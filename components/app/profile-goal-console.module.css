@@ -153,3 +153,67 @@
 .console a.stageStart{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:44px;padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#087b50,#00432c);color:#fff8e7!important;text-decoration:none;box-sizing:border-box;font:700 16px/1.2 system-ui,sans-serif}
 .console .stageStart>svg:last-child{margin-left:auto}
 .console .stageStart>svg:first-child{margin-right:auto}
+
+/* GOAL_PROGRAM_TWO_STATES_20261124 — approved mobile program, not a second Daybook.
+   Promotional landing for guests/no saved goal; real selected goal and resume for members. */
+.console[data-profile-goal-console]{display:grid;gap:12px;padding:7px;background:linear-gradient(150deg,#fff9ea,#f6e9cb);border:1px solid #ead0a0;border-radius:22px;color:#164531;box-shadow:0 4px 14px #22170e33}
+.console .programHero,.console .activeHero{min-width:0;overflow:hidden;border-radius:17px;padding:16px 13px;background:linear-gradient(90deg,#211a10f2 0%,#2e2417b8 58%,#2e241738 100%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover no-repeat;color:#fff8e5;box-shadow:0 3px 10px #45311b38}
+.console .programHero{min-height:185px;display:flex;flex-direction:column;justify-content:center}
+.console .programEyebrow{display:flex;align-items:center;gap:7px;margin:0 0 5px!important;color:#fff4dc!important;font:700 11px/1.3 system-ui,sans-serif!important;letter-spacing:.10em}
+.console .programHero h1,.console .activeHero h1{color:#fff8e5!important;font:700 clamp(30px,8vw,48px)/1.08 Georgia,serif!important;margin:4px 0 8px!important;overflow-wrap:anywhere}
+.console .programIntro{color:#fff8e5!important;font:500 15px/1.4 system-ui,sans-serif!important;max-width:34ch;margin:0!important;overflow-wrap:anywhere}
+.console .programActions{display:grid;grid-template-columns:1.35fr 1fr;gap:8px;margin-top:17px}
+.console .primaryAction,.console .secondaryAction{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:50px;padding:8px;border-radius:25px;border:1.5px solid #fff0bd;text-align:center;text-decoration:none;box-sizing:border-box;font:700 15px/1.2 system-ui,sans-serif!important}
+.console .primaryAction{background:linear-gradient(125deg,#ffe77a,#ffbe19);color:#262109!important;box-shadow:0 2px 9px #e7bb4166}
+.console .secondaryAction{background:#fff7e4;color:#123f2c!important}
+.console .programActions strong{font:inherit!important;color:inherit!important;overflow-wrap:normal}
+.console .programActions svg,.console .activeUtilities svg{flex:none;width:19px;height:19px}
+.console .benefits h2,.console[data-profile-goal-console] .stepsTitle{font:700 clamp(22px,5.6vw,30px)/1.2 Georgia,serif!important;color:#114631!important;text-align:center;text-shadow:none;margin:3px 0 9px!important}
+.console .benefitGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.console .benefit{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:8px;padding:6px;border:1px solid #ead4ac;border-radius:15px;min-height:86px;background:#fff8e8;box-shadow:0 3px 8px #93734324;box-sizing:border-box}
+.console .benefitPhoto{width:100%;height:100%;min-height:65px;border-radius:11px;background-position:center;background-size:cover}
+.console .benefitPhoto[data-benefit-photo="0"]{background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+.console .benefitPhoto[data-benefit-photo="1"]{background-image:url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.console .benefitPhoto[data-benefit-photo="2"]{background-image:url("/images/holistic-house/ideas-pine-reference.webp")}
+.console .benefitPhoto[data-benefit-photo="3"]{background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp")}
+.console .benefit strong,.console .benefit small{display:block;overflow-wrap:anywhere}
+.console .benefit strong{font:700 16px/1.2 system-ui,sans-serif!important;color:#173a2a!important}
+.console .benefit small{margin-top:3px;font:400 13px/1.3 system-ui,sans-serif!important;color:#344a39!important}
+.console .programStages{scroll-margin-top:90px;min-width:0}
+.console .programSubtitle{color:#34523e!important;font:400 14px/1.4 system-ui,sans-serif!important;text-align:center;margin:0 0 11px!important}
+.console[data-profile-goal-console] .steps{gap:7px}
+.console[data-profile-goal-console] button.step,.console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:27px 23px minmax(0,1fr) 15px;gap:8px;min-height:70px;padding:10px 8px;border:1px solid #e8d2ac;border-radius:15px;background:#fffaee;box-shadow:0 2px 6px #92734726}
+.console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:27px 23px minmax(0,1fr) 15px}
+.console[data-profile-goal-console] .stepBody{border:0;padding:0;gap:3px}
+.console[data-profile-goal-console] .stepBody strong{font:700 16px/1.25 system-ui,sans-serif!important;color:#163a2a!important;overflow-wrap:anywhere}
+.console[data-profile-goal-console] .stepBody small{font:400 14px/1.35 system-ui,sans-serif!important;color:#435044!important;overflow-wrap:anywhere}
+.console[data-profile-goal-console] .stepState{grid-column:3;grid-row:2;flex-direction:row;gap:6px;align-items:center;justify-content:flex-start;white-space:normal}
+.console[data-profile-goal-console] .stepState small{font:600 12px/1.3 system-ui,sans-serif!important}
+.console[data-profile-goal-console] .stageChevron{grid-column:4;grid-row:1}
+.console[data-profile-goal-console] .number{background:#dce9d5;color:#155237!important;font:700 15px/1 system-ui,sans-serif!important}
+.console[data-profile-goal-console] button.step[aria-expanded=true]{background:#f3f4df;border-color:#60966c}
+.console[data-profile-goal-console] .selectedGoal{padding:0;gap:11px;background:#fff9ec;border:1px solid #ead6b0;border-radius:18px;overflow:hidden;box-shadow:0 3px 10px #94733f24}
+.console .activeHero{border-radius:16px 16px 0 0;min-height:108px}
+.console[data-profile-goal-console] .goalSummary{padding:0 13px;gap:10px}
+.console[data-profile-goal-console] .goalSummary .circle{width:91px;height:91px}
+.console[data-profile-goal-console] .goalSummary .circle strong{font-size:25px}
+.console[data-profile-goal-console] .goalSummary .circle small{font:600 11px/1.1 system-ui,sans-serif;max-width:67px}
+.console[data-profile-goal-console] .goalText h2{font:700 23px/1.18 Georgia,serif!important}
+.console .goalText>span{font-size:12px;line-height:1.4}
+.console .lessonMeta{padding:0 13px;font:600 13px/1.4 system-ui,sans-serif;gap:7px}
+.console .lessonMeta>span:last-child{margin-left:0}
+.console .lessonButton,.console .lessonComplete,.console .lessonStatus{margin:0 11px 11px}
+.console .lessonButton{min-height:52px;font:700 16px/1.25 system-ui,sans-serif!important;background:linear-gradient(125deg,#ffe77a,#ffbe19);color:#25200a!important;border-color:#e6b94d}
+.console .activeUtilities{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.console .activeUtilities a{min-height:48px;display:flex;justify-content:center;align-items:center;gap:6px;padding:8px;border:1px solid #e5cba0;border-radius:14px;background:#fffaf0;color:#164631!important;text-align:center;text-decoration:none;font:650 14px/1.3 system-ui,sans-serif!important;box-sizing:border-box}
+.console[data-profile-goal-console] .goalStrip{background:#f6ead3;border-color:#e5cba0;margin:0}
+.console .stripTitle{color:#18442e!important}
+.console .goalActive strong{color:#fff8dc!important}
+.console .goalChip strong{color:#173b28!important}
+.console .disclaimer{color:#435044!important;font-size:13px;line-height:1.4}
+.console .focusDetails{margin-top:12px}
+.console .focusDetails [data-profile-current-goal]{display:none}
+.console .focusDetails [data-profile-space-focus]{grid-template-columns:1fr}
+.console :focus-visible{outline:3px solid #27754d;outline-offset:2px}
+@media(max-width:374px){.console .programActions{grid-template-columns:1fr}.console .benefitGrid{grid-template-columns:1fr}.console .benefit{grid-template-columns:76px 1fr;min-height:76px}.console .activeUtilities{grid-template-columns:1fr}.console[data-profile-goal-console] button.step,.console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:25px 20px minmax(0,1fr) 13px;gap:6px}.console[data-profile-goal-console] .stepBody strong{font-size:16px!important}.console[data-profile-goal-console] .stepBody small{font-size:14px!important}}
+@media(min-width:700px){.console[data-profile-goal-console]{padding:14px}.console .programHero,.console .activeHero{padding:24px}.console .benefit{grid-template-columns:94px minmax(0,1fr)}.console .programActions{max-width:520px}.console .programIntro{font-size:17px!important}}
