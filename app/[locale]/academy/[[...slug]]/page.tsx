@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : routeKey(slug) === "egyptian-priesthood" || routeKey(slug) === "egyptian-priesthood/learn"
     ? locale === "ru" ? "Египетское жречество: 7 оригинальных видеоуроков Андрея Литвинова по циклу Осириса, короткие практики, рефлексия и переход к египетским мистериям."
       : locale === "es" ? "Sacerdocio egipcio: siete vídeos originales en ruso del ciclo de Osiris, prácticas y reflexiones." : "Egyptian Priesthood: seven original Russian-language Osiris video lessons by Andrey Litvinov, reflection and historical study."
-    : routeKey(slug) === "principles-of-energywork/learn"
+    : ["principles-of-energywork/learn", "principles-of-energywork/daybook"].includes(routeKey(slug))
     ? locale === "ru" ? "Бесплатный интерактивный курс «Практик Рейки»: пять уроков, авторские медитации и практические задания." : locale === "es" ? "Curso interactivo gratis Reiki Practitioner: cinco lecciones, meditaciones originales y ejercicios." : "Free Reiki Practitioner study course: five lessons, original guided meditations and practical exercises."
     : routeKey(slug) === "free-ai-courses"
     ? locale === "ru" ? "Бесплатные образовательные курсы Holistic House: ОПОРА Антистресс, 14 занятий и личный прогресс в кабинете." : locale === "es" ? "Cursos gratuitos de Holistic House: OPORA Antiestrés, 14 lecciones y seguimiento personal." : "Free Holistic House courses: OPORA Stress Relief, 14 lessons, guided practices and your private course progress."

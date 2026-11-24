@@ -22,7 +22,7 @@ test("Classic route stays available; alternative uses the same curriculum, priva
   assert.ok(ui.includes("energyworkLessonRanges()"));
   assert.ok(ui.includes("position <= daybookFrontier"));
   assert.ok(ui.includes('if (daybook && !daybookCanOpen(target)) return;'));
-  assert.ok(ui.includes('daybook ? "energywork-daybook" : "energywork"'));
+  assert.ok(ui.includes('daybook ? { continueTo: "energywork-daybook" } : { continueTo: "energywork" }'));
   assert.ok(api.includes("/academy/principles-of-energywork/daybook"));
   assert.ok(ui.includes('data-cabinet-theme": "daybook"'));
   assert.ok(ui.includes('slides.slice(activeWeek.start, activeWeek.end)'));

@@ -1058,7 +1058,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     if (busy) return;
     setBusy(true);
     try {
-      const response = await appFetch("auth/start", { locale, continueTo: daybook ? "energywork-daybook" : "energywork" }, "POST") as { redirectUrl?: string };
+      const continuation = daybook ? { continueTo: "energywork-daybook" } : { continueTo: "energywork" };
+      const response = await appFetch("auth/start", { locale, ...continuation }, "POST") as { redirectUrl?: string };
       if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
       // The short-lived, consented first-lesson handoff is safely kept within
       // this tab, so an expected OAuth navigation should not warn of lost edits.
@@ -1136,7 +1137,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   // Decorative artwork belongs behind the lesson copy, never in a cropped strip.
   // Video playback and the existing welcome/testimonial backgrounds are unaffected.
-  const artBackground = !daybook && Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
+  const artBackground = Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind) && !daybook;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
@@ -1397,11 +1398,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
             <p>{db.subtitle}</p>
             <div className={daybookStyles.heroBottom}>
               <span>{daybookCompletedCount}/{total} {db.done.toLowerCase()}</span>
-              <Link href={"/" + locale + "/academy/principles-of-energywork/learn"}>{db.classic}</Link>
+              <a href={"/" + locale + "/academy/principles-of-energywork/learn"}>{db.classic}</a>
             </div>
           </header>
         ) : null}
-        {!daybook && slide.kind === "welcome" ? (
+        {slide.kind === "welcome" ? (
           <header className={styles.top}>
             <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
               <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
@@ -1939,7 +1940,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
             <p>{sync === "ready" ? db.shared : db.guest}</p>
           </details>
         ) : null}
-        <section className={styles.programme} data-daybook-part={daybook ? "resources" : undefined} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
+        <section className={styles.programme} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
           <div className={styles.programmeBody} id="reiki-journey-help" hidden={!programmeOpen}>
             <p className={styles.programmeIntro}>{t.programmeIntro}</p>
             <div className={styles.programmeSystems}>
@@ -1965,7 +1966,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
             <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
           </button>
         </section>
-        <footer className={styles.footer} data-daybook-part={daybook ? "footer" : undefined}>
+        <footer className={styles.footer}>
           <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
             {slide.kind === "milestone" ? (
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}

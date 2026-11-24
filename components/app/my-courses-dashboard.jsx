@@ -210,6 +210,19 @@ export default function MyCoursesDashboard({
         </span>
         <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
       </Link>
+      <Link className={styles.bonusCard} style={{marginTop:8}} data-reiki-practitioner-daybook-bonus
+        href={'/' + (locale==='ru'?'ru':'en') + '/academy/principles-of-energywork/daybook'} prefetch={false}>
+        <span className={styles.bonusPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+            width={176} height={140} alt="" loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.bonusBody}>
+          <small className={styles.bonusEyebrow}>DAYBOOK · {locale==='ru'?'БЕСПЛАТНО':locale==='es'?'GRATIS':'FREE'}</small>
+          <strong>{locale==='ru'?'Практик Рейки — Daybook':'Reiki Practitioner — Daybook'}</strong>
+          <small>{locale==='ru'?'5 недель · Все уроки и практики. Общий прогресс с классическим курсом.':locale==='es'?'5 semanas · Versión en inglés. Progreso compartido.':'5 weeks · All original lessons and practices. Shared course progress.'}</small>
+        </span>
+        <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+      </Link>
     </section>
     <details className={styles.moreFree}>
       <summary>{locale==='ru'?'Все бесплатные программы':'More free programmes'}</summary>

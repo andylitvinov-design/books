@@ -43,11 +43,11 @@
 .page[data-reiki-daybook] [data-daybook-part="art"] img {object-fit:contain;background:#fff9ea;object-position:center;}
 .page[data-reiki-daybook] [data-daybook-part="progress"] {position:static;display:block;min-height:0;height:auto;max-height:none;color:#fff1d4;background:#3b2919;padding:10px 13px;border:1px solid #8b693f;border-radius:13px;}
 .page[data-reiki-daybook] [data-daybook-part="progress"] :is(p,span,a) {color:#fff1d4;}
-.page[data-reiki-daybook] [data-daybook-part="resources"] {position:static;min-height:0;max-height:none;height:auto;overflow:visible;background:#fff6e3;border:1px solid #d7b576;border-radius:13px;color:#3c291c;}
-.page[data-reiki-daybook] [data-daybook-part="footer"] {position:static;background:none;min-height:0;max-height:none;height:auto;padding:0;margin:0;}
-.page[data-reiki-daybook] [data-daybook-part="footer"]>div {display:flex;gap:8px;margin:0;}
-.page[data-reiki-daybook] [data-daybook-part="footer"] button {min-height:48px;min-width:44px;border-radius:12px;padding:10px 13px;font-size:14px;}
-.page[data-reiki-daybook] [data-daybook-part="footer"] button:last-child:not(:first-child) {background:linear-gradient(135deg,#07815e,#00513d);color:#fff9e7;flex:1;border:1px solid #d7b576;}
+.page[data-reiki-daybook] [data-daybook-part="shell"]>section[data-expanded] {position:static;min-height:0;max-height:none;height:auto;overflow:visible;background:#fff6e3;border:1px solid #d7b576;border-radius:13px;color:#3c291c;}
+.page[data-reiki-daybook] [data-daybook-part="shell"]>footer {position:static;background:none;min-height:0;max-height:none;height:auto;padding:0;margin:0;}
+.page[data-reiki-daybook] [data-daybook-part="shell"]>footer>div {display:flex;gap:8px;margin:0;}
+.page[data-reiki-daybook] [data-daybook-part="shell"]>footer button {min-height:48px;min-width:44px;border-radius:12px;padding:10px 13px;font-size:14px;}
+.page[data-reiki-daybook] [data-daybook-part="shell"]>footer button:last-child:not(:first-child) {background:linear-gradient(135deg,#07815e,#00513d);color:#fff9e7;flex:1;border:1px solid #d7b576;}
 .steps {border:1px solid #d7b576;border-radius:16px;background:#fff6e3;color:#3c291c;overflow:hidden;}
 .steps summary {min-height:50px;padding:10px 12px;display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;font-size:15px;}
 .steps summary::-webkit-details-marker {display:none;}
@@ -68,3 +68,5 @@
 .page[data-reiki-daybook] :is(button,a,summary,input,select,textarea):focus-visible {outline:3px solid #a27025;outline-offset:2px;}
 @media(min-width:640px){.weeks button {min-height:67px;font-size:13px;}.weeks button small {font-size:12px;}.weeks button span {gap:4px;}.hero {padding:17px 21px;}}
 @media(max-width:360px){.weeks {gap:3px;}.weeks button {padding:5px 2px;}.weeks button small {font-size:9px;}.heroBottom {gap:5px;font-size:11px;}}
+
+.page[data-reiki-daybook] [data-daybook-part="shell"]>header:not(.hero) {display:none;}
