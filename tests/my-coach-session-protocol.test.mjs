@@ -260,7 +260,7 @@ test('profile numbers must match a real client utterance and not the coach infer
  const obj=sample()
  obj.turns=[{role:'user',content:'Сейчас 3, хочу 7'},{role:'assistant',content:'Понял.'}]
  obj.profileCheckin={version:'hh-coach-profile-intake-v1',completed:false,ratings:[
-  {axis:'support',kind:'rated',current:3,desired:7,quote:'Сейчас 3, хочу 7'}
+  {axis:'anchor',kind:'rated',current:3,desired:7,quote:'Сейчас 3, хочу 7'}
  ]}
  assert.equal(normalizeMyCoachProtocol(obj).profileCheckin.ratings[0].desired,7)
  obj.profileCheckin.ratings[0].desired=9
