@@ -1,9 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
-import {advanceDaybookRouteIntent,vectorStartDecision} from '../lib/app/daybook-route-intent.mjs'
+import {advanceDaybookRouteIntent,vectorStartDecision,daybookRouteOptions} from '../lib/app/daybook-route-intent.mjs'
 import {createVectorGoalSession} from '../lib/app/daybook-vector-session.mjs'
 import {createGoalWorkspaceMemory} from '../lib/app/daybook-goal-editor-session.mjs'
+
+test('guide is the default; saved stage zero and direct journal routes retain their intent',()=>{
+ assert.deepEqual(daybookRouteOptions(),{autoStartVector:false,initialTab:'stages',initialStage:1,initialLevel:1,initialStep:1,initialGoalId:null})
+ assert.equal(advanceDaybookRouteIntent(null,daybookRouteOptions()).tab,'stages')
+ assert.equal(advanceDaybookRouteIntent(null,daybookRouteOptions({start:'vector'})).tab,'goals')
+ for(const tab of ['today','journal','goals','growth'])assert.equal(daybookRouteOptions({tab}).initialTab,tab)
+ const goal=randomUUID(),valid=daybookRouteOptions({stage:'8',level:'4',step:'7',goal})
+ assert.equal(valid.initialStage,8);assert.equal(valid.initialLevel,4);assert.equal(valid.initialStep,7);assert.equal(valid.initialGoalId,goal)
+ for(const bad of ['9','0','-1','1.5','2x',['2'],'<script>']){
+  const parsed=daybookRouteOptions({stage:bad,level:bad,step:bad,goal:bad,tab:bad})
+  assert.equal(parsed.initialStage,1);assert.equal(parsed.initialLevel,1);assert.equal(parsed.initialStep,1);assert.equal(parsed.initialGoalId,null);assert.equal(parsed.initialTab,'stages')
+ }
+})
 
 test('same-route navigation moves Today to Goals and assigns one start request per deliberate entry',()=>{
  const initial=advanceDaybookRouteIntent(null,{initialTab:'today'})
