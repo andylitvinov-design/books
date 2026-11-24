@@ -175,7 +175,11 @@ test('saved goal check-in is read only under account identity; conversion remain
   assert.match(editor,/data-goal-checkin-control=\{key\}/)
   assert.match(editor,/goalCheckin: values\.every/)
   assert.match(editor,/measuredAt: new Date\(\)\.toISOString\(\)/)
-  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'revision'\]\)/)
+  // Strict allowlist includes the owner-saved Daybook vector and voluntary life-context narrative.
+  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'vectors', 'lifeContext', 'revision'\]\)/)
+  // Older goal editors must preserve both private fields without inventing consent.
+  assert.match(backend,/if\(preserveVectors&&prior\.vectors\)nextGoals=\{\.\.\.nextGoals,vectors:prior\.vectors\}/)
+  assert.match(backend,/if\(preserveLifeContext&&prior\.lifeContext\)nextGoals=\{\.\.\.nextGoals,lifeContext:prior\.lifeContext\}/)
   assert.match(backend,/openSealed/)
   assert.match(backend,/seal\(/)
   assert.match(backend,/account_id=\$1/)

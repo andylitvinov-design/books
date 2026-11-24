@@ -483,3 +483,136 @@
 .page .libraryTile{color:var(--progress-ink)}
 .page .videoEmpty a,.page .mandalaEmpty a{color:#177c59}
 .page .identityCopy a{color:#107e61}
+
+/* The private activity dashboard shares the Daybook cabinet palette. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .page {
+  --progress-ink: var(--hh-cabinet-ink, #3c291c);
+  --progress-muted: var(--hh-cabinet-muted, #695644);
+  --progress-forest: var(--hh-cabinet-primary-hover, #00513d);
+  --progress-green: var(--hh-cabinet-primary, #006b4e);
+  --progress-edge: var(--hh-cabinet-border, #d7b576);
+  --progress-cream: var(--hh-cabinet-surface, #fff6e3);
+  padding-inline: 0;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  border-color: var(--progress-edge);
+  background: linear-gradient(135deg, var(--progress-cream), var(--hh-cabinet-surface-soft, #f5e3bf));
+  box-shadow: 0 6px 20px #130c0826;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .identityCopy h1 {
+  color: var(--progress-ink);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .avatar {
+  border-color: var(--progress-cream);
+  outline-color: var(--progress-edge);
+  background: linear-gradient(135deg, var(--progress-green), var(--progress-forest));
+  color: #fff6e3;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroEyebrow { color: var(--progress-green); font-size: 12px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.identityCopy p, .heroIntro) {
+  color: var(--progress-muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .identityCopy a {
+  color: var(--progress-green);
+  min-height: 44px;
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .metric,
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.libraryTile, .entry, .videoEmpty, .mandalaEmpty, .emptyState) {
+  color: var(--progress-ink);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .metric span { font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .metric small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .libraryCopy small {
+  color: var(--progress-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .libraryCopy strong { font-size: 16px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionHead h2 {
+  color: #fff6e3;
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionEyebrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.sectionFoot, .activityIntro, .footer) {
+  color: #e5d3b6;
+  font-size: 14px;
+  line-height: 1.45;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .footer p { font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .footer { border-color: var(--progress-edge); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionLink,
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .refresh {
+  min-height: 44px;
+  color: var(--progress-green);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionLink {
+  padding: 8px 11px;
+  border-radius: 14px;
+  white-space: normal;
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoCard, .mandalaCard) {
+  padding: 10px;
+  color: var(--progress-ink);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+  border-radius: 22px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoTitle, .mandalaCard strong, .entryBody>strong) {
+  color: var(--progress-ink);
+  font-size: 16px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoMeta, .mandalaCard small, .entryBody p, .entryTop) {
+  color: var(--progress-muted);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .entryTop :is(span, time) { font-size: 12px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .resume {
+  border: 1px solid var(--progress-edge);
+  background: linear-gradient(120deg, var(--progress-green), var(--progress-forest));
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .resumeAction {
+  min-height: 48px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+  font-size: 15px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .filters button {
+  min-height: 44px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .filters button[aria-pressed="true"] {
+  color: #fff6e3;
+  background: var(--progress-green);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page :is(.more, .mandalaButton) {
+  min-height: 44px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.explanation, .loading) {
+  color: var(--progress-muted);
+  background: var(--progress-cream);
+  font-size: 14px;
+}
+@media(max-width:600px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .sectionHead { align-items: flex-start; flex-wrap: wrap; }
+}
+@media(max-width:360px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .library { grid-template-columns: minmax(0,1fr); }
+}

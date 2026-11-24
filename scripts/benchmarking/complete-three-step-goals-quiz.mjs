@@ -12,30 +12,46 @@ export async function completeThreeStepGoalsQuiz(page,{
   // The full original 3-step taxonomy is intentionally collapsed until a
   // real visitor taps More goals. Never force-click the hidden legacy CTA.
   // New Magic Mirror has a real landing screen before the topic composer.
-  const plan=page.locator('[data-hh-mirror-plan]');
-  if(await plan.isVisible()){
-    if(engine==='webkit')await plan.tap();else await plan.click();
-  }
   const collapsedMirror=page.locator(
     '[data-mandala-free-video][data-hh-mirror-advanced="false"] [data-hh-mirror-goals]'
   );
   if(await collapsedMirror.isVisible()){
-    const moreGoals=collapsedMirror.locator('[data-hh-mirror-more-goals]');
-    if(await moreGoals.isVisible()){
-      if(engine==='webkit')await moreGoals.tap();else await moreGoals.click();
-    }else{
-      // The approved compact topic design hides the old overflow icon.
-      // The + button in the REAL visible composer opens the same advanced quiz.
-      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
-      for(let i=0;i<2&&!await composer.isVisible();i++){
-        const back=collapsedMirror.locator('[data-hh-mirror-back]');
-        await back.waitFor({state:'visible',timeout:15000});
-        if(engine==='webkit')await back.tap();else await back.click();
+    const tap=async locator=>{
+      await locator.waitFor({state:'visible',timeout:15000});
+      if(engine==='webkit')await locator.tap();
+      else await locator.click();
+    };
+    const overflow=collapsedMirror.locator('[data-hh-mirror-more-goals]');
+    if(await overflow.isVisible())await tap(overflow);
+    else{
+      // Approved Screen 2 begins with the three-lightbulb topic quiz.
+      // Advanced editor is opened only through the visible Details → + path,
+      // not through the old Scope → Purpose → Format sequence or a hidden click.
+      const screen=()=>collapsedMirror.getAttribute('data-hh-mirror-screen');
+      const awaitScreen=async expected=>page.waitForFunction(expected=>
+        document.querySelector('[data-hh-mirror-goals]')
+          ?.getAttribute('data-hh-mirror-screen')===expected,
+        expected,{timeout:15000});
+      if(await screen()==='landing'){
+        await tap(collapsedMirror.locator('[data-hh-mirror-enter="me"]'));
+        await awaitScreen('topic');
       }
+      assert.equal(await screen(),'topic','GOAL_QUIZ_EXPECTS_REAL_VISIBLE_TOPIC');
+      // Return from steps 2/3 to the first topic card with actual Back taps.
+      for(let i=0;i<2 && await collapsedMirror.getAttribute('data-hh-mirror-step')!=='1';i++)
+        await tap(collapsedMirror.locator('[data-hh-mirror-back]'));
+      assert.equal(await collapsedMirror.getAttribute('data-hh-mirror-step'),'1',
+        'GOAL_QUIZ_DETAILS_ONLY_ON_REAL_FIRST_SCREEN');
+      const details=collapsedMirror.locator('[data-hh-mirror-own-description]');
+      await details.waitFor({state:'visible',timeout:15000});
+      if(await details.getAttribute('open')===null)
+        await tap(details.locator(':scope > summary'));
+      await page.waitForFunction(()=>
+        document.querySelector('[data-hh-mirror-own-description]')?.hasAttribute('open'),
+        undefined,{timeout:15000});
+      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
       await composer.waitFor({state:'visible',timeout:15000});
-      const plus=composer.locator('button').first();
-      await plus.waitFor({state:'visible',timeout:15000});
-      if(engine==='webkit')await plus.tap();else await plus.click();
+      await tap(composer.locator('[data-hh-mirror-open-advanced="true"]'));
     }
     await page.waitForFunction(()=>
       document.querySelector('[data-mandala-free-video]')

@@ -185,21 +185,22 @@ try {
     if(engine==='webkit')await mirrorMore.tap();
     else await mirrorMore.click();
   }else{
-    // Approved Magic Mirror now has a landing page and a large topic composer.
-    // Older More-goals control is intentionally hidden at phone widths.
-    // Open the same advanced tools through the visible composer + button.
-    const plan=page.locator('[data-hh-mirror-plan]');
-    if(await plan.isVisible()){
-      if(engine==='webkit')await plan.tap();else await plan.click();
+    // Real browser entry: Landing -> Topic Screen 2 -> explicitly opened editor.
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    if(await mirror.getAttribute('data-hh-mirror-screen')==='landing'){
+      row.phase='mirror-audience-native-selection';
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      if(engine==='webkit')await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
+    }
+    const description=mirror.locator('[data-hh-mirror-own-description]');
+    if(!await description.evaluate(el=>el.open)){
+      const summary=description.locator('summary');
+      if(engine==='webkit')await summary.tap();else await summary.click();
     }
     const composer=page.locator('[data-hh-mirror-composer]');
-    for(let i=0;i<2&&!await composer.isVisible();i++){
-      const back=page.locator('[data-hh-mirror-back]');
-      await expect(back).toBeVisible();
-      if(engine==='webkit')await back.tap();else await back.click();
-    }
     await expect(composer).toBeVisible({timeout:15000});
-    const plus=composer.locator('button').first();
+    const plus=composer.locator('[data-hh-mirror-open-advanced]');
     await expect(plus).toBeVisible();
     if(engine==='webkit')await plus.tap();else await plus.click();
   }

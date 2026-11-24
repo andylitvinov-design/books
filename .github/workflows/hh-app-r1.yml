@@ -6,6 +6,11 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      - 'tests/development-vector-wheel.test.mjs'
+      - 'tests/daybook-*.mjs'
+      - 'tests/helpers/daybook-canonical-schema.mjs'
+      - 'tests/ci-daybook-*.mjs'
+      - 'scripts/ci-daybook*.mjs'
       - 'scripts/ci-coaching-rls*.mjs'
       - 'tests/ci-coaching-rls-guard.test.mjs'
       - 'tests/personal-coaching-rls-isolated.integration.mjs'
@@ -138,6 +143,9 @@ jobs:
         if: needs.impact.outputs.profile == 'true'
         with:
           stage: materialize
+      - name: Daybook private workspace unit acceptance
+        if: needs.impact.outputs.full_app == 'true'
+        run: node --conditions=react-server --test tests/daybook-*.test.mjs tests/ci-daybook-isolated.test.mjs tests/development-vector-wheel.test.mjs tests/profile-inner-balance-preview.test.mjs
       - name: Check-in evidence, scoring and report-priority regressions
         if: needs.impact.outputs.full_app == 'true'
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
@@ -309,6 +317,9 @@ jobs:
       - name: Isolated two-client/two-master client memory SQL and RLS acceptance
         if: needs.impact.outputs.database == 'true'
         run: node scripts/ci-client-memory-rls.mjs
+      - name: Isolated Daybook journal goals and daily acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: node scripts/ci-daybook-isolated.mjs
       - name: Isolated personal coaching owner RLS acceptance
         if: needs.impact.outputs.database == 'true'
         run: |

@@ -55,40 +55,57 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
- const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
- const chooseCandidates=[
-   flow.indexOf('await choice.tap()',goalPanel),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
- ].filter(index=>index>=0);
- const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
- const nextCandidates=[
-   flow.indexOf('await nextGoal.tap()',choose),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
- ].filter(index=>index>=0);
- const next=nextCandidates.length?Math.min(...nextCandidates):-1;
- const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
- const montage=flow.indexOf("await montage.tap()",personalized);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
-   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
+ const scope=flow.indexOf("await mirror.locator('[data-hh-mirror-enter=\"me\"]').click()");
+ const category=flow.indexOf("await mirror.locator('[data-hh-mirror-goal-choice=\"love\"]').click()",scope);
+ const subcategory=flow.indexOf("await subs.first().click()",category);
+ const topic=flow.indexOf("await mirror.locator('[data-hh-mirror-topic]').first().click()",subcategory);
+ const purposeFormat=flow.indexOf('await confirmPurposeAndFormat("rest","pro")',topic);
+ assert.ok(scope>=0&&category>scope&&subcategory>category&&topic>subcategory&&purposeFormat>topic,
+   "visible Screen-2 selects three Goal lightbulb stages before purpose and format");
+ for(const step of [1,2,3])assert.ok(flow.includes('await stepIs('+step+')'),
+   "the visible Goal must check each of its three real lightbulbs");
+ assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
+ // Test the exact supported user path, not the retired Goal → Ideas shortcut.
+ const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page,engine)",mirrorNext);
+ const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
+ const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
+ const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",selectGoal);
+ const nextGoal=flow.indexOf("await ideasNext.tap()",nextControl);
+ const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
+ const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
+ assert.ok(first>=0&&last>first&&mirrorNext>=0&&extraToPersonal>mirrorNext&&personalGoal>extraToPersonal&&
+   selectGoal>personalGoal&&nextControl>selectGoal&&nextGoal>nextControl&&personalization>nextGoal&&backToMontageText>personalization,
+   "real visitor goes from Goal to Montage Extra, chooses Personal, then returns to Montage Text after answering");
+ const helperStart=browser.indexOf("async function enterPersonalAfterMontageExtra");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ const editor=helper.indexOf('toHaveAttribute("data-active-workspace","editor"');
+ const extra=helper.indexOf('data-video-montage-tab=\"promo\"',editor);
+ const choice=helper.indexOf('data-video-extra-text-option=\"personal\"',extra);
+ const personal=helper.indexOf('toHaveAttribute("data-active-workspace","phrases"',choice);
+ assert.ok(helperStart>=0&&helperEnd>helperStart&&editor>=0&&extra>editor&&choice>extra&&personal>choice,
+   "the helper must exercise visible Extra and Personal buttons and await React workspace state");
+ assert.doesNotMatch(helper,/click\(\{force:true\}\)|\.evaluate\(/);
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{continueToMontage\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- // The live Style controls are direct buttons, not the removed legacy wrapper.
+ // The live Style controls remain real buttons, not a removed legacy wrapper.
  assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
  assert.ok(flow.includes('await styleTab.tap()'));
- assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('const moreStyles=page.locator("[data-video-montage-more-styles]")'));
+ assert.ok(flow.includes('await moreStyles.locator("summary").tap()'));
+ assert.ok(flow.includes('const styles=moreStyles.locator("[data-video-montage-style]")'));
  assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
  assert.ok(flow.includes('await minimal.tap()'));
  assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
@@ -189,11 +206,11 @@ test("macOS WebKit exposes preserved recipient actions through visible Magic Mir
  assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
  const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
   browser.indexOf("async function enterVisibleStudioWorkspace"));
- assert.match(reveal,/data-hh-mirror-plan/);
+ assert.match(reveal,/data-hh-mirror-enter="me"/);
  assert.match(reveal,/data-hh-mirror-composer/);
  assert.match(reveal,/data-hh-mirror-open-advanced/);
  assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
- assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\([^)]*click/);
 });
 
 test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
@@ -209,9 +226,23 @@ test("real macOS WebKit Montage navigation opens visible Magic Mirror controls b
  assert.match(helper,/else await control\.click\(\)/);
  assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
  const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
- assert.match(reveal,/if\(engine==="webkit"\)await plan\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await entry\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await summary\.tap\(\)/);
  assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
  const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
  assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
  assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
+});
+
+test("original-motion WebKit opens current Screen-2 Goal through real Details and Plus",()=>{
+ const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-own-description]',
+   '[data-hh-mirror-composer]','[data-hh-mirror-open-advanced="true"]',
+   '[data-auto-video-category]','[data-auto-video-subcategory]','[data-video-goal-topic]'])
+  assert.ok(source.includes(token),token);
+ assert.match(source,/await awaitScreen\('topic'\)/);
+ assert.match(source,/details\.getAttribute\('open'\)/);
+ assert.match(source,/await tap\(details\.locator\(':scope > summary'\)\)/);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE|force:\s*true/);
+ assert.doesNotMatch(source,/await awaitScreen\('purpose'\)|await awaitScreen\('format'\)/);
 });

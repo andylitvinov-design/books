@@ -1,9 +1,8 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ComponentType } from 'react';
 import { ArrowRight, Menu, Sparkles } from 'lucide-react';
-import { CartNavLink } from '@/components/commerce/cart-nav-link';
 import { SiteSearch } from '@/components/site-search';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
@@ -12,9 +11,17 @@ import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type Public
 import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 import { HomePersonalSpaceNavEntry } from './home-personal-space';
-import { HeaderCreditProfile } from './header-credit-profile';
 
-type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void; compact?: boolean };
+type FullHeaderComponents = {
+  CartNavLink: ComponentType<{ locale: PublicLocale }>;
+  HeaderCreditProfile: ComponentType<{ locale?: PublicLocale }>;
+};
+export type SiteNavigationProps = {
+  locale?: PublicLocale;
+  onLocaleChange?: (locale: Locale) => void;
+  compact?: boolean;
+  fullHeaderComponents?: FullHeaderComponents;
+};
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 const myCoachMenuCopy = { en: 'My Coach', ru: 'Мой коуч', es: 'Mi coach' } as const;
@@ -40,7 +47,12 @@ const siteMenuCopy = {
   },
 } as const;
 
-export function SiteNavigation({ locale, onLocaleChange, compact = false }: Props) {
+export function SiteNavigation({ locale, onLocaleChange, compact = false, fullHeaderComponents }: SiteNavigationProps) {
+  const CartNavLink = fullHeaderComponents?.CartNavLink;
+  const HeaderCreditProfile = fullHeaderComponents?.HeaderCreditProfile;
+  if (!compact && (!CartNavLink || !HeaderCreditProfile)) {
+    throw new Error('Full site navigation requires its cart and credit controls');
+  }
   const pathname = usePathname();
   const languageRef = useRef<HTMLDetailsElement>(null);
   const siteMenuRef = useRef<HTMLDetailsElement>(null);
@@ -145,14 +157,14 @@ export function SiteNavigation({ locale, onLocaleChange, compact = false }: Prop
     <SiteSearch locale={activeLocale} pathname={pathname} />
     {!compact && <>
     {/^(?:\/)(?:en|ru|es)\/holistic-support\/mandala(?:\/|$)/.test(pathname)
-      ? <HeaderCreditProfile locale={activeLocale} />
+      ? HeaderCreditProfile && <HeaderCreditProfile locale={activeLocale} />
       : <HomePersonalSpaceNavEntry locale={activeLocale}
           href={"/" + (activeLocale === "es" ? "en" : activeLocale) + "/app"} />}
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
       {shopMenuCopy[activeLocale]}
     </Link>
-    <CartNavLink locale={activeLocale} />
+    {CartNavLink && <CartNavLink locale={activeLocale} />}
     <span className="site-language-switch"><details className="site-language-menu" ref={languageRef}>
       <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
       <span className="site-language-menu-list">{languages.map(next => localizedPath || next === 'es' || !onLocaleChange

@@ -211,9 +211,9 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     courses: '/' + selected + '/academy',
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
-  const stateBrand = current === 'today' || current === 'state' || current === 'reports'
+  const stateBrand = current === 'today' || current === 'state' || current === 'reports' || current === 'sessions'
   const isCourseLanding = current === 'courses' && courseLanding
-  const simplifiedSpace = current === 'today' || current === 'state' || isCourseLanding
+  const simplifiedSpace = current === 'today' || current === 'state' || current === 'sessions' || isCourseLanding
   const brandedSpace = stateBrand || isCourseLanding
   const settingsMode = current === 'settings'
   const s = SETTINGS_HUB_COPY[selected]
@@ -290,7 +290,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
       </Link>
     </div>}
-    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
+    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} accountId={account?.id || null} />}
      {isCourseLanding && <CourseSpaceIntro locale={selected} root={root} />}
     {settingsMode && <ProfileSettingsLanding locale={selected} root={root} plans={NEW_PACKAGES} />}
     {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>

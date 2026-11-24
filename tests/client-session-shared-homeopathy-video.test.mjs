@@ -45,8 +45,11 @@ test('all three session readers receive the availability gate',()=>{
     'app/[locale]/app/sessions/[id]/page.jsx',
   ]) assert.match(source(path),/sharedGuideReady=\{sharedGranulesGuideReady\(\)\}/)
   const page=source('components/client-session-page.jsx')
-  assert.match(page,/hasHomeopathyRecommendation&&sharedGuideReady/)
-  assert.match(page,/GRANULES_GUIDE_ID/)
-  assert.match(page,/не научно подтверждённая/)
-  assert.match(page,/do not prove/)
+  // An approved educational file must remain access-gated but is no longer
+  // inserted automatically in every homeopathic consultation report.
+  assert.doesNotMatch(page,/hasHomeopathyRecommendation&&sharedGuideReady/)
+  assert.doesNotMatch(page,/GRANULES_GUIDE_ID/)
+  assert.match(page,/Homeopathy educational videos are opt-in library choices/)
+  assert.match(page,/openingMaterials\.map/)
+  assert.match(page,/closingMaterials\.map/)
 })

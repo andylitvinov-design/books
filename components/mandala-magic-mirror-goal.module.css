@@ -222,3 +222,771 @@
  .goals[data-hh-mirror-screen="topic"] .progress{flex-wrap:wrap;justify-content:center;gap:5px}
  .progressStages{justify-content:center;gap:5px}
 }
+
+/* Approved screenshot #3 · 22 Nov 2026 · mobile single-screen landing. */
+@media(max-width:759px){
+ .heroSwoosh{display:block;grid-column:1/-1;margin:0 0 0 15px;
+  width:140px;height:7px;border-bottom:4px solid #edd17e;border-radius:50%;transform:rotate(-3deg)}
+ .title{display:grid!important;grid-template-columns:24px minmax(0,1fr);
+  align-content:center;align-items:center;justify-items:start;gap:0 5px;
+  min-height:84px!important;margin:0!important;padding:3px 8px!important;
+  overflow:visible;border:0;border-radius:0;background:none!important;color:#fff!important}
+ .title>svg{grid-column:1;grid-row:1;width:24px;height:24px;color:#fffaf0}
+ .title h2{grid-column:2;grid-row:1;margin:0!important;white-space:nowrap;
+  color:#fff!important;font:750 clamp(27px,7.8vw,36px)/1 Georgia,serif!important}
+ .title strong{grid-column:1/-1;grid-row:2;max-width:270px;color:#fff7e8!important;
+  font:800 clamp(16px,5vw,22px)/1.08 system-ui,sans-serif!important}
+ .title p{display:none}
+ .goals.landing{gap:5px!important;padding:0 2px 7px}
+ .destinationCards{gap:6px}
+ .destination{grid-template-columns:30% minmax(0,1fr) 30px;
+  align-items:stretch;gap:5px;min-height:100px;padding:0 6px 0 0;
+  border:1px solid #e9d7ca;border-radius:22px;background:#fffcf7;
+  box-shadow:0 3px 12px #876a5023}
+ .destination:first-child{border-color:#e9d7ca;background:linear-gradient(110deg,#edf8f2,#fffdf9)}
+ .destination[aria-pressed="true"]{border:2px solid #25d89a;
+  background:linear-gradient(105deg,#e5fff2,#fffef9);
+  box-shadow:0 0 0 1px #d3ffe9,0 4px 13px #009b7240}
+ .destination>img{display:block;width:100%;height:100%;min-height:0;
+  object-fit:cover;object-position:center;border-radius:20px 0 0 20px}
+ .destinationCopy{display:grid;grid-template-columns:20px minmax(0,1fr);
+  align-content:center;align-items:start;gap:3px 4px;min-width:0;padding:4px 0}
+ .destinationCopy>svg{grid-column:1;grid-row:1;width:19px;height:19px;color:#087b54}
+ .destinationCopy strong{grid-column:2;grid-row:1;color:#123e32;
+  font:800 clamp(16px,4.4vw,20px)/1.04 Georgia,serif;letter-spacing:-.02em}
+ .destinationCopy small{grid-column:2;grid-row:2;color:#344e50;
+  font:500 clamp(11px,3vw,12px)/1.14 system-ui,sans-serif}
+ .destinationArrow{align-self:center;width:30px;height:32px;
+  border-radius:50%;background:#fffbf4;color:#075b47;box-shadow:0 2px 7px #563a2620}
+ .destination[aria-pressed="true"] .destinationArrow{background:linear-gradient(130deg,#0abd83,#006b4e);color:#fff}
+ .destinationArrow svg{width:20px;height:20px}
+ .formatHeading{display:flex;align-items:center;justify-content:center;gap:7px;margin:0!important;
+  font:800 clamp(17px,4.6vw,21px)/1.1 system-ui,sans-serif!important;white-space:nowrap}
+ .formatHeading:before,.formatHeading:after{content:"";height:1px;flex:1;min-width:8px;background:#aca9a4}
+ .formatGrid{gap:5px}
+ .formatCard{gap:3px;min-height:126px;padding:7px 3px;border-radius:20px;
+  background:#fffaf4;box-shadow:0 3px 11px #74594126}
+ .formatCard>svg{flex:none;width:23px;height:23px}
+ .formatCard strong{font:800 clamp(12px,3.55vw,15px)/1.07 system-ui,sans-serif;overflow-wrap:anywhere}
+ .formatCard small{color:#344551;font:500 clamp(10.5px,2.75vw,12px)/1.1 system-ui,sans-serif}
+ .formatCard span{display:flex;align-items:center;justify-content:center;gap:3px;
+  min-height:29px;padding:3px 2px;background:#fff9f1;color:#0b4939;
+  box-shadow:0 2px 7px #72543c20;font:850 clamp(12px,3.65vw,17px)/1 system-ui,sans-serif}
+ .formatCard span svg{flex:none;width:13px;height:13px;color:#e7a520}
+ .formatCard[aria-pressed="true"]{border:2px solid #06c68c;
+  background:linear-gradient(145deg,#dfffe8,#edfff1 72%);box-shadow:0 2px 14px #0ca46c40}
+ .formatCard[aria-pressed="true"] span{background:linear-gradient(120deg,#02bb83,#006b4d);color:#fff}
+ .formatCard[aria-pressed="true"] span svg{color:#ffe26a}
+ .formatDisclosure{position:absolute!important;width:1px;height:1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap}
+ .primaryAction{min-height:49px;margin:2px 0 0;padding:7px 12px;
+  border:2px solid #e9ffef;background:linear-gradient(112deg,#02b67e,#006348);
+  box-shadow:0 4px 12px #066f4f60;font:850 clamp(15px,4.3vw,19px)/1.05 system-ui,sans-serif}
+ .primaryAction>svg{flex:none;width:21px;height:21px}
+}
+@media(max-width:359px){
+ .title{min-height:79px!important;padding-inline:6px!important}
+ .title h2{font-size:26px!important}.title strong{font-size:16px!important;max-width:235px}
+ .destination{grid-template-columns:28% minmax(0,1fr) 26px;gap:3px;min-height:102px;padding-right:3px}
+ .destinationCopy{grid-template-columns:16px minmax(0,1fr);column-gap:2px}
+ .destinationCopy>svg{width:16px;height:16px}
+ .destinationCopy strong{font-size:15px}
+ .destinationCopy small{font-size:10.5px;line-height:1.1}
+ .destinationArrow{width:26px;height:28px}
+ .formatHeading{font-size:16px!important;gap:4px}
+ .formatGrid{gap:3px}.formatCard{min-height:126px;padding:5px 2px;border-radius:17px}
+ .formatCard strong{font-size:11.5px}.formatCard small{font-size:10px}
+ .formatCard span{font-size:11px}.formatCard span svg{width:11px;height:11px}
+ .primaryAction{font-size:14px;min-height:47px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .title{min-height:72px!important}.title h2{font-size:clamp(26px,7.5vw,32px)!important}
+ .title strong{font-size:clamp(15px,4.7vw,19px)!important}
+ .heroSwoosh{height:4px;border-bottom-width:3px}
+ .goals.landing{gap:3px!important}.destinationCards{gap:4px}
+ .destination{min-height:91px;border-radius:19px}
+ .destinationCopy strong{font-size:clamp(14px,4vw,18px)}
+ .destinationCopy small{font-size:clamp(10px,2.9vw,11px)}
+ .formatCard{min-height:110px;padding:4px 2px 5px;gap:1px}
+ .formatCard>svg{height:20px;width:20px}
+ .formatCard strong{font-size:clamp(11px,3.4vw,14px)}
+ .formatCard small{font-size:clamp(10px,2.7vw,11px)}
+ .formatCard span{min-height:26px}
+ .primaryAction{min-height:45px;margin-top:0}
+}
+
+/* Owner 2026-11-22: one-fold Topic composition, based on the supplied iPhone
+   screenshots and approved fourth mock. Keep the actual player, keyboard,
+   category controls and consent-safe Next flow; never hide the primary CTA. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="topic"]{gap:4px!important;padding:0 2px 4px!important}
+ .goals[data-hh-mirror-screen="topic"] .backLanding{
+  position:absolute;z-index:4;top:7px;right:8px;left:auto;
+  min-height:32px;padding:5px 9px;border:1px solid #ffffff69;border-radius:999px;
+  background:#0a493bbc;color:#fff;font-size:11px;backdrop-filter:blur(4px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{
+  min-height:clamp(110px,15.5dvh,132px);height:auto;padding:11px 13px 9px;
+  border-radius:21px;align-content:center
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow{
+  max-width:68%;gap:5px;font-size:clamp(22px,5.75vw,29px);line-height:1.04
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow svg{width:20px;height:20px}
+ .goals[data-hh-mirror-screen="topic"] .therapyHero p{
+  max-width:68%;margin:5px 0 0!important;
+  font-size:clamp(11px,2.9vw,13px);line-height:1.18
+ }
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{
+  height:clamp(76px,10.9dvh,96px);border-width:3px;border-radius:21px
+ }
+ .goals[data-hh-mirror-screen="topic"] .videoPlay{
+  width:48px;height:48px;border-width:3px
+ }
+ .goals[data-hh-mirror-screen="topic"] .videoPlay svg{width:25px;height:25px}
+ .goals[data-hh-mirror-screen="topic"] .videoCaption{bottom:5px;left:9px;font-size:11px}
+ .goals[data-hh-mirror-screen="topic"] .progress{
+  min-height:35px;padding:4px 6px;gap:4px;flex-wrap:nowrap;
+  font-size:11px
+ }
+ .goals[data-hh-mirror-screen="topic"] .progress>strong{
+  min-width:75px;padding:6px 4px;font-size:clamp(10px,2.7vw,12px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .progressStages{gap:2px}
+ .goals[data-hh-mirror-screen="topic"] .progressStages span{
+  gap:3px;font-size:clamp(9px,2.45vw,11.5px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .progressStages span b{
+  width:19px;height:19px;font-size:10px
+ }
+ .goals[data-hh-mirror-screen="topic"] .question{margin:0!important}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer{
+  border-radius:21px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:clamp(47px,6.8dvh,64px);height:clamp(47px,6.8dvh,64px);
+  max-height:190px;padding:10px 12px 5px;border-radius:21px 21px 0 0;
+  font-size:clamp(13px,3.65vw,15.5px);line-height:1.25
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  min-height:43px;padding:3px 5px;gap:3px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  width:35px;height:38px;border-radius:11px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon svg{
+  width:19px;height:19px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  min-height:38px;padding:0 2px;gap:2px;font-size:clamp(10px,2.8vw,12px)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu svg{
+  width:14px;height:14px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  width:42px;height:42px
+ }
+ .goals[data-hh-mirror-screen="topic"] .example{
+  font-size:clamp(10px,2.65vw,12px);line-height:1.14
+ }
+ .goals[data-hh-mirror-screen="topic"] .alternative{
+  margin:1px 0!important;gap:5px;font-size:clamp(11px,3.1vw,13px);line-height:1.1
+ }
+ .goals[data-hh-mirror-screen="topic"] .cards{gap:5px}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  grid-template-rows:clamp(33px,5.2dvh,43px) minmax(33px,auto);
+  min-height:70px;border-radius:16px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  min-height:33px;gap:4px;padding:2px 5px;
+  font-size:clamp(11.5px,3.3vw,14.5px);line-height:1.06
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .choiceIcon{
+  width:17px;height:17px;flex-basis:17px
+ }
+ .goals[data-hh-mirror-screen="topic"] .check{
+  top:2px;right:2px;width:22px;height:22px;padding:2px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction{
+  min-height:47px;margin:3px 0 0;padding:7px 11px;
+  gap:7px;font-size:clamp(13px,4.1vw,18px);line-height:1.08
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction svg{
+  width:19px;height:19px
+ }
+}
+/* On a 320px phone the editor tools must stay in one row, not create a
+   second toolbar with a second-screen CTA. Each action remains operable. */
+@media(max-width:359px){
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  flex-wrap:nowrap;gap:2px;padding:3px 4px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  width:31px;height:40px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  gap:0;padding:0;font-size:10px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu svg{
+  width:12px;height:12px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  width:40px;height:40px
+ }
+}
+/* Short Safari content viewports trade ornamental height, not text or
+   functionality. The page can scroll when the keyboard or font scale grows. */
+@media(max-width:759px) and (max-height:740px){
+ .goals[data-hh-mirror-screen="topic"]{gap:3px!important}
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{
+  min-height:103px;padding:8px 12px 7px
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow{
+  font-size:clamp(21px,5.6vw,27px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyHero p{
+  margin-top:3px!important;font-size:11px;line-height:1.14
+ }
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{height:72px}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:45px;height:45px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  grid-template-rows:30px minmax(32px,auto);min-height:64px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  min-height:32px;font-size:clamp(11px,3.1vw,13px)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction{
+  min-height:44px;padding-block:5px
+ }
+}
+/* Preserve a readable, vertically scrollable landscape / accessibility view. */
+@media(max-width:759px) and (orientation:landscape){
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{min-height:100px}
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{height:74px}
+}
+
+/* Owner-approved 22 Nov final: three large stacked photo-led DIRECT buttons. */
+@media(max-width:759px){
+ .title{min-height:clamp(96px,12dvh,118px)!important;padding:5px 8px 7px!important}
+ .title h2{font-size:clamp(28px,7.7vw,38px)!important}
+ .title strong{max-width:270px;color:#fff7e5!important;font-size:clamp(17px,5.15vw,23px)!important}
+ .goals.landing{margin:0!important;padding:0 2px 4px!important;gap:0!important}
+ .goals.landing .destinationCards{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(6px,1dvh,11px)}
+ .goals.landing .destination{position:relative;display:grid;grid-template-columns:38% minmax(0,1fr) 34px;
+  align-items:stretch;min-width:0;gap:6px;padding:0 7px 0 0;
+  min-height:clamp(128px,17.4dvh,158px);overflow:hidden;border:2px solid #fffaf4!important;
+  border-radius:24px;background:linear-gradient(110deg,#ecfff6,#f9fff8 68%,#f3fffa);
+  text-align:left;box-shadow:0 4px 13px #604b3830}
+ .goals.landing .destination:first-child{border-color:#18dca1!important;
+  background:linear-gradient(112deg,#e4fff0,#f8fffa 68%,#eafff3);
+  box-shadow:0 0 0 1px #c6ffe8,0 5px 16px #12b88658}
+ .goals.landing .destination:nth-child(2){background:linear-gradient(112deg,#fff5e9,#fffdf8 67%,#ffefd9)}
+ .goals.landing .destination:nth-child(3){background:linear-gradient(112deg,#edfaff,#fdfefa 67%,#e5f7ff)}
+ .goals.landing .destination>img{display:block;width:100%;height:100%;min-height:0;
+  object-fit:cover;object-position:center;border-radius:21px 11px 11px 21px}
+ .goals.landing .destinationCopy{z-index:1;display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;gap:clamp(2px,.45dvh,5px);padding:5px 0;min-width:0}
+ .goals.landing .destinationCopy>svg{flex:none;width:clamp(23px,6.7vw,30px);
+  height:clamp(23px,6.7vw,30px);color:#08795a;stroke-width:1.8}
+ .goals.landing .destination:nth-child(2) .destinationCopy>svg{color:#93661e}
+ .goals.landing .destination:nth-child(3) .destinationCopy>svg{color:#0b6b7b}
+ .goals.landing .destinationCopy strong{font:800 clamp(17px,4.6vw,23px)/1.03 Georgia,serif;
+  color:#0b3b31;letter-spacing:-.025em;overflow-wrap:normal}
+ .goals.landing .destinationCopy small{font:550 clamp(11.5px,3.12vw,14px)/1.16 system-ui,sans-serif;color:#374d4d}
+ .goals.landing .destinationArrow{align-self:center;justify-self:center;display:grid;place-items:center;
+  width:34px;height:42px;border-radius:99px;color:#fff;background:linear-gradient(135deg,#05ad79,#006449);
+  box-shadow:0 3px 9px #026f4f40}
+ .goals.landing .destination:nth-child(2) .destinationArrow{background:linear-gradient(135deg,#dca95c,#885b18)}
+ .goals.landing .destination:nth-child(3) .destinationArrow{background:linear-gradient(135deg,#10a8b5,#00687c)}
+ .goals.landing .destinationArrow svg{width:23px;height:23px}
+ .goals.landing .destination:focus-visible{outline:3px solid #087e62;outline-offset:3px}
+}
+@media(max-width:359px){
+ .goals.landing .destination{grid-template-columns:34% minmax(0,1fr) 29px;gap:4px;
+  min-height:clamp(130px,18dvh,152px);padding-right:3px;border-radius:21px}
+ .goals.landing .destinationCopy{gap:2px;padding:3px 0}
+ .goals.landing .destinationCopy>svg{width:21px;height:21px}
+ .goals.landing .destinationCopy strong{font-size:clamp(15px,4.8vw,17px)}
+ .goals.landing .destinationCopy small{font-size:clamp(10.5px,3.32vw,12px)}
+ .goals.landing .destinationArrow{width:29px;height:35px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .title{min-height:79px!important}
+ .title strong{font-size:clamp(16px,4.8vw,19px)!important}
+ .goals.landing .destinationCards{gap:6px}
+ .goals.landing .destination{min-height:116px}
+ .goals.landing .destinationCopy strong{font-size:clamp(15px,4.35vw,19px)}
+ .goals.landing .destinationCopy small{font-size:clamp(11px,2.95vw,12px)}
+ .goals.landing .destinationCopy>svg{width:21px;height:21px}
+}
+
+
+/* Approved second screen: three photo-led horizontal format choices.
+   Planning only: do not spend XP or call a provider on selection. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="format"]{display:grid!important;align-content:start;gap:7px;
+  min-width:0;margin:0!important;padding:0 2px 7px!important}
+ .formatBack{display:inline-flex;align-items:center;justify-self:start;gap:6px;
+  min-height:36px;padding:4px 9px;border:0;border-radius:999px;
+  color:#09664f;background:#fffaf2;font:750 13px/1.14 system-ui,sans-serif;cursor:pointer}
+ .formatHero{display:grid;align-content:center;gap:4px;min-height:clamp(101px,14dvh,125px);
+  padding:12px 14px;border-radius:23px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(7,56,46,.97),rgba(10,62,50,.78) 62%,rgba(10,62,50,.1)),
+   url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 47%/cover;color:#fff}
+ .formatHeroKicker{display:inline-flex;align-items:center;gap:6px;
+  max-width:82%;font:800 clamp(22px,5.6vw,27px)/1.08 Georgia,serif;color:#ffe7b7}
+ .formatHeroKicker svg{flex:none;color:#ffe69b}
+ .formatHero p{margin:1px 0 0!important;color:#fffefa;
+  font:600 clamp(12px,3.2vw,14px)/1.2 system-ui,sans-serif}
+ .formatRows{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+ .formatRow{position:relative;display:grid;align-items:stretch;
+  grid-template-columns:31% minmax(0,1fr) 31px;gap:7px;
+  min-height:118px;padding:0 7px 0 0;border:1px solid #e5d6c6;border-radius:21px;
+  overflow:hidden;text-align:left;background:#fffdf7;color:#153e32;
+  box-shadow:0 5px 13px #694a2b20;cursor:pointer}
+ .formatRow>img{display:block;width:100%;height:100%;min-height:118px;
+  object-fit:cover;object-position:center}
+ .formatRowCopy{display:flex;flex-direction:column;align-items:start;justify-content:center;
+  gap:4px;min-width:0;padding:7px 0}
+ .formatRowCopy strong{font:800 clamp(17px,4.6vw,21px)/1.04 Georgia,serif;letter-spacing:-.01em}
+ .formatRowCopy small{color:#4d645c;font:500 clamp(11px,2.9vw,13px)/1.14 system-ui,sans-serif}
+ .formatRowPrice{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:27px;margin-top:2px;padding:4px 10px;border-radius:99px;
+  background:#f5ecd8;color:#075b45;white-space:nowrap;
+  font:850 clamp(14px,3.7vw,17px)/1 system-ui,sans-serif}
+ .formatRowPrice svg{flex:none;color:#c99826}
+ .formatRowArrow{display:grid;align-self:center;place-items:center;width:29px;height:34px;
+  color:#07654e;border-radius:99px;background:#f0f7ed}
+ .formatRow[data-hh-mirror-video-format="pro"]{border:2px solid #12b987;
+  background:linear-gradient(105deg,#eafff3,#fcfff8);box-shadow:0 4px 16px #0596682c}
+ .formatRow[data-hh-mirror-video-format="pro"] .formatRowPrice{color:#fff;
+  background:linear-gradient(120deg,#05ad7e,#00694d)}
+ .formatRow[data-hh-mirror-video-format="pro"] .formatRowPrice svg{color:#ffe69b}
+ .formatRow[aria-pressed="true"]{outline:2px solid #04b67c;outline-offset:-2px}
+ .formatPlanningNote{margin:0 5px!important;color:#607067;
+  font:500 11px/1.2 system-ui,sans-serif;text-align:center}
+ .formatRow:focus-visible,.formatBack:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:359px){
+ .goals[data-hh-mirror-screen="format"]{gap:5px}
+ .formatHero{min-height:99px;padding:9px 12px}
+ .formatHeroKicker{font-size:21px}
+ .formatRow{grid-template-columns:29% minmax(0,1fr) 25px;gap:5px;min-height:116px;padding-right:4px}
+ .formatRow>img{min-height:116px}
+ .formatRowCopy{gap:3px}
+ .formatRowCopy strong{font-size:17px}
+ .formatRowCopy small{font-size:11px}
+ .formatRowArrow{width:24px}
+ .formatRowPrice{padding:4px 8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .goals[data-hh-mirror-screen="format"]{gap:5px}
+ .formatHero{min-height:87px;padding:8px 12px}
+ .formatHeroKicker{font-size:21px}
+ .formatRow{min-height:100px}
+ .formatRow>img{min-height:100px}
+ .formatRowCopy{padding:4px 0}
+ .formatRowPrice{min-height:24px;margin-top:0}
+ .formatPlanningNote{font-size:10px}
+}
+@media(min-width:760px){
+ .goals[data-hh-mirror-screen="format"]{display:none}
+}
+
+/* Owner 2026-11-23 · approved Goal Topic: one text composer and four spacious
+   image-backed themes, with no second hero, player, step menu or bottom CTA. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="topic"]{
+  gap:clamp(9px,1.3dvh,14px)!important;padding:6px 6px 16px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer{
+  border:2px solid #d4f0df;border-radius:26px;background:#fffcf8;
+  box-shadow:0 6px 20px #0793662b
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:clamp(80px,10dvh,106px)!important;
+  height:clamp(80px,10dvh,106px)!important;
+  max-height:220px!important;padding:18px 16px 10px!important;
+  font:650 clamp(16px,4.4vw,21px)/1.32 system-ui,sans-serif!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  flex-wrap:nowrap!important;gap:4px!important;
+  min-height:54px!important;padding:5px 7px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  flex:0 0 clamp(32px,8.5vw,42px)!important;
+  width:clamp(32px,8.5vw,42px)!important;
+  height:44px!important;border-radius:15px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon svg{
+  width:clamp(17px,4.7vw,23px)!important;
+  height:clamp(17px,4.7vw,23px)!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  min-width:0!important;min-height:44px!important;
+  gap:2px!important;padding:0 1px!important;
+  font-size:clamp(10px,2.8vw,13px)!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  flex:0 0 45px!important;width:45px!important;height:45px!important;
+  margin-left:auto!important
+ }
+ .goals[data-hh-mirror-screen="topic"] .example{
+  margin:0!important;color:#65716e;
+  font-size:clamp(11px,2.9vw,14px)!important
+ }
+ .goals[data-hh-mirror-screen="topic"] .alternative{
+  margin:2px 0!important;color:#124d42;
+  font:750 clamp(13px,3.35vw,17px)/1.2 system-ui,sans-serif!important
+ }
+ .goals[data-hh-mirror-screen="topic"] .cards{gap:10px!important}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  position:relative;isolation:isolate;display:flex!important;
+  align-items:flex-end;grid-template-rows:none!important;
+  min-height:clamp(117px,31vw,156px)!important;
+  border:3px solid #fff;border-radius:23px;overflow:hidden;
+  background:#174b3a;color:white;text-align:left;
+  box-shadow:0 5px 15px #5f4e352e
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card[aria-pressed="true"]{
+  border:3px solid #08bc87;
+  box-shadow:0 0 0 2px #c6f4dc,0 5px 17px #0e8e6855
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;filter:saturate(1.17) contrast(1.04)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card:after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(0deg,rgba(5,34,31,.85),rgba(9,40,35,.31) 45%,transparent 85%)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  position:relative;z-index:1;display:flex;justify-content:flex-start;
+  align-items:center;width:100%;min-height:0!important;gap:6px!important;
+  padding:11px 7px 12px!important;color:#fff;text-align:left;
+  overflow-wrap:normal;hyphens:none;text-shadow:0 2px 6px #001d1a99;
+  font:800 clamp(12px,3.3vw,17px)/1.13 system-ui,sans-serif!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .choiceIcon{
+  flex:0 0 clamp(20px,6vw,28px)!important;
+  width:clamp(20px,6vw,28px)!important;
+  height:clamp(20px,6vw,28px)!important;color:white!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .check{
+  z-index:2;top:7px!important;right:7px!important;
+  width:29px!important;height:29px!important
+ }
+ .goals[data-hh-mirror-screen="topic"] .guide{
+  margin:4px 10px 11px!important;color:#34594d
+ }
+ .goals[data-hh-mirror-screen="topic"] .guide p{margin:0!important}
+ .goals[data-hh-mirror-screen="topic"] .guideActions{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:10px
+ }
+ .goals[data-hh-mirror-screen="topic"] .guideActions button{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:7px;min-height:44px;padding:8px 13px;
+  border:1px solid #bee2d2;border-radius:13px;
+  background:#edf8f0;color:#095c44;
+  font:750 12px/1.2 system-ui,sans-serif
+ }
+}
+@media(max-width:359px){
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  gap:2px!important;padding-inline:4px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  flex-basis:30px!important;width:30px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  gap:0!important;font-size:10px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  flex-basis:41px!important;width:41px!important;height:44px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  min-height:118px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  padding:7px 5px 9px!important;font-size:12px!important
+ }
+}
+@media(max-width:759px) and (max-height:740px){
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  min-height:110px!important
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:74px!important;height:74px!important
+ }
+}
+
+/* Canonical Goal is mobile Screen 2; real MandalaVideoIdeaGoal is reused. */
+@media(max-width:759px){
+ .purposeScreen{display:grid!important;align-content:start;gap:4px!important;padding:0 2px 6px!important}
+ .purposeScreen [data-video-ideas-goal-picker]{display:grid;gap:6px!important;padding:0 0 5px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header{padding:0 5px 2px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header span{margin:0 0 2px!important;font-size:11px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header h2{font-size:clamp(21px,5.5vw,27px)!important;margin:0 0 2px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header p{font-size:clamp(11px,3.15vw,13px)!important;line-height:1.18!important}
+ .purposeScreen [data-video-ideas-goal-page]{gap:7px!important}
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:clamp(104px,14dvh,123px)!important;
+  grid-template-columns:31% minmax(0,1fr) 24px!important;gap:7px!important;padding:5px 6px!important;border-radius:20px!important}
+ .purposeScreen [data-goal-photo]{min-height:92px!important;border-radius:16px 7px 7px 16px!important}
+ .purposeScreen [data-video-ideas-goal-choice] strong{font-size:clamp(15px,4.4vw,20px)!important;line-height:1.06!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="kind"]{font-size:10px!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="detail"]{font-size:clamp(11px,3vw,13px)!important;line-height:1.17!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="wording"]{gap:4px!important}
+ .purposeScreen [data-video-ideas-goal-selected]{margin:0 3px!important;font-size:11px!important}
+ .purposeScreen [data-video-ideas-goal-next]{min-height:46px!important;padding:7px 12px!important;
+  margin:0!important;font-size:clamp(15px,4vw,19px)!important}
+ .purposeScreen [data-video-ideas-goal-next] svg{width:21px;height:21px}
+ .purposeScreen button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:359px){
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:105px!important;grid-template-columns:29% minmax(0,1fr) 23px!important;gap:5px!important}
+ .purposeScreen [data-goal-photo]{min-height:89px!important}
+ .purposeScreen [data-video-ideas-goal-choice] strong{font-size:15px!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="detail"]{font-size:10.5px!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:97px!important}
+ .purposeScreen [data-video-ideas-goal-page]{gap:5px!important}
+ .purposeScreen [data-video-ideas-goal-next]{min-height:44px!important}
+}
+
+
+/* Owner mobile visual reference · 2026-11-23 · landing only.
+   Photo strip contains three cropped approved illustration areas; no screenshot,
+   private identity, new player or new price/checkout state is introduced. */
+@media (max-width:759px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {
+    margin-top:-25px!important;
+    padding-inline:5px!important;
+    background-image:
+      linear-gradient(90deg,rgba(5,55,45,.95),rgba(5,68,55,.69) 43%,rgba(8,62,51,.02) 100%),
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp"),
+      linear-gradient(175deg,#fff9f0,#fdf1e5 82%,#fff8ef)!important;
+    background-position:top center,top right,center!important;
+    background-size:100% 224px,100% 224px,100% 100%!important;
+    background-repeat:no-repeat!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] {
+    min-height:48px!important;
+    padding:3px 3px 1px!important;
+    gap:5px!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > a:first-child {
+    width:42px!important;
+    min-width:42px!important;
+    height:45px!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > a:first-child svg {
+    width:37px!important;
+    height:37px!important;
+    color:#b9e856!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) {
+    display:grid!important;
+    gap:2px!important;
+    min-width:0;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) strong {
+    font:750 clamp(17px,5vw,23px)/1.04 Georgia,serif!important;
+    color:#fffaf2!important;
+    white-space:nowrap;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) small {
+    font:550 clamp(9px,2.6vw,11px)/1.12 system-ui,sans-serif!important;
+    color:#f3faed!important;
+  }
+  /* The dock retains AI help, so a duplicate header iHelp control is unnecessary. */
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > button[data-video-ihelp-header-trigger] {
+    display:none!important;
+  }
+  .title:has(+ .goals.landing) {
+    display:grid!important;
+    grid-template-columns:32px minmax(0,1fr);
+    align-content:start;
+    align-items:center;
+    gap:3px 6px;
+    min-height:clamp(134px,17.5dvh,154px)!important;
+    padding:5px 14px 10px!important;
+    margin:0!important;
+    background:transparent!important;
+    color:#fff!important;
+    text-align:left;
+  }
+  .title:has(+ .goals.landing) > svg {
+    grid-column:1;
+    grid-row:1;
+    width:30px;height:30px;
+    color:#fffdf5;
+  }
+  .title:has(+ .goals.landing) h2 {
+    grid-column:2;
+    grid-row:1;
+    font:750 clamp(33px,8.9vw,43px)/1.02 Georgia,serif!important;
+    color:#fffdf5!important;
+    letter-spacing:-.03em;
+  }
+  .title:has(+ .goals.landing) strong {
+    grid-column:1/-1;
+    grid-row:2;
+    max-width:min(78%,305px)!important;
+    font:800 clamp(22px,6.25vw,27px)/1.08 system-ui,sans-serif!important;
+    color:#ffe1a0!important;
+    letter-spacing:-.02em;
+    text-wrap:balance;
+  }
+  .title:has(+ .goals.landing) .heroSwoosh {
+    grid-column:1/-1;
+    width:clamp(154px,43vw,205px);
+    height:12px;
+    margin:2px 0 0 7px;
+    border-bottom:5px solid #f8d573;
+    border-radius:55%;
+    transform:rotate(-3deg);
+  }
+  .goals.landing {
+    padding:0 0 max(72px, env(safe-area-inset-bottom))!important;
+    gap:0!important;
+    margin:0!important;
+  }
+  .goals.landing .destinationCards {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:clamp(10px,1.4dvh,13px)!important;
+  }
+  .goals.landing .destination {
+    position:relative;
+    isolation:isolate;
+    display:grid;
+    grid-template-columns:42% minmax(0,1fr) 39px!important;
+    align-items:stretch;
+    min-width:0;
+    min-height:clamp(142px,18.7dvh,174px)!important;
+    gap:6px!important;
+    padding:0 7px 0 0!important;
+    overflow:hidden;
+    border:2px solid #fff9f2!important;
+    border-radius:29px!important;
+    background:linear-gradient(105deg,#e6fff3,#fbfff8 78%,#e2fff5)!important;
+    box-shadow:0 5px 17px #6c4f3726;
+    text-align:left;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .goals.landing .destination:first-child {
+    border:2px solid #16e6a2!important;
+    background:linear-gradient(108deg,#d9ffee,#f8fff7 73%,#d5ffe9)!important;
+    box-shadow:0 0 0 2px #b9ffe8,0 0 15px #00cf9d6b,0 5px 16px #0d986657!important;
+  }
+  .goals.landing .destination:nth-child(2) {
+    background:linear-gradient(105deg,#fff5e6,#fffdf8 70%,#ffebd2)!important;
+    box-shadow:0 5px 17px #87603833;
+  }
+  .goals.landing .destination:nth-child(3) {
+    background:linear-gradient(105deg,#e8f7ff,#fffefb 71%,#dff6ff)!important;
+    box-shadow:0 5px 16px #4b6f7930;
+  }
+  .goals.landing .destinationImage {
+    display:block;
+    width:100%;
+    height:100%;
+    min-height:0;
+    align-self:stretch;
+    border-radius:26px 10px 10px 26px;
+    background-image:url("/images/holistic-house/magic-mirror-owner-cards-20261123.avif");
+    background-repeat:no-repeat;
+    background-size:100% 300%;
+    background-position:center top;
+    -webkit-mask-image:linear-gradient(to right,#000 87%,transparent 100%);
+    mask-image:linear-gradient(to right,#000 87%,transparent 100%);
+  }
+  .goals.landing .destination:nth-child(2) .destinationImage {background-position:center center}
+  .goals.landing .destination:nth-child(3) .destinationImage {background-position:center bottom}
+  .goals.landing .destinationCopy {
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:5px!important;
+    padding:8px 0!important;
+    min-width:0;
+  }
+  .goals.landing .destinationCopy > svg {
+    flex:none;
+    width:clamp(26px,7vw,35px);
+    height:clamp(26px,7vw,35px);
+    stroke-width:2;
+    color:#00875e;
+  }
+  .goals.landing .destination:nth-child(2) .destinationCopy > svg {color:#8a5c0f}
+  .goals.landing .destination:nth-child(3) .destinationCopy > svg {color:#0b6b80}
+  .goals.landing .destinationCopy strong {
+    font:830 clamp(17px,5.35vw,23px)/1.03 system-ui,sans-serif!important;
+    letter-spacing:-.036em;
+    color:#073d31;
+    overflow-wrap:normal;
+    text-wrap:pretty;
+  }
+  .goals.landing .destinationCopy small {
+    font:610 clamp(11.5px,3.62vw,15px)/1.18 system-ui,sans-serif!important;
+    color:#3e4e4d;
+  }
+  .goals.landing .destinationArrow {
+    position:relative;
+    z-index:2;
+    align-self:center;
+    justify-self:center;
+    width:38px!important;
+    height:43px!important;
+    border-radius:99px;
+    color:#fff;
+    background:linear-gradient(135deg,#00b588,#00694d)!important;
+    box-shadow:0 4px 13px #0876593b;
+  }
+  .goals.landing .destination:nth-child(2) .destinationArrow {
+    background:linear-gradient(135deg,#d3a558,#885c20)!important;
+  }
+  .goals.landing .destination:nth-child(3) .destinationArrow {
+    background:linear-gradient(135deg,#18b1bd,#00778c)!important;
+  }
+  .goals.landing .destinationArrow svg {width:25px;height:25px}
+  .goals.landing .destination:after {
+    content:"";
+    position:absolute;
+    right:-19px;
+    bottom:-19px;
+    width:119px;
+    height:70px;
+    border-top:6px solid #ffffffb3;
+    border-radius:90% 10% 0 0;
+    background:linear-gradient(180deg,#ffffff05,#56ce8750);
+    transform:rotate(-24deg);
+    pointer-events:none;
+  }
+  .goals.landing .destination:nth-child(2):after {background:linear-gradient(180deg,#ffffff00,#deae714f)}
+  .goals.landing .destination:nth-child(3):after {background:linear-gradient(180deg,#ffffff00,#2eb6d459)}
+  .goals.landing .destination:focus-visible {outline:3px solid #066f57;outline-offset:3px}
+}
+@media (max-width:359px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {padding-inline:7px!important}
+  .title:has(+ .goals.landing) {padding-inline:8px!important;min-height:126px!important}
+  .title:has(+ .goals.landing) h2 {font-size:30px!important}
+  .title:has(+ .goals.landing) strong {font-size:21px!important}
+  .goals.landing .destination {grid-template-columns:39% minmax(0,1fr) 31px!important;gap:4px!important;min-height:140px!important;padding-right:4px!important}
+  .goals.landing .destinationCopy strong {font-size:16px!important}
+  .goals.landing .destinationCopy small {font-size:11px!important}
+  .goals.landing .destinationArrow {width:31px!important;height:38px!important}
+  .goals.landing .destinationArrow svg {width:22px;height:22px}
+}
+@media (max-width:759px) and (max-height:740px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {background-size:100% 191px,100% 191px,100% 100%!important}
+  .title:has(+ .goals.landing) {min-height:114px!important}
+  .goals.landing .destination {min-height:clamp(128px,18dvh,145px)!important}
+}

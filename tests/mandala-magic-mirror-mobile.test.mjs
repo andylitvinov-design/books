@@ -28,24 +28,28 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  for(const label of ["For Me","For Work","Present","Для работы","Подарок","Para el trabajo","Regalo"])
   assert.ok(mirror.includes(label),label);
  assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,12);
- assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-audience=\{item\}/);
  assert.match(mirror,/data-hh-mirror-enter="me"/);
  assert.match(mirror,/data-hh-mirror-enter="others"/);
- assert.match(mirror,/data-hh-mirror-plan/);
+ assert.match(mirror,/data-hh-mirror-enter="work"/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-plan/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
- assert.match(mirror,/data-hh-mirror-ideas-cta/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-ideas-cta/);
  assert.match(mirror,/data-hh-mirror-open-advanced/);
+ assert.match(mirror,/data-hh-mirror-guide-menu/);
+ assert.match(mirror,/data-hh-mirror-back-landing/);
+ assert.match(mirrorCss,/Owner 2026-11-23 · approved Goal Topic/);
  assert.match(browser,/async function revealMirrorAdvanced/);
  assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
  assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
- assert.match(mirror,/videoFormat\}\);/);
- for(const price of ["250","500","1000"])assert.ok(mirror.includes("credits:"+price));
+ assert.match(mirror,/videoFormat:next,goalPurposeId\}\);/);
+ for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
  assert.match(mirrorCss,/\.destinationCards/);
- assert.match(mirrorCss,/\.formatGrid/);
+ assert.match(mirrorCss,/\.formatRows/);
  assert.match(mirrorCss,/\.composerToolbar/);
  assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
- assert.match(mirror,/src="\/images\/holistic-house\/assessment-lotus\.svg"/);
- assert.match(mirror,/src="\/images\/holistic-house\/assist-video-letter\.svg"/);
+ assert.equal((mirror.match(/className=\{css\.destinationImage\}/g)||[]).length,3);
+ assert.match(mirrorCss,/magic-mirror-owner-cards-20261123\.avif/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);
@@ -73,7 +77,7 @@ test("photo -> exactly two visible taxonomy choices -> Goal; Next auto-classifie
  assert.match(mirror,/classifyMyTubeRequest\(wish,locale\)/);
  assert.match(mirror,/finish\(categoryId,subId,topicId,goalText\)/);
  assert.match(studio,/mirrorResolveRef\.current\?\.\(path\)/);
- assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("editor"\);setMontagePanel\("effects"\)/);
  assert.match(studio,/setMirrorAdvanced\(false\);setVideoScenarioOpen\(false\)/);
  assert.match(director,/mirrorResolveRef\.current=resolve/);
  assert.match(director,/found\.category\.id!==path\.categoryId/);
@@ -136,7 +140,7 @@ test("preserve protected purpose-first Goal and adaptive Personalization to Conc
  assert.match(studio,/applyPurposePhrases\(chosenIdeaGoal\.type,ideasProfile\.supportNeed\|\|""\)/);
  for(const line of ['goalType==="leisure"','["desired","energy","name"]',
    '["current","desired","support","energy","name"]',
-   '["current","desired","meaning","energy","name"]',
+   '["current","desired","energy","name"]',
    'data-personalization-kind="energy-current" hidden={stage!=="energy"}',
    'data-video-personalization-energy={score}'])
    assert.ok(personal.includes(line),line);
@@ -167,8 +171,8 @@ test("Next uses a relevant canonical default for every approved card, never arbi
  const choices=[...mirror.matchAll(/\{id:"([^"]+)",theme:"[^"]+",categoryId:"([^"]+)",image:"[^"]+",defaultTopicId:"([^"]+)"/g)];
  assert.equal(choices.length,12,"four cards in each of three tabs");
  assert.deepEqual(choices.slice(0,4).map(([,id,category])=>category),
-  ["stress-anxiety","love-relationships","goals-money","energy-confidence"],
-  "first-screen axis order must match the canonical MyTube and Telegram taxonomy");
+  ["love-relationships","goals-money","stress-anxiety","energy-confidence"],
+  "owner-approved second-screen order keeps canonical MyTube category IDs");
  assert.match(mirror,/categoryLabels\.find\(category=>category\.id===item\.categoryId\)\?\.label/,
   "visible cards use real localized canonical category names");
 
@@ -197,4 +201,85 @@ test("Mirror quiz image URL survives category then subcategory and topic",()=>{
  assert.ok(mirror.includes('const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:'));
  assert.equal((mirror.match(/mirrorPosterUrl\(available\[index%available\.length\]\.image\)/g)||[]).length,2);
  assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
+});
+
+test("three screen path reuses canonical Goal before Format; no early XP charge",()=>{
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="purpose")'));
+ const purpose=mirror.slice(mirror.indexOf('if(screen==="purpose")'),mirror.indexOf('if(screen==="format")'));
+ const format=mirror.slice(mirror.indexOf('if(screen==="format")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
+ assert.equal((landing.match(/data-hh-mirror-enter="/g)||[]).length,3);
+ for(const [id,next] of [["me","me"],["others","present"],["work","business"]])
+  assert.match(landing,new RegExp('data-hh-mirror-enter="'+id+'"[^]*?onClick=\\{\\(\\)=>enterScreen\\("'+next+'"\\)\\}'));
+ for(const name of ['therapy:"Видео для себя"','therapy:"Videos for Myself"','therapy:"Vídeos para mí"'])
+  assert.ok(mirror.includes(name),name);
+ assert.match(mirror,/useState<"landing"\|"purpose"\|"format"\|"topic">\("landing"\)/);
+ assert.match(mirror,/const enterScreen=\(next:MirrorScope\)=>/);
+ assert.match(mirror,/setScreen\("purpose"\)/);
+ assert.match(mirror,/const continueFromGoal=\(\)=>/);
+ assert.match(mirror,/setScreen\("format"\)/);
+ assert.match(mirror,/const chooseFormat=\(next:MirrorVideoFormat\)=>/);
+ assert.match(mirror,/setVideoFormat\(next\)/);
+ assert.match(mirror,/setScreen\("topic"\)/);
+ assert.match(purpose,/<MandalaVideoIdeaGoal/);
+ assert.match(purpose,/data-hh-mirror-purpose-step/);
+ assert.match(purpose,/data-hh-mirror-back-purpose/);
+ assert.match(purpose,/onContinue=\{continueFromGoal\}/);
+ assert.match(format,/data-hh-mirror-back-format/);
+ assert.equal((format.match(/data-hh-mirror-video-format=\{option\.id\}/g)||[]).length,1);
+ assert.match(format,/onClick=\{\(\)=>chooseFormat\(option\.id\)\}/);
+ assert.doesNotMatch(landing,/data-hh-mirror-plan|data-hh-mirror-video-format|formatOptions/);
+ assert.doesNotMatch(purpose,/data-hh-mirror-video-format/);
+ assert.doesNotMatch(format,/data-hh-mirror-plan|data-hh-mirror-ideas-cta/);
+ for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
+ assert.match(mirror,/videoFormat:next,goalPurposeId/);
+ assert.match(mirror,/useState<MirrorVideoFormat\|undefined>\(undefined\)/);
+ assert.match(mirror,/data-hh-mirror-tier-option=\{option\.id\}/);
+ assert.match(mirrorCss,/\.purposeScreen \[data-video-ideas-goal-picker\]/);
+ assert.match(mirrorCss,/\.formatRows/);
+ assert.match(mobile,/second screen reuses original Goal UI/i);
+ assert.match(studio,/setPendingMirrorPurpose\(path\.goalPurposeId/);
+ assert.match(studio,/setIdeasGoalChoice\(\{contextKey:personalGoalOptions\.contextKey,id:goal\.id\}\)/);
+ assert.match(browser,/data-hh-mirror-purpose-step/);
+ assert.match(browser,/data-hh-mirror-back-purpose/);
+ const exportBrowser=read("scripts/benchmarking/first-video-live-export.mjs");
+ assert.match(exportBrowser,/data-video-ideas-goal-choice="rest"/);
+ assert.match(exportBrowser,/data-hh-mirror-video-format="basic"/);
+});
+test("direct Work selection shows its own localized Topic heading, not the gift heading",()=>{
+ assert.match(mirror,/scope==="me"\?copy\.therapy:scope==="business"\?copy\.work:copy\.other/);
+ assert.match(mirror,/scope==="me"\?copy\.therapyHint:scope==="business"\?copy\.workHint:copy\.otherHint/);
+ for(const name of ['work:"Видео для работы"','work:"Videos for Work"','work:"Vídeos para el trabajo"'])
+  assert.ok(mirror.includes(name),name);
+});
+test("owner goal step uses the actual three goal IDs and original editor",async()=>{
+ const {buildPersonalVideoGoalOptions}=await import("../lib/mandala/video-personal-goal-composer.mjs");
+ for(const locale of ["en","ru","es"]){
+  const found=buildPersonalVideoGoalOptions({locale,theme:"energy"});
+  assert.deepEqual(found.goals.map(goal=>goal.id),["rest","accept","reframe"]);
+ }
+ const reused=read("components/mandala-video-idea-goal.tsx");
+ assert.match(reused,/continueLabel?:string/);
+ assert.match(reused,/introOverride?:string/);
+ assert.match(reused,/data-video-ideas-goal-choice={choice.id}/);
+});
+
+test("chosen format persists as planning state in original Studio, never a debit",()=>{
+ assert.match(studio,/const \[mirrorPlannedFormat,setMirrorPlannedFormat\]=useState<MirrorResolution\["videoFormat"\]>\(undefined\)/);
+ assert.match(studio,/setMirrorPlannedFormat\(path\.videoFormat\)/);
+ assert.match(studio,/data-hh-mirror-planned-format=\{mirrorPlannedFormat\}/);
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="purpose")'));
+ const purpose=mirror.slice(mirror.indexOf('if(screen==="purpose")'),mirror.indexOf('if(screen==="format")'));
+ assert.doesNotMatch(landing+purpose,/fetch\(|createQuickVideo\(|confirmCredit\(/);
+});
+
+test("Screen 2 preserves one video and shows three progress bulbs on each topic quiz stage",()=>{
+ assert.match(mirror,/setScreen\("topic"\);setPendingPath\(null\)/);
+ assert.match(mirror,/data-hh-mirror-quiz-heading/);
+ assert.match(mirror,/data-hh-mirror-quiz-lightbulb=\{number\}/);
+ assert.match(mirror,/aria-current=\{step===number\?"step":undefined\}/);
+ assert.equal((mirror.match(/data-hh-mirror-quiz-card\b/g)||[]).length,3);
+ assert.match(mirror,/data-hh-mirror-own-description/);
+ assert.match(mobile,/all three numbered-bulb quiz screens/);
+ for(const text of ["Which goal topic","Какую тему цели","¿Qué tema de tu objetivo"])
+  assert.ok(mirror.includes(text),text);
 });

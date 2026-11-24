@@ -19,7 +19,7 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
-import {geminiFreeLiveConfig,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
+import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -27,6 +27,7 @@ import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight 
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
+import { issueCoachContextSession } from '@/lib/app/coach-context-session'
 import { coachContextConsentOptions, manageCoachContextConsent } from '@/lib/app/coach-context-snapshot'
 import { reviewedReportMemoryCandidates } from '@/lib/personal-coaching/context-memory-candidates.mjs'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
@@ -58,7 +59,8 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate,transaction } from '@/lib/app/database'
+import { consumeRate,consumeRateBatch,transaction } from '@/lib/app/database'
+import {geminiLiveTokenQuota} from '@/lib/coaching/gemini-live-quota.mjs'
 import { operationHash } from '@/lib/app/crypto'
 import { verifiedTelegramSubject } from '@/lib/app/telegram-business-identity.mjs'
 import { createBillingService } from '@/lib/billing/service'
@@ -1035,13 +1037,35 @@ async function handle(request, { params }) {
       let start
       try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
-      await consumeRate(config,{op:'my-coach-live-free-actor-hour',actor:actor.id},2,3600)
-      await consumeRate(config,{op:'my-coach-live-free-actor-day',actor:actor.id},4,86400)
-      await consumeRate(config,{op:'my-coach-live-free-global-day'},20,86400)
+      // Abuse control remains before Google, but a failed token mint must not
+      // consume the real 2/hour, 4/day and 20/day successful-session quota.
+      const liveQuota=geminiLiveTokenQuota(actor.id,{
+        ownerTrial:practitionerEmailAllowed(actor),
+      })
+      await consumeRateBatch(config,liveQuota.attempts)
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
-      catch{throw new AppError('MY_COACH_GEMINI_LIVE_UNAVAILABLE',503)}
+      catch(error){
+        // Fixed allowlist only: NEVER log API key, token, URL, personal data,
+        // request payload, upstream response body or a raw exception message.
+        const reasons={
+          GEMINI_LIVE_RATE_LIMIT:['MY_COACH_GEMINI_LIVE_RATE_LIMIT',429],
+          GEMINI_LIVE_AUTH_FAILURE:['MY_COACH_GEMINI_LIVE_AUTH_FAILURE',503],
+          GEMINI_LIVE_PROVIDER_BAD_REQUEST:['MY_COACH_GEMINI_LIVE_SETUP_REJECTED',503],
+          GEMINI_LIVE_PROVIDER_MODEL_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_MODEL_UNAVAILABLE',503],
+          GEMINI_LIVE_PROVIDER_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_PROVIDER_UNAVAILABLE',503],
+          GEMINI_LIVE_TOKEN_INVALID:['MY_COACH_GEMINI_LIVE_BAD_TOKEN_REPLY',503],
+        }
+        const [safeCode,status]=reasons[error?.message]||
+          ['MY_COACH_GEMINI_LIVE_UNAVAILABLE',503]
+        console.warn('HH_MY_COACH_LIVE_TOKEN_FAILURE',safeCode)
+        throw new AppError(safeCode,status)
+      }
+      // Three original delivered-token limits are an atomic DB commit. A
+      // rejected rate dimension rolls back all of them; invalid Google
+      // setup/auth/outage (G-L1..G-L7) never reaches this point.
+      await consumeRateBatch(config,liveQuota.successful)
       return json(token)
     }
     // Server-only evidence checkpoint for the transcript of a Free Live call.
@@ -1064,6 +1088,7 @@ async function handle(request, { params }) {
         gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
         gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
         gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
+        gemini_live_reason:geminiFreeLiveUnavailableReason(process.env),
         live:false})
     }
     if (joined === 'my-coach/turn') {
@@ -1131,12 +1156,21 @@ async function handle(request, { params }) {
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
     }
+    if (joined === 'coaching-context/session') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      await consumeRate(config,{op:'coaching-context-session',actor:actor.id},30,3600)
+      return json(issueCoachContextSession(config,actor))
+    }
     if (joined === 'coaching-context/consent') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
-      return json(await manageCoachContextConsent(config,actor,await readBody(request,2048)))
+      const body=await readBody(request,2048)
+      if (body?.operation === 'options' && typeof body.contextSessionToken === 'string')
+        return json(await coachContextConsentOptions(config,actor,process.env,body.contextSessionToken))
+      return json(await manageCoachContextConsent(config,actor,body))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)

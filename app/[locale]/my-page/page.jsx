@@ -1,5 +1,6 @@
 import {notFound} from 'next/navigation'
 import MyPageClient from '@/components/app/my-page-client'
+import '../app/cabinet-theme.css'
 export const dynamic='force-dynamic'
 export const revalidate=0
 export async function generateMetadata({params}){

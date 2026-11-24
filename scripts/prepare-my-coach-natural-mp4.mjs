@@ -99,3 +99,6 @@ if(!production){
   console.log('HH_COACH_NATURAL_MP4 '+status.filter(x=>x.ok).length+'/8 first-party clips, '+
     status.reduce((sum,item)=>sum+item.bytes,0)+' new bytes')
 }
+
+// Reuse this existing guarded prebuild invocation; no new Vercel jobs.
+await import('./prepare-samir-motion-mp4.mjs')

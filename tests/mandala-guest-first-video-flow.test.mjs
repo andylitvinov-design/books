@@ -24,27 +24,27 @@ test('legacy first guest video remains local, while XP v2 requires signed-in bal
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Montage follows Story then three format choice routes without an automatic debit',()=>{
+test('Montage Audio enters Extra and retains three guarded legacy video formats',()=>{
  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
-  studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
+  studio.indexOf('// Goal always enters Montage',studio.indexOf('const continueMontageOrGenerate=')));
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
  assert.ok(handler.includes('setMontagePanel("audio")'));
  assert.ok(handler.includes('setBasicPanelTab("music")'));
- assert.ok(handler.includes('setMontagePanel("text")'));
+ assert.ok(handler.includes('setMontagePanel("promo")'),"Audio → Extra");
  assert.ok(handler.includes('setMontagePanel("concept")'),"Text → Story");
- assert.ok(handler.includes('setMontagePanel("promo")'),"Story → Montage PRO");
+ assert.ok(handler.includes('openReadyForGeneration()'),"Story → guarded Ready");
  assert.doesNotMatch(handler,/setActiveWorkspace\("(?:effects|pro|ready)"\)/,"Next never auto-renders or skips a choice");
  assert.doesNotMatch(handler,/startFromHero\(|createQuickVideo\(/);
  const direct=studio.slice(studio.indexOf('data-video-quick-generate'),
   studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
- const nextStart=studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":');
+ const nextStart=studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":');
  const next=studio.slice(nextStart,studio.indexOf('</button>',nextStart));
  assert.ok(nextStart>0&&next.includes('onClick={continueMontageOrGenerate}'));
  assert.ok(next.includes('montagePanel==="text"||montagePanel==="settings"?"concept"'));
- assert.ok(next.includes('montagePanel==="concept"?"promo"'));
+ assert.ok(next.includes('montagePanel==="concept"?"ready"'));
  assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage navigates without rendering");
- const routeStart=studio.indexOf('montagePanel==="promo" ? <MandalaMontageProOffer');
- const routes=studio.slice(routeStart,studio.indexOf('/> : null}',routeStart));
+ const routeStart=studio.indexOf('montagePanel==="promo" ? <>');
+ const routes=studio.slice(routeStart,studio.indexOf('</details></> : null}',routeStart));
  const free=routes.slice(routes.indexOf("onChooseFree={()=>"),routes.indexOf("onChooseCharacter={()=>"));
  assert.ok(free.includes("openReadyForGeneration();"),"Free opens Ready in one click");
  assert.ok(!free.includes("createQuickVideo();"),"Free cannot encode inside Montage");
@@ -194,4 +194,32 @@ test("native WebKit recovers bounded mid-shot licensed source drift without stal
  assert.match(source,/const hasStoryboardPhotoAt=\(seconds:number\)=>\{/);
  assert.match(source,/stock\?\.complete&&stock\.naturalWidth>=600&&stock\.naturalHeight>=600/);
  assert.match(source,/licensed_scene_frame_unavailable/);
+});
+
+test('an in-flight studio preview cannot seek a source after Create takes the decoders',async()=>{
+  const section=studio.indexOf('// No autoplay: paint a still scene');
+  const start=studio.indexOf('useEffect(() => {',section)+'useEffect('.length;
+  const end=studio.indexOf('  }, [source, effect',start);
+  assert.ok(section>=0&&end>start);
+  const preparingRef={current:false};
+  let seekCount=0;
+  const runPreview=runInNewContext('('+studio.slice(start,end+3).replace('(now: number)','(now)')+')',{
+    source:'poster',jobRef:{current:null},webCodecJobRef:{current:null},
+    preparing:false,preparingRef,recording:false,previewPlaying:false,previewSeekSeconds:2,
+    usingFreeFilmCompilation:true,freeFilmReady:true,styleFilmReady:false,
+    canvasRef:{current:{getContext:()=>({})}},aspect:'portrait',
+    loadSceneImage:async()=>({}),formatDimensions:()=>[720,1280],
+    freeFilmVideoAt:()=>{seekCount++;return null;},
+    selectedStyleFilm:null,hasStoryboardPhotoAt:()=>false,
+  });
+
+  runPreview();
+  preparingRef.current=true;
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(seekCount,0,'a preview frame queued before the tap must yield to export');
+
+  preparingRef.current=false;
+  runPreview();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(seekCount,1,'preview resumes when export releases the decoders');
 });

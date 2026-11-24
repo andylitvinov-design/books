@@ -183,3 +183,46 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
   font-size:clamp(10px,2.6vw,12px)
  }
 }
+
+
+/* SHAMANIC_UNIFIED_HD_DOCK_20261121: personal AND business first screens. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]):has(main[data-shamanica-mobile]){
+  padding-bottom:0!important;
+ }
+ /* The page header already contains a working Help button. A duplicate
+    fixed iHelp pill would cover the illustrated scene and block taps. */
+ body:has(main[data-shamanica-mobile]) [data-hh-ihelp-trigger]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-mobile]) [data-sitewide-antistress-banner]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock]{
+  min-height:78px;padding:12px max(3px,env(safe-area-inset-right))
+    calc(5px + env(safe-area-inset-bottom))
+    max(3px,env(safe-area-inset-left));
+  border:1px solid #ae9049;border-bottom:0;border-radius:28px 28px 0 0;
+  background:linear-gradient(180deg,#04462ffb,#063421f9 70%,#032918);
+  box-shadow:0 -5px 17px #080b067a,inset 0 1px #e5d3987d;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#f9f0d8;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item] span{
+  max-width:100%;white-space:normal!important;overflow-wrap:break-word!important;
+  font-size:clamp(10px,2.5vw,10.3px)!important;line-height:1.08;
+  letter-spacing:-.12px!important;text-align:center;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="practice"][aria-current="page"]{
+  background:#426523a6;color:#fff5d9;border-radius:13px;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border:2px solid #ffe6a3;
+  background:radial-gradient(circle at 35% 18%,#18c988 0,#078b5b 55%,#054b30 100%);
+  box-shadow:0 0 0 3px #dab6657a,0 0 15px 3px #f0c76a6b;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  color:#fff6d6;background:#076745;
+ }
+}

@@ -19,6 +19,16 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Cache only existing first-screen PUBLIC imagery. No HTML, API, RSC or
+// private client media is added to the CDN. Paths stay unchanged and design
+// remains pixel-identical to the approved Max/Andrey homepage.
+const homepagePublicImageSources = [
+  "/images/holistic-house/my-coach-motion/:path*",
+  "/images/holistic-house/ideas-pine-reference.webp",
+  "/images/video-goal-art/:path*",
+  "/images/holistic-house/andy-about.png",
+] as const;
+
 // Only approved pages with an explicit Record button may ask for microphone.
 // The public Messenger needs the same narrowly scoped permission as Studio;
 // microphone remains denied across the rest of the site.
@@ -87,6 +97,12 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Reuse exactly the already-approved public hero photography on repeat
+      // visits. Never apply these headers to session, report, auth, API or HTML.
+      ...homepagePublicImageSources.map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=120" }],
+      })),
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
@@ -160,6 +176,8 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // Reuse the pinned encoder only when recording a missing public greeting.
+    "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.

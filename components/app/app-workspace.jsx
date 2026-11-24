@@ -71,10 +71,11 @@ import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/prof
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
-import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
+import ProfileSessionsDashboard from '@/components/app/profile-sessions-dashboard'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import MyCoachingPlan from '@/components/app/my-coaching-plan'
+import CoachingDaybook from '@/components/app/coaching-daybook'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -160,6 +161,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     recordId = path[1],
     root = `/${locale}/app`,
     view = page === 'portrait' ? 'portrait' : 'full'
+  const cabinetTheme = ['course', 'business', 'coaching', 'practice'].includes(page) ? undefined : 'daybook'
   // Avoid showing the previous tab's reduced Profile snapshot as full data.
   const [viewState, setViewState] = useState(() => {
     const cached = peekCabinetBootstrap(view)
@@ -589,7 +591,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   }
   if (deleted || state === 'deletion')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         <section className="hh-panel">
           <p className="hh-kicker">Holistic House</p>
           <h1>{c.deletion}</h1>
@@ -600,7 +602,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'loading')
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
           : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
             : page === 'settings' ? 'settings'
@@ -613,7 +615,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'ready' && !data)
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
         <h1>{c.loading}</h1>
       </main>
@@ -644,7 +646,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Course/test deep links retain the dedicated Google handoff flows above.
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
-      <main className="hh-app hh-app--cabinet-guest" data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
+      <main className="hh-app hh-app--cabinet-guest" data-cabinet-theme={cabinetTheme} data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
         <ProfileHubTabs locale={locale} active="today" />
         <CabinetGuestOverview
           locale={locale} busy={busy} onSignin={()=>signin('google')}
@@ -663,7 +665,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state !== 'ready')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
@@ -743,7 +745,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-cabinet-theme={documentReader ? undefined : cabinetTheme} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
       {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
@@ -810,7 +812,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} courseLanding={courseLanding} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' || page === 'portrait' ? data.account : null} courseLanding={courseLanding} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
@@ -821,6 +823,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
+                 <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
                </>}
@@ -829,20 +832,8 @@ export default function AppWorkspace({ locale, path = [] }) {
                  <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
                    reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
                </>}
-               {searchParams.get('space') === 'sessions' && <>
-                 <SavedSessionsPanel items={data.savedSessions || []} locale={locale} />
-                 {(!Array.isArray(data.savedSessions) || !data.savedSessions.length) && <section className="hh-panel" data-profile-sessions-empty>
-                   <h2>{locale === 'ru' ? 'Мои сохранённые консультации' : locale === 'es' ? 'Mis consultas guardadas' : 'My saved consultations'}</h2>
-                   <p>{locale === 'ru'
-                     ? 'В этом кабинете пока нет сохранённых консультаций. Можно выбрать новую консультацию в разделе поддержки.'
-                     : locale === 'es'
-                       ? 'Todavía no has guardado consultas en esta cuenta. Puedes explorar nuevas sesiones en Soporte.'
-                       : 'No consultations saved to this account yet. You can explore new sessions through Support.'}</p>
-                   <Link href={'/' + locale + '/holistic-support'} prefetch={false}>
-                     {locale === 'ru' ? 'Найти поддержку' : locale === 'es' ? 'Ver apoyo' : 'Explore Support'}
-                   </Link>
-                 </section>}
-               </>}
+               {searchParams.get('space') === 'sessions' && <ProfileSessionsDashboard locale={locale}
+                 savedSessions={data.savedSessions || []} services={data.services || []} />}
              </>
            )}
            {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}

@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs'
 import {PUBLIC_COACH_PERSONA_IDS} from '../lib/coaching/persona-registry.mjs'
 import {getCoachCompactProfile} from '../lib/coaching/coach-compact-profiles.mjs'
 
-test('one concise localized profile for each of the six public coaches',()=>{
-  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry'])
+test('one concise localized profile for each of the seven public coaches',()=>{
+  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry','genie'])
   for(const locale of ['ru','en','es']){
     for(const id of PUBLIC_COACH_PERSONA_IDS){
       const profile=getCoachCompactProfile(id,locale)
@@ -58,19 +58,27 @@ test('profile stays inside existing live conversation with user-invoked Back',()
   assert.match(css,/max-height:735px/)
 })
 
-test('mobile reference blocks remain model-first and quote artwork is height-bounded',()=>{
+test('approved profile has separate large cards, localized 100 XP price and a clear lighthouse photo',()=>{
   const component=readFileSync(new URL('../components/my-coach-compact-profile.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-compact-profile.module.css',import.meta.url),'utf8')
   let i=-1
-  for(const key of ['styles.characterCard','styles.modelCard','styles.focusCard','styles.featuresCard']){
-    const j=component.indexOf(key,i+1);assert.ok(j>i,key);i=j
+  for(const key of ['styles.characterCard','styles.archetypeCard','styles.styleCard','styles.workCard',
+    'styles.modelCard','styles.focusCard','styles.featuresCard']){
+    const j=component.indexOf(key,i+1)
+    assert.ok(j>i,'separate large section '+key);i=j
   }
-  for(const token of ['styles.cardIcon','styles.heroTags','styles.quoteArt','data-quote-persona'])assert.ok(component.includes(token),token)
-  assert.match(css,/grid-template-rows:/)
+  assert.match(component,/100 XP \/ 20 min session/)
+  assert.match(component,/100 XP \/ сеанс 20 мин/)
+  assert.match(component,/100 XP \/ sesión de 20 min/)
+  assert.match(component,/data-coach-session-price="100xp-20min"/)
+  assert.match(component,/data-coach-style-passport=\{personaId\}/)
+  assert.doesNotMatch(component,/styles\.quoteArt/)
   assert.match(css,/report-lighthouse-coast\.avif/)
+  assert.match(css,/\.inlineProfile \.card h2/)
+  assert.match(css,/\.inlineProfile \.card p/)
+  assert.match(css,/\.page \.hero\{flex:0 0 auto;min-height:clamp\(310px/)
+  assert.match(css,/\.inlineProfile \.quote/)
   assert.match(css,/@media\(max-width:355px\)/)
-  assert.match(css,/@media\(max-height:735px\)/)
-  assert.doesNotMatch(css,/flex:1 0 auto/)
 })
 
 test('public coach profile is inline before Play; only real session shows stage lamps',()=>{

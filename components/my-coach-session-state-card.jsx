@@ -1,8 +1,11 @@
 'use client'
 
 import {useMemo} from 'react'
+import Link from 'next/link'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
+import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
+import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewNextReply} from '@/lib/coaching/coach-profile-review.mjs'
 import styles from './my-coach-session-state-card.module.css'
 
 const copy={
@@ -44,6 +47,38 @@ const openingTitles={
 }
 const openingKeys=['invitation','name','continuity','focus','feelings','confirmation']
 const openingLampKey={invitation:'invitation',name:'identity',focus:'focus',confirmation:'confirmation'}
+const radarPoint=(index,value)=>{
+  const angle=-Math.PI/2+index*Math.PI/4
+  return [Number((160+Math.cos(angle)*94*value/10).toFixed(1)),Number((123+Math.sin(angle)*94*value/10).toFixed(1))]
+}
+function ProfileWheel({profile,language}){
+  const rows=COACH_PROFILE_AXES.map((axis,index)=>({axis,index,rating:profile.ratings.find(item=>item.axis===axis.id)}))
+  const allRated=rows.every(({rating})=>rating?.kind==='rated')
+  const polygon=key=>rows.map(({index,rating})=>radarPoint(index,rating[key]).join(',')).join(' ')
+  const label={ru:'Колесо смыслов: сейчас и хочу',en:'Meaning wheel: now and desired',es:'Rueda de sentidos: ahora y deseado'}[language]
+  const hint={ru:'Это личные оценки, не психологический тест. Пропущенные оси не дорисовываются.',en:'Personal ratings, not a psychological test. Skipped axes are not imputed.',es:'Valoraciones personales, no una prueba psicológica. No se estiman ejes omitidos.'}[language]
+  return <div data-coach-profile-wheel aria-label={label}>
+    <p><strong>{label}</strong></p>
+    <svg viewBox="0 0 320 246" role="img" aria-label={label}
+      style={{display:'block',width:'100%',maxWidth:340,height:'auto',marginInline:'auto'}}>
+      <title>{label}</title>
+      {[2.5,5,7.5,10].map(level=><polygon key={level}
+        points={Array.from({length:8},(_,index)=>radarPoint(index,level).join(',')).join(' ')}
+        fill="none" stroke="currentColor" strokeOpacity=".16" strokeWidth="1"/>)}
+      {Array.from({length:8},(_,index)=>{const [x,y]=radarPoint(index,10)
+        return <line key={index} x1="160" y1="123" x2={x} y2={y}
+          stroke="currentColor" strokeOpacity=".16"/>})}
+      {allRated&&<polygon points={polygon('desired')} fill="#3A9F7C" fillOpacity=".13" stroke="#3A9F7C" strokeWidth="2"/>}
+      {allRated&&<polygon points={polygon('current')} fill="#478FCC" fillOpacity=".16" stroke="#478FCC" strokeWidth="2"/>}
+      {rows.map(({axis,index,rating})=>rating?.kind==='rated'?<g key={axis.id}>
+        <circle cx={radarPoint(index,rating.current)[0]} cy={radarPoint(index,rating.current)[1]} r="3.5" fill="#478FCC"/>
+        <circle cx={radarPoint(index,rating.desired)[0]} cy={radarPoint(index,rating.desired)[1]} r="3.5" fill="#3A9F7C"/>
+      </g>:null)}
+    </svg>
+    <p style={{fontSize:14}}><span style={{color:'#478FCC'}}>●</span> {language==='ru'?'Сейчас':language==='es'?'Ahora':'Now'}　<span style={{color:'#3A9F7C'}}>●</span> {language==='ru'?'Хочу':language==='es'?'Deseado':'Desired'}</p>
+    <p style={{fontSize:13}}>{hint}</p>
+  </div>
+}
 const methodTitles={
   grow:'GROW',tgrow:'T-GROW',woop:'WOOP',oskar:'OSKAR',
   solution_focused:'Solution-Focused',appreciative_inquiry:'Appreciative Inquiry'
@@ -67,12 +102,13 @@ function ReadOnlyCheckbox({checked}){
  */
 export default function MyCoachSessionStateCard({
   locale='en',turns=[],progress=null,stageLabel='',
-  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null
+  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null,profile=null
 }){
   const language=copy[locale]?locale:'en'
   const t=copy[language]
   const card=useMemo(()=>coachSessionStateView({locale:language,turns,progress}),[language,turns,progress])
   const verified=stageProgressVerified&&card.stageVerifiedByDirector
+  const review=profile?.version===COACH_PROFILE_REVIEW_VERSION
   const selectedStage=Math.max(0,Math.min(stageNames.length-1,stageIndex))
   const fields=[
     {id:'topic',label:t.topic,Icon:Target,mentioned:!!card.workingTopicQuote,
@@ -121,7 +157,46 @@ export default function MyCoachSessionStateCard({
         })}
       </ol>
     </section>}
-    {(!opening||opening.completed)&&<section className={styles.stageSection} aria-label={t.stages}>
+    {profile&&<section className={styles.stageSection} data-coach-profile-checklist
+      aria-label={language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'}>
+      <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
+        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {review?profile.ratings.filter(x=>x.kind==='rated').length:profile.ratings.length}/{COACH_PROFILE_AXES.length}
+      </h3>
+      <ol className={styles.stageList}>
+        {COACH_PROFILE_AXES.map((axis,index)=>{
+          const rating=review?profile.ratings.find(item=>item.axis===axis.id):profile.ratings[index]
+          const done=review?rating?.kind==='rated':Boolean(rating)
+          const active=!profile.completed&&index===profile.step-1
+          const state=done?t.done:active?t.current:t.waiting
+          const value=(rating?.kind==='rated'||rating?.kind==='partial')
+            ?(rating.current===null?'—':rating.current)+' → '+(rating.desired===null?'—':rating.desired):
+            rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
+          return <li key={axis.id} className={styles.stageRow} data-profile-axis={axis.id}
+            data-stage-status={done?'done':active?'current':'pending'}>
+            <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
+            <span className={styles.stageName}>{axis.name[language]}
+              {value&&<small className={styles.openingValue}>{value}</small>}
+            </span>
+            <span className={styles.stageStatus}>{state}</span>
+            <ReadOnlyCheckbox checked={done}/>
+          </li>
+        })}
+      </ol>
+      {(profile.completed||review)&&<ProfileWheel profile={profile} language={language}/>}
+      {review&&!profile.finished&&<p data-coach-profile-next-question>
+        {coachProfileReviewNextReply(profile)}
+      </p>}
+      {review&&profile.finished&&<div data-coach-profile-next-steps>
+        <p>{language==='ru'?'Следующий шаг выбираете вы:':language==='es'?'Elige el siguiente paso:':'Choose your next step:'}</p>
+        <p><Link href={'/'+language+'/app/my-coaching-plan'}>
+          {language==='ru'?'Уточнить мои цели':language==='es'?'Revisar mis metas':'Review my goals'}
+        </Link></p>
+        <p><Link href={'/'+language+'/app/tests'}>
+          {language==='ru'?'Посмотреть доступные тесты':language==='es'?'Ver mis pruebas':'View available tests'}
+        </Link></p>
+      </div>}
+    </section>}
+    {(!opening||opening.completed)&&!profile&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
         {stageNames.map((label,index)=>{
