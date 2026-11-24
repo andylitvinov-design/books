@@ -651,9 +651,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const protectedPlayback=r.speaking||r.player.playing||r.player.reference.recent(now)
     const residual=level>=.0105?r.player.reference.residualLevel(audio,r.context.sampleRate,now):null
     const micLevel=residual??level
-    // Removing the correlated speaker signal also removes some energy from
-    // a quiet overlapping voice. Use the lower threshold only for that fit.
-    const speechThreshold=residual===null?.013:.0105
+    // A louder speaker leaves more residual echo. Raise the threshold with
+    // that level, while a quiet caller over softer playback can still pass.
+    const speechThreshold=residual===null?.013:Math.max(.0105,Math.min(.013,.21*level))
     if(micLevel>=speechThreshold)r.lastHumanAudioAt=Date.now()
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,micLevel*4)))
     const frameMs=1000*audio.length/r.context.sampleRate

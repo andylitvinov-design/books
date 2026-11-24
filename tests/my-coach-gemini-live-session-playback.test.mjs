@@ -29,17 +29,25 @@ const playerFactory='function makePlayer(r,context){\n'+
   '\nreturn r.player\n}'
 const pcm=seconds=>bytesToBase64(new Uint8Array(Math.round(seconds*24000)*2))
 
-function audioClock(){
+function audioClock(sampleRate=48000){
   const sources=[]
   let heardSamples=0
-  const context={state:'running',currentTime:0,sampleRate:48000,destination:{},failStart:false,
+  const context={state:'running',currentTime:0,sampleRate,destination:{},failStart:false,
     resume:()=>Promise.resolve(),
     createGain:()=>{
-      const changes=[{at:0,value:1}]
+      const changes=[{at:0,value:1,timeConstant:0}]
+      function valueAt(time){
+        const change=changes.findLast(entry=>entry.at<=time)
+        if(!change)return 1
+        if(!change.timeConstant)return change.value
+        return change.value+(change.previous-change.value)*Math.exp(-(time-change.at)/change.timeConstant)
+      }
       return {gain:{
         get value(){return changes.at(-1).value},
-        set value(value){changes.push({at:context.currentTime,value})},
-        valueAt(time){return changes.findLast(change=>change.at<=time)?.value??1},
+        set value(value){changes.push({at:context.currentTime,value,timeConstant:0})},
+        cancelScheduledValues(){}, // the player schedules gains only at the current time
+        setTargetAtTime(value,at,timeConstant){changes.push({at,value,timeConstant,previous:valueAt(at)})},
+        valueAt,
       },connect(){}}
     },
     createBuffer:(_channels,size,rate)=>{
@@ -75,8 +83,8 @@ function audioClock(){
   return {context,sources,advanceTo,get heardSamples(){return heardSamples}}
 }
 
-function session(){
-  const clock=audioClock(),events={final:[],interim:[],notices:[],phases:[],gestures:[],input:[],interruptions:[]}
+function session(sampleRate=48000){
+  const clock=audioClock(sampleRate),events={final:[],interim:[],notices:[],phases:[],gestures:[],input:[],interruptions:[]}
   let stops=0,socketCloses=0,micStops=0
   const track={readyState:'live',stop(){micStops++;this.readyState='ended'}}
   const sent=[],credential={token:'auth_tokens/synthetic-existing-session'}
@@ -139,10 +147,9 @@ function session(){
   return {r,clock,events,receive,assertLive,sent,...methods}
 }
 
-// Drive the same 1536-sample blocks that the capture worklet delivers. Echo
+// Drive the same ~32 ms blocks that the capture worklet delivers. Echo
 // is sampled from the buffers the real player scheduled, with a room/device
 // delay and attenuation. The two synthetic voices have independent pitches.
-const workletBlock=1536
 function coachVoicePcm(seconds){
   const samples=new Int16Array(24000*seconds)
   for(let i=0;i<samples.length;i++){
@@ -152,11 +159,20 @@ function coachVoicePcm(seconds){
   }
   return bytesToBase64(new Uint8Array(samples.buffer))
 }
+function browserGreetingPcm(seconds){
+  const samples=new Int16Array(24000*seconds)
+  for(let i=0;i<samples.length;i++){
+    const t=i/24000,phase=2*Math.PI*(163*t+15*t*t+.3*Math.sin(6*t))
+    const envelope=.65+.25*Math.sin(22*t)
+    samples[i]=Math.round(32767*envelope*(.22*Math.sin(phase)+.09*Math.sin(3*phase)+.04*Math.sin(5*phase)))
+  }
+  return bytesToBase64(new Uint8Array(samples.buffer))
+}
 const directEcho=[[.07,.48]]
 const roomEcho=[...directEcho,[.079,.155],[.093,.085]]
 function captureBlock(h,{echo=false,paths=echo?directEcho:[],person=()=>0}={}){
   const {context,sources}=h.clock,rate=context.sampleRate,from=context.currentTime
-  const audio=new Float32Array(workletBlock)
+  const audio=new Float32Array(128*Math.max(1,Math.round(rate*.032/128)))
   for(let i=0;i<audio.length;i++){
     for(const [delay,attenuation] of paths){
       const emittedAt=from+i/rate-delay
@@ -276,6 +292,18 @@ test('multiple loudspeaker reflections do not interrupt the coach or hide the qu
   assert.equal(h.r.player.playing,false)
   const onset=transmittedFrames(h)[beforeSpeech]
   assert.ok(onset&&toneAmplitude(onset,1125)>.012,'the quieter caller retained the onset over room reflections')
+  h.assertLive()
+})
+
+for(const sampleRate of [48000,96000])test('full browser greeting survives room reflections at '+sampleRate+' Hz',()=>{
+  const h=session(sampleRate)
+  for(let i=0;i<3;i++)captureBlock(h)
+  h.receive({audio:[browserGreetingPcm(1.5)],output:'Full browser greeting',turnComplete:true})
+  for(let i=0;i<61;i++)captureBlock(h,{paths:roomEcho})
+  assert.deepEqual(h.events.interruptions,[])
+  assert.deepEqual(h.events.final,[{text:'Full browser greeting',interrupted:false}])
+  assert.equal(h.clock.heardSamples,36000)
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005))
   h.assertLive()
 })
 
