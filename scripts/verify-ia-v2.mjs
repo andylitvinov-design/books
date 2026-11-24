@@ -321,12 +321,16 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           }
           await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
           await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
-          await expect(entry.locator('[data-home-continue-path]')).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
-          // Same-frame geometry: composer, programs, methods and profile link
+          const journeyLink=entry.locator('[data-home-continue-path]')
+          await expect(journeyLink).toHaveCount(1)
+          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
+          // The approved layout intentionally hides this duplicate Profile entry.
+          await expect(journeyLink).toBeHidden()
+          // Same-frame geometry: visible composer, programs and methods
           // must follow in order without overlap or horizontal overflow.
           const homeLayout=await entry.evaluate(root=>{
             const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-methods]','[data-home-continue-path]']
+              '[data-home-methods]']
               .map(selector=>root.querySelector(selector))
             if(nodes.some(node=>!node))return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
@@ -338,7 +342,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             }
           })
           assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three programs → methods → profile '+JSON.stringify(homeLayout))
+            label+': composer → three programs → methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
