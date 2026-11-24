@@ -103,7 +103,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  },[]);
  const stopDialogue=useCallback(()=>{
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
-  if(mounted.current)setConversing(false);
+  if(mounted.current){setConversing(false);setNotice('');}
   stop();
  },[stop]);
  const setVoiceId=useCallback((value:string)=>{
@@ -161,9 +161,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const setRecognitionConsent=useCallback((value:boolean)=>{
   if(!value)stopDialogue();setSttConsent(value);setNotice('');
  },[stopDialogue]);
- const speak=useCallback((text:string)=>{
+ const speak=useCallback((text:string,explicitPlay=false)=>{
   if(!enabled)return;
-  if(chooseVoiceRoute({channel:'web',playbackConsent})!=='browser-speech'){
+  // Explicit Read aloud is an immediate user gesture, not automatic playback.
+  if(chooseVoiceRoute({channel:'web',playbackConsent:playbackConsent||explicitPlay})!=='browser-speech'){
    setNotice(t.permission);return;
   }
   if(document.hidden)return;
@@ -175,7 +176,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(!parts.length){if(dialogueActive.current)stopDialogue();return;}
   // No background synthesis and no new AI turn. A client gesture (or prior
   // explicit opt-in to auto-read) starts one existing browser voice session.
-  stop();setNotice('');lastSpoken.current=text;
+  if(explicitPlay){setPlaybackConsent(true);stopDialogue();}
+  else stop();
+  setNotice('');lastSpoken.current=text;
   const seq=generation.current;
   let index=0;
   const playNext=()=>{
@@ -194,7 +197,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     onStart:()=>{if(seq===generation.current)setSpeaking(true);},
     onEnd:(reason)=>{
      if(seq!==generation.current)return;
-     if(reason==='ended'){playNext();return;}
+     if(reason==='ended'){
+      // Safari can keep speechSynthesis.speaking true until after onend.
+      // Leave the event stack before scheduling the next spoken segment.
+      resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},100);
+      return;
+     }
      setSpeaking(false);
      if(dialogueActive.current)stopDialogue();
      if(reason!=='cancelled')setNotice(t.error);

@@ -134,10 +134,11 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(card,/\/masters\/'\+masterSlug/)
   assert.match(middleware,/const ownerMessengerImages =/)
   assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''/)
-  // The owner photo library is shared by My Videos and the exact Video Studio
-  // route; its API remains authenticated and its origin is a real Supabase host.
-  assert.match(middleware,/const privateSupportPhotoCabinet =/);
-  assert.match(middleware,/if \(!privateSupportPhotoCabinet && !publicMandalaLocalImages\) return ''/);
+  // Signed photo origins are confined to My Videos and the exact Video Studio
+  // route; the owner-authenticated API still controls access to signed URLs.
+  assert.ok(middleware.includes(String.raw`const privateSupportPhotoCabinet = /^\/(en|ru|es)\/app\/videos\/?$/.test(pathname)`));
+  assert.ok(middleware.includes(String.raw`const publicMandalaLocalImages = /^\/(en|ru|es)\/holistic-support\/mandala\/?$/.test(pathname)`));
+  assert.match(middleware,/const privateSupportPhotoOrigin = \(\(\) => \{\s*if \(!privateSupportPhotoCabinet && !publicMandalaLocalImages\) return ''/);
   assert.ok(middleware.includes(String.raw`/^[a-z0-9]{20}\.supabase\.co$/`));
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)

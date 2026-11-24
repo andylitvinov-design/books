@@ -824,7 +824,7 @@ try{
  await bilingualInput.fill("Хочу денег");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Расскажи, чего ты хочешь или что сейчас мешает…",null,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
  // The exact owner screenshot phrase must open the real menu, not just appear in the transcript.
@@ -1411,21 +1411,25 @@ try{
    "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
  const profileDashboard=page.locator('[data-profile-space-dashboard]');
  await profileDashboard.waitFor({state:"visible",timeout:30000});
- await expect(profileDashboard).toHaveAttribute('data-profile-space-section','goals');
+ await expect(profileDashboard).toHaveAttribute('data-profile-space-section','clarity');
  assert.deepEqual(await profileDashboard.locator('[data-goal-profile-tab]').evaluateAll(
-   buttons=>buttons.map(button=>button.dataset.goalProfileTab)),['goals','tests','support'],
-   'Profile offers the current Goals, Tests and Support views');
- await expect(profileDashboard.locator('[data-goal-profile-tab="goals"]')).toHaveAttribute('aria-pressed','true');
- await expect(profileDashboard.locator('[data-goal-vector-entry]')).toHaveAttribute('href','/ru/app/daybook?start=vector');
+   buttons=>buttons.map(button=>button.dataset.goalProfileTab)),['clarity','goals','business'],
+   'Profile retains the approved Clarity / My Goal / My Business tabs');
+ await expect(profileDashboard.locator('[data-goal-profile-tab="clarity"]')).toHaveAttribute('aria-pressed','true');
+ await expect(profileDashboard.locator('[data-clarity-stage]')).toHaveCount(3);
  const login=page.locator('dialog[data-profile-auth-dialog]');
  await expect(login).toBeHidden();
- await profileDashboard.locator('[data-goal-profile-tab="tests"]').click();
- await expect(profileDashboard.locator('[data-goal-stage-zero]')).toBeVisible();
- await expect(profileDashboard.locator('[data-goal-diagnostic]')).toHaveCount(4);
+ await profileDashboard.locator('[data-clarity-stage="0"] button').click();
+ await expect(profileDashboard.locator('[data-clarity-stage="0"] [data-goal-diagnostic]').first()).toBeVisible();
  await expect(login).toBeHidden();
- await profileDashboard.locator('[data-goal-profile-tab="support"]').click();
- await expect(profileDashboard).toHaveAttribute('data-profile-space-section','support');
+ await profileDashboard.locator('[data-goal-profile-tab="goals"]').click();
+ await expect(profileDashboard).toHaveAttribute('data-profile-space-section','goals');
  await expect(login).toBeHidden();
+ await profileDashboard.locator('[data-goal-profile-tab="business"]').click();
+ await expect(profileDashboard.locator('[data-profile-business]')).toBeVisible();
+ await expect(login).toBeHidden();
+ await profileDashboard.locator('[data-goal-profile-tab="clarity"]').click();
+ await profileDashboard.locator('details').filter({has:profileDashboard.locator('[data-profile-space-work]')}).locator(':scope > summary').click();
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');

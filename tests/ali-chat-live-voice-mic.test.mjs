@@ -14,10 +14,18 @@ test('iOS fallback checks actual microphone, codec and audio path before promisi
  assert.equal(coachRecordingFailureCode(Error('AUDIO_STT_429')),'STT_RATE_LIMIT')
  assert.equal(coachRecordingFailureCode({name:'NotAllowedError'}),'MIC_PERMISSION')
 })
-test('AI Chat gives one informed voice activation without three onboarding checkboxes',()=>{
+test('AI Chat primary mic is manual dictation; optional live voice keeps its informed activation',()=>{
  const chat=read('components/holistic-agent-chat.tsx')
  const voice=read('components/voice-companion-controls.tsx')
  const css=read('components/holistic-agent-chat.module.css')
+ const note=read('components/app/messenger-voice-note.tsx')
+ assert.match(chat,/variant="dictation"[\s\S]{0,100}micMarker="data-hh-conversation-mic"/)
+ assert.match(chat,/data-hh-live-conversation-mic/)
+ assert.match(note,/if \(dictation && confirmed && recording\.size>0/)
+ assert.match(note,/stop\(true\)/)
+ assert.match(note,/data-hh-dictation-active/)
+ assert.match(chat,/voice\.speak\(m\.text,true\)/)
+ assert.match(voice,/playbackConsent:playbackConsent\|\|explicitPlay/)
  for(const id of ['data-hh-conversation-mic','data-hh-ai-voice-consent',
   'data-hh-ai-voice-disclosure','data-hh-ai-start-voice',
   'data-hh-ai-stop-voice','data-hh-ai-voice-status'])
@@ -55,5 +63,8 @@ test('client audio is ephemeral; guest and account STT both use existing free pr
  assert.match(capture,/onResult\(answer\)/)
  assert.match(capture,/for\(const track of stream\.getTracks\(\)\)track\.stop\(\)/)
  assert.match(chat,/recordedPurpose:authenticated\?'ali_chat':'public'/)
+ assert.match(route,/multipart\.set\("response_format",textOnly\?"json":"verbose_json"\)/)
+ assert.match(route,/if\(!textOnly\)multipart\.set\("timestamp_granularities\[\]","segment"\)/)
+ assert.match(route,/version:"hh-audio-dictation-v1"/)
  assert.doesNotMatch(route,/GEMINI_PAID|STRIPE|PAYMENT/)
 })
