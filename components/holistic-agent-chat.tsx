@@ -501,7 +501,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setMessages(previous);if(!preserveResumeDraft.current)setDraft("");setChoices([]);setJudgmentView(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     const restoredLocale=detectConversationLocale(entries.at(-1)?.user,locale) as PublicLocale;
-    if(messengerView&&restoredLocale!==locale){setLocale(restoredLocale);onConversationLocaleChange?.(restoredLocale);}
+    if(messengerView&&!preserveResumeDraft.current&&restoredLocale!==locale){setLocale(restoredLocale);onConversationLocaleChange?.(restoredLocale);}
     judgmentClickLock.current=false;setVideoStep(null);setGuidedTrack(null);
     setContentStep(null);setContentVoice(false);setEntryOpen(false);
     setStatus("");setSource("");followTail.current=true;setNewBelow(false);
