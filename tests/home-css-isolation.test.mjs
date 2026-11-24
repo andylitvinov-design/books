@@ -82,3 +82,14 @@ test("Spanish Home links do not prefetch unrelated route bundles before an expli
     assert.ok(es.includes(link + " prefetch={false}"), link);
   }
 });
+
+test("current public Samir hero and scenic masthead use bounded image caching", () => {
+  const config = read("next.config.ts");
+  const block = config.slice(config.indexOf("const homepagePublicImageSources ="), config.indexOf("] as const;", config.indexOf("const homepagePublicImageSources =")));
+  for (const name of ["ali-inner-alchemist-hero.webp", "shamanic-genie-lounge.webp"]) {
+    assert.ok(block.includes('"/images/holistic-house/' + name + '"'), name);
+    assert.ok(readFileSync(new URL("../public/images/holistic-house/" + name, import.meta.url)).length > 0, name);
+  }
+  assert.match(config, /max-age=3600, s-maxage=86400, stale-while-revalidate=120/);
+  assert.doesNotMatch(block, /\/api\/|\/app\/|\/client\//);
+});

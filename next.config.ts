@@ -25,6 +25,8 @@ const practitionerRecordingSources = [
 const homepagePublicImageSources = [
   "/images/holistic-house/my-coach-motion/:path*",
   "/images/holistic-house/ideas-pine-reference.webp",
+  "/images/holistic-house/ali-inner-alchemist-hero.webp",
+  "/images/holistic-house/shamanic-genie-lounge.webp",
   "/images/video-goal-art/:path*",
   "/images/holistic-house/andy-about.png",
 ] as const;
