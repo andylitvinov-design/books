@@ -7,6 +7,7 @@ import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
+import { parseReportProgram } from '@/lib/consultations/report-program.mjs'
 import { parseReportMaterialIds, parseReportMaterialPlacements, stageReportMaterials } from '@/lib/consultations/report-material-staging'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
@@ -19,6 +20,8 @@ function input(formData) {
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
+  if(formData.has('reportProgram')||formData.has('reportWeek'))
+    data.programPlacement=parseReportProgram(formData.get('reportProgram'),formData.get('reportWeek'))
   data.includeInvoice = formData.get('includeInvoice') === 'on'
   data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
@@ -33,6 +36,7 @@ function input(formData) {
 
 function safeConsultationError(error) {
   const message = error instanceof Error ? error.message : ''
+  if (/INVALID_REPORT_PROGRAM|INVALID_REPORT_WEEK/.test(message)) return 'Choose a valid program and week for this report.'
   if (/Select at least one document/i.test(message)) return 'Select a prescription, an invoice, or both.'
   if (/INVALID_DAO_RESOURCE_SCORE/.test(message)) return 'Enter a Wu Xing resource score from 0 to 10 with at most one decimal place.'
   if (/INVALID_REPORT_PROGRESS_SCORE/.test(message)) return 'Before and after scores must be between 0 and 10 (up to one decimal place).'

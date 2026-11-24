@@ -14,6 +14,7 @@ import {PrescriptionDocument} from '@/components/prescription-document'
 import {ClientSessionPage,ClientSessionVoiceMessage} from '@/components/client-session-page'
 import {sharedGranulesGuideReady} from '@/lib/clients/shared-education-video'
 import {SavedSessionManagement} from '@/components/app/saved-session-management'
+import {normalizeReportPlacement,reportProgramLabel,reportWeekHref} from '@/lib/consultations/report-program.mjs'
 import '../../[[...path]]/workspace.css'
 
 export const runtime='nodejs'
@@ -52,12 +53,14 @@ export default async function SavedSessionPage({params}){
     }
     throw error
   }
+  const placement=normalizeReportPlacement(record?.programPlacement)
   const payment=record?.kind==='payment'
   const doc=record ? payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale):null
   return <>
     <nav className="hh-saved-session-topnav" aria-label={locale==='ru'?'Мой кабинет':'My Cabinet'}>
-      <Link prefetch={false} href={'/'+locale+'/app/portrait#personal-reports'}>
-        {locale==='ru'?'← Мои отчёты':'← My Reports'}
+      {placement&&<div><strong>{reportProgramLabel(placement,locale)}</strong><span> · {locale==='ru'?'Неделя':'Week'} {placement.week}</span></div>}
+      <Link prefetch={false} href={reportWeekHref(locale,placement)}>
+        {placement?(locale==='ru'?'← К неделе программы':'← Back to program week'):(locale==='ru'?'← Мои отчёты':'← My Reports')}
       </Link>
     </nav>
     <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id} audioEmbedded={Boolean(doc&&!payment)}
