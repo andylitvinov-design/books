@@ -333,7 +333,9 @@ async function inspect(browserType,locale,width){
         const back=landing.locator('a[href="'+prefix+'"]');
         await expect(back).toBeVisible();
         await back.click();
-        await page.waitForURL(url=>url.pathname.replace(/\/$/,"")===prefix,{timeout:45000});
+        // EN Home is canonical at /; /en redirects there in next.config.
+        const homePath=locale==="en"?"/":prefix;
+        await page.waitForURL(url=>(url.pathname.replace(/\/$/,"")||"/")===homePath,{timeout:45000});
         await assertPinnedSixDock(page,marker+":return-home",null);
         results.push({id:marker,immersive:true,returnDock:true,route:path,authenticated:false});
         continue;
