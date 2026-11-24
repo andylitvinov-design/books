@@ -10,12 +10,15 @@ import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readSavedCoachGreeting,saveCoachGreetingOnce,isMp3Bytes} from '@/lib/coaching/coach-greeting-mp3-store.mjs'
+import {geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,synthesizeGeminiCoachTts} from '@/lib/coaching/gemini-coach-tts.mjs'
+import {approvedGeminiVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {encodeCoachGreetingMp3} from '@/lib/coaching/coach-greeting-mp3.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 export const preferredRegion='yul1'
-export const maxDuration=25
+export const maxDuration=60
 
 const ARCHIVED_CACHE_CONTROL='public, max-age=31536000, s-maxage=31536000, immutable'
 const CACHE_HEADERS={
@@ -28,6 +31,11 @@ const CACHE_HEADERS={
 // MP3 bytes are stored only on the first successful v=2 request; every later
 // Play and Replay serves the SAME immutable Supabase object, without TTS.
 function storedAudioResponse(stored){
+  if(stored.status===416)return new NextResponse(null,{status:416,headers:{
+    'Cache-Control':'private, no-store','Accept-Ranges':'bytes',
+    'Content-Range':stored.headers.get('content-range'),
+    'X-Content-Type-Options':'nosniff',
+  }})
   const headers={...CACHE_HEADERS,'Cache-Control':ARCHIVED_CACHE_CONTROL,'Accept-Ranges':'bytes'}
   for(const key of ['content-length','content-range']){
     const value=stored.headers.get(key)
@@ -50,7 +58,8 @@ async function persistGreeting(config,personaId,locale,audio){
     throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)
   }
   return new NextResponse(audio,{status:200,headers:{...CACHE_HEADERS,
-    'Cache-Control':ARCHIVED_CACHE_CONTROL,'Content-Length':String(audio.length)}})
+    'Cache-Control':ARCHIVED_CACHE_CONTROL,'Accept-Ranges':'bytes',
+    'Content-Length':String(audio.length)}})
 }
 
 // Public, editorial-only natural voice. Path parameters survive browsers and
@@ -65,7 +74,8 @@ export async function GET(request){
     if(!match||!['','?v=2'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
     const intro=getCoachPresentation(personaId,locale)
-    const introduction=url.search==='?v=2'?coachOpeningIntro(personaId,locale):intro?.text
+    // Record the same authored greeting shown on the coach's introduction card.
+    const introduction=intro?.text||coachOpeningIntro(personaId,locale)
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
@@ -78,6 +88,30 @@ export async function GET(request){
         request.headers.get('range'))}
       catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
       if(saved)return storedAudioResponse(saved)
+    }
+
+    // Freeze each selected public RU/EN Gemini voice into a real MP3. Only the
+    // fixed editorial greeting leaves the server, never a visitor's words.
+    // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
+    // no Paid fallback, voice substitution, or repeated synthesis on cache hits.
+    const voiceName=useRecordedGreeting?approvedGeminiVoice(personaId,locale):null
+    const gemini=voiceName?geminiCoachTtsConfig(process.env,'gemini_tts_free'):null
+    if(gemini){
+      let input
+      try{
+        input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',locale,personaId,
+          voiceName,text:coachSpokenText(introduction).text,
+          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+      }catch{throw new AppError('MY_COACH_INTRO_INVALID',400)}
+      await consumeRate(config,{op:'my-coach-gemini-public-intro-minute'},3,60)
+      await consumeRate(config,{op:'my-coach-gemini_tts_free-global-day'},24,86400)
+      let audio
+      try{
+        const wav=await synthesizeGeminiCoachTts({config:gemini,input,
+          signal:AbortSignal.any([request.signal,AbortSignal.timeout(30000)])})
+        audio=await encodeCoachGreetingMp3(wav,{signal:request.signal})
+      }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      return await persistGreeting(config,personaId,locale,audio)
     }
 
     // Google is the owner-approved long-term voice ONLY when every existing
@@ -102,7 +136,7 @@ export async function GET(request){
         audio=await synthesizeGoogleChirp({config:chirp,input,
           signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])})
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
-      if(useRecordedGreeting)return persistGreeting(config,personaId,locale,audio)
+      if(useRecordedGreeting)return await persistGreeting(config,personaId,locale,audio)
       return new NextResponse(audio,{status:200,headers:{
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
@@ -136,7 +170,7 @@ export async function GET(request){
       let audio
       try{audio=Buffer.from(await upstream.arrayBuffer())}
       catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
-      return persistGreeting(config,personaId,locale,audio)
+      return await persistGreeting(config,personaId,locale,audio)
     }
     // Keep existing legacy v=1 streaming untouched.
     return new NextResponse(upstream.body,{status:200,headers:CACHE_HEADERS})
