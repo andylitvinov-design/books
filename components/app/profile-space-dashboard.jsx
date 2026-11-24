@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
-  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, Flag, HandHeart, ChevronDown,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, Flag, HandHeart, ChevronDown, Flower2, BriefcaseBusiness,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
@@ -107,14 +107,20 @@ const CLARITY = {
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
-  const [section, setSection] = useState('goals')
+  const [section, setSection] = useState('clarity')
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
   const c = CLARITY[selected]
   const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.'] }[selected]
+  const navigation = {
+    en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
+    ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
+    es: { label: 'Mi espacio', clarity: 'Claridad', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
+  }[selected]
   const tabs = [
-    { id: 'goals', title: t.goalsTab, icon: Target },
-    { id: 'clarity', title: c.tab, icon: Heart },
+    { id: 'clarity', title: navigation.clarity, icon: Compass },
+    { id: 'goals', title: navigation.goal, icon: Target },
+    { id: 'business', title: navigation.business, icon: BriefcaseBusiness },
   ]
   const diagnostics = [
     { id: 'life', title: t.lifeWheel, detail: t.lifeWheelDetail, icon: BarChart3, href: '/' + selected + '/development-vectors' },
@@ -138,7 +144,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
     [{title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
-  const stageIcons = [Leaf,BarChart3,HandHeart,Flag]
+  const stageIcons = [Flower2,BarChart3,Leaf,Flag]
   const needs = [Target,Leaf,Heart,Sparkles]
   function openStage(index, need = null) {
     setSelectedNeed(need)
@@ -146,13 +152,26 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   }
 
   return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
-    <nav className={styles.profileTabs} aria-label={diary[1]} data-goal-profile-tabs data-profile-mode-switch>
+    <nav className={styles.profileTabs} aria-label={navigation.label} data-goal-profile-tabs data-profile-mode-switch>
       {tabs.map(({ id, title, icon: Icon }) => <button key={id} type="button"
         className={section === id ? styles.profileTabActive : styles.profileTab}
         onClick={() => setSection(id)} aria-pressed={section === id} data-goal-profile-tab={id}>
         <Icon size={23} aria-hidden="true"/><strong>{title}</strong>
       </button>)}
     </nav>
+    {section === 'business' && <section className={styles.business} aria-label={navigation.business} data-profile-business>
+      <header className={styles.scenic}>
+        <h1 className={styles.title}>{navigation.business}</h1>
+        <p className={styles.intro}>{navigation.businessIntro}</p>
+      </header>
+      <Link href={'/' + selected + '/services'} className={styles.profileInsight} prefetch={false}>
+        <BriefcaseBusiness size={23} aria-hidden="true"/>{navigation.businessSupport}<ArrowRight size={19} aria-hidden="true"/>
+      </Link>
+      <p className={styles.clarityNotice}>{navigation.businessHint}</p>
+      <Link href={'/' + selected + '/shamanica/business'} className={styles.profileInsight} prefetch={false}>
+        <Compass size={23} aria-hidden="true"/>{navigation.businessTools}<ArrowRight size={19} aria-hidden="true"/>
+      </Link>
+    </section>}
     {section === 'goals' && <section className={styles.scenic} aria-label={diary[1]} data-profile-space-scenic>
       <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{diary[0]}</p>
       <h1 className={styles.title}>{diary[1]}</h1>
@@ -183,7 +202,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         const expanded=openedStage===index
         return <article key={index} className={styles.clarityStage} data-clarity-stage={index}>
           <button className={styles.clarityStep} type="button" aria-expanded={expanded} aria-controls={'clarity-tools-'+index} onClick={()=>openStage(expanded?null:index)}>
-            <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={19} aria-hidden="true"/>
+            <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
             {stages[index].map((tool)=>tool.action ?
