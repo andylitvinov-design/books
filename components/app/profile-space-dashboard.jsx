@@ -9,6 +9,7 @@ import {
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
+import { REIKI_FREE_COURSE_PATH } from '@/lib/academy/reiki-free-course'
 
 const TEXT = {
   en: {
@@ -108,8 +109,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const t = TEXT[selected]
   const [section, setSection] = useState('goals')
   const [openedStage, setOpenedStage] = useState(null)
+  const [selectedNeed, setSelectedNeed] = useState(null)
   const c = CLARITY[selected]
-  const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.', 'Tests', 'Support'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.', 'Тесты', 'Поддержка'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.', 'Tests', 'Apoyo'] }[selected]
+  const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.'] }[selected]
   const tabs = [
     { id: 'goals', title: t.goalsTab, icon: Target },
     { id: 'clarity', title: c.tab, icon: Heart },
@@ -133,12 +135,13 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const stages = [
     [diagnostics[0], diagnostics[1], diagnostics[3]],
     [diagnostics[2], {title:t.insights,href:profile}, {title:c.allTests,href:root+'/tests'}],
-    [{title:c.practices,href:support+'?view=meditation'}, {title:c.freeReiki,href:'/'+selected+'/academy/reiki/tantra-reiki/discover'}, cards[1], cards[3], {title:c.consultation,href:personal}],
+    [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
     [{title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
   const stageIcons = [Leaf,BarChart3,HandHeart,Flag]
   const needs = [Target,Leaf,Heart,Sparkles]
-  function openStage(index) {
+  function openStage(index, need = null) {
+    setSelectedNeed(need)
     setOpenedStage(index)
   }
 
@@ -170,7 +173,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <div className={styles.clarityNeeds}>{c.needs.map(([title,detail],index)=>{
         const Icon=needs[index]
         return <button key={title} type="button" className={styles.clarityNeed} data-clarity-need={index}
-          aria-pressed={openedStage===[0,2,2,1][index]} onClick={()=>openStage([0,2,2,1][index])}>
+          aria-pressed={selectedNeed===index} onClick={()=>openStage([0,2,2,1][index],index)}>
           <Icon size={25} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ArrowRight size={17} aria-hidden="true"/>
         </button>
       })}</div>
@@ -179,7 +182,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         const Icon=stageIcons[index]
         const expanded=openedStage===index
         return <article key={index} className={styles.clarityStage} data-clarity-stage={index}>
-          <button className={styles.clarityStep} type="button" aria-expanded={expanded} aria-controls={'clarity-tools-'+index} onClick={()=>setOpenedStage(expanded?null:index)}>
+          <button className={styles.clarityStep} type="button" aria-expanded={expanded} aria-controls={'clarity-tools-'+index} onClick={()=>openStage(expanded?null:index)}>
             <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
