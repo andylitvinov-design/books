@@ -158,3 +158,66 @@ test('an answer within a selected step does not reopen the menu or change intent
  }
  assert.equal(waveGoalStageFromHistory([...history,{role:'assistant',text:menu.reply}]),null);
 });
+
+test('native continuation preserves direct FAQ answers and host-owned actions',()=>{
+ for(const [locale,identity,abilities,services] of [
+  ['ru','Кто ты?','Что ты умеешь?','Где найти услуги?'],
+  ['en','Who are you?','What can you do?','Where are your services?'],
+  ['es','¿Quién eres?','¿Qué puedes hacer?','¿Dónde están los servicios?'],
+ ]){
+  const menu=buildWaveGoalMenu('money',locale);
+  const history=[{role:'assistant',text:menu.reply}];
+  const step=waveNativeTurn({message:'1',locale,history});
+  history.push({role:'user',text:'1'},{role:'assistant',text:step.reply});
+  for(const [message,intent] of [[identity,'identity'],[abilities,'abilities'],[services,'services']]){
+   const reply=waveNativeTurn({message,locale,history});
+   assert.equal(reply?.intent,'faq.'+intent);assert.equal(reply.journey,undefined);
+   assert.equal(reply.modelUsed,false);assert.equal(reply.externalCalled,false);
+  }
+  for(const message of ['Оплати заказ','Не могу дышать','Хочу пройти тест','Мне нужен коуч',
+   'Хочу 7 встреч с коучем','Предложи практику','Хочу медитацию']){
+   assert.equal(waveNativeTurn({message,locale,history}),null,message);
+  }
+ }
+});
+
+test('native journey continuation preserves advice and question boundaries in three locales',()=>{
+ for(const [locale,decline,resume,noQuestions,money] of [
+  ['ru','Не хочу советов','Теперь хочу совет','Не задавай вопросов','Деньги'],
+  ['en',"I don't want advice",'Now I want advice',"Don't ask questions",'Money'],
+  ['es','No quiero consejos','Ahora quiero consejos','No me preguntes','Dinero'],
+ ]){
+  const history=[{role:'assistant',text:buildWaveGoalMenu('money',locale).reply}];
+  const send=message=>{
+   const reply=waveNativeTurn({message,locale,history});
+   history.push({role:'user',text:message},{role:'assistant',text:reply.reply});
+   return reply;
+  };
+  send('1');
+  const selectedHistory=[...history];
+  for(const message of [decline,money]){
+   const reply=send(message);
+   assert.equal(reply.journey.path,'goal');assert.equal(readWaveGoalMenu(reply.reply),null);
+   if(message===decline)assert.doesNotMatch(reply.reply,/[?？]/u);
+   assert.equal(reply.modelUsed,false);assert.equal(reply.externalCalled,false);
+  }
+  assert.equal(waveDialoguePreferences(history).noAdvice,true);
+  send(resume);
+  assert.equal(waveDialoguePreferences(history).noAdvice,false);
+  for(const message of [noQuestions,money]){
+   const reply=send(message);
+   assert.equal(reply.journey.path,'goal');assert.equal(readWaveGoalMenu(reply.reply),null);
+   assert.doesNotMatch(reply.reply,/[?？]/u);
+  }
+  assert.equal(waveDialoguePreferences(history).noQuestions,true);
+  history.splice(0,history.length,...selectedHistory);
+  send(noQuestions);
+  send(decline);
+  const listening=send(money);
+  assert.equal(readWaveGoalMenu(listening.reply),null);
+  assert.doesNotMatch(listening.reply,/[?？]/u);
+ }
+ for(const refusal of ['Не давай советов о деньгах',"I don't want advice about money",'No quiero consejos sobre dinero']){
+  assert.equal(waveDialogueEntryTurn({message:refusal,locale:'ru'}),null,refusal);
+ }
+});
