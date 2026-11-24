@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
+import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
+import { collectJournalExport } from '@/lib/app/daybook-journal-export.mjs'
 import { goalStageOptions, goalOptionHref } from '@/lib/profile/goal-stage-options.mjs'
 import { goalStageRecord as stageRecord } from '@/lib/profile/goal-stage-progress.mjs'
 
@@ -31,6 +33,7 @@ const COPY = {
     tool: ['Goal coaching', 'AI coach & My Why', 'Courses and practices', 'Coaching Daybook', 'Guided coaching', 'AI brainstorming', 'Action review', 'Progress review'],
     noStages: 'Step progress appears after it has been saved; these are entry points, not completed stages.',
     stageProgress: 'Step progress', open: 'Explore',
+    lesson: 'Take lesson', week: 'Week', of: 'of', courseProgress: 'Course progress', completedWeeks: 'weeks completed', courseDone: 'Course completed', courseLoading: 'Loading course progress…', courseError: 'Course progress unavailable', courseRetry: 'Retry',
   },
   ru: {
     goals: 'Мои цели', add: 'Создать новую цель', empty: 'Цель пока не выбрана. Все 8 этапов доступны для знакомства.',
@@ -43,6 +46,7 @@ const COPY = {
     tool: ['Коучинг цели', 'ИИ-коуч и My Why', 'Курсы и практики', 'Дневник коучинга', 'Коучинг и образы', 'Поиск решений с ИИ', 'Обзор действий', 'Обзор прогресса'],
     noStages: 'Процент появится после сохранения прогресса этапа. Доступ к практикам не означает завершение.',
     stageProgress: 'Прогресс этапа', open: 'Открыть',
+    lesson: 'Пройти урок', week: 'Неделя', of: 'из', courseProgress: 'Прогресс курса', completedWeeks: 'недель завершено', courseDone: 'Курс завершён', courseLoading: 'Загрузка прогресса курса…', courseError: 'Прогресс курса недоступен', courseRetry: 'Повторить',
   },
   es: {
     goals: 'Mis metas', add: 'Crear una nueva meta', empty: 'Aún no has elegido una meta. Puedes explorar las 8 etapas.',
@@ -55,6 +59,7 @@ const COPY = {
     tool: ['Coaching de objetivos', 'Coach IA y My Why', 'Cursos y prácticas', 'Diario de coaching', 'Coaching guiado', 'Ideas con IA', 'Revisión de acciones', 'Revisión del progreso'],
     noStages: 'El porcentaje aparece cuando se guarda el avance. Abrir una práctica no significa completarla.',
     stageProgress: 'Progreso del paso', open: 'Explorar',
+    lesson: 'Hacer lección', week: 'Semana', of: 'de', courseProgress: 'Progreso del curso', completedWeeks: 'semanas completadas', courseDone: 'Curso completado', courseLoading: 'Cargando progreso…', courseError: 'Progreso no disponible', courseRetry: 'Reintentar',
   },
 }
 const percent = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null
@@ -83,6 +88,8 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const [state, setState] = useState({ owner: null, loading: Boolean(accountId), error: false, plan: null })
   const [selectedId, setSelectedId] = useState('')
   const [expandedStage, setExpandedStage] = useState(null)
+  const [course, setCourse] = useState({ owner: null, entries: null, error: false })
+  const [courseRetry, setCourseRetry] = useState(0)
   useEffect(() => {
     if (!accountId) return undefined
     const controller = new AbortController()
@@ -99,9 +106,24 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const selected = goals.find(goal => String(goal.id) === selectedId) || goals[0] || null
   const records = STEPS.map((_, index) => selected ? stageRecord(selected, index) : null)
   const scores = records.map(row => percent(row?.progressPercent ?? row?.percent))
-  const verifiedGoalPercent = selected ? percent(selected.progressPercent) : null
-  const overall = verifiedGoalPercent !== null ? verifiedGoalPercent : scores.length === STEPS.length && scores.every(value => value !== null)
-    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / STEPS.length) : null
+  const hasSelected = Boolean(selected)
+  useEffect(() => {
+    if (!accountId || !hasSelected) return undefined
+    const controller = new AbortController()
+    setCourse({ owner: accountId, entries: null, error: false })
+    const scopedFetch = (path, body, method, options) => appFetch(path, body, method, {...options, signal: controller.signal})
+    collectJournalExport(scopedFetch, accountId, () => !controller.signal.aborted)
+      .then(result => { if (!controller.signal.aborted) setCourse({ owner: accountId, entries: result.entries, error: false }) })
+      .catch(() => { if (!controller.signal.aborted) setCourse({ owner: accountId, entries: null, error: true }) })
+    return () => controller.abort()
+  }, [accountId, hasSelected, courseRetry])
+  const courseView = course.owner === accountId ? course : {entries: null, error: false}
+  const goalId = selected ? String(selected.id) : null
+  const progress = useMemo(() => courseView.entries && goalId ? guideGoalProgress(courseView.entries, goalId) : null, [courseView.entries, goalId])
+  const overall = progress?.percent ?? null
+  const next = progress?.next
+  const lessonHref = next && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(goalId)
+    ? root + '/daybook?tab=stages&goal=' + encodeURIComponent(goalId) + '&stage=' + next.week + '&level=1&step=' + next.step : null
   const planLink = selected ? root + '/my-coaching-plan?goal=' + encodeURIComponent(selected.id) : root + '/my-coaching-plan'
   const optionHref = route => goalOptionHref(route, { lang, root, planLink })
   return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)} data-goal-selected={Boolean(selected)}>
@@ -122,13 +144,18 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state hidden>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal}>
-          <div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
+          <div className={css.goalSummary}><div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
             <p>{typeof selected.desiredOutcome === 'string' && selected.desiredOutcome.trim() ? selected.desiredOutcome : t.hint}</p>
           </div>
           <div className={css.circle} style={{ '--hh-circle-value': (overall ?? 0) + '%' }}
-            aria-label={t.progress + ': ' + (overall === null ? t.unmeasured : overall + '%')}>
-            <div><strong>{overall === null ? '—' : overall + '%'}</strong><small>{t.progress}</small></div>
-          </div>
+            aria-label={t.courseProgress + ': ' + (overall === null ? t.unmeasured : overall + '%')} role="img" data-goal-course-progress={overall ?? 'unknown'}>
+            <div><strong>{overall === null ? '—' : overall + '%'}</strong><small>{t.courseProgress}</small></div>
+          </div></div>
+          {progress && <div className={css.lessonMeta}><CalendarDays size={16} aria-hidden="true" /><span>{next ? t.week + ' ' + next.week + ' ' + t.of + ' 8' : t.courseDone}</span><span>{progress.completedWeeks}/8 {t.completedWeeks}</span></div>}
+          {lessonHref ? <Link href={lessonHref} prefetch={false} className={css.lessonButton} data-goal-current-lesson={next.week}>
+            <PlayCircle size={23} aria-hidden="true" /><strong>{t.lesson} — {t.week} {next.week}</strong><ChevronRight size={20} aria-hidden="true" />
+          </Link> : progress && !next ? <div className={css.lessonComplete} role="status"><CheckCircle2 size={20} aria-hidden="true" />{t.courseDone}</div> :
+            <div className={css.lessonStatus} role="status">{courseView.error || progress ? <>{t.courseError} <button type="button" onClick={() => setCourseRetry(value => value + 1)}>{t.courseRetry}</button></> : t.courseLoading}</div>}
         </div>
       </>}
     <Link className={css.step} href={root + '/daybook?start=vector'} prefetch={false} data-goal-vector-entry>
