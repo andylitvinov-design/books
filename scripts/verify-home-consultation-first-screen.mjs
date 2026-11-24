@@ -73,7 +73,7 @@ async function verifyDictation(page,form,marker,calls,baseText){
  assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
  await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
  try{await mic.waitFor({state:"visible",timeout:15000});}catch(error){
-  console.error("dictation confirm diagnostic",{requests:calls.count-initialCalls,fixture:await page.evaluate(()=>({stats:window.__hhDictationQA,hidden:document.hidden,phase:document.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:document.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent}))});
+  console.error("dictation confirm diagnostic",JSON.stringify({requests:calls.count-initialCalls,...await form.evaluate(root=>({phase:root.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:root.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent,fixture:window.__hhDictationQA,hidden:document.hidden}))}));
   throw error;
  }
  assert.equal(calls.count,initialCalls+1,"one explicit recording upload");

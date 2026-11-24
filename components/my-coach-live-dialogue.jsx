@@ -1,6 +1,7 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
+import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
@@ -40,7 +41,7 @@ import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
 import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
-import {DEFAULT_COACH_COURSE_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
+import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
@@ -509,7 +510,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function startSessionFromPortrait(){
     if(busy||paused||replaying||voiceState.phase!=='idle'||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
-    if(!selectedGoal)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
+    if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   async function rateCoachAnswer(signal){
@@ -1353,11 +1354,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
-  function enterCoachingFromGreeting(){
-    // The same user gesture that approves the session starts the existing
-    // Gemini microphone path. A failed/disabled voice connection falls back
-    // to the ordinary explicit Play control; no token is minted on preview.
-    setGreetingAccepted(true)
+  function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID){
+    // Commit the chosen topic before the synchronous iOS activation gesture.
+    // Gemini reads the current courseSessionId from its mounted props ref;
+    // opening or dismissing the topic menu never calls this function.
+    const focus=id===INTRODUCTORY_COACH_SESSION_ID?'':coachCourseFocusLabel(id,conversationLang)
+    flushSync(()=>{
+      setSelectedCourseId(id)
+      setSelectedGoal(focus)
+      setGreetingAccepted(true)
+    })
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
       speechRef.current?.startSession?.()
   }
