@@ -322,3 +322,45 @@ test('P0: generic discovery starts with the three verified free entry points',()
   assert.doesNotMatch(answer.text,/€50/);
  }
 });
+
+test('Business welcome is a five-topic localized inline menu, free first, no prices',async()=>{
+ const {telegramBusinessWelcomeMenu,telegramBusinessWelcomeTopic,telegramBusinessWelcomeClick}=await import('../lib/crm/telegram-business-welcome-menu.mjs');
+ for(const locale of ['en','ru','es']){
+  const welcome=telegramBusinessWelcomeMenu(locale);
+  assert.equal(welcome.buttons.length,5);
+  assert.equal(welcome.buttons[0].callback_data,'hhbw1:'+locale+':free');
+  for(const button of welcome.buttons){
+   assert.ok(button.text.length<=48);
+   assert.ok(!button.url);
+   const topic=button.callback_data.split(':').at(-1);
+   const plan=telegramBusinessWelcomeTopic(locale,topic);
+   assert.ok(plan.text.length<600);
+   assert.doesNotMatch(plan.text,/€|\$|CAD|EUR/);
+   assert.ok(plan.buttons.length<=3);
+   for(const link of plan.buttons)assert.equal(new URL(link.url).origin,TELEGRAM_SITE);
+   const now=Date.now(),body={update_id:923,callback_query:{id:'test-callback-123',data:button.callback_data,
+    from:{id:123456789,is_bot:false},message:{message_id:55,date:Math.floor(now/1000),
+     chat:{id:123456789,type:'private'},sender_business_bot:{id:987654321,is_bot:true},
+     business_connection_id:'business-connection-123',text:welcome.text}}};
+   assert.equal(telegramBusinessWelcomeClick(body,'987654321',now)?.topic,topic);
+   assert.equal(telegramBusinessWelcomeClick(body,'111111111',now),null);
+   assert.equal(telegramBusinessWelcomeClick(body,'987654321',now+86400000),null);
+   assert.equal(telegramBusinessWelcomeClick({...body,callback_query:{...body.callback_query,from:{id:99999999,is_bot:false}}},'987654321',now),null);
+   assert.equal(telegramBusinessWelcomeClick({...body,callback_query:{...body.callback_query,data:'hhbw1:'+locale+':book'}},'987654321',now),null);
+  }
+  assert.equal(telegramBusinessWelcomeTopic(locale,'free').buttons.length,3);
+  assert.match(telegramBusinessWelcomeTopic(locale,'reiki').buttons[0].url,/principles-of-energywork$/);
+ }
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const first=route.indexOf('if(businessLead?.created)');
+ assert.ok(first>0);
+ const welcomeRoute=route.slice(first,route.indexOf('const updates=normalizeMessengerUpdates',first));
+ assert.ok(welcomeRoute.indexOf('generalWelcome:true')<welcomeRoute.indexOf('welcomeLocale:welcome.locale'));
+ assert.match(welcomeRoute,/ensureTelegramInlineWebhookUpdates/);
+ assert.match(welcomeRoute,/fallback.buttons/);
+ assert.match(route,/secretaryStopped\(click,config\)/);
+ assert.match(route,/inbox.matched&&inbox.recorded&&!inbox.humanActive/);
+ const inbox=f('lib/crm/telegram-business-inbox.js');
+ assert.match(inbox,/business-callback:/);
+ assert.match(inbox,/Telegram Business menu selected:/);
+});
