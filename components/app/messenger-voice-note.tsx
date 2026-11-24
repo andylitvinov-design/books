@@ -1,7 +1,7 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
-import {Mic, Square, X, Send, LoaderCircle, Check} from "lucide-react";
+import {useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent} from "react";
+import {Mic, Square, X, Send, LoaderCircle, Check, ArrowUp} from "lucide-react";
 import styles from "./messenger-voice-note.module.css";
 
 type Locale = "ru" | "en" | "es";
@@ -13,6 +13,11 @@ const DICTATION_COPY = {
   ru:{mic:"Диктовать",starting:"Подключаю микрофон…",recording:"Запись речи",finish:"Распознать запись",processing:"Распознаю речь…",ready:"Запись готова",retry:"Повторить",cancel:"Отменить",privacy:"✓ — распознать через Groq Whisper Free. Только текст попадёт в поле сообщения.",quota:"Бесплатный лимит распознавания исчерпан. Повторите позже.",timeout:"Распознавание не ответило. Можно повторить.",unavailable:"Сервис распознавания недоступен. Попробуйте снова.",empty:"Речь не распознана. Запишите ещё раз."},
   en:{mic:"Dictate",starting:"Connecting microphone…",recording:"Recording speech",finish:"Transcribe recording",processing:"Transcribing…",ready:"Recording ready",retry:"Try again",cancel:"Cancel",privacy:"✓ transcribes via Groq Whisper Free. Only text goes into the message field.",quota:"Free transcription limit reached. Try later.",timeout:"Transcription timed out. You can retry.",unavailable:"Transcription is unavailable. Try again.",empty:"No speech recognized. Record again."},
   es:{mic:"Dictar",starting:"Conectando micrófono…",recording:"Grabando voz",finish:"Transcribir grabación",processing:"Transcribiendo…",ready:"Grabación lista",retry:"Reintentar",cancel:"Cancelar",privacy:"✓ transcribe con Groq Whisper Free. Solo el texto llega al campo de mensaje.",quota:"Se alcanzó el límite gratuito. Inténtalo más tarde.",timeout:"La transcripción tardó demasiado. Puedes reintentar.",unavailable:"Transcripción no disponible. Reintenta.",empty:"No se reconoció voz. Graba de nuevo."}
+} as const;
+const INSTANT_COPY = {
+  ru:{send:"Отправить голосовое сообщение",stop:"Остановить запись",release:"Отпустите для отправки",cancelRelease:"Отпустите для отмены",hint:"Удерживайте для записи или нажмите один раз. Отправка распознаёт речь через Groq Whisper Free; в чат поступает только текст.",sent:"Распознаю и отправляю…",ready:"Запись готова к отправке",mic:"Записать голосовое сообщение"},
+  en:{send:"Send voice message",stop:"Stop recording",release:"Release to send",cancelRelease:"Release to cancel",hint:"Hold to record or tap once. Sending transcribes via Groq Whisper Free; only text enters the chat.",sent:"Transcribing and sending…",ready:"Recording ready to send",mic:"Record voice message"},
+  es:{send:"Enviar mensaje de voz",stop:"Detener grabación",release:"Suelta para enviar",cancelRelease:"Suelta para cancelar",hint:"Mantén pulsado para grabar o toca una vez. El envío transcribe con Groq Whisper Free; solo el texto llega al chat.",sent:"Transcribiendo y enviando…",ready:"Grabación lista para enviar",mic:"Grabar mensaje de voz"}
 } as const;
 const COPY = {
   ru: {
@@ -67,7 +72,7 @@ function fileExtension(mime:string) {
 
 export function MessengerVoiceNote({
   locale, disabled = false, resetRevision = 0, accountAuthenticated = false, onSendTranscript, onBegin,
-  variant = "note", micMarker, micClassName, micDescribedBy,
+  variant = "note", instantSend = false, micMarker, micClassName, micDescribedBy,
 }:{
   locale:Locale;
   disabled?:boolean;
@@ -76,6 +81,7 @@ export function MessengerVoiceNote({
   onSendTranscript:(text:string,file:File,seconds:number)=>boolean;
   onBegin?:()=>void;
   variant?:"note"|"dictation";
+  instantSend?:boolean;
   micMarker?:MicMarker;
   micClassName?:string;
   micDescribedBy?:string;
@@ -83,6 +89,8 @@ export function MessengerVoiceNote({
   const t = COPY[locale] || COPY.en;
   const d = DICTATION_COPY[locale] || DICTATION_COPY.en;
   const dictation = variant === "dictation";
+  const instant = dictation && instantSend;
+  const v = INSTANT_COPY[locale] || INSTANT_COPY.en;
   const [phase,setPhase] = useState<Phase>("idle");
   const [readyToRecord,setReadyToRecord] = useState(false);
   const [file,setFile] = useState<File|null>(null);
@@ -104,6 +112,10 @@ export function MessengerVoiceNote({
   const [levels,setLevels] = useState<number[]>(Array(18).fill(0));
   const audioContextRef = useRef<AudioContext|null>(null);
   const analyserRef = useRef<AnalyserNode|null>(null);
+  const deliveryRef=useRef({disabled,onSendTranscript});
+  useEffect(()=>{deliveryRef.current={disabled,onSendTranscript};},[disabled,onSendTranscript]);
+  const gestureCleanup=useRef<(()=>void)|null>(null);
+  const [gesture,setGesture]=useState<"hold"|"cancel"|null>(null);
 
   const release = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -117,6 +129,7 @@ export function MessengerVoiceNote({
     if(context&&context.state!=="closed")void context.close().catch(()=>{});
   }, []);
   const discard = useCallback(() => {
+    gestureCleanup.current?.();setGesture(null);
     generationRef.current++;
     abortRef.current?.abort();
     abortRef.current = null;
@@ -159,6 +172,7 @@ export function MessengerVoiceNote({
     return () => {
       document.removeEventListener("visibilitychange",hidden);
       window.removeEventListener("pagehide",discard);
+      gestureCleanup.current?.();
       generationRef.current++;openingRef.current=false;stoppingRef.current=false;sendAfterStop.current=false;
       abortRef.current?.abort();
       cancelledRef.current = true;
@@ -221,6 +235,7 @@ export function MessengerVoiceNote({
       recorder.onstop = () => {
         if (cancelledRef.current || generation !== generationRef.current) return;
         const confirmed=sendAfterStop.current;
+        gestureCleanup.current?.();setGesture(null);
         sendAfterStop.current=false;stoppingRef.current=false;
         release(); recorderRef.current = null;
         const type = (recorder.mimeType || chunks[0]?.type || mime || "audio/webm").split(";")[0];
@@ -286,7 +301,8 @@ export function MessengerVoiceNote({
     }
   };
   const submitRecording = async (recording:File,length:number) => {
-    if (disabled || abortRef.current || !recording.size) return;
+    if (abortRef.current || !recording.size) return;
+    if(deliveryRef.current.disabled){setPhase("ready");setError(t.busy);return;}
     if (length > LIMIT_SECONDS || recording.size > LIMIT_BYTES) { setError(t.tooLarge); return; }
     const generation = ++generationRef.current;
     const abort = new AbortController();
@@ -311,7 +327,7 @@ export function MessengerVoiceNote({
       if(typeof recognized!=="string"||!recognized.trim())throw Error("STT_EMPTY");
       if (generation !== generationRef.current) return;
       const text = recognized.trim().slice(0,2000);
-      if (!onSendTranscript(text,recording,length)) {
+      if (!deliveryRef.current.onSendTranscript(text,recording,length)) {
         setPhase("ready");setError(t.busy);return;
       }
       discard(); // Audio is never retained after accepted transcription.
@@ -326,15 +342,53 @@ export function MessengerVoiceNote({
     }
   };
   const send=()=>{if(file&&phase==="ready")void submitRecording(file,seconds);};
+  // Keep the pointer listeners on the window because the mic button is
+  // replaced by the recording tray. Tap and keyboard activation remain
+  // available, including while waiting for first-use OS permission.
+  const beginHold=(event:ReactPointerEvent<HTMLButtonElement>)=>{
+    if(!instant||disabled||!readyToRecord||phase!=="idle"||openingRef.current||!event.isPrimary||event.button!==0)return;
+    event.preventDefault();
+    gestureCleanup.current?.();
+    const pointer=event.pointerId, x=event.clientX, pressedAt=Date.now();
+    let cancelling=false;
+    const move=(e:PointerEvent)=>{
+      if(e.pointerId!==pointer)return;
+      cancelling=x-e.clientX>=72;
+      setGesture(cancelling?"cancel":"hold");
+    };
+    const cleanup=()=>{
+      window.removeEventListener("pointermove",move,true);
+      window.removeEventListener("pointerup",up,true);
+      window.removeEventListener("pointercancel",cancel,true);
+      gestureCleanup.current=null;
+    };
+    const up=(e:PointerEvent)=>{
+      if(e.pointerId!==pointer)return;
+      cleanup();setGesture(null);
+      if(cancelling||x-e.clientX>=72){discard();return;}
+      // A quick tap keeps recording. Never submit an empty clip when the
+      // permission dialog outlasts the hold.
+      if(Date.now()-pressedAt>=300&&recorderRef.current?.state==="recording"&&Date.now()-startedRef.current>=250)stop(true);
+    };
+    const cancel=(e:PointerEvent)=>{if(e.pointerId===pointer){cleanup();discard();}};
+    gestureCleanup.current=cleanup;
+    window.addEventListener("pointermove",move,true);
+    window.addEventListener("pointerup",up,true);
+    window.addEventListener("pointercancel",cancel,true);
+    setGesture("hold");void start();
+  };
 
   if(dictation){
     const active=phase!=="idle"||Boolean(error);
-    return !active?<button type="button" onClick={()=>void start()}
+    return !active?<button type="button" onClick={event=>{if(!instant||event.detail===0)void start();}}
+      onPointerDown={instant?beginHold:undefined} onContextMenu={instant?event=>event.preventDefault():undefined}
+      style={instant?{touchAction:"none",userSelect:"none",WebkitTouchCallout:"none"}:undefined}
       disabled={!readyToRecord||disabled} className={micClassName||styles.mic}
       aria-describedby={micDescribedBy} data-hh-dictation-ready={readyToRecord?"true":undefined}
       {...(micMarker?{[micMarker]:true}:{})} data-hh-composer-dictation-mic
-      aria-label={d.mic} title={d.mic}><Mic size={22} aria-hidden="true"/></button>:
-      <div className={styles.dictationPanel} data-hh-dictation-active="true" data-hh-dictation-phase={phase}>
+      aria-label={instant?v.mic:d.mic} title={instant?v.hint:d.mic}><Mic size={22} aria-hidden="true"/></button>:
+      <div className={styles.dictationPanel} data-hh-dictation-active="true" data-hh-dictation-phase={phase} data-hh-instant-voice={instant?"true":undefined} data-hh-voice-cancelling={gesture==="cancel"?"true":undefined}>
+        {instant&&gesture&&<p className={styles.holdHint} role="status">{gesture==="cancel"?v.cancelRelease:v.release}</p>}
         <div className={styles.dictationRow}>
           <button type="button" className={styles.dictationCancel} onClick={discard}
             aria-label={d.cancel} title={d.cancel}><X size={21}/></button>
@@ -342,19 +396,21 @@ export function MessengerVoiceNote({
             {phase==="recording"?<><span className={styles.waveform} aria-hidden="true">
               {levels.map((value,index)=><i key={index} style={{height:Math.round(4+25*value)+"px"}}/>)}
             </span><span className={styles.dictationTime} aria-label={d.recording}>{durationLabel(seconds)}</span></>:
-             <span>{phase==="starting"?d.starting:phase==="sending"||phase==="finishing"?d.processing:
-              phase==="ready"?d.ready:t.failed}</span>}
+             <span>{phase==="starting"?d.starting:phase==="sending"||phase==="finishing"?(instant?v.sent:d.processing):
+              phase==="ready"?(instant?v.ready:d.ready):t.failed}</span>}
           </div>
+          {instant&&phase==="recording"&&<button type="button" className={styles.dictationStop}
+            onClick={()=>stop(false)} aria-label={v.stop} title={v.stop}><Square size={17} fill="currentColor" aria-hidden="true"/></button>}
           <button type="button" className={styles.dictationConfirm}
             disabled={disabled||phase==="starting"||phase==="sending"||phase==="finishing"}
-            aria-label={phase==="idle"?d.retry:phase==="ready"&&error?d.retry:d.finish}
-            title={phase==="idle"?d.retry:d.finish}
+            aria-label={phase==="idle"?d.retry:phase==="ready"&&error?d.retry:instant?v.send:d.finish}
+            title={phase==="idle"?d.retry:instant?v.send:d.finish}
             onClick={()=>{if(phase==="recording")stop(true);else if(phase==="ready")send();else void start();}}>
             {phase==="sending"||phase==="starting"||phase==="finishing"?
-              <LoaderCircle size={20} className={styles.spinner}/>:<Check size={22}/>}
+              <LoaderCircle size={20} className={styles.spinner}/>:instant?<ArrowUp size={22}/>:<Check size={22}/>}
           </button>
         </div>
-        <p className={styles.dictationPrivacy}>{d.privacy}</p>
+        <p className={styles.dictationPrivacy}>{instant?v.hint:d.privacy}</p>
         {error&&<p className={styles.error} role="alert">{error}</p>}
       </div>;
   }

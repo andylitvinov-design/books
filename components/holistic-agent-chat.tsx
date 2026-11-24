@@ -1923,13 +1923,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
             (locale==="ru"?"Начать чат":locale==="es"?"Empezar chat":"Start chat")}</span>}</>:busy?t.loading:t.send}</button>
         {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} variant="dictation"
-          micMarker="data-hh-conversation-mic" micClassName={styles.recorderToggle}
+          micMarker="data-hh-conversation-mic" instantSend micClassName={styles.recorderToggle}
           accountAuthenticated={authenticated} resetRevision={dictationRevision}
           disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
           onBegin={()=>{voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
             setVoiceNoteRevision(value=>value+1);setStatus("");}}
           onSendTranscript={text=>{
-            setDraft(previous=>((previous?previous+" ":"")+text).slice(0,contentStep==="brief"?160:2000));
+            const combined=[draft.trim(),text.trim()].filter(Boolean).join(" ");
+            const limit=contentStep==="brief"?160:proSelected?1200:2000;
+            // The arrow or deliberate hold release is the Send action.
+            // If the existing conversation gate blocks delivery, retain the
+            // transcript instead of dropping it or changing providers.
+            if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
+              (proSelected&&!proReady)||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(combined))))||
+              combined.length>limit){
+              setDraft(combined);
+              setStatus(combined.length>limit?
+                (locale==="ru"?"Текст сохранён. Сократите сообщение перед отправкой.":locale==="es"?"Texto guardado. Acorta el mensaje antes de enviarlo.":"Text kept. Shorten the message before sending."):
+                (locale==="ru"?"Речь распознана и сохранена. Отправьте текст, когда чат будет готов.":locale==="es"?"Texto guardado. Envíalo cuando el chat esté listo.":"Transcript kept. Send it when the chat is ready."));
+              return true;
+            }
+            setDraft("");
+            sendSelectedTurn(combined);
             return true;
           }}/>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}

@@ -45,7 +45,7 @@ async function installDictationMock(page){
  });
  return calls;
 }
-async function verifyDictation(page,form,marker,calls,baseText){
+async function verifyDictation(page,form,marker,calls,baseText,instant=false){
  const input=form.locator("textarea");
  const mic=form.locator(marker);
  const panel=form.locator("[data-hh-dictation-active]");
@@ -70,11 +70,21 @@ async function verifyDictation(page,form,marker,calls,baseText){
  assert.equal(await input.inputValue(),baseText,"cancel preserves draft");
  await mic.click();
  await phase.waitFor({state:"visible",timeout:10000});
- assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
- await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
+ const sendLabel=instant?"Отправить голосовое сообщение":"Распознать запись";
+ assert.equal(await panel.getByRole("button",{name:sendLabel,exact:true}).isEnabled(),true);
+ if(instant){
+  await page.route("**/api/holistic-agent/turn",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({reply:"Тестовый ответ без внешней модели.",recommendations:[]})}));
+  await panel.getByRole("button",{name:"Остановить запись",exact:true}).click();
+  await panel.locator('[data-hh-dictation-phase="ready"]').or(form.locator('[data-hh-dictation-phase="ready"]')).waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls,"stop alone does not upload");
+ }
+ await panel.getByRole("button",{name:sendLabel,exact:true}).click();
  await mic.waitFor({state:"visible",timeout:15000});
  assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
- assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","transcription appends editable Russian text");
+ if(instant){
+  await page.getByText(baseText+" Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","speech is sent to chat, not staged in composer");
+ }else assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","home transcription remains editable");
  const stats=await page.evaluate(()=>window.__hhDictationQA);
  assert.equal(stats.opened,stats.closed,"all synthetic microphone tracks released");
  assert.ok(stats.opened>=2,"cancel and confirm each acquired microphone");
@@ -156,7 +166,7 @@ for(const engine of [chromium,webkit]){
       assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
       await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
       const form=page.locator("[data-hh-ai-chat-composer]");
-      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель");
+      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель",true);
       assert.equal(new URL(page.url()).pathname,"/ru/app/messages","dictation alone stays in chat");
       assert.equal(await form.locator("[data-hh-ai-voice-consent]").count(),0,"no old continuous-mode consent gate");
       evidence.push({engine:engine.name(),locale,width,manualDictation:true,cancel:true,confirmed:true,requests:dictationCalls.count});

@@ -14,7 +14,7 @@ test('iOS fallback checks actual microphone, codec and audio path before promisi
  assert.equal(coachRecordingFailureCode(Error('AUDIO_STT_429')),'STT_RATE_LIMIT')
  assert.equal(coachRecordingFailureCode({name:'NotAllowedError'}),'MIC_PERMISSION')
 })
-test('AI Chat primary mic is manual dictation; optional live voice keeps its informed activation',()=>{
+test('AI Chat primary mic sends recorded speech; optional live voice keeps its informed activation',()=>{
  const chat=read('components/holistic-agent-chat.tsx')
  const voice=read('components/voice-companion-controls.tsx')
  const css=read('components/holistic-agent-chat.module.css')
@@ -24,6 +24,13 @@ test('AI Chat primary mic is manual dictation; optional live voice keeps its inf
  assert.match(note,/if \(dictation && confirmed && recording\.size>0/)
  assert.match(note,/stop\(true\)/)
  assert.match(note,/data-hh-dictation-active/)
+ assert.match(chat,/micMarker="data-hh-conversation-mic" instantSend/)
+ assert.match(chat,/sendSelectedTurn\(combined\)/)
+ assert.match(note,/window\.addEventListener\("pointerup",up,true\)/)
+ assert.match(note,/x-e\.clientX>=72\)\{discard\(\);return;\}/)
+ assert.match(note,/deliveryRef\.current\.onSendTranscript\(text,recording,length\)/)
+ assert.match(note,/onClick=\{\(\)=>stop\(false\)\}/)
+ assert.match(note,/if\(deliveryRef\.current\.disabled\)\{setPhase\("ready"\)/)
  assert.match(chat,/voice\.speak\(m\.text,true\)/)
  assert.match(voice,/playbackConsent:playbackConsent\|\|explicitPlay/)
  for(const id of ['data-hh-conversation-mic','data-hh-ai-voice-consent',
