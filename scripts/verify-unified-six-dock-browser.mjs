@@ -23,7 +23,25 @@ const labels={
 // iPhone E2E is a separate acceptance requirement, never impersonated here.
 async function assertPinnedSixDock(page, id, active) {
   const dock=page.locator("[data-hh-unified-dock]");
-  await dock.waitFor({state:"visible",timeout:30000});
+  try {
+    await dock.waitFor({state:"visible",timeout:30000});
+  } catch(error) {
+    // Isolated guest QA: retain the failing route and visibility evidence.
+    const diagnostic=await page.evaluate(()=>{
+      const node=document.querySelector("[data-hh-unified-dock]");
+      const style=node?getComputedStyle(node):null;
+      return {path:location.pathname,dockPresent:!!node,display:style?.display,
+        visibility:style?.visibility,keyboard:node?.getAttribute("data-keyboard-open"),
+        editorial:node?.getAttribute("data-hh-editorial-dock"),
+        coachImmersive:!!document.querySelector("[data-my-coach-immersive-session]"),
+        energyLearner:!!document.querySelector("main[data-energywork-ai-learner]"),
+        messengerKeyboard:!!document.querySelector('.hh-messages-page [data-keyboard-open="true"]'),
+        viewport:{width:innerWidth,height:innerHeight,visualHeight:visualViewport?.height}};
+    }).catch(()=>({unavailable:true}));
+    console.error("UNIFIED_DOCK_VISIBILITY_FAILURE",id,JSON.stringify(diagnostic));
+    await page.screenshot({path:folder+"/failure-"+id.replace(/[^a-zA-Z0-9_-]/g,"-")+".png",fullPage:false}).catch(()=>{});
+    throw error;
+  }
   if(active)await page.waitForFunction(expected=>{
     const node=document.querySelector("[data-hh-unified-dock]");
     return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
@@ -287,6 +305,7 @@ async function inspect(browserType,locale,width){
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["development-vectors",prefix+"/development-vectors","profile"],
       ["services",prefix+"/services","services"],
       ["services-review",prefix+"/services/free-situation-review","services"],
     ];
@@ -294,6 +313,18 @@ async function inspect(browserType,locale,width){
       const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
       await assertPinnedSixDock(page,marker,active);
+      if(caseName==="development-vectors"){
+        const root=page.locator("main[data-daybook-vectors]");
+        await expect(root).toHaveAttribute("data-cabinet-theme","daybook");
+        const stage=root.locator('a[href*="/app/daybook?start=vector"]');
+        await expect(stage).toBeVisible();
+        const geometry=await stage.evaluate(el=>({width:el.getBoundingClientRect().width,
+          height:el.getBoundingClientRect().height,display:getComputedStyle(el).display,
+          clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}));
+        assert.equal(geometry.display,"flex",marker+" stage action is a real wrapping block");
+        assert.ok(geometry.height>=44&&geometry.width<=geometry.clientWidth,marker+" stage action fits");
+        assert.ok(geometry.scrollWidth<=geometry.clientWidth+1,marker+" no document overflow");
+      }
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
       results.push({id:marker,pinned:true,route:path,authenticated:false});

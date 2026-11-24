@@ -24,8 +24,18 @@ test('use one existing profile dock on the exact vectors route; do not include p
   assert.equal(unifiedMobileDockActive(path),'profile')
   assert.equal(isUnifiedMobileDockPath(path),true)
   assert.equal(isUnifiedMobileDockPath('/'+locale+'/development-vectors/invalid'),false)
-  for(const suffix of ['tests','client','client/tests'])assert.equal(unifiedMobileDockActive('/'+locale+'/'+suffix),'profile')
+  for(const suffix of ['tests','client','client/tests'])assert.equal(unifiedMobileDockActive('/'+locale+'/'+suffix),null)
   assert.equal(isUnifiedMobileDockPath('/'+locale+'/client/private-record'),false)
   assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/runs'),false)
+ }
+})
+
+test('legacy balance and life-context panels inherit the approved private theme',()=>{
+ for(const path of ['components/app/my-inner-balance-preview.module.css','components/app/client-life-context-editor.module.css']){
+   const css=read(path)
+   assert.ok(css.includes('[data-cabinet-theme="daybook"]'),path)
+   assert.ok(css.includes('var(--hh-cabinet-card)'),path)
+   assert.ok(css.includes('var(--hh-cabinet-border)'),path)
+   assert.ok(css.includes('var(--hh-cabinet-primary)'),path)
  }
 })
