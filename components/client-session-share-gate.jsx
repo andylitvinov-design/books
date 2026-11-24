@@ -53,6 +53,8 @@ export function ClientSessionShareGate({locale='en',selector,invitationReady=fal
       <button type="button" className={styles.sessionSaveModalPrimary} disabled={busy} onClick={openWithGoogle}>
         {busy?(ru?'Открываем Google…':'Opening Google…'):(ru?'Продолжить через Google':'Continue with Google')}
       </button>
+      <p>{ru?'После входа кабинет будет связан с вашей карточкой клиента и контактами специалиста. Это не подписка на рассылку.':
+        'Your Cabinet will be linked to your existing client record and the practitioner’s contact list. This does not subscribe you to marketing.'}</p>
       <p>{ru?'Доступ получит только подтверждённый аккаунт клиента. Если адрес Google отличается от указанного специалистом, обратитесь к специалисту.':
         'Only the verified client account can access the report. If your Google email differs from the address your practitioner recorded, contact your practitioner.'}</p>
       {error&&<p role="alert">{ru?'Не удалось начать вход. Попробуйте ещё раз.':'Could not start sign-in. Please try again.'}</p>}

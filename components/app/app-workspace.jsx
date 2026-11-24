@@ -1083,6 +1083,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
           ? ru
             ? 'Время подтверждения истекло. Вернитесь к исходному документу и повторите сохранение.'
             : 'This confirmation expired. Return to the original item and save again.'
+          : e?.code === 'REPORT_RECIPIENT_MISMATCH' || e?.code === 'GOOGLE_IDENTITY_REQUIRED'
+            ? (ru ? 'Войдите через Google с адресом, указанным специалистом. Если адрес другой или не указан, попросите специалиста подтвердить его в вашей карточке клиента.' : 'Use the Google email your practitioner recorded. If it differs or is missing, ask your practitioner to confirm it in your client record.')
           : e?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED'
             ? ru
               ? 'Эта карточка клиента уже связана с другим Google-аккаунтом. Свяжитесь с Andy, чтобы проверить привязку.'
