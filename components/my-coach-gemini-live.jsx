@@ -212,7 +212,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       else propsRef.current.onOutputInterim?.('')
       propsRef.current.onInterrupted?.(partial)
       r.interrupted=false
-      phaseChange('listening')
+      if(r.resumeAfterDrain){r.resumeAfterDrain=false;scheduleReconnect(r)}
+      else phaseChange('listening')
     }
   }
   function sendSocket(r,packet){
