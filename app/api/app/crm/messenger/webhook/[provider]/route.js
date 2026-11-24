@@ -243,16 +243,13 @@ export async function POST(request,{params}){
       if(businessLead?.created){
         let providerAccepted=false
         try{
-          const text=businessLead.locale==='ru'
-            ?'Здравствуйте! Я Ali, помощник Holistic House. Ваше сообщение получено. Чем могу помочь?'
-            :businessLead.locale==='es'
-              ?'¡Hola! Soy Ali, el asistente de Holistic House. Recibimos tu mensaje. ¿En qué puedo ayudarte?'
-              :'Hello! I’m Ali, the Holistic House assistant. We received your message. How can I help?'
+          const welcome=composeTelegramSecretaryClarification('hi',businessLead.locale)
+          const text=welcome.text
           // Neutral acknowledgement only, not an approved booking or paid order.
           try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
           catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_STATE_UNAVAILABLE')}
           await sendHolisticBusinessRequestReply({connectionId:businessLead.connectionId,
-            to:businessLead.chatId,text})
+            to:businessLead.chatId,text,buttons:welcome.buttons})
           providerAccepted=true
         }catch(error){
           const failure=telegramBusinessReplyFailure(error)

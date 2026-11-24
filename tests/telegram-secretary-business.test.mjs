@@ -283,7 +283,8 @@ test('P0: Reiki? offers the actual FREE course first, then verified paid service
   const answer=composeTelegramSecretaryAnswer(q,[make()]);
   assert.equal(answer.kind,'catalog');
   assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/'+locale+'/academy/principles-of-energywork');
-  assert.ok(answer.buttons[1].url.includes('/remote-energy-support'));
+  assert.equal(answer.buttons[1].url,TELEGRAM_SITE+'/'+locale+'/academy/reiki/tantra-reiki/free-initiation');
+  assert.ok(answer.buttons[2].url.includes('/remote-energy-support'));
   assert.doesNotMatch(answer.text,/€50|\$50|CAD 50|от €|from €/iu);
   assert.match(answer.text,/\?/);
   assert.equal(composeTelegramSecretaryAnswer(q,[]).buttons[0].url,answer.buttons[0].url);
@@ -296,8 +297,9 @@ test('P0: relevant free published rows precede any paid row, even if rank favour
  const answer=composeTelegramSecretaryAnswer(q,[make(),free]);
  assert.equal(answer.buttons.length,3);
  assert.ok(answer.buttons[0].url.includes('/academy/principles-of-energywork'));
- assert.ok(answer.buttons[1].url.includes('reiki-free-intro'));
- assert.ok(answer.buttons[2].url.includes('remote-energy-support'));
+ assert.ok(answer.buttons[1].url.includes('tantra-reiki/free-initiation'));
+ assert.ok(answer.buttons[2].url.includes('reiki-free-intro'));
+ assert.ok(answer.buttons.every(b=>!b.url.includes('remote-energy-support')));
  assert.doesNotMatch(answer.text,/€50/);
  const asked=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Reiki price?','en'),[make()]);
  assert.match(asked.text,/from €50/);
@@ -309,4 +311,14 @@ test('P0: free-only Reiki enquiry cannot display a paid session',()=>{
  const answer=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Free Reiki course','en'),[make()]);
  assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/en/academy/principles-of-energywork');
  assert.ok(answer.buttons.every(b=>!b.url.includes('remote-energy-support')));
+});
+
+
+test('P0: generic discovery starts with the three verified free entry points',()=>{
+ for(const [locale,message] of [['en','What services do you offer?'],['ru','Какие у вас услуги?']]){
+  const answer=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery(message,locale),[make()]);
+  assert.equal(answer.kind,'catalog');
+  assert.deepEqual(answer.buttons.map(b=>b.url),['services/free-situation-review','tests','academy/principles-of-energywork'].map(path=>TELEGRAM_SITE+'/'+locale+'/'+path));
+  assert.doesNotMatch(answer.text,/€50/);
+ }
 });
