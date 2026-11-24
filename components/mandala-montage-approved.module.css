@@ -375,3 +375,37 @@
 .orderedPanel:has(>.livingHero)>[data-video-montage-progress] button{min-height:44px}
 .avatarTabs button{min-height:44px}
 @media(min-width:390px) and (max-width:699px){.photoOptionArt{display:grid;width:22px;height:25px}.photoOptionArt svg{width:15px;height:15px}.photoOption[data-video-montage-photo-choice="animate"] .photoOptionArt{background:linear-gradient(#123a3530,#123a3570),url("/images/holistic-house/my-coach-motion/mira-still.webp") center 28%/cover;color:#fff}}
+
+/* 24 Nov owner approval: choose source first, then choose one of two actions.
+   Keep the real gallery and native input in flow; no third coach-mode card. */
+.stylePane .photoWorkspace{grid-template-columns:minmax(0,1fr);gap:6px}
+.stylePane .photoUploadHero{min-height:104px;padding:8px;gap:3px;border-radius:18px;background:linear-gradient(125deg,#edfdf4,#fff9ee)}
+.stylePane .photoUploadHero[data-has-photo="true"]{min-height:104px;padding:8px 8px 8px 104px}
+.stylePane .photoUploadHero .photoUploadPreview{position:absolute;inset:7px auto 7px 7px;width:88px;height:calc(100% - 14px);max-width:none;border-radius:12px}
+.stylePane .photoUploadLabel{font:800 clamp(16px,4.2vw,20px)/1.15 Arial,sans-serif}
+.stylePane .photoUploadHint{font:500 13px/1.2 Arial,sans-serif}
+.stylePane .choosePhoto{min-height:30px;width:min(100%,210px);font:750 13px/1.15 Arial,sans-serif}
+.stylePane .avatarLibrary{gap:5px;padding:7px 8px;border-radius:16px}
+.stylePane .avatarHeader strong{font-size:clamp(14px,3.7vw,19px)}
+.stylePane .avatarHeader span{font-size:11px}
+.stylePane .photoChoiceColumn{gap:5px}
+.stylePane .photoChoiceColumn .photoLead h3{font:800 clamp(16px,4vw,21px)/1.15 Arial,sans-serif}
+.stylePane .photoChoiceColumn .photoChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.stylePane .photoOption{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:4px 5px;min-height:70px;padding:6px;border-radius:14px}
+.stylePane .photoOption[data-selected="true"]{border-color:#059e74;padding:5px}
+.stylePane .photoOptionArt{display:grid;place-items:center;width:22px;height:25px}
+.stylePane .photoOptionArt svg{width:17px;height:17px}
+.stylePane .photoOptionText strong{font:800 clamp(13px,3.4vw,17px)/1.12 Arial,sans-serif}
+.stylePane .photoOptionText small{font:500 11px/1.15 Arial,sans-serif}
+.stylePane .photoOptionPrice{grid-column:2;justify-self:start;min-width:0;padding:4px 8px;font-size:12px}
+.stylePane .photoOption[data-video-montage-photo-choice="animate"] .photoOptionArt{background:#e6f8e8;color:#08745e}
+.stylePane .styleNext{min-height:48px!important}
+@media(max-width:359px){
+ .stylePane .photoUploadHero{min-height:94px}
+ .stylePane .photoUploadHint{font-size:12px}
+ .stylePane .avatarHeader span{display:none}
+ .stylePane .photoOptionText strong{font-size:12px}
+ .stylePane .photoOptionText small{font-size:11px}
+ .stylePane .photoOption{padding:5px}
+ .stylePane .photoOption[data-selected="true"]{padding:4px}
+}

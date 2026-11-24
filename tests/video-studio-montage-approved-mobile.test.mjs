@@ -10,9 +10,9 @@ test('photo-first Montage uses the original editor, native iPhone input and real
   assert.match(studio,/data-video-montage-photo-upload/);
   assert.match(studio,/data-video-montage-photo-options/);
   assert.match(studio,/data-video-montage-photo-choice=\{item\.id\}/);
-  assert.match(studio,/id:"animate",tab:"animated",price:250/);
-  assert.match(studio,/id:"library",tab:"personal",price:100/);
-  assert.match(studio,/id:"coach",tab:"coaches",price:0/);
+  assert.match(studio,/id:"animate",price:250/);
+  assert.match(studio,/id:"library",price:100/);
+  assert.match(studio,/item.id==="library"&&montagePhotoChoice==="coach"\?0:item.price/);
   assert.match(studio,/data-video-montage-library-tab=\{item\.id\}/);
   assert.match(studio,/data-video-montage-library-panel=\{montageLibraryTab\}/);
   assert.match(studio,/data-video-montage-coach=\{item\.id\}/);
@@ -113,7 +113,7 @@ test('mobile-safe sizes, scoping and EN/RU/ES parity',()=>{
   }
 });
 
-test('owner 23 Nov actual Montage screen has hero, two-column upload and thumbnail rail, CTA last',()=>{
+test('owner 24 Nov source-first Montage has upload, library, two actions and CTA in order',()=>{
   assert.match(studio,/data-video-montage-living-hero/);
   assert.match(studio,/data-video-montage-photo-workspace/);
   const start=studio.indexOf('data-video-montage-effects>');
@@ -122,7 +122,13 @@ test('owner 23 Nov actual Montage screen has hero, two-column upload and thumbna
   assert.match(step,/<VideoPhotoLibrary locale=\{locale\} compact rail/);
   assert.ok(step.indexOf('data-video-montage-more-styles')<step.indexOf('data-video-montage-next="audio"'));
   assert.ok(step.indexOf('actualPriceNote')<step.indexOf('data-video-montage-next="audio"'));
-  assert.match(css,/\.photoWorkspace\{display:grid;grid-template-columns:minmax/);
+  assert.match(css,/\.stylePane \.photoWorkspace\{grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css,/\.stylePane \.photoChoiceColumn \.photoChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.ok(step.indexOf("data-video-montage-photo-upload")<step.indexOf("data-video-montage-avatar-library"));
+  assert.ok(step.indexOf("data-video-montage-avatar-library")<step.indexOf("data-video-montage-photo-options"));
+  assert.ok(step.indexOf("data-video-montage-photo-options")<step.indexOf('data-video-montage-next="audio"'));
+  assert.match(step,/Or choose from My Library/);
+  assert.match(step,/Use Without Animation/);
   assert.match(css,/\.livingHero::after/);
   assert.match(css,/data-client-photo-rail/);
   const gallery=readFileSync(new URL('../components/app/video-photo-library.jsx',import.meta.url),'utf8');

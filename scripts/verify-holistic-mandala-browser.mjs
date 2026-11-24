@@ -1013,10 +1013,11 @@ const runEngine = async ([engine, browserType]) => {
         });
         assert.ok(photoFold.hero&&photoFold.steps&&photoFold.upload&&photoFold.choices&&photoFold.library&&photoFold.next,
           "living-photo elements must all render");
-        assert.ok(photoFold.hero.bottom<=photoFold.steps.top+2&&photoFold.upload.right<=photoFold.choices.left+2&&
-          photoFold.library.top>=Math.max(photoFold.upload.bottom,photoFold.choices.bottom)-2&&
-          photoFold.next.top>=photoFold.library.bottom-2&&photoFold.scrollWidth<=photoFold.width+2,
+        assert.ok(photoFold.hero.bottom<=photoFold.steps.top+2&&photoFold.library.top>=photoFold.upload.bottom-2&&
+          photoFold.choices.top>=photoFold.library.bottom-2&&
+          photoFold.next.top>=photoFold.choices.bottom-2&&photoFold.scrollWidth<=photoFold.width+2,
           engine+" "+locale+" "+width+" Montage photo hierarchy/overflow: "+JSON.stringify(photoFold));
+        await expect(page.locator("[data-video-montage-photo-choice]")).toHaveCount(2);
         assert.ok(photoFold.next.bottom<=Math.min(photoFold.viewport,photoFold.dock?.top??photoFold.viewport)+2,
           engine+" "+locale+" "+width+" Montage CTA below fold/dock: "+JSON.stringify(photoFold));
         if(width===390){
