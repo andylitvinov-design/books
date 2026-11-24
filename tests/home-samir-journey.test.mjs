@@ -23,7 +23,7 @@ test("all three program names and five tools have complete localized copy",()=>{
 });
 test("existing persona, audio, microphone, same-tab chat handoff and shared dock remain",()=>{
  const home=read("components/home-dialogue-entry.tsx"),dock=read("components/unified-mobile-dock.tsx");
- for(const image of ["sun-warm-ocean-dawn.jpg","course-focus-mountain-boy.webp","shamanic-cards-business-hd.avif","ali-inner-alchemist-hero.webp"])assert.ok(home.includes(image),image);
+ for(const image of ["support-business-choice-photos-hd.webp","support-personal-choice-photos-hd.webp","profile-card-photos.webp","ali-inner-alchemist-hero.webp"])assert.ok(home.includes(image),image);
  assert.match(home,/src=\{picture\}/);
  assert.match(home,/playAliPersonaAudio\(persona\.id,locale/);
  assert.match(home,/variant="dictation" micMarker="data-home-intent-mic"/);
@@ -35,4 +35,19 @@ test("existing persona, audio, microphone, same-tab chat handoff and shared dock
  assert.match(home,/MessengerVoiceNote locale=\{locale\} variant="dictation"/);
  assert.match(dock,/UNIFIED_DOCK_IDS/);
  assert.doesNotMatch(home,/URLSearchParams|UnifiedMobileDock|data-hh-unified-dock/);
+});
+
+test("approved photo-led home keeps its idle composer compact and uses home-only integrated dock",()=>{
+ const home=read("components/home-dialogue-entry.tsx"),css=read("components/home-dialogue-entry.module.css"),dock=read("components/unified-mobile-dock.module.css");
+ const verify=read("scripts/verify-home-consultation-first-screen.mjs");
+ assert.match(home,/data-home-has-draft=\{Boolean\(draft\.trim\(\)\)\}/);
+ assert.match(home,/micDescribedBy="home-voice-disclosure"/);
+ assert.match(home,/className=\{styles\.visuallyHidden\} data-home-voice-disclosure/);
+ assert.match(home,/data-home-program-art=\{art\.id\}/);
+ assert.match(css,/HOME_APPROVED_REFERENCE_20261124/);
+ assert.match(css,/\.programSteps\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.root \.composer\[data-home-has-draft="false"\] \.send\{display:none\}/);
+ assert.match(dock,/\.dock\[data-hh-home-route="true"\] \.item\[data-unified-dock-item="ai"\] svg\{position:static/);
+ assert.match(verify,/all five tools fit on initial screen/);
+ assert.match(verify,/active recording retains explicit provider disclosure/);
 });

@@ -64,6 +64,7 @@ async function verifyDictation(page,form,marker,calls,baseText){
  }
  assert.equal(await input.isVisible(),false,"dictation replaces composer input");
  assert.equal(calls.count,initialCalls,"no speech upload before confirm");
+ assert.ok((await panel.innerText()).includes("Groq Whisper Free"),"active recording retains explicit provider disclosure before confirmation");
  await panel.getByRole("button",{name:"Отменить",exact:true}).click();
  await mic.waitFor({state:"visible"});
  assert.equal(calls.count,initialCalls,"cancel never transmits audio");
@@ -113,11 +114,15 @@ for(const engine of [chromium,webkit]){
        assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
      }
      assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
-     const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
-     assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
      const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
+     assert.equal(await send.isVisible(),false,name+": empty composer shows only mic, as approved");
+     assert.equal(await root.locator("[data-home-intent-mic]").isVisible(),true,name+": idle microphone");
      await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
      assert.equal(await send.isEnabled(),true,name+": editable send");
+     assert.equal(await send.isVisible(),true,name+": typed draft reveals send");
+     const hitTargets=await root.locator('[data-home-intent-form] button:visible').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
+     assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
+     await input.fill("");
      await input.blur();
      await page.evaluate(()=>window.scrollTo(0,0));
      const layout=await root.evaluate(element=>{
@@ -139,6 +144,15 @@ for(const engine of [chromium,webkit]){
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
        ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+     // Check the actual initial viewport BEFORE scrolling, not a scrolled-to-panel screenshot.
+     const firstFold=await page.evaluate(()=>{
+       const methods=document.querySelector('[data-home-methods]');
+       const nav=document.querySelector('[data-hh-unified-dock]');
+       return {scrollY,methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top};
+     });
+     if(width>=390)assert.ok(firstFold.scrollY<=1&&firstFold.methodsBottom<=firstFold.dockTop+2,name+": all five tools fit on initial screen "+JSON.stringify(firstFold));
+     const stepFits=await root.locator('[data-home-intent-option] [data-home-program-art]').evaluateAll(items=>items.every(el=>{const card=el.closest("button");return el.getBoundingClientRect().width/card.getBoundingClientRect().width>=.29}));
+     assert.ok(stepFits,name+": reference photo proportions");
      await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');

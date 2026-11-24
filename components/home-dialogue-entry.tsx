@@ -236,23 +236,23 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const audienceFor=(message:string):Mode=>/business|company|revenue|clients|startup|бизнес|компан|клиент|продаж|negocio|empresa|ventas/i.test(message)?"business":"self";
   const programCopy={
     ru:{intro:"Твой ИИ-проводник к ясности, цели и развитию.",welcome:"Давай вместе разберёмся, что для тебя сейчас важно — снять напряжение, достичь цели или развить бизнес.",listen:"Послушать моё приветствие",prompt:"С чем ты хочешь поработать сегодня?",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Программы","Видео","Тесты","Практики"],send:"Отправить сообщение",listenOn:"Воспроизвести приветствие",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения.",group:"Выбери программу",programs:[
-      {title:"Ясность и снятие стресса",detail:"Спокойствие и восстановление ресурсов.",steps:["Снять напряжение","Восстановить энергию","Вернуть ясность"],prompt:"Хочу начать программу «Ясность и снятие стресса». Помоги понять мою ситуацию и выбрать первый шаг."},
-      {title:"Достижение моей цели",detail:"От идеи к результату: найти цель, ресурсы и пройти путь.",steps:["Определить цель","Построить план","Достичь результата"],prompt:"Хочу начать программу «Достижение моей цели». Помоги определить мою цель и следующий шаг."},
-      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Уточнить стратегию","Найти ресурсы","Улучшить результат"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."}]},
+      {title:"Ясность и снятие стресса",detail:"Спокойствие и восстановление ресурсов.",steps:["Снять стресс","Вернуть силы","Найти ясность"],prompt:"Хочу начать программу «Ясность и снятие стресса». Помоги понять мою ситуацию и выбрать первый шаг."},
+      {title:"Достижение моей цели",detail:"От идеи к результату: найти цель, ресурсы и пройти путь.",steps:["Найти цель","Создать план","Достичь цели"],prompt:"Хочу начать программу «Достижение моей цели». Помоги определить мою цель и следующий шаг."},
+      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Стратегия","Ресурсы","Рост"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."}]},
     en:{intro:"Your AI guide to clarity, goals and growth.",welcome:"Let's discover what matters now — relieving stress, achieving a goal or growing your business.",listen:"Listen to my greeting",prompt:"What would you like to work on today?",methods:"What we use to help:",tools:["AI coaches","Programs","Videos","Tests","Practices"],send:"Send a message",listenOn:"Play my greeting",privacy:"Start free without signing in. Long-term memory requires your permission.",group:"Choose a program",programs:[
       {title:"Clarity & Stress Relief",detail:"Find calm, clarity and restore your resources.",steps:["Relieve stress","Restore energy","Find clarity"],prompt:"I'd like to start the Clarity & Stress Relief program. Help me understand my situation and choose the first step."},
       {title:"Achieving My Goal",detail:"From idea to result: find your goal, resources and path.",steps:["Define my goal","Build a plan","Achieve results"],prompt:"I'd like to start the Achieving My Goal program. Help me define my goal and next step."},
-      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Clarify strategy","Find resources","Improve results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."}]},
+      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Strategy","Resources","Grow results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."}]},
     es:{intro:"Tu guía de IA hacia la claridad, las metas y el crecimiento.",welcome:"Descubramos qué importa ahora: aliviar el estrés, alcanzar una meta o desarrollar tu negocio.",listen:"Escucha mi bienvenida",prompt:"¿En qué quieres trabajar hoy?",methods:"Trabajamos con:",tools:["Coaches IA","Programas","Vídeos","Pruebas","Prácticas"],send:"Enviar mensaje",listenOn:"Reproducir bienvenida",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso.",group:"Elige un programa",programs:[
-      {title:"Claridad y alivio del estrés",detail:"Calma, claridad y recuperación de recursos.",steps:["Aliviar el estrés","Recuperar energía","Ganar claridad"],prompt:"Quiero empezar el programa Claridad y alivio del estrés. Ayúdame a entender mi situación y elegir el primer paso."},
+      {title:"Claridad y alivio del estrés",detail:"Calma, claridad y recuperación de recursos.",steps:["Menos estrés","Más energía","Claridad"],prompt:"Quiero empezar el programa Claridad y alivio del estrés. Ayúdame a entender mi situación y elegir el primer paso."},
       {title:"Alcanzar mi meta",detail:"De la idea al resultado: encuentra tu meta, recursos y camino.",steps:["Definir mi meta","Crear un plan","Lograr resultados"],prompt:"Quiero empezar el programa Alcanzar mi meta. Ayúdame a definir mi objetivo y el siguiente paso."},
-      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Aclarar estrategia","Encontrar recursos","Mejorar resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."}]}
+      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Estrategia","Recursos","Resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."}]}
   } as const;
   const msg=programCopy[locale];
   const programArt=[
-    {id:"clarity",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",icon:Flower2,steps:[Flower2,Leaf,Sparkles]},
-    {id:"goal",image:"/images/holistic-house/course-focus-mountain-boy.webp",icon:Compass,steps:[Compass,Route,TrendingUp]},
-    {id:"business",image:"/images/holistic-house/shamanic-cards-business-hd.avif",icon:BarChart3,steps:[BriefcaseBusiness,Sprout,TrendingUp]},
+    {id:"clarity",image:"/images/holistic-house/support-business-choice-photos-hd.webp",icon:Flower2,steps:[Flower2,Leaf,Sparkles]},
+    {id:"goal",image:"/images/holistic-house/support-personal-choice-photos-hd.webp",icon:Compass,steps:[Compass,Route,TrendingUp]},
+    {id:"business",image:"/images/holistic-house/profile-card-photos.webp",icon:BarChart3,steps:[BriefcaseBusiness,Sprout,TrendingUp]},
   ] as const;
   const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
 
@@ -300,7 +300,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
           <button type="button" className={styles.guideAudio} data-home-ali-greeting-play
             aria-pressed={greetingSpeaking} aria-label={msg.listenOn} onClick={startGuideGreeting}>
             {greetingSpeaking?<Pause size={19} aria-hidden="true"/>:<Play size={19} aria-hidden="true"/>}
-            <span>{msg.listen}</span><span className={styles.audioWave} aria-hidden="true">▂▅▃▆▂</span>
+            <span>{msg.listen}</span><span className={styles.audioWave} aria-hidden="true">{[7,13,20,12,24,16,8].map((height,i)=><i key={i} style={{height}}/>)}</span>
           </button>
           <button type="button" className={styles.personaButton} data-home-open-ali-persona
             onClick={()=>setPersonaOpen(true)} aria-label={screen.choosePersona} title={screen.choosePersona}>
@@ -311,7 +311,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     </div>
     {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
 
-    <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
+    <form className={styles.composer} onSubmit={startConversation} data-home-intent-form data-home-has-draft={Boolean(draft.trim())}>
       <span className={styles.composerSparkle} aria-hidden="true"><Sparkles size={24}/></span>
       <label className={styles.visuallyHidden} htmlFor={"home-intent-"+locale}>{msg.prompt}</label>
       <textarea id={"home-intent-"+locale} ref={inputRef} value={draft} rows={2} maxLength={2000}
@@ -326,7 +326,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
       </div>
     </form>
-    <p id="home-voice-disclosure" className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
+    <p id="home-voice-disclosure" className={styles.visuallyHidden} data-home-voice-disclosure>{t.speechPrivacy}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
 
@@ -335,9 +335,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         const art=programArt[index],ProgramIcon=art.icon;
         return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
           aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
-          <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
+          <span className={styles.programImage} data-home-program-art={art.id}><img src={art.image} width={240} height={180} alt="" loading="eager" decoding="async"/><ProgramIcon aria-hidden="true" size={28}/></span>
           <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
-            <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>
+            <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/><span>{step}</span></span>})}</span>
           </span>
           <span className={styles.programArrow}><ArrowRight size={19} aria-hidden="true"/></span>
         </button>
