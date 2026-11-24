@@ -42,3 +42,29 @@ test('one user turn removes intro, retains a slim WhatsApp chat and real navigat
  assert.match(navCss,/\.sections\[data-chat-tabs-open="true"\]\{display:grid/)
  assert.match(agent,/data-hh-conversation-mic/)
 })
+
+test('blank initial CTA opens local dialogue; entered text still goes through existing consent path',()=>{
+ const agent=read('components/holistic-agent-chat.tsx')
+ assert.ok(agent.includes('if(showLandingComposer&&!draft.trim())'))
+ assert.ok(agent.includes('text:messengerStarter[locale].welcome,localOnly:true'))
+ assert.ok(agent.includes('sendSelectedTurn(draft)'))
+ assert.ok(agent.includes('(!draft.trim()&&!showLandingComposer)'))
+ assert.ok(agent.includes('(!showLandingComposer||Boolean(draft.trim()))'))
+ assert.ok(agent.includes('data-hh-ai-gemini-consent'))
+ assert.ok(agent.includes('data-hh-conversation-mic'))
+})
+test('AI Chat reuses the actual homepage photos, icon types and living persona',()=>{
+ const home=read('components/home-dialogue-entry.tsx')
+ const intro=read('components/app/messenger-ai-landing.tsx')
+ const landCss=read('components/app/messenger-ai-landing.module.css')
+ const chatCss=read('components/holistic-agent-chat.module.css')
+ for(const art of ['stress.webp','love.webp','growth.webp','energy.webp']){
+   assert.ok(home.includes(art),'homepage art '+art)
+   assert.ok(intro.includes('/images/video-goal-art/'+art),'AI opening art '+art)
+ }
+ assert.ok(intro.includes('genieScene'),'approved first turn reuses existing genie scene')
+ assert.ok(intro.includes('icon:TrendingUp'))
+ assert.ok(intro.includes('icon:Leaf'))
+ assert.ok(landCss.includes('23 Nov: approved homepage images'))
+ assert.ok(chatCss.includes('23 Nov: wide editable input'))
+})

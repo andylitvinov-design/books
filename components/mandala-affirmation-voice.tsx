@@ -68,9 +68,9 @@ const copy={
   }
 } as const;
 const fishCopy={
- ru:{tab:"Fish (6)",coaching:"Коучинг",meditation:"Медитация",license:"Нужна лицензия Fish",inactive:"Fish Audio ещё не активирован. Голоса показаны, но прослушивание и WAV будут доступны после подтверждения прав и бесплатных условий.",active:"Утверждённые голоса Fish RU/EN. Текст не переводится автоматически.",consent:"Разрешаю отправить выбранную фразу в Fish Audio. Не включаю личные и медицинские данные; Fish может использовать текст для улучшения модели.",used:" · Fish Audio бесплатно",device:"Это системный голос устройства, НЕ голос Fish Audio."},
- en:{tab:"Fish (6)",coaching:"Coaching",meditation:"Meditation",license:"Fish license required",inactive:"Fish Audio is not yet enabled. Voices are visible, but listening and WAV need approved rights and free-tier terms.",active:"Approved RU/EN Fish voices. Text is not translated automatically.",consent:"I agree to send this chosen phrase to Fish Audio. No personal or medical information; Fish may use text to improve models.",used:" · free Fish Audio",device:"This is your device voice, NOT Fish Audio."},
- es:{tab:"Fish (6)",coaching:"Coaching",meditation:"Meditación",license:"Requiere licencia Fish",inactive:"Fish Audio no está activado. Las voces son visibles; escuchar y generar WAV requiere aprobar derechos y condiciones gratuitas.",active:"Voces Fish RU/EN aprobadas; el texto no se traduce automáticamente.",consent:"Autorizo enviar la frase a Fish Audio. Sin datos personales ni médicos; Fish puede usar el texto para mejorar sus modelos.",used:" · Fish Audio gratis",device:"Es la voz del dispositivo, NO Fish Audio."}
+ ru:{tab:"Fish (10)",coaching:"Коучинг",meditation:"Медитация",license:"Нужна лицензия Fish",inactive:"Fish Audio ещё не активирован. Голоса показаны, но прослушивание и WAV будут доступны после подтверждения прав и бесплатных условий.",active:"Утверждённые голоса Fish RU/EN. Текст не переводится автоматически.",consent:"Разрешаю отправить выбранную фразу в Fish Audio. Не включаю личные и медицинские данные; Fish может использовать текст для улучшения модели.",used:" · Fish Audio бесплатно",device:"Это системный голос устройства, НЕ голос Fish Audio."},
+ en:{tab:"Fish (10)",coaching:"Coaching",meditation:"Meditation",license:"Fish license required",inactive:"Fish Audio is not yet enabled. Voices are visible, but listening and WAV need approved rights and free-tier terms.",active:"Approved RU/EN Fish voices. Text is not translated automatically.",consent:"I agree to send this chosen phrase to Fish Audio. No personal or medical information; Fish may use text to improve models.",used:" · free Fish Audio",device:"This is your device voice, NOT Fish Audio."},
+ es:{tab:"Fish (10)",coaching:"Coaching",meditation:"Meditación",license:"Requiere licencia Fish",inactive:"Fish Audio no está activado. Las voces son visibles; escuchar y generar WAV requiere aprobar derechos y condiciones gratuitas.",active:"Voces Fish RU/EN aprobadas; el texto no se traduce automáticamente.",consent:"Autorizo enviar la frase a Fish Audio. Sin datos personales ni médicos; Fish puede usar el texto para mejorar sus modelos.",used:" · Fish Audio gratis",device:"Es la voz del dispositivo, NO Fish Audio."}
 } as const;
 const levelCopy={
   ru:{voice:"Голос",music:"Музыка",balanced:"Изменение громкости не расходует бесплатные запросы.",remixing:"Обновляем баланс без повторного вызова Gemini…"},
@@ -118,8 +118,11 @@ export function MandalaAffirmationVoice({
     return selected==="meditation"?"meditation":selected==="coaching"?"coaching":locale==="ru"?"coaching":"meditation";
   });
   const chooseFishFirst=(purpose:"coaching"|"meditation",requestedLanguage:SpeechLanguage)=>{
-    const candidates=FISH_PUBLIC_VOICES.filter(v=>v.purpose===purpose&&!v.requiresProviderLicense);
-    return candidates.find(v=>v.language===requestedLanguage)??candidates[0];
+    const candidates=FISH_PUBLIC_VOICES.filter(v=>v.purpose===purpose);
+    // RU meditation must not silently jump to an unrelated EN voice.
+    return candidates.find(v=>v.language===requestedLanguage&&
+      (!v.requiresProviderLicense||fishLicensedIds.includes(v.id)))??
+      candidates.find(v=>v.language===requestedLanguage)??candidates[0];
   };
   const [bed,setBed]=useState<Bed>(()=>initialPreferences?.bed??"none");
   const [voiceLevel,setVoiceLevel]=useState(90);
@@ -133,6 +136,7 @@ export function MandalaAffirmationVoice({
   const [available,setAvailable]=useState(false);
   const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
   const [fishAvailableLanguages,setFishAvailableLanguages]=useState<string[]>([]);
+  const [fishLicensedIds,setFishLicensedIds]=useState<string[]>([]);
   const languageBeforeFishRef=useRef<SpeechLanguage|null>(null);
   const languageAvailable=available&&(voiceGender==="fish"?fishAvailableLanguages:availableLanguages).includes(language);
   const [busy,setBusy]=useState(false);
@@ -196,8 +200,10 @@ export function MandalaAffirmationVoice({
           (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
         setFishAvailableLanguages(Array.isArray(data.fishLanguages)?data.fishLanguages.filter(
           (value:unknown)=>value==="ru"||value==="en"):[]);
+        setFishLicensedIds(Array.isArray(data.fishLicensedVoices)?data.fishLicensedVoices.filter(
+          (value:unknown)=>typeof value==="string"&&FISH_PUBLIC_VOICES.some(v=>v.id===value)):[]);
       })
-      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);setFishAvailableLanguages([]);}});
+      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);setFishAvailableLanguages([]);setFishLicensedIds([]);}});
     return ()=>controller.abort();
   },[]);
 
@@ -612,15 +618,15 @@ export function MandalaAffirmationVoice({
           {voiceGender==="fish"?FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose).map(v=><div className={css.voiceCard} key={v.id}>
             <button type="button" className={css.voiceCardSelect}
               data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
-              disabled={busy||disabled||Boolean(v.requiresProviderLicense)} onClick={()=>{
+              disabled={busy||disabled||Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))} onClick={()=>{
                 resetSample();setVoiceId(v.id);setLanguage(v.language as SpeechLanguage);setConsent(false);
               }}>
-              <span><strong>{v.name[locale]}</strong><small>{v.language==="ru"?"Русский":"English"} · {v.requiresProviderLicense?f.license:"Fish Official"}</small></span>
+              <span><strong>{v.name[locale]}</strong><small>{v.language==="ru"?"Русский":"English"} · {v.requiresProviderLicense?(fishLicensedIds.includes(v.id)?"Fish Audio":f.license):"Fish Official"}</small></span>
               <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
             </button>
             <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
               aria-label={t.sample+" "+v.name[locale]} aria-busy={sampleBusyId===v.id}
-              disabled={busy||disabled||Boolean(v.requiresProviderLicense)||!fishAvailableLanguages.includes(v.language)}
+              disabled={busy||disabled||Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))||!fishAvailableLanguages.includes(v.language)}
               onClick={()=>{
                 if(voiceId!==v.id){setVoiceId(v.id);setConsent(false);}
                 setLanguage(v.language as SpeechLanguage);
@@ -763,7 +769,7 @@ export function MandalaAffirmationVoice({
     {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>
       <p>{voiceGender==="fish"?f.consent:t.consent}</p></details>:null}</div>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense)}
+      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense&&!fishLicensedIds.includes(voiceId))}
       // Mobile Safari may dispatch touchend but not pointerup or compatibility click.
       // Accept one short intentional touch, never a scroll or consent-free request.
       onTouchStart={event=>{

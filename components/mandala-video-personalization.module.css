@@ -136,3 +136,24 @@
  .wizard .choice{min-height:52px;font-size:12.5px}
  .wizard .energyGrid{gap:4px}.wizard .energyGrid button{min-height:46px}
 }
+
+/* After Montage Extra, the adaptive Personal quiz shows one compact question. */
+@media(max-width:759px){
+.wizard{gap:5px!important;padding:0 0 3px!important}
+.wizard .intro{display:none!important}
+.wizard .progress{min-height:30px!important;padding:5px 9px!important;font-size:12px!important}
+.wizard .card{padding:9px 10px!important;border-radius:15px!important}
+.wizard .cardHead{margin-bottom:5px!important}
+.wizard .cardName h3{font-size:clamp(17px,4.7vw,21px)!important}
+.wizard .cardName p{font-size:11px!important}
+.wizard .choiceScroll{height:auto!important;max-height:none!important;overflow:visible!important;
+grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(42px,auto)!important;gap:5px!important}
+.wizard .choice{min-height:42px!important;font-size:clamp(11px,3.25vw,14px)!important;padding:5px 2px!important}
+.wizard .axisGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+.wizard .axisGrid button{min-height:43px!important;font-size:clamp(11px,3.1vw,13px)!important}
+.wizard .energyGrid button{min-height:44px!important}
+.wizard .scrollHint{margin:2px 0!important;font-size:10px!important}
+.wizard .nameCard:not([hidden]){min-height:95px!important}
+.wizard .next{min-height:46px!important;font-size:15px!important}
+.wizard .back{min-height:37px!important}
+}

@@ -293,21 +293,22 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
 });
 
 
-test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
+test("verified signed-in Ready Save uses the existing signed uploader after private MP4 consent",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
-  assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
+  assert.match(ready,/if\(intent==="save"\)\{saveWithConsent\(\);return;\}/);
+  assert.match(ready,/if\(cloudConsent\)onSaveDirect\(true\)/);
   assert.match(ready,/data-ready-save-status/);
   assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
   assert.match(ready,/data-ready-download-fallback/);
   assert.match(studio,/const deliveryRef=useRef<VideoDeliveryHandle\|null>\(null\)/);
-  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
+  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(consentApproved\)/);
   assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
   assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
   assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
   assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
   assert.match(delivery,/savingRef\.current=true/);
-  assert.match(delivery,/const id=await privateUpload\(\)/);
+  assert.match(delivery,/const id=await privateUpload\(accountId\)/);
   assert.match(delivery,/setSavedId\(id\)/);
   assert.match(css,/\.saveStatus\{display:flex/);
   for(const loc of ["en","ru","es"]){
@@ -318,9 +319,8 @@ test("verified signed-in Ready Save uploads directly through the existing signed
   }
 });
 
-test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a server flag",()=>{
-  const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
-    HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
+test("personal signed MP4 CSP follows private storage availability on exact EN/RU/ES routes",()=>{
+  const env={HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
   const api="https://abcdefghijklmnopqrst.supabase.co";
   const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
   for(const locale of ["en","ru","es"]){
@@ -334,9 +334,9 @@ test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a 
     assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
   }
   assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
-    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:""});
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:" "+api+" "+tus,media:""});
   assert.deepEqual(personalVideoStorageCsp("/ru/app/videos",
-    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:" blob:"});
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:" "+api+" "+tus,media:" blob: "+api});
   for(const bad of ["http://abcdefghijklmnopqrst.supabase.co",
     "https://abcdefghijklmnopqrst.supabase.co.evil.test",
     "https://abcdefghijklmnopqrst.supabase.co:4433",
@@ -623,4 +623,31 @@ test("Ready uses existing Canvas for personal preview, not a fake exported file"
   assert.match(ready,/if\(video\|\|!previewAvailable\)return/);
   assert.match(ready,/Preview ≠ MP4/);
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
+});
+
+test("approved story stills decode before Ready preview without starting export",()=>{
+  const start=studio.indexOf("// Approved still-image stories must decode before export");
+  const end=studio.indexOf("// No autoplay: paint a still scene",start);
+  assert.ok(start>0&&end>start);
+  const preload=studio.slice(start,end);
+  assert.match(preload,/!cinematicPlan\|\|!usingFreeFilmCompilation\|\|!freeFilmSourcesListed/);
+  assert.match(preload,/isTrustedStoryPhoto\(photo\)/);
+  assert.match(preload,/withLocalMediaDeadline\(image\.decode\(\),20000\)/);
+  assert.match(preload,/resolved\.origin!==window\.location\.origin/);
+  assert.match(preload,/image\.naturalWidth<600\|\|image\.naturalHeight<600/);
+  assert.match(preload,/cancelled\|\|preparingRef\.current\|\|jobRef\.current\|\|webCodecJobRef\.current/);
+  assert.match(preload,/freeFilmPhotoRefs\.current\[id\]=image/);
+  assert.match(preload,/setFreeFilmPhotoRevision/);
+  assert.doesNotMatch(preload,/createVideo\(|videoCreditRequest\(|fetch\(/);
+  assert.match(studio,/previewAvailable=\{Boolean\(cinematicPlan\?\.shots\?\.length&&\s*\(!usingFreeFilmCompilation\|\|\(freeFilmReady&&freeFilmSourcesListed\)\)\)\}/);
+});
+test("pending Story approval routes both Generate paths to the existing confirmation",()=>{
+  const start=studio.indexOf("const revealPendingStoryApproval");
+  const end=studio.indexOf("const openMontageAudioFromSettings",start);
+  assert.ok(start>0&&end>start);
+  const flow=studio.slice(start,end);
+  assert.match(flow,/setActiveWorkspace\("editor"\);setMontagePanel\("concept"\)/);
+  assert.match(flow,/data-storyboard-apply-reference-photos/);
+  assert.match(flow,/approval\.focus/);
+  assert.equal((flow.match(/if\(storySourcePendingRef\.current\)return revealPendingStoryApproval\(\);/g)||[]).length,2);
 });

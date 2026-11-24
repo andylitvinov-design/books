@@ -152,7 +152,7 @@ test('My Coach UI sends an authored goal visibly and does not create account per
  assert.ok(body.indexOf('const wisdomRequested=')<body.indexOf('goalTurn=coachGoalTurn'))
  assert.match(body,/skip:wisdomRequested/)
  assert.match(body,/message=goalEligible\?goalTurn\.message:message/)
-  assert.match(ui,/const profileActive=Boolean\(profileProgress\)/)
+  assert.match(ui,/const profileActive=Boolean\(profileSelected\)/)
  assert.match(body,/openingProgress\.completed/)
  assert.equal((body.match(/commitGoalTurn\(\)/g)||[]).length,2)
  assert.match(body,/lastSharedGoalRef\.current=goalTurn\.goal/)
@@ -160,11 +160,11 @@ test('My Coach UI sends an authored goal visibly and does not create account per
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
 })
 
-test('goal state is retained during opening and unfinished profile, then becomes eligible',async()=>{
+test('goal state remains held during every Session 0 turn, including a completed profile',async()=>{
  const fs=await import('node:fs')
  const ui=fs.readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const body=ui.slice(ui.indexOf('async function sendMessage(raw'))
- assert.match(body,/const goalEligible=openingProgress\.completed&&\(!profileProgress\|\|profileProgress\.completed\)/)
+ assert.match(body,/const goalEligible=openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
  assert.match(body,/const commitGoalTurn=\(\)=>\{\s*if\(!goalEligible\)return/)
 })
  

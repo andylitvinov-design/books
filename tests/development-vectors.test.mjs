@@ -56,3 +56,37 @@ test('coach handoff includes only saved owner scores and no omitted axes',()=>{
  assert.doesNotMatch(coachVectorSummary(x,'ru','inner'),/Связь:/)
  assert.equal(coachVectorSummary(emptyDevelopmentVectors(),'ru','inner'),'')
 })
+
+test('reviewed sparse v2 protocol imports only user-confirmed complete meaning-axis scores',()=>{
+ const record={provenance:'client_reviewed_dialogue',
+  completedAt:'2026-11-22T19:00:00.000Z',
+  profileCheckin:{version:'hh-coach-profile-intake-v2',completed:false,ratings:[
+   {axis:'recognition',kind:'rated',current:0,desired:9,quote:'0 9'},
+   {axis:'freedom',kind:'skipped',current:null,desired:null,quote:'skip'},
+   {axis:'anchor',kind:'partial',current:null,desired:8,quote:'8'},
+   {axis:'dignity',kind:'rated',current:4,desired:7,quote:'4 7'}
+  ]}}
+ const score=ratingsFromCoachProtocol(record)
+ assert.deepEqual(Object.keys(score),['recognition','dignity'])
+ assert.equal(score.recognition.current,'0')
+ assert.equal(score.dignity.desired,'7')
+ assert.equal(score.recognition.recordedAt,record.completedAt)
+ assert.equal(score.anchor,undefined,'missing other half is never invented')
+})
+test('v2 archive provenance, timestamps, unique IDs and exact ratings fail closed',()=>{
+ const record={provenance:'client_reviewed_dialogue',
+  completedAt:'2026-11-22T19:00:00.000Z',
+  profileCheckin:{version:'hh-coach-profile-intake-v2',completed:false,
+   ratings:[{axis:'love',kind:'rated',current:3,desired:8,quote:'3 8'}]}}
+ assert.equal(ratingsFromCoachProtocol({...record,provenance:'ai_only'}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,completedAt:'not a date'}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,profileCheckin:{...record.profileCheckin,completed:true}}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,profileCheckin:{...record.profileCheckin,
+  ratings:[record.profileCheckin.ratings[0],record.profileCheckin.ratings[0]]}}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,profileCheckin:{...record.profileCheckin,
+  ratings:[{axis:'wrong',kind:'rated',current:3,desired:8}]}}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,profileCheckin:{...record.profileCheckin,
+  ratings:[{axis:'love',kind:'rated',current:-1,desired:8}]}}),null)
+ assert.equal(ratingsFromCoachProtocol({...record,profileCheckin:{...record.profileCheckin,
+  ratings:[{axis:'love',kind:'partial',current:null,desired:12}]}}),null)
+})

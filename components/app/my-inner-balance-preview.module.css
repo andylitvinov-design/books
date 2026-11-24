@@ -1,0 +1,6 @@
+.section{margin:8px 0 22px;min-width:0;color:#143d3a}
+.top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:12px 14px;border:1px solid #e9dfd1;border-radius:15px;background:#fffcf7}
+.top p{margin:0;flex:1 1 230px;max-width:620px;color:#5d6a71;font-size:14px;line-height:1.45}
+.top a{display:inline-flex;align-items:center;min-height:44px;border-radius:12px;background:#067a67;color:#fff;font-size:14px;font-weight:750;text-decoration:none;padding:8px 14px}
+.top a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.status{font-size:15px;line-height:1.5;color:#5d6a71;margin:14px}

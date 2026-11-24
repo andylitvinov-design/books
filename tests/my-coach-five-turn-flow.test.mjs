@@ -19,7 +19,7 @@ const end=source.indexOf("  const active=phase!=='idle'",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false}={}){
+function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
   const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
@@ -43,6 +43,7 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     navigator,SpeechRecognition:Recognition,webkitSpeechRecognition:Recognition,
     SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
     speechSynthesis:{
+      getVoices(){return deviceVoices},
       cancel(){},
       speak(utterance){
         // Distinguish Safari's short audio-session cue from the no-cost
@@ -228,6 +229,18 @@ test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS
   assert.equal(session.phases.at(-1),'idle')
 })
 
+test('RU replies without a native RU voice stay as text, never speak with EN default',async()=>{
+  const session=createSession({ttsFailures:[1],deviceVoices:[{name:'English default',lang:'en-US',localService:true}]})
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  let mic=await nextMic(session,1)
+  mic.hear('Я хочу говорить по-русски')
+  mic=await nextMic(session,2)
+  assert.equal(session.ttsCalls,1,'one approved cloud call, never a billable retry')
+  assert.equal(session.deviceSpoken,0,'the English default must not narrate a Russian reply')
+  assert.equal(session.cues,2,'iOS recognizer re-arms after text-only fallback')
+  session.ref.current.stop()
+  assert.equal(mic.aborted,true)
+})
 test('a deaf iOS recognizer retries a bounded number of times, then stops claiming to listen',async()=>{
   const session=createSession()
   session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})

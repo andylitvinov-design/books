@@ -3,7 +3,7 @@ export type PublicVideoLike={
  youtubeId?:string;description?:string;sourceLabel?:string;sourceGroup?:string;
  audioLanguage?:"ru"|"en"|"es";
  topicTags?:string[];lifeAreas?:string[];directions?:string[];traditions?:string[];
- durationVerifiedSeconds?:number;
+ durationVerifiedSeconds?:number;playbackMode?:"embedded"|"youtube_only";
  contentType?:string|null;curation?:"verified"|"published";
 };
 export type IndexedVideo<T> = T & {
@@ -23,5 +23,7 @@ export type ReviewedMeditationRow={
  editorial_status:string;embed_status:string;rights_status:string;
  content_checked_at?:string|null;embed_checked_at?:string|null;
  metadata_checked_at?:string|null;claims_risk?:string;
+ owner_review_status?:string;discovery_status?:string;
+ metadata_confidence?:string;youtube_oembed_checked_at?:string|null;
 };
 export declare function projectApprovedMeditationRows(rows:readonly ReviewedMeditationRow[]):PublicVideoLike[];

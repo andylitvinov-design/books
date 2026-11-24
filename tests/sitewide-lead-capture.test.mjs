@@ -108,14 +108,11 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(css, /:focus-visible/);
 });
 
-test("free landing's final slide is just the compact form, in all three languages", () => {
+test("free landing keeps one compact form; EN/RU/ES Services use approved consultation CTA", () => {
   const page = read("components/free-entry-landing.tsx");
   const pageCss = read("components/free-entry-landing.module.css");
   const main = read("app/[locale]/services/page.tsx");
   const es = read("app/es/services/page.tsx");
-  const root = read("app/layout.tsx");
-  const deferred = read("components/sitewide-lead-capture-deferred.tsx");
-  const capture = read("components/sitewide-lead-capture.tsx");
   assert.match(page, /const finalCopy = \{/);
   assert.match(page, /tests: \{ title:/);
   assert.match(page, /situation: \{ title:/);
@@ -128,14 +125,23 @@ test("free landing's final slide is just the compact form, in all three language
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
   assert.match(pageCss, /\.page\{padding-bottom:0\}/);
-  assert.match(main, /<PublicConsultationCta locale=\{locale\} id="consultation"/);
-  assert.match(es, /<PublicConsultationCta locale="es" id="consultation"/);
-  assert.match(main, /<ServicesDirectoryInvitation locale=\{locale\}/);
-  assert.match(es, /<ServicesDirectoryInvitation locale="es"/);
-  assert.ok(root.indexOf("{children}") < root.indexOf("<SitewideLeadCaptureDeferred"), "the sitewide capture remains after page content");
-  assert.match(deferred, /if \(!classifyPublicLead\(pathname\)\) return null/);
-  assert.match(capture, /<CompactLeadCapture/);
-  for (const locale of ["en", "ru", "es"]) assert.equal(classifyPublicLead('/' + locale + '/services')?.kind, "personal");
+  // The free-entry page finishes with CompactLeadCapture. The newer
+  // approved Services catalogue instead books via PublicConsultationCta
+  // inside its consultation panel; never demand or add a duplicate footer.
+  for (const [language, services, localeSyntax] of [
+    ["EN/RU", main, /<PublicConsultationCta locale=\{locale\} id="consultation" serviceBooking/],
+    ["ES", es, /<PublicConsultationCta locale="es" id="consultation" serviceBooking/],
+  ]) {
+    assert.match(services, /<ServicesCompactPanel id="consultation">/, language);
+    assert.match(services, localeSyntax, language + " real booking CTA");
+    assert.match(services, /<ServicesDirectoryInvitation locale=/, language);
+    assert.doesNotMatch(services, /<CompactLeadCapture/, language + " no duplicate capture");
+    assert.ok(
+      services.indexOf("<ServicesPersonalConsultationMobile") <
+        services.indexOf("<PublicConsultationCta"),
+      language + " booking immediately follows the real consultation",
+    );
+  }
 });
 
 

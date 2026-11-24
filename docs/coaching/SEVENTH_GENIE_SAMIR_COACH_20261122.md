@@ -18,7 +18,7 @@ Use the same verified stage-lamp and protocol mechanisms as the other coaches. A
 Example: “Если бы сегодня одно ваше желание получило шанс, что бы это было?” → “Что в реальности мешает?” → “Какой ресурс уже есть?” → “Какой маленький безопасный шаг вы выбираете?”
 
 ## Voice & deployment
-RU/EN suggested Gemini voice: Puck; not part of the owner's six 20 November selections. No silent Spanish Gemini fallback. Existing data consent, voice billing and privacy gates are unchanged. The new original static artwork is explicitly not a video.
+RU/EN Gemini voice: Algieba (smooth male); Puck is an optional upbeat comparison. This is separate from the six previously selected voices. No silent Spanish Gemini fallback. Existing data consent, voice billing and privacy gates are unchanged. The new original static artwork is explicitly not a video.
 Release: one atomic PR, existing protected checks and Vercel publisher, no new paid services or workflows.
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES
 
@@ -60,3 +60,11 @@ The existing six named public coaches each retain their existing 4×6×3 base-qu
 **Live voice:** `coachOpeningLiveInstruction('genie', locale)` includes Samir's preferred question for each pending stage while preserving server-verified progress. The same standalone bank is used for text/offline, EN/RU/ES. All 72 questions are authorial source text, not client memory or a stored transcript.
 
 **Client profile:** extra mission, signature question, and three-sparks structure shown only for Genie under the existing Profile UI, including the pre-Play inline view. Existing six profiles are unchanged.
+
+## LIVE roster visual + voice selection · 22 November 2026
+- User request: put Samir on the production coach chooser with a real photo and a distinct playable voice.
+- Roster rail and coach cards use `public/images/holistic-house/my-coach-motion/genie-photo.webp`: an original small, optimized photographic WebP thumbnail (160×213, 4 KB) from the earlier approved original digital portrait; no third-party film frames. Full-size session/profile continues using the existing original large SVG instead of upscaling a small thumbnail.
+- Default Gemini RU/EN voice: **Algieba**, Google's smooth male prebuilt voice. Puck remains an optional upbeat comparison for explicit auditions; existing other six voice selections unchanged, Spanish still requires its own voice QA.
+- Google Chirp RU/EN/ES generic voice mapping for Samir also uses Algieba, subject to the same separate cost and privacy gates. Device intro rate/pitch slightly slower for warmth. No voice cloning, new provider, new API, new infrastructure or extra charge approval.
+- The same Gemini Live/WebSocket, barge-in, consent and staging director should be used. No unverified audio-playback or microphone quality claim; acceptance requires live iPhone/manual test.
+- No manual Vercel deploy or promotion: protected PR/auto-merge then existing hourly publisher, verify READY canonical alias, SHA and user-visible media.

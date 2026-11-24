@@ -1,0 +1,134 @@
+.console{color:#163d2b;min-width:0}.goalsHeader{margin:14px 2px 7px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}.goalsHeader h2{display:flex;align-items:center;gap:8px;margin:0;color:#ffefd0;font:700 clamp(20px,5vw,28px)/1.2 Georgia,serif}.goalsHeader p{margin:0;color:#f9e8c7;font:500 12px/1.3 system-ui,sans-serif;text-align:right}.goalStrip{display:flex;align-items:stretch;gap:9px;overflow-x:auto;scroll-snap-type:x proximity;padding:5px 2px 11px;scrollbar-width:thin}.goalChip,.goalActive,.addGoal{display:flex;position:relative;align-items:center;justify-content:center;gap:6px;flex:0 0 162px;min-height:82px;padding:12px 10px;box-sizing:border-box;border-radius:20px;border:1.5px solid #ebc582;background:linear-gradient(145deg,#fff5dd,#f9d69c);color:#123b28;box-shadow:0 4px 12px #150d0666;text-align:center;font:700 17px/1.1 Georgia,serif;text-decoration:none;scroll-snap-align:start;cursor:pointer}.goalChip strong,.goalActive strong{min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}.goalActive{color:#fff6d8;background:linear-gradient(135deg,#007d50,#00442b);border-color:#fff2b6;box-shadow:0 0 0 2px #e8bd53,0 4px 14px #ffcf6590}.goalChip>svg:first-child,.goalActive>svg:first-child{flex:none;width:19px}.goalActive>svg:last-child{position:absolute;right:6px;top:5px;color:#fff5ae}.addGoal{flex-basis:112px;flex-direction:column}.selectedGoal{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:110px;padding:14px 16px;margin-top:3px;border:1.5px solid #ebc17d;border-radius:23px;background:linear-gradient(140deg,#fff9eb,#f5d69d);box-shadow:0 5px 18px #180b0655}.goalText{flex:1;min-width:0}.goalText>span{font:700 11px/1.1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.09em;color:#357250}.goalText h2{margin:5px 0;color:#122b1f;font:700 clamp(22px,5.6vw,31px)/1.07 Georgia,serif;overflow-wrap:anywhere}.goalText p{margin:5px 0 0;font:500 clamp(12px,3.2vw,15px)/1.3 system-ui,sans-serif;color:#35513d}.circle{width:86px;height:86px;flex:none;display:grid;place-items:center;border-radius:50%;padding:8px;box-sizing:border-box;background:conic-gradient(#087d40 0% var(--hh-circle-value),#d6bd8f var(--hh-circle-value) 100%);box-shadow:0 0 0 2px #fff9dc,0 2px 9px #1a150d50}.circle>div{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;background:#fff5dc;text-align:center}.circle strong{font:700 22px/1 Georgia,serif}.circle small{display:block;max-width:52px;margin-top:3px;font:600 9px/1.1 system-ui,sans-serif}.stepsTitle{margin:15px 3px 10px;color:#ffecd0;text-align:center;font:700 clamp(21px,5.2vw,29px)/1.2 Georgia,serif}.steps{display:grid;gap:8px}.step{min-height:78px;display:grid;grid-template-columns:33px 28px minmax(0,1fr) 47px 17px;gap:8px;align-items:center;padding:10px 9px;border:1.5px solid #ecc98a;border-radius:19px;background:linear-gradient(135deg,#fff9ea,#f6d7a3);color:#133b2b;text-decoration:none;box-shadow:0 4px 10px #170f0861;box-sizing:border-box;min-width:0}.step:hover,.step:focus-visible{border-color:#137c50;box-shadow:0 0 0 2px #ffd477}.number{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;color:#ffefcc;background:linear-gradient(135deg,#087d50,#003b26);font:700 19px/1 Georgia,serif}.stepIcon{color:#09573b}.stepBody{display:flex;flex-direction:column;gap:3px;min-width:0}.stepBody strong{font:700 clamp(16px,4.2vw,20px)/1.11 Georgia,serif;overflow-wrap:anywhere}.stepBody small{font:500 clamp(11px,2.9vw,13px)/1.23 system-ui,sans-serif;overflow-wrap:anywhere}.progressTrack{display:block;width:100%;height:5px;margin-top:4px;border-radius:10px;background:#d3c2a2;overflow:hidden}.progressTrack>span{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#008758,#79ad1b)}.stepState{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;white-space:nowrap}.stepState b{font:750 16px/1 Georgia,serif}.stepState small{font:600 10px/1.1 system-ui,sans-serif}.disclaimer{margin:10px 5px;color:#f2ddbc;font:500 12px/1.4 system-ui,sans-serif}.daybook{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;margin:14px 0 8px;padding:9px;border:1.5px solid #f0cb8c;border-radius:19px;background:linear-gradient(120deg,#00633e,#004129);color:#fff8dd;text-decoration:none;font:700 19px/1.1 Georgia,serif}.daybook>svg:last-child{margin-left:auto}.message{margin:10px 0;padding:24px 18px;border-radius:20px;background:#fff3d9;color:#24432c;font:550 16px/1.4 system-ui,sans-serif}.message a{color:#066447}.console :focus-visible{outline:3px solid #fff0ac;outline-offset:3px}@media(max-width:374px){.goalChip,.goalActive{flex-basis:145px;font-size:15px}.goalStrip{gap:6px}.selectedGoal{padding:11px 12px}.circle{width:74px;height:74px}.step{gap:5px;grid-template-columns:29px 24px minmax(0,1fr) 41px 15px;padding:9px 6px}.number{width:29px;height:29px}.stepIcon{width:23px}.stepBody strong{font-size:15px}.stepState b{font-size:14px}.stepState small{font-size:9px}.goalsHeader p{font-size:11px}}@media(min-width:700px){.goalStrip{justify-content:center}.goalChip,.goalActive{flex-basis:210px;min-height:92px}.addGoal{flex-basis:140px}.selectedGoal{min-height:132px;padding:19px 23px}.circle{width:100px;height:100px}.step{grid-template-columns:40px 35px minmax(0,1fr) 65px 23px;min-height:85px;padding:10px 20px}.number{width:40px;height:40px}.stepIcon{width:32px;height:32px}.stepState b{font-size:21px}.stepBody strong{font-size:22px}.stepBody small{font-size:14px}}
+
+/* OWNER_MOBILE_GOAL_COMPACT_20261123: stages are usable before a saved goal exists.
+   No fictitious progress: only persisted goal-specific percentages are drawn. */
+.goalsHeader{margin:4px 2px 5px;align-items:center;gap:8px}
+.goalsHeader h2{font-size:clamp(20px,5vw,25px);white-space:nowrap}
+.goalsHeader h2 svg{width:22px;height:22px}
+.goalsHeader p{max-width:28ch;font-size:11.5px}
+.goalStrip{gap:7px;padding:3px 2px 6px}
+.goalChip,.goalActive{flex-basis:151px;min-height:59px;padding:7px 9px;border-radius:17px;font-size:clamp(15px,3.9vw,18px)}
+.addGoal{flex:0 0 115px;min-height:59px;gap:4px;padding:7px;border-radius:17px;font-size:clamp(15px,4vw,18px)}
+.addGoal svg{width:24px;height:24px}
+.selectedGoal{min-height:79px;padding:10px 12px;gap:9px;border-radius:18px}
+.goalText h2{font-size:clamp(19px,5.2vw,27px);margin:4px 0}
+.goalText p{font-size:12px}
+.circle{width:71px;height:71px;padding:7px}
+.circle strong{font-size:19px}
+.circle small{font-size:8px}
+.notice{margin:4px 0 8px;padding:9px 12px;background:linear-gradient(130deg,#fff8e6,#f6dfb1);border:1px solid #e7bf86;border-radius:14px;color:#25402f;font:560 13px/1.3 system-ui,sans-serif}
+.notice a{color:#006c49}
+.stepsTitle{margin:9px 3px 7px;font-size:clamp(19px,5vw,26px)}
+.steps{gap:6px}
+.step{min-height:66px;grid-template-columns:31px 25px minmax(0,1fr) 43px 17px;gap:7px;padding:8px 9px;border-radius:16px}
+.number{width:30px;height:30px;font-size:17px}
+.stepIcon{width:25px;height:25px}
+.stepBody{gap:2px}
+.stepBody strong{font-size:clamp(15.5px,4vw,19px);line-height:1.1}
+.stepBody small{font-size:clamp(10.6px,2.8vw,12.5px);line-height:1.16}
+.stepState b{font-size:15px}
+.stepState small{font-size:10px}
+.progressTrack{margin-top:3px;height:4px}
+.daybook{min-height:48px;margin:10px 0 5px;font-size:17px}
+.disclaimer{font-size:11.5px;margin:7px 5px}
+@media(max-width:374px){
+ .goalsHeader h2{font-size:19px}
+ .goalChip,.goalActive{flex-basis:139px;min-height:56px}
+ .addGoal{min-height:56px;flex-basis:106px}
+ .step{grid-template-columns:29px 21px minmax(0,1fr) 38px 15px;gap:5px;padding:8px 7px}
+ .number{width:28px;height:28px;font-size:16px}
+ .stepIcon{width:21px;height:21px}
+ .stepBody strong{font-size:15px}
+ .stepBody small{font-size:10.4px}
+ .stepState b{font-size:13px}
+ .stepState small{font-size:9.5px}
+}
+@media(min-width:700px){
+ .goalChip,.goalActive{min-height:67px}
+ .addGoal{min-height:67px}
+ .step{min-height:74px}
+}
+
+/* Owner reference 3: compact single-column goal cockpit, scoped against global heading/link resets. */
+.console[data-profile-goal-console] .goalStrip{align-items:center;justify-content:flex-start;gap:6px;padding:5px;margin:0 0 5px;border:1px solid #d3a965;border-radius:15px;background:#231b10;min-height:46px}
+.console .stripTitle{display:flex;align-items:center;gap:5px;flex:none;margin:0!important;color:#fff2ce!important;font:700 14px/1.1 Georgia,serif!important;white-space:nowrap}
+.console .goalChip,.console .goalActive{flex-basis:124px;min-height:44px;padding:5px 7px;font:700 13px/1.1 Georgia,serif!important;border-radius:12px}
+.console .addGoal{flex:0 0 auto;min-height:44px;flex-direction:row;padding:5px 10px;margin-left:auto;border-radius:12px;font:700 14px/1.1 Georgia,serif!important;color:#143d2c!important}
+.console .addGoal svg{width:18px;height:18px}
+.console .emptyHint{display:block;color:#fff0ce!important;font:500 11px/1.25 system-ui,sans-serif;margin:3px 2px 5px}
+.console[data-profile-goal-console] .stepsTitle{display:flex;align-items:center;justify-content:center;gap:8px;margin:5px 0 6px!important;color:#fff1d3!important;font:700 clamp(16px,4.4vw,23px)/1.15 Georgia,serif!important;text-shadow:0 1px 3px #23190a}
+.console .stepsTitle:before,.console .stepsTitle:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#d4b06a,transparent)}
+.console[data-profile-goal-console] .steps{gap:3px}
+.console[data-profile-goal-console] button.step{min-height:44px;height:auto;grid-template-columns:23px 22px minmax(0,1fr) auto 12px;gap:5px;padding:4px 7px;border-radius:13px;color:#143b2b!important;box-shadow:0 2px 5px #1c13083b}
+.console .number{width:23px;height:23px;font:700 15px/1 Georgia,serif!important;color:#fff2d3!important}
+.console .stepIcon{width:21px;height:21px}
+.console .stepBody{gap:1px}
+.console .stepBody strong{font:700 clamp(13px,3.65vw,17px)/1.08 Georgia,serif!important;color:#173c2b!important}
+.console .stepBody small{font:500 10px/1.12 system-ui,sans-serif!important;color:#294c3b!important}
+.console .stepState{gap:1px;color:#173c2b!important}
+.console .stepState small{font:600 9px/1.1 system-ui,sans-serif!important;color:inherit!important}
+.console .stepState b{font-size:13px}
+.console .step>svg:last-child{width:14px;height:14px}
+.console .selectedGoal{min-height:55px;padding:6px 9px;border-radius:15px}
+.console .goalText h2{font-size:18px!important;color:#143b2b!important;margin:2px 0!important}
+.console .circle{width:49px;height:49px;padding:5px}
+.console .circle strong{font-size:14px}
+.console .circle small{display:none}
+.console .shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:7px 0 2px}
+.console .shortcuts a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:46px;padding:4px 2px;border:1px solid #e6c484;border-radius:12px;background:linear-gradient(135deg,#fff9e8,#f6d7a2);color:#143b2b!important;text-decoration:none;text-align:center}
+.console .shortcuts strong{font:700 12px/1.1 Georgia,serif!important;color:inherit!important}
+@media(min-width:700px){.console[data-profile-goal-console] button.step{min-height:58px;grid-template-columns:30px 28px minmax(0,1fr) 75px 20px}.console .stepBody small{font-size:13px!important}.console .stepBody strong{font-size:19px!important}}
+
+/* Inline stage accordion: collapsed geometry stays identical to owner reference 3. */
+.console .stageGroup{min-width:0;display:grid;gap:0}
+.console[data-profile-goal-console] button.step{width:100%;text-align:left;cursor:pointer;appearance:none;-webkit-appearance:none;font:inherit}
+.console[data-profile-goal-console] button.step[aria-expanded=true]{border-color:#edd08f;background:linear-gradient(140deg,#fff6df,#f0c983);box-shadow:0 0 0 1px #d8b16c}
+.console .stageChevron{transition:transform .16s ease}
+.console button.step[aria-expanded=true] .stageChevron{transform:rotate(180deg)}
+.console .stageOptions[hidden]{display:none!important}
+.console .stageOptions{display:grid;gap:5px;margin:3px 0 5px;padding:8px;border:1px solid #dbb77c;border-radius:13px;background:#f9ecd2;color:#143b2b}
+.console .optionHeading{margin:0 3px 3px!important;color:#173d2b!important;font:700 14px/1.2 Georgia,serif!important}
+.console .optionNote{margin:0 3px 3px!important;color:#365440!important;font:500 11px/1.3 system-ui,sans-serif}
+.console a.stageOption{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:7px 9px;border:1px solid #e4cfa7;border-radius:10px;background:#fff9ea;color:#133b2b!important;text-decoration:none;box-sizing:border-box}
+.console .stageOption>span{display:grid;gap:2px;min-width:0}
+.console .stageOption strong{font:700 14px/1.15 Georgia,serif!important;color:#173c2b!important}
+.console .stageOption small{font:500 11px/1.25 system-ui,sans-serif!important;color:#315343!important;overflow-wrap:anywhere}
+.console .stageOption>svg{flex:none}
+@media(prefers-reduced-motion:reduce){.console .stageChevron{transition:none}}
+
+
+/* Goal diary: seven aligned, full-width warm brown / champagne steps. */
+.console[data-profile-goal-console] .emptyHint[hidden]{display:none!important}
+.console[data-profile-goal-console] .stepsTitle{margin:11px 0 8px!important;font:700 clamp(20px,5vw,29px)/1.15 Georgia,serif!important}
+.console[data-profile-goal-console] .steps{gap:5px}
+.console[data-profile-goal-console] button.step{
+ grid-template-columns:27px 25px minmax(0,1fr) 15px;
+ gap:7px;min-height:49px;padding:6px 9px;
+ border-radius:14px;border:1px solid #d6ad72;
+ background:linear-gradient(115deg,#fff8e6 0%,#f8e5be 64%,#ecd0a1 100%);
+ color:#402719!important;box-shadow:0 2px 6px #10080566;
+}
+.console[data-profile-goal-console][data-goal-selected="true"] button.step{
+ grid-template-columns:27px 25px minmax(0,1fr) auto 15px;
+}
+.console[data-profile-goal-console] .number{width:27px;height:27px;font-size:16px!important}
+.console[data-profile-goal-console] .stepIcon{width:23px;height:23px}
+.console[data-profile-goal-console] .stepBody{padding-left:7px;border-left:1px solid #c39a62;gap:2px}
+.console[data-profile-goal-console] .stepBody strong{font:700 clamp(15px,4vw,20px)/1.11 Georgia,serif!important;color:#402719!important;overflow-wrap:normal}
+.console[data-profile-goal-console] .stepBody small{font:500 clamp(10.5px,2.8vw,13px)/1.2 system-ui,sans-serif!important;color:#5c4130!important}
+.console[data-profile-goal-console] .step[aria-expanded=true]{background:linear-gradient(135deg,#fff7df,#eac385)}
+.console[data-profile-goal-console] .stageChevron{color:#15513b;transform:rotate(-90deg)}
+.console[data-profile-goal-console] button.step[aria-expanded=true] .stageChevron{transform:rotate(180deg)}
+@media(max-width:355px){
+ .console[data-profile-goal-console] button.step{grid-template-columns:24px 20px minmax(0,1fr) 13px;gap:5px;padding:6px 7px}
+ .console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:24px 20px minmax(0,1fr) auto 13px}
+ .console[data-profile-goal-console] .number{width:24px;height:24px}
+ .console[data-profile-goal-console] .stepIcon{width:20px;height:20px}
+ .console[data-profile-goal-console] .stepBody strong{font-size:14px!important}
+}
+@media(min-width:700px){
+ .console[data-profile-goal-console] button.step{min-height:66px;grid-template-columns:35px 32px minmax(0,1fr) 20px;padding:8px 15px;gap:12px}
+ .console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:35px 32px minmax(0,1fr) auto 20px}
+ .console[data-profile-goal-console] .number{width:35px;height:35px}
+ .console[data-profile-goal-console] .stepIcon{width:29px;height:29px}
+}

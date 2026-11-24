@@ -46,8 +46,8 @@ test('seven unique public Google voices retain the previous cost and consent gat
     assert.ok(voices.every(Boolean))
   }
   assert.equal(Object.keys(COACH_CHIRP_VOICE_NAMES).length,11)
-  assert.equal(myCoachFishVoice('merlin','ru',{}),MY_COACH_FISH_VOICES.merlin)
-  assert.equal(myCoachFishVoice('harry','ru',{}),MY_COACH_FISH_VOICES.harry)
+  assert.equal(myCoachFishVoice('merlin','ru',{}),null)
+  assert.equal(myCoachFishVoice('harry','ru',{}),null)
   assert.match(read('lib/coaching/my-coach-google-chirp.mjs'),/HH_MY_COACH_GOOGLE_CHIRP_COST_APPROVED/)
 })
 test('Harry approved soft portrait is used in rail, profile, avatar and listening session',()=>{

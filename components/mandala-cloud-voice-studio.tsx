@@ -132,6 +132,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
   const [available,setAvailable]=useState(false);
   const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
   const [fishLanguages,setFishLanguages]=useState<string[]>([]);
+  const [fishLicensedIds,setFishLicensedIds]=useState<string[]>([]);
   const languageAvailable=available&&(provider==="fish"?fishLanguages:availableLanguages).includes(language);
   const [checking,setChecking]=useState(true);
   const [busy,setBusy]=useState(false);
@@ -165,11 +166,13 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
         const fish=Array.isArray(data.fishLanguages)?data.fishLanguages.filter(
           (value:unknown)=>value==="ru"||value==="en"):[];
         setAvailableLanguages(regular);setFishLanguages(fish);
+        setFishLicensedIds(Array.isArray(data.fishLicensedVoices)?data.fishLicensedVoices.filter(
+          (id:unknown)=>typeof id==="string"&&FISH_PUBLIC_VOICES.some(v=>v.id===id)):[]);
         if(!regular.length&&fish.length){setProvider("fish");
           const next=fish.includes(initialLanguage(locale))?initialLanguage(locale):fish[0] as VoiceLanguage;
           setLanguage(next);setVoiceId("fish-"+next);}
       })
-      .catch(()=>{if(!abort.signal.aborted){setAvailable(false);setAvailableLanguages([]);setFishLanguages([]);}})
+      .catch(()=>{if(!abort.signal.aborted){setAvailable(false);setAvailableLanguages([]);setFishLanguages([]);setFishLicensedIds([]);}})
       .finally(()=>{if(!abort.signal.aborted)setChecking(false);});
     return ()=>abort.abort();
   },[]);
@@ -366,12 +369,12 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
         <div className={css.voices+" "+css.fishVoices}>
           {FISH_PUBLIC_VOICES.filter(voice=>voice.language===language).map(voice=>
             <button type="button" key={voice.id} data-voice-id={voice.id}
-              aria-pressed={voice.id===voiceId} disabled={Boolean(voice.requiresProviderLicense)}
+              aria-pressed={voice.id===voiceId} disabled={Boolean(voice.requiresProviderLicense&&!fishLicensedIds.includes(voice.id))}
               onClick={()=>{resetAudio();setVoiceId(voice.id);}}
               className={css.voice}>
               <span className={css.voiceTop}>{voice.name[locale]}</span>
               <span className={css.provider}>{voice.requiresProviderLicense?
-                (locale==="ru"?"Требуется лицензия":locale==="es"?"Licencia requerida":"License required"):
+                (!fishLicensedIds.includes(voice.id)?(locale==="ru"?"Требуется лицензия":locale==="es"?"Licencia requerida":"License required"):"Fish Audio · S2.1 Pro Free"):
                 "Fish Official · S2.1 Pro Free"}</span>
             </button>)}
         </div>

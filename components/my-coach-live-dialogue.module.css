@@ -1858,3 +1858,25 @@
     flex:0 0 auto;min-height:90px;max-height:230px;overflow-y:auto;
   }
 }
+
+/* A dedicated first screen gates ALL Live voice/mic use. Keep the existing
+   dialogue mounted for a same-gesture iPhone WebAudio start, but offscreen. */
+.root[data-my-coach-immersive-session][data-coach-greeting-stage="introduction"]{
+  padding-bottom:0!important;gap:0!important}
+.root[data-coach-greeting-stage="introduction"] .sessionScrollAwaitingGreeting{display:none!important}
+.root[data-coach-greeting-stage="session"] .sessionScrollAwaitingGreeting{display:contents}
+
+/* Profile lives immediately below the greeting viewport, via scroll.
+   Do not duplicate a separate profile button on the welcome screen. */
+.root[data-coach-greeting-stage="introduction"] .headerProfileControl{display:none!important}
+
+/* P0: sessionScrollAwaitingGreeting only wraps the hero; voiceWorkspace,
+   transcript, actions and bottom nav are siblings. Hide EVERY direct session
+   sibling except the header and the stand-alone greeting, not just the hero.
+   Keep the components mounted (for iOS synchronous AudioContext on Start). */
+.root[data-coach-greeting-stage="introduction"] > :not(.sessionTopbar):not([data-my-coach-greeting-gate]){
+  display:none!important;
+}
+.root[data-coach-greeting-stage="introduction"] > [data-my-coach-greeting-gate]{
+  display:block!important;flex:1 1 auto;min-height:0;position:relative;z-index:1;
+}
