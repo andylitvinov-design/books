@@ -34,6 +34,8 @@ on:
       - 'next.config.ts'
       - 'app/layout.tsx'
       - 'components/home-dialogue-entry.tsx'
+      - 'components/site-navigation-compact.tsx'
+      - 'scripts/extract-home-lighthouse-screenshots.mjs'
       - 'components/sitewide-lead-capture-deferred.tsx'
       - 'components/home-deferred-sections.tsx'
       - 'components/home-deferred-content.tsx'
@@ -199,12 +201,18 @@ jobs:
             done
           done
           node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          node --check scripts/extract-home-lighthouse-screenshots.mjs
+          node scripts/extract-home-lighthouse-screenshots.mjs artifacts/home-perf
       - name: Save matched slow-4G evidence for first-screen release review
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
         uses: actions/upload-artifact@v4
         with:
           name: hh-home-lighthouse-${{ github.run_id }}
-          path: artifacts/home-perf/*.json
+          path: |
+            artifacts/home-perf/*.json
+            artifacts/home-perf/*.jpg
+            artifacts/home-perf/*.png
+            artifacts/home-perf/*.webp
           if-no-files-found: ignore
           retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
