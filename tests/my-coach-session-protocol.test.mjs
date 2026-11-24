@@ -231,3 +231,50 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
   assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
+
+test('chronological live voice report preserves greeting, consecutive utterances and trailing client words',()=>{
+ const obj=sample()
+ obj.turnLayout='chronological'
+ obj.turns=[
+  {role:'assistant',content:'Привет!'},
+  {role:'user',content:'Моя цель — развитие бизнеса.'},
+  {role:'user',content:'Хочу больше времени на отдых.'},
+  {role:'assistant',content:'Уточним',interrupted:true},
+  {role:'user',content:'И ещё один момент.'},
+ ]
+ const normalized=normalizeMyCoachProtocol(obj)
+ assert.equal(normalized.turnLayout,'chronological')
+ assert.deepEqual(normalized.turns.map(x=>x.content),obj.turns.map(x=>x.content))
+ assert.equal(normalized.turns.at(-1).unanswered,true)
+ const options=myCoachProtocolPdfOptions(normalized)
+ assert.equal(options.entries.length,5)
+ assert.match(options.entries[0].answer,/Привет/)
+ assert.match(options.entries[2].question,/отдых/)
+ assert.match(options.entries[3].reflection,/перебит/)
+ assert.match(options.entries[4].answer,/Ответ ИИ отсутствует/)
+ const pdf=readFileSync(new URL('../lib/personal-coaching/session-pdf.js',import.meta.url),'utf8')
+ assert.match(pdf,/!question && !\(dialogue && actualAnswer\)/)
+ assert.match(pdf,/actualAnswer \|\| \(dialogue \? '' : t.skipped\)/)
+})
+test('profile numbers must match a real client utterance and not the coach inference',()=>{
+ const obj=sample()
+ obj.turns=[{role:'user',content:'Сейчас 3, хочу 7'},{role:'assistant',content:'Понял.'}]
+ obj.profileCheckin={version:'hh-coach-profile-intake-v1',completed:false,ratings:[
+  {axis:'support',kind:'rated',current:3,desired:7,quote:'Сейчас 3, хочу 7'}
+ ]}
+ assert.equal(normalizeMyCoachProtocol(obj).profileCheckin.ratings[0].desired,7)
+ obj.profileCheckin.ratings[0].desired=9
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+ obj.profileCheckin.ratings[0].desired=7
+ obj.turns[0].content='Пока не знаю.'
+ obj.turns[1].content='Сейчас 3, хочу 7'
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('live protocol does not silently discard old turns or limit profile evidence to opening',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const live=ui.slice(ui.indexOf('function appendLiveTranscript'),ui.indexOf('function markCoachSpeechInterrupted'))
+ assert.ok(live.includes('const next=[...turnsRef.current,entry]'))
+ assert.ok(!live.includes('slice(-96)'))
+ assert.match(ui,/profileHistory=profileEvidence.slice\(openingProgress.consumedTurns\)/)
+ assert.match(ui,/turnLayout:'chronological'/)
+})
