@@ -64,6 +64,7 @@ import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
 import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
+import { clarityDaybookPath } from '@/lib/app/clarity-program.mjs'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -207,7 +208,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
       target.closest('[data-profile-language-switch]') ||
       target.closest('[data-profile-chrome-navigation]') ||
-      target.closest('[data-profile-auth-dialog]')) return
+      target.closest('[data-profile-auth-dialog]') || target.closest('[data-clarity-start]') || target.closest('[data-clarity-details]')) return
     event.preventDefault()
     event.stopPropagation()
     setProfileAuthOpen(true)
@@ -796,6 +797,10 @@ export default function AppWorkspace({ locale, path = [] }) {
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
             // First-time phone Messenger entry: return to the selected master
             // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='clarity'){
+              router.replace(clarityDaybookPath(searchParams.get('clarityLocale') || locale))
+              return
+            }
             if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
               try{
                 const chatLocale=searchParams.get('chatLocale')

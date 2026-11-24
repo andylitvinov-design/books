@@ -9,6 +9,7 @@ import {
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
+import { ClarityStartButton } from './clarity-program'
 import { REIKI_FREE_COURSE_PATH } from '@/lib/academy/reiki-free-course'
 
 const TEXT = {
@@ -184,7 +185,8 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{c.start}</p>
         <h1>{c.tab}</h1><p>{c.intro}</p>
         <div className={styles.clarityHeroActions}>
-          <button type="button" onClick={()=>openStage(0)}><Compass size={22} aria-hidden="true"/>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></button>
+          <ClarityStartButton locale={selected}>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></ClarityStartButton>
+          <Link data-clarity-details href={'/'+selected+'/coaching/clarity'} prefetch={false} className={styles.clarityDetailsLink}>{({en:'Details',ru:'Подробнее',es:'Detalles'})[selected]}<ArrowRight size={17} aria-hidden="true"/></Link>
         </div>
       </header>
       <h2 className={styles.clarityHeading}>{c.question}</h2>

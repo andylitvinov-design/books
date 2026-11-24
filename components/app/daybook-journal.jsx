@@ -15,6 +15,8 @@ import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.m
 import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-route-intent.mjs'
 import styles from './daybook-journal.module.css'
 import DaybookStages from './daybook-stages'
+import { ClarityDaybook, ClarityStartButton } from './clarity-program'
+import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
 import {GUIDE_WEEKS,guideReadable,parseGuideEntry} from '@/lib/app/daybook-guide.mjs'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
@@ -39,6 +41,7 @@ const exportCopy={
 function replaceDaybookURL(url){window.history.replaceState(null,'',url)}
 export default function DaybookJournal({locale,...serverRoute}){
  const searchParams=useSearchParams()
+ const clarityMode=searchParams ? searchParams.get('program')==='clarity' : serverRoute.initialProgram==='clarity'
  const {autoStartVector=false,initialTab='stages',initialStage=1,initialLevel=1,initialStep=1,initialGoalId=null}=searchParams?daybookRouteOptions(Object.fromEntries(searchParams.entries())):serverRoute
  const c=copy[locale],root='/'+locale+'/app'
  const vectorDone=useCallback(()=>replaceDaybookURL(root+'/daybook?tab=goals'),[root])
@@ -81,12 +84,13 @@ export default function DaybookJournal({locale,...serverRoute}){
   try{
    const boot=await appFetch('bootstrap?view=portrait')
    if(token!==epoch.current)return
+   if(clarityMode&&boot.account.onboardingState!=='active'){window.location.replace(clarityOnboardingPath(locale));return}
    const id=boot.account.id
    const result=await appFetch('daybook-journal',undefined,'GET',{accountId:id})
    if(token!==epoch.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(result.entries);setNext(result.nextCursor);setPhase('ready')
   }catch(error){if(token===epoch.current)setPhase(error.status===401?'signed-out':'error')}
- },[wipe])
+ },[wipe,clarityMode,locale])
  useEffect(()=>{
   void load()
   let channel
@@ -184,6 +188,11 @@ export default function DaybookJournal({locale,...serverRoute}){
   routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
   replaceDaybookURL(url)
  }
+ if(clarityMode)return <main className={styles.page} data-daybook-view="clarity" data-cabinet-theme="daybook" data-daybook-page>
+  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>
+  {phase==='ready'&&account?<ClarityDaybook key={account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} onLoadAll={()=>void collect(false)} loadError={['failed','large'].includes(exportStatus)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/>:
+  <section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<ClarityStartButton locale={locale}/>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>}
+ </main>
  return <main className={styles.page} data-daybook-view={tab} data-cabinet-theme="daybook" data-daybook-page>
   <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'} aria-label={c.home}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><button type="button" className={styles.inlineHelp} data-daybook-inline-help aria-label={({en:'Open iHelp',ru:'Открыть iHelp',es:'Abrir iHelp'})[locale]} aria-haspopup="dialog" title="iHelp" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircleQuestion size={19} aria-hidden="true"/></button><SiteNavigation locale={locale} compact/></header>
   <nav className={styles.destinations} aria-label={c.home}>

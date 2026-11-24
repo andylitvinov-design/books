@@ -7,6 +7,7 @@ import {
   createIdentityLinkProof, verifyIdentityLinkProof,
 } from '@/lib/app/telegram-oauth.mjs'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
+import { clarityDaybookPath, clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -251,7 +252,7 @@ async function handle(request, { params }) {
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
       const selectedProvider = oauthProvider(authChoice)
       if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(body.continueTo) ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -264,7 +265,7 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null,
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira', 'clarity-daybook'].includes(continueTo) &&
         !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
@@ -335,7 +336,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -379,7 +380,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -411,6 +412,8 @@ async function handle(request, { params }) {
             ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
           : continueTo === 'video-studio'
             ? `${origin}/${locale}/holistic-support/mandala`
+          : continueTo === 'clarity-daybook'
+            ? origin+clarityDaybookPath(locale)
           : continueTo === 'my-coach-mira'
             ? `${origin}/${locale}/coaching/sessions?coach=mira`
           : continueTo === 'tests'
@@ -516,7 +519,8 @@ async function handle(request, { params }) {
       // consent before a private thread is created. Keep the chosen master's
       // public slug through this existing Cabinet onboarding, never in storage.
       const verifiedDestination=linkedAccount ? (url.searchParams.get('quick')==='1' ? destination : origin+'/'+locale+'/app/settings?identity=linked') : continueTo==='direct-messages'&&account.onboardingState!=='active'
-        ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
+        ? origin+directMessengerSetupPath(locale,recipientSlug) : continueTo==='clarity-daybook'&&account.onboardingState!=='active'
+        ? origin+clarityOnboardingPath(locale) : destination
       return finishAuth(
         NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )

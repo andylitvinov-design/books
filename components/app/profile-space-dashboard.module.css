@@ -1007,6 +1007,7 @@
 .dashboard[data-profile-space-section="clarity"] .clarityHero>p:not(.eyebrow){max-width:65%;font-size:clamp(13px,3.6vw,17px)!important}
 .dashboard[data-profile-space-section="clarity"] .clarityHeroActions{grid-template-columns:1fr;margin-top:14px;max-width:100%}
 .dashboard[data-profile-space-section="clarity"] .clarityHeroActions button{background:linear-gradient(145deg,#fff19b,#ffc520 44%,#e99000);color:#2b210c!important;min-height:49px;padding:10px 16px;border:2px solid #fff4ba;box-shadow:0 3px 12px #e8a33199;font:700 clamp(17px,4.6vw,22px)/1.12 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions .clarityDetailsLink{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:6px 12px;border:1px solid #e9c583;border-radius:999px;color:#fff4df!important;background:#231d16bb;text-decoration:none;font:700 16px/1.2 Georgia,serif}
 .dashboard[data-profile-space-section="clarity"] .clarityHeading{color:#103f30!important;font-size:clamp(21px,5.3vw,30px)!important;margin:5px 0 0!important}
 .dashboard[data-profile-space-section="clarity"] .clarityHeading:before,.dashboard[data-profile-space-section="clarity"] .clarityHeading:after{background:linear-gradient(90deg,transparent,#b9955c)}
 .clarityProgramHint{text-align:center;font:500 13px/1.35 system-ui,sans-serif;color:#264337!important;margin:-4px 5px 2px!important}
