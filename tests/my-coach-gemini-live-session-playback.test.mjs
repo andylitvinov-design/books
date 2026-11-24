@@ -287,7 +287,7 @@ test('provider interrupted acknowledges a locally discarded reply and enables fr
 
 
 test('socket rollover drains a completed reply and resumes the original credential and handle',()=>{
-  const timers=new Map(),sockets=[],sent=[],final=[]
+  const timers=new Map(),sockets=[],sent=[],final=[],drafts=[]
   let timerId=0,stops=0
   class MockSocket{
     constructor(url){this.url=url;this.readyState=1;sockets.push(this)}
@@ -300,13 +300,15 @@ test('socket rollover drains a completed reply and resumes the original credenti
     player:{playing:true,setVolume(){}},stream:{active:true},
     pendingAudio:[],inputText:'incomplete fragment',bargeDetector:{userActive:false},
     audioGate:new GeminiLiveBargeGate()}
-  const code=section('  function finishAudibleTurn(','  // A local playback fault')+
+  const code=section('function audioTranscription(','\n\n')+'\n'+
+    section('  function preserveUnconfirmedInput(','  function commitInput(')+
+    section('  function finishAudibleTurn(','  // A local playback fault')+
     section('  function connect(','  async function getToken(')
   const methods=runInNewContext(code+'\n({connect,finishAudibleTurn,maybeReconnectOnGoAway})',{
     WebSocket:MockSocket,geminiLiveSetupMessage,geminiLiveSocketUrl,
     GeminiLiveBargeGate,GeminiLiveBargeDetector,LIVE_START_TIMEOUT_MS:10000,
     notify(){},phaseChange(){},stop(){stops++},flushSideband(){},
-    propsRef:{current:{onInputInterim(){}}},
+    propsRef:{current:{onInputInterim(){},onUnconfirmedInput:text=>drafts.push(text)}},
     t:{reconnecting:'reconnect',connection:'failure',providerAccess:'denied'},
     commitOutput(state){final.push(state.outputText);state.outputText=''},
     interrupt(){assert.fail('complete PCM must not be interrupted by reconnect')},
@@ -320,6 +322,7 @@ test('socket rollover drains a completed reply and resumes the original credenti
   assert.equal(r.resumeAfterDrain,true)
   assert.equal(r.reconnects,0)
   assert.equal(r.inputText,'')
+  assert.deepEqual(drafts,['incomplete fragment'])
   assert.deepEqual(final,[])
   r.player.playing=false
   methods.finishAudibleTurn(r)

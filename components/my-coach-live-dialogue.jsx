@@ -287,6 +287,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolSaved,setProtocolSaved]=useState(false)
   const [protocolSaveLocked,setProtocolSaveLocked]=useState(false)
   const protocolSaveSnapshotRef=useRef(null)
+  // Bind private writes to the verified account before any dialogue is collected.
+  // Do not rebind an existing in-tab transcript after a sign-in/account change.
+  const protocolOwnerRef=useRef(null)
+  const [protocolOwnerReady,setProtocolOwnerReady]=useState(false)
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
@@ -391,6 +395,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
   useEffect(()=>()=>pending.current?.abort(),[])
+  useEffect(()=>{
+    let active=true
+    void getCabinetBootstrap('portrait',{refresh:true}).then(value=>{
+      if(!active||turnsRef.current.length||protocolStartedRef.current)return
+      const id=value?.account?.id
+      if(typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
+        protocolOwnerRef.current=id;setProtocolOwnerReady(true)
+      }
+    }).catch(()=>{}) // Guest/offline dialogue and local PDF still work.
+    return()=>{active=false}
+  },[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
     // The client's message and history remain untouched until consent + Send.
@@ -561,7 +576,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     name:String(stagedMemory?.prior?.preferredName||'').slice(0,60),
     topic:String(stagedMemory?.prior?.previous?.[0]?.topic||'').slice(0,140)
   }:null
-  const openingHistory=turns.filter(turn=>turn.role==='user').slice(0,32)
+  const confirmedClientTurns=turns.filter(turn=>turn.role==='user'&&turn.unanswered!==true)
+  const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
@@ -569,7 +585,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Session 0 is distinct from method coaching. Existing saved values are
   // consulted ONLY in an owner-authorized preview, never from model prose.
   const profileSelected=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
-  const profileHistory=openingHistory.slice(openingProgress.consumedTurns)
+  const profileEvidence=confirmedClientTurns.map(turn=>String(turn.content||'').slice(0,300))
+  const profileHistory=profileEvidence.slice(openingProgress.consumedTurns)
   const newProfileProgress=profileSelected
     ?coachProfileProgress({locale:conversationLang,turns:profileHistory}):null
   const approvedProfileAudit=memoryReady&&stagedMemory?.allowProfile===true&&
@@ -583,17 +600,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(profileReviewStart===null&&newProfileProgress?.ratings.length)return
     if(profileReviewStart?.token!==stagedMemory.stageToken||
        profileReviewStart?.provider!==memoryProvider){
-      setProfileReviewStart({from:openingHistory.length,token:stagedMemory.stageToken,provider:memoryProvider})
+      setProfileReviewStart({from:profileEvidence.length,token:stagedMemory.stageToken,provider:memoryProvider})
     }
   },[profileSelected,approvedProfileAudit,stagedMemory?.stageToken,memoryProvider,
-    newProfileProgress?.ratings.length,openingHistory.length,profileReviewStart])
+    newProfileProgress?.ratings.length,profileEvidence.length,profileReviewStart])
   const reviewAvailable=profileSelected&&profileReviewStart!==null&&
     approvedProfileAudit?.status==='available'&&
     profileReviewStart.token===stagedMemory?.stageToken&&
     profileReviewStart.provider===memoryProvider
   const profileReviewProgress=reviewAvailable
     ?coachProfileReviewProgress({audit:approvedProfileAudit,
-      turns:openingHistory.slice(profileReviewStart.from),locale:conversationLang})
+      turns:profileEvidence.slice(profileReviewStart.from),locale:conversationLang})
     :null
   const profileProgress=profileReviewProgress||
     (profileReviewStart!==null?{version:COACH_PROFILE_REVIEW_VERSION,
@@ -877,7 +894,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
       // text-model + WAV-TTS pipeline. Do not charge another provider.
       const message=draft.trim()
-      if(!message||!liveVoiceReady)return null
+      if(!message)return null
+      // An unavailable or stopped transport must not lock the text composer.
+      // The same first-party coach continues locally; no other provider is called.
+      if(!liveVoiceReady||voiceState.phase==='idle')return await sendMessage(message,{forceLocal:true})
       const accepted=speechRef.current?.sendText?.(message)===true
       if(accepted){setDraft('');setError('');return {mode:'live'}}
       setError(({ru:'Сначала начните живую голосовую сессию.',
@@ -929,21 +949,26 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function appendLiveTranscript(role,text,{interrupted=false}={}){
     const value=String(text||'').trim().slice(0,1200)
     if(!value)return
-    setTurns(previous=>{
-      const last=previous.at(-1)
-      if(last?.role===role&&last?.content===value)return previous
-      const entry={role,content:value,locale:conversationLang,
-        ...(role==='assistant'?{mode:'ai',inference:{
-          provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
-          ...(interrupted?{interrupted:true}:{})}:{})}
-      const next=[...previous,entry].slice(-96)
-      turnsRef.current=next
-      return next
-    })
+    // The transport emits final utterances once; identical consecutive words
+    // can be legitimate client answers. Preserve them and the original opening.
+    // Use the synchronous ref so End immediately after an audio packet sees it.
+    const entry={role,content:value,locale:conversationLang,
+      ...(role==='assistant'?{mode:'ai',inference:{
+        provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
+        ...(interrupted?{interrupted:true}:{})}:{})}
+    const next=[...turnsRef.current,entry]
+    turnsRef.current=next
+    setTurns(next)
     setSessionClockStarted(true)
     setIntroComplete(true)
-    if(role==='user'){setSpeechPreview('');setDraft('')}
+    if(role==='user'){setSpeechPreview('')}
     else setStreamingPreview('')
+    // Leave room for the last interrupted output when stopping; never silently
+    // roll the report window and erase the first client statements.
+    if(next.length>=159||next.reduce((sum,row)=>sum+String(row.content||'').length+String(row.suggestion||'').length,0)>=67500){
+      setError(protocolCopy[lang].limit)
+      queueMicrotask(()=>speechRef.current?.stop?.())
+    }
   }
   function markCoachSpeechInterrupted(spokenText){
     // The response remains in the report as visible text but is not reused as
@@ -957,7 +982,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
-  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){
+  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
     // re-infer it from potentially mis-scripted browser ASR output.
@@ -1010,14 +1035,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // The local guard sends no client text to a provider and cannot wait for it.
     const currentInput={locale:responseLocale,message,
       turns:conversationTurns.map(({role,content})=>({role,content}))}
-    const localInterruption=readiness.status!=='verified'
+    const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
     if(profileReviewProgress&&!localInterruption){
       const upcoming=coachProfileReviewProgress({
         audit:approvedProfileAudit,
-        turns:[...openingHistory.slice(profileReviewStart.from),message],
+        turns:[...profileEvidence.slice(profileReviewStart.from),message],
         locale:responseLocale,
       })
       const answer=coachProfileReviewNextReply(upcoming,{
@@ -1041,10 +1066,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
     const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
       (selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified')
-    const modelReady=!needsVerifiedModel||
-      (!selectedGeminiEngine&&await retryCoachModelAfterOutage())
+    const modelReady=!forceLocal&&(!needsVerifiedModel||
+      (!selectedGeminiEngine&&await retryCoachModelAfterOutage()))
     if(turnRequestRef.current!==requestId)return null
-    if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
+    if(forceLocal||localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
       // microphone recognition must not wait for model readiness.
       // Local-only authored fallback. NEVER send private text to an unverified model.
@@ -1246,6 +1271,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
+      ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
+         turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
       ...(profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
@@ -1274,6 +1301,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function saveProtocol(){
     if(protocolSaving||protocolSaved)return
     if(!protocolConsent){setProtocolError(protocolCopy[lang].consentRequired);return}
+    const owner=protocolOwnerRef.current
+    if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
     try{
       protocol=protocolSaveSnapshotRef.current||currentProtocol()
@@ -1284,7 +1313,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       const response=await fetch('/api/app/my-coach/protocol',{
         method:'POST',credentials:'same-origin',cache:'no-store',
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
         body:JSON.stringify({action:'save',consent:true,protocol}),
       })
       const result=await response.json().catch(()=>null)
@@ -1444,6 +1473,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
+            localRecoveryTurns={turns}
+            onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
@@ -1742,7 +1773,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
-            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady)||(liveVoiceSelected&&!liveVoiceReady)}>
+            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady&&!liveVoiceSelected)}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
@@ -1941,9 +1972,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <input type="checkbox" checked={protocolConsent} disabled={protocolSaved||protocolSaving} onChange={e=>{setProtocolConsent(e.target.checked);setProtocolError('')}}/>
           <span>{protocolUi.consent}</span>
         </label>
-        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolConsent||protocolSaved||protocolSaving}
+        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolConsent||!protocolOwnerReady||protocolSaved||protocolSaving}
           onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
+        {!protocolOwnerReady&&<p role="status">{({ru:'Сохранение в аккаунт недоступно: аккаунт не подтверждён до начала беседы. PDF доступен.',en:'Account saving is unavailable because the account was not verified before the conversation. PDF is available.',es:'No se puede guardar en la cuenta porque no se verificó antes del diálogo. El PDF está disponible.'})[lang]}</p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
         <div className={styles.protocolActions}>
           {!protocolSaved&&!protocolSaveLocked&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
