@@ -36,7 +36,7 @@ async function handle(request,{params}){
       return auth.apply(NextResponse.json({url:'/api/app/saved-sessions/'+id+'/media/'+assetId,expiresIn:300},
         {headers:PRIVATE_HEADERS}))
     const response=await (sharedGuide?streamSharedGranulesGuide(config,request):
-      privateMediaStream(config,saved.source.clientId,saved.source.sessionId,assetId,request))
+      privateMediaStream(config,saved.source.clientId,saved.source.sessionId,assetId,request,{inlinePdf:saved.session.reportFormat==='pdf'&&saved.session.primaryPdfAssetId===assetId&&new URL(request.url).searchParams.get('view')==='inline'}))
     return auth.apply(response)
   }catch{return fail()}
 }

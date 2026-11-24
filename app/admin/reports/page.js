@@ -64,6 +64,7 @@ export default async function ClientReports({ searchParams }) {
     <div className={styles.top}>
       <Link href={'/' + locale + '/app/practice'} className={styles.back} prefetch={false}>← {t.back}</Link>
       <Link href="/admin/reports/new" className={styles.primary} prefetch={false}>{t.create}</Link>
+      <Link href="/admin/consultations/new?format=pdf" className={styles.primary} prefetch={false}>{locale==='ru'?'+ Готовый PDF-отчёт':'+ Upload PDF report'}</Link>
       <Link href="/admin/reports/general/new" className={styles.primary} prefetch={false}>{t.createGeneral}</Link>
     </div>
     <section className={styles.sheet} aria-label={t.list}>

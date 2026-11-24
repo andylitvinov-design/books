@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { SessionMaterialPicker } from './session-material-picker'
+import { OwnerPdfReportUpload } from './owner-pdf-report-upload'
 import { AdminSessionEngagement } from './admin-session-engagement'
 import { SessionSaveFooterVideo } from './session-save-footer-video'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
@@ -33,7 +34,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const [playerUrls,setPlayerUrls]=useState({})
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
-  const sharedReportLocale=resolveSavedReportLocale(documents.find(doc=>doc.id===(session.published?.reportDocumentId||draft.reportDocumentId)),locale)
+  const isPdf=draft.reportFormat==='pdf'
+  const sharedReportLocale=isPdf?(session.published?.reportLocale||draft.reportLocale):resolveSavedReportLocale(documents.find(doc=>doc.id===(session.published?.reportDocumentId||draft.reportDocumentId)),locale)
   const previewReportLocale=resolveSavedReportLocale(documents.find(doc=>doc.id===draft.reportDocumentId),locale)
   const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[]}
   const updatePlan=patch=>setDraft(current=>({...current,
@@ -114,6 +116,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     } catch(e) {setError(['SESSION_CHANGED','REPORT_VERSION_CHANGED','REPORT_SESSION_MISMATCH','PUBLICATION_REVIEW_REQUIRED'].includes(e.message)?
       (ru?'Черновик или исходный отчёт изменился. Сохраните выбранный отчёт, затем обновите страницу и проверьте его перед публикацией.':
         'The draft or source report changed. Save the selected report, then reload and review it before publishing.'):
+      e.message==='PDF_REPORT_GOOGLE_GATE_REQUIRED'?(ru?'Публикация PDF пока закрыта: требуется проверка Google-входа и CRM.':'PDF publishing is locked until Google sign-in and CRM are verified.'):
+      e.message==='PRIMARY_PDF_REQUIRED'?(ru?'Сначала выберите загруженный PDF.':'Choose an uploaded PDF first.'):
       e.message||String(e))}
     finally {setBusy('')}
   }
@@ -135,7 +139,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       return {...d,media:rows.map((row,i)=>({...row,sortOrder:i}))}
     })
   }
-  function discardMedia(id) {setDraft(d=>({...d,media:d.media.filter(m=>m.assetId!==id).map((row,i)=>({...row,sortOrder:i}))}))}
+  function discardMedia(id) {setDraft(d=>({...d,...(d.primaryPdfAssetId===id?{primaryPdfAssetId:null}:{}),media:d.media.filter(m=>m.assetId!==id).map((row,i)=>({...row,sortOrder:i}))}))}
   const block=Boolean(busy)
   return <div className={styles.adminStudio}>
     <header className={styles.studioHeader}>
@@ -148,8 +152,22 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         session.status==='archived'?(ru?'Архив':'Archived'):(ru?'Черновик':'Draft')}</span>
     </header>
     <section className={styles.editorCard+' '+styles.reportReadyCard} id="session-attached-report">
-      <h2>{ru?'Готовый отчёт клиента':'Saved client report'}</h2>
-      <p>{ru?
+      <h2>{isPdf?(ru?'Готовый PDF-отчёт':'Uploaded PDF report'):(ru?'Готовый отчёт клиента':'Saved client report')}</h2>
+      {isPdf?<>
+        <p>{ru?'Клиент получит оригинальный PDF после защищённого входа; оформление не меняется.':'The client receives the original PDF after protected sign-in; its layout is unchanged.'}</p>
+        <label className={styles.field}>{ru?'Основной PDF':'Primary PDF'}
+          <select value={draft.primaryPdfAssetId||''} onChange={event=>setDraft({...draft,primaryPdfAssetId:event.target.value||null})}>
+            <option value="">{ru?'Выберите PDF':'Choose PDF'}</option>
+            {draft.media.filter(row=>row.scope==='client'&&row.role!=='hidden'&&activeAssets.get(row.assetId)?.kind==='pdf').map(row=>
+              <option key={row.assetId} value={row.assetId}>{row.title} · {row.assetId.slice(0,8)}</option>)}
+          </select>
+        </label>
+        {draft.primaryPdfAssetId&&<a href={base+'/media/'+draft.primaryPdfAssetId+'?view=inline'} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>{ru?'Проверить PDF':'Preview PDF'}</a>}
+        <OwnerPdfReportUpload key={clientId+session.id} clientId={clientId} sessionId={session.id} locale={locale}
+          disabled={block||changed||session.status==='archived'} onBusy={value=>setBusy(value?'pdf-upload':'')}
+          onSaved={async(assetId)=>{const next=await load();if(next.draft.primaryPdfAssetId!==assetId){setDraft({...next.draft,primaryPdfAssetId:assetId})}}}/>
+        {changed&&<p>{ru?'Сохраните изменения перед следующей загрузкой.':'Save changes before uploading another file.'}</p>}
+      </>:<><p>{ru?
         (sourceDocument?.recommendationType==='general'?'Анализ и рекомендации уже находятся в отчёте. Препараты не требуются.':'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.'):
         'Your original report already contains the analysis and recommendations. No additional questionnaire is required to publish it.'}</p>
       <label className={styles.field}><FileText size={18}/>{ru?'Привязанный отчёт (настоящий PDF)':'Attached report (real PDF)'}
@@ -158,7 +176,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           <option value="">{ru?'Без документа':'No report attached'}</option>
           {documents.map(doc=><option key={doc.id} value={doc.id}>{doc.dateIssued} · {doc.kind} · {doc.languagePreference==='ru'?'RU':doc.languagePreference==='en'?'EN':'EN/RU'}</option>)}
         </select>
-      </label>
+      </label></>}
       <div className={styles.actions}>
         <a href="#session-publication" className={styles.jumpToPublication}>
           {ru?'Перейти к публикации ↓':'Go to publication ↓'}
@@ -368,7 +386,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <p>{ru?'Аудио сохраняется автоматически как черновик. Только кнопка «Опубликовать» обновляет страницу клиента. Личные заметки туда не попадают.':
         'Recordings save as drafts automatically. Only Publish updates the client page. Private notes are never included.'}</p>
       <div className={styles.actions}>
-        <button className={styles.primaryButton} disabled={block||session.status==='archived'}
+        <button className={styles.primaryButton} disabled={block||session.status==='archived'||(isPdf&&!draft.primaryPdfAssetId)}
           onClick={()=>act('publish')}><Send size={18}/>{ru?'Опубликовать клиенту':'Publish to client'}</button>
         <button className={styles.secondaryButton} disabled={block||session.status!=='published'}
           onClick={()=>act('copy')}><Copy size={18}/>{ru?'Скопировать ссылку сессии':'Copy session-only link'}</button>

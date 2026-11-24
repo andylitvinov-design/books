@@ -195,6 +195,22 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
+  // Uploaded reports are a document-first view, never a generated prescription.
+  if(session.reportFormat==='pdf') {
+    if(!['saved','owner'].includes(mode)||!session.primaryPdfAssetId) return <main role="status">{ru?'Откройте отчёт через личный кабинет Google.':'Open the report through your Google account.'}</main>
+    const original=assetBase+encodeURIComponent(session.primaryPdfAssetId)
+    return <main lang={locale} style={{maxWidth:1080,margin:'0 auto',padding:16}}>
+      <header style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:14}}>
+        <h1 style={{flex:'1 1 100%',fontSize:22}}>{session.title}</h1>
+        <a className={styles.sessionBottomPrimary} href={original+'?view=inline'} target="_blank" rel="noopener noreferrer">{ru?'Открыть PDF':'Open PDF'}</a>
+        <a className={styles.secondaryButton} href={original}>{ru?'Скачать PDF':'Download PDF'}</a>
+        {mode==='saved'&&<a className={styles.secondaryButton} href={'/'+locale+'/app/portrait#personal-reports'}>{ru?'Мои отчёты':'My reports'}</a>}
+      </header>
+      <iframe title={ru?'Оригинальный PDF-отчёт':'Original PDF report'} src={original+'?view=inline'} referrerPolicy="no-referrer"
+        style={{width:'100%',height:'75vh',minHeight:420,border:'1px solid #dce6e3',borderRadius:8}}/>
+      <p>{ru?'Если PDF не отображается полностью на телефоне, нажмите «Открыть PDF».':'If the PDF does not fully display on your phone, tap Open PDF.'}</p>
+    </main>
+  }
   const nextAnchor=hasRecommendation?'#session-prescription':personalAudio.length?'#session-message':
     session.report?'#session-report':photos.length?'#session-photos':
       hasMaterials?'#session-resources':'#session-title'
