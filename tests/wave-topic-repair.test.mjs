@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readWaveGoalMenu} from '../lib/holistic-support/wave-goal-dialogue.mjs';
 import {repairDialogueTopic} from '../lib/holistic-support/dialogue-topic-repair.mjs';
 import {ruleConversationReply} from '../lib/holistic-support/rule-conversation.mjs';
 import {waveNativeTurn} from '../lib/holistic-support/wave-native-router.mjs';
@@ -7,9 +8,11 @@ import {friendConversationReply} from '../lib/holistic-support/friend-mind.mjs';
 const history=[{"role":"assistant","text":"Хочу понять ваш запрос, а не угадывать. Что интереснее — конкретный ответ, видео, медитация или практика?"},{"role":"user","text":"Деньги"},{"role":"assistant","text":"Понял, вопрос касается работы. Важнее цель, энергия для действий или отношения с людьми?"}];
 test('money remains money in free rules, native and friend routes',()=>{
  for(const turn of [ruleConversationReply,waveNativeTurn,friendConversationReply]){
-  assert.match(turn({message:'Деньги',locale:'ru',history:history.slice(0,1)}).reply,/доход/);
+  const first=turn({message:'Деньги',locale:'ru',history:history.slice(0,1)});
+  if(turn===friendConversationReply)assert.match(first.reply,/доход/);
+  else assert.equal(readWaveGoalMenu(first.reply)?.topic,'money');
   const repaired=turn({message:'Я ж сказал уже',locale:'ru',history});
-  assert.match(repaired.reply,/Деньги/);assert.doesNotMatch(repaired.reply,/конкретный ответ, видео/);
+  assert.match(repaired.reply,/Деньги|финансы/);assert.doesNotMatch(repaired.reply,/конкретный ответ, видео/);
  }
 });
 test('advance a finance answer; avoid asking a previous question again',()=>{

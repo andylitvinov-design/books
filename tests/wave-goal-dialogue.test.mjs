@@ -34,5 +34,5 @@ test('messenger goal menu uses real buttons and selected stage handler',()=>{
  assert.match(source,/data-hh-wave-goal-step=\{i\+1\}/);
  assert.match(source,/onClick=\{\(\)=>void sendTurn\(label\)\}/);
  assert.match(source,/data-hh-wave-goal-closing/);
- assert.match(source,/requiresProtectedReply\(text,turnLocale\)\s*\?waveGoalDialogueTurn/);
+ assert.match(source,/requiresProtectedReply\(text,turnLocale\)\s*\?waveDialogueEntryTurn/);
 });

@@ -665,6 +665,11 @@ try{
    "obsolete five-button rail must not consume transcript space");
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
+ const journeyLabels=["Поговорить и снять напряжение","Понять, что происходит","Найти и достичь цель"];
+ const journeyChoices=chat.locator('[data-hh-genie-path-choice]');
+ assert.deepEqual(await journeyChoices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-genie-path-choice"))),
+   ["therapy","consultation","goal"],"the first choice is the person's need");
+ for(let i=0;i<3;i++)await expect(journeyChoices.nth(i)).toHaveText(journeyLabels[i]);
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
@@ -673,9 +678,14 @@ try{
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
-   "first screen presents four large conversational problem starters");
+   "four optional topic suggestions remain available in More topics");
+ const extraDirections=chat.locator('[data-hh-genie-extra-directions]');
+ assert.equal(await extraDirections.evaluate(node=>node.open),false,
+   "optional topic suggestions start collapsed under the three needs");
+ await extraDirections.locator(':scope > summary').click();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
+ await extraDirections.locator(':scope > summary').click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
    "More topics reveals the remaining four conversational suggestions");
  await moreTopics.click();
@@ -841,6 +851,52 @@ try{
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
+ // Owner screenshot regression, on this isolated guest WebKit session only.
+ const sendDialogue=async(text)=>{
+   const replies=log.locator('[data-hh-chat-turn="assistant"]');
+   const before=await replies.count();
+   await chat.locator('[data-hh-ai-chat-composer] textarea').fill(text);
+   await chat.locator('[data-hh-ai-chat-composer] button[type="submit"]').click();
+   await expect.poll(()=>replies.count()).toBeGreaterThan(before);
+ };
+ for(const path of ["therapy","consultation","goal"]){
+   await resetViaMore();
+   await chat.locator('[data-hh-genie-path-choice="'+path+'"]').click();
+   if(path==="goal")await expect(chat.locator('[data-hh-wave-goal-menu]')).toBeVisible();
+   else{
+     await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText(path==="therapy"?"выслушать":"разберёмся");
+     await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(0);
+   }
+ }
+ await resetViaMore();
+ await sendDialogue("Привет");
+ const entryMenu=chat.locator('[data-hh-wave-entry-menu]');
+ await expect(entryMenu).toBeVisible();
+ assert.deepEqual(await entryMenu.locator('[data-hh-wave-journey]').allTextContents(),journeyLabels);
+ await entryMenu.locator('[data-hh-wave-journey="consultation"]').click();
+ await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText("разберёмся");
+ for(let step=1;step<=7;step++){
+   await resetViaMore();
+   await sendDialogue("Дай денег");
+   const menu=chat.locator('[data-hh-wave-goal-menu]');
+   await expect(menu).toBeVisible();
+   await expect(menu.locator('[data-hh-wave-goal-step]')).toHaveCount(7);
+   await expect(menu.locator('[data-hh-wave-goal-closing]')).toHaveText("Можем начать с 1 пункта.");
+   const choice=menu.locator('[data-hh-wave-goal-step="'+step+'"]');
+   const rect=await choice.boundingBox();
+   assert.ok(rect&&rect.height>=44,"goal step "+step+" remains touch accessible");
+   await choice.click();
+   await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText(/финанс/iu);
+   await expect(choice).toBeDisabled();
+ }
+ await resetViaMore();
+ await sendDialogue("Дай денег");
+ await sendDialogue("Да");
+ await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText("Понять, что происходит, и выбрать цель");
+ await sendDialogue("Доход");
+ await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(1);
+ results.push({journey:"Three needs → money → seven real clickable stages and Yes → retained financial conversation",passed:true});
+ await resetViaMore();
  const openProject=async(id)=>{
    await resetViaMore();
    // The six legacy projects are intentionally inside a collapsed accessible
