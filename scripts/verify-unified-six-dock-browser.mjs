@@ -323,6 +323,15 @@ async function inspect(browserType,locale,width){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       await expect(entry).toBeVisible({timeout:30000});
       await entry.click();
+      // The current approved flow selects a canonical topic BEFORE purpose.
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
+      await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+      await mirror.locator('[data-hh-mirror-goal-choice="stress"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","2");
+      await mirror.locator('[data-hh-mirror-subcategory="vital-energy"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","3");
+      await mirror.locator('[data-hh-mirror-topic="low-energy"]').click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
       const goal=mirror.locator('[data-hh-mirror-purpose-step]');
       await goal.locator('[data-video-ideas-goal-choice="rest"]').click();
@@ -331,19 +340,8 @@ async function inspect(browserType,locale,width){
       await next.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
       await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-      const composer=mirror.locator('[data-hh-mirror-composer]');
-      for(let step=0;step<3&&!await composer.isVisible();step++){
-        const back=mirror.locator('[data-hh-mirror-back]');
-        await expect(back).toBeVisible();
-        await back.click();
-      }
-      const advanced=composer.locator('[data-hh-mirror-open-advanced]');
-      await expect(advanced).toBeVisible();
-      await expect(advanced).toBeEnabled();
-      await advanced.click();
       await expect(page.locator('[data-mandala-free-video]'))
-        .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+        .toHaveAttribute("data-active-workspace","editor",{timeout:15000});
     }
     await ideaButton.waitFor({state:"visible",timeout:30000});
     await page.waitForFunction(()=>{
@@ -444,19 +442,17 @@ async function inspect(browserType,locale,width){
         }else{
           const entry=mirror.locator('[data-hh-mirror-enter="me"]');
           if(await entry.isVisible())await entry.click();
-          const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
-          if(await purpose.isVisible()){
-            await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
-            await purpose.locator('[data-video-ideas-goal-next]').click();
-          }
-          const basic=mirror.locator('[data-hh-mirror-video-format="basic"]');
-          if(await basic.isVisible())await basic.click();
-          const composer=mirror.locator('[data-hh-mirror-composer]');
-          for(let step=0;step<3&&!await composer.isVisible();step++){
+          await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+          for(let step=0;step<3&&await mirror.getAttribute("data-hh-mirror-step")!=="1";step++){
             const back=mirror.locator('[data-hh-mirror-back]');
             await expect(back).toBeVisible();
             await back.click();
           }
+          await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
+          const description=mirror.locator('[data-hh-mirror-own-description]');
+          if(!await description.evaluate(node=>node.open))await description.locator(':scope > summary').click();
+          const composer=mirror.locator('[data-hh-mirror-composer]');
+          await expect(composer).toBeVisible();
           const advanced=composer.locator('[data-hh-mirror-open-advanced]');
           await expect(advanced).toBeVisible();
           await expect(advanced).toBeEnabled();

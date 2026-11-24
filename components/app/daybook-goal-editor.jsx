@@ -6,6 +6,7 @@ import {createGoalEditorSession} from '@/lib/app/daybook-goal-editor-session.mjs
 import {PERSONAL_GOAL_AREAS,PERSONAL_GOAL_AXES} from '@/lib/app/daybook-personal-goal-contract.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import css from './daybook-goal-editor.module.css'
+import DaybookVectorSummary from './daybook-vector-summary'
 const OBSTACLES={en:'What might get in the way',ru:'Что может помешать',es:'Qué podría dificultarlo'}
 const KEYS=['heading','title','why','outcome','area','axes','deadline','step','fallback','status','confirm','milestone','done','add','remove','save','saving','saved','failed','invalid','legacy']
 const COPY={
@@ -43,6 +44,7 @@ export default function DaybookGoalEditor({accountId,locale='en',initialGoal=nul
   event.preventDefault();await active.current?.save()
  }
  return <form className={css.editor} onSubmit={save}><h2>{c.heading}</h2>{state.legacy&&<p>{c.legacy}</p>}
+  {draft.vectorSelection&&<DaybookVectorSummary value={draft.vectorSelection} locale={lang}/>}
   {[['title','title',1000],['why','why',4000],['obstacles','obstacles',4000],['desiredOutcome','outcome',4000],['firstStep','step',2000],['fallbackStep','fallback',2000]].map(([key,label,max])=><label key={key}>{c[label]}<textarea rows={key==='title'?2:3} required={key==='title'} maxLength={max} value={draft[key]} disabled={locked} onChange={e=>change(key,e.target.value)}/></label>)}
   <label>{c.area}<select value={draft.areaKey} disabled={locked} onChange={e=>change('areaKey',e.target.value)}>{PERSONAL_GOAL_AREAS.map((key,i)=><option key={key} value={key}>{AREA_LABELS[lang][i]}</option>)}</select></label>
   <fieldset disabled={locked}><legend>{c.axes}</legend>{PERSONAL_GOAL_AXES.map(axis=><label key={axis}><input type="checkbox" checked={draft.axes.includes(axis)} onChange={e=>change('axes',e.target.checked?[...draft.axes,axis]:draft.axes.filter(key=>key!==axis))}/>{COACH_PROFILE_AXES.find(item=>item.id===axis)?.name[lang]||axis}</label>)}</fieldset>

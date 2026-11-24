@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {GOAL_STAGE_OPTIONS,goalStageOptions,goalOptionHref} from '../lib/profile/goal-stage-options.mjs'
-const stages=['result','motivation','resources','plan','obstacles','possibilities','integration']
-test('all seven stages have four distinct localized options and existing destination paths',()=>{
+const stages=['result','motivation','resources','plan','obstacles','possibilities','acceleration','integration']
+test('all eight stages have four distinct localized options and existing destination paths',()=>{
  assert.deepEqual(Object.keys(GOAL_STAGE_OPTIONS),stages)
  for(const locale of ['en','ru','es'])for(const stage of stages){
   const options=goalStageOptions(stage,locale)

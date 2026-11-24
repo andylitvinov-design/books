@@ -189,6 +189,9 @@ export default function DevelopmentVectors({locale='en'}){
  }
  return <main className={styles.root} data-daybook-vectors>
   <header className={styles.hero}><small>DAYBOOK · 8 + 8</small><h1>{t.title}</h1><p>{t.lead}</p></header>
+  <Link className={styles.save} href={'/'+lang+'/app/daybook?start=vector'} prefetch={false}>
+   {({en:'Stage 0 · Choose a direction and create a goal (4 + 8)',ru:'Этап 0 · Выбрать направление и создать цель (4 + 8)',es:'Etapa 0 · Elegir una dirección y crear una meta (4 + 8)'})[lang]}
+  </Link>
   {state==='ready'?<>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     {['inner','outer'].map(key=><button type="button" key={key}

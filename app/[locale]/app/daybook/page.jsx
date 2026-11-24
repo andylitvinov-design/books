@@ -4,8 +4,9 @@ import '@/app/holistic-light-tokens.css'
 export const dynamic='force-dynamic'
 export const revalidate=0
 export const metadata={title:'Coaching Daybook | Holistic House',robots:{index:false,follow:false},referrer:'no-referrer'}
-export default async function DaybookPage({params}){
+export default async function DaybookPage({params,searchParams}){
  const {locale}=await params
  if(!['en','ru','es'].includes(locale))notFound()
- return <DaybookJournal locale={locale}/>
+ const query=await searchParams
+ return <DaybookJournal locale={locale} autoStartVector={query?.start==='vector'} initialTab={query?.tab==='goals'?'goals':'today'}/>
 }
