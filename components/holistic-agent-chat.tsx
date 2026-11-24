@@ -504,6 +504,27 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setContentStep(null);setContentVoice(false);setEntryOpen(false);
     setStatus("");setSource("");followTail.current=true;setNewBelow(false);
   }});
+  // A returning, signed-in Messenger user resumes the same opted-in private
+  // conversation. Never replay historical speech, send a turn, or overwrite
+  // a new draft, a Home handoff, or a conversation already in progress.
+  const autoResumeAttempted=useRef(false);
+  useEffect(()=>{
+    if(!authenticated){autoResumeAttempted.current=false;return;}
+    if(!messengerView||autoResumeAttempted.current||
+      privateTranscript.status!=="ready")return;
+    autoResumeAttempted.current=true;
+    if(!privateTranscript.consent||!privateTranscript.items.length||
+      messages.length||draft.trim()||quickPrompt||busy||proBusy||pageHelp||
+      homeHandoffPhase!=="idle"||homeHandoffPending.current||
+      homeHandoffPreview)return;
+    try {
+      if(peekHomeAliHandoff(window.sessionStorage,routeLocale))return;
+    } catch {return;}
+    privateTranscript.restore();
+  },[authenticated,messengerView,privateTranscript.status,privateTranscript.consent,
+    privateTranscript.items.length,privateTranscript.restore,messages.length,draft,
+    quickPrompt,busy,proBusy,pageHelp,homeHandoffPhase,homeHandoffPreview,routeLocale]);
+
   useEffect(()=>{
     if(pageHelp){setEntryOpen(true);setPageHelpLink(null);}
   },[pageHelp]);
