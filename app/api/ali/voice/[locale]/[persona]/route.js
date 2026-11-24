@@ -32,8 +32,7 @@ const validRequest=(request,params)=>{
  return {locale,persona}
 }
 
-// A cached readiness check prevents a delayed 503 from blocking iOS user-gesture
-// fallback TTS. It never requests audio or spends a TTS character.
+// Fresh advisory readiness; no synthesis or TTS charge. Never cache failure.
 export async function HEAD(request,{params}){
  const selection=validRequest(request,await params)
  if(!selection)return new Response(null,{status:400,headers:{'Cache-Control':'no-store'}})
@@ -41,7 +40,7 @@ export async function HEAD(request,{params}){
  // expiry. HEAD remains zero-synthesis / zero-quota.
  const available=Boolean(googleChirpConfig()||geminiCoachTtsConfig(process.env,'gemini_tts_free')||myCoachFishConfig())
  return new Response(null,{status:available?204:503,headers:{
-  'Cache-Control':'public,max-age=60,s-maxage=300',
+  'Cache-Control':'no-store',
   'X-Content-Type-Options':'nosniff'
  }})
 }

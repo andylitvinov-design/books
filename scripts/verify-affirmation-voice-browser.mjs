@@ -28,6 +28,11 @@ async function revealMirrorAdvanced(page,engine="chromium"){
     if(await mirror.getAttribute("data-hh-mirror-screen")==="landing"){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==="webkit")await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    }
+    if(await mirror.getAttribute("data-hh-mirror-screen")==="format"){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==="webkit")await format.tap();else await format.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     }
     for(let n=0;n<3 && await mirror.getAttribute("data-hh-mirror-step")!=="1";n++){
@@ -225,17 +230,35 @@ async function verifyWorkspaceHydration(browser,locale){
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
     };
     const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+    const chooseSecondFormat=async(formatId)=>{
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      const format=mirror.locator('[data-hh-mirror-video-format]');
+      await expect(format).toHaveCount(3);
+      await expect(format.first()).toHaveAttribute("data-hh-mirror-video-format","pro");
+      for(const width of [320,354,390,430]){
+        await page.setViewportSize({width,height:840});
+        const g=await format.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {y:r.y,w:r.width,h:r.height,bottom:r.bottom};}));
+        assert.ok(g[0].w>1.8*g[1].w&&g[0].h>g[1].h,"featured photo dominates "+width);
+        assert.ok(g[1].y>g[0].y&&Math.abs(g[1].y-g[2].y)<3,"two smaller formats below "+width);
+        assert.ok(g[2].bottom<840-64,"formats above fixed dock "+width);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"format no horizontal overflow "+width);
+      }
+      await page.setViewportSize({width:390,height:840});
+      await mirror.locator('[data-hh-mirror-video-format="'+formatId+'"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-selected-format",formatId);
+    };
     const confirmPurposeAndFormat=async(goalId,formatId)=>{
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
       await expect(purpose.locator('[data-video-ideas-goal-choice]')).toHaveCount(3);
       await purpose.locator('[data-video-ideas-goal-choice="'+goalId+'"]').click();
       await purpose.locator('[data-video-ideas-goal-next]').click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-      await mirror.locator('[data-hh-mirror-video-format="'+formatId+'"]').click();
       await expect(studio).toHaveAttribute("data-active-workspace","editor");
+      await expect(studio).toHaveAttribute("data-hh-mirror-planned-format",formatId);
     };
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await chooseSecondFormat("pro");
     await stepIs(1);
     const choices=mirror.locator('[data-hh-mirror-goal-choice]');
     await expect(choices).toHaveCount(4);
@@ -283,6 +306,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="work"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await chooseSecondFormat("vip");
     await stepIs(1);
     const work=mirror.locator('[data-hh-mirror-goal-choice]');
     await expect(work).toHaveCount(4);
@@ -300,9 +324,11 @@ async function verifyWorkspaceHydration(browser,locale){
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="others"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await chooseSecondFormat("basic");
     await stepIs(1);
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await chooseSecondFormat("basic");
     await stepIs(1);
     await openDescription();
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
@@ -318,6 +344,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await page.locator('[data-video-quick-control="video"]').click();
     await stepIs(1);
+    await mirror.locator('[data-hh-mirror-back-to-format]').click();
+    await chooseSecondFormat("pro");
     await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
     await stepIs(2);
     await mirror.locator('[data-hh-mirror-subcategory]').first().click();

@@ -9,7 +9,7 @@ test('Messenger voice note is opt-in, does not replace the live Ali microphone',
   assert.match(chat,/data-hh-conversation-mic/)
   assert.match(chat,/voice\.interruptReply\(\)/)
   assert.match(chat,/MessengerVoiceNote locale=\{locale\} accountAuthenticated=\{authenticated\}/)
-  assert.match(chat,/onBegin=\{\(\)=>\{if\(voice\.conversing\)voice\.stopDialogue\(\);\}\}/)
+  assert.match(chat,/onBegin=\{\(\)=>\{setDictationRevision\(value=>value\+1\);if\(voice\.conversing\)voice\.stopDialogue\(\);\}\}/)
   assert.match(chat,/onSendTranscript=\{\(text,_file,_seconds\)=>\{/)
   assert.match(chat,/sendSelectedTurn\(text\)/)
   assert.match(chat,/\(proSelected&&!proReady\)/)

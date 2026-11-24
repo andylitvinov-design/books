@@ -67,8 +67,9 @@ test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal
  const subcategory=flow.indexOf("await subs.first().click()",category);
  const topic=flow.indexOf("await mirror.locator('[data-hh-mirror-topic]').first().click()",subcategory);
  const purposeFormat=flow.indexOf('await confirmPurposeAndFormat("rest","pro")',topic);
- assert.ok(scope>=0&&category>scope&&subcategory>category&&topic>subcategory&&purposeFormat>topic,
-   "visible Screen-2 selects three Goal lightbulb stages before purpose and format");
+ const format=flow.indexOf('await chooseSecondFormat("pro")',scope);
+ assert.ok(scope>=0&&format>scope&&category>format&&subcategory>category&&topic>subcategory&&purposeFormat>topic,
+   "visible Screen 2 selects format before three Goal stages and Purpose");
  for(const step of [1,2,3])assert.ok(flow.includes('await stepIs('+step+')'),
    "the visible Goal must check each of its three real lightbulbs");
  assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
@@ -244,5 +245,7 @@ test("original-motion WebKit opens current Screen-2 Goal through real Details an
  assert.match(source,/details\.getAttribute\('open'\)/);
  assert.match(source,/await tap\(details\.locator\(':scope > summary'\)\)/);
  assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE|force:\s*true/);
- assert.doesNotMatch(source,/await awaitScreen\('purpose'\)|await awaitScreen\('format'\)/);
+ assert.match(source,/await awaitScreen\('format'\)/);
+ assert.match(source,/data-hh-mirror-video-format="basic"/);
+ assert.doesNotMatch(source,/await awaitScreen\('purpose'\)/);
 });

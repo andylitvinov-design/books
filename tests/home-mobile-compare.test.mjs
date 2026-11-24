@@ -35,3 +35,18 @@ test("matched paired mobile-only median identifies pass/fail without hiding regr
   assert.throws(() => summarizePair(before.slice(1),after));
   assert.throws(() => summarizePair(before,[{...after[0],settings:{formFactor:"desktop",throttlingMethod:"simulate"}},after[1]]));
 });
+
+import {snapshot,assertHeroPreload} from "../scripts/measure-home-css-network.mjs";
+test("CSS network audit requires the actual rendered hero portrait to be preloaded",()=>{
+  for(const url of ["/images/holistic-house/ali-inner-alchemist-hero.webp","/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp"]){
+    const portrait='<img class="home-dialogue-entry_heroPortrait__abc" src="'+url+'" loading="eager" fetchPriority="high"/>';
+    const preload='<link rel="preload" as="image" href="'+url+'" fetchPriority="high"/>';
+    const data=snapshot(preload+portrait);
+    assert.equal(data.heroImage,url);
+    assert.doesNotThrow(()=>assertHeroPreload(data));
+    assert.throws(()=>assertHeroPreload(snapshot(portrait)));
+    assert.throws(()=>assertHeroPreload(snapshot(preload+portrait.replace('loading="eager"','loading="lazy"'))));
+    assert.throws(()=>assertHeroPreload(snapshot(preload+portrait.replace(url,"/images/wrong.webp"))));
+    assert.throws(()=>assertHeroPreload(snapshot(preload+portrait+portrait)));
+  }
+});

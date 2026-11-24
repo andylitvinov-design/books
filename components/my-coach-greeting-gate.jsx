@@ -58,6 +58,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    setError('');setPhase('playing')
    try{
      player.current=startDirectCoachIntroAudio(url,{
+       fallbackText:presentation?.text||localCoachText(persona?.opening,lang),locale:lang,
        onStart:()=>{if(audioRun.current===generation)setPhase('playing')},
        onEnd:()=>{if(audioRun.current===generation){player.current=null;setPhase('complete')}},
        onBlocked:()=>{if(audioRun.current===generation){player.current=null;setError(t.failed);setPhase('complete')}},
