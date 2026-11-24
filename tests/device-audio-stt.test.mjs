@@ -28,10 +28,10 @@ test('video and messenger have the local-first, consented fallback, privacy and 
  const video=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8');
  const messenger=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
  const helper=readFileSync(new URL('../lib/mandala/device-audio-stt.mjs',import.meta.url),'utf8');
- assert.match(video,/startDeviceVoiceCapture\(locale\)/);
+ assert.match(video,/startDeviceVoiceCapture\(spokenAudioLanguage\)/);
  assert.match(video,/micSpeechRef\.current\?\.abort\(\)/);
- assert.match(video,/transcribeDeviceAudioFile\(entry\.file,locale,controller\.signal\)/);
- assert.match(video,/requestConsentedTimedTranscript\(entry\.file,locale,true,controller\.signal\)/);
+ assert.match(video,/transcribeDeviceAudioFile\(entry\.file,spokenAudioLanguage,controller\.signal\)/);
+ assert.match(video,/requestConsentedTimedTranscript\(\s*entry\.file,spokenAudioLanguage,true,controller\.signal\)/);
  assert.match(video,/data-video-recipient-audio-manual-text/);
  assert.match(video,/timingSource==="estimated"/);
  assert.match(messenger,/transcribeDeviceAudioFile\(file,locale,abort\.signal\)/);

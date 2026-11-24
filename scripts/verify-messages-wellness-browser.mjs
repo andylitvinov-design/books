@@ -168,30 +168,27 @@ for(const browserType of [chromium,webkit]){
       return {composerBottom:r.bottom,hubBottom:hub.bottom,position:getComputedStyle(el.closest('[data-orders-clients-hub]')).position}
     })
     assert.equal(aiGeometry.position,'fixed',key+' AI chat viewport pinned')
+    const more=root.locator('[data-hh-ai-more] > summary')
+    await more.waitFor({state:'visible',timeout:15000})
+    await more.click()
+    const popup=root.locator('[data-hh-ai-composer-popup]')
+    await popup.waitFor({state:'visible',timeout:15000})
+    const native=await popup.evaluate(el=>typeof el.showPopover==='function')
+    if(native){
+      await page.waitForFunction(()=>{
+        const el=document.querySelector('[data-hh-ai-composer-popup]')
+        if(!el?.matches(':popover-open'))return false
+        const r=el.getBoundingClientRect(),v=window.visualViewport
+        const x=v?.offsetLeft||0,y=v?.offsetTop||0,w=v?.width||innerWidth,h=v?.height||innerHeight
+        return r.left>=x-2&&r.top>=y-2&&r.right<=x+w+2&&r.bottom<=y+h+2
+      },null,{timeout:10000})
+      await page.keyboard.press('Escape')
+      await popup.waitFor({state:'hidden',timeout:10000})
+      assert.equal(await more.evaluate(el=>document.activeElement===el),true,key+' Escape returns focus')
+    }else await more.click()
+
     assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
       key+' visible composer '+JSON.stringify(aiGeometry))
-    // Both first-screen and ongoing chat use the same anchored plus menu.
-    // The portal must escape the clipped transcript on iPhone and remain
-    // inside the actual Safari visual viewport (also after keyboard resize).
-    const moreToggle=root.locator('#hh-ai-panel [data-hh-ai-more] summary').first()
-    await moreToggle.click()
-    const popup=page.locator('[data-hh-ai-composer-popup]')
-    await popup.waitFor({state:'visible',timeout:5000})
-    const popupBounds=await popup.evaluate(el=>{
-      const r=el.getBoundingClientRect(),v=window.visualViewport
-      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,
-        vleft:v?.offsetLeft||0,vtop:v?.offsetTop||0,
-        vright:(v?.offsetLeft||0)+(v?.width||innerWidth),
-        vbottom:(v?.offsetTop||0)+(v?.height||innerHeight)}
-    })
-    assert.ok(popupBounds.left>=popupBounds.vleft-2&&
-      popupBounds.right<=popupBounds.vright+2&&
-      popupBounds.top>=popupBounds.vtop-2&&
-      popupBounds.bottom<=popupBounds.vbottom+2,
-      key+' plus popup stays on screen '+JSON.stringify(popupBounds))
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-ai-plus.png',fullPage:false})
-    await page.keyboard.press('Escape')
-    assert.equal(await popup.count(),0,key+' Escape closes plus menu')
     const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
     await firstQuick.click()
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')

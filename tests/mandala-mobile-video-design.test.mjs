@@ -165,7 +165,10 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/data-video-montage-preference="format"/);
   assert.match(studio,/data-video-montage-preference="speed"/);
   assert.match(studio,/onChange=\{event=>setSpeed\(event.currentTarget.value as Speed\)\}/);
-  assert.match(studio,/setBrightness\("bright"\)/);
+  // Brightness is automatic per chosen style, no longer a visible control.
+  assert.match(studio,/setBrightness\(index===1\|\|index===5\?"bright":"soft"\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.montageEffectBrightness\}/,
+    "removed Brightness selector must not return");
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
@@ -192,7 +195,8 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/if\(photoUrl&&!backgroundOnly&&!photoConsent\)/);
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
-  assert.match(studio,/disabled=\{!canGenerate\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?disabled=\{!studioHydrated\|\|recording\|\|preparing\} onClick=\{openReadyForGeneration\}/);
+   assert.match(studio,/if\(!canGenerate\)\{/,"Ready retains verified source/rights/credit guards");
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
   // Only these two bounded same-origin GETs are permitted: the original
@@ -230,7 +234,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(studio,/data-mandala-cinematic-canvas/);
   assert.match(studio,/startFromHero/);
   assert.match(studio,/document\.querySelector\("\[data-video-photo-consent\]"\)\?\.scrollIntoView/);
-  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
   assert.match(studio,/data-mandala-video-download/);
   assert.match(studio,/data-video-theme=\{item\}/);
   assert.match(css,/\.heroCanvas canvas\{display:block/);
@@ -488,12 +492,16 @@ test("iPhone release layout has no unsolicited diagnostic banner, with Picks and
 test("approved video quick flow keeps one real Canvas, six direct controls and actual local phrase/music handlers", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const topics=["energy","health","relationships","money","goals","life"];
-  const orderStart=studio.indexOf("const quickThemeOrder: VideoTheme[]");
+  const effectsMoods=["life","energy","relationships","goals","money","health"];
+  const orderStart=studio.indexOf("const effectsThemeOrder: VideoTheme[]");
   const orderEnd=studio.indexOf(";",orderStart);
+  assert.ok(orderStart>=0&&orderEnd>orderStart,"existing six licensed scene moods are still available");
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
-    .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/locale==="ru"\?"1\. Выберите цель":locale==="es"\?"1\. Elige tu objetivo":"1\. Choose your goal"/);
+    .map(match=>match[1]),effectsMoods,"visual mood order preserved only in Effects");
+  assert.match(studio,/activeWorkspace==="effects"\?<details[^>]+data-video-theme-advanced/);
+  assert.doesNotMatch(studio,/const quickThemeOrder: VideoTheme\[\]/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/data-video-goal-category-label/);
+  assert.match(studio,/locale==="ru"\?"1\. Выберите категорию":locale==="es"\?"1\. Elige la categoría":"1\. Choose a category"/);
   const goal=studio.indexOf("data-video-director-goal-controls");
   const topic=studio.indexOf("data-video-director-topic-controls");
   const prompt=studio.indexOf("data-video-request-prompt");
@@ -502,7 +510,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
   assert.match(studio,/data-video-wish-above-goals/);
   assert.match(studio,/data-video-director-audience-controls/);
-  assert.match(read("components/mandala-auto-video-director.tsx"),/data-auto-video-audience=\{mode\}/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
   assert.doesNotMatch(studio,/data-video-goal-audience-option/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);

@@ -18,7 +18,7 @@ const personal={
 const labels={en:"Ready for a Relationship",ru:"Готовность к отношениям",es:"Preparación para una relación"};
 const sources=[...catalog.scenes,...original.scenes];
 
-test("specific relationship goal yields three DIFFERENT authored stories in RU/EN/ES, not a restatement of the filters",()=>{
+test("specific relationship goal yields two DIFFERENT authored stories in RU/EN/ES, not a restatement of the filters",()=>{
  for(const locale of ["ru","en","es"]){
   const base=suggestVideoConcept({
    locale,goal:labels[locale],theme:"relationships",
@@ -26,9 +26,10 @@ test("specific relationship goal yields three DIFFERENT authored stories in RU/E
   });
   assert.equal(base.topicId,"ready-relationship");
   const directions=getVideoCreativeDirections(base,locale);
-  assert.deepEqual(directions.map(x=>x.id),["space","real","crossing"]);
-  assert.equal(new Set(directions.map(x=>x.idea)).size,3);
-  assert.equal(new Set(directions.map(x=>x.story)).size,3);
+  assert.equal(directions.length,2);
+  assert.ok(directions.every(x=>["space","real","crossing"].includes(x.id)));
+  assert.equal(new Set(directions.map(x=>x.idea)).size,2);
+  assert.equal(new Set(directions.map(x=>x.story)).size,2);
   for(const direction of directions){
    assert.ok(direction.title.length>=8);
    assert.ok(direction.idea.length>=75);
@@ -70,17 +71,35 @@ test("specific relationship goal yields three DIFFERENT authored stories in RU/E
  }
 });
 
-test("only a specific goal gets cinematic biography suggestions; transcripts remain source-authoritative",()=>{
+test("category Love yields original anonymous films; unknown intent and transcripts remain protected",()=>{
  for(const locale of ["ru","en","es"]){
-  const general=suggestVideoConcept({locale,goal:"Love",theme:"relationships"});
-  assert.equal(getVideoCreativeDirections({...general,semanticConfidence:"low"},locale).length,0);
+  const goal={ru:"Любовь",en:"Love",es:"Amor"}[locale];
+  const general=suggestVideoConcept({locale,goal,theme:"relationships"});
+  const suggestions=getVideoCreativeDirections({...general,semanticConfidence:"low"},locale);
+  assert.equal(suggestions.length,2,locale+": explicit Love requests original films");
+  assert.equal(new Set(suggestions.map(x=>x.idea)).size,2);
+  assert.equal(new Set(suggestions.map(x=>x.story)).size,2);
+  assert.ok(suggestions.every(d=>d.creativeSchemaVersion==="hh-creative-concept-v3"));
+  assert.ok(suggestions.every(d=>d.storyboard.length===6&&
+    new Set(d.storyboard.map(x=>x.action)).size===6));
+  assert.ok(suggestions.every(d=>!/(?:→|The story opens with|Something begins to change)/i
+    .test(d.idea+" "+d.story)));
+  assert.ok(suggestions.every(d=>d.storyboard.every(x=>x.sourceVerified===false)));
+  const unknown=suggestVideoConcept({locale,goal:"unrelated unknown topic",theme:"relationships"});
+  const unknownDirections=getVideoCreativeDirections({...unknown,semanticConfidence:"low"},locale);
+  assert.equal(unknownDirections.length,2,
+    "An unfamiliar explicit goal still receives two clearly fictional film directions");
+  assert.ok(unknownDirections.every(direction=>
+    ["v3_authored_composition","256_screenplay_editorial"].includes(direction.provenance)&&
+    direction.review.status==="pass"&&
+    direction.storyboard.length===direction.conceptScenes.length));
   const speaking=suggestVideoConcept({locale,goal:labels[locale],theme:"relationships",
    selectedTopicId:"ready-relationship",speechTranscript:{text:"Create a video from what I am saying"}});
   assert.equal(getVideoCreativeDirections(speaking,locale).length,0);
   const income=suggestVideoConcept({locale,goal:"Income Growth",theme:"money",selectedTopicId:"income-growth"});
   const alt=getVideoCreativeDirections(income,locale);
-  assert.equal(alt.length,3);
-  assert.equal(new Set(alt.map(x=>x.scenarioId)).size,3);
+  assert.equal(alt.length,2);
+  assert.equal(new Set(alt.map(x=>x.scenarioId)).size,2);
   assert.ok(alt.every(x=>videoConceptIsValid(applyVideoCreativeDirection(income,x))));
  }
 });
@@ -89,7 +108,7 @@ test("specific exclusion is respected and no story claims its video footage exis
  const base=suggestVideoConcept({locale:"en",goal:"Ready for a Relationship",theme:"relationships",
   selectedTopicId:"ready-relationship"});
  const noWater=getVideoCreativeDirections({...base,avoidImagery:["water","forest"]},"en");
- assert.equal(noWater.length,3);
+ assert.equal(noWater.length,2);
  assert.ok(noWater.every(x=>x.id!=="crossing"));
  assert.ok(noWater.every(x=>!x.story.toLowerCase().includes("across the river")));
 });
@@ -128,7 +147,7 @@ test("mobile editor selects directions, hides advanced settings, and carries app
  assert.match(css,/\.panel \.actions\{position:fixed/);
  assert.match(studio,/selectedTopic=\{selectedConceptTopic\}/);
  assert.match(studio,/!approved\.storyboard\?\.length&&cinematicPlan/);
- assert.match(montage,/approvedConcept\?\.baseSignature===suggested\.signature/);
+ assert.match(montage,/sameIntent\(approvedConcept\)/);
  assert.match(montage,/selectedTopicId:selectedTopic\?\.topicId/);
  assert.match(montage,/buildAlignedStorySceneGuides/);
 });
@@ -152,9 +171,9 @@ test("anxiety is a stated PROBLEM, never a positive goal; cinematic stories repl
   assert.equal(base.parameters.situation.source,"goal");
   assert.doesNotMatch(base.mainMessage,/From tiredness|From tension|От усталости|Desde el cansancio/i);
   const directions=getVideoCreativeDirections(base,locale);
-  assert.equal(directions.length,3);
-  assert.equal(new Set(directions.map(d=>d.idea)).size,3);
-  assert.equal(new Set(directions.map(d=>d.story)).size,3);
+  assert.equal(directions.length,2);
+  assert.equal(new Set(directions.map(d=>d.idea)).size,2);
+  assert.equal(new Set(directions.map(d=>d.story)).size,2);
   for(const d of directions){
    assert.equal(d.storyboard.length,6);
    assert.equal(new Set(d.storyboard.map(s=>s.action)).size,6);

@@ -34,6 +34,9 @@ on:
       - '!app/api/app/direct-messages/route.js'
       - '!app/api/app/practitioner-client-messages/route.js'
       - '!app/api/app/notification-channels/route.js'
+      # CRM messenger provider ingress is not an Axis/meditation policy route.
+      # Keep the shared authenticated dispatcher and all other app APIs.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'lib/holistic-support/client-reasoning-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
@@ -128,6 +131,13 @@ on:
       - 'tests/portrait-one-screen-mobile.test.mjs'
       - 'scripts/verify-app-r1.mjs'
       - '.github/workflows/hh-portrait-sectors.yml'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Shared Practice editor routes are independently covered by App/Practice owners.
+      - '!app/api/app/practice/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
 permissions:
   contents: read
 concurrency:

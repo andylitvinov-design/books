@@ -27,3 +27,18 @@ test('visualViewport top/left offsets are applied without horizontal overflow',(
   assert.ok(p.left>=32&&p.left+p.width<=398);
   assert.ok(p.top>=62&&p.top+280<=468);
 });
+
+
+test('native top-layer composer preserves existing DOM, fallback and voice controls',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const chat=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../components/holistic-agent-chat.module.css',import.meta.url),'utf8');
+  assert.ok(chat.includes('typeof HTMLElement.prototype.showPopover==="function"'));
+  assert.ok(chat.includes('popover={nativeComposerPopover?"manual":undefined}'));
+  assert.ok(chat.includes('menu.showPopover()')&&chat.includes('menu.hidePopover()'));
+  assert.ok(chat.includes('positionComposerPopover({anchor:'));
+  assert.ok(chat.includes('micMarker="data-hh-conversation-mic"'));
+  assert.ok(chat.includes('data-hh-live-conversation-mic'));
+  assert.ok(chat.includes('closeComposerMenu();resetConversation()'));
+  assert.ok(css.includes('.composerMenu:popover-open{position:fixed!important'));
+});

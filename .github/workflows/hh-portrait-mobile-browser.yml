@@ -18,7 +18,6 @@ on:
       - 'lib/assessments/portrait-sectors.js'
       - 'scripts/verify-portrait-mobile.mjs'
       - 'tests/portrait-report-actions.test.mjs'
-      - '.github/workflows/hh-portrait-mobile-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read

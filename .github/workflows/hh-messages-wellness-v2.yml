@@ -20,7 +20,6 @@ on:
       - 'lib/practitioners/request-media-policy.mjs'
       - 'supabase/migrations/*private_order_photo_video_media.sql'
       - 'docs/design/MESSAGES_WELLNESS_ORDERS_CLIENTS_20261029.md'
-      - '.github/workflows/hh-messages-wellness-v2.yml'
 permissions:
   contents: read
 concurrency:

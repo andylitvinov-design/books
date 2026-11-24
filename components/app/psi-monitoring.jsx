@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Activity, ArrowRight, BarChart3, BookOpen, CalendarDays, Sparkles, Target } from 'lucide-react'
 import { MoodCheckIn } from './mood-checkin'
 import { labelFor } from './copy'
 import { getAssessmentDefinition } from '@/lib/assessments/definitions'
@@ -352,9 +353,50 @@ export default function PsiMonitoring({ data, locale, instrumentKey, onStarted }
   return <MonitoringDashboard data={data} locale={locale} c={c} onStarted={onStarted} />
 }
 
+
+const MOBILE_COPY = {
+  en: {
+    eyebrow: 'MY WELLBEING', hero: 'My balance',
+    intro: 'Your real check-ins, test results and changes — in one calm space.',
+    start: 'Take an assessment', portrait: 'My state portrait',
+    portraitHelp: 'Areas based on available monitoring tests — not a health score.',
+    measured: 'Completed measurements', noResults: 'No measurements yet',
+    resultNote: 'Colored markers indicate completed check-ins. These counts are not health percentages or diagnoses.',
+    next: 'What to check next', nextEmpty: 'Your next step is a new check-in',
+    results: 'Results and history', resultsHint: 'View only your saved measurements',
+    path: 'My personal plan', pathHint: 'Goals, learning and practical steps',
+    analysis: 'Explore my results and analysis',
+    tests: 'State tests', testsHint: 'Measurements and changes',
+    practices: 'Practices & balance', practicesHint: 'Courses and support',
+    progress: 'My progress', progressHint: 'Saved steps and achievements',
+    schedule: 'Plan my next check', plan: 'My plan',
+    checkin: 'How am I today?', checkinHint: 'Private check-in and quick state analysis',
+    overview: 'My monitoring details'
+  },
+  ru: {
+    eyebrow: 'МОЁ СОСТОЯНИЕ', hero: 'Мой баланс',
+    intro: 'Самочувствие, реальные замеры и динамика — в одном месте.',
+    start: 'Пройти диагностику', portrait: 'Мой профиль состояния',
+    portraitHelp: 'Оси по доступным тестам — не общая оценка здоровья.',
+    measured: 'Сохранено измерений', noResults: 'Пока нет измерений',
+    resultNote: 'Цветные точки отмечают завершённые тесты. Это не проценты здоровья и не диагноз.',
+    next: 'Что проверить дальше', nextEmpty: 'Следующий шаг — новый замер',
+    results: 'Результаты и динамика', resultsHint: 'Ваши сохранённые измерения',
+    path: 'Мой личный план', pathHint: 'Цели, развитие и следующие шаги',
+    analysis: 'Мои результаты и разбор',
+    tests: 'Тесты состояния', testsHint: 'Измерения и динамика',
+    practices: 'Практики и баланс', practicesHint: 'Курсы и поддержка',
+    progress: 'Мой прогресс', progressHint: 'Изменения и достижения',
+    schedule: 'Проверить состояние', plan: 'Мой план',
+    checkin: 'Как я сегодня?', checkinHint: 'Приватная отметка и короткий анализ',
+    overview: 'Подробности моего мониторинга'
+  }
+}
+
 function MonitoringDashboard({ data, locale, c, onStarted }) {
   const [moodSignal, setMoodSignal] = useState(data.moodCheckins?.[0] || null)
   const [moodError, setMoodError] = useState('')
+  const m = MOBILE_COPY[locale] || MOBILE_COPY.en
   const plan = useMemo(
     () => monitoringPlan({ results: data.results, runs: data.runs, locale }),
     [data.results, data.runs, locale],
@@ -388,6 +430,13 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
   const completedCount = activePlan.filter((entry) =>
     ['completed', 'up_to_date', 'due_soon', 'due_now'].includes(entry.state),
   ).length
+  const axisMarkers = axes.map(({ axis, items }) => {
+    const eligible = items.filter(({ item }) => item.startable)
+    const measured = eligible.filter(({ state }) =>
+      ['completed', 'up_to_date', 'due_soon', 'due_now'].includes(state),
+    ).length
+    return { axis, name: c.axis[axis] || axis, measured, total: eligible.length }
+  })
 
   async function persistMood(payload) {
     setMoodError('')
@@ -431,22 +480,91 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
   }
 
   return (
-    <section className="hh-psi">
-      <div className="hh-heading hh-psi-heading">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.title}</h1>
-        <p>{c.subtitle}</p>
-        <p className="hh-fine">{c.privacy}</p>
-      </div>
-
-      <MoodCheckIn
-        locale={locale}
-        compact
-        latestMood={moodSignal}
-        onMoodChange={persistMood}
-        onQuickCheckin={startStateAnalysis}
-      />
-      {moodError && <p className="hh-psi-error" role="alert">{moodError}</p>}
+    <section className="hh-psi" data-mobile-state-dashboard>
+      <header className="hh-psi-hero" data-state-hero>
+        <p className="hh-psi-heroEyebrow"><Sparkles size={20} aria-hidden="true" />{m.eyebrow}</p>
+        <h1>{m.hero}</h1>
+        <p className="hh-psi-heroText">{m.intro}</p>
+        <Link className="hh-psi-heroAction" href={'/' + locale + '/app/tests'} prefetch={false}>
+          <BarChart3 size={26} aria-hidden="true" /><strong>{m.start}</strong><ArrowRight size={25} aria-hidden="true" />
+        </Link>
+      </header>
+      <section className="hh-psi-portraitCard" aria-labelledby="hh-state-portrait-title" data-state-portrait>
+        <h2 id="hh-state-portrait-title">{m.portrait}</h2>
+        <p className="hh-psi-portraitIntro">{m.portraitHelp}</p>
+        <div className="hh-psi-wheel" aria-label={m.portrait}>
+          <div className="hh-psi-wheelPhoto" aria-hidden="true" />
+          <svg className="hh-psi-wheelLines" viewBox="0 0 360 360" aria-hidden="true">
+            <circle cx="180" cy="185" r="116" fill="none" stroke="#b1d6ba" strokeWidth="1.5"/>
+            <circle cx="180" cy="185" r="84" fill="none" stroke="#d9ecce" strokeWidth="1.5"/>
+            <path d="M180 185V37 M180 185L35 122 M180 185L325 122 M180 185L48 308 M180 185L312 308"
+              fill="none" stroke="#9bcc9a" strokeWidth="2.5" strokeDasharray="5 5" />
+            <circle cx="180" cy="185" r="7" fill="#0a826e" stroke="#fff" strokeWidth="3"/>
+          </svg>
+          {axisMarkers.map(({ axis, name, measured, total }) => (
+            <a key={axis} href={'#psi-axis-' + axis} className="hh-psi-wheelChip"
+              data-axis={axis} data-measured={measured > 0}
+              aria-label={name + ': ' + measured + ' / ' + total}>
+              <span>{name}</span>
+              <strong>{total ? measured + ' / ' + total : '—'}</strong>
+            </a>
+          ))}
+        </div>
+        <div className="hh-psi-coverage" data-saved-measurements={completedCount}>
+          <div><span>{m.measured}</span><strong>{completedCount} / {activePlan.length}</strong></div>
+          <progress max={Math.max(1, activePlan.length)} value={completedCount} aria-label={m.measured} />
+        </div>
+        <p className="hh-psi-portraitNote">{m.resultNote}</p>
+        <div className="hh-psi-insightRows">
+          <a href="#psi-recommended-title">
+            <Activity size={24} aria-hidden="true" />
+            <span><strong>{m.next}</strong><small>{recommendation ? (recommendation.item.title[locale] || recommendation.item.title.en) : m.nextEmpty}</small></span>
+            <ArrowRight size={22} aria-hidden="true" />
+          </a>
+          <Link href={'/' + locale + '/app/portrait?space=reports'} prefetch={false}>
+            <BarChart3 size={24} aria-hidden="true" />
+            <span><strong>{m.results}</strong><small>{m.resultsHint}</small></span>
+            <ArrowRight size={22} aria-hidden="true" />
+          </Link>
+          <Link href={'/' + locale + '/app/my-coaching-plan'} prefetch={false}>
+            <Target size={24} aria-hidden="true" />
+            <span><strong>{m.path}</strong><small>{m.pathHint}</small></span>
+            <ArrowRight size={22} aria-hidden="true" />
+          </Link>
+        </div>
+        <Link className="hh-psi-analysisAction" href={'/' + locale + '/app/portrait?space=reports'} prefetch={false}>
+          <Sparkles size={23} aria-hidden="true" />{m.analysis}<ArrowRight size={23} aria-hidden="true" />
+        </Link>
+      </section>
+      <nav className="hh-psi-photoCards" aria-label={m.overview}>
+        {[
+          { id: 'tests', icon: Activity, label: m.tests, hint: m.testsHint, href: '/' + locale + '/app/tests' },
+          { id: 'practices', icon: BookOpen, label: m.practices, hint: m.practicesHint, href: '/' + locale + '/app/course?view=courses' },
+          { id: 'progress', icon: BarChart3, label: m.progress, hint: m.progressHint, href: '/' + locale + '/app/progress' },
+        ].map(({ id, icon: Icon, label, hint, href }) => (
+          <Link key={id} className="hh-psi-photoCard" href={href} prefetch={false} data-state-card={id}>
+            <span className="hh-psi-photoCardImage" data-photo={id} aria-hidden="true" />
+            <span className="hh-psi-photoCardText"><Icon size={24} aria-hidden="true" /><strong>{label}</strong><small>{hint}</small></span>
+            <ArrowRight size={22} className="hh-psi-photoCardArrow" aria-hidden="true" />
+          </Link>
+        ))}
+      </nav>
+      <nav className="hh-psi-nextActions" aria-label={m.overview}>
+        <a href="#psi-plan-title"><CalendarDays size={24} aria-hidden="true" />{m.schedule}</a>
+        <Link href={'/' + locale + '/app/my-coaching-plan'} prefetch={false}><Target size={24} aria-hidden="true" />{m.plan}</Link>
+      </nav>
+      <section className="hh-psi-checkin" id="psi-checkin">
+        <h2>{m.checkin}</h2><p>{m.checkinHint}</p>
+        <MoodCheckIn
+          locale={locale}
+          compact
+          latestMood={moodSignal}
+          onMoodChange={persistMood}
+          onQuickCheckin={startStateAnalysis}
+        />
+        {moodError && <p className="hh-psi-error" role="alert">{moodError}</p>}
+        <p className="hh-psi-privacy">{c.privacy}</p>
+      </section>
 
       <section className="hh-psi-recommended" aria-labelledby="psi-recommended-title">
         <p className="hh-kicker">{c.recommended}</p>
@@ -475,7 +593,7 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
       <section className="hh-psi-section" aria-labelledby="psi-plan-title">
         <div className="hh-psi-section-head">
           <div>
-            <p className="hh-kicker">Personal baseline first</p>
+            <p className="hh-kicker">{m.measured}</p>
             <h2 id="psi-plan-title">{c.plan}</h2>
           </div>
           <span className="hh-psi-progress-copy">
@@ -538,7 +656,7 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
           {axes.map(({ axis, items }) => {
             const visible = items.filter(({ item }) => item.startable)
             return (
-              <article className="hh-psi-axis" key={axis}>
+              <article className="hh-psi-axis" id={"psi-axis-" + axis} key={axis}>
                 <div>
                   <p className="hh-kicker">{c.axis[axis]}</p>
                   <p>{c.axisText[axis]}</p>
@@ -584,7 +702,7 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
       <section className="hh-psi-section">
         <div className="hh-psi-section-head">
           <div>
-            <p className="hh-kicker">Registry-driven</p>
+            <p className="hh-kicker">Holistic House</p>
             <h2>{c.allTests}</h2>
           </div>
           <Link className="hh-primary" href={'/' + locale + '/app/tests'} prefetch={false}>

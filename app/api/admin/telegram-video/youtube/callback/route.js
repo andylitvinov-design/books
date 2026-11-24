@@ -4,8 +4,9 @@ import {ownerVideoOauthStateMatches} from '@/lib/practitioners/owner-telegram-vi
 import {getAppConfig} from '@/lib/app/config'
 import {openSealed} from '@/lib/app/crypto'
 import {PRACTITIONER_ID} from '@/data/app-services'
-import {verifyYoutubeRuOwner,verifyYoutubeEnOwner} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
-import {saveOwnerVideoYoutubeConsent,ownerVideoOauthConfigured,ownerYoutubeExpectedChannel} from '@/lib/practitioners/owner-telegram-video-consent'
+import {verifyYoutubeRuOwner,verifyYoutubeEnOwnerForPairing} from '@/lib/practitioners/owner-telegram-video-youtube.mjs'
+import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store.js'
+import {saveOwnerVideoYoutubeConsent,ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-consent'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 const COOKIE='hh_tgvideo_oauth_state'
@@ -56,8 +57,16 @@ export async function GET(request){
      (editing&&!granted.has('https://www.googleapis.com/auth/youtube.force-ssl')))
      return result('failed')
    if(target==='en'){
-     const expected=await ownerYoutubeExpectedChannel('en')
-     const channel=await verifyYoutubeEnOwner(token.access_token,expected)
+     // Google's consent must follow the owner-scoped PKCE challenge above.
+     // Verify the actual channel AND exact @aatapro handle before pairing.
+     const channel=await verifyYoutubeEnOwnerForPairing(token.access_token)
+     const history=getYoutubeHistoryStore()
+     if(!history)return result('failed')
+     // HSETNX: first pairing is idempotent and conflicting pairings fail closed.
+     // The existing Russian pairing and encrypted RU grant are untouched.
+     const paired=await history.pairEnglish({id:channel,name:'AATA Pro',handle:'@aatapro'})
+     if(paired?.id!==channel)return result('failed')
+     // Preserve existing encrypted EN grant and independent ID recheck.
      await saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})
      return result('en-connected')
    }

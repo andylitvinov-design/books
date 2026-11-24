@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {GOAL_IDEA_LINES,translateVideoGoalPhrase} from "../lib/mandala/video-goal-idea-phrases.mjs";
+import {MEANING_LINES} from "../lib/mandala/video-meaning-phrases.mjs";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
 const layout=read("components/mandala-video-mobile.module.css");
@@ -16,7 +19,7 @@ test("Montage Text retains the original seven-phrase editor and all three phrase
   assert.ok(ui.includes(key),key);
  assert.ok(ui.includes("const allFive=[0,1,2,3,4]"));
  assert.ok(ui.includes("limit:7"));
- assert.ok(studio.includes('onGenerate={createQuickVideo} status={notice}/>'));
+ assert.ok(studio.includes('onGenerate={openReadyForGeneration} status={notice}/>'));
 });
 test("Text-only mobile UI hides size, note, refine, clear and outer duplicate CTA",()=>{
  assert.ok(layout.includes('[data-montage-panel="text"] .quickBuilder>[data-video-order-bar]'));
@@ -42,4 +45,22 @@ test("intentional Play reveals the original Canvas; render and effects are not c
  assert.ok(studio.includes("setPreviewPlaying(true)"));
  assert.ok(studio.includes("data-video-live-stage"));
  assert.ok(studio.includes('onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}}'));
+});
+
+test("Montage Text EN/RU language switch translates curated captions without losing checked phrases",()=>{
+ const english=GOAL_IDEA_LINES.en.love.slice(0,7);
+ const russian=GOAL_IDEA_LINES.ru.love.slice(0,7);
+ assert.deepEqual(english.map(line=>translateVideoGoalPhrase(line,"en","ru")),russian);
+ assert.deepEqual(russian.map(line=>translateVideoGoalPhrase(line,"ru","en")),english);
+ assert.equal(translateVideoGoalPhrase(MEANING_LINES.en.anchor[0],"en","ru"),MEANING_LINES.ru.anchor[0]);
+ assert.equal(translateVideoGoalPhrase("My personal phrase","en","ru"),"My personal phrase");
+ const chosen=[0,1,2,4,6];
+ const result=planIdeaSelection(russian,chosen,russian,"stable-goal");
+ assert.deepEqual(result.editor.chosen,chosen);
+ assert.deepEqual(result.settingsPatch.presetOverride,chosen.map(index=>russian[index]));
+ assert.ok(ui.includes("data-video-text-language={language}"));
+ assert.ok(ui.includes("aria-pressed={captionLocale===language}"));
+ assert.ok(ui.includes("apply(translated,chosen,next)"));
+ assert.ok(studio.includes("profile={ideasProfile} languagePicker"));
+ assert.ok(css.includes(".languageHeader"));
 });

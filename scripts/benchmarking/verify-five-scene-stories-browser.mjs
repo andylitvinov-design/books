@@ -10,6 +10,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 import {isReviewedFilmedStoryScene} from '../../lib/mandala/reviewed-filmed-story.mjs';
 import {verifiedCategorySource} from '../../lib/mandala/category-video-storyboard.mjs';
 
@@ -64,42 +65,32 @@ try{
    {waitUntil:'domcontentloaded',timeout:60000});
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
- await page.locator('[data-video-continue-scenarios]').click();
+ await completeThreeStepGoalsQuiz(page,{engine:'webkit'});
+ // The legacy Create CTA may collapse after the third real Goal tap.
+ // Use the visible Ideas rail without force-clicking hidden elements or skipping
+ // the native three-choice quiz. The real media/consent checks remain below.
+ const advance=page.locator('[data-video-goal-create-cta]');
+ const visibleNext=await advance.isVisible()?advance:page.locator('[data-video-quick-control="phrases"]');
+ await visibleNext.waitFor({state:'visible',timeout:15000});
+ await visibleNext.tap();
+ await page.waitForFunction(()=>document.querySelector('[data-video-quick-control="phrases"]')
+   ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
  await page.locator('[data-video-quick-control="editor"]').click();
  const storyTab=page.locator('[data-video-montage-tab="concept"]');
  await storyTab.waitFor({state:'visible',timeout:20000});
  await storyTab.click();
  await page.locator('[data-video-montage-concept]').waitFor({state:'visible'});
- // Verify the approved one-screen Story CTA really selects fifth Montage.
- const quality=page.locator('[data-video-story-select-quality]');
- // A real mobile WebKit touch must commit both the selected tab and its panel.
- // A click returning before React commits is not evidence of navigation.
- await quality.tap();
+ // A pending editorial storyboard cannot approve source rights via Quality.
+ // Open actual Story video settings and choose five independently verified
+ // filmed sources before visiting Extra. Do not force the blocked Quality CTA.
  const montageTab=page.locator('[data-video-montage-tab="promo"]');
- try{
-   await page.waitForFunction(()=>{
-     const tab=document.querySelector('[data-video-montage-tab="promo"]');
-     const panel=document.querySelector('[data-video-basic-editor]');
-     return tab?.getAttribute('aria-pressed')==='true' &&
-       panel?.getAttribute('data-montage-panel')==='promo';
-   },undefined,{timeout:15000});
- }catch(error){
-   // Safe structural telemetry only: no client text, media, URL or health data.
-   const state=await page.evaluate(()=>({
-     workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
-     panel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
-     activeTab:document.querySelector('[data-video-montage-tab][aria-pressed="true"]')?.getAttribute('data-video-montage-tab')||null,
-     qualityButtonVisible:Boolean(document.querySelector('[data-video-story-select-quality]')),
-     mediaUnready:Boolean(document.querySelector('[data-video-story-missing-relevant-media]'))
-   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
-   console.error('STORY_MONTAGE_TRANSITION_STATE '+JSON.stringify(state));
-   throw error;
- }
- assert.equal(await montageTab.getAttribute('aria-pressed'),'true',
-   'STORY_QUALITY_MUST_OPEN_MONTAGE');
- assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
-   'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
+ const storySettings=page.locator('[data-video-story-open-settings]');
+ await storySettings.waitFor({state:'visible',timeout:15000});
+ await storySettings.tap();
+ await page.waitForFunction(()=>document.querySelector('[data-video-basic-editor]')
+   ?.getAttribute('data-montage-panel')==='settings',undefined,{timeout:15000});
  const advanced=page.locator('[data-video-stories-advanced]');
+ await advanced.waitFor({state:'visible',timeout:20000});
  await advanced.locator(':scope > summary').click();
  const format=advanced.locator('[data-video-stories-format]');
  await format.waitFor({state:'visible'});
@@ -130,8 +121,41 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- // The user-approved fifth Montage has exactly three choices. Generate FREE
- // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
+ // Exercise the real mobile single-scene alternate when the licensed catalog
+ // offers an eligible option. A disabled alternate is honest, not a fake render.
+ const remixButtons=sceneList.locator('[data-video-stories-remix]');
+ assert.equal(await remixButtons.count(),5,'STORIES_SCENE_REMIX_CONTROLS_MISSING');
+ let changeIndex=-1;
+ for(let i=0;i<5;i++)if(await remixButtons.nth(i).isEnabled()){changeIndex=i;break;}
+ if(changeIndex>=0){
+   await remixButtons.nth(changeIndex).click();
+   await page.waitForFunction(({index,previous})=>{
+     const values=[...document.querySelectorAll('[data-video-stories-source]')].map(node=>node.value);
+     return values.length===5&&values[index]!==previous;
+   },{index:changeIndex,previous:ids[changeIndex]},{timeout:15000});
+   const changed=await sceneList.locator('[data-video-stories-source]').evaluateAll(nodes=>
+     nodes.map(node=>node.value));
+   assert.equal(new Set(changed).size,5,'STORIES_REMIX_DUPLICATED_MEDIA');
+   assert.ok(approved.has(changed[changeIndex]),'STORIES_REMIX_UNREVIEWED_SOURCE');
+   for(let i=0;i<5;i++)if(i!==changeIndex)
+     assert.equal(changed[i],ids[i],'STORIES_REMIX_CHANGED_UNRELATED_SCENE_'+i);
+   result.singleSceneRemix={status:'VERIFIED',index:changeIndex,unchanged:4};
+ }else result.singleSceneRemix={status:'NO_ELIGIBLE_ALTERNATIVE'};
+ // Explicit user approval advances from visible Story editors to Extra,
+ // preserving the five licensed source IDs for the existing real renderer.
+ const toExtra=sceneList.locator('[data-video-stories-to-extra]');
+ // The action belongs to the settings footer (a sibling of the scene list).
+ await page.locator('[data-video-stories-to-extra]').click();
+ await montageTab.waitFor({state:'visible',timeout:15000});
+ // Other formats live inside an explicit disclosure. Open its real visible
+ // summary, just as the visitor and the main WebKit voice acceptance do.
+ const formats=page.locator('[data-video-extra-advanced-formats]');
+ await formats.waitFor({state:'visible',timeout:15000});
+ if(await formats.getAttribute('open')===null)
+   await formats.locator(':scope > summary').tap();
+ assert.equal(await formats.getAttribute('open'),'','STORIES_FORMAT_DISCLOSURE_NOT_OPEN');
+ await page.locator('[data-video-montage-pro-offer]').waitFor({state:'visible'});
+ // Generate FREE from the actual in-card CTA, not a hidden legacy shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
  await free.waitFor({state:'visible',timeout:20000});
  // Track whether a genuine recorded result was mounted then invalidated:
@@ -147,9 +171,18 @@ try{
    window.__hhFiveSceneResultTrace=trace;
    check();
  });
- // Use a trusted native iPhone-style touch. Desktop click may not unlock
- // the Safari video/audio decoder within the original user gesture.
+ // The Extra FREE card navigates to Ready; it does NOT start recording.
+ // Require the real visitor's second Generate gesture, as in the existing
+ // original-motion acceptance. Never synthesize a click or start media via DOM.
  await free.tap({timeout:30000});
+ const readyChoice=page.locator('[data-video-ready][data-ready-state="choose"]');
+ await readyChoice.waitFor({state:'visible',timeout:15000});
+ const readyGenerate=readyChoice.locator('[data-ready-generate]');
+ await readyGenerate.waitFor({state:'visible',timeout:15000});
+ assert.equal(await readyGenerate.isEnabled(),true,'STORIES_READY_GENERATE_MUST_BE_ENABLED');
+ assert.equal(await page.locator('[data-free-film-source]').count(),5,
+   'STORIES_READY_MUST_KEEP_ALL_FIVE_LICENSED_SOURCES');
+ await readyGenerate.tap({timeout:30000});
  const safeExportState=()=>page.evaluate(()=>{
    const studio=document.querySelector('[data-mandala-free-video]');
    const masters=[...document.querySelectorAll('[data-free-film-source]')];
@@ -162,17 +195,19 @@ try{
      progressVisible:Boolean(document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen]')),
      renderResult:Boolean(document.querySelector('[data-mandala-video-preview]')),
      renderTrace:window.__hhFiveSceneResultTrace||null,
+     readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
+     readyGeneratePresent:Boolean(document.querySelector('[data-ready-generate]')),
      createDisabled:Boolean(document.querySelector('[data-video-montage-pro-choice="free"]')?.disabled),
    };
  });
- // A genuine accepted Create gesture enters existing renderer progress or
- // yields a Ready media result. Fail early on a missing native event.
+ // Only a genuine accepted Ready Generate gesture enters the renderer or
+ // yields a physical MP4 result. Fail early on a missing native event.
  try{
    await page.waitForFunction(()=>Boolean(
      document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen],[data-mandala-video-preview]')),
      undefined,{timeout:20000});
  }catch(error){
-   console.error('STORIES_FREE_NATIVE_TAP_NOT_STARTED '+JSON.stringify(await safeExportState()));
+   console.error('STORIES_READY_GENERATE_NOT_STARTED '+JSON.stringify(await safeExportState()));
    throw error;
  }
  let captured;

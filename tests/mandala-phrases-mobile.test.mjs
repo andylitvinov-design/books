@@ -99,7 +99,7 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  const directStart=studio.indexOf("data-video-quick-generate",action);
  assert.ok(action>0&&directStart>action,"the original Create button remains in the real Montage action bar");
  const direct=studio.slice(directStart,studio.indexOf("</button>",directStart));
- assert.ok(direct.includes('onClick={createQuickVideo}'));
+ assert.ok(direct.includes('onClick={openReadyForGeneration}'));
  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
    assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
@@ -115,7 +115,7 @@ test("TTS never speaks an outdated script when phrases are staged",()=>{
   assert.match(studio,/disabled=\{recording\|\|preparing\}\s+approvalPending=\{phrasePending\}\s+initialPreferences=\{voicePreferences\}\s+onAttach=\{attachGeneratedAffirmationAudio\}/);
   // An unapproved draft blocks narration generation, not public voice comparisons.
   const voice=read("components/mandala-affirmation-voice.tsx");
-  assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}"));
+  assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense&&!fishLicensedIds.includes(voiceId))}"),"staged phrases and unlicensed Fish voices must both block audio generation");
   assert.ok(voice.includes("if(!languageAvailable||disabled||approvalPending||busy"));
   assert.ok(voice.includes("data-video-affirmation-voice-preview={v.id}"));
   assert.match(studio,/data-video-voice-approval-required/);
@@ -225,7 +225,7 @@ test("choosing Ready preserves private audio state while the current Ideas edito
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
  assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
  assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
- assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
  assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
    "the retired standalone Hypno approval button must not reappear");
 });
@@ -242,5 +242,5 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
  assert.ok(script.includes("data-video-narration-reapproval"));
  assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
- assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
 });

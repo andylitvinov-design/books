@@ -19,6 +19,18 @@ async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=fal
   createRequestAuth:()=>({verified:async()=>{calls.push('actor');return {id:'synthetic'}},apply:x=>x}),
   createAppRepository:()=>({ensureAccount:async()=>calls.push('account')}),consumeRate:async()=>calls.push('rate'),
   PRIVATE_HEADERS:{},readBody:async()=>body,safeError:e=>({code:e.code||e.message,status:e.status||500}),
+  // The Director is a read-only progress hint; mock it so signed Judgment and
+  // state-machine security tests continue to exercise their real priority.
+  planDialogueDirectorTurn:()=>null,
+  publicDialogueDirectorState:()=>null,
+  // Test only the secure host priority, not the separately unit-tested planners.
+  planWaveMagicTurn:()=>({version:'fixture',mode:'secretary',depth:'short',
+    intent:'conversation',dialogueStage:'contact',nextAction:'clarify',
+    consentRequired:false,roleDecision:{role:'secretary'}}),
+  waveNativeTurn:()=>null,
+  WAVE_NATIVE_ROUTER_VERSION:'wave-native-first-v1',
+  rankVerifiedSuggestions:({suggestions})=>suggestions,
+  routeMindRole:()=>({role:'secretary'}),
   detectConversationLocale:(_,locale)=>locale,interpretSupportUtterance:()=>({kind:'none'}),nativeDialogueEventFromUtterance,understandConversationTurn,
   resolveWisdomRequest:async()=>null,ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,progressConversationTurn,progressDialogueReply,
   consultServiceQuestion:()=>{calls.push('consultant');return consultation},

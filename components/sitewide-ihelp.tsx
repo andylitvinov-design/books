@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {lazy,Suspense,useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
 import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import dynamic from "next/dynamic";
+
 import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
 import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
@@ -14,9 +14,10 @@ import styles from "./sitewide-ihelp.module.css";
 
 // The heavyweight AI conversation is only needed after an explicit iHelp tap.
 // Preserve the one real chat instance, privacy gates and all conversation state.
-const HolisticAgentChat = dynamic(
-  () => import("@/components/holistic-agent-chat").then(module => module.HolisticAgentChat),
-  { ssr: false },
+// React.lazy keeps the hidden chat CSS, test catalogue and media widgets out
+// of the initial Home route manifest. The chat is mounted only after a tap.
+const HolisticAgentChat = lazy(
+  () => import("@/components/holistic-agent-chat").then(module => ({default:module.HolisticAgentChat})),
 );
 
 const UI={
@@ -59,6 +60,7 @@ export function SitewideIHelp(){
  const dialog=useRef<HTMLElement>(null);
  const closeButton=useRef<HTMLButtonElement>(null);
  const priorPath=useRef(pathname);
+ const businessShamanica=/^\/(?:ru|en|es)\/shamanica\/business\/?$/.test(pathname);
  // The video studio reports whether its ONE real Director drawer is open.
  // We do not mount a second copy of the video chatbot here.
  useEffect(()=>{
@@ -87,7 +89,7 @@ export function SitewideIHelp(){
      if(event.key==="Escape"){
        event.preventDefault();
        setOpen(false);
-       window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+       window.requestAnimationFrame(()=>restoreHelpFocus());
        return;
      }
      if(event.key!=="Tab")return;
@@ -145,6 +147,16 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+ // The business tab opens the one existing help dialog only on a user tap.
+ useEffect(()=>{
+  const onBusinessHelp=()=>show();
+  window.addEventListener("hh:open-ihelp",onBusinessHelp);
+  return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
+ },[pathname,locale]);
+ function restoreHelpFocus(){
+  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger]");
+  (trigger||launcher.current)?.focus({preventScroll:true});
+ }
  function chooseTopic(prompt:string){
    // An explicit chip fills the existing unsent composer; no network call or diagnosis.
    setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
@@ -155,7 +167,7 @@ export function SitewideIHelp(){
    // Stop any ongoing browser narration when the user closes iHelp.
    window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
-   window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+   window.requestAnimationFrame(()=>restoreHelpFocus());
  }
  function show(){
    // Video Studio already has an executable, single-instance AI Video Director.
@@ -191,8 +203,14 @@ export function SitewideIHelp(){
    setMounted(true);
    setOpen(true);
  }
+ // The Services landing now has its own four-step support finder and an explicit
+ // Ali messenger entry. A second floating iHelp launcher obscures the approved
+ // scenic header; suppress it only on the landing, not service detail pages.
+ if(/^\/(?:ru|en|es)\/services\/?$/.test(pathname))return null;
+ // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
+ if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher}
+   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>
@@ -212,7 +230,7 @@ export function SitewideIHelp(){
        </header>
        <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/>
+         <Suspense fallback={null}><HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/></Suspense>
        </div>
        <IHelpTopics locale={locale} onSelect={chooseTopic}/>
        <nav className={styles.bottomNav} aria-label={

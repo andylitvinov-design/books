@@ -96,3 +96,37 @@
 .adviceCalm{margin:0 0 12px;font-size:12px;color:#526347}
 @media(max-width:1050px){.adviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:630px){.adviceGrid{grid-template-columns:1fr;gap:9px}.adviceSection{margin-top:20px}.adviceCard{padding:15px}.adviceTitle{font-size:20px}.adviceSectionHeader{gap:10px}.adviceFooter{align-items:start}}
+
+
+/* SEOmator stays a small read-only extension of the existing SEO workspace. */
+.auditPanel{margin-top:16px}
+.auditOverview{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;margin:12px 0 18px;align-items:center}
+.auditScore{background:#f1f5ec;border:1px solid #dbe6d5;border-radius:16px;padding:17px;display:flex;flex-direction:column;gap:6px}
+.auditScore strong{font:400 49px/1 Georgia,serif;letter-spacing:-.04em;color:#36543b}
+.auditScore strong small{font:400 18px Georgia,serif;color:#778e78}
+.auditScore span,.auditMeta p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.auditMeta{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:13px}
+.auditMeta a{color:#46674b;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.auditMeta .auditWarning{color:#9c581a;font-weight:700}
+.auditCategories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.auditCategory{padding:12px;background:#faf8f4;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.auditCategory span{text-transform:capitalize;overflow-wrap:anywhere;font-size:12px;font-weight:700}
+.auditCategory strong{font:400 27px Georgia,serif;color:#435b45}
+.auditCategory small{font-size:11px;color:var(--muted)}
+.auditTrends,.auditFindings{margin-top:18px}
+.auditTrends h3,.auditFindings h3{font:400 19px Georgia,serif;margin:0 0 12px}
+.auditHistory{display:flex;gap:10px;height:108px;align-items:flex-end;padding:8px 8px 0;border:1px solid #eee8dd;border-radius:12px;background:#fcfbf8;overflow-x:auto}
+.auditHistoryItem{display:flex;align-items:center;flex-direction:column;justify-content:flex-end;gap:3px;height:100%;min-width:30px;flex:1}
+.auditHistoryItem span{background:#829777;width:min(100%,28px);border-radius:4px 4px 0 0;min-height:4px}
+.auditHistoryItem strong,.auditHistoryItem small{font-size:10px;line-height:1;color:var(--muted)}
+.auditHistoryItem small{white-space:nowrap;padding-bottom:3px}
+.auditFindings ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;list-style:none;margin:0;padding:0}
+.auditFindings li{padding:12px;border:1px solid var(--line);background:#fcfaf6;border-radius:12px;min-width:0;overflow-wrap:anywhere}
+.auditFindings li strong{font-size:12px;display:block;color:#503e33}
+.auditFindings li span{font-size:10px;color:var(--muted);display:block;margin-top:5px}
+.auditFindings li p{font-size:11px;color:var(--muted);line-height:1.45;margin:5px 0 0}
+.auditEmpty{border:1px dashed #ded3c3;border-radius:12px;padding:18px;background:#fcfaf6}
+.auditEmpty strong{font-size:13px}
+.auditEmpty p{font-size:12px;line-height:1.6;color:var(--muted);margin:8px 0 0}
+@media(max-width:760px){.auditCategories{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:570px){.auditPanel{padding:16px}.auditOverview{grid-template-columns:110px minmax(0,1fr);gap:12px}.auditScore{padding:12px}.auditScore strong{font-size:35px}.auditCategories{grid-template-columns:repeat(2,minmax(0,1fr))}.auditCategory{padding:10px}.auditFindings ul{grid-template-columns:1fr}.auditHistory{gap:5px}}

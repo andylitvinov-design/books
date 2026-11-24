@@ -84,6 +84,10 @@ const reviewCopy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 /** Restore the original top navy/burgundy bar independently of the compact course offers. */
 const isDistractionSensitivePage = (pathname: string) =>
+  // My Space replaces the public homepage header and review ribbon on all locales.
+  pathname === "/" || /^\/(?:ru|en|es)\/?$/.test(pathname) ||
+  // Shamanic and its business page have their own compact hero and guided quiz.
+  /^\/(?:ru|en|es)\/shamanica(?:\/business)?\/?$/.test(pathname) ||
   // MyTube is a video-first dark destination; no generic review promotion over the feed.
   /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname) ||
   // The Services AI dialogue already handles personal situation review.
@@ -112,6 +116,8 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/app\/coaching(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname) ||
   /^\/(?:ru|en|es)\/my-coach\/?$/.test(pathname) ||
+  // Human coaching dialogue is first-screen video + chat, not a marketing landing.
+  /^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname) ||
   (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
