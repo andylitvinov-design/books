@@ -340,21 +340,27 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
 
   const audienceFor=(message:string):Mode=>/business|company|revenue|clients|startup|бизнес|компан|клиент|продаж|negocio|empresa|ventas/i.test(message)?"business":"self";
-  const stageWords={
-    ru:[["Найти цель","Разберём, что важно."],["Зажечь желание","Уточним смысл."],["Открыть силу","Найдём ресурсы."],["Построить путь","Составим план."],["Преодолеть страхи","Исследуем препятствия."],["Открыть возможности","Найдём новые решения."],["Ускорить движение","Поддержим действия."]],
-    en:[["Find your goal","Clarify what matters."],["Ignite desire","Discover your why."],["Find your strength","Explore your resources."],["Build your path","Create a clear plan."],["Face your fears","Work through obstacles."],["Find opportunities","Explore solutions."],["Build momentum","Support real actions."]],
-    es:[["Encontrar la meta","Aclaremos prioridades."],["Encender el deseo","Exploremos tu porqué."],["Descubrir la fuerza","Encontremos recursos."],["Crear el camino","Hagamos un plan."],["Superar los miedos","Exploremos obstáculos."],["Ver posibilidades","Busquemos soluciones."],["Seguir avanzando","Apoyemos acciones."]]
+  const programCopy={
+    ru:{intro:"Твой ИИ-проводник к ясности, цели и развитию.",welcome:"Давай вместе разберёмся, что для тебя сейчас важно — снять напряжение, достичь цели или развить бизнес.",listen:"Послушать моё приветствие",prompt:"С чем ты хочешь поработать сегодня?",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Программы","Видео","Тесты","Практики"],send:"Отправить сообщение",listenOn:"Воспроизвести приветствие",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения.",group:"Выбери программу",programs:[
+      {title:"Ясность и снятие стресса",detail:"Спокойствие и восстановление ресурсов.",steps:["Снять напряжение","Восстановить энергию","Вернуть ясность"],prompt:"Хочу начать программу «Ясность и снятие стресса». Помоги понять мою ситуацию и выбрать первый шаг."},
+      {title:"Достижение моей цели",detail:"От идеи к результату: найти цель, ресурсы и пройти путь.",steps:["Определить цель","Построить план","Достичь результата"],prompt:"Хочу начать программу «Достижение моей цели». Помоги определить мою цель и следующий шаг."},
+      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Уточнить стратегию","Найти ресурсы","Улучшить результат"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."}]},
+    en:{intro:"Your AI guide to clarity, goals and growth.",welcome:"Let's discover what matters now — relieving stress, achieving a goal or growing your business.",listen:"Listen to my greeting",prompt:"What would you like to work on today?",methods:"What we use to help:",tools:["AI coaches","Programs","Videos","Tests","Practices"],send:"Send a message",listenOn:"Play my greeting",privacy:"Start free without signing in. Long-term memory requires your permission.",group:"Choose a program",programs:[
+      {title:"Clarity & Stress Relief",detail:"Find calm, clarity and restore your resources.",steps:["Relieve stress","Restore energy","Find clarity"],prompt:"I'd like to start the Clarity & Stress Relief program. Help me understand my situation and choose the first step."},
+      {title:"Achieving My Goal",detail:"From idea to result: find your goal, resources and path.",steps:["Define my goal","Build a plan","Achieve results"],prompt:"I'd like to start the Achieving My Goal program. Help me define my goal and next step."},
+      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Clarify strategy","Find resources","Improve results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."}]},
+    es:{intro:"Tu guía de IA hacia la claridad, las metas y el crecimiento.",welcome:"Descubramos qué importa ahora: aliviar el estrés, alcanzar una meta o desarrollar tu negocio.",listen:"Escucha mi bienvenida",prompt:"¿En qué quieres trabajar hoy?",methods:"Trabajamos con:",tools:["Coaches IA","Programas","Vídeos","Pruebas","Prácticas"],send:"Enviar mensaje",listenOn:"Reproducir bienvenida",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso.",group:"Elige un programa",programs:[
+      {title:"Claridad y alivio del estrés",detail:"Calma, claridad y recuperación de recursos.",steps:["Aliviar el estrés","Recuperar energía","Ganar claridad"],prompt:"Quiero empezar el programa Claridad y alivio del estrés. Ayúdame a entender mi situación y elegir el primer paso."},
+      {title:"Alcanzar mi meta",detail:"De la idea al resultado: encuentra tu meta, recursos y camino.",steps:["Definir mi meta","Crear un plan","Lograr resultados"],prompt:"Quiero empezar el programa Alcanzar mi meta. Ayúdame a definir mi objetivo y el siguiente paso."},
+      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Aclarar estrategia","Encontrar recursos","Mejorar resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."}]}
   } as const;
-  const journeyLabels={
-    ru:{intro:"Твой ИИ-проводник к важной цели.",welcome:"Давай вместе разберёмся, чего ты хочешь, где твоя сила и какой шаг приведёт тебя ближе к желаемому.",listen:"Послушать моё приветствие",prompt:"Расскажи, чего ты хочешь или что сейчас мешает…",find:"Помоги разобраться",findDetail:"Разберём твою ситуацию и определим, что важно.",have:"У меня уже есть цель",haveDetail:"Наметим путь и следующий реальный шаг.",talk:"Давай просто поговорим",journey:"7 шагов к твоей цели",sub:"Выбери этап или начни разговор с Самиром",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Специалисты","Видео","Тесты","Практики"],findPrompt:"Помоги мне разобраться в ситуации и понять свои желания.",havePrompt:"У меня уже есть цель. Помоги её прояснить и составить план.",talkPrompt:"Мне хочется просто поговорить. Поддержи меня в спокойном разговоре.",stagePrompt:"Хочу начать этап",send:"Отправить сообщение Самиру",listenOn:"Воспроизвести приветствие",photo:"Открыть чат и добавить фото",more:"Открыть вложения в чате",clear:"Очистить сообщение",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения."},
-    en:{intro:"Your AI guide to a meaningful goal.",welcome:"Let's discover what you want, find your strengths and choose your next step.",listen:"Listen to my greeting",prompt:"Tell me what you want or what is holding you back…",find:"Help me figure it out",findDetail:"Understand yourself and what matters.",have:"I already have a goal",haveDetail:"Make a plan and move forward.",talk:"Let's just talk",journey:"7 steps to your goal",sub:"Pick a step or let Samir guide you",methods:"What we use to help:",tools:["AI coaches","Specialists","Videos","Tests","Practices"],findPrompt:"Help me understand my situation and what I really want.",havePrompt:"I already have a goal. Help me clarify it and make a plan.",talkPrompt:"I would just like to talk. Please support me gently.",stagePrompt:"I want to work on step",send:"Send a message to Samir",listenOn:"Play my greeting",photo:"Open chat to add a photo",more:"Open chat attachments",clear:"Clear message",privacy:"Start free without signing in. Long-term memory requires your permission."},
-    es:{intro:"Tu guía de IA hacia una meta importante.",welcome:"Descubramos lo que quieres, dónde está tu fuerza y qué paso puedes dar ahora.",listen:"Escucha mi bienvenida",prompt:"Cuéntame qué deseas o qué te está frenando…",find:"Ayúdame a entender",findDetail:"Exploremos tu situación y prioridades.",have:"Ya tengo una meta",haveDetail:"Definamos el camino y el siguiente paso.",talk:"Solo quiero hablar",journey:"7 pasos hacia tu meta",sub:"Elige un paso o deja que Samir te guíe",methods:"Trabajamos con:",tools:["Coaches IA","Especialistas","Vídeos","Tests","Prácticas"],findPrompt:"Ayúdame a entender mi situación y lo que deseo.",havePrompt:"Ya tengo una meta. Ayúdame a aclararla y crear un plan.",talkPrompt:"Solo quiero hablar contigo y recibir apoyo.",stagePrompt:"Quiero trabajar en el paso",send:"Enviar mensaje a Samir",listenOn:"Reproducir bienvenida",photo:"Abrir chat para añadir foto",more:"Abrir archivos adjuntos",clear:"Borrar mensaje",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso."}
-  } as const;
-  const stageShortLabels={ru:["Найти цель","Зажечь желание","Открыть силу","План пути","Преодолеть страхи","Новые возможности","Ускорить движение"],en:["Find goal","Ignite desire","Find strength","Build path","Face fears","See options","Move ahead"],es:["Hallar meta","Crear deseo","Más fuerza","Trazar ruta","Superar miedos","Ver opciones","Avanzar"]} as const;
-  const msg=journeyLabels[locale];
-  const stepIcons=[Compass,Flame,Flower2,ClipboardList,Shield,Sprout,ChevronsRight] as const;
+  const msg=programCopy[locale];
+  const programArt=[
+    {id:"clarity",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",icon:Flower2,steps:[Flower2,Leaf,Sparkles]},
+    {id:"goal",image:"/images/holistic-house/course-focus-mountain-boy.webp",icon:Compass,steps:[Compass,Route,TrendingUp]},
+    {id:"business",image:"/images/holistic-house/shamanic-cards-business-hd.avif",icon:BarChart3,steps:[BriefcaseBusiness,Sprout,TrendingUp]},
+  ] as const;
   const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
-  const stepPhotos=["growth.webp","love.webp","energy.webp","stress.webp","stress.webp","love.webp","growth.webp"];
   function openGoalIntent(prompt:string) {
     const typed=draft.trim();
     startConversationWith(typed?prompt+"\\n"+typed:prompt,audienceFor(typed||prompt));
@@ -391,7 +397,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={greetingName}/>
         <div className={styles.heroStory}>
           <div className={styles.heroMessage}>
-            <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> AI GUIDE</div>
+            <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> {locale==="ru"?"ИИ-ПРОВОДНИК":locale==="es"?"GUÍA IA":"AI GUIDE"}</div>
             <h2 className={styles.heroTitle}>{guideLine}</h2>
             <p className={styles.guideRole}>{persona.id==="alex"?msg.intro:persona.role[locale]}</p>
             <p className={styles.subtitle}>{msg.welcome}</p>
@@ -428,37 +434,19 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
 
-    <div className={styles.focusGrid} role="group" aria-label={msg.journey} data-home-focus-grid>
-      <button type="button" className={styles.focusCard} data-home-intent-option="understand" data-home-free-review
-        onClick={()=>openGoalIntent(msg.findPrompt)}>
-        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg" width={400} height={160} alt="" loading="lazy"/>
-        <span className={styles.focusCopy}><Route size={24} aria-hidden="true"/><strong>{msg.find}</strong><small>{msg.findDetail}</small></span>
-        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
-      </button>
-      <button type="button" className={styles.focusCard} data-home-intent-option="goal" data-home-request-session
-        onClick={()=>openGoalIntent(msg.havePrompt)}>
-        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg" width={400} height={160} alt="" loading="lazy"/>
-        <span className={styles.focusCopy}><CheckCircle2 size={24} aria-hidden="true"/><strong>{msg.have}</strong><small>{msg.haveDetail}</small></span>
-        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
-      </button>
+    <div className={styles.programGrid} role="group" aria-label={msg.group} data-home-focus-grid>
+      {msg.programs.map((program,index)=>{
+        const art=programArt[index],ProgramIcon=art.icon;
+        return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
+          aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
+          <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
+          <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
+            <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>
+          </span>
+          <span className={styles.programArrow}><ArrowRight size={19} aria-hidden="true"/></span>
+        </button>
+      })}
     </div>
-    <button type="button" className={styles.talkLink} data-home-intent-option="talk" onClick={()=>openGoalIntent(msg.talkPrompt)}>
-      <MessageCircle size={18} aria-hidden="true"/>{msg.talk}<ArrowRight size={17} aria-hidden="true"/>
-    </button>
-    <section className={styles.howWorks} data-home-how-it-works aria-label={msg.journey}>
-      <h3>{msg.journey}</h3>
-      <div className={styles.journeyScroll} data-home-stage-scroll role="group" aria-label={msg.journey}>
-        {stageWords[locale].map((step,index)=>{
-          const StepIcon=stepIcons[index];
-          return <button type="button" className={styles.journeyCard} key={index} data-home-stage-option={index+1}
-            aria-label={String(index+1)+". "+step[0]+". "+step[1]}
-            onClick={()=>openGoalIntent(msg.stagePrompt+" "+(index+1)+": "+step[0]+". "+step[1])}>
-            <span className={styles.journeyPhoto}><StepIcon size={25} aria-hidden="true"/><b>{index+1}</b></span>
-            <strong>{stageShortLabels[locale][index]}</strong>
-          </button>;
-        })}
-      </div>
-    </section>
     <section className={styles.methods} data-home-methods aria-label={msg.methods}>
       <h3><Sparkles size={20} aria-hidden="true"/>{msg.methods}</h3>
       <div className={styles.methodGrid}>
