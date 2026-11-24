@@ -34,7 +34,6 @@ on:
       - 'next.config.ts'
       - 'app/layout.tsx'
       - 'components/home-dialogue-entry.tsx'
-      - 'components/site-navigation-compact.tsx'
       - 'scripts/extract-home-lighthouse-screenshots.mjs'
       - 'components/sitewide-lead-capture-deferred.tsx'
       - 'components/home-deferred-sections.tsx'

@@ -23,6 +23,7 @@ import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
   wavePsychologistQuestion} from "@/lib/assist/wave-psychologist-native.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
+import {animateMessengerComposerPlaceholder} from "@/lib/holistic-support/messenger-composer-placeholder.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
 import {shouldRetryNativeAgentMode,nativeAgentFallbackPayload,aliGentleContinuity,aliNeedsVerifiedAction} from "@/lib/holistic-support/agent-mode-recovery.mjs";
@@ -1822,13 +1823,23 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     </div>
   </article>;
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
+  const composerPlaceholder=messengerView?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder;
+  const animateComposer=messengerView&&!pageHelp&&!busy&&!proBusy&&!draft&&
+    !recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.speaking&&
+    !supportQuizOpen&&homeHandoffPhase==="idle";
+  useEffect(()=>{
+    const input=composerRef.current;
+    if(!input)return;
+    if(!animateComposer){input.placeholder=composerPlaceholder;return;}
+    return animateMessengerComposerPlaceholder(input,locale,composerPlaceholder);
+  },[animateComposer,locale,composerPlaceholder,showLandingComposer]);
   const composer=(
     <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}
       data-landing-composer={showLandingComposer||undefined}
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
       data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
-        placeholder={messengerView?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder}
+        placeholder={composerPlaceholder}
         onFocus={()=>{
           if(!compact||!messengerView)return;
           composerFocused.current=true;

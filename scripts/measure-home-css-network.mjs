@@ -27,17 +27,22 @@ async function main(){
     const data=snapshot(await response.text());
     const unique=[...new Set(data.cssLinks)];
     let cssBytes=0;
+    const stylesheets=[];
     for(const href of unique){
       const s=await fetch(new URL(href,origin),{signal:AbortSignal.timeout(20000)});
       assert.equal(s.status,200,href);
-      cssBytes+=Buffer.byteLength(await s.text());
+      const css=await s.text();
+      const bytes=Buffer.byteLength(css);
+      cssBytes+=bytes;
+      const foreignPrefixes=["test-scale-guide_","priority-methods-review_","profile-hub-tabs_","messenger-ai-landing_"];
+      stylesheets.push({href,decodedBytes:bytes,unrelatedModuleMarkers:foreignPrefixes.filter(prefix=>css.includes(prefix))});
     }
     assert.ok(data.decodedHtmlBytes<300000,"HTML payload regression >300 KB: "+path);
     assert.ok(data.highPriorityImages.some(href=>/ideas-pine-reference\.webp/.test(href)),
       "Scenic hero background preload missing: "+path);
     assertHeroPreload(data,path);
     list.push({path,htmlBytes:data.decodedHtmlBytes,cssFiles:unique.length,cssBytes,
-      heroImage:data.heroImage,highPriorityImages:data.highPriorityImages});
+      heroImage:data.heroImage,highPriorityImages:data.highPriorityImages,stylesheets});
   }
   console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; these are not Lighthouse times",pages:list},null,2));
 }

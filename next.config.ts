@@ -27,6 +27,10 @@ const homepagePublicImageSources = [
   "/images/holistic-house/ideas-pine-reference.webp",
   "/images/holistic-house/ali-inner-alchemist-hero.webp",
   "/images/holistic-house/shamanic-genie-lounge.webp",
+  "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",
+  "/images/holistic-house/course-focus-mountain-boy.webp",
+  "/images/holistic-house/shamanic-cards-business-hd.avif",
+  "/images/holistic-house/books-library.webp",
   "/images/video-goal-art/:path*",
   "/images/holistic-house/andy-about.png",
 ] as const;
@@ -55,6 +59,11 @@ const liveAudioHostSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Measured Home CSS overshipping: unrelated test, profile and messenger styles
+  // are merged into its initial route chunks by Next's default heuristic.
+  // Candidate only: exact-head paired browser/perf evidence is mandatory before
+  // release. Keep all existing style sources, cascade rules and image bytes.
+  experimental: { cssChunking: false },
   // ffmpeg-static uses __dirname to locate its downloaded native executable.
   // Keep the package external to Next webpack so its binary path remains valid.
   serverExternalPackages: ["ffmpeg-static"],

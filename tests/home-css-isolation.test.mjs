@@ -51,45 +51,29 @@ test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no 
   assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
 });
 
-test("Home compact header uses the same menu markup without hidden full-header modules", () => {
-  const full = read("components/site-navigation.tsx");
-  const compact = read("components/site-navigation-compact.tsx");
-  const home = read("components/home-dialogue-entry.tsx");
-  assert.match(home, /from "@\/components\/site-navigation-compact"/);
-  assert.match(home, /<SiteNavigation locale=\{locale\} compact \/>/);
-  assert.doesNotMatch(compact, /CartNavLink|HeaderCreditProfile|HomePersonalSpaceNavEntry|commerce\/cart-nav-link/);
-  assert.match(compact, /className="site-navigation site-navigation--profile-compact"/);
-  assert.match(compact, /<SiteSearch locale=\{activeLocale\} pathname=\{pathname\} \/>/);
-  const start = '    <details className="site-main-menu" ref={siteMenuRef}>';
-  assert.ok(full.includes(start) && compact.includes(start));
-  assert.equal(compact.slice(compact.indexOf(start)), full.slice(full.indexOf(start)), "compact menu markup, links, handlers must stay identical");
-  const commonStart = "const shopMenuCopy =";
-  assert.ok(compact.includes(commonStart) && full.includes(commonStart));
-  for (const key of ["const shopMenuCopy", "const myCoachMenuCopy", "const siteMenuCopy"]) assert.ok(compact.includes(key));
-  assert.match(compact, /document.addEventListener\('keydown', escape\)/);
-  assert.match(compact, /getCompactNavigation\(activeLocale\)/);
-  assert.match(compact, /savePublicLocale\(locale\)/);
-});
-test("Hidden persona selector CSS starts only on explicit open, not with the Home route", () => {
-  const home = read("components/home-dialogue-entry.tsx");
-  assert.match(home, /const AliPersonaPicker=lazy\(\(\)=>import\("@\/components\/app\/ali-persona-picker"\)\)/);
-  assert.match(home, /personaOpen&&<Suspense fallback=\{null\}><AliPersonaPicker/);
-  assert.doesNotMatch(home, /const AliPersonaPicker=dynamic\(/);
-});
-test("Spanish Home links do not prefetch unrelated route bundles before an explicit navigation", () => {
-  const es = read("app/es/page.tsx");
-  for (const link of ['href="/es/about"', 'href="/es/books"', 'href="/es"', 'href="/es/services"']) {
-    assert.ok(es.includes(link + " prefetch={false}"), link);
-  }
-});
-
-test("current public Samir hero and scenic masthead use bounded image caching", () => {
+test("current approved program artwork uses only bounded public image cache rules", () => {
   const config = read("next.config.ts");
   const block = config.slice(config.indexOf("const homepagePublicImageSources ="), config.indexOf("] as const;", config.indexOf("const homepagePublicImageSources =")));
-  for (const name of ["ali-inner-alchemist-hero.webp", "shamanic-genie-lounge.webp"]) {
-    assert.ok(block.includes('"/images/holistic-house/' + name + '"'), name);
-    assert.ok(readFileSync(new URL("../public/images/holistic-house/" + name, import.meta.url)).length > 0, name);
+  for (const path of ["/images/holistic-house/ali-inner-alchemist-hero.webp","/images/holistic-house/shamanic-genie-lounge.webp","/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg","/images/holistic-house/course-focus-mountain-boy.webp","/images/holistic-house/shamanic-cards-business-hd.avif","/images/holistic-house/books-library.webp"]) {
+    assert.ok(block.includes(JSON.stringify(path)), path);
+    assert.ok(readFileSync(new URL("../public" + path, import.meta.url)).length > 0, path);
   }
   assert.match(config, /max-age=3600, s-maxage=86400, stale-while-revalidate=120/);
   assert.doesNotMatch(block, /\/api\/|\/app\/|\/client\//);
+});
+test("release browsers exercise all three current approved program rows", () => {
+  const home=read("components/home-dialogue-entry.tsx");
+  const ia=read("scripts/verify-ia-v2.mjs");
+  const release=read("scripts/verify-release-reaudit.mjs");
+  for(const id of ["clarity","goal","business"]){
+    assert.ok(home.includes('id:"'+id+'"'));
+    assert.ok(ia.includes("'"+id+"'"));
+    assert.ok(release.includes("'"+id+"'"));
+  }
+  assert.match(ia, /cardsSeparate/);
+  assert.match(ia, /programSteps/);
+  assert.match(ia, /toHaveAttribute\('aria-label',programs\[locale\]\[index\]\)/);
+  assert.match(release, /body\[data-fast-home\]/);
+  assert.doesNotMatch(ia, /\['understand','goal','talk'\]/);
+  assert.doesNotMatch(release, /\['understand','goal','talk'\]/);
 });

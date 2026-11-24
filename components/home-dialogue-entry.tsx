@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays, Compass, Flame, Flower2, ClipboardList, Shield, Sprout, ChevronsRight, GraduationCap, BarChart3 } from "lucide-react";
-import { SiteNavigation } from "@/components/site-navigation-compact";
+import { SiteNavigation } from "@/components/site-navigation";
 
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
@@ -14,7 +15,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
 
 // Load the 4-persona selection dialog, its cards and styles only when asked.
-const AliPersonaPicker=lazy(()=>import("@/components/app/ali-persona-picker"));
+const AliPersonaPicker=dynamic(()=>import("@/components/app/ali-persona-picker"),{ssr:false});
 
 type Mode = "self" | "business";
 const LOCALES = ["ru", "en", "es"] as const;
@@ -308,7 +309,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         </div>
       </div>
     </div>
-    {personaOpen&&<Suspense fallback={null}><AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/></Suspense>}
+    {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
 
     <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
       <span className={styles.composerSparkle} aria-hidden="true"><Sparkles size={24}/></span>
