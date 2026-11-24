@@ -65,7 +65,7 @@ for(const engine of [chromium,webkit]){
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
        ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
-     await root.locator("[data-home-methods]").scrollIntoViewIfNeeded();
+     await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');
        const nav=document.querySelector('[data-hh-unified-dock]');
@@ -76,7 +76,7 @@ for(const engine of [chromium,webkit]){
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
      assert.deepEqual(errors,[],name+": no script errors");
      evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
-     if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});
+     if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
     }finally{await page.close()}
    }
   }
