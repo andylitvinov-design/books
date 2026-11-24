@@ -10,22 +10,25 @@
 .steps li[aria-current="step"] { color:var(--hh-design-ink); }
 .steps li[aria-current="step"] span { background:var(--hh-design-primary);color:#fff; }
 .wizard .question,.wizard .review { display:grid;gap:16px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent; }
-.counter,.hint { color:var(--hh-light-muted); }
+.hint { color:var(--hh-light-muted); }
 .wizard .hint { font-size:14px; }
+.ratingSection { display:grid;gap:12px; }
+.ratingSection h4 { margin:0;font-size:18px;line-height:1.4;overflow-wrap:anywhere; }
 .ratings { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; }
 .wizard .ratings label,.wizard .statement { display:grid;gap:8px;min-width:0;margin:0;font-size:16px;font-weight:600; }
 .wizard .ratings select,.wizard .statement textarea { width:100%;min-width:0;max-width:100%;min-height:52px;border:1px solid var(--hh-light-border);border-radius:var(--hh-light-radius-control);background:var(--hh-design-surface);color:var(--hh-design-ink);font:inherit;font-size:17px;padding:12px; }
 .wizard .statement textarea { resize:vertical;font-weight:400;line-height:1.5; }
 .navigation { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:stretch;gap:12px; }
 .wizard .primary,.wizard .secondary { display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:52px;margin:0;padding:12px 16px;border:1px solid var(--hh-light-border);border-radius:var(--hh-light-radius-control);font:inherit;font-size:16px;font-weight:700;line-height:1.35;text-align:center;cursor:pointer;overflow-wrap:anywhere; }
+.navigation > :only-child { grid-column:1/-1; }
 .wizard .primary { background:var(--hh-design-primary);color:#fff;border-color:var(--hh-design-primary); }
 .wizard .primary:hover { background:var(--hh-design-primary-hover); }
 .wizard .secondary { background:var(--hh-design-surface);color:var(--hh-design-ink); }
 .wizard .primary:disabled,.wizard .secondary:disabled { opacity:.55;cursor:not-allowed; }
 .wizard :is(button,input,select,textarea,summary):focus-visible { outline:3px solid var(--hh-light-focus);outline-offset:3px; }
 .wizard h3:focus { outline:none; }
-.review fieldset { padding:0;border:0;margin:0;min-width:0; }
-.review legend { font-size:18px;font-weight:700;margin-bottom:12px; }
+.wizard fieldset { padding:0;border:0;margin:0;min-width:0; }
+.wizard legend { font-size:18px;font-weight:700;margin-bottom:12px; }
 .choices { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
 .wizard .choice { display:flex;align-items:flex-start;gap:8px;min-height:70px;min-width:0;margin:0;padding:12px;border:1px solid var(--hh-light-border);border-radius:16px;background:var(--hh-design-surface);font-size:16px;cursor:pointer; }
 .wizard .choice[data-selected="true"] { outline:2px solid var(--hh-design-primary);outline-offset:-2px;background:var(--hh-design-selected); }
@@ -46,6 +49,12 @@
 .summary th { text-align:left; }
 .summary th:first-child { width:54%; }
 .summary td { text-align:center; }
+.selectedScores { display:grid;gap:12px;min-width:0;margin:0; }
+.selectedScores > div { display:grid;gap:8px;min-width:0;padding:14px;border:1px solid var(--hh-light-border);border-radius:16px;background:var(--hh-design-surface); }
+.selectedScores dt { font-size:16px;font-weight:600;overflow-wrap:anywhere; }
+.selectedScores dd { display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0;font-size:16px; }
+.selectedScores dd span:not([aria-hidden]) { display:grid;gap:4px;color:var(--hh-light-muted); }
+.selectedScores dd strong { color:var(--hh-design-ink);font-size:21px; }
 .goalTitle { overflow-wrap:anywhere; }
 @media(max-width:480px) { .wizard .choices { grid-template-columns:minmax(0,1fr); } }
-@media(max-width:360px) { .wizard[data-daybook-vector-start] { padding:14px; }.navigation { gap:8px; }.wizard .primary,.wizard .secondary { padding:12px; } }
+@media(max-width:360px) { .wizard[data-daybook-vector-start] { padding:14px; }.steps { grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr); }.navigation { gap:8px; }.wizard .primary,.wizard .secondary { padding:12px; } }
