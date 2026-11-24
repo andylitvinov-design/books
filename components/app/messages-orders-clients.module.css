@@ -720,7 +720,7 @@
 
 .dialogueBack{display:none}.onlineDot{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;background:#22d080}
 @media(max-width:760px){
- .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]){padding:0!important;gap:0;background:linear-gradient(180deg,#082e3099,transparent 27%,#142c2b66),url("/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp") center 24%/cover no-repeat!important;height:var(--hh-messenger-height,100dvh);max-height:100dvh}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]){padding:0!important;gap:0;background:linear-gradient(180deg,#082e3099,transparent 27%,#142c2b66),var(--hh-ai-persona-image, none) center 24%/cover no-repeat #142f2b!important;height:var(--hh-messenger-height,100dvh);max-height:100dvh}
  .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .head{order:-2;min-height:64px;height:auto;max-height:none;margin:0;padding:7px 8px;border:0;background:#082b30bd;color:#fff;gap:4px}
  .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .sections{order:-1;background:#fffaef;padding:5px;margin:0}
  .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity{display:flex;flex:1;min-width:0;gap:6px;color:#fff}
