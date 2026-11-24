@@ -287,6 +287,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolSaved,setProtocolSaved]=useState(false)
   const [protocolSaveLocked,setProtocolSaveLocked]=useState(false)
   const protocolSaveSnapshotRef=useRef(null)
+  // Bind private writes to the verified account before any dialogue is collected.
+  // Do not rebind an existing in-tab transcript after a sign-in/account change.
+  const protocolOwnerRef=useRef(null)
+  const [protocolOwnerReady,setProtocolOwnerReady]=useState(false)
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
@@ -391,6 +395,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
   useEffect(()=>()=>pending.current?.abort(),[])
+  useEffect(()=>{
+    let active=true
+    void getCabinetBootstrap('portrait',{refresh:true}).then(value=>{
+      if(!active||turnsRef.current.length||protocolStartedRef.current)return
+      const id=value?.account?.id
+      if(typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
+        protocolOwnerRef.current=id;setProtocolOwnerReady(true)
+      }
+    }).catch(()=>{}) // Guest/offline dialogue and local PDF still work.
+    return()=>{active=false}
+  },[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
     // The client's message and history remain untouched until consent + Send.
@@ -1286,6 +1301,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function saveProtocol(){
     if(protocolSaving||protocolSaved)return
     if(!protocolConsent){setProtocolError(protocolCopy[lang].consentRequired);return}
+    const owner=protocolOwnerRef.current
+    if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
     try{
       protocol=protocolSaveSnapshotRef.current||currentProtocol()
@@ -1296,7 +1313,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       const response=await fetch('/api/app/my-coach/protocol',{
         method:'POST',credentials:'same-origin',cache:'no-store',
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
         body:JSON.stringify({action:'save',consent:true,protocol}),
       })
       const result=await response.json().catch(()=>null)
@@ -1955,9 +1972,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <input type="checkbox" checked={protocolConsent} disabled={protocolSaved||protocolSaving} onChange={e=>{setProtocolConsent(e.target.checked);setProtocolError('')}}/>
           <span>{protocolUi.consent}</span>
         </label>
-        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolConsent||protocolSaved||protocolSaving}
+        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolConsent||!protocolOwnerReady||protocolSaved||protocolSaving}
           onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
+        {!protocolOwnerReady&&<p role="status">{({ru:'Сохранение в аккаунт недоступно: аккаунт не подтверждён до начала беседы. PDF доступен.',en:'Account saving is unavailable because the account was not verified before the conversation. PDF is available.',es:'No se puede guardar en la cuenta porque no se verificó antes del diálogo. El PDF está disponible.'})[lang]}</p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
         <div className={styles.protocolActions}>
           {!protocolSaved&&!protocolSaveLocked&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
