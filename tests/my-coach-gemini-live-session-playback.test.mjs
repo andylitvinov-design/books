@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {
-  GeminiLivePcmPlayer,GeminiLiveBargeGate,bytesToBase64,
+  GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
+  geminiLiveSetupMessage,geminiLiveSocketUrl,
   readGeminiLiveServerMessage,appendGeminiLiveTranscript,
 } from '../lib/coaching/gemini-live-transport.mjs'
 
@@ -282,4 +283,55 @@ test('provider interrupted acknowledges a locally discarded reply and enables fr
   h.clock.advanceTo(1)
   assert.deepEqual(h.events.final.at(-1),{text:'Reply after acknowledgement',interrupted:false})
   h.assertLive()
+})
+
+
+test('socket rollover drains a completed reply and resumes the original credential and handle',()=>{
+  const timers=new Map(),sockets=[],sent=[],final=[]
+  let timerId=0,stops=0
+  class MockSocket{
+    constructor(url){this.url=url;this.readyState=1;sockets.push(this)}
+    close(code){this.readyState=3;this.onclose?.({code})}
+  }
+  const token={token:'auth_tokens/synthetic-resume',model:'gemini-3.1-flash-live-preview',
+    expiresAt:new Date(Date.now()+20*60000).toISOString()}
+  const r={voiceName:'Orus',ready:true,ended:false,reconnects:0,resumeHandle:'prior-handle',
+    lastAssistantTurnFinished:false,modelTurnComplete:true,hadAudio:true,outputText:'Full reply',
+    player:{playing:true,setVolume(){}},stream:{active:true},
+    pendingAudio:[],inputText:'incomplete fragment',bargeDetector:{userActive:false},
+    audioGate:new GeminiLiveBargeGate()}
+  const code=section('  function finishAudibleTurn(','  // A local playback fault')+
+    section('  function connect(','  async function getToken(')
+  const methods=runInNewContext(code+'\n({connect,finishAudibleTurn,maybeReconnectOnGoAway})',{
+    WebSocket:MockSocket,geminiLiveSetupMessage,geminiLiveSocketUrl,
+    GeminiLiveBargeGate,GeminiLiveBargeDetector,LIVE_START_TIMEOUT_MS:10000,
+    notify(){},phaseChange(){},stop(){stops++},flushSideband(){},
+    propsRef:{current:{onInputInterim(){}}},
+    t:{reconnecting:'reconnect',connection:'failure',providerAccess:'denied'},
+    commitOutput(state){final.push(state.outputText);state.outputText=''},
+    interrupt(){assert.fail('complete PCM must not be interrupted by reconnect')},
+    sendSocket(_state,packet){sent.push(packet);return true},
+    setTimeout(fn,delay){const id=++timerId;timers.set(id,{fn,delay});return id},
+    clearTimeout(id){timers.delete(id)},Date,
+  })
+  methods.connect(r,token)
+  r.ready=true
+  sockets[0].close(1011)
+  assert.equal(r.resumeAfterDrain,true)
+  assert.equal(r.reconnects,0)
+  assert.equal(r.inputText,'')
+  assert.deepEqual(final,[])
+  r.player.playing=false
+  methods.finishAudibleTurn(r)
+  assert.deepEqual(final,['Full reply'])
+  assert.equal(r.reconnects,1)
+  const timer=timers.get(r.reconnectTimer)
+  assert.ok(timer)
+  timer.fn()
+  assert.equal(sockets.length,2)
+  sockets[1].onopen()
+  assert.equal(sockets[1].url,sockets[0].url)
+  assert.equal(sent.at(-1).setup.sessionResumption.handle,'prior-handle')
+  assert.equal(r.audioGate.blocked,false)
+  assert.equal(stops,0)
 })
