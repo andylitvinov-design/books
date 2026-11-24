@@ -1058,7 +1058,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         window.__hhRecordedVideoBlobs=recordedVideos;
         URL.createObjectURL=function(blob){
           const uri=originalCreate.call(URL,blob);
-          if(blob instanceof File && /^holistic-house-voice-\d+\.(?:m4a|webm)$/.test(blob.name))
+          if(blob instanceof File && /^(?:holistic-house-voice-\d+|my-voice)\.(?:m4a|webm)$/.test(blob.name))
             recordedFiles.set(uri,blob);
           if(blob instanceof Blob && blob.type.startsWith("video/"))recordedVideos.set(uri,blob);
           return uri;
@@ -1281,6 +1281,53 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
+      // Deterministic CI microphone input; actual MediaRecorder, File and player.
+      const montageMicAvailable=await page.evaluate(()=>{
+        if(!navigator.mediaDevices||typeof MediaRecorder==="undefined"||
+          !["audio/mp4","audio/webm;codecs=opus","audio/webm"].some(type=>MediaRecorder.isTypeSupported(type)))return false;
+        const ctx=new AudioContext(),tone=ctx.createOscillator(),gain=ctx.createGain(),dest=ctx.createMediaStreamDestination();
+        gain.gain.value=.2;tone.frequency.value=330;
+        tone.connect(gain);gain.connect(dest);tone.start();
+        const old=Object.getOwnPropertyDescriptor(navigator.mediaDevices,"getUserMedia");
+        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>dest.stream.clone()});
+        window.__hhMontageMic={ctx,tone,old};return true;
+      });
+      if(engine==="chromium")assert.ok(montageMicAvailable,"Chromium Montage microphone fixture available");
+      if(montageMicAvailable){
+        try{
+          const mic=page.locator('[data-video-montage-voice-record]');
+          await mic.click();
+          await expect(mic).toHaveAttribute("aria-pressed","true");
+          await page.evaluate(()=>window.__hhMontageMic.ctx.resume());
+          await page.waitForTimeout(1500);
+          await mic.click();
+          const card=page.locator('[data-video-montage-voice-card]');
+          await expect(card).toContainText(/my-voice\.(m4a|webm)/,{timeout:15000});
+          await expect(page.locator('[data-video-audio-compact-rights]')).toHaveCount(0);
+          await expect(page.locator('[data-video-audio-rights]')).toHaveCount(0);
+          const play=card.locator('[data-video-recorded-audio-play]');
+          await expect(play).toBeVisible();await play.click();
+          const audio=card.locator('[data-video-audio-player]');
+          await expect.poll(()=>audio.evaluate(el=>el.currentTime),{timeout:10000}).toBeGreaterThan(.15);
+          const output=await audio.evaluate(async el=>{
+            const file=window.__hhOwnVoiceFiles?.get(el.getAttribute("src"));
+            if(!(file instanceof File))return {muted:el.muted,rms:0};
+            const decoded=await window.__hhMontageMic.ctx.decodeAudioData(await file.arrayBuffer());
+            const samples=decoded.getChannelData(0);
+            let energy=0;for(const sample of samples)energy+=sample*sample;
+            return {muted:el.muted,rms:Math.sqrt(energy/samples.length)};
+          });
+          assert.equal(output.muted,false,"native preview not muted");
+          assert.ok(output.rms>.003,"captured track contains audible PCM");
+        }finally{
+          await page.evaluate(async()=>{
+            const fixture=window.__hhMontageMic;
+            if(fixture.old)Object.defineProperty(navigator.mediaDevices,"getUserMedia",fixture.old);
+            else delete navigator.mediaDevices.getUserMedia;
+            fixture.tone.stop();await fixture.ctx.close();delete window.__hhMontageMic;
+          });
+        }
+      }
       await page.locator('[data-video-audio-compact-silent]').click();
       const choices=compactGrid.locator('[data-video-audio-compact-select]');
       await choices.nth(0).click();

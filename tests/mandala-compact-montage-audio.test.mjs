@@ -102,3 +102,21 @@ test("Audio two-button route never performs premature render and keeps a single-
   assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
   assert.match(studio,/filteredAudio\.slice\(0,4\)/);
 });
+
+
+test("captured microphone voice automatically attaches without repeat consent and has native playback",()=>{
+  const mic=source.slice(source.indexOf("async function startMicRecording()"),source.indexOf("function handleNativeVideoPlaybackFailure"));
+  assert.match(mic,/chooseAudioFile\(file,false,true\)/);
+  assert.match(mic,/setAttachedAudio\(\{kind:"file",file:selected\.file,id:selected\.url,nonLoop:true\}\)/);
+  assert.match(mic,/setSoundVolume\(100\);setAudioStartSeconds\(0\)/);
+  assert.match(mic,/recorder\.start\(\)/);
+  assert.match(source,/if\(fromMicrophone\|\|recipientAudioSelected\)setAudioRights\(true\)/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\?\s*<div className=\{videoStyles\.audioCompactRights\}/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\s*\?\s*<label className=\{videoStyles\.audioRights\}/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\?\s*<label className=\{videoStyles\.audioLibraryRights\}/);
+  assert.match(source,/if\(uploadedAudio\?\.recorded&&player\.getAttribute\("src"\)===uploadedAudio\.url\)return false/);
+  assert.match(source,/data-video-recorded-audio-play/);
+  assert.match(source,/onClick=\{playSelectedRecording\}/);
+  assert.match(source,/if\(uploadedAudio&&!audioRights\)/);
+  assert.equal(source.match(/data-video-audio-player data-video-audio-source/g)?.length,1);
+});
