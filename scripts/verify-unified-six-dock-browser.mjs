@@ -293,10 +293,28 @@ async function inspect(browserType,locale,width){
     for(const [caseName,path,active] of routeCases){
       const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
-      await assertPinnedSixDock(page,marker,active);
+      // The approved immersive first chat screen (#5498) deliberately hides
+      // the global dock. Verify that exception, its actual navigation, and
+      // the three journey choices rather than waiting on an invisible dock.
+      if(caseName==="ai"){
+        const landing=page.locator("[data-hh-ai-landing]");
+        await expect(landing).toBeVisible({timeout:30000});
+        await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
+        await expect(page.locator("[data-hh-unified-dock]")).toBeHidden();
+        await expect(landing.locator("[data-hh-genie-path-choice]")).toHaveCount(3);
+        await expect(landing.locator("[data-hh-genie-persona-shortcut]")).toBeVisible();
+        const extra=landing.locator("[data-hh-genie-extra-directions]");
+        if(!await extra.evaluate(el=>el.open))await extra.locator("summary").click();
+        for(const section of ["ai","page","orders","clients"]){
+          await expect(extra.locator('[data-hh-chat-shortcut="'+section+'"]')).toBeVisible();
+        }
+        results.push({id:marker,immersive:true,dockHidden:true,route:path,authenticated:false});
+      }else{
+        await assertPinnedSixDock(page,marker,active);
+        results.push({id:marker,pinned:true,route:path,authenticated:false});
+      }
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
-      results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
     if(width===390){
       // Verify the identical sitewide dock on three ordinary editorial pages.
