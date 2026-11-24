@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
-  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, Flag, HandHeart, ChevronDown,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, Flag, HandHeart, ChevronDown, Flower2,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
@@ -138,7 +138,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
     [{title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
-  const stageIcons = [Leaf,BarChart3,HandHeart,Flag]
+  const stageIcons = [Flower2,BarChart3,Leaf,Flag]
   const needs = [Target,Leaf,Heart,Sparkles]
   function openStage(index, need = null) {
     setSelectedNeed(need)
@@ -183,7 +183,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         const expanded=openedStage===index
         return <article key={index} className={styles.clarityStage} data-clarity-stage={index}>
           <button className={styles.clarityStep} type="button" aria-expanded={expanded} aria-controls={'clarity-tools-'+index} onClick={()=>openStage(expanded?null:index)}>
-            <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={19} aria-hidden="true"/>
+            <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
             {stages[index].map((tool)=>tool.action ?
