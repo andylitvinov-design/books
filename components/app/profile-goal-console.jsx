@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Info, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
@@ -26,7 +26,7 @@ const COPY = {
     goals: 'My Goals', add: 'Create a new goal', empty: 'No goal selected yet. You can explore all 8 steps now.',
     error: 'Saved goals are temporarily unavailable.', retry: 'Open my goals',
     hint: 'Choose a goal to see its eight-stage path.', plan: '8 Stages to My Goal',
-    zero: 'Create a new goal', zeroDetail: 'Choose a life sphere, a meaning axis and your direction',
+    zero: 'Create a new goal', zeroDetail: 'Name your goal and describe what you want',
     progress: 'Goal progress', unmeasured: 'Not measured', ready: 'Ready', active: 'Active', done: 'Done', locked: 'Locked',
     title: ['Define the Result', 'Ignite Motivation', 'Build an Action Plan', 'Activate Resources', 'Overcome Inner Blocks', 'Find New Opportunities', 'Accelerate Toward the Goal', 'Results & New Perspectives'],
     detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Choose your next practical actions', 'Find your energy and support', 'Work with obstacles gently', 'Discover new options and solutions', 'Strengthen what works and adjust your next actions', 'Reflect on results and choose what comes next'],
@@ -39,7 +39,7 @@ const COPY = {
     goals: 'Мои цели', add: 'Создать новую цель', empty: 'Цель пока не выбрана. Все 8 этапов доступны для знакомства.',
     error: 'Пока не удалось загрузить сохранённые цели.', retry: 'Открыть мои цели',
     hint: 'Выберите цель, чтобы пройти её восемь этапов.', plan: '8 этапов к моей цели',
-    zero: 'Создать новую цель', zeroDetail: 'Выберите сферу жизни, смысловую ось и свой вектор',
+    zero: 'Создать новую цель', zeroDetail: 'Назовите цель и опишите желаемый результат',
     progress: 'Прогресс цели', unmeasured: 'Не измерен', ready: 'Доступен', active: 'Активен', done: 'Пройден', locked: 'Закрыт',
     title: ['Определить результат', 'Зажечь мотивацию', 'Построить план', 'Активировать ресурсы', 'Преодолеть препятствия', 'Найти возможности', 'Ускорение к цели', 'Итоги и новые перспективы'],
     detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Мои следующие действия', 'Моя энергия, люди и поддержка', 'Мягкая работа со страхами', 'Новые пути и решения', 'Усилить работающие действия и скорректировать план', 'Оценить результаты и выбрать дальнейшее направление'],
@@ -52,7 +52,7 @@ const COPY = {
     goals: 'Mis metas', add: 'Crear una nueva meta', empty: 'Aún no has elegido una meta. Puedes explorar las 8 etapas.',
     error: 'No se pudieron cargar las metas guardadas.', retry: 'Abrir mis metas',
     hint: 'Elige una meta para explorar sus ocho etapas.', plan: '8 etapas hacia mi meta',
-    zero: 'Crear una nueva meta', zeroDetail: 'Elige un ámbito de vida, un eje de sentido y tu dirección',
+    zero: 'Crear una nueva meta', zeroDetail: 'Nombra tu meta y describe el resultado deseado',
     progress: 'Progreso de la meta', unmeasured: 'Sin medir', ready: 'Disponible', active: 'Activo', done: 'Hecho', locked: 'Bloqueado',
     title: ['Definir el resultado', 'Encender la motivación', 'Construir un plan', 'Activar recursos', 'Superar obstáculos', 'Encontrar posibilidades', 'Acelerar hacia la meta', 'Resultados y nuevas perspectivas'],
     detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Planificar los próximos pasos', 'Encontrar energía y apoyo', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Reforzar lo que funciona y ajustar las acciones', 'Revisar resultados y elegir el siguiente rumbo'],
@@ -61,6 +61,11 @@ const COPY = {
     stageProgress: 'Progreso del paso', open: 'Explorar', start: 'Empezar',
     lesson: 'Hacer lección', week: 'Semana', of: 'de', courseProgress: 'Progreso del curso', completedWeeks: 'semanas completadas', courseDone: 'Curso completado', courseLoading: 'Cargando progreso…', courseError: 'Progreso no disponible', courseRetry: 'Reintentar',
   },
+}
+const LANDING = {
+  en: { label: 'GOAL PROGRAM', title: 'My Goal', intro: 'A guided 8-week journey from intention to real results.', start: 'Start Program', details: 'Program Details', benefits: 'What you’ll gain', items: [['Clarity & Direction','Understand your goal'],['Energy & Motivation','Find your inner drive'],['Action Plan','Build your next steps'],['Real Results','Track meaningful progress']], subtitle: 'A practical path from intention to results.', current: 'My current goal', create: 'Choose what you want to work on', overview: 'Program overview' },
+  ru: { label: 'ПРОГРАММА ЦЕЛИ', title: 'Моя цель', intro: '8 недель от намерения до реальных результатов — с ясностью и поддержкой.', start: 'Начать программу', details: 'О программе', benefits: 'Что даст программа', items: [['Ясность и направление','Понять свою цель'],['Энергия и мотивация','Найти внутреннюю силу'],['План действий','Определить шаги'],['Результаты','Отследить изменения']], subtitle: 'Практический путь от намерения к результату.', current: 'Моя текущая цель', create: 'Выберите, над чем хотите поработать', overview: 'Обзор программы' },
+  es: { label: 'PROGRAMA DE METAS', title: 'Mi meta', intro: '8 semanas desde la intención hasta los resultados, con claridad y apoyo.', start: 'Iniciar programa', details: 'Ver programa', benefits: 'Qué conseguirás', items: [['Claridad y dirección','Comprender tu meta'],['Energía y motivación','Encontrar tu impulso'],['Plan de acción','Definir tus pasos'],['Resultados','Medir tu progreso']], subtitle: 'Un camino práctico hacia los resultados.', current: 'Mi meta actual', create: 'Elige en qué quieres trabajar', overview: 'Resumen del programa' },
 }
 const percent = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null
 const validGoal = goal => goal && typeof goal.title === 'string' && goal.title.trim() && VALID_GOALS.has(goal.status)
@@ -82,9 +87,10 @@ function getStatus(step, value, t) {
   if (value === 100) return t.done
   return t.ready
 }
-export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', accountId = null }) {
+export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', accountId = null, children }) {
   const lang = Object.hasOwn(COPY, locale) ? locale : 'en'
   const t = COPY[lang]
+  const landing = LANDING[lang]
   const [state, setState] = useState({ owner: null, loading: Boolean(accountId), error: false, plan: null })
   const [expandedStage, setExpandedStage] = useState(null)
   const [course, setCourse] = useState({ owner: null, entries: null, error: false })
@@ -122,7 +128,18 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const next = progress?.next
   const lessonHref = next && goalId ? profileDaybookHref(root, goalId, next.week, next.step) : null
   const goalHref = lessonHref || profileDaybookHref(root, goalId)
+  const ready = !view.loading && !view.error
+  const showLanding = ready && !selected
+  const startHref = root + '/daybook?start=vector'
   return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)} data-goal-selected={Boolean(selected)}>
+    {showLanding && <header className={css.programHero} data-goal-program-landing data-profile-space-scenic>
+      <p className={css.programEyebrow}><Target size={20} aria-hidden="true"/>{landing.label}</p>
+      <h1>{landing.title}</h1><p className={css.programIntro}>{landing.intro}</p>
+      <div className={css.programActions}>
+        <Link href={startHref} prefetch={false} className={css.primaryAction} data-goal-vector-entry><PlayCircle size={23} aria-hidden="true"/><strong>{landing.start}</strong><ChevronRight size={18} aria-hidden="true"/></Link>
+        <a href="#goal-program-stages" className={css.secondaryAction}><Info size={20} aria-hidden="true"/><strong>{landing.details}</strong></a>
+      </div>
+    </header>}
     {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
@@ -139,9 +156,9 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/daybook?tab=goals'}>{t.retry}</Link></p>}
     {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state hidden>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
-        <div className={css.selectedGoal}>
-          <Link className={css.goalSummary} href={goalHref} prefetch={false} data-profile-goal-summary><div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
-            <p>{typeof selected.desiredOutcome === 'string' && selected.desiredOutcome.trim() ? selected.desiredOutcome : t.hint}</p>
+        <div className={css.selectedGoal} data-goal-program-active>
+          <div className={css.activeHero} data-profile-space-scenic><p className={css.programEyebrow}><Target size={20} aria-hidden="true"/>{landing.label}</p><h1>{selected.title}</h1>{typeof selected.desiredOutcome === 'string' && selected.desiredOutcome.trim() && <p className={css.programIntro}>{selected.desiredOutcome}</p>}</div>
+          <Link className={css.goalSummary} href={goalHref} prefetch={false} data-profile-goal-summary><div className={css.goalText}><span>{landing.current}</span><h2>{selected.title}</h2>
           </div>
           <div className={css.circle} style={{ '--hh-circle-value': (overall ?? 0) + '%' }}
             aria-label={t.courseProgress + ': ' + (overall === null ? t.unmeasured : overall + '%')} role="img" data-goal-course-progress={overall ?? 'unknown'}>
@@ -153,13 +170,21 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           </Link> : progress && !next ? <div className={css.lessonComplete} role="status"><CheckCircle2 size={20} aria-hidden="true" />{t.courseDone}</div> :
             <div className={css.lessonStatus} role="status">{courseView.error || progress ? <>{t.courseError} <button type="button" onClick={() => setCourseRetry(value => value + 1)}>{t.courseRetry}</button></> : t.courseLoading}</div>}
         </div>
+        <div className={css.activeUtilities}>
+          <Link href={startHref} prefetch={false} data-goal-vector-entry><Plus size={20} aria-hidden="true"/>{t.add}</Link>
+          <a href="#goal-program-stages"><Info size={20} aria-hidden="true"/>{landing.details}</a>
+        </div>
       </>}
-    <Link className={css.step} href={root + '/daybook?start=vector'} prefetch={false} data-goal-vector-entry>
-      <span className={css.number}>0</span><Compass className={css.stepIcon} size={27} aria-hidden="true" />
-      <span className={css.stepBody}><strong>{t.zero}</strong><small>{t.zeroDetail}</small></span>
-      <ChevronRight size={18} aria-hidden="true" />
-    </Link>
+    {showLanding && <section className={css.benefits} aria-label={landing.benefits}>
+      <h2>{landing.benefits}</h2>
+      <div className={css.benefitGrid}>{landing.items.map(([title,detail],index)=><div key={title} className={css.benefit}>
+        <span className={css.benefitPhoto} data-benefit-photo={index} aria-hidden="true"/>
+        <span><strong>{title}</strong><small>{detail}</small></span>
+      </div>)}</div>
+    </section>}
+    <div id="goal-program-stages" className={css.programStages}>
     <h2 className={css.stepsTitle}>{t.plan}</h2>
+    <p className={css.programSubtitle}>{landing.subtitle}</p>
     <div className={css.steps}>
           {STEPS.map(({ id, icon: Icon }, index) => {
             const value = selected && !view.loading && !view.error ? scores[index] : null
@@ -189,5 +214,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           })}
     </div>
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
+    {selected && children && <div className={css.focusDetails}>{children}</div>}
+    </div>
   </section>
 }
