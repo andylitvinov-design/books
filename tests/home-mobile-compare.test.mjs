@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { summarizeLighthouse, summarizePair } from "../scripts/report-home-mobile-compare.mjs";
+import { snapshot, assertHeroPreload } from "../scripts/measure-home-css-network.mjs";
 
 const fixture = (score, extra = {}) => ({
   lighthouseVersion: "13.6.0",
@@ -34,4 +35,25 @@ test("matched paired mobile-only median identifies pass/fail without hiding regr
   assert.deepEqual(result.mobileTargets,{performance90:true,fcpUnder1800:true,lcpUnder2500:true,clsUnder01:true});
   assert.throws(() => summarizePair(before.slice(1),after));
   assert.throws(() => summarizePair(before,[{...after[0],settings:{formFactor:"desktop",throttlingMethod:"simulate"}},after[1]]));
+});
+
+test("network audit verifies the actual SSR persona, not a stale hardcoded image or unrelated preload", () => {
+  const scenic="/images/holistic-house/ideas-pine-reference.webp";
+  const current="/images/holistic-house/ali-inner-alchemist-hero.webp";
+  const previous="/images/holistic-house/my-coach-motion/max-living.webp";
+  const html=(image,preload=image,loading="eager",priority="high",includeScenic=true,includeHero=true)=>
+    '<link rel="preload" as="image" fetchpriority="high" href="'+preload+'">'+
+    (includeScenic?'<link rel="preload" as="image" fetchpriority="high" href="'+scenic+'">':'')+
+    (includeHero?'<div class="heroContent" data-home-ali-persona="alex"><img width="530" loading="'+loading+'" src="'+image+'" fetchPriority="'+priority+'" height="480"/></div>':'');
+  for(const image of [current,previous]){
+    const data=snapshot(html(image));
+    assert.equal(data.heroImage.src,image);
+    assert.doesNotThrow(()=>assertHeroPreload(data));
+  }
+  assert.throws(()=>assertHeroPreload(snapshot(html(current,previous))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(current,current,"lazy"))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(current,current,"eager","low"))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(current,current,"eager","high",false))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(current,current,"eager","high",true,false))));
+  assert.throws(()=>assertHeroPreload(snapshot(html("/unapproved.webp"))));
 });

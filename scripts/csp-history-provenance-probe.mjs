@@ -75,10 +75,12 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
     await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     await expect(page.locator('[data-home-intent-option]')).toHaveCount(3);
-    for (const intent of ['understand', 'goal', 'talk']) {
+    for (const intent of ['clarity', 'goal', 'business']) {
       await expect(page.locator(`[data-home-intent-option="${intent}"]`)).toBeVisible();
     }
+    await expect(page.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
     await expect(page.locator('[data-home-intent-form]')).toBeVisible();
+    await expect(page.locator('[data-home-methods]')).toBeVisible();
     await ready('/'); result.home = await snapshot();
     await page.locator('.service-home-about a[href="/en/about"]').click();
     await ready('/en/about'); result.about = await snapshot();

@@ -301,40 +301,49 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home now has three entry intentions, not the removed
-          // Self/Business toggle. Exercise all entry and step elements.
+          // Owner-approved #5551: three localized full-width program rows;
+          // no obsolete seven-stage panel. Preserve all responsive checks.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           const choices=entry.locator('[data-home-intent-option]')
+          const titles={
+            en:['Clarity & Stress Relief','Achieving My Goal','Business Support'],
+            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса'],
+            es:['Claridad y alivio del estrés','Alcanzar mi meta','Apoyo empresarial'],
+          }[locale]
           await expect(choices).toHaveCount(3)
-          for(const intention of ['understand','goal','talk']){
+          for(const [i,intention] of ['clarity','goal','business'].entries()){
             const button=entry.locator('[data-home-intent-option="'+intention+'"]')
             await expect(button).toHaveCount(1)
             await expect(button).toHaveAttribute('type','button')
             await expect(button).toBeVisible()
+            await expect(button).toBeEnabled()
+            await expect(button.locator('strong')).toHaveText(titles[i])
+            await expect(button.locator('img')).toHaveCount(1)
           }
-          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(7)
-          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('data-home-intent-option','understand')
-          await expect(entry.locator('[data-home-request-session]')).toHaveAttribute('data-home-intent-option','goal')
-          // Same-frame geometry: composer, two large choices, gentle Talk
-          // option and seven steps must follow in order without overflow.
+          await expect(entry.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works], [data-home-intent-option="talk"]')).toHaveCount(0)
+          // Same-frame geometry: composer, three program rows and five tools
+          // follow in order without overlap or horizontal overflow.
           const homeLayout=await entry.evaluate(root=>{
-            const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-intent-option="talk"]','[data-home-how-it-works]']
+            const nodes=['[data-home-intent-form]','[data-home-focus-grid]','[data-home-methods]']
               .map(selector=>root.querySelector(selector))
-            if(nodes.some(node=>!node))return null
+            const cards=[...root.querySelectorAll('[data-home-focus-grid] [data-home-intent-option]')]
+            if(nodes.some(node=>!node)||cards.length!==3)return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
+            const rows=cards.map(node=>node.getBoundingClientRect())
             return {
               ordered:nodes.every((node,i)=>i===0||Boolean(
                 nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
               noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
-              inWidth:boxes.every(box=>box.left>=-1&&box.right<=innerWidth+1),
+              inWidth:[...boxes,...rows].every(box=>box.left>=-1&&box.right<=innerWidth+1),
+              fullWidthRows:rows.every((box,i)=>box.width>=boxes[1].width-2&&
+                (i===0||rows[i-1].bottom<=box.top+1)),
             }
           })
-          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three intentions → seven steps '+JSON.stringify(homeLayout))
+          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth&&homeLayout.fullWidthRows,
+            label+': composer → three programs → methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
