@@ -61,3 +61,21 @@ test('public coaching questions cover every goal direction in all three language
   }
  }
 });
+
+test('courtesy phrases, hyphen variants and expanded knowledge remain finite public topics',()=>{
+ for(const [locale,query,topic] of [
+  ['ru','Подскажи, как найти цель?','clarity'],
+  ['ru','Объясни уверенность в себе','confidence'],
+  ['ru','Что такое командная работа, пожалуйста?','teamwork'],
+  ['ru','Что такое SMART-цель?','goal'],
+  ['en','Could you tell me what is coaching?','coaching'],
+  ['en','What is work-life balance, please?','rest'],
+  ['en','Explain decision making','decision'],
+  ['es','¿Puedes decirme qué es la gestión del tiempo?','time'],
+  ['es','Explica empatía','empathy'],
+  ['es','¿Qué es la retroalimentación, por favor?','feedback'],
+ ]){
+  assert.equal(waveGeminiPublicTopic(query,locale),topic,query);
+  assert.equal(waveGeminiPublicTopic(query+'; private@invalid.example',locale),null);
+ }
+});
