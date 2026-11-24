@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import {useRouter} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
@@ -9,6 +10,7 @@ import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import DaybookGoalContext from './daybook-goal-context'
 import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
 import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.mjs'
+import {advanceDaybookRouteIntent} from '@/lib/app/daybook-route-intent.mjs'
 import styles from './daybook-journal.module.css'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
@@ -26,12 +28,23 @@ const exportCopy={
  ru:{download:'Экспорт сохранённых записей (JSON)',all:'Загрузить все записи для поиска',working:'Чтение всех сохранённых записей…',failed:'Не удалось завершить. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает текущий лимит браузера 32 МиБ. Неполный файл не скачан.',done:'Файл экспорта подготовлен. Несохранённые черновики не включены.'},
  es:{download:'Exportar entradas guardadas (JSON)',all:'Cargar todas las entradas para buscar',working:'Leyendo todas las entradas guardadas…',failed:'No se pudo completar. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite actual de 32 MiB del navegador. No se descargó un archivo parcial.',done:'Archivo de exportación preparado. No incluye borradores sin guardar.'},
 }
-export default function DaybookJournal({locale}){
+export default function DaybookJournal({locale,autoStartVector=false,initialTab='today'}){
  const c=copy[locale],root='/'+locale+'/app'
+ const router=useRouter()
+ const vectorDone=useCallback(()=>router.replace(root+'/daybook?tab=goals',{scroll:false}),[root,router])
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
- const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
+ const [phase,setPhase]=useState('loading'),[tab,setTab]=useState(autoStartVector?'goals':initialTab),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
  const [exportStatus,setExportStatus]=useState('')
  const [goalsVisited,setGoalsVisited]=useState(false),[weeklyVisited,setWeeklyVisited]=useState(false)
+ const routeIntent=useRef(advanceDaybookRouteIntent(null,{autoStartVector,initialTab}))
+ const [vectorStartRequest,setVectorStartRequest]=useState(routeIntent.current.vectorStartRequest)
+ useEffect(()=>{
+  const nextIntent=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector,initialTab})
+  if(nextIntent===routeIntent.current)return
+  routeIntent.current=nextIntent
+  setTab(nextIntent.tab);setVectorStartRequest(nextIntent.vectorStartRequest)
+  if(nextIntent.tab==='goals')setGoalsVisited(true)
+ },[autoStartVector,initialTab])
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
  const journalField=useRef(null)
@@ -140,7 +153,7 @@ export default function DaybookJournal({locale}){
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}
    {tab==='today'&&<details onToggle={event=>{if(event.currentTarget.open)setWeeklyVisited(true)}}><summary>{({en:'My weekly review',ru:'Мой недельный обзор',es:'Mi revisión semanal'})[locale]}</summary>{weeklyVisited&&<DaybookWeekly key={account} accountId={account} locale={locale} initialDay={today} memory={weeklyMemory.current} onSessionLost={sessionLost}/>}</details>}
-   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
+   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current} autoStartVector={autoStartVector} vectorStartRequest={vectorStartRequest} onVectorDone={vectorDone}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
    {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><DaybookGrowth accountId={account} locale={locale} onSessionLost={sessionLost}/></section>:<>
     {tab!=='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>

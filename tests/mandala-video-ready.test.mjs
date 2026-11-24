@@ -319,9 +319,8 @@ test("verified signed-in Ready Save uses the existing signed uploader after priv
   }
 });
 
-test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a server flag",()=>{
-  const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
-    HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
+test("personal signed MP4 CSP follows private storage availability on exact EN/RU/ES routes",()=>{
+  const env={HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
   const api="https://abcdefghijklmnopqrst.supabase.co";
   const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
   for(const locale of ["en","ru","es"]){
@@ -335,9 +334,9 @@ test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a 
     assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
   }
   assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
-    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:""});
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:" "+api+" "+tus,media:""});
   assert.deepEqual(personalVideoStorageCsp("/ru/app/videos",
-    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:" blob:"});
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:" "+api+" "+tus,media:" blob: "+api});
   for(const bad of ["http://abcdefghijklmnopqrst.supabase.co",
     "https://abcdefghijklmnopqrst.supabase.co.evil.test",
     "https://abcdefghijklmnopqrst.supabase.co:4433",
