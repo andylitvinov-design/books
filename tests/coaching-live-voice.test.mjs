@@ -169,18 +169,18 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){'))
   // On a new consented turn, a metadata-only model probe may restore verified
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
-    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
+    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){'))
   // Gemini checks a dedicated owner gate plus client consent, while Groq
   // keeps its verified-model probe. Neither sends text when unavailable.
   const verify="const needsVerifiedModel=!wisdomRequested&&!localInterruption&&"
   const selector="selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified'"
-  const wait="const modelReady=!needsVerifiedModel||"
+  const wait="const modelReady=!forceLocal&&(!needsVerifiedModel||"
   const retry="!selectedGeminiEngine&&await retryCoachModelAfterOutage()"
-  const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
+  const offline="if(forceLocal||localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
   const send="fetch('/api/app/my-coach/turn'"
   assert.ok(sendFunction.indexOf(verify)>=0 &&
     sendFunction.includes(selector) && sendFunction.includes(retry) &&
