@@ -877,7 +877,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
       // text-model + WAV-TTS pipeline. Do not charge another provider.
       const message=draft.trim()
-      if(!message||!liveVoiceReady)return null
+      if(!message)return null
+      // An unavailable or stopped transport must not lock the text composer.
+      // The same first-party coach continues locally; no other provider is called.
+      if(!liveVoiceReady||voiceState.phase==='idle')return await sendMessage(message,{forceLocal:true})
       const accepted=speechRef.current?.sendText?.(message)===true
       if(accepted){setDraft('');setError('');return {mode:'live'}}
       setError(({ru:'Сначала начните живую голосовую сессию.',
@@ -942,7 +945,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     setSessionClockStarted(true)
     setIntroComplete(true)
-    if(role==='user'){setSpeechPreview('');setDraft('')}
+    if(role==='user'){setSpeechPreview('')}
     else setStreamingPreview('')
   }
   function markCoachSpeechInterrupted(spokenText){
@@ -957,7 +960,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
-  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){
+  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
     // re-infer it from potentially mis-scripted browser ASR output.
@@ -1010,7 +1013,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // The local guard sends no client text to a provider and cannot wait for it.
     const currentInput={locale:responseLocale,message,
       turns:conversationTurns.map(({role,content})=>({role,content}))}
-    const localInterruption=readiness.status!=='verified'
+    const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
@@ -1041,10 +1044,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
     const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
       (selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified')
-    const modelReady=!needsVerifiedModel||
-      (!selectedGeminiEngine&&await retryCoachModelAfterOutage())
+    const modelReady=!forceLocal&&(!needsVerifiedModel||
+      (!selectedGeminiEngine&&await retryCoachModelAfterOutage()))
     if(turnRequestRef.current!==requestId)return null
-    if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
+    if(forceLocal||localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
       // microphone recognition must not wait for model readiness.
       // Local-only authored fallback. NEVER send private text to an unverified model.
@@ -1444,6 +1447,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
+            localRecoveryTurns={turns}
+            onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
@@ -1742,7 +1747,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
-            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady)||(liveVoiceSelected&&!liveVoiceReady)}>
+            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady&&!liveVoiceSelected)}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
