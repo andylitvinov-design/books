@@ -18,15 +18,16 @@ test('all eight stages have four distinct localized options and existing destina
  }
  assert.equal(goalOptionHref('unknown'),null)
 })
-test('stage click toggles an in-page region, only option links navigate',()=>{
+test('stage click toggles an in-page region, only a single Start link navigates to Daybook',()=>{
  const source=readFileSync(new URL('../components/app/profile-goal-console.jsx',import.meta.url),'utf8')
  const css=readFileSync(new URL('../components/app/profile-goal-console.module.css',import.meta.url),'utf8')
  assert.match(source,/aria-expanded=\{expanded\}/)
  assert.match(source,/setExpandedStage\(current => current === id \? null : id\)/)
  assert.match(source,/aria-controls=\{'goal-stage-options-' \+ id\}/)
  assert.match(source,/hidden=\{!expanded\}/)
- assert.match(source,/data-goal-stage-option=\{option.route\}/)
- assert.match(source,/href=\{optionHref\(option.route\)\}/)
+ assert.match(source,/data-goal-stage-start=\{index \+ 1\}/)
+ assert.ok(source.includes('href={profileDaybookHref(root, goalId, index + 1)}'))
+ assert.doesNotMatch(source,/options\.map|goalOptionHref|data-goal-stage-option=/)
  assert.match(css,/\.stageOptions\[hidden\]\{display:none!important\}/)
  assert.doesNotMatch(source,/href=\{hrefFor\(href\)\}/)
 })

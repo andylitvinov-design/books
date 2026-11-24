@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Layers3, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
+import { profileDaybookHref } from '@/lib/profile/profile-daybook-route.mjs'
 import {INNER_VECTOR_ITEMS,normalizeDevelopmentVectors} from '@/lib/profile/development-vectors.mjs'
 import styles from './profile-space-dashboard.module.css'
 
@@ -17,14 +18,15 @@ const COPY = {
 const OPEN_STATUS = new Set(['active','accepted','in_progress'])
 const validText = value => typeof value === 'string' ? value.trim().slice(0,180) : ''
 function findCurrentGoal(result) {
-  if (!Array.isArray(result?.goals)) return ''
-  return validText(result.goals.find(goal => OPEN_STATUS.has(goal?.status) && validText(goal?.title))?.title)
+  const roots = Array.isArray(result?.goals) ? result.goals : []
+  const nested = Array.isArray(result?.domains) ? result.domains.flatMap(domain => Array.isArray(domain?.goals) ? domain.goals : []) : []
+  return [...roots, ...nested].find(goal => OPEN_STATUS.has(goal?.status) && validText(goal?.title) && goal?.id) || null
 }
 
 export function ProfileSpaceFocus({ locale='en', root='/en/app', accountId=null }) {
   const lang = Object.hasOwn(COPY,locale) ? locale : 'en'
   const t = COPY[lang]
-  const [state,setState] = useState({accountId:null,goal:'',axis:''})
+  const [state,setState] = useState({accountId:null,goal:null,axis:''})
   useEffect(()=>{
     if (!accountId) return undefined // Guests never request private goal or axis data.
     const controller = new AbortController()
@@ -47,13 +49,13 @@ export function ProfileSpaceFocus({ locale='en', root='/en/app', accountId=null 
       window.removeEventListener('hh:development-vectors-saved',refresh)
     }
   },[accountId,lang])
-  const goal = accountId && state.accountId===accountId ? state.goal : ''
+  const goal = accountId && state.accountId===accountId ? state.goal : null
   const axis = accountId && state.accountId===accountId ? state.axis : ''
   return <nav className={styles.focusRow} aria-label={lang==='ru'?'Мои направления':lang==='es'?'Mi enfoque':'My focus'}
     data-profile-space-focus>
-    <Link href={root+'/my-coaching-plan'} prefetch={false} className={styles.focusChip} data-profile-current-goal>
+    <Link href={goal ? profileDaybookHref(root, String(goal.id)) : root+'/daybook?tab=goals'} prefetch={false} className={styles.focusChip} data-profile-current-goal>
       <span className={styles.focusIcon}><Target size={25} aria-hidden="true"/></span>
-      <span><small>{t.goal}</small><strong>{goal||t.noGoal}</strong></span>
+      <span><small>{t.goal}</small><strong>{validText(goal?.title)||t.noGoal}</strong></span>
       <ArrowUpRight size={16} aria-hidden="true"/>
     </Link>
     <Link href={'/'+lang+'/development-vectors'} prefetch={false} className={styles.focusChip} data-profile-chosen-axis>

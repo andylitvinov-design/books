@@ -7,19 +7,19 @@ import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
 import { collectJournalExport } from '@/lib/app/daybook-journal-export.mjs'
-import { goalStageOptions, goalOptionHref } from '@/lib/profile/goal-stage-options.mjs'
-import { goalStageRecord as stageRecord } from '@/lib/profile/goal-stage-progress.mjs'
+import { profileDaybookHref } from '@/lib/profile/profile-daybook-route.mjs'
+import { GOAL_STAGE_IDS, goalStageRecord as stageRecord } from '@/lib/profile/goal-stage-progress.mjs'
 
 const VALID_GOALS = new Set(['active', 'accepted', 'in_progress'])
 const STEPS = [
-  { id: 'result', icon: Target, href: 'plan' },
-  { id: 'motivation', icon: Flame, href: 'coach' },
-  { id: 'resources', icon: Leaf, href: 'courses' },
-  { id: 'plan', icon: ClipboardList, href: 'daybook' },
-  { id: 'obstacles', icon: ShieldCheck, href: 'coach' },
-  { id: 'possibilities', icon: Compass, href: 'coach' },
-  { id: 'acceleration', icon: Rocket, href: 'plan' },
-  { id: 'integration', icon: Rocket, href: 'daybook' },
+  { id: 'result', icon: Target },
+  { id: 'motivation', icon: Flame },
+  { id: 'plan', icon: ClipboardList },
+  { id: 'resources', icon: Leaf },
+  { id: 'obstacles', icon: ShieldCheck },
+  { id: 'possibilities', icon: Compass },
+  { id: 'acceleration', icon: Rocket },
+  { id: 'integration', icon: Rocket },
 ]
 const COPY = {
   en: {
@@ -28,11 +28,11 @@ const COPY = {
     hint: 'Choose a goal to see its eight-stage path.', plan: '8 Stages to My Goal',
     zero: 'Create a new goal', zeroDetail: 'Choose a life sphere, a meaning axis and your direction',
     progress: 'Goal progress', unmeasured: 'Not measured', ready: 'Ready', active: 'Active', done: 'Done', locked: 'Locked',
-    title: ['Define the Result', 'Ignite Motivation', 'Activate Resources', 'Build an Action Plan', 'Overcome Inner Blocks', 'Find New Opportunities', 'Accelerate Toward the Goal', 'Results & New Perspectives'],
-    detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Find your energy and support', 'Choose your next practical actions', 'Work with obstacles gently', 'Discover new options and solutions', 'Strengthen what works and adjust your next actions', 'Reflect on results and choose what comes next'],
-    tool: ['Goal coaching', 'AI coach & My Why', 'Courses and practices', 'Coaching Daybook', 'Guided coaching', 'AI brainstorming', 'Action review', 'Progress review'],
+    title: ['Define the Result', 'Ignite Motivation', 'Build an Action Plan', 'Activate Resources', 'Overcome Inner Blocks', 'Find New Opportunities', 'Accelerate Toward the Goal', 'Results & New Perspectives'],
+    detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Choose your next practical actions', 'Find your energy and support', 'Work with obstacles gently', 'Discover new options and solutions', 'Strengthen what works and adjust your next actions', 'Reflect on results and choose what comes next'],
+    tool: ['Goal coaching', 'AI coach & My Why', 'Coaching Daybook', 'Courses and practices', 'Guided coaching', 'AI brainstorming', 'Action review', 'Progress review'],
     noStages: 'Step progress appears after it has been saved; these are entry points, not completed stages.',
-    stageProgress: 'Step progress', open: 'Explore',
+    stageProgress: 'Step progress', open: 'Explore', start: 'Start',
     lesson: 'Take lesson', week: 'Week', of: 'of', courseProgress: 'Course progress', completedWeeks: 'weeks completed', courseDone: 'Course completed', courseLoading: 'Loading course progress…', courseError: 'Course progress unavailable', courseRetry: 'Retry',
   },
   ru: {
@@ -41,11 +41,11 @@ const COPY = {
     hint: 'Выберите цель, чтобы пройти её восемь этапов.', plan: '8 этапов к моей цели',
     zero: 'Создать новую цель', zeroDetail: 'Выберите сферу жизни, смысловую ось и свой вектор',
     progress: 'Прогресс цели', unmeasured: 'Не измерен', ready: 'Доступен', active: 'Активен', done: 'Пройден', locked: 'Закрыт',
-    title: ['Определить результат', 'Зажечь мотивацию', 'Активировать ресурсы', 'Построить план', 'Преодолеть препятствия', 'Найти возможности', 'Ускорение к цели', 'Итоги и новые перспективы'],
-    detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Моя энергия, люди и поддержка', 'Мои следующие действия', 'Мягкая работа со страхами', 'Новые пути и решения', 'Усилить работающие действия и скорректировать план', 'Оценить результаты и выбрать дальнейшее направление'],
-    tool: ['Коучинг цели', 'ИИ-коуч и My Why', 'Курсы и практики', 'Дневник коучинга', 'Коучинг и образы', 'Поиск решений с ИИ', 'Обзор действий', 'Обзор прогресса'],
+    title: ['Определить результат', 'Зажечь мотивацию', 'Построить план', 'Активировать ресурсы', 'Преодолеть препятствия', 'Найти возможности', 'Ускорение к цели', 'Итоги и новые перспективы'],
+    detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Мои следующие действия', 'Моя энергия, люди и поддержка', 'Мягкая работа со страхами', 'Новые пути и решения', 'Усилить работающие действия и скорректировать план', 'Оценить результаты и выбрать дальнейшее направление'],
+    tool: ['Коучинг цели', 'ИИ-коуч и My Why', 'Дневник коучинга', 'Курсы и практики', 'Коучинг и образы', 'Поиск решений с ИИ', 'Обзор действий', 'Обзор прогресса'],
     noStages: 'Процент появится после сохранения прогресса этапа. Доступ к практикам не означает завершение.',
-    stageProgress: 'Прогресс этапа', open: 'Открыть',
+    stageProgress: 'Прогресс этапа', open: 'Открыть', start: 'Начать',
     lesson: 'Пройти урок', week: 'Неделя', of: 'из', courseProgress: 'Прогресс курса', completedWeeks: 'недель завершено', courseDone: 'Курс завершён', courseLoading: 'Загрузка прогресса курса…', courseError: 'Прогресс курса недоступен', courseRetry: 'Повторить',
   },
   es: {
@@ -54,11 +54,11 @@ const COPY = {
     hint: 'Elige una meta para explorar sus ocho etapas.', plan: '8 etapas hacia mi meta',
     zero: 'Crear una nueva meta', zeroDetail: 'Elige un ámbito de vida, un eje de sentido y tu dirección',
     progress: 'Progreso de la meta', unmeasured: 'Sin medir', ready: 'Disponible', active: 'Activo', done: 'Hecho', locked: 'Bloqueado',
-    title: ['Definir el resultado', 'Encender la motivación', 'Activar recursos', 'Construir un plan', 'Superar obstáculos', 'Encontrar posibilidades', 'Acelerar hacia la meta', 'Resultados y nuevas perspectivas'],
-    detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Encontrar energía y apoyo', 'Planificar los próximos pasos', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Reforzar lo que funciona y ajustar las acciones', 'Revisar resultados y elegir el siguiente rumbo'],
-    tool: ['Coaching de objetivos', 'Coach IA y My Why', 'Cursos y prácticas', 'Diario de coaching', 'Coaching guiado', 'Ideas con IA', 'Revisión de acciones', 'Revisión del progreso'],
+    title: ['Definir el resultado', 'Encender la motivación', 'Construir un plan', 'Activar recursos', 'Superar obstáculos', 'Encontrar posibilidades', 'Acelerar hacia la meta', 'Resultados y nuevas perspectivas'],
+    detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Planificar los próximos pasos', 'Encontrar energía y apoyo', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Reforzar lo que funciona y ajustar las acciones', 'Revisar resultados y elegir el siguiente rumbo'],
+    tool: ['Coaching de objetivos', 'Coach IA y My Why', 'Diario de coaching', 'Cursos y prácticas', 'Coaching guiado', 'Ideas con IA', 'Revisión de acciones', 'Revisión del progreso'],
     noStages: 'El porcentaje aparece cuando se guarda el avance. Abrir una práctica no significa completarla.',
-    stageProgress: 'Progreso del paso', open: 'Explorar',
+    stageProgress: 'Progreso del paso', open: 'Explorar', start: 'Empezar',
     lesson: 'Hacer lección', week: 'Semana', of: 'de', courseProgress: 'Progreso del curso', completedWeeks: 'semanas completadas', courseDone: 'Curso completado', courseLoading: 'Cargando progreso…', courseError: 'Progreso no disponible', courseRetry: 'Reintentar',
   },
 }
@@ -86,14 +86,12 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const lang = Object.hasOwn(COPY, locale) ? locale : 'en'
   const t = COPY[lang]
   const [state, setState] = useState({ owner: null, loading: Boolean(accountId), error: false, plan: null })
-  const [selectedId, setSelectedId] = useState('')
   const [expandedStage, setExpandedStage] = useState(null)
   const [course, setCourse] = useState({ owner: null, entries: null, error: false })
   const [courseRetry, setCourseRetry] = useState(0)
   useEffect(() => {
     if (!accountId) return undefined
     const controller = new AbortController()
-    setSelectedId('')
     setExpandedStage(null)
     setState({ owner: accountId, loading: true, error: false, plan: null })
     appFetch('coaching-life-plan?locale=' + lang, undefined, 'GET', { accountId, signal: controller.signal })
@@ -103,8 +101,8 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   }, [accountId, lang])
   const view = state.owner === accountId ? state : { owner: null, loading: Boolean(accountId), error: false, plan: null }
   const goals = useMemo(() => goalList(view.plan), [view.plan])
-  const selected = goals.find(goal => String(goal.id) === selectedId) || goals[0] || null
-  const records = STEPS.map((_, index) => selected ? stageRecord(selected, index) : null)
+  const selected = goals[0] || null
+  const records = STEPS.map(({ id }) => selected ? stageRecord(selected, GOAL_STAGE_IDS.indexOf(id)) : null)
   const scores = records.map(row => percent(row?.progressPercent ?? row?.percent))
   const hasSelected = Boolean(selected)
   useEffect(() => {
@@ -122,35 +120,33 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const progress = useMemo(() => courseView.entries && goalId ? guideGoalProgress(courseView.entries, goalId) : null, [courseView.entries, goalId])
   const overall = progress?.percent ?? null
   const next = progress?.next
-  const lessonHref = next && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(goalId)
-    ? root + '/daybook?tab=stages&goal=' + encodeURIComponent(goalId) + '&stage=' + next.week + '&level=1&step=' + next.step : null
-  const planLink = selected ? root + '/my-coaching-plan?goal=' + encodeURIComponent(selected.id) : root + '/my-coaching-plan'
-  const optionHref = route => goalOptionHref(route, { lang, root, planLink })
+  const lessonHref = next && goalId ? profileDaybookHref(root, goalId, next.week, next.step) : null
+  const goalHref = lessonHref || profileDaybookHref(root, goalId)
   return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)} data-goal-selected={Boolean(selected)}>
     {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
-        return <button key={goal.id} type="button" className={active ? css.goalActive : css.goalChip}
-          aria-pressed={active} onClick={() => { setSelectedId(String(goal.id)); setExpandedStage(null) }}>
+        return <Link key={goal.id} href={active ? goalHref : profileDaybookHref(root, String(goal.id))} prefetch={false} className={active ? css.goalActive : css.goalChip}
+          data-profile-goal-link={goal.id}>
           <Target size={23} aria-hidden="true" />
           <strong>{goal.title}</strong>{active && <CheckCircle2 size={19} aria-hidden="true" />}
-        </button>
+        </Link>
       })}
       <Link className={css.addGoal} href={root + '/daybook?start=vector'} prefetch={false}><Plus size={26} aria-hidden="true" /><strong>{t.add}</strong></Link>
     </div>}
     {view.loading && <p className={css.notice} role="status">…</p>}
-    {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/my-coaching-plan'}>{t.retry}</Link></p>}
+    {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/daybook?tab=goals'}>{t.retry}</Link></p>}
     {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state hidden>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal}>
-          <div className={css.goalSummary}><div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
+          <Link className={css.goalSummary} href={goalHref} prefetch={false} data-profile-goal-summary><div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
             <p>{typeof selected.desiredOutcome === 'string' && selected.desiredOutcome.trim() ? selected.desiredOutcome : t.hint}</p>
           </div>
           <div className={css.circle} style={{ '--hh-circle-value': (overall ?? 0) + '%' }}
             aria-label={t.courseProgress + ': ' + (overall === null ? t.unmeasured : overall + '%')} role="img" data-goal-course-progress={overall ?? 'unknown'}>
             <div><strong>{overall === null ? '—' : overall + '%'}</strong><small>{t.courseProgress}</small></div>
-          </div></div>
+          </div></Link>
           {progress && <div className={css.lessonMeta}><CalendarDays size={16} aria-hidden="true" /><span>{next ? t.week + ' ' + next.week + ' ' + t.of + ' 8' : t.courseDone}</span><span>{progress.completedWeeks}/8 {t.completedWeeks}</span></div>}
           {lessonHref ? <Link href={lessonHref} prefetch={false} className={css.lessonButton} data-goal-current-lesson={next.week}>
             <PlayCircle size={23} aria-hidden="true" /><strong>{t.lesson} — {t.week} {next.week}</strong><ChevronRight size={20} aria-hidden="true" />
@@ -168,9 +164,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           {STEPS.map(({ id, icon: Icon }, index) => {
             const value = selected && !view.loading && !view.error ? scores[index] : null
             const status = selected && !view.loading && !view.error ? getStatus(records[index], value, t) : t.open
-            const isLocked = Boolean(selected && records[index]?.status === 'locked')
             const expanded = expandedStage === id
-            const options = goalStageOptions(id, lang)
             return <div key={id} className={css.stageGroup} data-goal-stage-group={id}>
               <button type="button" id={'goal-stage-button-' + id} className={css.step}
                 aria-expanded={expanded} aria-controls={'goal-stage-options-' + id}
@@ -186,12 +180,10 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
               </button>
               <div id={'goal-stage-options-' + id} role="region" aria-labelledby={'goal-stage-button-' + id}
                 className={css.stageOptions} hidden={!expanded} data-goal-stage-options={id}>
-                <p className={css.optionHeading}>{({en:'Choose your support',ru:'Выберите вариант поддержки',es:'Elige tu apoyo'})[lang]}</p>
-                {isLocked && <p className={css.optionNote}>{({en:'You can explore options before this stage is activated.',ru:'Варианты можно изучить до активации этапа.',es:'Puedes explorar opciones antes de activar esta etapa.'})[lang]}</p>}
-                {options.map(option => <Link key={option.route} href={optionHref(option.route)} prefetch={false}
-                  className={css.stageOption} data-goal-stage-option={option.route}>
-                  <span><strong>{option.title}</strong><small>{option.detail}</small></span><ChevronRight size={17} aria-hidden="true"/>
-                </Link>)}
+                <Link href={profileDaybookHref(root, goalId, index + 1)} prefetch={false}
+                  className={css.stageStart} data-goal-stage-start={index + 1}>
+                  <PlayCircle size={21} aria-hidden="true"/><strong>{t.start}</strong><ChevronRight size={18} aria-hidden="true"/>
+                </Link>
               </div>
             </div>
           })}
