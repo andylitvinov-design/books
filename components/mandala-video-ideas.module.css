@@ -110,7 +110,12 @@
 /* Owner-approved phrase editor: only Montage / Text gets compact controls.
    All handlers remain the original editable/preview/record/render paths. */
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas{gap:0}
-:global([data-active-workspace="editor"][data-montage-panel="text"]) .sizeCard,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .sizeCard{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,1fr);
+  align-items:center;gap:6px;margin:4px 0;padding:2px 8px;border-radius:10px;
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .sizeCard input[type="range"]{height:44px}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .sizeHints{display:none}
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .subtitle,
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .refine,
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .clear,

@@ -87,9 +87,11 @@ try {
   // This anonymous export chooses a first-party fictional coach still, rather
   // than fabricating consent to use somebody else's photograph.
   assert.equal(await styleNext.isEnabled(),false,'PHOTO_FIRST_REQUIRES_EXPLICIT_PHOTO_CHOICE');
-  const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
-  await coachMode.waitFor({state:'visible',timeout:20000});
-  await press(coachMode);
+  const coachTab=page.locator('[data-video-montage-library-tab="coaches"]');
+  await coachTab.waitFor({state:'visible',timeout:20000});
+  await press(coachTab);
+  await page.locator('[data-video-montage-library-panel="coaches"]').waitFor({state:'visible',timeout:20000});
+  assert.equal(await coachTab.getAttribute('aria-pressed'),'true','COACH_LIBRARY_MUST_OPEN');
   assert.equal(await styleNext.isEnabled(),false,'COACH_MODE_REQUIRES_A_PORTRAIT');
   for(const id of ['mira','max','sofia','alex','mira']){
     const coachPhoto=page.locator('[data-video-montage-coach="'+id+'"]');
@@ -104,10 +106,18 @@ try {
     assert.equal(await page.locator('[data-video-montage-coach][aria-pressed="true"]').count(),1,
       'ONLY_ONE_COACH_STILL_SELECTED');
   }
-  // Coach selection cannot unlock an empty personal library or approve its rights.
+  // A library tab is a source browser, not an implicit mode change.
+  // The actual Animate action clears the coach and returns to the personal source;
+  // choosing a still photo afterwards must not inherit the coach's permissions.
+  await press(page.locator('[data-video-montage-photo-choice="animate"]'));
+  await page.locator('[data-video-montage-library-panel="personal"]').waitFor({state:'visible',timeout:20000});
+  assert.equal(await styleNext.isEnabled(),false,'UNAVAILABLE_ANIMATION_MUST_NOT_UNLOCK_AUDIO');
   await press(page.locator('[data-video-montage-photo-choice="library"]'));
   assert.equal(await styleNext.isEnabled(),false,'COACH_DOES_NOT_AUTHORIZE_PERSONAL_PHOTO');
-  await press(coachMode);
+  await press(coachTab);
+  await page.locator('[data-video-montage-library-panel="coaches"]').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('[data-video-montage-coach][aria-pressed="true"]').count(),0,
+    'PERSONAL_MODE_CLEARS_COACH_SELECTION');
   assert.equal(await styleNext.isEnabled(),false,'RESELECT_COACH_AFTER_PERSONAL_MODE');
   await press(page.locator('[data-video-montage-coach="mira"]'));
   await page.waitForFunction(()=>!document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]')?.disabled,
@@ -237,9 +247,12 @@ try {
   // before comparing full encoded frames to the four source masters.
   // Do not lower source-identity thresholds or bypass the real MP4 encoder.
   // Quick Start's checkbox is intentionally hidden under the current
-  // workspace navigation. Select the real visible Montage option instead:
-  // switching from an AI-coach portrait to the personal-photo library with
-  // no personal photo turns off the optional portrait overlay. The original
+  // workspace navigation. The source-first two-action Montage keeps a chosen
+  // coach when "Use Without Animation" is pressed (coach stills are original
+  // photos). Clear that source via the visible Animate Photo selection, which
+  // only changes local selection and is explicitly provider/payment-disabled,
+  // then restore the Express choice with an empty personal photo. No render,
+  // payment or provider request is initiated by either selection. The original
   // four licensed motion sources and consent/export gates remain mandatory.
   const portraitOverlay=page.locator('[data-video-photo-enabled]');
   assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
@@ -251,6 +264,15 @@ try {
   const styleWorkspace=page.locator('[data-video-montage-tab="effects"]');
   await styleWorkspace.waitFor({state:'visible',timeout:15000});
   await press(styleWorkspace);
+  const animatePhotoMode=page.locator('[data-video-montage-photo-choice="animate"]');
+  await animatePhotoMode.waitFor({state:'visible',timeout:15000});
+  await press(animatePhotoMode);
+  await page.waitForFunction(()=>{
+    const choice=document.querySelector('[data-video-montage-photo-choice="animate"]');
+    const checkbox=document.querySelector('[data-video-photo-enabled]');
+    return choice?.getAttribute('aria-pressed')==='true' &&
+      checkbox instanceof HTMLInputElement && !checkbox.checked;
+  },undefined,{timeout:15000});
   const personalPhotoMode=page.locator('[data-video-montage-photo-choice="library"]');
   await personalPhotoMode.waitFor({state:'visible',timeout:15000});
   await press(personalPhotoMode);

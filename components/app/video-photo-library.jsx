@@ -18,9 +18,9 @@ async function request(url,options){
   return response.json()
 }
 /**
- * @param {{locale?: string, onSelectPhoto?: (photo: File) => void, disabled?: boolean, compact?: boolean, draftPhoto?: File|null, onDraftPhotoSettled?: (file: File) => void}} props
+ * @param {{locale?: string, onSelectPhoto?: (photo: File) => void, disabled?: boolean, compact?: boolean, rail?: boolean, draftPhoto?: File|null, onDraftPhotoSettled?: (file: File) => void}} props
  */
-export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,draftPhoto=null,onDraftPhotoSettled}){
+export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,rail=false,draftPhoto=null,onDraftPhotoSettled}){
   const t=TEXT[locale]||TEXT.en
   const [opened,setOpened]=useState(Boolean(draftPhoto))
   const [status,setStatus]=useState('idle')
@@ -53,7 +53,7 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
     return()=>urls.forEach(url=>URL.revokeObjectURL(url))
   },[files])
   useEffect(()=>{
-    if(!opened)return
+    if(!opened&&!rail)return
     let active=true
     let reading=false
     const load=async()=>{
@@ -84,7 +84,7 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
       window.removeEventListener('focus',refreshOnReturn)
       document.removeEventListener('visibilitychange',refreshOnReturn)
     }
-  },[opened])
+  },[opened,rail])
   async function refresh(){
     const result=await request('/api/app/video-photos')
     setPhotos(result.photos||[])
@@ -167,11 +167,11 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
       await refresh()
     }catch{setError(t.error)}finally{setBusy(false)}
   }
-  return <details open={opened} data-client-video-photo-library data-compact={compact?'true':'false'}
+  return <><details open={opened} data-client-video-photo-library data-compact={compact?'true':'false'}
     style={{margin:'8px 0',padding:compact?'6px 8px':'10px 12px',border:'1px solid #d7c7b6',borderRadius:12,background:'#fffaf5',minWidth:0}}
     onToggle={event=>setOpened(event.currentTarget.open)}>
-    <summary style={{cursor:'pointer',fontSize:compact?13:15,fontWeight:700,color:'#514638'}}>{compact?t.open:t.heading}</summary>
-    {opened?<div style={{display:'grid',gap:10,paddingTop:10,minWidth:0}}>
+    <summary data-client-photo-rail-manage={rail?'true':undefined} style={{cursor:'pointer',fontSize:compact?13:15,fontWeight:700,color:'#514638'}}>{rail?t.upload:compact?t.open:t.heading}</summary>
+    {opened?<div data-client-photo-drawer-body style={{display:'grid',gap:10,paddingTop:10,minWidth:0}}>
       {!compact?<p style={{fontSize:13,margin:0}}>{t.about}</p>:null}
       {status==='guest'?<p role="status" style={{fontSize:13}}>{t.guest} <Link href={'/'+locale+'/app/videos'} prefetch={false}>My House</Link></p>:null}
       {status==='unavailable'?<p role="status" style={{fontSize:13}}>{t.unavailable}</p>:null}
@@ -241,4 +241,12 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
       {error?<p role="alert" style={{fontSize:12,margin:0,color:'#a43a3a'}}>{error}</p>:null}
     </div>:null}
   </details>
+  {rail?<div data-client-photo-rail aria-label={t.heading}>
+    {status==='ready'&&photos.length?photos.map(photo=><button key={photo.id} type="button"
+      aria-label={t.pick} disabled={busy||disabled||!onSelectPhoto} onClick={()=>void usePhoto(photo.id)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={photo.url} alt="" loading="lazy"/>
+    </button>):<p role="status">{status==='guest'?t.guest:status==='unavailable'?t.unavailable:status==='ready'?t.none:t.busy}</p>}
+  </div>:null}
+  </>
 }

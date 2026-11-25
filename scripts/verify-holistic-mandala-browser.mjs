@@ -1000,6 +1000,30 @@ const runEngine = async ([engine, browserType]) => {
         await expect(conceptPanel).toBeVisible({timeout:15000});
         await expect(conceptPanel.locator("[data-video-concept-approve]")).toBeVisible();
         await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        await page.locator('[data-video-montage-tab="effects"]').click();
+        await expect(page.locator("[data-video-montage-living-hero]")).toBeVisible();
+        await page.evaluate(()=>window.scrollTo(0,0));
+        const photoFold=await page.evaluate(()=>{
+          const rect=selector=>document.querySelector(selector)?.getBoundingClientRect().toJSON();
+          return {hero:rect("[data-video-montage-living-hero]"),steps:rect("[data-video-montage-progress]"),
+            upload:rect("[data-video-montage-photo-upload]"),choices:rect("[data-video-montage-photo-options]"),
+            library:rect("[data-video-montage-avatar-library]"),next:rect('[data-video-montage-next="audio"]'),
+            dock:rect("[data-mandala-support-bottom-nav]"),viewport:innerHeight,
+            scrollWidth:document.documentElement.scrollWidth,width:document.documentElement.clientWidth};
+        });
+        assert.ok(photoFold.hero&&photoFold.steps&&photoFold.upload&&photoFold.choices&&photoFold.library&&photoFold.next,
+          "living-photo elements must all render");
+        assert.ok(photoFold.hero.bottom<=photoFold.steps.top+2&&photoFold.library.top>=photoFold.upload.bottom-2&&
+          photoFold.choices.top>=photoFold.library.bottom-2&&
+          photoFold.next.top>=photoFold.choices.bottom-2&&photoFold.scrollWidth<=photoFold.width+2,
+          engine+" "+locale+" "+width+" Montage photo hierarchy/overflow: "+JSON.stringify(photoFold));
+        await expect(page.locator("[data-video-montage-photo-choice]")).toHaveCount(2);
+        assert.ok(photoFold.next.bottom<=Math.min(photoFold.viewport,photoFold.dock?.top??photoFold.viewport)+2,
+          engine+" "+locale+" "+width+" Montage CTA below fold/dock: "+JSON.stringify(photoFold));
+        if(width===390){
+          mkdirSync("artifacts/mandala-audio",{recursive:true});
+          await page.screenshot({path:"artifacts/mandala-audio/"+engine+"-"+locale+"-390-montage-photo-fold.png",fullPage:false,animations:"disabled"});
+        }
         await page.locator('[data-video-montage-tab="settings"]').click();
         const conceptTextTools=page.locator("[data-video-concept-text-tools]");
         if(!(await conceptTextTools.evaluate(node=>node.open)))
