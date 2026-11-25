@@ -119,7 +119,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
-  liveContextAccess='',contextRevision=0,localRecoveryTurns=[],resumingPrivateDraft=false,onUnconfirmedInput,
+  liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -131,7 +131,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,resumingPrivateDraft,onUnconfirmedInput}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput}
 
   const notify=text=>{
     setNotice(text)
@@ -282,6 +282,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
        document.visibilityState==='hidden')return false
     if(r.resumeUnavailable||(r.resumePending&&(!r.resumeHandle||r.reconnects>=3||
        !(Date.parse(r.liveToken?.expiresAt)>Date.now())))){
+      r.resumeUnavailable=true
       notify(t.resumeUnavailable);return false
     }
     const epoch=r.pauseEpoch
@@ -1117,7 +1118,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
-      continuing:recovery.continuing||p.resumingPrivateDraft===true,inputText:'',outputText:'',
+      continuing:recovery.continuing,inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
@@ -1197,7 +1198,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }).catch(()=>{if(!r.ended)notify(t.audioRoute)})
     }catch{notify(t.audioRoute)}
   }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+    hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}

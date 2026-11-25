@@ -322,6 +322,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             await expect(button).toHaveAttribute('aria-label',programs[locale][index])
             await expect(button).toHaveAccessibleName(programs[locale][index])
             await expect(button).toBeVisible()
+            await expect(button.locator('img')).toHaveCount(1)
             await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
             const box=await button.boundingBox()
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')

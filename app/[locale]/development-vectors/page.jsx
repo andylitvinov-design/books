@@ -1,4 +1,5 @@
 import {notFound} from 'next/navigation'
+import '../app/cabinet-theme.css'
 import DevelopmentVectors from '@/components/app/development-vectors'
 export const dynamic='force-dynamic'
 export const revalidate=0

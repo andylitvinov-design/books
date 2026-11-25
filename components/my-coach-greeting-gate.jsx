@@ -35,7 +35,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,autosaveAvailable=false,autosaveConsent=false,onAutosaveConsent,savedDrafts=[],onResumeDraft,draftLoading=false,hasMoreDrafts=false,onMoreDrafts}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,privateAutosaveControl,resumeControl}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -150,6 +150,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
        {phase==='complete'&&<div className={styles.completed}>
          <p className={styles.greetingQuote}>“{presentation?.text||localCoachText(persona?.opening,lang)}”</p>
+         {privateAutosaveControl}
          <button type="button" className={styles.primary} data-coach-greeting-start
            onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={20} fill="currentColor" aria-hidden="true"/>
            {t.start} {sessionName}</button>
@@ -161,19 +162,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
      </div>
      <p className={styles.freeNotice}>{t.free}</p>
-     {autosaveAvailable&&<label className={styles.freeNotice}>
-       <input type="checkbox" checked={autosaveConsent} onChange={e=>onAutosaveConsent?.(e.target.checked)}/>
-       {({ru:'Сохранять текст сессии в моём личном профиле автоматически, даже при прерывании. Это не разрешение передавать историю внешнему ИИ.',en:'Privately autosave session text even if interrupted. This does not authorize sharing history with an external AI.',es:'Guardar el texto en mi perfil privado incluso si se interrumpe. No autoriza compartir el historial con una IA externa.'})[lang]}
-     </label>}
-     {savedDrafts.length>0&&<div className={styles.freeNotice}>
-       {savedDrafts.map(d=><button key={d.id} type="button" className={styles.secondary} disabled={draftLoading}
-         onClick={()=>{audioRun.current++;player.current?.cancel?.();player.current=null;onResumeDraft?.(d.id)}}>
-         {({ru:'Продолжить и сохранять личный черновик',en:'Resume and autosave private draft',es:'Continuar y guardar borrador privado'})[lang]} · {new Date(d.updatedAt).toLocaleDateString(lang)} · {d.turnCount}
-       </button>)}
-       {hasMoreDrafts&&<button type="button" className={styles.secondary} disabled={draftLoading} onClick={onMoreDrafts}>
-         {({ru:'Более ранние сессии',en:'Earlier sessions',es:'Sesiones anteriores'})[lang]}
-       </button>}
-     </div>}
+     {resumeControl}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
