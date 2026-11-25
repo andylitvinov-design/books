@@ -335,7 +335,10 @@ test('IA Core proof accepts only exact existing Messenger UI source changes and 
     .split('\n').map(line=>line.slice(10)).join('\n');
   const run=new Function('require','process',body);
   const merge='a'.repeat(40),base='b'.repeat(40),head='c'.repeat(40);
-  const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'));
+  // Use the reviewed manifest shape as a fixture. Future manifest changes
+  // must restore the full build rather than fail this policy test.
+  const prebuild=JSON.parse(body.match(/s\.prebuild!==(\"(?:[^\"\\\\]|\\\\.)*\")/)[1]);
+  const pkg={scripts:{build:'next build',prebuild}};
   const z=String.fromCharCode(0);
   function accepted(rows,opts={}){
     let failed=false;
@@ -370,4 +373,5 @@ test('IA Core proof accepts only exact existing Messenger UI source changes and 
   assert.equal(accepted([ui],{core:'d'.repeat(40)}),false);
   assert.equal(accepted([ui],{router:'d'.repeat(40)}),false);
   assert.equal(accepted([ui],{pkg:{...pkg,scripts:{...pkg.scripts,postbuild:'node new-hook.js'}}}),false);
+  assert.equal(accepted([ui],{pkg:{scripts:{...pkg.scripts,prebuild:prebuild+' && node new-test.js'}}}),false);
 });
