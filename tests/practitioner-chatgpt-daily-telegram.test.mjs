@@ -112,7 +112,7 @@ test('same existing private date receipt and cron handle ChatGPT, no new job or 
   assert.match(core,/practiceTelegramConfigured\(env\)/)
   assert.match(core,/sendOwnerDocument\(/)
   assert.deepEqual(config.crons.filter(c=>c.path.includes('council-archive-telegram')),
-    [{path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'}])
+    [{path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'}])
 })
 
 test('attempted API errors are preserved, not flattened to not_run when both fail',()=>{

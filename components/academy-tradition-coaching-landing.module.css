@@ -33,3 +33,91 @@
 @media(max-width:760px){.hero{grid-template-columns:1fr}.visual{order:-1;min-height:215px;max-height:270px}.heroText{gap:12px}.stageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.end{flex-direction:column;align-items:stretch}.end .primary{width:100%}}
 @media(max-width:420px){.root{padding:11px 12px 48px}.hero{border-radius:17px}.heroText{padding:21px}.visual{min-height:180px;max-height:205px}.stageGrid{gap:8px}.stage{padding:12px;min-height:88px;font-size:12px}.howGrid{grid-template-columns:1fr;gap:9px}.howCard{min-height:0;padding:16px}.hero h1{font-size:32px}.features{gap:9px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto;transition:none}}
+
+
+/* Egyptian / Greek coaching offer: each model question is a separate
+   illustrated step; no private answers or logins appear in public media. */
+.root[data-public-visual-landing="tradition-coaching"] .stageGrid,
+.root[data-public-visual-landing="tradition-coaching"] .howGrid{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:12px;
+}
+.root[data-public-visual-landing="tradition-coaching"] .stage,
+.root[data-public-visual-landing="tradition-coaching"] .howCard,
+.root[data-public-visual-landing="tradition-coaching"] .end,
+.root[data-public-visual-landing="tradition-coaching"] .finalCapture{
+  display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);
+  align-items:stretch;gap:0;overflow:hidden;
+  min-height:min(630px,calc(100svh - 157px));
+  margin:12px 0;padding:0;border:1px solid #dfe5d9;
+  border-radius:20px;background:#fffdf7;box-shadow:0 8px 24px rgba(45,66,54,.045);
+}
+.root[data-public-visual-landing="tradition-coaching"] .scenePhoto{
+  position:relative;min-width:0;min-height:100%;overflow:hidden;
+  background:#dbdbcc;isolation:isolate;
+}
+.root[data-public-visual-landing="tradition-coaching"] .scenePhoto img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
+}
+.root[data-public-visual-landing="tradition-coaching"] .sceneWords{
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  gap:12px;min-width:0;padding:clamp(20px,4vw,47px);
+}
+.root[data-public-visual-landing="tradition-coaching"] .sceneWords strong{
+  font:400 clamp(30px,3.5vw,47px)/1.16 Georgia,serif;color:#294d48;
+  letter-spacing:-.03em;text-wrap:balance;
+}
+.root[data-public-visual-landing="tradition-coaching"] .sceneWords .number{
+  font:800 12px/1.4 Arial,Helvetica,sans-serif;color:#96704f;
+  letter-spacing:.12em;
+}
+.root[data-public-visual-landing="tradition-coaching"] .stage,
+.root[data-public-visual-landing="tradition-coaching"] .howCard{font-size:inherit}
+.root[data-public-visual-landing="tradition-coaching"] .howCard small{
+  font-size:13px;color:#5a7369;
+}
+.root[data-public-visual-landing="tradition-coaching"] .how .privacy,
+.root[data-public-visual-landing="tradition-coaching"] .how .disclaimer{
+  margin:12px 0 0;max-width:100%;
+}
+.root[data-public-visual-landing="tradition-coaching"] .end{
+  color:#2b524c;background:#eef6ef;
+}
+.root[data-public-visual-landing="tradition-coaching"] .end h2{
+  font:400 clamp(29px,3vw,40px)/1.13 Georgia,serif;color:#294d48;
+}
+.root[data-public-visual-landing="tradition-coaching"] .end p{font-size:14px;color:#50726a}
+.root[data-public-visual-landing="tradition-coaching"] .end .primary{margin-top:12px;background:#195c61;color:#fff!important}
+.root[data-public-visual-landing="tradition-coaching"] .end .back{margin-top:7px}
+.root[data-public-visual-landing="tradition-coaching"] .finalCapture{min-height:0}
+.root[data-public-visual-landing="tradition-coaching"] .finalCapture :global([data-inline-offer-form]){
+  width:100%;max-width:100%;align-self:center;margin:0;padding:clamp(18px,3vw,32px);
+  border:0;border-radius:0;background:#fffefa;
+}
+@media(max-width:760px){
+ .root[data-public-visual-landing="tradition-coaching"] .stage,
+ .root[data-public-visual-landing="tradition-coaching"] .howCard,
+ .root[data-public-visual-landing="tradition-coaching"] .end,
+ .root[data-public-visual-landing="tradition-coaching"] .finalCapture{
+   display:flex;flex-direction:column;gap:0;
+   min-height:min(615px,calc(100svh - 155px));
+   margin:9px 0;border-radius:17px;
+ }
+ .root[data-public-visual-landing="tradition-coaching"] .scenePhoto{
+   flex:none;min-height:0;width:100%;height:clamp(155px,26svh,220px);
+ }
+ .root[data-public-visual-landing="tradition-coaching"] .sceneWords{
+   flex:1;padding:17px 19px;
+ }
+ .root[data-public-visual-landing="tradition-coaching"] .sceneWords strong{
+   font-size:clamp(26px,7.3vw,36px);
+ }
+ .root[data-public-visual-landing="tradition-coaching"] .finalCapture{min-height:0}
+ .root[data-public-visual-landing="tradition-coaching"] .finalCapture .scenePhoto{height:clamp(100px,17svh,154px)}
+ .root[data-public-visual-landing="tradition-coaching"] .finalCapture :global([data-inline-offer-form]){
+   padding:12px;align-self:stretch;
+ }
+}
+@media(max-width:350px){
+ .root[data-public-visual-landing="tradition-coaching"] .scenePhoto{height:145px}
+ .root[data-public-visual-landing="tradition-coaching"] .finalCapture .scenePhoto{height:99px}
+}

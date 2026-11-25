@@ -10,20 +10,46 @@ import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coa
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingChatThread from '@/components/coaching-chat-thread'
+import MyCoachLiveDialogue from '@/components/my-coach-live-dialogue'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
+import {normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
-import CoachingLiveSessionCapture from '@/components/coaching-live-session-capture'
+import { CoachingLoungeEntry, CoachingLoungeOffers } from '@/components/coaching-lounge-entry'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
+import { getCoachPersona, localCoachText, coachStagePrompt, personaMethodFit } from '@/lib/coaching/persona-registry.mjs'
 import styles from './public-coaching-discovery.module.css'
 
 
+const preferredCoachingStarters=Object.freeze({
+  mira:['grow_reflect_v1','oskar_wellbeing_resources_v1','oskar_resources_v1'],
+  max:['grow_quick_v1','tgrow_compass_v1'],
+  sofia:['solution_relationship_dialogue_v1','clear_dialogue_v1'],
+  alex:['tgrow_compass_v1','grow_quick_v1'],
+  merlin:['appreciative_future_v1','grow_reflect_v1'],
+  harry:['oskar_resources_v1','woop_habit_v1'],
+  lea:['appreciative_future_v1','grow_reflect_v1'],
+  noah:['woop_habit_v1','woop_wellbeing_routine_v1'],
+  iris:['oskar_resources_v1','solution_focus_quick_v1'],
+  ray:['appreciative_future_v1','grow_reflect_v1'],
+})
+const coachTopicTags={
+  resilience:['stress','wellbeing','unclear'],decisions:['goal','decision','unclear'],
+  relationships:['relationships','conflict'],career:['career','business'],
+  meaning:['growth','transition'],habits:['motivation','productivity'],
+  clarity:['unclear','confidence','goal'],creativity:['creativity','growth'],
+}
+const myCoachCopy={
+  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',guided:'Or use a guided session',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'Text AI responds only after sign-in and explicit consent, when a privacy-preserving free model is configured. Otherwise the reviewed guided session remains available. Gemini Live Free is offered in coach settings when available, after sign-in and separate microphone consent.'},
+  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',guided:'Или пройти пошаговую программу',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Текстовый AI отвечает после входа и явного согласия, если настроена бесплатная модель с защитой данных. Иначе доступна программа с проверенными вопросами. Gemini Live Free доступен в настройках коуча, если активирован, после входа и отдельного согласия на микрофон.'},
+  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',guided:'O usar sesión guiada',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'La IA de texto responde tras iniciar sesión y dar consentimiento, si hay un modelo gratuito con privacidad verificada. Si no, sigue disponible la sesión guiada. Gemini Live Free está disponible en los ajustes del coach cuando se habilita, con acceso y consentimiento separado del micrófono.'},
+}
 const copy={
   en:{
     adultTitle:"Adults (18+) · Your conscious choice",
@@ -212,8 +238,17 @@ function CoachingLoungeCard({
     <div className={styles.loungeRow}>
       <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
-        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
-          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+        {traditionKey
+          ? <>
+              {/* Native eager image avoids Safari/WebKit skipping a lazy,
+                  absolutely positioned Next Image in a long scrolled grid. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.loungeTraditionPhoto} src={cardArtworkUrl(image)}
+                alt="" aria-hidden="true" loading="eager" decoding="async" width="640" height="720"
+                referrerPolicy="no-referrer"/>
+            </>
+          : <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
+              sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>}
       </Link>
       <div className={styles.loungeContent}>
         <div className={styles.loungeMeta}>
@@ -282,11 +317,15 @@ function CoachingCatalogGroup({group,items,locale,renderCard}){
   </section>
 }
 
-export default function PublicCoachingDiscovery({locale='en',catalog=null}){
+export default function PublicCoachingDiscovery({locale='en',catalog=null,personaSelection=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
+  const selectedPersona=getCoachPersona(personaSelection?.personaId)
+  const selectedPersonaName=selectedPersona?localCoachText(selectedPersona.name,lang):''
+  const personaBridgeText=myCoachCopy[lang]
   const privateCoachingLocale=lang==='es'?'en':lang
   const traditionHref=id=>'/'+privateCoachingLocale+'/app/coaching/'+id+(lang==='es'?'?lang=es':'')
   const [format,setFormat]=useState('all')
+  const [coachingChoice,setCoachingChoice]=useState('free')
   const [outcome,setOutcome]=useState('')
   const [sessionMode,setSessionMode]=useState('all')
   const [question,setQuestion]=useState('')
@@ -299,6 +338,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
+  const [liveChat,setLiveChat]=useState(Boolean(selectedPersona))
   const [entryStep,setEntryStep]=useState('intro')
   const [checkin,setCheckin]=useState('')
   const [sessionTopic,setSessionTopic]=useState('')
@@ -308,6 +348,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false)
   const [speechConsent,setSpeechConsent]=useState(false)
+  const [avatarSpeech,setAvatarSpeech]=useState({phase:'idle',beat:0})
+  const avatarPhase=dictating?'listening':avatarSpeech.phase
+  const updateCoachSpeech=event=>setAvatarSpeech(normalizeAvatarSpeechEvent(event))
   const [finished,setFinished]=useState(false)
   const [finishedAt,setFinishedAt]=useState(null)
   const [pdfError,setPdfError]=useState('')
@@ -322,7 +365,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
   useEffect(()=>{
-    if(!session)return
+    if(!session&&!liveChat)return
     // The public session is an immersive viewport, not a card inside the site.
     // Keep the original scroll state when returning to the model lounge.
     const previousOverflow=document.body.style.overflow
@@ -345,7 +388,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       rootRef.current?.style.removeProperty('--coach-visible-height')
       rootRef.current?.style.removeProperty('--coach-visible-top')
     }
-  },[session])
+  },[session,liveChat])
   // On phones, the next question must not appear below the old viewport.
   // Focus the freshly rendered heading after each guest step; never autofocus
   // an input or open the keyboard without the visitor's action.
@@ -357,6 +400,28 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   },[session,index,finished,pendingFollowup,entryStep])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
+  // Only a published, non-sensitive model can open directly from a fictional AI persona.
+  const starterScheme=useMemo(()=>{
+    if(!selectedPersona)return null
+    const safe=schemes.filter(s=>!coachingSchemeRequiresAdultConsent(s))
+    const preferred=preferredCoachingStarters[selectedPersona.id]||[]
+    for(const key of preferred){
+      const found=safe.find(s=>s.schemeKey===key)
+      if(found)return found
+    }
+    const topicTags=coachTopicTags[selectedPersona.topic]||[]
+    const wantsFast=personaSelection?.settings?.pace==='fast'
+    const score=s=>{
+      const tags=Array.isArray(s.tags)?s.tags:[]
+      return (tags.some(tag=>topicTags.includes(tag))?40:0)
+        +(tags.some(tag=>['goal','unclear','growth'].includes(tag))?20:0)
+        +personaMethodFit(selectedPersona.id,s.modelKey)*10
+        +(s.style===(wantsFast?'quick':'reflective')?2:0)
+        -(tags.some(tag=>['money','budget'].includes(tag))&&selectedPersona.topic!=='career'?50:0)
+    }
+    return [...safe].sort((a,b)=>score(b)-score(a)||Math.abs(a.minutes-20)-Math.abs(b.minutes-20)
+      ||a.schemeKey.localeCompare(b.schemeKey))[0]||null
+  },[schemes,selectedPersona,personaSelection?.settings?.pace])
   // A dedicated public scheme landing may link back to an explicit Start action.
   // Only a whitelisted, published scheme key is read from the URL; never a
   // visitor's raw question or response. No session is stored by this handoff.
@@ -376,7 +441,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)&&coachingSchemeInGroup(s,topicGroup)&&(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
-    .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||outcomeScore(b,outcome,topicGroup)-outcomeScore(a,outcome,topicGroup)||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,sessionMode,topicGroup,topic,duration,style,outcome,suggestionKeys])
+    .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||outcomeScore(b,outcome,topicGroup)-outcomeScore(a,outcome,topicGroup)||(personaMethodFit(selectedPersona?.id,b.modelKey)-personaMethodFit(selectedPersona?.id,a.modelKey))||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,sessionMode,topicGroup,topic,duration,style,outcome,suggestionKeys,selectedPersona?.id])
   const useGroupedCatalog=format==='all'&&sessionMode==='all'&&topicGroup==='all'&&topic==='all'&&duration===0&&style==='all'&&!outcome&&!question.trim()&&shown.length>6
   const shownTraditions=useMemo(()=>{
     if(sessionMode==='express'||sessionMode==='extended')return []
@@ -398,6 +463,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     previousReflection:reflections?.[previousQuestion?.id]?.text,
     index,total:session?.questions?.length||1,locale:lang,
   })
+  const personaFollowupText=selectedPersona&&pendingFollowup?coachStagePrompt(selectedPersona.id,pendingFollowup.stage,lang,personaSelection?.settings):null
   const followupTurn=pendingFollowup?coachingConversationTurn({
     question:current,previousQuestion:current,previousAnswer:answers?.[current?.id],
     index,total:session?.questions?.length||1,locale:lang,followup:true,
@@ -420,15 +486,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     setTopicGroup(coachingTopicGroup(groupId).id)
     setTopic('all')
   }
-  function start(scheme){
-    if(recommendation.blocked)return
+  function start(scheme,direct=false){
+    if(!scheme||recommendation.blocked)return
     setDictating(false)
+    setAvatarSpeech({phase:'idle',beat:0})
     setAdultAcknowledged(false)
-    setSession(scheme);setEntryStep('intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep(direct?'questions':'intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
+    setAvatarSpeech({phase:'idle',beat:0})
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setEntryStep('intro');setCheckin('');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
@@ -535,14 +603,43 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       onLanding={()=>stageIdeasCoachingQuestion(question)}
       landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
   }
-  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
+  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session||liveChat?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
-      {!session?<>
-        <header className={styles.hero}>
-          <p className={styles.eyebrow}><Sparkles size={16}/>{t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p><span className={styles.leadFull}>{t.lead}</span><span className={styles.leadShort}>{t.leadCompact}</span></p>
-        </header>
+      {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id} data-coach-session-layout={liveChat?'true':undefined}>
+        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id} locale={lang}
+          personaId={selectedPersona.id} settings={personaSelection?.settings}
+          onClose={()=>setLiveChat(false)}
+          onGuided={starterScheme?()=>{setLiveChat(false);start(starterScheme,true)}:null}/> : <>
+        <Link className={styles.personaWelcomeChange} href={'/'+lang+'/my-coach'} prefetch={false}>
+          <ArrowLeft size={17} aria-hidden="true"/>{personaBridgeText.edit}
+        </Link>
+        <div className={styles.personaWelcomeArt}>
+          <span className={styles.personaWelcomeGlow} aria-hidden="true"/>
+          <span className={styles.personaWelcomeFace} data-persona={selectedPersona.id}
+            role="img" aria-label={selectedPersonaName}>{selectedPersona.symbol}</span>
+          <span className={styles.personaWelcomeStatus}><Sparkles size={16} aria-hidden="true"/>{personaBridgeText.ready}</span>
+        </div>
+        <div className={styles.personaWelcomeBody}>
+          <p className={styles.personaWelcomeEyebrow}>{personaBridgeText.eyebrow}</p>
+          <h1>{selectedPersonaName}</h1>
+          <p className={styles.personaWelcomeRole}>{localCoachText(selectedPersona.role,lang)}</p>
+          <p className={styles.personaWelcomeDescription}>{localCoachText(selectedPersona.description,lang)}</p>
+          <blockquote className={styles.personaWelcomeGreeting}>“{localCoachText(selectedPersona.opening,lang)}”</blockquote>
+          <button type="button" className={styles.personaWelcomeStart} disabled={recommendation.blocked}
+            onClick={()=>setLiveChat(true)} data-my-coach-begin-conversation>
+            {personaBridgeText.start}<ArrowRight size={19} aria-hidden="true"/>
+          </button>
+          {starterScheme&&<button type="button" className={styles.personaWelcomeGuided}
+            onClick={()=>start(starterScheme,true)} data-my-coach-begin-guided-session>
+            {personaBridgeText.guided}
+          </button>}
+          {recommendation.blocked?<p className={styles.alert} role="alert">{t.alert}</p>:
+            !starterScheme?<p className={styles.alert} role="status">{personaBridgeText.unavailable}</p>:null}
+          <p className={styles.personaWelcomeNote}><LockKeyhole size={15} aria-hidden="true"/>{personaBridgeText.note}</p>
+        </div>
+        </>}
+      </section>:<>
+        <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
             <legend><strong>{t.groupHeading}</strong><span>{t.groupNote}</span></legend>
@@ -558,6 +655,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               </button>)}
             </div>
           </fieldset>
+          {format!=='human'&&<div className={styles.discoverySearch} data-coaching-discovery-search>
+            <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
+            <textarea id="public-coaching-question" className={styles.questionInput} rows={1} maxLength={600}
+              value={question} placeholder={t.placeholder} autoComplete="off"
+              onChange={e=>setQuestion(e.target.value)}/>
+            <p className={styles.privacy}><LockKeyhole size={14}/>{t.privateQuestion}</p>
+          </div>}
           <fieldset className={styles.sessionModes} data-coaching-session-mode-first>
             <legend><strong>{t.sessionModeTitle}</strong></legend>
             <div className={styles.sessionModeGrid} role="group" aria-label={t.sessionModeTitle}>
@@ -622,11 +726,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 </div>
               </div>
               </div>
-              <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
-            <textarea id="public-coaching-question" className={styles.questionInput} rows={1} maxLength={600}
-              value={question} placeholder={t.placeholder} autoComplete="off"
-              onChange={e=>setQuestion(e.target.value)}/>
-            <p className={styles.privacy}><LockKeyhole size={14}/>{t.privateQuestion}</p>
+
             </>}
           </details>
         </section>
@@ -661,7 +761,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
               key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
               title={t.egyptian} meta={t.egyptianMethod} price="€0"
-              image={traditionCoachingArt} description={t.egyptianNote}
+              image={traditionCoachingArt.egyptian} description={t.egyptianNote}
               detail={t.egyptianNote} caution={t.safe}
               suggested={suggestedTraditions.has('egyptian')}
               primaryHref={traditionHref('egyptian')} primaryLabel={t.chooseTradition}
@@ -669,7 +769,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {shownTraditions.includes('greek')&&<CoachingLoungeCard
               key="greek" locale={lang} id="greek" traditionKey="greek"
               title={t.greek} meta={t.greekMethod} price="€0"
-              image={traditionCoachingArt} description={t.greekNote}
+              image={traditionCoachingArt.greek} description={t.greekNote}
               detail={t.greekNote} caution={t.safe}
               suggested={suggestedTraditions.has('greek')}
               primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}
@@ -687,6 +787,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             </Link>
           </p>}
         </section>}
+        <CoachingLoungeOffers locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title" data-coaching-session-capture>
           <div className={styles.coachFit} data-coaching-practitioner-checklist>
             <strong>{t.coachFitTitle}</strong>
@@ -694,14 +795,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
             <p className={styles.coachOnly}>{t.coachOnly}</p>
           </div>
-          <CoachingLiveSessionCapture locale={lang} />
+          <a href="#coaching-intake" className={styles.primary} data-coaching-human-to-intake
+              onClick={()=>setCoachingChoice("session")}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
         </section>}
         
-      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
+      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}
+        data-coaching-one-viewport={entryStep==='questions'&&!finished&&(!requiresAdult||adultAcknowledged)?'true':undefined}>
         <header className={styles.sessionHeader}>
-          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{selectedPersona?personaBridgeText.back:t.back}</button>
+          {selectedPersona&&<span className={styles.sessionPersonaMark} data-persona={selectedPersona.id} aria-hidden="true">{selectedPersona.symbol}</span>}
           <div className={styles.sessionHeaderInfo}>
-            <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {t.free}</p>
+            <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {selectedPersonaName?selectedPersonaName+' · ':''}{t.free}</p>
             {!finished&&<div className={styles.progress}>
               <span>{entryStep==='questions'?t.stage+' '+(index+1)+' '+t.of+' '+session.questions.length:progressPosition+' / '+(session.questions.length+2)}</span>
               <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length+2}
@@ -752,16 +856,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang}>
-              <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona}
+              speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
+              <h1 ref={titleRef} tabIndex={-1}>{personaFollowupText||tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}
-                 draftPreview={quickChoices&&draft.startsWith('choice:')?answerText(draft,current,lang,t):''}>
+              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona}
+                speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
@@ -800,8 +905,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <div className={styles.replyTools}>
               <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
                 compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
-                locale={lang} mode="answer" speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-                onListeningChange={setDictating}
+                locale={lang} mode="answer" fictionalPersona={Boolean(selectedPersona)} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                onListeningChange={setDictating} onSpeechChange={updateCoachSpeech}
                 onTranscript={words=>{
                   if(pendingFollowup)setReflectionDraft(old=>appendSpokenAnswer(old,words,500))
                   else setDraft(old=>appendSpokenAnswer(old.startsWith('choice:')?'':old,words))

@@ -18,21 +18,27 @@ async function handle(request) {
     const config = getAppConfig()
     requestOrigin(request, config)
     if (request.method !== 'GET') requireSameOrigin(request, config)
-    await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
     const inbox = createReikiLeadInbox(config)
     const donations = createReikiDonationOrders(config)
-    const reviews = createReikiReviewModeration(config)
     if (request.method === 'GET') {
-      return NextResponse.json({
-        leads: await inbox.list(),
-        donations: await donations.listOwner(),
-        reviews: await reviews.list(),
-      }, { headers: PRIVATE_HEADERS })
+      const url = new URL(request.url)
+      const photoId = url.searchParams.get('photo')
+      if (photoId !== null) {
+        if (url.searchParams.getAll('photo').length !== 1 ||
+            [...url.searchParams.keys()].some(key => key !== 'photo'))
+          throw new AppError('INVALID_PHOTO_REQUEST', 400)
+        await consumeRate(config, { op: 'reiki-owner-photo', id: photoId }, 12, 60)
+        return NextResponse.json(await inbox.photo({ id: photoId }), { headers: PRIVATE_HEADERS })
+      }
+      if (url.search) throw new AppError('INVALID_FILTER', 400)
+      await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
+      const reviews = createReikiReviewModeration(config)
+      return NextResponse.json({ leads: await inbox.list(), reviews: await reviews.list(), donations: await donations.listOwner() }, { headers: PRIVATE_HEADERS })
     }
+    await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
+    const reviews = createReikiReviewModeration(config)
     const body = await readBody(request, 4096)
-    if (body.action === 'verify-donation') {
-      return NextResponse.json(await donations.verifyOwner(body), { headers: PRIVATE_HEADERS })
-    }
+    if (body.action === 'verify-donation') return NextResponse.json(await donations.verifyOwner(body), { headers: PRIVATE_HEADERS })
     if (body.action === 'moderate-review') {
       onlyKeys(body,['action','id','status','expectedRevision'])
       return NextResponse.json(await reviews.moderate(body),{headers:PRIVATE_HEADERS})

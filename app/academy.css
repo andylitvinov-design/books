@@ -5114,3 +5114,14 @@
     line-height: 1.3;
   }
 }
+
+/* Original Russian PsiMaster curriculum -> verified source video chapters. */
+.academy-mystery-video-bridge { margin: 22px 0; padding: 18px; border: 1px solid #dfcdb7; background: #fff9f1; }
+.academy-mystery-video-bridge h2 { margin: 0 0 8px; font-size: clamp(19px, 3.8vw, 25px); line-height: 1.2; color: #563c2b; }
+.academy-mystery-video-bridge p { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: #625247; }
+.academy-mystery-video-bridge .academy-resource-links { padding: 0; border: 0; }
+.academy-mystery-video-bridge .academy-resource-links a { font-size: 14px; line-height: 1.4; background: #fff; }
+@media (max-width: 620px) {
+  .academy-mystery-video-bridge { padding: 14px; }
+  .academy-mystery-video-bridge .academy-resource-links { grid-template-columns: minmax(0, 1fr); }
+}

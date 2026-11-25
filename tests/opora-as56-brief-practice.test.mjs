@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
-import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -63,7 +63,7 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      const current=oporaAs60Day(day,locale)
+      const current=oporaAs60VariedDay(day,locale)
       assert.ok(textOf(f.h.tree).includes(current.title),'Current 3-step practice has its own day title')
       assert.ok(textOf(f.h.tree).includes(current.practice),'Practice card shows the real AS-6.0 experiment')
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))

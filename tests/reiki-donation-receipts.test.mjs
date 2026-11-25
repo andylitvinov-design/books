@@ -117,3 +117,10 @@ test('mobile accessible cart previews, explicit confirmation and per-client veri
   assert.match(css,/min-height:44px/)
   assert.doesNotMatch(learner,/sessionStorage\.setItem\([^)]*donation/)
 })
+
+// Disabled schema must not interrupt the existing CRM or course.
+test('Donation endpoints are fail-closed before schema approval', () => {
+  assert.match(service, /if \(!schemaApproved\(\)\) return \{ enabled: false, order: null \}/)
+  assert.match(service, /if \(!schemaApproved\(\)\) return \[\]/)
+  assert.match(route, /request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
+})

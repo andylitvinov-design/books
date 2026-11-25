@@ -19,6 +19,7 @@ async function handle(request) {
     if (request.method === 'POST') requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const actor = await auth.verified()
+    if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
     const orders = createReikiDonationOrders(config)
     await consumeRate(config, { op: 'reiki-donation', user: actor.id },
       request.method === 'POST' ? 8 : 30, 3600)

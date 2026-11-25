@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {checkPrHandoff} from '../scripts/lab-pr-handoff.mjs';
+const a='a'.repeat(40),b='b'.repeat(40);
+const packet={id:'LAB-101',status:'RELEASE_CANDIDATE',targetBranch:'codex/public-book-library',headSha:b,baseSha:a,qaPassed:true,testEvidence:true};
+const facts={headSha:b,productionSha:a,openPrs:[]};
+test('eligible packet is handed to release lane',()=>assert.equal(checkPrHandoff(packet,facts).ready,true));
+test('stale base blocks handoff',()=>assert.equal(checkPrHandoff(packet,{...facts,productionSha:b}).reason,'base-changed'));
+test('existing PR blocks duplicate',()=>assert.equal(checkPrHandoff(packet,{...facts,openPrs:[{labId:'LAB-101'}]}).reason,'existing-pr'));
+test('missing live PR inventory fails closed',()=>assert.equal(checkPrHandoff(packet,{...facts,openPrs:null}).reason,'pr-inventory-unavailable'));

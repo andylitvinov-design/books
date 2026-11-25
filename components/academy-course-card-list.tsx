@@ -15,6 +15,7 @@ export type AcademyCourseItem = CatalogShowcaseItem & {
   duration?: string;
   detailsHint?: string;
   archiveKind?: "course" | "video";
+  takeLabel?: string;
 };
 
 const copy = {
@@ -79,7 +80,7 @@ function AcademyCourseCard({ item, locale }: { item: AcademyCourseItem; locale: 
               <ChevronDown className={showDetails ? styles.chevronOpen : styles.chevron} size={15} aria-hidden="true" />
             </button>
             <Link className={styles.take} href={item.courseHref ?? item.href} prefetch={false}>
-              {item.courseHref ? t.start : t.open}
+              {item.takeLabel ?? (item.courseHref ? t.start : t.open)}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>

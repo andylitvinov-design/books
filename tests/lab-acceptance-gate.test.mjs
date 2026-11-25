@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {acceptLabFeature} from '../scripts/lab-acceptance-gate.mjs';
+const A='a'.repeat(40),B='b'.repeat(40);
+const feature={headSha:A,authorId:'agent-dev',criteria:['generates-text'],requiresBrowser:true};
+const evidence={criteria:{'generates-text':{passed:true,sha:A}},tests:[{status:'passed',sha:A,runId:'test-123',source:'test-runner'}],independentReview:{status:'passed',sha:A,reviewerId:'agent-review',evidenceId:'review-123'},security:{status:'passed',sha:A},browser:{status:'passed',sha:A}};
+test('accepts complete evidence on exact head',()=>assert.equal(acceptLabFeature(feature,evidence).accepted,true));
+test('rejects stale test evidence',()=>assert.equal(acceptLabFeature(feature,{...evidence,tests:[{...evidence.tests[0],sha:B}]}).reason,'tests-unverified'));
+test('rejects self-review',()=>assert.equal(acceptLabFeature(feature,{...evidence,independentReview:{...evidence.independentReview,reviewerId:'agent-dev'}}).reason,'independent-review-missing'));
+test('rejects missing browser verification',()=>assert.equal(acceptLabFeature(feature,{...evidence,browser:null}).reason,'browser-unverified'));
+test('rejects unsupported criterion',()=>assert.equal(acceptLabFeature(feature,{...evidence,criteria:{}}).reason,'acceptance-criteria-unverified'));

@@ -136,7 +136,7 @@ test('personal course offers listen, typed, one-tap and dictated editable choice
   const answerIndex=ui.indexOf('id="hh-personal-coach-answer"')
   assert.ok(suggestionIndex>=0 && answerIndex>=0 && suggestionIndex<answerIndex,
     'Quick response chips must exist before the editable answer textarea')
-  assert.match(ui,/command\('answer',\{questionId:question\.id,answer\}\)/)
+  assert.match(ui,/command\('answer',\{questionId:question\.id,answer,/)
   assert.match(ui,/if\(!saved\)return/)
   assert.match(server,/seal\(course,sealContext\(actor\),config\)/)
   assert.match(css,/\.questionArea\{min-height:0;flex:1;overflow-y:auto/)

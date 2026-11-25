@@ -1,0 +1,75 @@
+{
+  "version": "hh-dareful-source-candidates-v1",
+  "reviewedOn": "2026-11-01",
+  "approvedForPublication": false,
+  "editorialStatus": "source_license_verified_visual_media_qc_pending",
+  "licenseEvidence": "Individual source pages linked below display MP4 format and CC BY 4.0. Source links are not master footage and are not served to visitors.",
+  "publisher": "Dareful",
+  "creator": "Joel Holland",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "sources": [
+    {
+      "id": "sun-trees-forest",
+      "sourcePage": "https://dareful.com/sun-trees-forest/",
+      "mediaUrl": "https://stream.mux.com/H02FObGT9Z01BnWL5zZu19x502TjsnYGh7TT016BUGnGfrM.m3u8",
+      "durationSeconds": 14,
+      "suggestedTheme": "health",
+      "targetScenarioId": "forest-balance",
+      "suggestedNames": {
+        "ru": "Солнечный зимний лес",
+        "en": "Sunlit snowy forest",
+        "es": "Bosque nevado al sol"
+      },
+      "visualReviewRequired": true,
+      "visualTags": [
+        "winter",
+        "frost",
+        "snow",
+        "forest",
+        "sunlight"
+      ]
+    },
+    {
+      "id": "mountain-fall-autumn",
+      "sourcePage": "https://dareful.com/mountain-fall-autumn/",
+      "mediaUrl": "https://stream.mux.com/IgcMhpoz01cK9fxaaOSOXW6nzZEqlADRjRdshlrZbQzw.m3u8",
+      "durationSeconds": 24,
+      "suggestedTheme": "life",
+      "targetScenarioId": "fresh-chapter",
+      "suggestedNames": {
+        "ru": "Осенние горы",
+        "en": "Autumn mountain light",
+        "es": "Luz de montañas otoñales"
+      },
+      "visualReviewRequired": true
+    },
+    {
+      "id": "warm-clouds-sunset",
+      "sourcePage": "https://dareful.com/warm-clouds-sunset/",
+      "mediaUrl": "https://stream.mux.com/bJwm8P02mmLytplzaZiTw4Mhvwn8aafkEcd6ql9qkG1s.m3u8",
+      "durationSeconds": 17,
+      "suggestedTheme": "relationships",
+      "targetScenarioId": "warm-connection",
+      "suggestedNames": {
+        "ru": "Тёплые облака",
+        "en": "Warm clouds at sunset",
+        "es": "Nubes cálidas al atardecer"
+      },
+      "visualReviewRequired": true
+    },
+    {
+      "id": "sunset-coast-timelapse",
+      "sourcePage": "https://dareful.com/sunset-coast-timelapse/",
+      "mediaUrl": "https://stream.mux.com/wf97MiaBr3umTkB00wSTweccCuWy01cMZ01WbK6mp99KDE.m3u8",
+      "durationSeconds": 33,
+      "suggestedTheme": "goals",
+      "targetScenarioId": "clear-future",
+      "suggestedNames": {
+        "ru": "Далёкий горизонт",
+        "en": "Sunset coast horizon",
+        "es": "Horizonte costero al atardecer"
+      },
+      "visualReviewRequired": true
+    }
+  ]
+}

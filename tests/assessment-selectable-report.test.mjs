@@ -11,6 +11,7 @@ import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
 import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
 import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
+import { buildMotivatorMessage } from '../lib/assessments/motivator-mind.mjs'
 import { SITUATION_OBSERVATION } from '../lib/assessments/situational-score-context.js'
 import { assessmentResultOverview, initialAssessmentSection } from '../lib/assessments/result-overview.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
@@ -20,6 +21,7 @@ const compile = path => ts.transpileModule(readFileSync(new URL('../' + path, im
 }).outputText
 const reportCode = compile('components/app/compact-assessment-report.jsx')
 const gaugeCode = compile('components/app/assessment-gauge.jsx')
+const motivatorCode = compile('components/app/motivator-mind.jsx')
 const jsx = (type, props, key) => ({ type, props, key })
 const runtime = { jsx, jsxs: jsx, Fragment: 'Fragment' }
 const load = (code, imports) => {
@@ -34,6 +36,9 @@ const load = (code, imports) => {
 }
 const gauges = load(gaugeCode, { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange },
   '@/lib/assessments/score-change-reading': { scoreChangeReading } })
+const { MotivatorMind } = load(motivatorCode, {
+  '@/lib/assessments/motivator-mind.mjs': { buildMotivatorMessage },
+})
 const expand = node => node == null || typeof node !== 'object' ? node
   : Array.isArray(node) ? node.map(expand)
     : typeof node.type === 'function' ? expand(node.type(node.props))
@@ -65,6 +70,7 @@ function mount(props) {
   } }
   const { CompactAssessmentReport } = load(reportCode, {
     react: hooks, './assessment-gauge': gauges,
+    './motivator-mind': { MotivatorMind },
     './free-course-banner': { FreeCourseBanner: p => jsx('aside', { 'data-optional-course': true, ...p }) },
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },

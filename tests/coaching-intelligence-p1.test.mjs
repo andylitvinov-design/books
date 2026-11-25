@@ -168,7 +168,7 @@ test('UI reuses authenticated encrypted storage, keeps one question and offers e
   assert.match(ui,/data-coaching-recap-key=\{row\.key\}/)
   assert.match(ui,/clipboard\.writeText\(coachingRecapClipboardText/)
   assert.match(ui,/root='\/'\+lang\+'\/app'/)
-  assert.match(ui,/command\('answer',\{questionId:question\.id,answer\}\)/)
+  assert.match(ui,/command\('answer',\{questionId:question\.id,answer,/)
   assert.match(server,/seal\(course,sealContext\(actor\),config\)/)
   for(const name of ['adaptivePanel','smartRecap','smartRecapGrid','smartRecapCard','recapCopy'])
     assert.match(css,new RegExp('\\.'+name+'\\b'))

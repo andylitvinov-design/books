@@ -85,3 +85,21 @@ test("occupied Cart stays reachable in the menu and Cabinet remains visible on n
   assert.match(headerCss, /@media \(max-width: 490px\)[\s\S]*a\[data-nav-item="cart"\]\[data-cart-has-items="true"\]/);
   assert.match(headerCss, /> a\[data-nav-item="cart"\]\[data-cart-has-items="true"\]\s*\{\s*display:\s*none/);
 });
+
+test("paid Video Studio tiers are kept separately in the existing personal cart, never mixed into consultation SKU prices",()=>{
+ const studio=read("components/mandala-pro-enhance.tsx");
+ const cart=read("components/commerce/personal-cart.tsx");
+ const header=read("components/commerce/cart-nav-link.tsx");
+ const video=read("components/commerce/video-cart-payment.tsx");
+ assert.match(studio,/createVideoCartSelection\(id,proWish\)/);
+ assert.match(studio,/router.push\("\/"\+locale\+"\/cart\?video="\+id\)/);
+ assert.match(cart,/<VideoCartPayment locale=\{locale\}/);
+ assert.match(cart,/chosen.length \+ videoCartCount/);
+ assert.match(header,/restoreVideoCart/);
+ assert.match(video,/data-video-cart-paypal-dialog/);
+ assert.match(video,/data-video-cart-paypal-open/);
+ assert.match(video,/window.open\(redirect/);
+ assert.match(video,/paypalOpened/);
+ assert.match(video,/acknowledged|agreed/);
+ assert.doesNotMatch(video,/postVideoCreditAction|markAsPaid|setPaid\(|captureOrder|autoRender|sendToProvider/);
+})

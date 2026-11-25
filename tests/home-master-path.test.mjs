@@ -10,11 +10,15 @@ const styles = read("components/home-master-path.module.css");
 
 test("Master is the final immersion stage, not a repeated footer promotion", () => {
   const feature = read("components/home-featured-workspace.tsx");
-  for (const page of [home, spanish]) {
-    assert.equal((page.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
-    assert.doesNotMatch(page, /<HomeMasterPath\b/);
-    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<footer"));
+  const expanded=read("components/home-expanded-catalog.tsx");
+  for(const page of [home,spanish]){
+    assert.match(page,/<HomeDialogueEntry locale=/);
+    assert.match(page,/<HomeDeferredSections locale=/);
+    assert.doesNotMatch(page,/<HomeFeaturedWorkspace|<HomeMasterPath\b/);
+    assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<footer"));
   }
+  assert.equal((expanded.match(/<HomeFeaturedWorkspace\b/g)||[]).length,1);
+  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
   assert.match(feature, /"courses",\s*"personality",\s*"situation",\s*"coaching",\s*"alchemy",\s*"energy",\s*"master"/);
   assert.match(feature, /data-home-module=\{id\}/);
   for (const action of ['"pro"', '"service"', '"course"']) assert.ok(feature.includes(action));
@@ -25,8 +29,8 @@ test("the compact invitation has localized actionable Pro and My Practice links 
   const pro = read("app/[locale]/pro/page.tsx");
   const practice = read("components/app/practice-workspace.jsx");
   assert.ok(widget.includes('href={"/" + locale + "/pro"}'));
-  assert.ok(widget.includes('href={"/" + accountLocale + "/app/practice?panel=services"}'));
-  assert.ok(widget.includes('locale === "es" ? "en" : locale'));
+  assert.ok(widget.includes('href={"/" + locale + "/practice"}'));
+  assert.ok(!widget.includes('accountLocale + "/app/practice"'));
   assert.match(pro, /<ProfiHub locale=\{locale\}/);
   assert.match(practice, /if\(params\.get\('panel'\)==='services'\)\s*\{?\s*setActivePanel\('services'\)/);
   for (const label of ["Become a Master", "Станьте мастером", "Hazte profesional",

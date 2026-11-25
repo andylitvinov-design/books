@@ -40,7 +40,7 @@ async function handler(request){
         onlyKeys(body,['action','requestId','messageId'])
         data=await store.markSeen(actor,body)
       }else{
-        onlyKeys(body,['requestId','operationId','text','visibility'])
+        onlyKeys(body,['requestId','operationId','text','visibility','assetId'])
         data=await store.send(actor,body)
       }
     }

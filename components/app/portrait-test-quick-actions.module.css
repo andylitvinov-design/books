@@ -26,3 +26,41 @@
 @media(max-width:430px){.header{padding:12px}.list{padding:0 8px}.item{gap:8px;padding:11px 3px}.info strong{font-size:12.5px}.takeTest{min-width:93px;min-height:44px;padding:8px 7px;font-size:11.5px}.note{padding:0 12px 12px}}
 @media(max-width:340px){.item{gap:5px}.takeTest{min-width:88px;font-size:11px}.header strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.up,.down,.shell,.shell[data-expanded="true"]{transition:none}}
+
+
+/* Full source-backed profile test catalogue: filters and completion status. */
+.catalog{min-width:0;background:#fffdf9;border:1px solid #c7ddd1;border-radius:12px;overflow:hidden}
+.catalogHeader{display:flex;gap:10px;align-items:start;justify-content:space-between;padding:12px 13px 9px}
+.catalogHeader>div{display:grid;gap:3px;min-width:0}
+.catalogHeader strong{color:#205c53;font:750 14px/1.25 system-ui,sans-serif}
+.catalogHeader small{font:500 11px/1.3 system-ui,sans-serif;color:#60796e}
+.count{font:700 10px/1.35 system-ui,sans-serif;color:#486e62;text-align:right;max-width:42%}
+.kindTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 10px 8px;padding:3px;background:#e9f2ed;border-radius:9px}
+.kindTabs button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:34px;border:1px solid transparent;border-radius:7px;background:transparent;color:#35695c;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}
+.kindTabs button[aria-pressed=true]{border-color:#a6cbb7;background:#fffdf8;color:#155f51}
+.kindTabs button span{color:#698d80;font-size:10px}
+.kindTabs button:focus-visible{outline:3px solid #197a69;outline-offset:2px}
+.catalogList{list-style:none;padding:0 10px 3px;margin:0;max-height:min(62svh,480px);overflow-y:auto;overscroll-behavior:contain}
+.catalogItem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;min-height:57px;padding:10px 4px;border-top:1px solid #e2ebe4}
+.catalogItem .info{gap:3px}
+.catalogItem .info strong{font-size:12.5px}
+.catalogItem .info small{font-size:10.5px}
+.catalogItem .info span{font-size:10.5px}
+.completed{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:29px;padding:4px 7px;background:#e3f3e8;color:#246954;border:1px solid #b5d6c4;border-radius:999px;white-space:nowrap;font:700 10.5px/1.15 system-ui,sans-serif}
+.catalog .takeTest{min-width:84px;min-height:35px;padding:6px 8px;border-radius:9px;font-size:11px}
+.catalog .note{border-top:1px solid #edf0e9;padding:9px 12px 10px;margin:0}
+@media(max-width:430px){
+  .catalogHeader{padding:10px 9px 7px}
+  .catalogHeader strong{font-size:13px}
+  .count{font-size:10px}
+  .kindTabs{margin:0 7px 6px}
+  .kindTabs button{min-height:34px;padding:5px 1px;font-size:10.5px}
+  .catalogList{padding:0 7px;max-height:min(56svh,410px)}
+  .catalogItem{gap:5px;padding:9px 1px}
+  .catalogItem .info strong{font-size:12px}
+  .catalog .takeTest{min-width:76px;min-height:36px;padding:5px 6px;font-size:10px}
+  .completed{font-size:10px;padding:4px}
+}
+@media(prefers-reduced-motion:reduce){.kindTabs button,.catalog .takeTest{transition:none}}
+
+.catalog .exploratory{display:block;color:#875f49;font:600 10px/1.3 system-ui,sans-serif;font-style:normal}

@@ -84,7 +84,9 @@ async function ready(){
  for(let attempt=0;attempt<3;attempt++){
   try {
    await expect(nav).toBeVisible({timeout:attempt===0?30000:20000})
-   await page.waitForLoadState('networkidle')
+   // The authenticated navigation is the semantic readiness marker. Background
+   // billing/notification requests need not become idle for the page to work.
+   // Every journey still asserts its own content and server-side responses.
    return
   } catch(error) {
    console.log('SYNTHETIC_READINESS_PENDING_REQUESTS',JSON.stringify([...pendingRequests.values()]))
@@ -361,9 +363,10 @@ async function openCompletedPlanResult(){
  await expect(page.locator('#my-tests-list')).toBeVisible()
  const resultLink=page.getByRole('link',{name:'View result'}).first()
  await expect(resultLink).toHaveAttribute('href',/\/results\//)
- // WebKit can hydrate a newly completed test overview more slowly in CI.
- // Wait for route readiness before exercising client-side navigation.
- await page.waitForLoadState('networkidle')
+ // The specific result link and subsequent route are the readiness contract;
+ // unrelated background requests must not delay a real user navigation.
+ await expect(resultLink).toBeVisible()
+ await expect(resultLink).toBeEnabled()
  await resultLink.click()
  await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
@@ -436,8 +439,13 @@ async function verifyPublicServiceConversionJourneys(){
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    const serviceResponse=await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded'})
+     assert.equal(serviceResponse?.status(),200,locale+'/'+slug+'/'+width+': service route HTTP 200')
+    // The canonical free Wu Xing entry now uses FreeEntryLanding rather than CoreServiceDetail.
+    // Check the actual page, never a historical DOM selector or synthetic placeholder.
+    const heading=kind==='dao'?'main[data-free-entry-landing="dao"] h1#free-entry-title':
+     'main[data-core-service-detail="'+kind+'"] h1'
+    await expect(servicePage.locator(heading)).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -445,13 +453,18 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
-     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
-      'Default payment details are collapsed before geometry measurement')
+     assert.equal(await servicePage.locator('[data-alchemy-payment-disclosure]').count(),0,
+      'Payment methods are absent until the practitioner confirms the session')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
+     // The one-screen contract applies to the mobile breakpoints (320/360/390).
+     // Desktop at 1280px intentionally flows naturally, and must not inherit
+     // a phone-only 764px height budget. Its real overflow/CTA tests still run.
+     if(width<=680){
+      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
+       'Every collapsed mobile Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     }
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -468,16 +481,17 @@ async function verifyPublicServiceConversionJourneys(){
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     const preferenceSelects=form.locator(':scope > label > select')
+     await expect(preferenceSelects).toHaveCount(2)
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     await preferenceSelects.first().selectOption('30')
+     await preferenceSelects.nth(1).selectOption('business')
+     await expect(preferenceSelects.first()).toHaveValue('30')
+     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
        nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+     assert.equal(boxes.length,12,'All twelve source-backed videos are visible')
      assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
        'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
      assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
@@ -485,24 +499,90 @@ async function verifyPublicServiceConversionJourneys(){
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
+     const book=pricing.locator('[data-booking-cta="book"]')
+     await expect(book).toHaveCount(1)
+     await book.click()
+     await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
+     await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else if(kind==='dao'){
+     const landing=servicePage.locator('main[data-free-entry-landing="dao"]')
+     const capture=landing.locator('#request-free-wu-xing[data-service-lead-capture]')
+     await expect(capture).toBeVisible({timeout:30000})
+     await expect(landing.locator('a[href="#request-free-wu-xing"]').first()).toBeVisible()
+     const form=capture.locator('form[data-compact-lead-form]')
+     await expect(form.locator('input[name="contact"]')).toBeVisible()
+     const consent=form.locator('input[type="checkbox"][required]')
+     await expect(consent).toHaveCount(1)
+     assert.equal(await consent.isChecked(),false,'Free profile consent must start unchecked')
+     for(const channel of ['whatsapp','telegram'])
+      await expect(form.locator('button[data-compact-channel="'+channel+'"]')).toBeVisible()
+     let unconsentedPosts=0
+     servicePage.on('request',request=>{
+      if(request.method()==='POST'&&new URL(request.url()).pathname==='/api/service-enquiries')
+       unconsentedPosts++
+     })
+     // A visible SSR form can be non-interactive before React hydration.
+     // This waits for the real client mount and retains the invalid-contact assertion.
+     await expect(form).toHaveAttribute('data-compact-hydrated','true',{timeout:15000})
+     await form.locator('button[data-compact-channel="whatsapp"]').click()
+     await expect(form.locator('input[name="contact"]')).toHaveAttribute('aria-invalid','true')
+     await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)
+     assert.equal(unconsentedPosts,0,'Free profile must not submit a lead without contact and consent')
     }else{
+     // Current SitewideLeadCapture uses the consent-first CompactLeadCapture,
+     // not the legacy ContactChannelChooser. Verify its real UI and never
+     // send a synthetic request to a deployed endpoint.
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
      await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
+     const form=capture.locator('form[data-compact-lead-form]')
+     await expect(form).toBeVisible()
+     await expect(form).toHaveAttribute('data-compact-hydrated','true',{timeout:15000})
+     await expect(form.locator('input[name="contact"]')).toBeVisible()
+     const consent=form.locator('input[type="checkbox"][required]')
+     await expect(consent).toHaveCount(1)
+     assert.equal(await consent.isChecked(),false,'Public core-service consent starts unchecked')
+     await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0)
+     for(const channel of ['whatsapp','telegram'])
+      await expect(form.locator('button[data-compact-channel="'+channel+'"]')).toBeVisible()
+     const alternative=servicePage.locator('main[data-core-service-detail="'+kind+'"] > section').last().locator(':scope > details')
+     await expect(alternative).toHaveCount(1)
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+     if(width===390){
+      // One verified synthetic consented registration per locale, bound to
+      // localhost interception. The popup is replaced before the real click:
+      // no external messenger opens during CI.
+      const submissions=[]
+      await servicePage.route('**/api/service-enquiries',async route=>{
+       if(route.request().method()!=='POST')return route.continue()
+       submissions.push(route.request().postDataJSON())
+       await route.fulfill({status:201,contentType:'application/json',
+        body:JSON.stringify({saved:true,referenceCode:'HH-ABCD1234EF56'})})
+      })
+      await servicePage.evaluate(()=>{
+       window.open=()=>({opener:null,closed:false,location:{replace:()=>{}},close:()=>{}})
+      })
+      await form.locator('input[name="contact"]').fill('service-ci@example.test')
+      await consent.check()
+      await form.locator('button[data-compact-channel="whatsapp"]').click()
+      await expect(capture.locator('[data-lead-saved]')).toBeVisible()
+      await expect(capture.locator('a[data-compact-channel]')).toHaveCount(2)
+      assert.equal(submissions.length,1,'Exactly one consented synthetic public enquiry')
+      assert.equal(submissions[0].contactConsent,true)
+      assert.equal(submissions[0].contact.email,'service-ci@example.test')
+      assert.equal(submissions[0].serviceTitle,names[locale])
+      const whatsappLink=capture.locator('a[data-compact-channel="whatsapp"]')
+      const href=await whatsappLink.getAttribute('href')
+      const url=new URL(href)
+      assert.equal(url.origin,'https://wa.me')
+      assert.match(url.searchParams.get('text')||'',/HH-ABCD1234EF56/)
+      assert.ok((url.searchParams.get('text')||'').includes(names[locale]))
+      assert.ok(!(url.searchParams.get('text')||'').includes('service-ci@example.test'),
+       'Contact details must never leak into external messenger draft')
+     }
     }
    }
    await servicePage.close()
@@ -516,7 +596,8 @@ async function verifyPublicServiceConversionJourneys(){
    : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
-   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const reviewResponse=await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded'})
+    assert.equal(reviewResponse?.status(),200,locale+': free review route HTTP 200')
    const quick=publicPage.locator('[data-free-quick-request]').first()
    await expect(quick).toBeVisible({timeout:30000})
    const intake=publicPage.locator('[data-free-drawing-intake]')
@@ -527,7 +608,8 @@ async function verifyPublicServiceConversionJourneys(){
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
   await publicPage.setViewportSize({width:390,height:844})
-  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+  const reviewResponse=await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded'})
+    assert.equal(reviewResponse?.status(),200,locale+': free review route HTTP 200')
   await publicPage.evaluate(()=>{
    document.documentElement.dataset.analyticsConsent='granted'
    window.__publicAcquisition=[]
@@ -866,7 +948,7 @@ try {
   // reload, cancelling WebKit's in-flight Home click. Compile it before setting
   // up the archive route; the actual single user click and URL checks stay intact.
   await warmCabinetExitDocument(context,origin)
-  await page.waitForLoadState('networkidle')
+  // Already warmed in the isolated context; next protected route asserts its real archive.
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
   await expect(page.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
@@ -1366,7 +1448,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 

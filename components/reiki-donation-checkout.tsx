@@ -18,7 +18,7 @@ const lang = {
   en: {
     title: "Your optional Reiki donation", note: "Your first Level 1 initiation stays free. A donation is voluntary and does not confirm an initiation or appointment.",
     total: "Your donation", edit: "Choose any amount in EUR (1–250)", selected: "Additional Reiki systems",
-    ready: "Continue my request", requires: "The payment link appears after your course application is saved and shared privately with Andrey.",
+    ready: "Continue my request", requires: "If online donations are enabled, the payment link appears after your course application is saved and shared privately with Andrey.",
     checkout: "Optional donation · checkout", start: "Prepare my donation", pay: "Continue to PayPal",
     payer: "Confirm that the recipient is Andrii Litvinov. Pay for goods and services, not friends and family. PayPal login may be required.",
     reference: "PayPal transaction ID", referenceHint: "After completing your payment in PayPal, paste the real transaction ID here. Do not send a screenshot or payment credentials.",
@@ -31,7 +31,7 @@ const lang = {
   ru: {
     title: "Ваша добровольная поддержка", note: "Первая инициация I ступени остаётся бесплатной. Донейшн добровольный и сам по себе не подтверждает проведение инициации или запись.",
     total: "Сумма донейшна", edit: "Любая сумма в EUR (1–250)", selected: "Дополнительные системы Рейки",
-    ready: "Продолжить оформление", requires: "Ссылка на оплату появится после того, как вы сохраните и отправите свою заявку Андрею через защищённый кабинет.",
+    ready: "Продолжить оформление", requires: "Если онлайн-донейшн доступен, ссылка на оплату появится после отправки заявки Андрею через защищённый кабинет.",
     checkout: "Донейшн · корзина курса", start: "Оформить донейшн", pay: "Перейти в PayPal",
     payer: "Проверьте получателя: Andrii Litvinov. Выберите «Товары и услуги», не «Друзьям и семье». Может потребоваться аккаунт PayPal.",
     reference: "Номер транзакции PayPal", referenceHint: "После фактического перевода скопируйте номер транзакции из PayPal. Не присылайте скриншоты, пароль или данные карты.",

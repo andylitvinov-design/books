@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {PublicSiteHeader} from '@/components/public-site-header'
+import {PublicPathwayStrip} from '@/components/public-pathway-strip'
 import {publicLocales} from '@/lib/public-locales'
 import type {PublicLocale} from '@/lib/public-locales'
 import {metadataBaseFor} from '@/data/site-metadata'
@@ -16,7 +17,7 @@ const COPY={
   subtitle:'Ask a question, discuss a consultation or get help with your private account. Your message is sent only when you choose Send.',
   msgTitle:'Message Andrey',msg:'For general questions, request a personal reply in WhatsApp or Telegram. Neither app shares your phone number with Holistic House automatically.',
   whatsapp:'Continue in WhatsApp',telegram:'Continue in Telegram',
-  consultations:'Business & coaching consultations',consultationText:'Prefer to submit your name and optional email or international phone number? Use the secure business consultation form. The number is used for replying to your request, not marketing.',
+  consultations:'Business & coaching consultations',consultationText:'Choose your service, then contact us via Telegram or WhatsApp. Email or a typed phone number alone is not enough.',
   form:'Open consultation form',cabinet:'Client Cabinet contact settings',cabinetText:'Signed-in clients can save or delete a private, unverified contact phone in Settings and separately enable Web Push.',
   settings:'Open Cabinet settings',about:'Meet Andrey',privacy:'Phone numbers and private records are not read from your messenger apps. Never include test reports or confidential health data in public messages.',
  },
@@ -25,7 +26,7 @@ const COPY={
   subtitle:'Задайте вопрос, обсудите консультацию или получите помощь с личным кабинетом. Сообщение будет отправлено только после вашего подтверждения.',
   msgTitle:'Написать Андрею',msg:'По общим вопросам напишите в WhatsApp или Telegram. Сайт не получает номер телефона из переписки автоматически.',
   whatsapp:'Написать в WhatsApp',telegram:'Написать в Telegram',
-  consultations:'Бизнес- и коучинг-консультации',consultationText:'Хотите оставить имя и телефон с кодом страны или email? Заполните защищённую форму заявки. Контакт используется для ответа, а не для рекламной рассылки.',
+  consultations:'Бизнес- и коучинг-консультации',consultationText:'Выберите услугу и напишите через Telegram или WhatsApp. Одного email или введённого номера телефона недостаточно.',
   form:'Открыть форму консультации',cabinet:'Контакты личного кабинета',cabinetText:'В настройках авторизованный клиент может сохранить или удалить личный неподтверждённый номер и отдельно включить Web Push.',
   settings:'Открыть настройки кабинета',about:'Об Андрее',privacy:'Мы не считываем телефоны из мессенджеров и не помещаем медицинские сведения в публичные сообщения.',
  },
@@ -34,7 +35,7 @@ const COPY={
   subtitle:'Haz una pregunta, consulta una sesión o pide ayuda con tu cuenta. El mensaje se envía solo cuando confirmas Enviar.',
   msgTitle:'Escribir a Andrey',msg:'Contacta por WhatsApp o Telegram. El sitio no obtiene tu número automáticamente de conversaciones privadas.',
   whatsapp:'Abrir WhatsApp',telegram:'Abrir Telegram',
-  consultations:'Consultoría y coaching',consultationText:'Puedes dejar nombre, correo o teléfono internacional mediante el formulario privado. Tu contacto se usa para responder, no para marketing.',
+  consultations:'Consultoría y coaching',consultationText:'Elige el servicio y escríbenos por Telegram o WhatsApp. El correo o teléfono escrito no basta.',
   form:'Abrir formulario',cabinet:'Teléfono de cuenta privada',cabinetText:'En Ajustes, clientes autenticados pueden guardar o eliminar un teléfono no verificado y activar Web Push por separado.',
   settings:'Abrir ajustes',about:'Conoce a Andrey',privacy:'El sitio no extrae números de aplicaciones de chat ni solicita información médica confidencial en mensajes públicos.',
  },
@@ -56,7 +57,7 @@ export default async function ContactPage({params}:Props){
  const whatsapp=whatsappEnquiryUrl({locale:l,service:'Holistic House',
   request:'General contact enquiry',pagePath:'/'+locale+'/contact'})
  const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp)
- return <main className={styles.root} lang={l}>
+ return <main className={styles.root} lang={l} data-public-design-migration="wave1">
   <PublicSiteHeader locale={l}/>
   <div className={styles.wrap}>
    <header className={styles.hero}>
@@ -77,6 +78,7 @@ export default async function ContactPage({params}:Props){
      <Link href={'/'+locale+'/app/settings#hh-client-contact-phone'} className={styles.secondary}>{t.settings} →</Link>
     </section>
    </div>
+   <PublicPathwayStrip locale={l}/>
    <p className={styles.privacy}>{t.privacy} <Link href={'/'+locale+'/about'}>{t.about} →</Link></p>
   </div>
  </main>

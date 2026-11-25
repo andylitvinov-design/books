@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("one owner-supplied YouTube video serves exactly the intended three service landings", () => {
+test("constellation video stays on its related paid service landings, not the free express-review hero", () => {
   const library = read("data/service-video-library.ts");
   const showcase = read("components/service-video-showcase.tsx");
   const personal = read("components/personal-service-landing.tsx");
@@ -22,8 +22,9 @@ test("one owner-supplied YouTube video serves exactly the intended three service
 
   assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
   assert.match(business, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\} id="business-constellation-video" \/>/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
-  assert.match(free, /data-featured-constellations-video/);
+  assert.doesNotMatch(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /data-free-review-intro-video/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
   assert.doesNotMatch(free, /<ServiceVideoShowcase topic="overview"/);
   assert.equal((showcase.match(/"constellation-case": \{/g) ?? []).length, 3,
@@ -35,30 +36,47 @@ test("all three placements reuse the existing click-to-load video player and kee
   const showcase = read("components/service-video-showcase.tsx");
   const player = read("components/site-video-player.tsx");
   assert.match(showcase, /<SiteVideoPlayer video=\{video.video\} locale=\{locale\}/);
-  assert.match(player, /playing \? \(/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /\{playing(?: && embedUrl)? \? \(/, 'click-to-load frame stays conditional');
+  assert.match(player, /className="site-video-play"/, 'real accessible play button stays');
   assert.match(player, /youtube-nocookie.com\/embed\/\$\{playbackYouTubeId\}/);
-  assert.match(player, /const externalLink = internalOnly \? null/);
+  assert.match(player, /const externalLink = internalOnly(?: \|\| !verifiedWatchUrl)? \? null/, 'private About must not get an off-site link');
 });
 
-test("mobile free-review starts with the recording, with a compact single-screen CTA", () => {
- const free = read("components/free-entry-landing.tsx");
- const css = read("components/free-entry-landing.module.css");
- const video = free.indexOf("data-featured-constellations-video");
- assert.ok(video > free.indexOf('aria-labelledby="free-entry-title"') && video < free.indexOf('id="what-you-get"'));
- assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
- assert.match(free, /siteVideoWatchUrl\(situationVideo\.video\)/);
- assert.match(free, /Один вопрос и простой рисунок/);
- assert.match(free, /Una pregunta y un dibujo sencillo/);
- assert.match(css, /\.situationHero \.situationVideo\{order:0/);
- assert.match(css, /\.situationHero \.heroCopy\{order:1/);
- assert.match(css, /\.situationHero \.primary\{width:100%/);
- assert.match(css, /@media\(max-width:600px\) and \(max-height:730px\)/);
- assert.match(css, /\.situationScene\{min-height:0/);
- assert.match(css, /@media\(max-width:360px\) and \(max-height:620px\)/);
- assert.match(css, /\.situationScene \.sceneImage\{display:none\}/);
- assert.match(css, /\.situationHero \.primary\{min-height:44px\}/);
- assert.match(css, /\.situationHero \.videoSource\{right:7px;top:7px;min-height:44px/);
- assert.match(css, /\.situationVideo :global\(\.site-video-poster-title\)\{left:86px/);
- assert.match(css, /@media\(max-width:600px\)\{[\s\S]*?\.situationVideo :global\(\.site-video-poster-title\)\{left:72px/);
+test("personal free review has portrait, locale-matched explainer and twelve vertically stacked videos", () => {
+  const free = read("components/free-entry-landing.tsx");
+  const css = read("components/free-entry-landing.module.css");
+  const hero = free.indexOf('aria-labelledby="free-entry-title"');
+  const video = free.indexOf('data-free-review-intro-video');
+  const outcome = free.indexOf('id="what-you-get"');
+  const proof = free.indexOf('data-featured-free-review-testimonials');
+  const process = free.indexOf('id="how-it-works"');
+  assert.ok(hero >= 0 && hero < video && video < outcome && outcome < proof && proof < process,
+    "Portrait → intro → value → all authentic client videos → steps");
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /heygenId: "2c251709aba74fd96ae8be43257a080b"/);
+  assert.match(free, /language: "es" as const/);
+  assert.match(free, /const reviewVideos = kind === "situation"/);
+  assert.match(free, /testimonialVideos\.ru\[4\]/);
+  assert.match(free, /testimonialVideos\[locale\]/);
+  assert.match(free, /reviewVideos\.map/);
+  assert.match(free, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(free, /featuredReviewVideos|reviewSwipeHint/);
+  assert.match(free, /data-testimonial-video-id=\{item\.id\}/);
+  assert.match(free, /locallyArchivedVideoPosterIds\.has\(item\.id\)/);
+  assert.match(free, /item\.language === "ru"/);
+  assert.match(free, /"Esta revisión exprés gratuita"|vídeo específico sobre la revisión exprés/);
+  assert.match(free, /"Андрей рассказывает о работе · на русском"/);
+  assert.match(free, /"Introduction by Andrey · English"/);
+  assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
+  assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.match(free, /data-review-list-direction="vertical"/);
+  assert.doesNotMatch(free, /<LazyPersonalTestimonials|data-review-stories/);
+  assert.doesNotMatch(free, /data-featured-constellations-video|siteVideoWatchUrl/);
+  assert.match(css, /\.situationHero \.heroVisual/);
+  assert.match(css, /\.reviewIntro/);
+  assert.match(css, /\.reviewPreviewGrid/);
+  assert.match(css, /\.reviewPreviewGrid\{display:flex;flex-direction:column/);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /@media\(max-width:360px\)/);
+  assert.match(css, /:focus-visible/);
 });

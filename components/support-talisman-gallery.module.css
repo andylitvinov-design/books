@@ -1,0 +1,43 @@
+.gallery{display:grid;gap:13px;min-width:0;color:#45362b;font-family:Arial,Helvetica,sans-serif}
+.intro{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.intro p{margin:0;max-width:630px;color:#675b4c;font-size:13px;line-height:1.55}
+.privateBadge{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:6px 10px;border:1px solid #d8cabc;color:#735841;background:#f7f1e7;font-size:11px;font-weight:650;white-space:nowrap}
+.categoryList{display:flex;gap:7px;flex-wrap:wrap;min-width:0}
+.categoryList button{display:inline-flex;align-items:center;gap:6px;min-height:41px;max-width:100%;padding:8px 12px;border:1px solid #e3d7c8;border-radius:99px;background:#fffdf8;color:#614b39;font-size:12px;line-height:1.25;font-weight:650;cursor:pointer}
+.categoryList button small{border-radius:99px;min-width:19px;padding:2px 5px;background:#f2ede5;color:#7d7368;font-size:10px;font-weight:700}
+.categoryList button:hover,.categoryList button:focus-visible{border-color:#926d52}
+.categoryList button.active{color:#fff9f0;background:#7c523c;border-color:#7c523c}
+.categoryList button.active small{color:#fff;background:#98735b}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:9px}
+.card{display:flex;gap:10px;min-width:0;min-height:116px;border-radius:14px;border:1px solid #e4d7c8;background:#fff9f1;padding:8px}
+.preview{flex:0 0 100px;display:block;position:relative;overflow:hidden;border-radius:10px;background:linear-gradient(145deg,#ead9bc,#d7c09c)}
+.preview img{display:block;width:100%;height:100%;min-height:99px;object-fit:cover}
+.cardCopy{display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0;padding:4px 0}
+.cardCopy strong{font:400 18px/1.15 Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
+.cardCopy span{font-size:11px;color:#827263}
+.cardCopy button{margin-top:auto;border:0;background:transparent;color:#744633;text-decoration:underline;cursor:pointer;padding:3px 0;font-size:11px}
+.empty,.gate{border:1px dashed #d6c1ab;background:#f9f4ec;border-radius:14px;padding:16px;color:#675a4a;font-size:13px;line-height:1.5}
+.empty{margin:0}
+.gate p{margin:0 0 12px}
+.gate a,.addButton,.formActions button:first-child,.retry{display:inline-flex;justify-content:center;align-items:center;gap:9px;min-height:46px;padding:10px 16px;border-radius:12px;border:1px solid #774b35;background:#774b35;color:white;text-decoration:none;font-size:12px;font-weight:750;cursor:pointer}
+.addButton{width:max-content;max-width:100%}
+.addButton span{font-size:20px;line-height:1}
+.gate a:hover,.addButton:hover,.formActions button:first-child:hover{background:#613923}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:15px;border-radius:16px;border:1px solid #decab7;background:linear-gradient(135deg,#fbf5eb,#fffcf7)}
+.form label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#614834}
+.form input,.form select{min-width:0;width:100%;min-height:45px;padding:9px 10px;border:1px solid #d7c9b9;background:#fff;border-radius:10px;color:#44352b;font-size:14px;font-family:inherit}
+.form .fileLabel{grid-column:1/-1}
+.form input[type=file]{height:auto;max-width:100%;font-size:12px}
+.hint{grid-column:1/-1;color:#786d61;margin:0;font-size:11px;line-height:1.45}
+.formActions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:9px}
+.formActions button{min-height:45px;padding:10px 13px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer}
+.formActions button:nth-child(2){border:1px solid #c9b8a6;background:#fff9f1;color:#775541}
+.formActions button:disabled,.cardCopy button:disabled{opacity:.5;cursor:wait}
+.note{max-width:760px;margin:0;color:#8b7c70;font-size:11px;line-height:1.55}
+.error,.success{margin:0;font-size:12px}
+.error{color:#9d392f}
+.success{color:#32634b}
+.retry{width:max-content}
+@media(max-width:430px){.gallery{gap:11px}.categoryList{gap:6px}.categoryList button{min-height:39px;padding:7px 9px;font-size:11px}.cards{grid-template-columns:1fr}.card{min-height:112px}.preview{flex-basis:96px}.form{grid-template-columns:1fr;padding:11px}.form .fileLabel,.hint,.formActions{grid-column:auto}.formActions button{flex:1 1 120px}.intro p{font-size:12px}.privateBadge{font-size:10px}}
+@media(max-width:350px){.categoryList button{font-size:10px;padding:6px 8px}.cardCopy strong{font-size:16px}.card{gap:8px}.preview{flex-basis:84px}}
+@media(prefers-reduced-motion:reduce){.gallery *{transition:none}}

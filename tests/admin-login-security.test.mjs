@@ -53,8 +53,9 @@ test('practitioner sign-in uses verified Google instead of the old access-code p
   assert.ok(route.includes('/admin/login'))
   assert.match(route, /!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(adminSession, /maxAge: 60 \* 60 \* 12/)
-  assert.match(admin, /maxAttempts: 5/)
-  assert.match(admin, /consumeAccessAttempt/)
+  assert.match(admin, /createRequestAuth/)
+  assert.match(admin, /authorizeAdminSession/)
+  assert.match(admin, /export async function establishAdminSession\(\) \{\s+return false/)
 })
 
 test('practitioner Logout clears the session and opens the public Holistic House homepage', async () => {

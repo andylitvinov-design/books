@@ -51,3 +51,72 @@ test('Language counterparts load on selection rather than speculative client-ent
   assert.match(navigation, /<Link prefetch=\{false\}[^>]*href=\{counterpart\(next\)\}/);
   assert.match(navigation, /onClick=\{\(\) => selectLocale\(next\)\}/);
 });
+
+
+test('expanded ES menu acceptance matches current seven quick destinations and five editorial routes',()=>{
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const navigation = source('components/site-navigation.tsx');
+  const model = source('lib/site-navigation-model.js');
+  assert.match(browser,/getCompactNavigation\('es'\)/);
+  assert.match(browser,/getSiteNavigation\('es'\)/);
+  assert.match(browser,/assert\.deepEqual\(compact\.map\(item => item\.id\)/);
+  assert.match(browser,/assert\.deepEqual\(more\.map\(item => item\.id\)/);
+  assert.match(browser,/assert\.deepEqual\(await links\.evaluateAll/);
+  assert.match(browser,/Missing required Spanish public menu destination/);
+  assert.match(browser,/toHaveAccessibleName\(expectedLabel\)/);
+  assert.match(browser,/const primaryPublicCopy/);
+  assert.match(browser,/querySelectorAll\('\[data-testimonial-video-id\]'\)/);
+  assert.match(browser,/card\.querySelector\('\[lang="ru"\]'\)/);
+  assert.match(browser,/Original RU testimonial cards must remain visible and labelled/);
+  assert.match(navigation,/const mainMenuItems = getCompactNavigation\(activeLocale\)/);
+  assert.match(navigation,/const extraMenuItems = getSiteNavigation\(activeLocale\)/);
+  assert.match(model,/compactNavigationIds = \['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple'\]/);
+  assert.doesNotMatch(browser,/links\.nth\(2\)\.toHaveAccessibleName\('Energía'\)/);
+  assert.match(browser,/data-home-topic-filters/);
+  assert.match(browser,/Explora por tema/);
+  assert.match(browser,/toHaveCSS\('grid-template-columns'/);
+  assert.doesNotMatch(browser,/service-home-card-grid/);
+  assert.doesNotMatch(browser,/first\.push\('/);
+  assert.match(browser,/const cabinet = navigation\.locator/);
+  assert.match(browser,/toHaveAttribute\('aria-controls','home-personal-space-dialog'\)/);
+  assert.match(browser,/await cabinet\.click\(\)/);
+  assert.match(browser,/a\[href\^="\/en\/app"\]/);
+  assert.match(browser,/Cerrar Mi espacio/);
+  assert.match(browser,/const accountCabinet = page\.locator\('\.site-navigation \.site-cabinet-entry'\)/);
+  assert.match(browser,/expect\(accountCabinet\)\.toHaveAttribute\('aria-haspopup','dialog'\)/);
+  assert.match(browser,/expect\(accountCabinet\)\.toHaveAttribute\('aria-controls','home-personal-space-dialog'\)/);
+  assert.match(browser,/await click\(accountCabinet\)/);
+  assert.match(browser,/const accountDialog = page\.locator\('#home-personal-space-dialog'\)/);
+  assert.match(browser,/expect\(accountDialog\)\.toBeVisible\(\)/);
+  assert.match(browser,/accountDialog\.locator\('a\[data-space-link="profile"\]'\)/);
+  assert.match(browser,/expect\(accountLink\)\.toHaveAttribute\('href', entry\.href\)/);
+  assert.match(browser,/spanishCabinetEntryExpectation\(observedCabinetResponses\.at\(-1\), cabinetResponseSnapshot\.length > cabinetResponsesBeforeOpen, !live\)/);
+  assert.match(browser,/No se pudo abrir tu espacio ahora\./);
+  assert.match(browser,/name: 'Reintentar', exact: true/);
+  assert.match(browser,/name: 'Entrar a mi espacio', exact: true/);
+  assert.match(browser,/\.or\(accountDialog\.getByRole\('status'\)\.filter/);
+  assert.ok(browser.indexOf(".or(accountDialog.getByRole('status').filter") < browser.indexOf('const cabinetResponseSnapshot = [...cabinetResponses]'));
+  assert.match(browser,/await click\(accountLink\)/);
+  assert.match(browser,/expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\)/);
+  assert.doesNotMatch(browser,/toHaveAttribute\('href','\/en\/app'\)/);
+  // The genuine signed-out portrait is CabinetGuestOverview, not old hh-entry.
+  assert.ok(browser.includes('data-cabinet-guest-overview="true"'));
+  assert.ok(browser.includes('Discover where you are. Grow into what comes next.'));
+  assert.ok(browser.includes('Your personal tests and reports stay private.'));
+  assert.ok(browser.includes("'Open the previous access page'"));
+});
+
+test('Spanish Cabinet entry fails closed on unknown bootstrap states', () => {
+  const browser = source('scripts/verify-es-public-site.mjs');
+  const helper = browser.match(/function spanishCabinetEntryExpectation\(observation, freshResponse, isolatedLocal\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(helper, 'Browser acceptance must discriminate actual bootstrap evidence');
+  const decide = new Function('assert', helper + '; return spanishCabinetEntryExpectation;')(assert);
+  assert.deepEqual(decide({ status: 401 }, false), { state: 'guest', href: '/en/app/portrait' });
+  assert.deepEqual(decide({ status: 503, error: 'APP_UNAVAILABLE' }, true, true), { state: 'unavailable', href: '/en/app' });
+  assert.throws(() => decide({ status: 503, error: 'APP_UNAVAILABLE' }, true, false));
+  assert.throws(() => decide({ status: 503, error: 'APP_UNAVAILABLE' }, true));
+  for (const [observation, fresh] of [[undefined, true], [{ status: 200 }, true], [{ status: 403 }, true], [{ status: 500 }, true], [{ status: 503, error: 'SERVICE_UNAVAILABLE' }, true], [{ status: 503, error: 'INVALID_ERROR_RESPONSE' }, true], [{ status: 503, error: 'APP_UNAVAILABLE' }, false]]) {
+    assert.throws(() => decide(observation, fresh, true));
+  }
+});
+

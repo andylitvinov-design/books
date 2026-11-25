@@ -1,0 +1,84 @@
+.dashboard{box-sizing:border-box;width:min(100%,1050px);margin:0 auto 30px;color:#103c35;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}.dashboard *{box-sizing:border-box}
+.mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:7px 0 11px}
+.mode a{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:51px;padding:9px 7px;border-radius:21px;border:1px solid #e6dacf;text-align:center;text-decoration:none;font:750 clamp(15px,3.8vw,20px)/1.15 system-ui,sans-serif;box-shadow:0 5px 12px #1e49321a}
+.mode a svg{flex:none}.life{background:linear-gradient(130deg,#009878,#00634f);color:#fff!important}.work{background:#fffdf9;color:#113c34!important}
+.hero{position:relative;isolation:isolate;overflow:hidden;min-height:215px;padding:21px 16px 12px;border-radius:26px;background:linear-gradient(95deg,rgba(7,55,50,.89) 0%,rgba(9,68,58,.72) 43%,rgba(16,70,57,.04) 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 44%/cover no-repeat;box-shadow:0 8px 22px #143d3530;color:#fff}
+.eyebrow{display:flex;align-items:center;gap:8px;margin:0 0 6px 2px!important;color:#fff!important;font:780 11px/1.2 system-ui,sans-serif;letter-spacing:.17em;text-shadow:0 2px 10px #123b37aa}
+.hero h1{margin:0 0 9px!important;font:700 clamp(30px,7.8vw,52px)/1.07 Georgia,serif!important;letter-spacing:-.028em;color:#fff!important;text-shadow:0 3px 15px #052f2ba9}
+.summary{max-width:31ch;margin:0!important;font:540 clamp(14px,3.6vw,17px)/1.35 system-ui,sans-serif;color:#fff!important;text-shadow:0 2px 8px #103e3b92}
+.heroAction{display:flex;align-items:center;gap:11px;min-height:70px;margin:21px 0 0;padding:10px 12px;border:1px solid #f2fff1;border-radius:21px;background:linear-gradient(110deg,#fffefa 0%,#f0fbf0 60%,#d3efd2 100%);text-decoration:none;color:#0b4438!important;box-shadow:0 5px 13px #0435272f}
+.heroActionIcon{display:grid;place-items:center;flex:none;width:47px;min-height:43px;border-right:1px solid #72b8a2;color:#007b61}
+.heroAction>span:nth-child(2){display:grid;flex:1;gap:3px;min-width:0}.heroAction strong{font-size:clamp(16px,4.1vw,22px);line-height:1.14;font-weight:800;color:#0b4438}.heroAction small{font-size:clamp(12px,3vw,15px);line-height:1.25;color:#2d6355}
+.actionArrow{display:grid;place-items:center;flex:none;width:37px;height:37px;border-radius:50%;background:#f7fff5;color:#3ab980}
+.activePanel{display:grid;gap:9px;margin-top:12px;padding:13px 11px 12px;border:1px solid #cfe5d5;border-radius:25px;background:linear-gradient(135deg,#f2faf4,#e8f5eb);box-shadow:0 5px 13px #1e48391b}
+.activeHeader{display:flex;align-items:center;gap:12px;padding:0 6px 0 4px;min-width:0}.activeIcon{flex:none;display:grid;place-items:center;width:53px;height:53px;border-radius:18px;background:#e0f0e7;color:#065b4a}
+.activeHeader>div{flex:1;min-width:0}.activeHeader h2{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 3px!important;font:700 clamp(23px,5.3vw,33px)/1.14 Georgia,serif!important;color:#113d34!important}
+.activeHeader p{margin:0!important;font:500 clamp(12px,3vw,14px)/1.35 system-ui,sans-serif;color:#607469!important}.count{display:inline-grid;place-items:center;flex:none;min-width:27px;height:27px;padding:2px 7px;border-radius:50%;background:#00886e;color:#fff;font:800 14px system-ui,sans-serif}.leaf{color:#79ac89;flex:none}
+.orderCard{display:flex;align-items:center;gap:10px;min-width:0;min-height:84px;padding:8px;border:1px solid #ece8e1;border-radius:19px;background:#fffefa;text-decoration:none!important;color:#0f3e34!important;box-shadow:0 4px 10px #1b3e3017}.orderCard:hover{border-color:#bedfcf}
+.orderImage{display:block;align-self:stretch;flex:0 0 19%;min-height:73px;max-width:110px;border-radius:14px;background:url('/images/holistic-house/profile-card-photos.webp') left center/400% 100% no-repeat}.orderImage[data-order-visual="1"]{background-position:33.333% center}.orderImage[data-order-visual="2"]{background-position:100% center}
+.orderBody{display:flex;flex:1;flex-direction:column;justify-content:center;gap:3px;min-width:0}.kind{font:800 10px/1.2 system-ui,sans-serif;letter-spacing:.1em;color:#00866b}.orderBody strong{font:760 clamp(14px,3.7vw,18px)/1.16 system-ui,sans-serif;color:#103d35;overflow-wrap:break-word}
+.date{display:flex;align-items:center;gap:4px;color:#587066;font:500 clamp(11px,2.9vw,13px)/1.25 system-ui,sans-serif}.date svg{flex:none}.messages{font-size:11px;line-height:1.2;font-weight:730;color:#006851}
+.orderRight{display:flex;flex:0 0 auto;align-items:center;gap:3px;max-width:36%;color:#008267}.orderRight>svg{flex:none}.pending,.inProgress,.completed{display:inline-flex;align-items:center;justify-content:center;gap:4px;max-width:100%;padding:7px 6px;border-radius:100px;text-align:center;font:750 clamp(10px,2.65vw,13px)/1.1 system-ui,sans-serif;overflow-wrap:anywhere}.pending{background:#fff0cf;color:#9b5a09}.inProgress{background:#dff6e6;color:#06765b}.completed{background:#e1f5e4;color:#0b694f}.pending svg,.inProgress svg,.completed svg{flex:none}
+.empty{margin:0!important;padding:12px 11px;border-radius:14px;background:#ffffffc4;color:#4f665b;font:500 14px/1.45 system-ui,sans-serif}.retryRow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px;border-radius:13px;background:#fffefa;font:500 14px/1.4 system-ui,sans-serif}.retryRow button{display:flex;align-items:center;gap:6px;min-height:44px;padding:9px 11px;border:1px solid #a7d4bd;border-radius:12px;background:#eaf8ef;font:700 13px system-ui,sans-serif;color:#006f5a}.moreActive{display:flex;align-items:center;gap:5px;justify-content:flex-end;min-height:41px;text-decoration:none;font:730 13px system-ui,sans-serif;color:#00674d}
+.history,.recommendations{display:grid;gap:9px;margin-top:15px}.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.sectionHeading h2{flex:1;min-width:0;margin:0!important;color:#0e3d34!important;font:700 clamp(23px,5.4vw,33px)/1.16 Georgia,serif!important;letter-spacing:-.02em}
+.sectionHeading a{display:flex;align-items:center;justify-content:center;gap:5px;flex:none;min-height:42px;padding:8px 11px;border-radius:999px;border:1px solid #cce6d4;background:#e8f5e9;color:#00634d;text-decoration:none;font:730 clamp(11px,2.9vw,14px)/1.2 system-ui,sans-serif}
+.offerRail{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 20px)/3);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:1px 2px 10px;margin:0 -2px;overscroll-behavior-x:contain;scrollbar-width:thin}
+.offer{display:flex;flex-direction:column;min-width:0;overflow:hidden;border-radius:20px;border:1px solid #ede9e1;background:#fffefa;box-shadow:0 5px 12px #14382c18;text-decoration:none!important;color:#133d34!important;scroll-snap-align:start}
+.offerImage{display:block;width:100%;height:85px;background:url('/images/holistic-house/profile-card-photos.webp') left center/400% 100% no-repeat}.offerImage[data-offer-visual="1"]{background-position:66.667% center}.offerImage[data-offer-visual="2"]{background-position:100% center}
+.offerBody{position:relative;display:grid;align-content:start;gap:5px;flex:1;min-height:122px;padding:10px 9px 32px}.offerBody strong{font:800 clamp(13px,3.7vw,17px)/1.16 system-ui,sans-serif;color:#113e34;overflow-wrap:break-word}.offerBody small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font:500 12px/1.26 system-ui,sans-serif;color:#35544a}
+.offerMeta{align-self:end;padding-top:4px;font:750 11px/1.3 system-ui,sans-serif;color:#124e3f}.offerArrow{position:absolute;right:7px;bottom:7px;display:grid;place-items:center;width:27px;height:27px;background:#e3f3e2;border-radius:50%;color:#0b7159}
+.noOffers{display:flex;align-items:center;gap:9px;min-height:55px;padding:13px;border-radius:17px;background:#e8f5eb;text-decoration:none;color:#0c5b49;font:700 14px/1.35 system-ui,sans-serif}.noOffers svg:last-child{margin-left:auto;flex:none}
+.dashboard a:focus-visible,.dashboard button:focus-visible{outline:3px solid #0b8468;outline-offset:3px}
+@media(max-width:370px){.mode{gap:6px}.mode a{font-size:14px;min-height:47px;gap:5px}.hero{padding:15px 10px 10px;min-height:193px;border-radius:22px}.hero h1{font-size:30px!important}.summary{font-size:13px}.heroAction{min-height:64px;margin-top:13px;padding:8px;gap:7px}.heroActionIcon{width:37px}.heroAction strong{font-size:15px}.heroAction small{font-size:11px}.actionArrow{width:31px;height:31px}.activePanel{padding:10px 7px}.activeIcon{width:40px;height:42px}.activeHeader{gap:7px}.activeHeader h2{font-size:23px!important}.leaf{display:none}.orderCard{gap:6px;padding:6px}.orderImage{flex-basis:21%;min-height:67px}.kind{font-size:9px}.orderBody strong{font-size:13px}.orderRight{gap:2px;max-width:38%}.orderRight>svg{width:15px}.pending,.inProgress,.completed{padding:6px 5px;font-size:10px}.pending svg,.inProgress svg,.completed svg{width:12px}.sectionHeading h2{font-size:22px!important}.sectionHeading a{padding:7px;font-size:11px}.offerRail{grid-auto-columns:minmax(157px,48%)}}
+@media(min-width:700px){.hero{padding:33px 28px 20px;min-height:270px}.heroAction{max-width:760px}.activePanel{padding:18px;gap:12px}.orderImage{flex-basis:17%;min-height:100px}.offerRail{grid-auto-columns:minmax(230px,31%)}.offerImage{height:115px}.offerBody{min-height:135px}.summary{max-width:42ch}}
+
+:global(.hh-app[data-cabinet-theme="daybook"]) .dashboard { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .mode a { border-color:var(--hh-cabinet-border);border-radius:999px;min-height:52px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .life {
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));color:#fff6e3!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .work,
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction,
+:global(.hh-app[data-cabinet-theme="daybook"]) .activePanel {
+  background:linear-gradient(135deg,#fffaef,var(--hh-cabinet-surface-soft));border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  border:1px solid var(--hh-cabinet-border);
+  background:linear-gradient(95deg,#291e12ed 0%,#302514ad 47%,#36261512 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 44%/cover no-repeat;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroActionIcon { border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction strong,
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderBody strong,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerBody strong { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .date,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerBody small { color:var(--hh-cabinet-muted);font-size:14px;line-height:1.4; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeHeader h2 { color:var(--hh-cabinet-ink)!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeHeader p { color:var(--hh-cabinet-muted)!important;font-size:14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeIcon,
+:global(.hh-app[data-cabinet-theme="daybook"]) .actionArrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerArrow { background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderCard,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offer,
+:global(.hh-app[data-cabinet-theme="daybook"]) .retryRow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .empty {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderCard:hover { border-color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .retryRow button,
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionHeading a,
+:global(.hh-app[data-cabinet-theme="daybook"]) .noOffers {
+  min-height:44px;background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);font-size:14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .moreActive { min-height:44px;color:var(--hh-cabinet-primary);font-size:14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionHeading h2 { color:#fff1cf!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .dashboard :is(a,button):focus-visible { outline-color:var(--hh-cabinet-primary); }
+@media(max-width:430px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .offerRail { grid-auto-columns:minmax(170px,60%); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .offerBody strong { font-size:16px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderBody strong { font-size:15px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderCard { flex-wrap:wrap; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderRight { max-width:100%;margin-left:auto; }
+}
+@media(prefers-reduced-motion:reduce){.offerRail{scroll-behavior:auto}}

@@ -31,6 +31,28 @@ test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
 })
 const css = read('components/profi-hub.module.css')
 
+test('Pro cards keep photos left, inline pills, and accessible 320px actions',()=>{
+  const cardCss=css.slice(css.indexOf('/* 2026-10-25: same photo-left'))
+  assert.ok(cardCss.length>1500,'current photo-left Pro skin should be present')
+  assert.match(cardCss,/\.offerGrid\{\s*display:grid;grid-template-columns:1fr/)
+  assert.match(cardCss,/\.offerOptionHeader\{display:contents\}/)
+  assert.match(cardCss,/\.offerOptionHeader \.offerThumb\{\s*grid-column:1;grid-row:1\/span 2/)
+  assert.match(cardCss,/\.offerActions\{\s*grid-column:2;grid-row:2;display:grid/)
+  assert.match(cardCss,/\.offerExpanded\{\s*grid-column:1\/-1;grid-row:3/)
+  assert.match(cardCss,/border-radius:999px/)
+  assert.match(cardCss,/@media\(max-width:600px\)/)
+  assert.match(cardCss,/@media\(max-width:359px\)/)
+  assert.match(cardCss,/min-height:44px/)
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    for(const key of ['diagnostic','energy','meditation','personal']){
+      const card=find(view,'data-profi-offer',key)
+      assert.equal(find(card,'data-profi-offer-details',key).props['aria-expanded'],false)
+      assert.ok(find(card,'data-profi-selected-offer',key).props.href.includes('/practice?start='))
+    }
+  }
+})
+
 test('every Pro card has existing locally-hosted photography and a real action',()=>{
   const photographs=[...hub.matchAll(/"(\/images\/holistic-house\/[^"]+\.(?:webp|avif))"/g)].map(match=>match[1])
   assert.ok(photographs.length>=10)
@@ -132,10 +154,11 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
-  const expected=['home','analysis','courses','profile','coaching','pro','temple']
+  const expected=['home','analysis','courses','profile','alchemy','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
+    assert.equal(nav[4].href,'/'+locale+'/services/alchemy-of-soul')
     assert.equal(nav.at(-2).href,'/'+locale+'/pro')
     assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
@@ -158,7 +181,7 @@ test('Pro page contains a separate free-tests and private/personal-professional 
     assert.deepEqual(entries.map(x=>x.props.href),[
       '/'+locale+'/client/tests',
       '/'+appLocale+'/app/portrait',
-      '/'+appLocale+'/app/practice?panel=profile'
+      '/'+locale+'/practice?start=profile'
     ])
     assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-profiles')))
     assert.ok(entries.every(x=>x.props.prefetch===false))
@@ -190,6 +213,20 @@ test('Pro keeps learning, practitioner offers and profiles visible in one scroll
   }
 })
 
+test('Pro does not show the redundant Learn / Develop / Share roadmap in EN, RU or ES',()=>{
+  assert.doesNotMatch(hub,/profi-after-learning|styles\.nextStage|t\.afterTitle|t\.after\.map|data-profi-action="advanced-reiki"/)
+  for(const text of ['How to move from learning to practice','Как перейти от учёбы к практике','De aprender a ejercer']){
+    assert.ok(!hub.includes(text),'obsolete roadmap copy: '+text)
+  }
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    assert.equal(nodes(tree).filter(node=>node.props?.id==='profi-after-learning').length,0,locale)
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-learning')),locale+': learning path retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-practice')),locale+': practitioner offers retained')
+    assert.equal(nodes(tree).filter(node=>node.props?.['data-profi-paid-program']!==undefined).length,3,locale+': advanced training remains available')
+  }
+})
+
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -208,14 +245,14 @@ test('actual interactive learner track explores five steps but launches only exi
 
 test('all four Pro offers link directly to the right existing editor; Details expands in place',()=>{
   const choices=[
-    ['diagnostic','?panel=services&create=1&starter=diagnostic','create-service'],
-    ['energy','?panel=services&create=1&starter=energy','create-service'],
-    ['meditation','?panel=materials&materialTab=courses&create=1','create-course'],
-    ['personal','?panel=services&create=1&starter=personal','create-service'],
+    ['diagnostic','?start=diagnostic','create-service'],
+    ['energy','?start=energy','create-service'],
+    ['meditation','?start=meditation','create-course'],
+    ['personal','?start=personal','create-service'],
   ]
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
-    const root='/'+(locale==='es'?'en':locale)+'/app/practice'
+    const root='/'+locale+'/practice'
     for(const [kind,url,action] of choices){
       let tree=widget.render()
       let card=find(tree,'data-profi-offer',kind)
@@ -266,10 +303,15 @@ test('Master offer choices are localized, non-medical, and backed by approved se
 })
 
 test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
-  assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
+  // Native explicit deep links preserve scoped editor intents; browser OAuth
+  // returns to reviewed Practice without an automatic draft or publication.
+  assert.match(app,/\(page === 'practice'\s*\?\s*native\s*\?\s*\{ continueTo: 'my-practice', \.\.\.\(proIntent \? \{ profi: proIntent \} : \{\}\) \}\s*:\s*\{ continueTo: 'practice-preview' \}/)
+  assert.match(auth,/const failedPracticeDestination = continueTo === 'practice-preview'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
   assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
-  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'\]/g)||[]).length,2)
+  assert.equal((auth.match(/validPracticeContinuation\(continueTo,profi\)/g)||[]).length,2)
+  assert.match(auth,/continueTo==='my-practice'/)
+  assert.match(auth,/continueTo==='practice-preview'/)
   assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
   assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
   assert.match(auth,/profi === 'requests' \? '\?panel=requests'/)
@@ -280,7 +322,7 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
+  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal','reiki'\]\.includes/)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
   for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
@@ -303,7 +345,7 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
     assert.ok(hub.toLowerCase().includes(phrase.toLowerCase()) || phrase==='Checkout' && hub.includes('checkout'),
       phrase)
   }
-  assert.match(hub,/не даёт профессиональной квалификации/)
+  assert.match(hub,/Pricing, qualifications and legal eligibility are your responsibility/)
   assert.match(hub,/<nav className=\{styles.pathControls\} aria-label=\{t.choose\}/)
   assert.match(hub,/href="#profi-practice"/)
   assert.match(hub,/aria-expanded=\{isExpanded\}/)
@@ -339,15 +381,15 @@ test('Pro includes the same consented express-written-review CTA as other direct
 test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
-  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
-  assert.match(switcher,/initialView \?\? \(hasArticles \|\| hasServices \? "articles" : "mentors"\)/)
+  assert.match(masters,/initialView=\{requestedView === "articles" \? "articles" : "mentors"\}/)
+  assert.match(switcher,/useState<View>\(initialView \?\? "mentors"\)/)
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
     assert.deepEqual(paths.map(x=>x.props['data-profi-path']),['find','learn','practice'])
-    assert.equal(paths[0].props.href,'/'+locale+'/masters?view=mentors')
+    assert.equal(paths[0].props.href,'#profi-find-master')
     assert.equal(paths[0].props.prefetch,false)
     assert.equal(paths[1].props.href,'#profi-learning')
     assert.equal(paths[2].props.href,'#profi-practice')
@@ -356,6 +398,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
     assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
   }
+  assert.match(hub,/data-profi-master-directory/)
   assert.match(hub,/findChoice: "Найти мастера"/)
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
   assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)

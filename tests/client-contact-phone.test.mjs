@@ -80,6 +80,6 @@ test('owner-only explicit business enquiry import uses protected question-free s
  assert.match(store,/where id=\$1 and owner_id=\$2 for update/)
  assert.match(store,/businessContactFromEnquiry/)
  const ui=source('components/app/crm-business-enquiries.jsx')
- assert.match(ui,/onAction\("import_business_contact",\{id:item\.id\}\)/)
+ assert.match(ui,/onAction\((['"])import_business_contact\1,\{id:item\.id\}\)/)
  assert.match(ui,/no marketing|marketing|реклам/i)
 })

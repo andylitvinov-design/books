@@ -19,8 +19,43 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Cache only existing first-screen PUBLIC imagery. No HTML, API, RSC or
+// private client media is added to the CDN. Paths stay unchanged and design
+// remains pixel-identical to the approved Max/Andrey homepage.
+const homepagePublicImageSources = [
+  "/images/holistic-house/my-coach-motion/:path*",
+  "/images/holistic-house/ideas-pine-reference.webp",
+  "/images/video-goal-art/:path*",
+  "/images/holistic-house/andy-about.png",
+] as const;
+
+// Only approved pages with an explicit Record button may ask for microphone.
+// The public Messenger needs the same narrowly scoped permission as Studio;
+// microphone remains denied across the rest of the site.
+// The existing authenticated one-to-one coaching page supports voice dictation
+// and optional AI voice. Grant microphone only to these exact private pages;
+// all other Cabinet, reports and API routes remain denied.
+const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching", "/es/app/coaching"];
+// Same-origin permission only on voice entry and coaching pages; consent and
+// the explicit user gesture remain required. Camera and location stay denied.
+const publicMyCoachVoiceSources = [
+  "/", "/en", "/ru", "/es",
+  "/my-coach", "/en/my-coach", "/ru/my-coach", "/es/my-coach",
+  "/coaching/sessions", "/en/coaching/sessions", "/ru/coaching/sessions", "/es/coaching/sessions",
+];
+
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+  "/en/app/messages", "/ru/app/messages", "/es/app/messages",
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ffmpeg-static uses __dirname to locate its downloaded native executable.
+  // Keep the package external to Next webpack so its binary path remains valid.
+  serverExternalPackages: ["ffmpeg-static"],
   // The idle Next badge covers fixed mobile navigation in isolated browser CI.
   // This supported option preserves compile/runtime error badges and overlays.
   devIndicators: process.env.CI === "true" &&
@@ -67,9 +102,15 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Reuse exactly the already-approved public hero photography on repeat
+      // visits. Never apply these headers to session, report, auth, API or HTML.
+      ...homepagePublicImageSources.map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=120" }],
+      })),
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
-      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
       })),
@@ -89,6 +130,18 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
+      })),
+      ...privateCoachingVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
+      ...publicMyCoachVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
+      ...liveAudioHostSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),
       // Record the owner's course narration directly on iPhone Safari. Only
       // these two PIN-protected editing pages need a microphone, not a camera.
@@ -117,6 +170,8 @@ const nextConfig: NextConfig = {
   // Vercel redirects these images to pinned public sources; do not bundle
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
+    // The signed CRM /video handler only hands off to Dot; never trace the native encoder.
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // Public-only artwork is served statically, never read by document PDFs.
     "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
@@ -126,9 +181,35 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // Reuse the pinned encoder only when recording a missing public greeting.
+    "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    // Sharp 0.35 loads libvips from an optional native package. Next tracing
+    // otherwise bundles the .node file without libvips-cpp.so into the Function.
+    // Include only for this small private upload route, never all routes.
+    // CRM video commands use a lightweight redirect; no FFmpeg here.
+    // Owner-private Dot /audio → /video uses its existing signed webhook.
+    // The same pinned FFmpeg binary must be available in this function too.
+    "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // This route also re-encodes personal drawings/photos with Sharp. Vercel's
+    // file tracer may omit native libvips from a dynamically imported module.
+    // Scope native assets to this PRIVATE upload Function, not all app routes.
+    "/api/free-express/media": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
+    // Scope these to the PDF API route instead of copying them into all Functions.
+    "/api/academy/reiki-guide": [
+      "./data/academy/tantra-reiki-full.generated.json",
+      "./data/academy/tantra-reiki-ru-en.generated.json",
+    ],
     "/sitemap.xml": [
       "./data/spanish-remedies.json",
       "./content/remedies/en/*.md",
@@ -146,6 +227,12 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
+      // Restore only the 8 small, published tradition HTML manuals to reader
+      // functions. Exclude raw archives and photographs to protect function size.
+      "./source-books/book-4-egyptian-tradition/*.html",
+      "./source-books/book-5-greek-mysteries/*.html",
+      "./source-books/book-6-roman-tradition/*.html",
+      "./source-books/book-7-zoroastrian-mithra/*.html",
     ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
       all[route] = [...files]; return all;
     }, {}),

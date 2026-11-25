@@ -1,0 +1,137 @@
+{
+  "version": "hh-curated-source-wave-v1",
+  "sourceRepository": "tannerhelland/free-music",
+  "sourceCommit": "f6bfe16f49feab2181075ab86b13b24740592aa6",
+  "rightsEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+  "licenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+  "license": "CC-BY-4.0",
+  "sourceRightsNote": "Original composer-produced works only; exclude commercial-game arrangements/remixes. CC BY 4.0 requires author credit, license link, source link and change indication. The owner must listen to candidate previews before approving LIVE.",
+  "entries": [
+    {
+      "id": "curated-memory-away",
+      "sourceFile": "a-memory-away.mp3",
+      "repositoryFilename": "A Memory Away.mp3",
+      "gitBlobSha": "9e87f558a1460f303b25d78bc9b447238f70a8d9",
+      "sizeBytes": 4208768,
+      "title": "A Memory Away",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "name": {
+        "en": "A Memory Away",
+        "ru": "Далёкое воспоминание",
+        "es": "Un recuerdo lejano"
+      },
+      "categories": [
+        "love",
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true
+    },
+    {
+      "id": "curated-daybreak",
+      "sourceFile": "daybreak.mp3",
+      "repositoryFilename": "Daybreak.mp3",
+      "gitBlobSha": "383824196f822b07877547066a8975b8620956eb",
+      "sizeBytes": 4251776,
+      "title": "Daybreak",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "name": {
+        "en": "Daybreak",
+        "ru": "Рассвет",
+        "es": "Amanecer"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift",
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false
+    },
+    {
+      "id": "curated-home",
+      "sourceFile": "home.mp3",
+      "repositoryFilename": "Home.mp3",
+      "gitBlobSha": "ce4a2523f5676d6dcc3653b28f1788299a3898e3",
+      "sizeBytes": 2159639,
+      "title": "Home",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "name": {
+        "en": "Home",
+        "ru": "Дом",
+        "es": "Hogar"
+      },
+      "categories": [
+        "body",
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true
+    },
+    {
+      "id": "curated-forest-awakes",
+      "sourceFile": "forest-awakes.mp3",
+      "repositoryFilename": "The Forest Awakes.mp3",
+      "gitBlobSha": "6635a935d0090aee936f64a796bf9b92e641d283",
+      "sizeBytes": 4418391,
+      "title": "The Forest Awakes",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "name": {
+        "en": "The Forest Awakes",
+        "ru": "Пробуждение леса",
+        "es": "El bosque despierta"
+      },
+      "categories": [
+        "energy",
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "uplift",
+        "calm"
+      ],
+      "pace": "steady",
+      "voiceSafe": true
+    },
+    {
+      "id": "curated-leaving-millie",
+      "sourceFile": "leaving-millie-live.mp3",
+      "repositoryFilename": "Leaving Millie (live piano).mp3",
+      "gitBlobSha": "fccf27f0c45251a1bcfe2f0ef8ade179923076de",
+      "sizeBytes": 3683035,
+      "title": "Leaving Millie (live piano)",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "name": {
+        "en": "Leaving Millie · live piano",
+        "ru": "Прощание с Милли · живое пианино",
+        "es": "Dejando a Millie · piano en vivo"
+      },
+      "categories": [
+        "love",
+        "stress",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true
+    }
+  ]
+}

@@ -15,7 +15,7 @@ test('cabinet actions go to existing editors and personal paths, never into user
   assert.equal(cabinetActionHref('video', 'en'), '/en/app/practice?panel=materials&materialTab=videos')
   assert.equal(cabinetActionHref('audio', 'ru'), '/ru/app/practice?panel=materials&materialTab=audio')
   assert.equal(cabinetActionHref('tests', 'ru'), '/ru/app/tests')
-  assert.equal(cabinetActionHref('reports', 'en'), '/en/app/portrait#personal-reports')
+  assert.equal(cabinetActionHref('reports', 'en'), '/en/app/portrait?space=reports#personal-reports')
   assert.equal(cabinetActionHref('lessons', 'en'), '/en/app/course?view=courses')
   assert.equal(cabinetActionHref('ideas', 'en'), '/en/books')
   assert.equal(cabinetActionHref('unsafe', 'en'), null)
@@ -75,6 +75,9 @@ test('signed-in portrait opens the compact task-first UI before preserved report
 
 test('Personal is the left column, Professional the right; creator actions retain role gates', () => {
   assert.match(component, /data-cabinet-action-groups/)
+  assert.ok(component.indexOf('data-cabinet-action-groups') < component.indexOf('<form onSubmit={onSubmit}'), 'real personal/professional actions precede wish field')
+  assert.match(component, /<h2 id="hh-cabinet-today-title">/)
+  assert.match(stylesheet, /\.shell \.intro h2/)
   assert.match(component, /personalMain = \['tests', 'reports', 'lessons', 'ideas'\]/)
   assert.match(component, /professionalMain = canCreate/)
   assert.match(component, /isOwner \? 'audio' : 'service'/)

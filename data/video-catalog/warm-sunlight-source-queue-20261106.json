@@ -1,0 +1,504 @@
+{
+  "schemaVersion": "hh-warm-sunlight-source-queue-v1",
+  "createdAt": "2026-11-06",
+  "purpose": "Source discovery and licensed media curation for a soft, warm, pleasant sun aesthetic; not a public playable MP4 library",
+  "concept": {
+    "ru": "Тёплое приятное солнце",
+    "en": "Warm pleasant sunlight",
+    "es": "Luz solar cálida y agradable"
+  },
+  "status": "source_candidates_waiting_for_editorial_and_media_review",
+  "sourceCount": 9,
+  "newImportedMp4Count": 0,
+  "countsTowardPlayableCatalog": false,
+  "productionBaseline": {
+    "licensedMasters": 48,
+    "proceduralAnimations": 684,
+    "totalRecords": 732
+  },
+  "defaultLicense": "CC BY 4.0",
+  "creator": "Joel Holland",
+  "publisher": "Dareful",
+  "sourceReviewScope": "Official public listing specifications; no actual video frames downloaded or measured; indexed-only pages explicitly flagged",
+  "sources": [
+    {
+      "id": "sunset-coast-gold",
+      "sourcePage": "https://dareful.com/coast-dusk-sunset/",
+      "mediaUrl": "https://stream.mux.com/4upHQIIZwX32RND2Y7RObv00lZKqpvu01Qtw7loBgbE7c.m3u8",
+      "label": {
+        "ru": "Золотистое солнце над побережьем",
+        "en": "Golden coast at dusk",
+        "es": "Costa dorada al atardecer"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "relationships",
+      "priority": "P0",
+      "visualTags": [
+        "warm_sunlight",
+        "golden_hour",
+        "sunset",
+        "ocean",
+        "sky",
+        "calm"
+      ],
+      "editorialUse": "Gentle warm horizon; check actual exposure, no faces or buildings.",
+      "claimedSource": {
+        "durationSeconds": 26,
+        "framerate": 59.94,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "sunrise-ocean-bright",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-clip-of-a-bright-sunrise-over-the-ocean-stock-footage/",
+      "mediaUrl": "https://stream.mux.com/uPavNUmOf4ilmnVoe6Pl9FK4g7Y8jWqYTiImKGc101OY.m3u8",
+      "label": {
+        "ru": "Яркий морской рассвет",
+        "en": "Bright sunrise over the ocean",
+        "es": "Amanecer luminoso sobre el océano"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "energy",
+      "priority": "P0",
+      "visualTags": [
+        "warm_sunlight",
+        "sunrise",
+        "ocean",
+        "golden_hour",
+        "light",
+        "morning"
+      ],
+      "editorialUse": "Warm light and optimism; reject harsh glare or strobing during technical review.",
+      "claimedSource": {
+        "durationSeconds": 16,
+        "framerate": 29.97,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "sunrise-water-soft",
+      "sourcePage": "https://dareful.com/sunrise-over-water/",
+      "mediaUrl": "https://stream.mux.com/02vlDZS3H00BEaGoP3WsfgEHWXEPR8l1imNCWBEIJ01YAA.m3u8",
+      "label": {
+        "ru": "Мягкий рассвет над водой",
+        "en": "Soft sunrise over water",
+        "es": "Amanecer suave sobre el agua"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "health",
+      "priority": "P0",
+      "visualTags": [
+        "warm_sunlight",
+        "sunrise",
+        "water",
+        "soft_light",
+        "calm",
+        "mist"
+      ],
+      "editorialUse": "Gentle morning atmosphere, suitable for soothing scenes only if frames confirm.",
+      "claimedSource": {
+        "durationSeconds": 32,
+        "framerate": 29.97,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "sunset-sunrise-landscape-gold",
+      "sourcePage": "https://dareful.com/sunset-sunrise-landscape/",
+      "mediaUrl": "https://stream.mux.com/1Ho802ko4H2rHjiOC5Exv7slZn88kXnNhHqysnGcQBvQ.m3u8",
+      "label": {
+        "ru": "Тёплый свет над горизонтом",
+        "en": "Warm light along the horizon",
+        "es": "Luz cálida en el horizonte"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "life",
+      "priority": "P0",
+      "visualTags": [
+        "warm_sunlight",
+        "golden_hour",
+        "horizon",
+        "sky",
+        "sunset",
+        "nature"
+      ],
+      "editorialUse": "Wide sunlit landscape; verify subject and landscape/portrait cropping.",
+      "claimedSource": {
+        "durationSeconds": 25,
+        "framerate": 59.94,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "sunset-ocean-tranquil",
+      "sourcePage": "https://dareful.com/sunset-ocean-sea/",
+      "mediaUrl": "https://stream.mux.com/2RHIvHXIDCqCFFkxmYcZIfA4HvbvYiW02RcjGkIN6Yo8.m3u8",
+      "label": {
+        "ru": "Спокойное вечернее море",
+        "en": "Tranquil evening sea",
+        "es": "Mar tranquilo al atardecer"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "relationships",
+      "priority": "P1",
+      "visualTags": [
+        "warm_sunlight",
+        "sunset",
+        "ocean",
+        "calm",
+        "horizon",
+        "soft_light"
+      ],
+      "editorialUse": "Calm seascape; warmth is a curation hypothesis until frames are reviewed.",
+      "claimedSource": {
+        "durationSeconds": 25,
+        "framerate": 59.94,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "sun-over-ocean-gold",
+      "sourcePage": "https://dareful.com/sun-over-ocean/",
+      "mediaUrl": null,
+      "label": {
+        "ru": "Солнечная дорожка на море",
+        "en": "Sunlight over the ocean",
+        "es": "Reflejos solares sobre el océano"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "energy",
+      "priority": "P0",
+      "visualTags": [
+        "warm_sunlight",
+        "sun_reflections",
+        "ocean",
+        "golden_hour",
+        "glow",
+        "warmth"
+      ],
+      "editorialUse": "Light on the water; streaming link still to be revalidated; source indexed only.",
+      "claimedSource": {
+        "durationSeconds": 31,
+        "framerate": 59.94,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "search_index_only_recheck_official_page",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "dawn-dusk-aerial-soft",
+      "sourcePage": "https://dareful.com/dawn-dusk-aerial/",
+      "mediaUrl": null,
+      "label": {
+        "ru": "Мягкий свет рассвета с высоты",
+        "en": "Soft aerial dawn light",
+        "es": "Luz suave del amanecer desde el aire"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "goals",
+      "priority": "P1",
+      "visualTags": [
+        "warm_sunlight",
+        "sunrise",
+        "sunset",
+        "aerial",
+        "sky",
+        "horizon"
+      ],
+      "editorialUse": "Airy landscape; original imagery and stream not yet accessible for frame review.",
+      "claimedSource": {
+        "durationSeconds": 41,
+        "framerate": 59.94,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "search_index_only_recheck_official_page",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "desert-sunrise-warm",
+      "sourcePage": "https://dareful.com/free-4k-uhd-travel-stock-video-time-lapse-desert-sunrise/",
+      "mediaUrl": "https://stream.mux.com/8G8gEvasAvKS28CZNbdTse01702S02HZ6mEbnR100trmAR00.m3u8",
+      "label": {
+        "ru": "Тёплый рассвет в пустыне",
+        "en": "Warm desert sunrise",
+        "es": "Amanecer cálido en el desierto"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "goals",
+      "priority": "P1",
+      "visualTags": [
+        "warm_sunlight",
+        "sunrise",
+        "desert",
+        "summer",
+        "golden_hour",
+        "nature"
+      ],
+      "editorialUse": "Desert dawn time-lapse; avoid fast flicker or overdramatic time-lapse in calm edits.",
+      "claimedSource": {
+        "durationSeconds": 14,
+        "framerate": 29.97,
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    },
+    {
+      "id": "rocky-mountain-sunset-light",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-of-a-sunset-drone-flight-in-the-colorado-rocky-mountains/",
+      "mediaUrl": "https://stream.mux.com/hJCaKmOAmdkgHyN102l7E02BOOKwxmU89gZQMdiOvgk88.m3u8",
+      "label": {
+        "ru": "Закатный свет в горах Колорадо",
+        "en": "Colorado mountain sunset",
+        "es": "Atardecer en las montañas de Colorado"
+      },
+      "emotion": "warm_pleasant_sunlight",
+      "suggestedTheme": "life",
+      "priority": "P1",
+      "visualTags": [
+        "warm_sunlight",
+        "sunset",
+        "mountains",
+        "forest",
+        "warmth",
+        "aerial"
+      ],
+      "editorialUse": "Golden mountain atmosphere requires visual proof; shared HLS under another page; do not double-count.",
+      "claimedSource": {
+        "durationSeconds": 15,
+        "framerate": 29.97,
+        "resolution": {
+          "width": 1920,
+          "height": 1012
+        },
+        "format": "mp4",
+        "sourceOfSpecifications": "Dareful listing; not independently decoded"
+      },
+      "rights": {
+        "creator": "Joel Holland",
+        "publisher": "Dareful",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "attributionRequired": true,
+        "modificationNoticeRequired": true,
+        "sourcePageVerification": "official_page_metadata",
+        "individualRightsReviewRequired": true
+      },
+      "approvedForPublication": false,
+      "physicallyImported": false,
+      "playableInGenerator": false,
+      "qualityStatus": "awaiting_original_download_motion_contact_sheet_and_visual_review",
+      "portraitReframeRequired": true,
+      "landscapeVariantRequired": true
+    }
+  ],
+  "alreadyPublishedNotNew": [
+    {
+      "id": "sun-trees-forest",
+      "alreadyPublished": true,
+      "neverCountAsNew": true
+    },
+    {
+      "id": "warm-clouds-sunset",
+      "alreadyPublished": true,
+      "neverCountAsNew": true
+    }
+  ],
+  "alreadyQueuedNotNew": [
+    {
+      "id": "water-evening-sunset",
+      "alreadyInPreviousSourceWave": true,
+      "neverCountAsNew": true
+    },
+    {
+      "id": "sunset-sky-landscape",
+      "alreadyInPreviousSourceWave": true,
+      "neverCountAsNew": true
+    },
+    {
+      "id": "sunset-coast-timelapse",
+      "alreadyInPreviousSourceWave": true,
+      "neverCountAsNew": true
+    }
+  ],
+  "excludedPotentialDuplicate": [
+    {
+      "title": "Sunset Over Malibu California Beach 4k",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-clip-of-a-sunset-over-malibu-california/",
+      "reason": "Official download anchor resolves to same Mux HLS identifier as Colorado sunset candidate; retain only one until original motion/hash prove different content",
+      "sharedMediaUrlWith": "rocky-mountain-sunset-light",
+      "countedAsNew": false
+    }
+  ],
+  "importGate": [
+    "Recheck every official page and CC BY 4.0 author/license",
+    "Download the real source once; probe codec, resolution, duration and fps",
+    "Watch full footage plus 9-frame contact sheets, confirm genuinely pleasant sunlight, subject rights, logos, consent and framing",
+    "Generate distinct landscape and portrait 5-second H.264 MP4 excerpts; note crop and re-encode",
+    "Check SHA-256 and perceptual near-duplicates against every first-party source and other queues",
+    "Record actual reviewer and individual owner signoff for approved films",
+    "Only then import physical files, posters, source credits and app taxonomy; run Core/Mandala/WebKit and Vercel LIVE smoke"
+  ]
+}

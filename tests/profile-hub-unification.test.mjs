@@ -1,0 +1,91 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { getCompactNavigation } from '../lib/site-navigation-model.js'
+import { isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from '../lib/unified-mobile-dock.mjs'
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+test('old public and new six-dock Profile share one private hub entry', () => {
+  for (const locale of ['ru', 'en', 'es']) {
+    const fallback = locale === 'es' ? 'en' : locale
+    const expected = '/' + fallback + '/app/portrait'
+    assert.equal(getCompactNavigation(locale).find(item => item.id === 'profile')?.href, expected)
+    assert.equal(unifiedMobileDockHref(locale, 'profile'), expected)
+    for (const path of ['personality-profiles','app/portrait','app/portfolio','app/tests','app/settings','app/history','app/results/00000000-0000-4000-8000-000000000001']) {
+      assert.equal(isUnifiedMobileDockPath('/' + locale + '/' + path), true, path)
+      assert.equal(unifiedMobileDockActive('/' + locale + '/' + path), 'profile', path)
+    }
+  }
+  for (const excluded of ['/ru/app/runs/anything','/ru/app/document-view/private']) assert.equal(isUnifiedMobileDockPath(excluded), false)
+  assert.equal(unifiedMobileDockActive('/ru/app/practice'), 'master')
+})
+test('six light video-first tabs reuse existing protected modules', () => {
+  const hub = read('components/app/profile-hub-tabs.jsx')
+  const style = read('components/app/profile-hub-tabs.module.css')
+  const builder = read('app/[locale]/personality-profiles/page.tsx')
+  const workspace = read('components/app/app-workspace.jsx')
+  assert.match(hub, /data-profile-hub-tabs/)
+  assert.match(hub, /data-profile-tab=\{id\}/)
+  for (const id of ['today','tests','state','path','courses','reports']) assert.match(hub, new RegExp("id: '"+id+"'"))
+  for (const name of ['Создать','Просмотр','Результаты','Настройки','Crear','Resultados','Settings']) assert.ok(hub.includes(name), name)
+  assert.match(hub, /data-profile-video-hero/)
+  const today = hub.slice(hub.indexOf("current === 'today'"), hub.indexOf("current !== 'today'"))
+  assert.ok(today.indexOf('<div className={styles.videoFrame}>') < today.indexOf('<nav className={styles.quickActions}'), 'actions immediately follow player')
+  assert.doesNotMatch(today, /heroCopy|heroFoot|t\.intro|t\.film/, 'no redundant hero text')
+  assert.match(style, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(style, /aspect-ratio:2\/1/)
+  assert.match(hub, /styles\.primaryQuickAction/)
+  assert.match(hub, /resultCount > 0/)
+  assert.match(hub, /portrait\?space=path/)
+  assert.match(hub, /portrait\?space=reports/)
+  assert.match(hub, /\/settings/)
+  assert.match(builder, /<ProfileHubTabs locale=\{locale\} active="create"/)
+  assert.match(workspace, /<ProfileHubTabs locale=\{locale\}/)
+  assert.match(workspace, /<ProfileResultsArchive locale=\{locale\} results=\{data\.results \|\| \[\]\}/)
+  assert.match(style, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/)
+  assert.match(style, /\.hub \.tab,\.hub \.current\{position:relative;min-height:54px/)
+  assert.match(style, /max-width:430px/)
+  assert.match(style, /\.hub \.heading\{flex-wrap:wrap/)
+  const banner = read('components/sitewide-antistress-banner.tsx')
+  assert.ok(banner.includes('app\\/portrait'), 'promo suppressed on My Space')
+  assert.match(banner, /if \(isDistractionSensitivePage\(pathname\)\) return null/)
+  const ihelp = read('components/sitewide-ihelp.module.css')
+  assert.match(ihelp, /body:has\(\[data-profile-hub-tabs\]\)/)
+  assert.match(ihelp, /bottom:calc\(86px/)
+
+  assert.doesNotMatch(hub, /localStorage|sessionStorage|fetch\(|postMessage\(/i)
+})
+test('all saved test attempts remain account-scoped, without fictitious summary metrics', () => {
+  const hub = read('components/app/profile-hub-tabs.jsx')
+  const repo = read('lib/app/repository.js')
+  const workspace = read('components/app/app-workspace.jsx')
+  assert.match(repo, /select \* from app\.assessment_results where account_id=\$1 order by measurement_at,id/)
+  assert.match(repo, /results: portraitOnly \? results/)
+  assert.match(workspace, /bootstrap\?view=portrait/)
+  assert.match(hub, /ordered\.slice\(0, 5\)/)
+  assert.match(hub, /data-saved-result-count=\{ordered\.length\}/)
+  assert.match(hub, /\/history/)
+  assert.match(hub, /\/results\//)
+  assert.match(hub, /\/tests\?filter=completed/)
+  assert.doesNotMatch(hub, /appFetch\(|insert into|create table|service_role|scorePercent|autoShare/i)
+})
+
+test('one scenic non-autoplay hero with six routed workspaces, private report and goal compatibility', () => {
+  const hub = read('components/app/profile-hub-tabs.jsx')
+  const app = read('components/app/app-workspace.jsx')
+  const routes = read('app/[locale]/app/[[...path]]/page.jsx')
+  const profile = read('components/app/profile-domains.jsx')
+  const home = read('components/home-personal-space.tsx')
+  for (const id of ['today','tests','state','path','courses','reports'])
+    assert.ok(hub.includes("id: '"+id+"'"), id)
+  assert.match(hub, /preload="none"/)
+  assert.match(hub, /film-collection-v3\/sun-autumn-hills\.mp4/)
+  assert.doesNotMatch(hub, /autoPlay|appFetch\(|fetch\(|localStorage|postMessage\(/i)
+  assert.match(app, /bootstrap\?view=portrait/)
+  assert.match(app, /searchParams\.get\('space'\) === 'path'/)
+  assert.match(app, /searchParams\.get\('space'\) === 'reports'/)
+  assert.match(app, /<AccountMessagingEntry/)
+  assert.match(app, /<DevelopmentProgram/)
+  assert.match(profile, /!hideDevelopment/)
+  assert.match(routes, /portrait\?space=reports#personal-reports/)
+  assert.match(home, /portrait\?space=path#hh-development-program/)
+})

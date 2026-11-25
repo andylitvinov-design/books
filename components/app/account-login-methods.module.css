@@ -1,0 +1,30 @@
+.root {
+  margin: 18px 0;
+  padding: clamp(16px, 3vw, 25px);
+  border: 1px solid #dde5e2;
+  border-radius: 18px;
+  background: #fffefb;
+  color: #253b42;
+}
+.root h2 {margin: 0 0 8px;font-size: clamp(18px, 2vw, 24px);line-height: 1.3}
+.root p {margin: 0 0 14px;line-height: 1.6}
+.methods {display: grid;grid-template-columns: repeat(2,minmax(0,1fr));gap: 12px}
+.method {
+  display: flex;flex-wrap: wrap;align-items: center;justify-content: space-between;
+  gap: 10px;padding: 14px;border: 1px solid #dce7e4;border-radius: 13px;
+  background: #f7faf8;min-width: 0;
+}
+.method strong {font-size: 15px}
+.method button {
+  border: 0;border-radius: 11px;padding: 11px 14px;min-height: 44px;
+  background: #245e61;color: white;font: 600 14px/1.35 system-ui,sans-serif;cursor: pointer;
+}
+.method button:disabled {opacity: .55;cursor: not-allowed}
+.method button:focus-visible {outline: 3px solid #d8b56a;outline-offset: 3px}
+.connected {font-size: 13px;font-weight: 600;color: #246d57}
+.root .note {font-size: 13px;color: #5c6b6e;margin: 13px 0 0}
+.root .status {margin: 10px 0 0;font-size: 14px}
+@media (max-width: 500px) {
+ .methods {grid-template-columns: 1fr}
+ .method {align-items: center}
+}

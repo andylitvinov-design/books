@@ -98,6 +98,14 @@ export default async function HomeopathyPage({ params }: PageProps) {
         })} rel="noreferrer" target="_blank">{current.whatsapp}</a>
       </div>
 
+      <section className="mx-auto max-w-6xl px-4 py-8" aria-labelledby="poem-catalog-heading">
+        <div className="rounded-3xl border border-[#e9dfd1] bg-[#fffcf7] p-6 sm:p-8">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#966a1f]">{locale === "ru" ? "Алхимия Души" : "Alchemy of the Soul"}</p>
+          <h2 id="poem-catalog-heading" className="mb-3 text-2xl font-semibold text-[#17334b] sm:text-3xl">{locale === "ru" ? "Стихи-настройки препаратов" : "Original remedy poems"}</h2>
+          <p className="mb-5 max-w-3xl text-base leading-relaxed text-[#5d6a71]">{locale === "ru" ? "Авторские стихи — отдельные карточки со ссылкой на описание и на сам стих." : "Original Russian poetic attunements, with separate links to the description and the poem."}</p>
+          <Link href={`/${locale}/homeopathy/attunements`} className="inline-flex min-h-12 items-center rounded-xl bg-[#067a67] px-5 py-3 font-semibold text-white">{locale === "ru" ? "Открыть каталог настроек" : "Explore original poems"}</Link>
+        </div>
+      </section>
       <section className="remedies-books-section" aria-labelledby="remedies-books-title">
         <div className="remedies-section-heading">
           <div>

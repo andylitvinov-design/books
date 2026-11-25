@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings, type StarSummary } from "@/components/catalog-star-rating";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
-import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { getPublicServiceDetailHref, getPublicServiceReviewHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -334,7 +335,7 @@ type CourseChoice = { value: string; label: string };
 function Filters({
   locale, mode, state, setState, count, languages, methods,
   offeringTypes = [], courseChoices = [], locations = [],
-  topics = MASTER_TOPICS, coursesUnavailable = false,
+  topics = MASTER_TOPICS, coursesUnavailable = false, embedded = false,
 }: {
   locale: Locale;
   mode: "masters" | "services";
@@ -348,6 +349,7 @@ function Filters({
   locations?: string[];
   topics?: readonly (typeof MASTER_TOPICS)[number][];
   coursesUnavailable?: boolean;
+  embedded?: boolean;
 }) {
   const t = COPY[locale];
   // Explicitly control the extra filters disclosure. The hydrated mobile
@@ -409,10 +411,34 @@ function Filters({
       </select>
     </label>
   );
+  const primaryMasterFilters = (
+    <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
+                <label>{t.offering}
+                  <select id="mentor-filter-offering" value={state.offeringType}
+                    onChange={(event) => set("offeringType", event.target.value)}>
+                    <option value="">{t.anyOffering}</option>
+                    {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
+                  </select>
+                </label>
+                {(!embedded || courseChoices.length > 0) ? <label>{t.courseTitle}
+                  <select id="mentor-filter-course" value={state.courseKey}
+                    disabled={!courseChoices.length}
+                    onChange={(event) => set("courseKey", event.target.value)}>
+                    <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
+                    {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                  </select>
+                </label> : null}
+                {formatSelect}
+                {languageSelect}
+              </div>
+  );
   return (
     <section className={styles.filters} aria-label={t.filterTitle} data-mentor-filters={mode === "masters" ? "" : undefined}>
       <div className={styles.heading}>
-        <h2>{mode === "masters" ? (locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner") : t.filterTitle}</h2>
+        <h2>{mode === "masters" ? (embedded
+          ? locale === "ru" ? "Подберите коуча" : locale === "es" ? "Encuentra tu coach" : "Find your coach"
+          : locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner")
+          : t.filterTitle}</h2>
         <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" && count === 1 ? (locale === "ru" ? "мастер" : locale === "es" ? "profesional" : "practitioner") : mode === "masters" ? t.masters : t.services}</span>
       </div>
       <div className={styles.searchRow} role="search">
@@ -429,25 +455,6 @@ function Filters({
       </div>
       {mode === "masters" ? (
         <>
-          <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
-            <label>{t.offering}
-              <select id="mentor-filter-offering" value={state.offeringType}
-                onChange={(event) => set("offeringType", event.target.value)}>
-                <option value="">{t.anyOffering}</option>
-                {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
-              </select>
-            </label>
-            <label>{t.courseTitle}
-              <select id="mentor-filter-course" value={state.courseKey}
-                disabled={!courseChoices.length}
-                onChange={(event) => set("courseKey", event.target.value)}>
-                <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
-                {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </label>
-            {formatSelect}
-            {languageSelect}
-          </div>
           <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
             <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
             {topics.map((topic) => (
@@ -456,6 +463,7 @@ function Filters({
               </button>
             ))}
           </div>
+                    {!embedded ? primaryMasterFilters : null}
           <div className={styles.masterExtra}>
             <button type="button" className={styles.masterExtraToggle}
               aria-expanded={mastersMoreOpen} aria-controls="mentor-extra-filters"
@@ -466,10 +474,11 @@ function Filters({
                 setMastersMoreOpen((previous) => !previous);
               }}
               onClick={() => setMastersMoreOpen((previous) => !previous)}>
-              {locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"}
+              {embedded ? (locale === "ru" ? "Фильтры · язык, формат, метод и цена" : locale === "es" ? "Filtros · idioma, formato, método y precio" : "Filters · language, format, method & price") : (locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more")}
               <span aria-hidden="true">⌄</span>
             </button>
             <div id="mentor-extra-filters" className={styles.masterExtraBody} hidden={!mastersMoreOpen}>
+            {embedded ? primaryMasterFilters : null}
             <div className={styles.selectGrid}>
               <label>{t.method}
                 <select value={state.method} onChange={(event) => set("method", event.target.value)}>
@@ -486,7 +495,7 @@ function Filters({
               {pricingSelect}
               {sortSelect}
             </div>
-            {areaFilters}
+            {!embedded ? areaFilters : null}
             </div>
           </div>
         </>
@@ -539,19 +548,37 @@ function ServiceCard({
   service,
   locale,
   profileView = false,
+  rating, onRate, ratingUnavailable = false,
 }: {
   service: PublicService;
   locale: Locale;
   profileView?: boolean;
+  rating?: StarSummary;
+  onRate?: (stars:number)=>Promise<unknown>;
+  ratingUnavailable?: boolean;
 }) {
   const t = COPY[locale];
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
+  const reviewHref = getPublicServiceReviewHref(locale, service.practitionerSlug, service.slug);
   const requestHref = service.slug === "remote-energy-support"
     ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
     : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
   const coverImage = service.photos?.[0] || service.imagePath;
+  // Decorative fallback illustrations are from the existing HH asset library,
+  // never invented practitioner photographs or representations of service outcomes.
+  const profileArtwork: Record<string, string> = {
+    personal_development: "/images/holistic-house/course-focus-mountain-boy.webp",
+    energy_spiritual: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+    relationships: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+    emotional_psychological: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+    body_somatic: "/images/holistic-house/ideas-pine-sharp.avif",
+    homeopathy_holistic: "/images/holistic-house/homeopathy-still-life.svg",
+    career_purpose: "/images/holistic-house/report-lighthouse-coast.webp",
+    business_money: "/images/holistic-house/report-lighthouse-coast.webp",
+  };
+  const artwork = coverImage || (profileView ? profileArtwork[service.areaKey] || profileArtwork.personal_development : "");
   const requestText = profileView
     ? (isFree(service)
       ? locale === "ru" ? "Получить бесплатно" : locale === "es" ? "Solicitar gratis" : "Get free"
@@ -562,12 +589,11 @@ function ServiceCard({
     <article className={profileView ? styles.serviceCard + " " + styles.profileServiceCard : styles.serviceCard}
       data-service-funnel-card>
       <ServiceFunnelImpression serviceId={service.id} />
-      {coverImage ? (
-        <Link href={detailsHref} className={styles.serviceCover}>
-          <img src={coverImage} alt={service.copy.title} loading="lazy" />
+      {artwork ? (
+        <Link href={detailsHref} className={styles.serviceCover}
+          aria-label={(locale === "ru" ? "Подробнее об услуге: " : locale === "es" ? "Más información: " : "Service details: ") + service.copy.title}>
+          <img src={artwork} alt={coverImage ? service.copy.title : ""} loading="lazy" />
         </Link>
-      ) : profileView ? (
-        <div className={styles.profileCoverFallback} aria-hidden="true"><span>✦</span></div>
       ) : null}
       <div className={styles.cardTop}>
         {!profileView && (
@@ -584,8 +610,17 @@ function ServiceCard({
         )}
         <span className={isFree(service) ? styles.freePrice : styles.price}>{servicePrice(service, locale)}</span>
       </div>
+      {(service.serviceIntroductions?.length||service.videoPresentation)&&<Link className={styles.mediaIntroLink}
+        href={detailsHref + "#service-introduction"}>
+        {(service.serviceIntroductions?.[0]?.type||'video')==='audio'?'♫':'▶'}{' '}
+        {locale==='ru'?'Обращение мастера':locale==='es'?'Presentación del profesional':'Meet the practitioner'}
+        {' · '}{service.serviceIntroductions?.length
+          ? service.serviceIntroductions.map(item=>item.language.toUpperCase()).join(' / ')
+          : 'VIDEO'}
+      </Link>}
       <p className={styles.area}>{areaName(service.areaKey, locale)}</p>
       <h3>{service.copy.title}</h3>
+      <CatalogStarRating locale={locale} summary={rating} onRate={onRate} unavailable={ratingUnavailable} compact/>
       <p className={styles.description}>{service.copy.shortDescription}</p>
       <div className={styles.meta}>
         <span>{format}</span>
@@ -596,8 +631,8 @@ function ServiceCard({
       <div className={styles.actions}>
         <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
         {!profileView && (
-          <Link className={styles.secondary} href={detailsHref + "#reviews"}>
-            {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+          <Link className={styles.secondary} href={reviewHref}>
+            {locale === "ru" ? "Оставить отзыв" : locale === "es" ? "Dejar opinión" : "Leave a review"} ★
           </Link>
         )}
         <TrackedServiceLink serviceId={service.id} event="order"
@@ -605,6 +640,12 @@ function ServiceCard({
           aria-label={requestText + ": " + service.copy.title}>
           {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
+        {profileView && (
+          <Link className={styles.profileReviewLink} href={reviewHref}>
+            ★ {locale === "ru" ? "Оставить отзыв мастеру" : locale === "es" ?
+              "Dejar una opinión al profesional" : "Leave a review for this practitioner"} →
+          </Link>
+        )}
       </div>
     </article>
   );
@@ -616,10 +657,11 @@ export function PractitionerServicesGrid({ services, locale: pageLocale }: {
   locale: string;
 }) {
   const locale = localized(pageLocale);
+  const stars = useCatalogRatings("service", services.map(service=>service.id));
   return (
     <div className={styles.cardGrid + " " + styles.practitionerServicesGrid}>
       {services.map(service => (
-        <ServiceCard key={service.id} service={service} locale={locale} profileView />
+        <ServiceCard key={service.id} service={service} locale={locale} profileView rating={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} ratingUnavailable={stars.unavailable}/>
       ))}
     </div>
   );
@@ -628,31 +670,44 @@ export function PractitionerServicesGrid({ services, locale: pageLocale }: {
 export function MarketplaceServiceFinder({ services, locale: pageLocale }: { services: PublicService[]; locale: string }) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
+  const [minimumStars,setMinimumStars] = useState(0);
+  const stars = useCatalogRatings("service", services.map(service=>service.id));
   const languages = useMemo(() => [...new Set(services.flatMap((service) => service.languages || []).map(clean).filter(Boolean))].sort(), [services]);
   const methods = useMemo(()=>[...new Set(services.flatMap(s=>s.methods||[]).map(clean).filter(Boolean))].sort(),[services]);
   const visible = useMemo(() => {
-    const list = services.filter((service) => serviceMatches(service, state));
+    const list = services.filter((service) => serviceMatches(service, state) && (stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[service.id], minimumStars)));
+    if (state.sort === "rating") return sortByStars(list, item=>item.id, stars.ratings);
     if (state.sort === "az") return list.sort((a, b) => a.copy.title.localeCompare(b.copy.title, pageLocale));
     if (state.sort === "shorter") return list.sort((a, b) => (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity));
     const areas = AREAS.map(([id])=>id);
     return list.sort((a,b)=>areas.indexOf(a.areaKey as typeof areas[number])-areas.indexOf(b.areaKey as typeof areas[number]));
-  }, [services, state, pageLocale]);
+  }, [services, state, pageLocale, stars.ratings, stars.loading, stars.unavailable, minimumStars]);
   return (
     <div className={styles.explorer}>
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",margin:"10px 0"}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars}/>
+        <label style={{fontSize:13}}>{locale==="ru"?"Сортировка":locale==="es"?"Ordenar":"Sort"}{" "}
+          <select value={state.sort} onChange={event=>setState(current=>({...current,sort:event.target.value}))}>
+            <option value="default">{COPY[locale].defaultSort}</option>
+            <option value="rating">{locale==="ru"?"Высокий рейтинг":locale==="es"?"Mayor valoración":"Highest rated"}</option>
+          </select>
+        </label>
+      </div>
       <Filters locale={locale} mode="services" state={state} setState={setState} count={visible.length} languages={languages} methods={methods} />
-      {visible.length ? <div className={styles.cardGrid}>{visible.map((service) => <ServiceCard key={service.id} service={service} locale={locale} />)}</div>
+      {visible.length ? <div className={styles.cardGrid}>{visible.map((service) => <ServiceCard key={service.id} service={service} locale={locale} rating={stars.ratings[service.id]} onRate={value=>stars.rate(service.id,value)} ratingUnavailable={stars.unavailable}/>)}</div>
         : <p className={styles.empty} role="status">{COPY[locale].noResults}</p>}
     </div>
   );
 }
 
 export function MarketplaceMasterFinder({
-  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale,
+  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale, embedded = false,
 }: {
   practitioners: PublicPractitioner[];
   courses?: PublicMentorCourse[];
   coursesUnavailable?: boolean;
   locale: string;
+  embedded?: boolean;
 }) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
@@ -705,8 +760,8 @@ export function MarketplaceMasterFinder({
   }, [practitioners, publishedCourses, state, pageLocale]);
   const t = COPY[locale];
   return (
-    <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
-      <Filters locale={locale} mode="masters" state={state} setState={setState}
+    <div className={[styles.explorer, practitioners.length === 1 ? styles.singleMaster : "", embedded ? styles.embeddedExplorer : ""].filter(Boolean).join(" ")} data-mentor-embedded={embedded ? "" : undefined}>
+      <Filters locale={locale} mode="masters" state={state} setState={setState} embedded={embedded}
         count={visible.length} languages={languages} methods={methods} locations={locations}
         offeringTypes={offeringTypes} courseChoices={courseChoices} topics={topics}
         coursesUnavailable={coursesUnavailable} />
@@ -723,6 +778,11 @@ export function MarketplaceMasterFinder({
           const queryMatches = state.query ? filteredServices.filter((service) =>
             clean([service.copy.title, service.copy.shortDescription].join(" ")).includes(clean(state.query))) : [];
           const firstService = queryMatches[0] || filteredServices[0];
+          const serviceFeaturePhoto = firstService?.photos?.[0] || firstService?.imagePath;
+          // The already-approved public profile portrait is a safe visual fallback
+          // when no service-specific cover has been published.
+          const profileFeaturePhoto = !serviceFeaturePhoto && Boolean(profile.photoPath);
+          const featurePhoto = serviceFeaturePhoto || profile.photoPath;
           const featuredCourse = matchingMasterCourses(master, state, publishedCourses)[0];
           const filtersActive = Boolean(state.query || state.area || state.offeringType ||
             state.courseKey || state.language || state.format || state.location ||
@@ -731,14 +791,25 @@ export function MarketplaceMasterFinder({
             (!filtersActive && masterServices.some((service) =>
               service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual"));
           return (
-            <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
+            <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id} data-master-card>
+              {featurePhoto ? <div className={styles.masterFeature} aria-hidden="true">
+                <img src={featurePhoto} alt="" loading="lazy" />
+              </div> : null}
               <div className={styles.masterHeading}>
-                {profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
-                  <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>}
+                {!profileFeaturePhoto ? (profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
+                  <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>) : null}
                 <div><p className={styles.area}>{[profile.city, profile.country].filter(Boolean).join(", ") || t.online}</p>
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
               </div>
               <p className={styles.description}>{profile.shortBio || ""}</p>
+              <Link className={styles.masterRating} href={"/" + locale + "/masters/" + master.slug + "#practitioner-reviews"}>
+                {master.reviewSummary?.count
+                  ? <><strong>★ {master.reviewSummary.average.toFixed(1)} / 5</strong>
+                      <span>· {master.reviewSummary.count} {locale === "ru" ? "отзывов" : locale === "es" ? "opiniones" : "reviews"}</span></>
+                  : <span>☆ {master.reviewSummary
+                    ? locale === "ru" ? "Пока без отзывов" : locale === "es" ? "Sin opiniones todavía" : "No reviews yet"
+                    : locale === "ru" ? "Отзывы мастера" : locale === "es" ? "Opiniones del profesional" : "Practitioner reviews"}</span>}
+              </Link>
               <div className={styles.meta}>
                 {(profile.languages || []).length ? <span>{profile.languages?.map((lang) => lang.toUpperCase()).join(" · ")}</span> : null}
                 {certified ? <span>{t.credentials}</span> : null}
