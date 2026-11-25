@@ -22,6 +22,7 @@ const ui={
     failure:'Живой голос недоступен. Можно продолжить текстом.',
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
     reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Звук приостановлен. Нажмите «Включить звук».',
+    resumedEarlier:'Разговор восстановлен. Если связь прервалась посреди фразы, повторите её последние слова.',
     resumeAudio:'Включить звук',networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
     playbackInterrupted:'Ответ прервался (G-L11). Можно продолжать говорить.',
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
@@ -46,6 +47,7 @@ const ui={
     failure:'Live voice is unavailable. You can continue by text.',
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
     reconnecting:'Restoring live voice…',audioRoute:'Audio is paused. Tap Enable audio to hear the coach.',
+    resumedEarlier:'The conversation has resumed. If the connection cut out mid-sentence, repeat the last few words.',
     resumeAudio:'Enable audio',networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
     playbackInterrupted:'Reply interrupted (G-L11). You can keep talking.',
     rateLimit:'Free live voice limit reached. You can continue by text.',
@@ -70,6 +72,7 @@ const ui={
     failure:'La voz en vivo no está disponible. Puedes seguir por texto.',
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
     reconnecting:'Restableciendo la voz…',audioRoute:'El audio está pausado. Toca Activar audio.',
+    resumedEarlier:'Se ha retomado la conversación. Si se cortó la conexión a mitad de una frase, repite las últimas palabras.',
     resumeAudio:'Activar audio',networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
     playbackInterrupted:'Respuesta interrumpida (G-L11). Puedes seguir hablando.',
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
@@ -169,6 +172,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{r.sink?.disconnect()}catch{}
     for(const track of r.stream?.getTracks?.()||[])try{track.stop()}catch{}
     restoreCoachIos27LiveDuplex(navigator)
+    r.pendingMic=[]
     silence(r)
     try{void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
@@ -430,12 +434,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.hadAudio=false
     r.outputWithoutAudio=false
     r.lastAssistantTurnFinished=true
+    r.player?.setVolume?.(1)
     if(r.resumeAfterDrain){r.resumeAfterDrain=false;scheduleReconnect(r)}
     else if(r.reconnectSoon)maybeReconnectOnGoAway(r)
     else{phaseChange('listening');flushSideband(r)}
   }
   function maybeReconnectOnGoAway(r){
-    if(!r.reconnectSoon||r.ended||r.reconnects>=3||!r.resumeHandle||
+    if(!r.reconnectSoon||r.ended||r.reconnects>=3||!r.resumeHandle||r.checkpointCurrent!==true||
       !r.lastAssistantTurnFinished||r.speaking||r.modelTurnComplete||
       r.player?.playing||r.pendingAudio?.length||r.inputText||r.bargeDetector.userActive||
       Date.now()-(r.lastHumanAudioAt||0)<=350)return
@@ -545,6 +550,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.ended)return
     let frame
     try{frame=readGeminiLiveServerMessage(packet)}catch{notify(t.failure);return}
+    if(frame.resumable!==null){
+      r.checkpointCurrent=frame.resumable
+      if(frame.resumable)r.resumeHandle=frame.resumeHandle
+    }
     if(frame.setupComplete){
       r.ready=true
       r.interrupted=false
@@ -563,6 +572,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         },10000)
       }else{
         phaseChange('listening')
+        notify(r.checkpointCurrent===false?t.resumedEarlier:'')
         // Same logical conversation: restore only the last server-reviewed
         // checkpoint, not archived facts or an artificial new user utterance.
         r.pendingDirectorHint=r.latestDirectorHint||''
@@ -572,6 +582,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       return
     }
     if(!r.ready)return
+    if(frame.input||frame.interim){
+      const value=frame.input||frame.interim
+      r.inputText=appendGeminiLiveTranscript(r.inputText,value)
+      propsRef.current.onInputInterim?.(r.inputText)
+    }
     if(frame.interrupted){
       interrupt()
       r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
@@ -596,11 +611,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }
     }
     const allowAudio=r.audioGate.accept(frame)
-    if(frame.input||frame.interim){
-      const value=frame.input||frame.interim
-      r.inputText=appendGeminiLiveTranscript(r.inputText,value)
-      propsRef.current.onInputInterim?.(r.inputText)
-    }
     if(frame.output&&allowAudio){
       if(r.inputText)commitInput(r)
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
@@ -629,27 +639,30 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.modelTurnComplete=true
       finishAudibleTurn(r)
     }
-    if(frame.resumable&&frame.resumeHandle)r.resumeHandle=frame.resumeHandle
-    if(frame.goAway&&r.resumeHandle){
-      r.reconnectSoon=true
-      maybeReconnectOnGoAway(r)
-    }
+    if(frame.goAway)r.reconnectSoon=true
+    if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
   function capture(r,chunk){
     if(r.ended||!r.ready||r.socket?.readyState!==1)return
     const audio=chunk instanceof Float32Array?chunk:new Float32Array(chunk)
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
-    if(level>=0.013)r.lastHumanAudioAt=Date.now()
-    propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,level*4)))
-    // Listen CONTINUOUSLY while the coach plays, including very quiet speech.
-    // First candidate ducks playback to rule out its own acoustic echo; a
-    // confirmed phrase cuts speaker audio immediately while PCM continues.
-    const event=r.bargeDetector.sample(level,r.speaking||r.player?.playing)
-    if(event==='duck')r.player?.setVolume(0.08)
-    else if(event==='restore')r.player?.setVolume(1)
+    const now=r.context.currentTime
+    const protectedPlayback=r.speaking||r.player.playing||r.player.reference.recent(now)
+    const residual=level>=.0105?r.player.reference.residualLevel(audio,r.context.sampleRate,now):null
+    const micLevel=residual??level
+    // A louder speaker leaves more residual echo. Raise the threshold with
+    // that level, while a quiet caller over softer playback can still pass.
+    const speechThreshold=residual===null?.013:Math.max(.0105,Math.min(.013,.21*level))
+    if(micLevel>=speechThreshold)r.lastHumanAudioAt=Date.now()
+    propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,micLevel*4)))
+    const frameMs=1000*audio.length/r.context.sampleRate
+    const event=r.bargeDetector.sample(micLevel,protectedPlayback,frameMs,speechThreshold)
+    if(event==='duck'&&r.player.playing)r.player.setVolume(.4)
+    else if(event==='restore')r.player.setVolume(1)
     else if(event==='interrupt')interrupt()
     if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
+      r.pendingMic.length=0
       r.backpressureChunks=(r.backpressureChunks||0)+1
       if(r.backpressureChunks===6)notify(t.networkSlow)
       // An explicit text fallback is safer than silent lost microphone seconds.
@@ -659,15 +672,35 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.backpressureChunks=0
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
-    if(pcm.length)sendSocket(r,geminiLivePcmMessage(pcm))
+    if(pcm.length){
+      // Keep the sample clock running through echo and failed onsets. Google
+      // must never hear the candidate before the local barge-in decision.
+      // Send a genuine onset in order, including its first syllable.
+      if(residual!==null&&micLevel<speechThreshold)pcm.fill(0)
+      const pending=r.pendingMic
+      if(protectedPlayback&&!r.bargeDetector.userActive&&r.bargeDetector.candidateMs>0){
+        pending.push(pcm)
+        // Bound undecided input, including short frames from a cached worklet.
+        if(pending.length>24){
+          const old=pending.shift()
+          old.fill(0)
+          sendSocket(r,geminiLivePcmMessage(old))
+        }
+      }else{
+        const confirmed=r.bargeDetector.userActive
+        for(const held of pending){
+          if(!confirmed)held.fill(0)
+          sendSocket(r,geminiLivePcmMessage(held))
+        }
+        pending.length=0
+        if(protectedPlayback&&!confirmed)pcm.fill(0)
+        sendSocket(r,geminiLivePcmMessage(pcm))
+      }
+    }
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
   async function installCapture(r){
     const ctx=r.context
-    const source=ctx.createMediaStreamSource(r.stream)
-    const sink=ctx.createGain()
-    sink.gain.value=0
-    sink.connect(ctx.destination)
     let processor
     if(ctx.audioWorklet?.addModule&&typeof window.AudioWorkletNode==='function'){
       try{
@@ -677,19 +710,29 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         processor.port.onmessage=event=>capture(r,event.data)
       }catch{processor=null}
     }
+    if(r.ended)return
     if(!processor){
       if(typeof ctx.createScriptProcessor!=='function')throw Error('AUDIO_WORKLET_UNAVAILABLE')
-      processor=ctx.createScriptProcessor(2048,1,1)
+      const blockSize=2**Math.ceil(Math.log2(ctx.sampleRate*.032))
+      processor=ctx.createScriptProcessor(blockSize,1,1)
       processor.onaudioprocess=event=>capture(r,
         new Float32Array(event.inputBuffer.getChannelData(0)))
     }
-    source.connect(processor)
-    processor.connect(sink)
-    r.source=source;r.processor=processor;r.sink=sink
+    // Attach the track only after the graph is ready to consume current audio.
+    // WebKit can queue old samples in a disconnected MediaStreamAudioSourceNode.
+    r.processor=processor
+    r.sink=ctx.createGain()
+    r.sink.gain.value=0
+    r.sink.connect(ctx.destination)
+    processor.connect(r.sink)
+    r.source=ctx.createMediaStreamSource(r.stream)
+    r.source.connect(processor)
   }
 
   function connect(r,token,{resume=false}={}){
     if(r.ended)return
+    const handle=resume?r.resumeHandle:null
+    if(resume&&!handle){notify(t.connection);stop();return}
     let socket
     try{
       socket=new WebSocket(geminiLiveSocketUrl(token.token))
@@ -710,7 +753,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ended||r.socket!==socket)return
       try{
         const setup=geminiLiveSetupMessage(token.model,r.voiceName)
-        if(resume&&r.resumeHandle)setup.setup.sessionResumption={handle:r.resumeHandle}
+        if(resume)setup.setup.sessionResumption={handle}
         if(!sendSocket(r,setup))throw Error('SETUP_SEND_FAILED')
       }catch{notify(t.setupInvalid);stop()}
     }
@@ -754,6 +797,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Clear its suppression gate so the first resumed reply is audible.
     r.audioGate=new GeminiLiveBargeGate()
     r.bargeDetector=new GeminiLiveBargeDetector()
+    r.pendingMic=[]
     r.player?.setVolume(1)
     r.modelTurnComplete=false;r.hadAudio=false;r.outputWithoutAudio=false
     r.lastAssistantTurnFinished=true
@@ -867,7 +911,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
       continuing:recovery.continuing,inputText:'',outputText:'',
-      speaking:false,interrupted:false,resumeHandle:null,
+      speaking:false,interrupted:false,resumeHandle:null,checkpointCurrent:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
       pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,
@@ -878,7 +922,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       contextSentFingerprint:'',pendingContextFingerprint:'',pendingContextReadAt:0,
       contextCheckTimer:null,contextCheckInFlight:false,
       pendingContext:'',pendingDirectorHint:'',latestDirectorHint:'',sidebandTimer:null,
-      bargeDetector:new GeminiLiveBargeDetector(),
+      bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
