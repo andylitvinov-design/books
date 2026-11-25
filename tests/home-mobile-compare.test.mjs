@@ -60,17 +60,23 @@ test("network audit verifies the actual SSR persona, not a stale hardcoded image
   assert.throws(()=>assertHeroPreload(snapshot(html("/unapproved.webp"))));
 });
 
-test("network audit requires exact inline approved WebP and distinguishes screen and deferred CSS",()=>{
-  const bytes=readFileSync(new URL("../public/images/holistic-house/ali-inner-alchemist-hero.webp",import.meta.url));
-  assert.ok(bytes.length<=4096);
-  const image="data:image/webp;base64,"+bytes.toString("base64");
-  const html=(src,loading="eager",persona="alex")=>'<link rel="stylesheet" href="/critical.css"><link rel="stylesheet" media="print" data-home-full-style href="/deferred.css"><noscript><link rel="stylesheet" href="/deferred.css"></noscript><div data-home-ali-persona="'+persona+'"><img src="'+src+'" loading="'+loading+'" fetchpriority="high"></div>';
+test("network audit requires a cacheable preloaded portrait and distinguishes screen and deferred CSS",()=>{
+  const image="/images/holistic-house/ali-inner-alchemist-hero.webp";
+  const bytes=readFileSync(new URL("../public"+image,import.meta.url));
+  assert.ok(bytes.length<=4096,"Approved tiny WebP must stay small");
+  const inline="data:image/webp;base64,"+bytes.toString("base64");
+  const html=(src,preload=src,loading="eager")=>'<link rel="stylesheet" href="/critical.css"><link rel="stylesheet" media="print" data-home-full-style href="/deferred.css"><noscript><link rel="stylesheet" href="/deferred.css"></noscript><link rel="preload" as="image" fetchpriority="high" href="'+preload+'"><div data-home-ali-persona="alex"><img src="'+src+'" loading="'+loading+'" fetchpriority="high"></div>';
   const data=snapshot(html(image));
   assert.deepEqual(data.cssLinks,["/critical.css","/deferred.css"]);
   assert.deepEqual(data.blockingCssLinks,["/critical.css"]);
   assert.doesNotThrow(()=>assertHeroPreload(data));
-  assert.throws(()=>assertHeroPreload(snapshot(html(image+"A"))));
-  assert.throws(()=>assertHeroPreload(snapshot(html("data:image/webp;base64,UklGRg=="))));
-  assert.throws(()=>assertHeroPreload(snapshot(html(image,"lazy"))));
-  assert.throws(()=>assertHeroPreload(snapshot(html(image,"eager","max"))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(inline))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(image,"/unrelated.webp"))));
+  assert.throws(()=>assertHeroPreload(snapshot(html(image,image,"lazy"))));
+  const entry=readFileSync(new URL("../components/home-dialogue-entry.tsx",import.meta.url),"utf8");
+  const config=readFileSync(new URL("../next.config.ts",import.meta.url),"utf8");
+  assert.doesNotMatch(entry,/HH_HOME_SAMIR_INLINE/);
+  assert.doesNotMatch(config,/HH_HOME_SAMIR_INLINE/);
+  assert.ok(entry.includes(image));
+  assert.match(entry,/<link rel="preload" as="image" href=\{picture\} fetchPriority="high"\/>/);
 });

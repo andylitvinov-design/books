@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
-import { readFileSync } from "node:fs";
 import { requestHomeDocument } from "./public-home-http.mjs";
 const paths=["/","/ru","/es"];
-const samirPath="/images/holistic-house/ali-inner-alchemist-hero.webp";
-const samirBytes=readFileSync(new URL("../public"+samirPath,import.meta.url));
-const inlineSamir=samirBytes.length<=4096?"data:image/webp;base64,"+samirBytes.toString("base64"):null;
 export function snapshot(html) {
   const sheets=[...html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,"").matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/gi)].map(x=>x[0]);
   const href=tag=>tag.match(/\bhref=["']([^"']+)/i)?.[1];
@@ -29,12 +25,10 @@ export function assertHeroPreload(data,path="/"){
   assert.ok(hero,"Approved SSR persona image missing: "+path);
   assert.equal(hero.loading,"eager","Hero image must load eagerly: "+path);
   assert.equal(hero.fetchPriority,"high","Hero image priority missing: "+path);
-  if(hero.src?.startsWith("data:")){
-    assert.ok(hero.persona==="alex"&&inlineSamir&&hero.src===inlineSamir,"Inline hero must be the exact approved small Samir WebP: "+path);
-  }else{
-    assert.ok(/^\/images\/holistic-house\/(?:ali-inner-alchemist-hero\.webp|my-coach-motion\/[a-z0-9_-]+\.webp)$/i.test(hero.src??""),"Approved SSR persona image missing: "+path);
-    assert.ok(data.highPriorityImages.includes(hero.src),"Actual SSR hero image preload missing: "+path);
-  }
+  // Keep the LCP portrait an independent, cacheable high-priority request.
+  // The inline-data experiment regressed matched mobile Lighthouse LCP.
+  assert.ok(/^\/images\/holistic-house\/(?:ali-inner-alchemist-hero\.webp|my-coach-motion\/[a-z0-9_-]+\.webp)$/i.test(hero.src??""),"Approved cacheable SSR persona image missing: "+path);
+  assert.ok(data.highPriorityImages.includes(hero.src),"Actual SSR hero image preload missing: "+path);
 }
 async function main(){
   const origin=new URL(process.argv[2]||"http://127.0.0.1:3000");
@@ -54,7 +48,7 @@ async function main(){
     assertHeroPreload(data,path);
     list.push({path,htmlBytes:data.decodedHtmlBytes,wireHtmlBytes:response.wireBytes,deliveryPolicy:response.headers.get('content-security-policy')?.includes("'sha256-")?'hash':'nonce-or-other',cssFiles:unique.length,cssBytes,
       blockingCssFiles:new Set(data.blockingCssLinks).size,
-      heroImage:data.heroImage.src.startsWith("data:")?{...data.heroImage,src:samirPath,delivery:"inline-approved-webp"}:data.heroImage,
+      heroImage:data.heroImage,
       highPriorityImages:data.highPriorityImages});
   }
   console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; blockingCssFiles excludes print-media sheets and noscript fallbacks; these are not Lighthouse times",pages:list},null,2));

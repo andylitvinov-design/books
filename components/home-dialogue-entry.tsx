@@ -229,7 +229,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     {id:"team",label:screen.team,detail:screen.team,prompt:screen.teamPrompt,image:"love.webp"},
   ];
   const picture = persona.id === "alex"
-    ? process.env.HH_HOME_SAMIR_INLINE || "/images/holistic-house/ali-inner-alchemist-hero.webp"
+    ? "/images/holistic-house/ali-inner-alchemist-hero.webp"
     : persona.image;
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
@@ -268,7 +268,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   // Reserve high priority for the portrait the visitor actually sees.
   return <section className={styles.root} data-home-dialogue-entry data-home-mode="self"
     data-home-interactive={interactive?"true":"false"} lang={locale}>
-    {!picture.startsWith("data:") && <link rel="preload" as="image" href={picture} fetchPriority="high"/>}
+    <link rel="preload" as="image" href={picture} fetchPriority="high"/>
     <link rel="preload" as="image" href="/images/holistic-house/shamanic-genie-lounge.webp" fetchPriority="low"/>
     <header className={styles.header} data-home-dialogue-header>
       <Link href={locale==="en"?"/":"/"+locale} className={styles.brand} prefetch={false} aria-label="Holistic House">
