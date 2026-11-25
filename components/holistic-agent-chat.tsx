@@ -5,6 +5,8 @@ import { positionComposerPopover } from "@/lib/holistic-support/composer-popover
 import {Mic, Paperclip, Plus, Send, ImageIcon, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
+import {MessengerDictationButton} from "@/components/app/messenger-dictation-button";
+import {appendSpokenAnswer} from "@/lib/personal-coaching/speech-text";
 import {stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {ALI_GEMINI_FREE_ENDPOINT,aliGeminiRequest,aliGeminiResult} from "@/lib/holistic-support/ali-gemini-consultant.mjs";
@@ -370,6 +372,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [draft,setDraft]=useState("");
   const [voiceNoteRevision,setVoiceNoteRevision]=useState(0);
   const [dictationRevision,setDictationRevision]=useState(0);
+  const [nativeDictationRevision,setNativeDictationRevision]=useState(0);
   const [voiceFile,setVoiceFile]=useState<File|null>(null);
   const [voiceConsent,setVoiceConsent]=useState(false);
   const [voiceBusy,setVoiceBusy]=useState(false);
@@ -1815,6 +1818,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if(event.currentTarget.querySelector("[data-hh-dictation-active]"))return;
+    setNativeDictationRevision(value=>value+1);
     // The initial CTA starts a conversation even without a written question.
     // This is a local welcome, never a blank Free/Gemini provider request.
     // Entered text still uses the existing consent-gated delivery path.
@@ -1829,7 +1833,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -2001,11 +2005,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             popover={nativeComposerPopover?"manual":undefined}
             style={nativeComposerPopover?{left:composerMenuPlacement.left,top:composerMenuPlacement.top,right:"auto",bottom:"auto",width:composerMenuPlacement.width,maxHeight:composerMenuPlacement.maxHeight}:undefined}>
             {voiceAttachment}
+            {messengerView&&!pageHelp&&<MessengerDictationButton locale={locale}
+              disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
+              resetRevision={nativeDictationRevision}
+              onBegin={()=>{setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);
+                voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);}}
+              onTranscript={(delta:string)=>setDraft(previous=>appendSpokenAnswer(previous,delta,Math.max(previous.length,contentStep==="brief"?160:proSelected?1200:2000)))}/>}
             {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} accountAuthenticated={authenticated}
               resetRevision={voiceNoteRevision}
               disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
                 (proSelected&&!proReady)||(mode==="owned"&&!agree)}
-              onBegin={()=>{setDictationRevision(value=>value+1);if(voice.conversing)voice.stopDialogue();}}
+              onBegin={()=>{setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);if(voice.conversing)voice.stopDialogue();}}
               onSendTranscript={(text,_file,_seconds)=>{
                 if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
                     (proSelected&&!proReady)||(mode==="owned"&&!agree)||!text.trim())return false;
@@ -2015,6 +2025,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             {messengerView&&!pageHelp&&<button type="button"
               data-hh-live-conversation-mic
               onClick={()=>{
+                setNativeDictationRevision(value=>value+1);
                 if(voice.conversing){
                   if(voice.speaking)voice.interruptReply();
                   else voice.stopDialogue();
@@ -2074,7 +2085,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           micMarker="data-hh-conversation-mic" instantSend micClassName={styles.recorderToggle}
           accountAuthenticated={authenticated} resetRevision={dictationRevision}
           disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
-          onBegin={()=>{voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
+          onBegin={()=>{setNativeDictationRevision(value=>value+1);voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
             setVoiceNoteRevision(value=>value+1);setStatus("");}}
           onSendTranscript={text=>{
             const combined=[draft.trim(),text.trim()].filter(Boolean).join(" ");

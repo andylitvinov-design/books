@@ -189,6 +189,30 @@ for(const browserType of [chromium,webkit]){
 
     assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
       key+' visible composer '+JSON.stringify(aiGeometry))
+    // A separate, optional native transcription edits the draft and never submits.
+    await page.evaluate(()=>{
+      class MockRecognition {
+        start(){queueMicrotask(()=>{
+          const event={results:[{isFinal:true,0:{transcript:'Synthetic dictated segment'}}]}
+          this.onresult?.(event);this.onresult?.(event);this.onend?.()
+        })}
+        stop(){this.onend?.()}
+        abort(){this.onend?.()}
+      }
+      Object.defineProperty(window,'SpeechRecognition',{value:MockRecognition,configurable:true,writable:true})
+    })
+    await aiComposer.fill('Existing draft')
+    await more.click()
+    await popup.waitFor({state:'visible',timeout:10000})
+    page.once('dialog',dialog=>dialog.accept())
+    await popup.locator('[data-hh-dictation-mic]').click()
+    await page.waitForFunction(()=>document.querySelector('#hh-ai-panel textarea')?.value==='Existing draft Synthetic dictated segment')
+    assert.equal(await aiComposer.inputValue(),'Existing draft Synthetic dictated segment',key+' optional native dictation remains editable')
+    if(await popup.isVisible()){
+      if(native)await page.keyboard.press('Escape')
+      else await more.click()
+    }
+    await aiComposer.fill('')
     const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
     await firstQuick.click()
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
