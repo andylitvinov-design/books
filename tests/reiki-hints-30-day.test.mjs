@@ -23,7 +23,7 @@ test('explicit consent, valid time and zone, no arbitrary recipient or topic',()
  for(const patch of [{permissionAccepted:false},{timezone:'no-zone'},{dailyAt:'25:00'},{chatId:'123456'},{consentVersion:'wrong'}])assert.throws(()=>validateReikiHintsRequest({...good,...patch}))
 })
 test('durable claim before transport and finite date range are wired',()=>{
- const sql=readFileSync(new URL('../supabase/migrations/20261125201000_hh_reiki_hints_30_day.sql',import.meta.url),'utf8')
+ const sql=readFileSync(new URL('../supabase/migrations/20261125195701_hh_reiki_hints_30_day.sql',import.meta.url),'utf8')
  assert.match(sql,/primary key\(account_id,local_day\),unique\(account_id,slot\)/)
  assert.match(sql,/between 0 and 29/)
  assert.match(sql,/p\.stopped_at is null/)
