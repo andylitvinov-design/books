@@ -4499,6 +4499,30 @@
   font-size: 12px;
   line-height: 1.4;
 }
+.page[data-course-portrait="v3"] .initiationCertificateOptIn {
+  min-height: 48px;
+  margin: 7px 0 8px;
+}
+.page[data-course-portrait="v3"] .initiationCertificateSystem {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 9px;
+  color: #285767;
+  font-size: 13px;
+  font-weight: 750;
+}
+.page[data-course-portrait="v3"] .initiationCertificateSystem select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #a9d2d3;
+  border-radius: 10px;
+  background: #fff;
+  color: #133e50;
+  font: 500 16px/1.4 system-ui, sans-serif;
+}
 .page[data-course-portrait="v3"] .initiationDetails {
   display: grid;
   gap: 9px;
@@ -4546,6 +4570,7 @@
 }
 .page[data-course-portrait="v3"] .initiationChoice:focus-within,
 .page[data-course-portrait="v3"] .initiationField input:focus-visible,
+.page[data-course-portrait="v3"] .initiationCertificateSystem select:focus-visible,
 .page[data-course-portrait="v3"] .initiationMotivation textarea:focus-visible {
   outline: 3px solid rgba(15, 161, 154, .45);
   outline-offset: 2px;
