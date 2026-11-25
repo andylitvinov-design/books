@@ -4,6 +4,7 @@ import {connectSimliAvatar} from '@/lib/coaching/live-avatar-renderers.mjs'
 import {GeminiLivePcmResampler} from '@/lib/coaching/gemini-live-transport.mjs'
 import {createLukasTurnGate} from '@/lib/coaching/lukas-turn-gate.mjs'
 import {createLukasPlaybackGate} from '@/lib/coaching/lukas-playback-gate.mjs'
+import {watchLukasVideo} from '@/lib/coaching/lukas-video-evidence.mjs'
 
 const endpoint='/api/admin/coach-live-avatar'
 const consent={freeOnly:true,nonSensitiveTest:true,privacyConsent:true}
@@ -19,7 +20,8 @@ async function post(body,signal){
 }
 const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,onActivate,onSpeaking,onSpeechEnd,onStop,onSpeakInput},ref){
   const t=copy[locale]||copy.en
-  const [available,setAvailable]=useState(false),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
+  const [mode,setMode]=useState('off'),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
+  const checkOnly=mode==='check',available=mode!=='off'
   const video=useRef(null),audio=useRef(null),run=useRef(null),mounted=useRef(false),blockedRef=useRef(blocked)
   blockedRef.current=blocked
   const callbacks=useRef({onSpeaking,onSpeechEnd,onStop,onSpeakInput})
@@ -38,6 +40,8 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     if(!current||current.stopped)return
     current.stopped=true
     clearTimeout(current.deadline)
+    current.videoWatch?.stop()
+    if(audio.current)audio.current.muted=true
     try{cancelSpeech(current)}catch{current.cleanupUnconfirmed=true}
     current.controller.abort()
     for(const el of [audio.current,video.current])try{if(el){el.pause();el.srcObject=null}}catch{}
@@ -55,11 +59,12 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   function interrupt(){
     const current=run.current
     if(!current||current.stopped)return
+    if(current.checkOnly){stop(current);return}
     current.pending=null
     try{cancelSpeech(current);if(current.ready)report(current.sound?'connected':'sound')}catch{stop(current,'failed')}
   }
   async function speak(current,text){
-    if(!current.ready||!current.sound||current.stopped||blockedRef.current)return
+    if(!current.ready||!current.sound||current.stopped||blockedRef.current||!current.videoWatch?.isLive())return
     try{cancelSpeech(current)}catch{stop(current,'failed');return}
     const ticket=current.gate.begin(text)
     if(!ticket){stop(current,'failed');return}
@@ -68,7 +73,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     report('speaking')
     callbacks.current.onSpeaking?.()
     try{
-      const response=await post({action:'ali-audio',target:'chatbot',locale,personaId,text:ticket.text,...consent,trainingConsent:true},ac.signal)
+      const response=await post(current.checkOnly?{action:'lukas-check-audio',target:'chatbot',locale,syntheticOnly:true,freeOnly:true}:{action:'ali-audio',target:'chatbot',locale,personaId,text:ticket.text,...consent,trainingConsent:true},ac.signal)
       const sample=await current.context.decodeAudioData(await response.arrayBuffer())
       if(current.stopped||!current.gate.isCurrent(ticket)||ac.signal.aborted||blockedRef.current)return
       if(sample.numberOfChannels!==1||sample.duration>35||sample.sampleRate<16000||sample.sampleRate>192000)throw Error('AVATAR_SAMPLE_INVALID')
@@ -78,6 +83,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       const clearOwnTimer=()=>{clearInterval(timer);if(current.pacer===timer)current.pacer=null}
       const send=()=>{
         if(current.stopped||!current.gate.isCurrent(ticket)||blockedRef.current){clearOwnTimer();return}
+        if(!current.videoWatch?.isLive()){stop(current,'failed');return}
         if(offset>=samples.length){clearOwnTimer();return}
         try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length){current.playback.sent();current.renderer.sendPcm16(bytes)}offset=end;if(offset>=samples.length){clearOwnTimer();current.playback.drained()}}
         catch{stop(current,'failed')}
@@ -90,29 +96,33 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   function acceptReply(text){
     const current=run.current
     if(!current||current.stopped||blockedRef.current)return false
+    if(current.checkOnly){stop(current);return false}
     if(typeof text!=='string'||!text.trim()||text.trim().length>500){stop(current,'failed');return false}
     current.pending=text.trim()
     if(current.ready&&current.sound){const next=current.pending;current.pending=null;void speak(current,next)}
     return true
   }
   async function enableSound(current=run.current){
-    if(!current||current.stopped||!current.ready)return
+    if(!current||current.stopped||!current.ready||!current.videoWatch?.isLive())return
     try{
+      // Never start an audio-only session. The Simli audio track is the sole audible output.
+      if(!audio.current?.srcObject?.getAudioTracks?.().some(track=>track.readyState==='live'))throw Error('AUDIO_TRACK_MISSING')
+      audio.current.muted=false
       await audio.current.play()
-      if(current.stopped||blockedRef.current)return
+      if(current.stopped||blockedRef.current||!current.videoWatch.isLive()){audio.current.muted=true;return}
       current.sound=true
       report('connected')
       const text=current.pending;current.pending=null
       if(text)void speak(current,text)
-    }catch{if(!current.stopped)report('sound')}
+    }catch{if(audio.current)audio.current.muted=true;if(!current.stopped)report('sound')}
   }
-  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop(),isActive:()=>Boolean(run.current&&!run.current.stopped),isSpeaking:()=>Boolean(run.current&&!run.current.stopped&&(run.current.speechAbort||run.current.playback.active()))}))
+  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop(),isActive:()=>Boolean(run.current&&!run.current.stopped&&!run.current.checkOnly),isSpeaking:()=>Boolean(run.current&&!run.current.stopped&&(run.current.speechAbort||run.current.playback.active()))}))
   useEffect(()=>{
     mounted.current=true
     const ac=new AbortController()
     // Owner readiness only. No allocation, autoplay or billing during page mount.
     fetch(endpoint,{credentials:'same-origin',cache:'no-store',signal:ac.signal}).then(r=>r.ok?r.json():null)
-      .then(d=>{if(!ac.signal.aborted)setAvailable(d?.chatbot===true)}).catch(()=>{})
+      .then(d=>{if(!ac.signal.aborted)setMode(d?.chatbot===true?'dialogue':d?.videoCheck===true?'check':'off')}).catch(()=>{})
     const hide=()=>{if(document.hidden)stop()}
     const leave=()=>stop()
     document.addEventListener('visibilitychange',hide);window.addEventListener('pagehide',leave)
@@ -123,18 +133,19 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   async function start(){
     if(!available||!agreed||blockedRef.current||run.current||document.hidden||!video.current||!audio.current)return
     let settle
-    const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
+    const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),checkOnly,stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
     run.current=current;report('connecting')
     current.deadline=setTimeout(()=>stop(current),55000)
     try{
       onActivate?.()
+      audio.current.muted=true
       const Audio=window.AudioContext||window.webkitAudioContext
       current.context=new Audio()
       await current.context.resume()
       const sdk=await import('simli-client')
       if(current.stopped||blockedRef.current)return
       current.tokenRequested=true
-      const response=await post({action:'start-dialogue',provider:'simli',target:'chatbot',...consent},current.controller.signal)
+      const response=await post(current.checkOnly?{action:'start',provider:'simli',target:'chatbot',syntheticOnly:true,freeOnly:true}:{action:'start-dialogue',provider:'simli',target:'chatbot',...consent},current.controller.signal)
       const session=await response.json()
       if(current.stopped)return
       if(session.target!=='chatbot'||typeof session.sessionToken!=='string')throw Error('AVATAR_ROLE_MISMATCH')
@@ -143,10 +154,14 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
         onSilent:()=>{
           if(current.stopped||!current.playback.silent())return
           current.speechAbort=null
+          if(current.checkOnly){stop(current);return}
           report('connected')
           callbacks.current.onSpeechEnd?.()
         }})
       current.renderer=renderer
+      if(current.stopped)return
+      current.videoWatch=watchLukasVideo(video.current,{signal:current.controller.signal,onFailure:()=>stop(current,'failed')})
+      await current.videoWatch.ready
       if(current.stopped)return
       current.ready=true
       void enableSound(current)
@@ -158,19 +173,19 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   if(!available)return null
   const live=['connecting','connected','speaking','sound'].includes(state)
   const locked=live||state==='stopping'||state==='unconfirmed'
-  return <section data-hh-lukas-video data-state={state} aria-label={t.title} style={{padding:'6px 10px',border:'1px solid #dce6de',borderRadius:14,background:'#f7faf7',display:'grid',gap:4}}>
+  return <section data-hh-lukas-video data-video-mode={mode} data-state={state} aria-label={t.title} style={{padding:'6px 10px',border:'1px solid #dce6de',borderRadius:14,background:'#f7faf7',display:'grid',gap:4}}>
     <div data-lukas-portrait style={{position:'relative',height:'var(--hh-lukas-height,clamp(100px,24dvh,220px))',overflow:'hidden',borderRadius:10,background:'#18382f',display:'grid',placeItems:'center',color:'#fff'}}>
       <video ref={video} autoPlay playsInline muted style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',visibility:live?'visible':'hidden'}}/>
       {(!live||state==='connecting')&&<div style={{position:'relative',padding:8,textAlign:'center'}}><strong>Lukas</strong><div style={{fontSize:12}}>{state==='connecting'?t.connecting:t.idle}</div></div>}
     </div>
-    <audio ref={audio} autoPlay style={{display:'none'}}/>
+    <audio ref={audio} autoPlay muted style={{display:'none'}}/>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}><strong>{t.title}</strong>
-      {live?<button type="button" onClick={()=>stop()}>{t.stop}</button>:<button type="button" disabled={!agreed||blocked||locked} onClick={start}>{t.ready}</button>}
+      {live?<button type="button" onClick={()=>stop()}>{t.stop}</button>:<button type="button" disabled={!agreed||blocked||locked} onClick={start}>{checkOnly?(locale==='ru'?'Проверить видео Lukas':locale==='es'?'Probar vídeo Lukas':'Test Lukas video'):t.ready}</button>}
       {state==='sound'&&<button type="button" onClick={()=>void enableSound()}>{t.sound}</button>}
-      {state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
+      {!checkOnly&&state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
     </div>
-    {!locked&&<label style={{fontSize:11,lineHeight:1.3}}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/> {t.consent}</label>}
-    <small role="status">{state==='idle'?t.limit:(t[state]||t.failed)}</small>
+    {!locked&&<label style={{fontSize:11,lineHeight:1.3}}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/> {checkOnly?(locale==='ru'?'Только фиксированное приветствие, без данных из чата.':locale==='es'?'Solo saludo fijo, sin datos del chat.':'Fixed greeting only; no chat data.'):t.consent}</label>}
+    <small role="status">{state==='idle'?(checkOnly?(locale==='ru'?'Проверка видеоканала владельцем; живой диалог пока не включён.':locale==='es'?'Prueba del propietario; el diálogo aún no está habilitado.':'Owner video check; live dialogue is not yet enabled.'):t.limit):(t[state]||t.failed)}</small>
   </section>
 })
 export default AliLukasVideo
