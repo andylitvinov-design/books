@@ -58,7 +58,7 @@
     status.textContent=message+' '
     const link=document.createElement('a')
     link.href=MAIN+'/commander-connect.html?next='+encodeURIComponent(requestedNext(new URLSearchParams(location.search).get('next')||'/agents.html'))
-    link.textContent='Продолжить через Google';link.className='cc-primary'
+    link.textContent='Использовать текущую сессию';link.className='cc-primary'
     status.append(link)
   }
 
@@ -95,26 +95,31 @@
     if(sessionToken){
       if(sessionToken.length<120||sessionToken.length>8192||!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(sessionToken)){
         sessionToken=''
-        googleAction('Передача сессии недействительна. Войдите повторно.')
+        googleAction('Передача сессии недействительна. Проверьте текущую авторизацию Holistic House.')
         return
       }
       try{await exchangeToken(next)}catch(error){
         const message=String(error.message||error)
-        if(!sessionToken)googleAction(message+' Войдите повторно через Google.')
+        if(!sessionToken)googleAction(message+' Проверьте текущую авторизацию Holistic House.')
         else retryAction(message,()=>exchangeToken(next))
       }
       return
     }
 
-    try{
+    async function checkExistingSession(){
       const response=await fetchWithTimeout('/api/commander-session',{
         credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
       },'Проверка защищённой сессии')
       const data=await response.json().catch(()=>({}))
-      if(response.ok&&data.authenticated===true){clearRemember();location.replace(next);return}
-      googleAction('Срок сессии истёк. Войдите ещё раз через Google на Holistic House.')
-    }catch(error){googleAction(String(error.message||error)+' Войдите повторно через Google.')}
+      if(response.ok&&data.authenticated===true&&data.owner===true){clearRemember();location.replace(next);return}
+      if(response.status===401&&['OWNER_SESSION_REQUIRED','OWNER_SESSION_EXPIRED'].includes(data.error)){
+        googleAction('Подключите существующую сессию Holistic House.');return
+      }
+      if(response.status===403){status.textContent='Права владельца не подтверждены.';return}
+      throw Error('Проверка существующей сессии временно недоступна.')
+    }
+    try{await checkExistingSession()}catch(error){retryAction(String(error.message||error),checkExistingSession)}
   }
 
-  start().catch(error=>googleAction(String(error.message||error)+' Войдите повторно через Google.'))
+  start().catch(error=>retryAction(String(error.message||error),start))
 })()
