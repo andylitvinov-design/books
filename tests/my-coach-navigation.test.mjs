@@ -76,7 +76,7 @@ test('About coach expands inline and Start Session opens the selected persona, n
 
 test('header Back checkpoints consented draft without opening the Insight review', () => {
   const source=read('components/my-coach-live-dialogue.jsx')
-  const back=source.slice(source.indexOf('async function navigateBackToCoaches'),source.indexOf('function interceptSessionExit'))
+  const back=source.slice(source.indexOf('async function navigateBackToCoaches'),source.indexOf('function resumeFromProtocol'))
   assert.match(back,/retainPendingClient\(\)/)
   assert.match(back,/autoSaveRef\.current/)
   assert.match(back,/await autoSaveQueueRef\.current\?\.flush\(\)/)

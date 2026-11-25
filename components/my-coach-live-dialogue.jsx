@@ -1373,6 +1373,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     queuePrivateDraft(turnsRef.current)
     void autoSaveQueueRef.current?.flush()
   }
+  function interceptSessionExit(event){
+    // The explicit Close/Back choice from the already-open Summary means
+    // leaving without account retention; do not trap the client in a loop.
+    if(protocolOpen||ratingOpen)return
+    if(!protocolSaved&&(turnsRef.current.length>0||speechRef.current?.hasLiveSession?.())){event.preventDefault();endWithProtocol()}
+  }
   // Header Back is navigation, never an entry point to the Insight dialog.
   // With prior private-save consent, wait for the existing checkpoint ACK.
   async function navigateBackToCoaches(event){
@@ -1397,12 +1403,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }
       window.location.assign(href)
     }finally{headerBackPendingRef.current=false}
-  }
-  function interceptSessionExit(event){
-    // The explicit Close/Back choice from the already-open Summary means
-    // leaving without account retention; do not trap the client in a loop.
-    if(protocolOpen||ratingOpen)return
-    if(!protocolSaved&&(turnsRef.current.length>0||speechRef.current?.hasLiveSession?.())){event.preventDefault();endWithProtocol()}
   }
   function resumeFromProtocol(){
     if(protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
@@ -2202,7 +2202,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
-    {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={protocolUi.title} data-my-coach-protocol>
+    {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={keyInfoUi.finish} data-my-coach-protocol>
       <div className={styles.protocolCard}>
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
         <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>

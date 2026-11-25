@@ -142,7 +142,7 @@ test('a client topic correction resets old checkmarks and partial evidence is no
   assert.equal(rows.situation.status,'missing')
   assert.ok(!JSON.stringify(rows).includes('change jobs'))
 })
-test('owner mobile design keeps voice controls, back and end-call summary while overlaying the transcript',()=>{
+test('owner mobile design keeps voice controls, back and explicit Insight while overlaying the transcript',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   assert.match(ui,/data-coach-progress-accordion/)
@@ -150,8 +150,8 @@ test('owner mobile design keeps voice controls, back and end-call summary while 
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
   assert.match(ui,/onClick=\{endWithProtocol\}/)
-  assert.match(ui,/<PhoneOff size=\{19\}/)
-  assert.match(ui,/Summary/)
+  assert.match(ui,/<FileText size=\{19\}/)
+  assert.match(ui,/Session Insight/)
   assert.match(ui,/<ArrowLeft size=\{16\}/)
   assert.match(ui,/data-coach-live-wave/)
   assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
