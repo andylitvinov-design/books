@@ -379,7 +379,6 @@ test('IA Core proof accepts only exact existing Messenger UI source changes and 
 test('remaining source specialists avoid redundant production PR installs and lint without removing contracts',()=>{
   for(const [file,steps] of [
     ['practitioner-presentations.yml',['Load original checksum-verified FFmpeg for npm ci','Install dependencies for standalone practitioner compile','Install SHA-verified FFmpeg into package after npm ci']],
-    ['hh-public-journey-wave1.yml',['Install dependencies for independent public journey QA']],
     ['hh-public-test-collections.yml',['Lint modified application code']],
     ['hh-energywork-ai.yml',['Targeted ESLint']],
     ['library-public-feed.yml',['Lint changed TypeScript and JavaScript sources']],
@@ -395,7 +394,10 @@ test('remaining source specialists avoid redundant production PR installs and li
   assert.match(practitioner,/^  push:/m);
   assert.ok(practitioner.includes('run: npm run build'));
   const journey=read('hh-public-journey-wave1.yml');
-  assert.equal((journey.match(/if \[\[ "\$GITHUB_EVENT_NAME" != pull_request \|\| "\$GITHUB_BASE_REF" != codex\/public-book-library \]\]; then/g)||[]).length,2);
+  assert.ok(journey.includes('name: Verify dependency-free journey inputs'));
+  assert.ok(journey.includes('git hash-object -- "$file"'));
+  assert.ok(journey.includes("name: Install full journey dependencies\n        if: steps.deps.outputs.minimal != 'true'"));
+  assert.equal((journey.match(/if \[\[ "\$HH_JOURNEY_MINIMAL" != true \]\]; then npx --no-install eslint /g)||[]).length,2);
   for(const f of ['tests/public-pathway-migration.test.mjs','tests/public-pathway-toronto.test.mjs','tests/ci-public-journey-consolidation.test.mjs','node scripts/verify-public-pathway-mobile.mjs','node scripts/verify-public-pathway-toronto-mobile.mjs'])
     assert.ok(journey.includes(f),f+' retained');
   assert.ok(journey.split(/^  push:/m)[0].includes("      - '.github/workflows/hh-public-journey-wave1.yml'"));
