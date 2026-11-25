@@ -10,7 +10,7 @@ import styles from "./principles-of-energywork.module.css";
 
 const copy = {
   ru: { start: "Начать бесплатный курс", wait: "Открываем курс…", note: "Вход через Google для сохранения вашего прогресса.", error: "Не удалось открыть курс. Повторите попытку.", label: "БЕСПЛАТНО · DAYBOOK", title: "Практик Рейки", description: "5 недель · медитации, практики и знакомство с тремя системами Рейки.", details: "Подробнее о курсе" },
-  en: { start: "Start free course", wait: "Opening course…", note: "Google sign-in keeps your progress in your profile.", error: "Could not open the course. Please try again.", label: "FREE · DAYBOOK", title: "Reiki Practitioner", description: "5 weeks of meditations, practices and three Reiki traditions.", details: "Explore the course" },
+  en: { start: "Start Free Course", wait: "Opening course…", note: "Google sign-in keeps your progress in your profile.", error: "Could not open the course. Please try again.", label: "FREE · DAYBOOK", title: "Reiki Practitioner", description: "5 weeks of meditations, practices and three Reiki traditions.", details: "Explore the course" },
   es: { start: "Empezar gratis (EN)", wait: "Abriendo el curso…", note: "Accede con Google para guardar tu progreso. El curso está disponible en inglés y ruso.", error: "No se pudo abrir el curso. Inténtalo de nuevo.", label: "GRATIS · DAYBOOK", title: "Reiki Practitioner", description: "5 semanas de meditaciones, prácticas y tres tradiciones Reiki (EN/RU).", details: "Ver el curso" },
 } as const;
 

@@ -58,3 +58,20 @@ test("My Reiki has three profile-style program destinations and real curriculum 
  assert.ok(css.includes('.reikiProgramTabs a[aria-current="page"]'));
  assert.ok(css.includes("min-height:44px"));
 });
+
+test("My Reiki matches Profile chrome, starts with a functional four-choice quiz and uses actual images",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const chrome=read("components/my-reiki-header.tsx");
+ const quiz=read("components/my-reiki-quiz.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const dock=read("app/unified-mobile-dock.css");
+ assert.ok(landing.indexOf("<MyReikiHeader") < landing.indexOf("<ReikiProgramNavigation"));
+ assert.ok(landing.indexOf("<MyReikiQuiz") < landing.indexOf('aria-labelledby="reiki-syllabus-title"'));
+ assert.ok(chrome.includes("profile-hub-tabs.module.css") && chrome.includes("<SiteNavigation locale={locale} compact"));
+ assert.ok(quiz.includes("setSelected") && quiz.includes("aria-pressed={selected === index}") && quiz.includes("<ReikiDaybookStart"));
+ assert.equal((quiz.match(/\/images\/holistic-house\//g)||[]).length,4);
+ assert.ok(landing.includes("src={weekPhotos[index]}") && landing.includes('href="#reiki-start"'));
+ assert.ok(!landing.includes("<AcademyVideoPlayer") && !landing.includes("<EnergyworkVideoArchive"));
+ assert.ok(css.includes("support-therapy-cabinet-hd.webp") && css.includes(".reikiQuizGrid"));
+ assert.ok(dock.includes("body:has([data-reiki-practitioner-landing]) [data-hh-unified-dock]"));
+});
