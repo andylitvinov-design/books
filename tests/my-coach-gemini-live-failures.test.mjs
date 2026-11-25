@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {greetingSwipeDirection,greetingCoachNeighbor} from '../lib/coaching/coach-greeting-swipe.mjs'
+import {PUBLIC_COACH_RAIL_IDS} from '../lib/coaching/persona-registry.mjs'
 import {
   geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,
   normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken
@@ -345,4 +347,31 @@ test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting
  assert.match(live,/restoreCoachIos27LiveDuplex\(navigator\)/)
  assert.match(live,/getUserMedia\(\{/)
  assert.match(live,/new GeminiLivePcmPlayer\(context/)
+})
+
+
+test('greeting swipe follows public rail in both directions, ignores vertical, short and invalid gestures',()=>{
+ const ids=PUBLIC_COACH_RAIL_IDS
+ assert.equal(ids[0],'merlin')
+ assert.equal(greetingSwipeDirection(-90,12),1)
+ assert.equal(greetingSwipeDirection(90,-12),-1)
+ for(const [dx,dy] of [[20,0],[0,100],[60,65],[90,80],[NaN,0]])assert.equal(greetingSwipeDirection(dx,dy),0)
+ for(let i=0;i<ids.length;i++){
+   assert.equal(greetingCoachNeighbor(ids,ids[i],1),ids[(i+1)%ids.length])
+   assert.equal(greetingCoachNeighbor(ids,ids[i],-1),ids[(i+ids.length-1)%ids.length])
+ }
+ assert.equal(greetingCoachNeighbor(ids,'hidden',1),null)
+ assert.equal(greetingCoachNeighbor(ids,'merlin',0),null)
+})
+test('greeting navigation cancels old audio before switching and never starts Live',()=>{
+ const gate=load('components/my-coach-greeting-gate.jsx')
+ const navigation=gate.slice(gate.indexOf('function switchCoach('),gate.indexOf('function beginSwipe('))
+ assert.ok(navigation.includes('greetingCoachNeighbor(PUBLIC_COACH_RAIL_IDS,personaId,direction)'))
+ assert.ok(navigation.includes('coachSessionHref(lang,nextId)'))
+ assert.ok(navigation.indexOf('audioRun.current++')<navigation.indexOf('player.current?.cancel?.()'))
+ assert.ok(navigation.indexOf('player.current?.cancel?.()')<navigation.indexOf('router.push(href)'))
+ assert.doesNotMatch(navigation,/onStart\?\.|startSession\(|playGreeting\(|fetch\(/)
+ assert.ok(gate.includes('onTouchCancel')&&gate.includes('onTouchEnd')&&gate.includes('onClickCapture'))
+ assert.ok(load('components/my-coach-greeting-gate.module.css').includes('touch-action:pan-y pinch-zoom'))
+ assert.ok(load('components/public-coaching-discovery.jsx').includes('MyCoachLiveDialogue key={selectedPersona.id}'))
 })

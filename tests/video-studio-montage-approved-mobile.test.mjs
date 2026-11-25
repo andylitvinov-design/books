@@ -155,3 +155,21 @@ test('main native upload stages the same file in the private library without aut
   assert.match(library,/catch\(e\)\{if\(latestDraft.current===draftPhoto\)\{setError\(actionError\(e\)\)\}\}/);
   assert.match(library,/if\(latestDraft.current===draftPhoto\)/);
 });
+
+const library=readFileSync(new URL('../components/app/video-photo-library.jsx',import.meta.url),'utf8');
+test('main native upload stages the same file in the private library without automatic cloud consent',()=>{
+  assert.match(studio,/setMontagePhotoDraft\(file\);\s*setNotice\(""\);selectNativePhoto\(file\)/);
+  assert.match(studio,/draftPhoto=\{montagePhotoDraft\}/);
+  assert.match(studio,/current===file\?null:current/);
+  assert.match(studio,/data-video-montage-photo-error/);
+  assert.match(studio,/data-video-montage-photo-pending/);
+  assert.match(library,/setFiles\(\[draftPhoto\]\);setOpened\(true\)/);
+  assert.match(library,/setCloudConsent\(false\);setRights\(false\);setSubject\('self'\)/);
+  assert.match(library,/open=\{opened\}/);
+  assert.match(library,/if\(busy\|\|disabled\|\|!files.length\|\|status!=='ready'\)return/);
+  assert.match(library,/if\(!cloudConsent\|\|!rights/);
+  assert.match(library,/savedIds.every\(id=>listed.some\(photo=>photo.id===id\)\)/);
+  assert.match(library,/onDraftPhotoSettled\?\.\(draftPhoto\)/);
+  assert.match(library,/catch\(e\)\{if\(latestDraft.current===draftPhoto\)\{setError\(actionError\(e\)\)\}\}/);
+  assert.match(library,/if\(latestDraft.current===draftPhoto\)/);
+});

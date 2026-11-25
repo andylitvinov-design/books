@@ -409,3 +409,7 @@
  .stylePane .photoOption{padding:5px}
  .stylePane .photoOption[data-selected="true"]{padding:4px}
 }
+
+/* Expanded private-photo consent needs the full mobile library width. */
+.libraryPhotoRow:has([data-client-video-photo-library][open]){flex-wrap:wrap;align-items:flex-start}
+.libraryPhotoRow:has([data-client-video-photo-library][open]) .savedPhotoDrawer{flex:1 0 100%;order:3;max-width:100%}
