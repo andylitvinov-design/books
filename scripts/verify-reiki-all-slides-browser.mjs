@@ -794,7 +794,7 @@ async function verifyGoldenDaybook(locale) {
           outerHorizontal:el.scrollWidth-el.clientWidth,innerHorizontal:panel.scrollWidth-panel.clientWidth,
           innerVertical:panel.scrollHeight-panel.clientHeight,
           panel:rect(panel),choices:[...panel.querySelectorAll('label:has(input[type=radio])')].map(rect),
-          visibleShare:[...el.querySelectorAll('[data-reiki-referral-share]')].some(n=>n.getClientRects().length>0),
+          visibleShare:[...el.querySelectorAll('[data-reiki-referral-share]')].some(n=>n.getClientRects().length>0 && !n.parentElement.closest('details:not([open])')),
           documentOverflow:document.documentElement.scrollHeight-document.documentElement.clientHeight,
           tail:footer!==shell.lastElementChild,header:!!shell.querySelector(':scope > header'),
           ads:[...document.querySelectorAll('[data-sitewide-capture]')].some(n=>n.getClientRects().length>0),
