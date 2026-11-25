@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {waveGeminiPublicTopic,waveGeminiPublicEligibility,waveGeminiPublicQuota,waveGeminiPublicReply} from '../lib/holistic-support/wave-gemini-public.mjs';
+import {waveGeminiPublicTopic,waveGeminiPublicEligibility,waveGeminiPublicQuota,waveGeminiPublicReadiness,waveGeminiPublicReply} from '../lib/holistic-support/wave-gemini-public.mjs';
 const env={HH_WAVE_GEMINI_PUBLIC_ENABLED:'true',HH_WAVE_GEMINI_FREE_BILLING_DISABLED_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_ENABLED:'true',HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',HH_GEMINI_FREE_API_KEY:'AIza'+'X'.repeat(35)};
 test('exact public topic, not personal content or money journey',()=>{
  assert.equal(waveGeminiPublicTopic('Что такое коучинг?','ru'),'coaching');
@@ -78,4 +78,26 @@ test('courtesy phrases, hyphen variants and expanded knowledge remain finite pub
   assert.equal(waveGeminiPublicTopic(query,locale),topic,query);
   assert.equal(waveGeminiPublicTopic(query+'; private@invalid.example',locale),null);
  }
+});
+
+
+test('Wave readiness distinguishes gates without invoking a provider or revealing credentials',()=>{
+ assert.equal(waveGeminiPublicReadiness({eligible:true,env:{}}),'disabled');
+ assert.equal(waveGeminiPublicReadiness({eligible:true,env:{...env,HH_WAVE_GEMINI_FREE_BILLING_DISABLED_CONFIRMED:'false'}}),'billing_unconfirmed');
+ assert.equal(waveGeminiPublicReadiness({eligible:true,env:{...env,HH_GEMINI_FREE_API_KEY:''}}),'provider_unconfigured');
+ assert.equal(waveGeminiPublicReadiness({eligible:true,env:{...env,HH_GEMINI_PAID_API_KEY:env.HH_GEMINI_FREE_API_KEY}}),'provider_unconfigured');
+ assert.equal(waveGeminiPublicReadiness({eligible:false,env}),'account_ineligible');
+ assert.equal(waveGeminiPublicReadiness({eligible:true,env}),'ready_for_public_turn');
+ assert.equal(waveGeminiPublicReadiness({eligible:'true',env}),'account_ineligible');
+});
+test('readiness is authenticated, no-store and never implies modelUsed; UI attributes only verified model output',()=>{
+ const route=readFileSync(new URL('../app/api/holistic-agent/turn/route.js',import.meta.url),'utf8');
+ const get=route.slice(route.indexOf('export async function GET('),route.indexOf('export async function POST('));
+ assert.match(get,/await auth\.verified\(\)/);
+ assert.match(get,/waveGeminiPublicEligibility\(actor\.wavePublicGeminiEligibility\)/);
+ assert.match(get,/providerCall:false,modelUsed:false/);
+ assert.match(get,/headers:PRIVATE_HEADERS/);
+ assert.doesNotMatch(get,/waveGeminiPublicReply\(|consumeRateBatch\(|fetch\(|apiKey/);
+ const ui=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
+ assert.ok(ui.includes('used==="gemini-free-public"&&data.modelUsed===true?"Gemini · Free API"'));
 });

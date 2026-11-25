@@ -127,7 +127,7 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
   assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry','genie'])"),
     'approved six MP4 coaches remain allowlisted alongside Samir cinematic GIF')
-  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v1.mp4'"),
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v2.mp4'"),
     'Merlin and Harry use pre-rendered greeting videos rather than synthesized facial movement')
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
   assert.ok(media.includes('coachNaturalVideoPath(personaId,state,visualScene)'))
