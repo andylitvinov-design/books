@@ -101,9 +101,30 @@ try{
     const input=resolve(posterRoot,name)
     try{await access(input,constants.R_OK)}catch{continue}
     const frame=spawnSync(posterFfmpeg,['-hide_banner','-loglevel','error','-y','-i',input,'-frames:v','1','-c:v','libwebp','-q:v','90',temporaryPoster],{encoding:'utf8',timeout:15000,maxBuffer:131072})
-    if(frame.error||frame.status!==0)continue
-    const bytes=await readFile(temporaryPoster)
-    if(bytes.length<1000||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')continue
+    // Native FFmpeg builds may decode H.264 without a usable WebP encoder.
+    // Fall back to decoding the same real frame and encoding with Sharp.
+    const validWebp=bytes=>bytes?.length>=1000&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP'
+    let bytes=null
+    if(!frame.error&&frame.status===0){
+      try{bytes=await readFile(temporaryPoster)}catch{}
+    }
+    if(!validWebp(bytes)){
+      console.warn('HH_SAMIR_OPENING_WEBP_FALLBACK '+name+' '+String(frame.stderr||frame.error?.message||'invalid WebP').slice(0,240))
+      const decoded=spawnSync(posterFfmpeg,['-hide_banner','-loglevel','error','-i',input,'-frames:v','1','-c:v','png','-f','image2pipe','pipe:1'],{timeout:15000,maxBuffer:16*1024*1024})
+      if(decoded.error||decoded.status!==0||!decoded.stdout?.length){
+        console.warn('HH_SAMIR_OPENING_DECODE_FAILED '+name+' '+String(decoded.stderr||decoded.error?.message||'empty frame').slice(0,240))
+        continue
+      }
+      try{
+        const {default:sharp}=await import('sharp')
+        bytes=await sharp(decoded.stdout).webp({quality:90}).toBuffer()
+        if(!validWebp(bytes))continue
+        await writeFile(temporaryPoster,bytes)
+      }catch(error){
+        console.warn('HH_SAMIR_OPENING_ENCODE_FAILED '+name+' '+error.message)
+        continue
+      }
+    }
     await rename(temporaryPoster,openingPoster)
     console.log('HH_SAMIR_OPENING_POSTER '+name)
     openingReady=true
