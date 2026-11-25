@@ -1252,7 +1252,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const weekArt = REIKI_DAYBOOK_ART[activeWeek.lesson - 1] ?? REIKI_DAYBOOK_ART[0];
   const diagramArt = Boolean(slide.image?.includes("kundalini-manual"));
   const hasVideo = slide.kind === "video" || slide.id === "paths-01";
-  const displayArtSource = daybook ? (hasVideo ? undefined : diagramArt ? slide.image : weekArt) : artSource;
+  const displayArtSource = daybook ? (hasVideo ? undefined : slide.kind === "welcome" ? weekArt : slide.image ?? weekArt) : artSource;
   // Decorative artwork belongs behind the lesson copy, never in a cropped strip.
   // Video playback and the existing welcome/testimonial backgrounds are unaffected.
   const artBackground = daybook ? Boolean(displayArtSource) && slide.kind !== "welcome" && !diagramArt : Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
@@ -1536,9 +1536,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
           <div className={styles.slideMain} data-daybook-part={daybook ? "slide-main" : undefined}>
             <div className={styles.content} data-daybook-part={daybook ? "content" : undefined}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
-              {daybook
-                ? <h2 id="energywork-slide-title" tabIndex={-1}>{slide.id === "welcome-01" ? db.title : slide.title[locale]}</h2>
-                : <h1 id="energywork-slide-title" tabIndex={-1}>{slide.title[locale]}</h1>}
+              {daybook && slide.kind !== "welcome"
+                ? <h2 id="energywork-slide-title" tabIndex={-1}>{slide.title[locale]}</h2>
+                : <h1 id="energywork-slide-title" tabIndex={-1}>{daybook ? db.title : slide.title[locale]}</h1>}
               <p className={styles.description}>{slide.body[locale]}</p>
               {slide.introAudioKey && slide.introTopics ? (
                 <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
@@ -2084,7 +2084,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                 <MessageCircle size={17} aria-hidden="true" />iHelp
               </button>
             </div>
-            <h1>{db.title}</h1>
+            {slide.kind !== "welcome" ? <h1>{db.title}</h1> : null}
             <p>{db.subtitle}</p>
             <div className={daybookStyles.heroBottom}>
               <span>{daybookCompletedCount}/{total} {db.done.toLowerCase()}</span>
