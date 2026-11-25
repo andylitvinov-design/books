@@ -243,7 +243,11 @@ export function ServicesCompactCatalog({ locale, children }: { locale: PublicLoc
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
             block: "start",
           };
-          if (booking && panel?.contains(booking)) booking.scrollIntoView(options);
+          if (booking && panel?.contains(booking)) {
+            // Next hash scrolling must not compete with the newly mounted paid offer.
+            // The heading, rather than the tall panel, must enter the viewport.
+            (booking.querySelector("h2") ?? booking).scrollIntoView({ block: "center", behavior: "instant" });
+          }
           else panel?.scrollIntoView(options);
         });
       });

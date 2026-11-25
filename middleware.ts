@@ -155,7 +155,7 @@ export async function middleware(request: NextRequest) {
   const reikiIntroAudioManager = /^\/admin\/materials\/courses\/reiki-practitioner\/?$/.test(pathname)
   const coachingOwnerAudioManager = /^\/admin\/materials\/coaching\/(egyptian|greek)\/?$/.test(pathname)
   const coachingLearnerAudioPlayer = /^\/(en|ru)\/app\/coaching\/(egyptian|greek)\/?$/.test(pathname)
-  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/learn\/?$/.test(pathname)
+  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/(?:learn|daybook)\/?$/.test(pathname)
   // Only the authenticated course editor and published standalone course player
   // can fetch signed media from the dedicated PRIVATE educational Storage bucket.
   const practitionerCourseEditor = /^\/(en|ru|es)\/app\/practice\/?$/.test(pathname)

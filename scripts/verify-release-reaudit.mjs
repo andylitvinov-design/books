@@ -56,11 +56,13 @@ async function assertCspPublicHome(page) {
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
   await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
-  for (const intention of ['clarity','goal','business']) {
-    const choice = home.locator('[data-home-intent-option="'+intention+'"]');
-    await expect(choice).toHaveCount(1);
-    await expect(choice).toHaveAttribute('type','button');
-    await expect(choice).toBeVisible();
+  const programIds=['clarity','goal','business'];
+  assert.deepEqual(await home.locator('[data-home-intent-option]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),programIds);
+  for (const intention of programIds) {
+    const program=home.locator('[data-home-intent-option="'+intention+'"]');
+    await expect(program).toHaveCount(1);
+    await expect(program).toBeVisible();
+    await expect(program).toHaveAttribute('type','button');
   }
   await expect(home.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
   await expect(home.locator('[data-home-intent-form]')).toBeVisible();
@@ -463,7 +465,6 @@ async function exercise(engine, browserType, width) {
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
-
       await check('home-paid-session-link', { engine, width, locale }, async () => {
         const home = locale === 'en' ? '/' : '/' + locale;
         await page.goto(origin + home, { waitUntil: 'domcontentloaded', timeout: 35000 });
@@ -780,11 +781,35 @@ async function exercise(engine, browserType, width) {
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
           const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
+          // The normal Home has an IntersectionObserver-driven lazy catalogue above
+          // About. Exercise the user scroll through it before locating the lower link;
+          // a late insertion can otherwise move the click target on a busy CI runner.
+          // This is still a single real user click and all CSP/history assertions remain.
+          if (!fromFastHome) {
+            const deferredHome = cspPage.locator('[data-home-deferred-sections]');
+            await expect(deferredHome).toHaveCount(1);
+            await deferredHome.scrollIntoViewIfNeeded();
+            await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
+          }
           const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
+          await publicAbout.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+          await cspPage.evaluate(() => {
+            window.__hhAboutClickEvidence = null;
+            document.addEventListener('click', event => {
+              const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+              window.__hhAboutClickEvidence = { href: link?.getAttribute('href') || null, trusted: event.isTrusted,
+                tag: event.target instanceof Element ? event.target.tagName : null };
+            }, { capture: true, once: true });
+          });
           await publicAbout.click();
-          await expect(cspPage).toHaveURL(origin + '/en/about');
+          try {
+            await expect(cspPage).toHaveURL(origin + '/en/about', { timeout: 20000 });
+          } catch (error) {
+            const clickEvidence = await cspPage.evaluate(() => window.__hhAboutClickEvidence).catch(() => null);
+            throw new Error(`${error.message}; aboutClick=${JSON.stringify(clickEvidence)}`);
+          }
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),

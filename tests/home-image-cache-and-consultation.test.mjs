@@ -28,7 +28,7 @@ test("homepage first-screen photography is CDN/browser cached without HTML or pr
 });
 
 test("the first screen has a native localized booking link before the program choices", () => {
-  assert.match(dialogue, /<Link className=\{styles\.sessionLink\} href=\{`\/\$\{locale\}\/services#consultation`\} prefetch=\{false\} data-home-request-session>/);
+  assert.match(dialogue, /<Link className=\{styles\.sessionLink\} href=\{`\/\$\{locale\}\/services#consultation`\} prefetch=\{false\} scroll=\{false\} data-home-request-session>/);
   for (const label of ["Request a session · from €50", "Запросить сессию · от €50", "Solicitar sesión · desde 50 €"]) {
     assert.ok(dialogue.includes(label));
   }
@@ -44,7 +44,8 @@ test("consultation deep links open the actual booking section on mobile and desk
   assert.match(catalog,/consultation: "consultation"/);
   assert.match(effect,/setExpanded\(previous => new Set\(previous\)\.add\(id\)\)/);
   assert.match(effect,/hash === "consultation" \? document\.getElementById\(hash\)/);
-  assert.match(effect,/if \(booking && panel\?\.contains\(booking\)\) booking\.scrollIntoView\(options\)/);
+  assert.match(effect,/if \(booking && panel\?\.contains\(booking\)\)/);
+  assert.match(effect,/\(booking\.querySelector\("h2"\) \?\? booking\)\.scrollIntoView\(\{ block: "center", behavior: "instant" \}\)/);
   assert.match(effect,/else panel\?\.scrollIntoView\(options\)/);
   assert.match(catalog,/\(id === "consultation" \|\| id === "directory"\) && !expanded \? null : children/);
   for(const path of ["app/[locale]/services/page.tsx","app/es/services/page.tsx"]){

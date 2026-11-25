@@ -330,7 +330,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <p id="home-voice-disclosure" className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
-    <Link className={styles.sessionLink} href={`/${locale}/services#consultation`} prefetch={false} data-home-request-session>
+    <Link className={styles.sessionLink} href={`/${locale}/services#consultation`} prefetch={false} scroll={false} data-home-request-session>
       {sessionLabel}<ArrowRight size={16} aria-hidden="true"/>
     </Link>
 

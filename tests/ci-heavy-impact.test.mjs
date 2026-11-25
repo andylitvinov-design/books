@@ -606,3 +606,29 @@ test('App R1 no-op lanes use only slim runners and skip PostgreSQL', () => {
   assert.match(unit, /node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
 });
+
+test('Messenger focused and isolated RLS contracts avoid unrelated media install lifecycle and fixed-list PR lint', () => {
+  const yaml=read('hh-messages-wellness-v2.yml');
+  const productionPR="github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'";
+  const standalone="github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'";
+  for(const job of ['focused','guest-contact-audit-db']){
+    const block=yaml.split(new RegExp('^  '+job+':\\n','m'))[1].split(/^  [a-z][a-z-]+:\s*$/m)[0];
+    assert.ok(block.includes("github.event.pull_request.draft == false"));
+    const install=block.slice(block.indexOf('Install locked dependencies for protected PR contracts'),block.indexOf('Stage checksum-verified FFmpeg'));
+    assert.ok(install.includes(productionPR));
+    assert.ok(install.includes('npm ci --ignore-scripts --no-audit --no-fund'));
+    for(const name of ['Stage checksum-verified FFmpeg before npm lifecycle','Materialize checksum-verified FFmpeg for package runtime']){
+      assert.ok(block.slice(block.indexOf(name),block.indexOf(name)+260).includes(standalone),name);
+    }
+  }
+  for(const name of ['Lint guest reply composer and recipient policy','Lint edited Messages components and route']){
+    assert.ok(yaml.slice(yaml.indexOf(name),yaml.indexOf(name)+250).includes(standalone),name);
+  }
+  assert.ok(yaml.includes('tests/direct-message-media-transport.test.mjs'));
+  assert.ok(yaml.includes('tests/public-enquiry-reply-handoff.test.mjs'));
+  assert.ok(yaml.includes('tests/public-enquiry-contact-audit-rls.integration.mjs'));
+  assert.ok(yaml.includes('image: postgres:17'));
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.ok(matchesTrigger(parsePrTrigger(yaml,'hh-messages-wellness-v2.yml'),['.github/workflows/hh-messages-wellness-v2.yml'],'codex/public-book-library'));
+  assert.ok(read('hh-pr-core-release.yml').includes('Lint changed JS/TS sources on PR; full lint for manual/merge queue'));
+});
