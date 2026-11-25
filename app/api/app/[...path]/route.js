@@ -359,7 +359,7 @@ async function handle(request, { params }) {
         coachingLang = url.searchParams.get('coachingLang'),
         recipientSlug = url.searchParams.get('recipientSlug')
       const reikiJoinNonce=url.searchParams.get('reikiJoin')
-      const reikiCookie=reikiJoinCookieName(reikiJoinNonce)
+      const reikiCookie=reikiJoinNonce===null?null:reikiJoinCookieName(reikiJoinNonce)
       if(reikiJoinNonce!==null && (!reikiCookie||continueTo!=='energywork-daybook'||url.searchParams.getAll('reikiJoin').length!==1))
         throw new AppError('INVALID_REIKI_REGISTRATION',400)
       const reikiLocale=reikiCookie?verifyReikiJoinIntent(reikiJoinNonce,request.cookies.get(reikiCookie)?.value,config):null
@@ -1288,8 +1288,8 @@ async function handle(request, { params }) {
       const requestedView = new URL(request.url).searchParams.get('view')
       const view = requestedView === 'portrait' || requestedView === 'practice' ? requestedView : 'full'
       const data=await repo.bootstrap(actor, { view })
-      const retryCookie=request.cookies.get(REIKI_RETRY_COOKIE)?.value
-      const retryLocale=verifyReikiRetryProof(actor,retryCookie,config)
+      const retryCookie=request.cookies?.get(REIKI_RETRY_COOKIE)?.value
+      const retryLocale=retryCookie?verifyReikiRetryProof(actor,retryCookie,config):null
       let clearRetry=Boolean(retryCookie&&!retryLocale)
       if(retryLocale){
         try{

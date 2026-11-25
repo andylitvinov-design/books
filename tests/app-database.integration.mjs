@@ -2636,13 +2636,26 @@ test('Reiki verified registration creates a single operational CRM contact; pres
   const run=(who,verified=true)=>syncReikiRegistration(config,who,authFor(who,verified),'es',{transact:(_config,acting,fn)=>rawAs(acting,'hh_app_backend',fn)})
   let previousOwner
   try{
+    // The earlier memory RLS test creates the same NOLOGIN CRM role. Reuse
+    // that verified role in this isolated database; replay every schema grant,
+    // table and policy from the original historical migration unchanged.
+    const priorRole=(await db.query("select rolcanlogin,rolsuper,rolbypassrls from pg_roles where rolname='hh_crm_backend'")).rows[0]
+    if(priorRole)assert.deepEqual(priorRole,{rolcanlogin:false,rolsuper:false,rolbypassrls:false})
     for(const filename of [
       '20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql',
       '20261018123830_hh_crm_contact_lifecycle.sql',
       '20261018183403_hh_crm_followups_activity_sources_20261018.sql',
       '20261018184529_hh_crm_phone_first_contacts_20261018.sql',
       '20261125185710_hh_reiki_crm_registration.sql',
-    ])await db.query(await readFile(new URL('../supabase/migrations/'+filename,import.meta.url),'utf8'))
+    ]){
+      let sql=await readFile(new URL('../supabase/migrations/'+filename,import.meta.url),'utf8')
+      if(priorRole&&filename==='20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql'){
+        const declaration='create role hh_crm_backend nologin nobypassrls;'
+        assert.equal(sql.split(declaration).length,2,'exact historical role declaration')
+        sql=sql.replace(declaration,'-- verified isolated role already exists')
+      }
+      await db.query(sql)
+    }
     for(const who of [owner,learner,existing,outsider]){
       await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,who.email])
       await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
