@@ -114,3 +114,8 @@
   .backButton { width: 100%; }
   .kicker { font-size: 10px; }
 }
+
+:global(.client-entry-shell) .reportLayout{color:var(--hh-cabinet-ink)}
+:global(.client-entry-shell) .reportContext,:global(.client-entry-shell) .resultCard{background:var(--hh-cabinet-card);border-color:var(--hh-cabinet-border);box-shadow:var(--hh-cabinet-shadow)}
+:global(.client-entry-shell) .reportLayout .headingText h2,:global(.client-entry-shell) .reportLayout .resultCard :global(.cabinet-result-hero) h3{color:var(--hh-cabinet-ink)}
+:global(.client-entry-shell) .backButton{background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary)}
