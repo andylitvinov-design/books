@@ -78,8 +78,8 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       const clearOwnTimer=()=>{clearInterval(timer);if(current.pacer===timer)current.pacer=null}
       const send=()=>{
         if(current.stopped||!current.gate.isCurrent(ticket)||blockedRef.current){clearOwnTimer();return}
-        if(offset>=samples.length){clearOwnTimer();current.playback.drained();return}
-        try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length){current.playback.sent();current.renderer.sendPcm16(bytes)}offset=end}
+        if(offset>=samples.length){clearOwnTimer();return}
+        try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length){current.playback.sent();current.renderer.sendPcm16(bytes)}offset=end;if(offset>=samples.length){clearOwnTimer();current.playback.drained()}}
         catch{stop(current,'failed')}
       }
       timer=setInterval(send,step/sample.sampleRate*1000);current.pacer=timer;send()
@@ -106,7 +106,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       if(text)void speak(current,text)
     }catch{if(!current.stopped)report('sound')}
   }
-  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop(),isActive:()=>Boolean(run.current&&!run.current.stopped),isSpeaking:()=>Boolean(run.current&&!run.current.stopped&&run.current.playback.active())}))
+  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop(),isActive:()=>Boolean(run.current&&!run.current.stopped),isSpeaking:()=>Boolean(run.current&&!run.current.stopped&&(run.current.speechAbort||run.current.playback.active()))}))
   useEffect(()=>{
     mounted.current=true
     const ac=new AbortController()
@@ -142,6 +142,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
         onSpeaking:()=>{if(!current.stopped)current.playback.speaking()},
         onSilent:()=>{
           if(current.stopped||!current.playback.silent())return
+          current.speechAbort=null
           report('connected')
           callbacks.current.onSpeechEnd?.()
         }})
