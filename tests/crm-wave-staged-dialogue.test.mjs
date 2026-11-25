@@ -53,10 +53,15 @@ test('Short informal greetings stay first-party',()=>{
   assert.equal(r?.externalCalled,false);assert.match(r.reply,/Ali/);
  }
 });
-test('Eight reviewed problem areas have source-grounded first-stage answers',()=>{
+test('reviewed problem areas keep their staged answers and anxiety selects support',()=>{
  for(const text of ['Ничего не успеваю','Мне трудно начать','Мы поссорились','Мне одиноко',
-   'Я постоянно себя ругаю','Не знаю что делать','Я устал','Мне тревожно'])
+   'Я постоянно себя ругаю','Не знаю что делать','Я устал'])
   assert.equal(waveNativeTurn({message:text,locale:'ru'})?.phase,'clarify',text);
+ const support=waveNativeTurn({message:'Мне тревожно',locale:'ru'});
+ assert.deepEqual(support?.journey,{path:'therapy',stage:null});
+ assert.equal(support.modelUsed,false);assert.equal(support.externalCalled,false);
+ assert.match(support.reply,/страх|тревож/iu);
+ assert.doesNotMatch(support.reply,/1\.|7 встреч|оплат/iu);
 });
 test('No false payment, booking, sensitive, unsupported or forged-history actions',()=>{
  for(const text of ['Создай видео','Оплати заказ','Не хочу больше жить','Не могу дышать',

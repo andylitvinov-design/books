@@ -93,11 +93,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+      # All seven PR contracts import only Node built-ins and dependency-free local modules.
+      # Full standalone install/build and real browsers remain unchanged.
       - run: npm ci --no-audit --no-fund
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
       - name: Verify install manifests and private-message safety
         run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs tests/holistic-house-native-public-downloads.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         if: github.event_name != 'pull_request'
