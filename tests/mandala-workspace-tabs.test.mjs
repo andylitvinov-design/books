@@ -434,7 +434,7 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
   "only the separate Ready Generate gesture reaches the original guarded renderer");
  const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
  assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/,
-  "Ready must keep its own explicit generation button");
+  "Ready Save must keep its own explicit guarded export gesture");
  assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
