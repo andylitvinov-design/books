@@ -9,7 +9,6 @@ import { MyReikiHeader } from "@/components/my-reiki-header";
 import { MyReikiQuiz } from "@/components/my-reiki-quiz";
 import { ReikiProgramNavigation, ReikiAdvancedProgram, resolveReikiProgram } from "@/components/reiki-programs";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
-import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -339,11 +338,10 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
   // Native-resolution, artwork-only crops from the approved second-screen reference.
   const detailPhotos = ["/images/holistic-house/reiki-week-sunrise-approved.webp", "/images/holistic-house/reiki-week-lotus-approved.webp", "/images/holistic-house/reiki-week-kundalini-approved.webp", "/images/holistic-house/reiki-week-world-tree-approved.webp", "/images/holistic-house/reiki-week-initiation-approved.webp"];
   const yggdrasilVideos = {
-    en: { kicker: "INTRODUCTORY VIDEOS", title: "Discover Reiki Yggdrasil", first: "Level 1 introduction", second: "Reiki Yggdrasil meditation", language: "Original videos · English audio" },
-    ru: { kicker: "ВВОДНЫЕ ВИДЕО", title: "Знакомство с Рейки Иггдрасиль", first: "Введение в первую ступень", second: "Медитация Рейки Иггдрасиль", language: "Оригинальные видео · на английском" },
-    es: { kicker: "VIDEOS INTRODUCTORIOS", title: "Descubre Reiki Yggdrasil", first: "Introducción al Nivel 1", second: "Meditación Reiki Yggdrasil", language: "Videos originales · audio en inglés" },
+    en: { kicker: "INTRODUCTORY VIDEOS", title: "Discover Reiki Yggdrasil", first: "Introductory video", second: "What really is Reiki Yggdrasil", language: "Original videos" },
+    ru: { kicker: "ВВОДНЫЕ ВИДЕО", title: "Знакомство с Рейки Иггдрасиль", first: "Вводное видео", second: "Что такое Рейки Иггдрасиль", language: "Оригинальные видео" },
+    es: { kicker: "VIDEOS INTRODUCTORIOS", title: "Descubre Reiki Yggdrasil", first: "Video introductorio", second: "Qué es realmente Reiki Yggdrasil", language: "Videos originales" },
   }[locale];
-  const yggdrasilMeditation = englishGuidedMeditations.find(item => item.key === "reiki-yggdrasil");
   return (
     <main className={styles.page} lang={locale} data-reiki-practitioner-landing>
       <div className={styles.reikiShell}>
@@ -428,8 +426,8 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
             <p>{yggdrasilVideos.language}</p>
           </div>
           <div className={styles.reikiIntroVideoGrid}>
-            <article><h3>{yggdrasilVideos.first}</h3><AcademyVideoPlayer youtubeId="DYo-fG-SyKw" title={yggdrasilVideos.first} locale={locale} /></article>
-            {yggdrasilMeditation?.youtubeId && <article><h3>{yggdrasilVideos.second}</h3><AcademyVideoPlayer youtubeId={yggdrasilMeditation.youtubeId} title={yggdrasilVideos.second} locale={locale} /></article>}
+            <article><h3>{yggdrasilVideos.first}</h3><AcademyVideoPlayer youtubeId="lOo93GuzeJ0" title={yggdrasilVideos.first} locale={locale} /></article>
+            <article><h3>{yggdrasilVideos.second}</h3><AcademyVideoPlayer youtubeId="XvMdX5czoOc" title={yggdrasilVideos.second} locale={locale} /></article>
           </div>
           <Link className={styles.reikiOverviewFreeLink} href={academyUrl(locale, "reiki/yggdrasil/archive")}>{locale === "ru" ? "Архив школы" : locale === "es" ? "Archivo de la escuela" : "School archive"}<ArrowRight size={15} aria-hidden="true" /></Link>
         </section>
@@ -437,7 +435,6 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
           <div><p className={styles.eyebrow}>{t.subtitle}</p><h2>{t.footerTitle}</h2><p>{t.footerLead}</p></div>
           <div className={styles.finalCtaActions} data-energywork-final-choices>
             <ReikiDaybookStart locale={locale} className={styles.primaryButton} />
-            <Link href={learnPath} className={styles.ghostButton} data-energywork-final-online>{daybookCopy.classic}<ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
         </section>
         <p className={styles.disclaimer}>{t.notice}</p>

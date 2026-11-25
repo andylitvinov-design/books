@@ -90,7 +90,8 @@ test('Public review requires separate learner opt-in, owner approval and no PII 
   // Owner replaced the landing review widget with original Yggdrasil introductions; consent and moderation remain intact.
   assert.doesNotMatch(landing,/<ReikiPublicReviews/)
   assert.match(landing,/data-reiki-yggdrasil-intro-videos/)
-  assert.match(landing,/youtubeId="DYo-fG-SyKw"/)
+  assert.match(landing,/youtubeId="lOo93GuzeJ0"/)
+  assert.match(landing,/youtubeId="XvMdX5czoOc"/)
   assert.doesNotMatch(listing,/review\.accountId|review\.email|review\.displayName/)
 })
 
