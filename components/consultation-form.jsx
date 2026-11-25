@@ -1,5 +1,7 @@
 'use client'
 
+import './consultation-entry-layout.css'
+
 import { ConsultationClientSelector } from './consultation-client-selector'
 import './consultation-studio.css'
 import './consultation-report.css'
