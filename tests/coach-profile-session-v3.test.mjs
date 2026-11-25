@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createCoachProfileSessionV3,coachProfileQuestionV3,applyCoachProfileAnswerV3,requestCoachProfileCorrectionV3,
- closeCoachProfileSessionV3,coachProfileSnapshotV3,coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID,replayCoachProfileSessionV3} from '../lib/coaching/coach-profile-session-v3.mjs'
+ closeCoachProfileSessionV3,coachProfileSnapshotV3,coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID,replayCoachProfileSessionV3,requestCoachProfilePriorityV3} from '../lib/coaching/coach-profile-session-v3.mjs'
 const sessionId='11111111-1111-4111-8111-111111111111'
 const date='2026-11-25T12:00:00.000Z'
 const init=(courseSessionId='introductory',locale='ru',approvedBaseline=[])=>createCoachProfileSessionV3({sessionId,courseSessionId,locale,approvedBaseline})
@@ -99,4 +99,67 @@ test('replay binds sources and produces identical partial snapshot',()=>{
  const b=replayCoachProfileSessionV3(initial,[{kind:'answer',question:q,turn:u},{kind:'close'}])
  assert.deepEqual(coachProfileSnapshotV3(a),coachProfileSnapshotV3(b))
  assert.equal(coachProfileSnapshotV3(b).ratings[0].current.source.quote,'3')
+})
+
+test('compound outer area labels survive language conjunctions and choose desired slots only for those areas',()=>{
+ for(const [locale,body,career] of [['ru','Тело и здоровье','Карьера и бизнес'],['en','Body and health','Career and business'],['es','Cuerpo y salud','Carrera y negocios']]){
+  let s=init('introductory',locale)
+  for(let i=0;i<8;i++)s=respond(s,'5')
+  s=respond(s,body+', '+career)
+  assert.deepEqual(s.priority.axisIds,['body_health','career_business'])
+  assert.equal(coachProfileQuestionV3(s).axis,'body_health')
+  s=respond(s,'8');s=respond(s,'9')
+  assert.equal(coachProfileQuestionV3(s),null)
+  assert.equal(s.rows.finance.desired.value,null)
+ }
+})
+test('compound outer title alone is one selected priority, not two inferred areas',()=>{
+ let s=requestCoachProfilePriorityV3(init())
+ s=respond(s,'Тело и здоровье')
+ assert.deepEqual(s.priority.axisIds,['body_health'])
+ assert.equal(coachProfileQuestionV3(s).slot,'desired')
+ s=respond(s,'8')
+ assert.equal(coachProfileQuestionV3(s),null)
+ assert.equal(coachProfileSnapshotV3(s).status,'partial')
+ assert.equal(s.rows.body_health.current.value,null)
+})
+test('inner completed ratings lead to one explicitly selected meaning axis, not an invented priority',()=>{
+ for(const [locale,ambiguous,chosen] of [['ru','Опора и Свобода','Свобода'],['en','Safety & support and Freedom','Freedom'],['es','Seguridad y apoyo y Libertad','Libertad']]){
+  let s=init(MEANING_AXES_COACH_SESSION_ID,locale)
+  for(let i=0;i<8;i++)s=respond(s,'3 / 8')
+  assert.equal(coachProfileQuestionV3(s).slot,'priority')
+  s=respond(s,ambiguous)
+  assert.equal(s.priority.status,'needs_confirmation')
+  assert.equal(s.priority.axisIds.length,0)
+  assert.equal(coachProfileQuestionV3(s).slot,'priority')
+  s=respond(s,chosen)
+  assert.deepEqual(s.priority.axisIds,['freedom'])
+  assert.equal(coachProfileQuestionV3(s),null)
+  assert.equal(coachProfileSnapshotV3(s).status,'complete')
+ }
+})
+test('timebox handoff preserves partial inner wheel, captures priority and replays identically',()=>{
+ const initial=init(MEANING_AXES_COACH_SESSION_ID)
+ const q=coachProfileQuestionV3(initial),u=turn(q,'4 / 8','answer-1')
+ let s=applyCoachProfileAnswerV3(initial,q,u)
+ const old=coachProfileQuestionV3(s)
+ s=requestCoachProfilePriorityV3(s)
+ assert.throws(()=>applyCoachProfileAnswerV3(s,old,turn(old,'5 / 8','stale')),/COACH_PROFILE_SESSION_INVALID/)
+ const next=coachProfileQuestionV3(s),selection=turn(next,'Опора','priority-1')
+ assert.equal(next.slot,'priority')
+ s=applyCoachProfileAnswerV3(s,next,selection)
+ assert.equal(coachProfileQuestionV3(s),null)
+ assert.equal(s.rows.connection.current.value,null)
+ assert.equal(coachProfileSnapshotV3(s).status,'partial')
+ const events=[{kind:'answer',question:q,turn:u},{kind:'prioritize'},{kind:'answer',question:next,turn:selection}]
+ assert.deepEqual(coachProfileSnapshotV3(replayCoachProfileSessionV3(initial,events)),coachProfileSnapshotV3(s))
+})
+test('timebox outer handoff does not force remaining ratings, skip leaves no fabricated desired',()=>{
+ let s=respond(init(),'0')
+ s=requestCoachProfilePriorityV3(s)
+ s=respond(s,'пропустить')
+ assert.equal(coachProfileQuestionV3(s),null)
+ assert.equal(s.rows.body_health.current.value,0)
+ assert.equal(s.rows.emotional_wellbeing.current.value,null)
+ assert.equal(coachProfileSnapshotV3(s).status,'partial')
 })
