@@ -515,7 +515,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
-    if(busy||paused||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
+    if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
@@ -858,7 +858,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(context)try{void context.close?.().catch?.(()=>{})}catch{}
       setReplayBlocked(false);setReplaying(false)
     }
-    const onHidden=()=>{if(document.hidden){stopReplay();setVoiceState({phase:'idle',beat:0})}}
+    const onHidden=()=>{
+      if(!document.hidden)return
+      stopReplay()
+      // Gemini owns its phase; never overwrite a synchronous pause with idle.
+      if(!speechRef.current?.hasLiveSession?.())setVoiceState({phase:'idle',beat:0})
+    }
     document.addEventListener('visibilitychange',onHidden)
     window.addEventListener('pagehide',stopReplay)
     return()=>{
@@ -874,16 +879,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   function openCoachProfile(){
     coachProfileOpenRef.current=true
-    // Profile is not End. Keep ephemeral protocol and draft while stopping
-    // microphone, speech and any stale provider response.
-    speechRef.current?.stop?.()
+    // Profile is not End. Pause Gemini; legacy speech releases resources.
+    const kept=speechRef.current?.pauseSession?.()===true
+    if(!kept&&!speechRef.current?.hasLiveSession?.())speechRef.current?.stop?.()
     cancelPendingCoachTurn()
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
     replayControllerRef.current=null
     replayPlayerRef.current=null
     setReplaying(false)
-    setVoiceState({phase:'idle',beat:0})
+    if(!kept&&!speechRef.current?.hasLiveSession?.())setVoiceState({phase:'idle',beat:0})
     setCoachProfileOpen(true)
   }
   function toggleComposer(){
@@ -1333,11 +1338,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setPaused(true)
     setProtocolOpen(true)
   }
+  // Keep the active coach document across navigation, including the existing
+  // public/private CSP reload boundary. No private data in the destination URL.
+  function pauseForNavigation(event){
+    if(!keepCoachTab||event.defaultPrevented)return
+    speechRef.current?.pauseSession?.()
+  }
   function interceptSessionExit(event){
     // The explicit Close/Back choice from the already-open Summary means
     // leaving without account retention; do not trap the client in a loop.
     if(protocolOpen||ratingOpen)return
-    if(turnsRef.current.length>0&&!protocolSaved){event.preventDefault();endWithProtocol()}
+    if(!protocolSaved&&(turnsRef.current.length>0||speechRef.current?.hasLiveSession?.())){event.preventDefault();endWithProtocol()}
   }
   function resumeFromProtocol(){
     if(protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
@@ -1449,6 +1460,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
+  const keepCoachTab=liveVoiceSelected&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
+  const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
+  const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID){
     // Commit the chosen topic before the synchronous iOS activation gesture.
     // Gemini reads the current courseSessionId from its mounted props ref;
@@ -1472,7 +1486,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
-      <Link className={styles.sessionBrand} href={'/'+lang} onClick={interceptSessionExit} aria-label="Holistic House">
+      <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
       <div className={styles.sessionTopbarActions}>
@@ -1577,7 +1591,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             courseSessionId={selectedCourseId}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
-            enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
+            enabled={liveVoiceReady} canStart={!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             localRecoveryTurns={turns}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
@@ -2143,11 +2157,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>
     </section>}
     <nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}>
-      <Link href={'/'+lang} onClick={interceptSessionExit}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
-      <Link href={'/'+lang+'/my-coach'} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mobile'} onClick={interceptSessionExit}><Leaf size={21} aria-hidden="true"/><span>{ui.practice}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mandala'} onClick={interceptSessionExit}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
-      <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'} onClick={interceptSessionExit}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
+      <Link href={'/'+lang} {...browseProps}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
+      <Link href={'/'+lang+'/my-coach'} onClick={interceptSessionExit} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
+      <Link href={'/'+lang+'/holistic-support/mobile'} {...browseProps}><Leaf size={21} aria-hidden="true"/><span>{ui.practice}</span></Link>
+      <Link href={'/'+lang+'/holistic-support/mandala'} {...browseProps}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
+      <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'} {...browseProps}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
     {coachProfileOpen&&<MyCoachCompactProfile personaId={personaId} locale={conversationLang}
       methodId={visibleMethodId}
