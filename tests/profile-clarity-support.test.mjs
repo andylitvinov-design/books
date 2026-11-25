@@ -59,3 +59,10 @@ test('Approved three-step landing uses one static hero action and numbered photo
  assert.match(css,/CLARITY_LANDING_THREE_20261124/)
  assert.match(css,/\.clarityStagePhoto/)
 })
+
+
+test('Both capture CTAs open the same Clarity Google continuation, not the generic consultation',()=>{
+ assert.match(source,/<ClarityStartButton locale=\{selected\}>/)
+ assert.match(source,/<ClarityStartLink locale=\{selected\} className=\{styles\.clarityPersonal\}>[\s\S]*?\{c\.planButton\}[\s\S]*?<\/ClarityStartLink>/)
+ assert.doesNotMatch(source,/<Link href=\{personal\} className=\{styles\.clarityPersonal\}/)
+})

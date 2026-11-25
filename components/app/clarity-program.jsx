@@ -13,7 +13,7 @@ const COPY={
  ru:{title:'Ясность и поддержка',details:'Программа курса',start:'Начать бесплатно',week:'Неделя',free:'Бесплатно',paid:'Платная сессия',intro:'Четыре сессии, чтобы лучше понять себя, найти опору и выбрать направление.',terms:'Первая сессия бесплатна. Следующие требуют завершения предыдущей сессии и подтверждённой оплаты соответствующей недели.',progress:'Сохранённые сессии',locked:'Закрыто · нужна оплата',notYet:'Завершите первую сессию, чтобы продолжить.',payment:'Оплата этой сессии ещё не настроена. Деньги не списываются, доступ закрыт.',steps:'Что нужно сделать',tasks:[['Колесо баланса','Оцените каждую сферу сейчас и в желаемом состоянии. Заметьте наибольшую разницу.'],['Мои желания и смыслы','Исследуйте смысловые оси и выберите область, которую хотите лучше понять. Не обязательно уже выбирать цель.'],['Личная рефлексия','Запишите, что заметили, почему это важно и за чем хотите понаблюдать на этой неделе.']],reflection:'Моя личная рефлексия',placeholder:'Что я заметил? Что для меня важно сейчас? За чем я буду наблюдать на этой неделе?',save:'Сохранить и завершить сессию',saved:'Рефлексия первой сессии сохранена.',edit:'Обновить рефлексию',retry:'Повторить сохранение',error:'Сохранение не подтверждено. Черновик сохранён на экране; повторите попытку перед редактированием.',authError:'Не удалось открыть вход через Google. Повторите попытку.',working:'Открываем…',load:'Загрузить сохранённый прогресс',loadError:'Не удалось прочитать весь прогресс. Повторите попытку.',privacy:'Ваши записи конфиденциальны. Эти практики не заменяют медицинскую диагностику и лечение.',back:'В профиль',goals:'Моя цель'},
  es:{title:'Claridad y apoyo',details:'Detalles del programa',start:'Empezar gratis',week:'Semana',free:'Gratis',paid:'Sesión de pago',intro:'Cuatro sesiones para conocerte, encontrar apoyo y elegir tu rumbo.',terms:'La primera sesión es gratis. Las siguientes requieren finalizar la sesión anterior y confirmar el pago de esa semana.',progress:'Sesiones guardadas',locked:'Bloqueada · requiere pago',notYet:'Completa la primera sesión antes de continuar.',payment:'El pago de esta sesión aún no está configurado. No se cobra nada y el acceso sigue bloqueado.',steps:'Tus instrucciones',tasks:[['Rueda de equilibrio','Valora cada área ahora y como te gustaría que fuera. Observa la mayor diferencia.'],['Mis deseos y sentido','Explora los ejes de significado y elige un área que quieras comprender mejor. No necesitas elegir una meta todavía.'],['Reflexión personal','Escribe qué observaste, por qué importa y qué quieres observar esta semana.']],reflection:'Mi reflexión privada',placeholder:'¿Qué observé? ¿Qué importa ahora? ¿Qué observaré esta semana?',save:'Guardar y terminar sesión',saved:'Tu reflexión de la sesión gratuita está guardada.',edit:'Actualizar reflexión',retry:'Reintentar guardado',error:'No se confirmó el guardado. Conservamos el borrador en pantalla; reintenta antes de editar.',authError:'No se pudo abrir el acceso de Google. Reintenta.',working:'Abriendo…',load:'Cargar progreso guardado',loadError:'No se pudo leer todo el progreso. Reintenta.',privacy:'Tus reflexiones son privadas. Estas prácticas no sustituyen el diagnóstico ni el tratamiento médico.',back:'Volver al perfil',goals:'Mi meta'}
 }
-export function ClarityStartButton({locale='en',children}){
+function useClarityStart(locale){
  const lang=clarityLocale(locale),t=COPY[lang]
  const [busy,setBusy]=useState(false),[error,setError]=useState(false)
  const live=useRef(true),pending=useRef(false)
@@ -37,7 +37,23 @@ export function ClarityStartButton({locale='en',children}){
   }catch{if(live.current)setError(true)}
   finally{pending.current=false;if(live.current)setBusy(false)}
  }
+ return {lang,t,busy,error,begin}
+}
+export function ClarityStartButton({locale='en',children}){
+ const {t,busy,error,begin}=useClarityStart(locale)
  return <><button type="button" data-clarity-start className={css.primary} onClick={()=>void begin()} disabled={busy}><Compass size={20} aria-hidden="true"/>{busy?t.working:children||t.start}</button>{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
+}
+// Keep the approved guidance card's link layout while using the same Google
+// continuation as the hero. Modified clicks still open the protected Daybook.
+export function ClarityStartLink({locale='en',className,children}){
+ const {lang,t,busy,error,begin}=useClarityStart(locale)
+ return <><Link href={clarityDaybookPath(lang)} className={className} prefetch={false}
+  data-clarity-start data-clarity-personal aria-busy={busy}
+  onClick={event=>{
+   if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
+   event.preventDefault()
+   if(!busy)void begin()
+  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
 }
 export function ClarityDetails({locale='en'}){
  const lang=clarityLocale(locale),t=COPY[lang]

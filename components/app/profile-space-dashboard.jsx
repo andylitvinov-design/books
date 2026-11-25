@@ -9,7 +9,7 @@ import {
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
-import { ClarityStartButton } from './clarity-program'
+import { ClarityStartButton, ClarityStartLink } from './clarity-program'
 import { REIKI_FREE_COURSE_PATH } from '@/lib/academy/reiki-free-course'
 
 const TEXT = {
@@ -212,9 +212,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           </div>
         </article>
       })}</div>
-      <Link href={personal} className={styles.clarityPersonal} prefetch={false} data-clarity-personal>
+      <ClarityStartLink locale={selected} className={styles.clarityPersonal}>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
-      </Link>
+      </ClarityStartLink>
       <p className={styles.clarityNotice}>{c.notice}</p>
       <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
