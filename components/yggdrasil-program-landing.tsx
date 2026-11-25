@@ -14,6 +14,9 @@ import { basicStepDescriptions, basicAttunementName } from "@/data/academy/yggdr
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
   yggdrasilSourceImages,
+  yggdrasilAcademyStoryImages,
+  yggdrasilAcademyStorySourcePage,
+  yggdrasilProgramSourcePage,
 } from "@/data/academy/yggdrasil-program-map";
 import type { PublicLocale } from "@/lib/public-locales";
 
@@ -57,6 +60,13 @@ const copy = {
     basicLevel: "Level",
     basicSettings: "attunements",
     basicStepOpen: "Explore level",
+    storyEyebrow: "School & lineage",
+    storyTitle: "The Academy behind Reiki Yggdrasil",
+    storyLead: "Explore the school’s historical account, teaching tradition and current programme.",
+    storySource: "Earlier Academy source",
+    source: "Original Reiki Yggdrasil source",
+    archive: "Historical archive",
+    sourceNote: "Historical school and lineage material: PsiTrends. Current curriculum: Holistic House.",
   },
   ru: {
     eyebrow: "Древние символы · Живая практика",
@@ -79,6 +89,13 @@ const copy = {
     basicLevel: "Уровень",
     basicSettings: "настроек",
     basicStepOpen: "Подробнее о ступени",
+    storyEyebrow: "Школа и линия обучения",
+    storyTitle: "Академия, из которой выросла система Рейки Иггдрасиль",
+    storyLead: "История школы, традиция обучения и современная программа по материалам Академии.",
+    storySource: "Исторический источник Академии",
+    source: "Исходная страница Рейки Иггдрасиль",
+    archive: "Исторический архив",
+    sourceNote: "История школы и линии обучения: PsiTrends. Актуальная программа: Holistic House.",
   },
   es: {
     eyebrow: "Símbolos antiguos · Práctica personal",
@@ -101,6 +118,13 @@ const copy = {
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
     basicStepOpen: "Explorar nivel",
+    storyEyebrow: "Escuela y linaje",
+    storyTitle: "La Academia detrás de Reiki Yggdrasil",
+    storyLead: "Conoce el relato histórico de la escuela, su tradición formativa y el programa actual.",
+    storySource: "Fuente histórica de la Academia",
+    source: "Fuente original de Reiki Yggdrasil",
+    archive: "Archivo histórico",
+    sourceNote: "Historia y linaje: PsiTrends. Programa actual: Holistic House.",
   },
 } satisfies Record<PublicLocale, Record<string, string>>;
 
@@ -122,6 +146,93 @@ const heroHighlights: Record<PublicLocale, string[]> = {
   ],
 };
 
+const academyStory: Record<PublicLocale, Array<{
+  key: keyof typeof yggdrasilAcademyStoryImages;
+  eyebrow: string;
+  title: string;
+  body: string;
+}>> = {
+  en: [
+    {
+      key: "founder",
+      eyebrow: "Origins",
+      title: "Nicolai Zhuravlev and the Reiki Yggdrasil school",
+      body: "The earlier Academy landing presents Nicolai Zhuravlev as the founder of the school and the author of the Reiki Yggdrasil system. It places the method inside a broader school of shamanic psychotechnologies, holistic studies and temple traditions.",
+    },
+    {
+      key: "history",
+      eyebrow: "Academy history",
+      title: "A long-running training tradition",
+      body: "The historical source describes the Academy as operating for more than 30 years and records a 2010 Paracelsus medal connected with the Reiki Yggdrasil system. Holistic House preserves this as the Academy's own historical account.",
+    },
+    {
+      key: "initiations",
+      eyebrow: "How the school teaches",
+      title: "Initiations, study, practice and assessment",
+      body: "The source describes an initiation or attunement-based training model combined with individual study, partner and client practice, seminars and final assessment. The current Holistic House course map keeps that staged logic while making each module, attunement and video easier to navigate.",
+    },
+    {
+      key: "teacher",
+      eyebrow: "Your teacher",
+      title: "Andrii Litvinov",
+      body: "The current Holistic House program is taught by Andrii Litvinov. The course pages bring the source texts, archived lectures, step-by-step practice and attunements together so students can move through the system without losing the original material.",
+    },
+  ],
+  ru: [
+    {
+      key: "founder",
+      eyebrow: "Истоки",
+      title: "Николай Журавлёв и школа Рейки Иггдрасиль",
+      body: "Старый лендинг Академии представляет Николая Журавлёва как основателя школы и автора системы Рейки Иггдрасиль. Система показана как часть более широкой школы шаманских психотехнологий, холистических исследований и храмовых традиций.",
+    },
+    {
+      key: "history",
+      eyebrow: "История Академии",
+      title: "Долгая традиция практического обучения",
+      body: "Исторический источник описывает Академию как работающую более 30 лет и упоминает медаль Парацельса 2010 года, связанную с системой Рейки Иггдрасиль. На Holistic House это сохраняется именно как историческое описание самой Академии.",
+    },
+    {
+      key: "initiations",
+      eyebrow: "Как устроено обучение",
+      title: "Инициации, самостоятельная работа, практика и экзамен",
+      body: "В старом описании обучение строится на инициациях или настройках, которые дополняются самостоятельным изучением, практикой с партнёрами и клиентами, семинарами и итоговой проверкой. Текущая структура Holistic House сохраняет эту логику, но делает модули, настройки и видео значительно удобнее для навигации.",
+    },
+    {
+      key: "teacher",
+      eyebrow: "Преподаватель",
+      title: "Андрей Литвинов",
+      body: "Текущую программу Holistic House ведёт Андрей Литвинов. На страницах курса исходные тексты, архивные лекции, поэтапная практика и настройки собраны вместе, чтобы проходить систему последовательно и не терять оригинальные материалы.",
+    },
+  ],
+  es: [
+    {
+      key: "founder",
+      eyebrow: "Orígenes",
+      title: "Nicolai Zhuravlev y la escuela Reiki Yggdrasil",
+      body: "La página histórica presenta a Nicolai Zhuravlev como fundador de la escuela y autor del sistema Reiki Yggdrasil, dentro de una tradición más amplia de estudios chamánicos y de templo.",
+    },
+    {
+      key: "history",
+      eyebrow: "Historia de la Academia",
+      title: "Una tradición de formación de larga duración",
+      body: "La fuente histórica describe a la Academia como activa durante más de 30 años y menciona una medalla Paracelsus de 2010 vinculada con Reiki Yggdrasil. Holistic House conserva esta información como relato histórico de la propia Academia.",
+    },
+    {
+      key: "initiations",
+      eyebrow: "Cómo se enseña",
+      title: "Iniciaciones, estudio, práctica y evaluación",
+      body: "La fuente describe una formación basada en iniciaciones o sintonizaciones, acompañada de estudio individual, práctica con compañeros y clientes, seminarios y evaluación final. La estructura actual conserva esa progresión y facilita la navegación.",
+    },
+    {
+      key: "teacher",
+      eyebrow: "Profesor",
+      title: "Andrii Litvinov",
+      body: "El programa actual de Holistic House es impartido por Andrii Litvinov y reúne textos fuente, videoclases de archivo, práctica progresiva y sintonizaciones en un solo recorrido.",
+    },
+  ],
+};
+
+
 function SourceVisual({ url, label, className = "" }: { url: string; label: string; className?: string }) {
   return (
     <div
@@ -138,6 +249,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
   const basic = curriculum.levels[0];
   const basicSteps = basic.steps as BasicStep[];
   const hero = yggdrasilSourceImages[0];
+  const schoolStory = academyStory[locale];
 
   return (
     <div className="yggdrasil-program-landing">
@@ -248,6 +360,37 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
       <div className="reiki-screen reiki-screen--media"><YggdrasilMeditationFeature locale={locale} /></div>
 
       <div className="reiki-screen reiki-screen--social"><YggdrasilTestimonials locale={locale} /></div>
+
+      <section className="yggdrasil-school-story" aria-labelledby="yggdrasil-school-story-title">
+        <div className="yggdrasil-school-story__heading">
+          <p className="homeopathy-kicker">{text.storyEyebrow}</p>
+          <h2 id="yggdrasil-school-story-title">{text.storyTitle}</h2>
+          <p>{text.storyLead}</p>
+        </div>
+
+        <div className="yggdrasil-school-story__grid">
+          {schoolStory.map((item) => (
+            <article className="yggdrasil-school-story__item" key={item.key}>
+              <SourceVisual url={yggdrasilAcademyStoryImages[item.key]} label={item.title} />
+              <div className="yggdrasil-school-story__copy">
+                <small>{item.eyebrow}</small>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+                {item.key === "teacher" ? (
+                  <Link href={`/${locale}/about`}>{locale === "ru" ? "Подробнее об Андрее" : locale === "es" ? "Más sobre Andrii" : "More about Andrii"}<span aria-hidden="true"> →</span></Link>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p className="yggdrasil-program-source-note">{text.sourceNote}</p>
+        <div className="yggdrasil-school-story__sources">
+          <Link className="yggdrasil-source-link" href={yggdrasilAcademyStorySourcePage} target="_blank" rel="noreferrer">{text.storySource}<span aria-hidden="true">↗</span></Link>
+          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}<span aria-hidden="true">→</span></Link>
+          <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
+        </div>
+      </section>
 
       <details className="reiki-disclosure reiki-disclosure--archive">
          <summary>{locale === "ru" ? "Полный видеоархив и дополнительные материалы" : locale === "es" ? "Archivo de vídeos y materiales adicionales" : "Complete video archive & further resources"}<span aria-hidden="true">＋</span></summary>

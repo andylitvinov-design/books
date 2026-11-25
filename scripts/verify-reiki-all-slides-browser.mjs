@@ -136,6 +136,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(form.locator('[data-reiki-free-choices] input[type="radio"]')).toHaveCount(3);
     await expect(form.locator('input[autocomplete="given-name"]')).toBeVisible();
     await expect(form.locator('input[autocomplete="family-name"]')).toBeVisible();
+    const certificate = form.locator('input[name="reiki-level1-certificate"]');
+    await expect(certificate).not.toBeChecked();
+    await expect(form.locator('select[name="reiki-certificate-system"]')).toHaveCount(0);
   }
   // Teacher intro audio loads only after its first slide, never inside the
   // meditation video. Audio is optional until the author uploads his file.
@@ -388,6 +391,24 @@ async function exerciseJourney(page, locale, width) {
     }
     if (id==="welcome-02") {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
+    }
+    if (id === "end-01") {
+      const optIn = page.locator('[data-reiki-certificate-choice]');
+      const checkbox = optIn.locator('input[name="reiki-level1-certificate"]');
+      const picker = optIn.locator('select[name="reiki-certificate-system"]');
+      await expect(checkbox).not.toBeChecked();
+      await expect(picker).toHaveCount(0);
+      await checkbox.check();
+      await expect(checkbox).toBeChecked();
+      await expect(picker).toBeVisible();
+      await expect(picker.locator('option')).toHaveCount(4);
+      await picker.selectOption("yggdrasil");
+      await expect(picker).toHaveValue("yggdrasil");
+      await checkbox.uncheck();
+      await expect(picker).toHaveCount(0);
+      await checkbox.check();
+      await picker.selectOption("kundalini");
+      await expect(picker).toHaveValue("kundalini");
     }
     if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
       // A written review of at least 50 characters is required; no numeric meditation rating.

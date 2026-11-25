@@ -2646,7 +2646,7 @@ test('Reiki verified registration creates a single operational CRM contact; pres
       '20261018123830_hh_crm_contact_lifecycle.sql',
       '20261018183403_hh_crm_followups_activity_sources_20261018.sql',
       '20261018184529_hh_crm_phone_first_contacts_20261018.sql',
-      '20261125185710_hh_reiki_crm_registration.sql',
+      '20261125215204_hh_reiki_crm_registration.sql',
     ]){
       let sql=await readFile(new URL('../supabase/migrations/'+filename,import.meta.url),'utf8')
       if(priorRole&&filename==='20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql'){
