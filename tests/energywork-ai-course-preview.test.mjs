@@ -41,7 +41,7 @@ test('New peer voices and celebrations appear between the existing lessons', () 
     assert.ok(curriculum.includes('id: "'+id+'"'),id)
   assert.match(learner,/data-meditation-voices/)
   // Milestone primary CTA lives in the anchored footer, not duplicated in the card.
-  assert.match(learner,/slide\.kind === "milestone" \? t\.saveAndContinue/)
+  assert.match(learner,/slide\.kind === "milestone" \? \(daybook \? \(locale === "ru" \? "Перейти к следующему уроку" : "Continue to next lesson"\) : t\.saveAndContinue\)/)
   assert.match(learner,/saveAndContinue: "Save my lesson and continue"/)
   assert.match(learner,/data-reiki-milestone-choices/)
   assert.match(learner,/data-energywork-next/)
