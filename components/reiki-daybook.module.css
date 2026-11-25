@@ -545,3 +545,273 @@
   .page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"] {height:auto;}
   .welcomeHero {min-height:140px;}
 }
+
+/* APPROVED GOLDEN ONE-SCREEN V3 — 25 November.
+   All 68 canonical slides use the same bounded viewport. Only the teaching
+   card (and intentional disclosures) may scroll on a short/zoomed viewport.
+   Keep the approved welcome and the independent Classic learner. */
+:global(html):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]),
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) {
+  height:100%;overflow:hidden!important;overscroll-behavior:none;
+  background:#24170e!important;scroll-behavior:auto;
+}
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) :global([data-sitewide-capture]),
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) :global([data-sitewide-capture-retry]),
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) :global([data-sitewide-antistress-banner]),
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) :global([data-hh-unified-dock]),
+:global(body):has(.page[data-reiki-daybook-design="golden-one-screen-v3"]) :global([data-hh-ihelp-trigger]) {display:none!important;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] {
+  --db-bg:#28190f;--db-glow:#7d4b224d;--db-ink:#392318;--db-muted:#674c36;
+  --db-accent:#006447;--db-accent-dark:#00402d;--db-accent-light:#38885d;
+  --db-line:#dbb77d;--db-soft:#f9e9cd;--db-selected:#e5efdc;--db-surface:#fff7e8;
+  --hh-cabinet-card:linear-gradient(145deg,#fffaf0,#f8e7c9);
+  --hh-cabinet-shadow:0 3px 16px #120a0640;
+  position:fixed;inset:0;z-index:110;
+  height:100dvh;max-height:100dvh;min-height:0;width:100%;max-width:none;
+  overflow:hidden;overscroll-behavior:none;padding:0;margin:0;
+  color:#fff5e2;
+  background:radial-gradient(ellipse at 65% 12%,var(--db-glow),transparent 46%),
+    linear-gradient(155deg,#362111,#24160d 75%);
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-week="2"] {--db-glow:#985b423d;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-week="3"] {--db-glow:#91624046;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-week="4"] {--db-glow:#57724539;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-week="5"] {--db-glow:#b58a4d40;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"] {
+  box-sizing:border-box;height:100%;min-height:0;max-height:100%;
+  width:100%;max-width:620px;margin:0 auto;overflow:hidden;
+  display:flex;flex-direction:column;gap:clamp(6px,1.05dvh,12px);
+  padding:max(8px,env(safe-area-inset-top)) clamp(10px,3vw,18px) max(10px,env(safe-area-inset-bottom));
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks {
+  flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+  margin:0;padding:0;align-items:start;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks::before {
+  top:20px;height:1px;background:linear-gradient(90deg,#d9b57e,#ffe5aa,#d9b57e);
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button {
+  min-height:76px;min-width:0;gap:4px;padding:1px 1px 2px;
+  border:0;background:transparent;color:#fff3df;box-shadow:none;opacity:1;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button .weekNumber {
+  width:38px;height:38px;border:1px solid #eac78c;border-radius:50%;
+  background:linear-gradient(155deg,#fff9ed,#f7e2bd);color:#422817;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button[aria-pressed=true] .weekNumber {
+  background:linear-gradient(145deg,#15845a,#00432e);color:#fff9e9;
+  border:2px solid #ffdfa0;box-shadow:0 0 10px #f5b85d88;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button:disabled:not([aria-pressed=true]) .weekNumber {
+  background:#ead8bd;color:#5a4633;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button .weekTitle {
+  font-size:clamp(10px,2.8vw,13px);font-weight:700;line-height:1.12;color:inherit;
+  min-height:0;text-wrap:pretty;overflow-wrap:normal;hyphens:auto;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button small {
+  font-size:10px;color:#ebd0a5;line-height:1.05;gap:2px;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="sheet"] {
+  flex:1 1 0;display:block;min-height:0;max-height:100%;height:auto;overflow:hidden;
+  border:1px solid #eec887;border-radius:20px;
+  background:linear-gradient(145deg,#fffaef,#f8e6c6);
+  box-shadow:0 2px 16px #e6ac5030,inset 0 0 20px #fff8e6aa;color:var(--db-ink);
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="slide-main"] {
+  box-sizing:border-box;display:block;position:relative;isolation:auto;
+  width:100%;height:100%;max-height:100%;min-height:0;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;scroll-padding:12px 0;scrollbar-width:thin;
+  padding:clamp(12px,3.6vw,22px);
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="slide-main"]:focus-visible {outline:2px solid #007451;outline-offset:-3px;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"] {
+  box-sizing:border-box;min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:stretch;
+  gap:clamp(6px,.95dvh,10px);padding:0;margin:0;color:var(--db-ink);z-index:auto;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"]>span:first-child {
+  display:flex;align-items:center;gap:7px;color:#07553d;font-size:12px;letter-spacing:.025em;line-height:1.3;margin:0;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"]>span:first-child::after {
+  content:"";height:1px;flex:1;min-width:10px;background:linear-gradient(90deg,#cda157,transparent);
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"]> :is(h1,h2)[id] {
+  font:700 clamp(25px,7.5vw,42px)/1.08 Georgia,serif;color:#392013;
+  letter-spacing:-.024em;margin:0;overflow-wrap:break-word;text-wrap:pretty;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"]>p {
+  font-size:clamp(14px,3.85vw,17px);font-weight:500;line-height:1.4;margin:0;color:#493022;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="art"] {
+  position:relative;inset:auto;width:100%;height:auto;min-height:0;max-height:clamp(130px,30dvh,295px);
+  aspect-ratio:16/9;flex:none;margin:1px 0;border-radius:14px;overflow:hidden;background:#f3dfba;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="art"]:not([data-reiki-diagram]) img {object-fit:cover;object-position:center 40%;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="art"][data-reiki-diagram] img {object-fit:contain;background:#fff4df;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-density="activity"] [data-daybook-part="art"] {
+  aspect-ratio:4/1;max-height:clamp(56px,11dvh,104px);
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-density="activity"] [data-daybook-part="art"][data-reiki-diagram] {aspect-ratio:16/9;max-height:112px;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-density="activity"] [data-daybook-part="content"]> :is(h1,h2)[id] {
+  font-size:clamp(23px,6.2vw,34px);
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] :is([data-daybook-question],[data-reiki-first-lesson-save],
+  [data-reiki-audio-welcome],[data-reiki-lesson-intro],[data-meditation-voices],[data-reiki-personal-initiation-note],
+  [data-daybook-part="content"]>[role=group]) {
+  box-sizing:border-box;margin:0;padding:clamp(9px,2.7vw,15px);border:1px solid #dfbd85;
+  border-radius:14px;background:linear-gradient(145deg,#fffaf0,#fff1d9);color:#392318;box-shadow:none;min-width:0;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question]>span:first-child {
+  color:#07553d;font-size:12px;margin:0 0 5px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question]> :is(p,label) {margin:0 0 7px;font-size:15px;line-height:1.38;font-weight:650;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question] textarea {
+  min-height:78px;height:clamp(78px,13dvh,116px);max-height:230px;
+  padding:10px;border:1px solid #c6a36c;border-radius:12px;background:#fffcf5;
+  font-size:16px;line-height:1.4;color:#392318;resize:vertical;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question] label:has(input) {
+  min-height:44px;padding:7px 9px;margin:0;gap:8px;font-size:14px;line-height:1.25;background:#fff8ea;
+  border:1px solid #dfbd85;color:#392318;border-radius:10px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question] label:has(:checked) {
+  background:#e7f0dc;border-color:#087149;box-shadow:inset 0 0 0 1px #087149;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] label:has(input) {
+  font-size:14px;min-height:46px;padding:6px 8px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [role=status] {
+  font-size:13px;padding:7px 9px;margin:6px 0 0;line-height:1.35;background:#e7f0dc;color:#28513b;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"] :is([data-reiki-study-hint],[data-tantra-study-hint]) {
+  color:#07553d;font-size:13px;line-height:1.25;min-height:44px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-intro]>strong {
+  font:700 19px/1.15 Georgia,serif;color:#07553d;margin:0 0 6px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-intro] ul {gap:5px;font-size:14px;line-height:1.35;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-video] {
+  order:0;flex:none;padding:0;border:0;border-radius:14px;margin:0;box-shadow:none;background:transparent;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-video] :global(.academy-video-poster),
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-video] :global(.academy-video-frame) {
+  border-radius:14px;aspect-ratio:16/9;max-height:34dvh;min-height:0;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-lesson-video] > p {font-size:13px;color:#674c36;}
+.bottomStatus {
+  position:relative;flex:none;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:7px;padding:7px 9px;border:1px solid #987044;border-radius:15px;
+  background:linear-gradient(130deg,#563518,#3b2616);color:#fff3df;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"] {
+  position:relative;min-width:0;padding:0;margin:0;border:0;background:transparent;color:#fff3df;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"]>div:first-child {font-size:12px;line-height:1.3;gap:4px 6px;margin:0 0 5px;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"]>div:first-child>div {gap:4px 6px;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"]>div:first-child>span,
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"]>div:first-child>div>span,
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-private-save-status] {color:#fff3df;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-private-save-status] {
+  justify-content:flex-start;gap:3px 6px;font-size:11px;line-height:1.25;margin-top:4px;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-private-save-status] a {color:#fff3df;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-private-save-status] details[open] {
+  position:absolute;bottom:calc(100% + 9px);left:0;z-index:30;
+  width:min(380px,calc(100vw - 38px));max-height:55dvh;overflow:auto;
+  background:#fff7e8;color:#392318;padding:12px;border:1px solid #dfbd85;border-radius:13px;
+  box-shadow:0 12px 30px #1b10094d;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] .overallProgress {height:7px;background:#8c6a4a;accent-color:#67c36e;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] .overallProgress::-webkit-progress-bar {background:#8c6a4a;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] .overallProgress::-webkit-progress-value {background:linear-gradient(90deg,#148456,#a0dc78);}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] .overallProgress::-moz-progress-bar {background:linear-gradient(90deg,#148456,#a0dc78);}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-referral-share]>summary,.courseTools>summary {
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:44px;min-height:44px;
+  list-style:none;padding:6px 9px;border:1px solid #dfbd85;border-radius:12px;
+  background:#fff3df;color:#07553d;cursor:pointer;white-space:nowrap;
+}
+.courseTools {position:relative;flex:none;align-self:center;}
+.courseTools>summary::-webkit-details-marker {display:none;}
+.toolsPanel {
+  position:absolute;bottom:calc(100% + 12px);right:0;z-index:60;width:min(420px,calc(100vw - 36px));
+  max-height:min(60dvh,450px);overflow-y:auto;overscroll-behavior:contain;padding:10px;
+  border:1px solid #dfbd85;border-radius:16px;background:#fff6e3;color:#392318;box-shadow:0 12px 35px #1b10096b;
+}
+.toolsLinks {display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;}
+.toolsLinks> :is(button,a) {
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  border:1px solid #dfbd85;border-radius:9px;min-height:44px;padding:5px 9px;
+  background:#fffaf0;color:#07553d;font:650 13px/1.25 system-ui,sans-serif;text-decoration:none;cursor:pointer;
+}
+.toolsPanel .steps {margin:0 0 6px;background:#fff9ec;}
+.toolsPanel>section[data-expanded] {margin:6px 0 0;padding:7px;background:#fff9ec;border:1px solid #dfbd85;border-radius:12px;color:#392318;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer {
+  flex:none;min-width:0;max-height:40%;overflow:auto;padding:0 1px 2px;margin:0;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer>div {gap:8px;align-items:stretch;}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer button {
+  min-height:48px;padding:8px 13px;max-width:100%;font-size:clamp(14px,4vw,18px);line-height:1.15;
+  border-radius:99px;white-space:normal;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer button:first-child:not([data-energywork-next]) {
+  color:#392318;background:linear-gradient(145deg,#fff9ee,#f5dfb9);border:1px solid #dfbd85;
+}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer button[data-energywork-next] {
+  flex:1;min-width:0;color:#fff9ea;border:1px solid #f2ce8a;
+  background:linear-gradient(115deg,#087953,#00432e);box-shadow:inset 0 0 0 1px #d1a55b,0 0 9px #e7b15145;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer button[data-energywork-next]:disabled {box-shadow:none;opacity:.66;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"]>footer [role=alert] {
+  color:#ffe6d0;margin:3px 0 0;font-size:12px;line-height:1.25;
+}
+/* Keep the approved opening composition; when space is exceptionally short,
+   its text card, not the whole document or primary button, may scroll. */
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .hero {flex:1 1 0;min-height:0;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeAbout {
+  flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+}
+.page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeHero {min-height:0;}
+@media (max-height:740px) {
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"] {gap:6px;padding-inline:10px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button {min-height:65px;gap:3px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button .weekNumber {width:31px;height:31px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks::before {top:16px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) .weeks button small {display:none;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="slide-main"] {padding:11px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-density="activity"] [data-daybook-part="art"]:not([data-reiki-diagram]) {max-height:62px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"] {gap:6px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-question] textarea {min-height:68px;height:82px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="content"]> :is(h1,h2)[id] {font-size:clamp(22px,6.5vw,30px);}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="art"] {max-height:25dvh;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .heroLotus {display:none;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeRibbon {font-size:12px;}
+}
+@media (max-height:640px) {
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-density="activity"] [data-daybook-part="art"]:not([data-reiki-diagram]) {display:none;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="art"] {max-height:22dvh;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] .bottomStatus {padding:5px 7px;gap:5px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeAbout {padding:8px;gap:4px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeFacts {padding:3px 1px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeFacts svg {width:19px;height:19px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekHeading {padding:2px 4px;}
+}
+@media (max-width:375px) {
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-reiki-referral-share]>summary>span {display:none;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="progress"]>div:first-child {font-size:11px;}
+}
+@media (max-width:760px) {
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-keyboard-open="true"] {
+    top:var(--reiki-visual-top,0px);bottom:auto;height:var(--reiki-visual-height,100dvh);max-height:var(--reiki-visual-height,100dvh);
+  }
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-keyboard-open="true"] :is(.weeks,.bottomStatus) {display:none;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-keyboard-open="true"] [data-daybook-part="shell"] {padding:5px 10px;gap:5px;}
+  .page[data-reiki-daybook-design="golden-one-screen-v3"][data-reiki-keyboard-open="true"] [data-daybook-density="activity"] [data-daybook-part="art"]:not([data-reiki-diagram]) {display:none;}
+}
+@media print {
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] {position:static;height:auto;max-height:none;overflow:visible;background:white!important;color:black;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="shell"],
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="sheet"],
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-daybook-part="slide-main"] {height:auto;max-height:none;overflow:visible;}
+  .bottomStatus,.courseTools {display:none;}
+}

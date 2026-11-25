@@ -55,7 +55,7 @@ test("both learner formats can load private course media under the same scoped p
 test("Immersive Daybook shares the canonical five themes, current week and owned media", () => {
   const ui = read("components/energywork-ai-learner.tsx");
   const css = read("components/reiki-daybook.module.css");
-  assert.ok(ui.includes('"data-reiki-daybook-design": "immersive-v2"'));
+  assert.ok(ui.includes('"data-reiki-daybook-design": "golden-one-screen-v3"'));
   assert.ok(ui.includes('"data-reiki-week": activeWeek.lesson'));
   assert.ok(ui.includes("REIKI_DAYBOOK_ART[activeWeek.lesson - 1]"));
   assert.ok(ui.includes("tantra-reiki-yin-yang-cover.svg"));
@@ -74,10 +74,10 @@ test("Immersive Daybook shares the canonical five themes, current week and owned
   assert.ok(css.includes('[data-reiki-art-layout="background"]'));
   assert.ok(css.includes('[data-daybook-cover="true"]'));
   assert.ok(css.includes('[data-reiki-diagram]'));
-  assert.ok(css.includes('order:-1;z-index:1'));
+  assert.ok(css.includes('order:0;flex:none'));
   assert.ok(css.includes('env(safe-area-inset-bottom)'));
   assert.ok(css.includes("min-height:44px"));
-  assert.ok(ui.indexOf("{lesson}\n        {!daybookWelcome ? <>\n        {progressPanel}\n        {daybook && controls}") >= 0);
+  assert.ok(ui.includes('data-daybook-part="bottom-status">{progressPanel}{courseTools}'));
   assert.ok(ui.includes("position < daybookFrontier"));
   assert.ok(ui.includes('sync === "ready" && courseCompleted'));
 });
@@ -97,8 +97,32 @@ test("Approved golden Reiki welcome is a single real screen with one primary act
   assert.ok(ui.includes('"data-daybook-welcome-screen": daybookWelcome ? "true" : undefined'));
   assert.ok(ui.includes('value={weeklyCompleted}'));
   assert.ok(ui.includes('{count}/{range.count}'));
-  assert.ok(css.includes('position:fixed;inset:0;z-index:2147483000'));
-  assert.ok(css.includes('height:100dvh;min-height:0;overflow:auto'));
+  assert.ok(css.includes('position:fixed;inset:0;z-index:110'));
+  assert.ok(css.includes('height:100dvh;max-height:100dvh;min-height:0'));
   assert.ok(css.includes('env(safe-area-inset-bottom)'));
   assert.ok(css.includes('@media(max-height:720px)'));
+});
+
+test("Golden Daybook is viewport-bound on every slide, with all controls and disclosures retained", () => {
+  const ui = read("components/energywork-ai-learner.tsx");
+  const css = read("components/reiki-daybook.module.css").split("/* APPROVED GOLDEN ONE-SCREEN V3")[1];
+  assert.ok(css);
+  assert.ok(ui.includes('data-daybook-tools'));
+  assert.ok(ui.includes('data-daybook-outline'));
+  assert.ok(ui.includes('daybookWelcome ? (\n          <header'));
+  assert.ok(ui.includes('{daybook ? lessonArt : null}'));
+  assert.ok(ui.includes('{daybook ? lessonVideoBlock : null}'));
+  assert.ok(ui.includes('{daybook ? controls : <>{programme}{controls}</>}'));
+  assert.ok(css.includes('overflow:hidden;overscroll-behavior:none'));
+  assert.ok(css.includes('flex:1 1 0;display:block;min-height:0'));
+  assert.ok(css.includes('overflow-y:auto;overflow-x:hidden'));
+  assert.ok(css.includes('data-sitewide-capture'));
+  assert.ok(css.includes('var(--reiki-visual-height,100dvh)'));
+  assert.ok(css.includes('env(safe-area-inset-bottom)'));
+  assert.ok(css.includes('data-reiki-keyboard-open'));
+  assert.ok(css.includes('data-daybook-density="activity"'));
+  assert.ok(css.includes('data-reiki-diagram'));
+  assert.ok(css.includes('max-height:min(60dvh,450px)'));
+  assert.ok(ui.includes('window.dispatchEvent(new Event("hh:open-ihelp"))'));
+  assert.ok(ui.includes('position <= daybookFrontier'));
 });
