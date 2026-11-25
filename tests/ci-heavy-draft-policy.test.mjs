@@ -901,11 +901,11 @@ test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual
     assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
     if (name === 'hh-reiki-all-slides-browser.yml') {
       // The protected Reiki release retains one owner-approved real browser
-      // acceptance for #5626. Do not generalize it to other pull requests.
-      const reikiGate = "github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626";
+      // acceptance for #5626 and the exact reviewed mobile-fit branch.
+      const reikiGate = "github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')";
       const expectedImage = "image: ${{ (" + reikiGate + ") && 'postgres:17-alpine' || '' }}";
       assert.equal(postgres.split('\n').filter(line => /^\s*image:/.test(line)).map(line => line.trim()).join('\n'), expectedImage,
-        name + ' PostgreSQL must remain limited to manual QA or exact #5626');
+        name + ' PostgreSQL must remain limited to manual QA or exact reviewed Daybook release');
       for (const step of ['Isolated Chromium/WebKit runtime (manual or one-time Daybook acceptance)',
         'Initialize synthetic isolated account database', fullQA]) {
         assert.ok(workflow.includes('- name: ' + step + '\n        if: ' + reikiGate + '\n'),
