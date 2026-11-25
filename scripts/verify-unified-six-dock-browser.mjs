@@ -298,6 +298,7 @@ async function inspect(browserType,locale,width){
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["development-vectors",prefix+"/development-vectors","profile"],
       ["services",prefix+"/services","services"],
       ["services-review",prefix+"/services/free-situation-review","services"],
     ];
@@ -322,6 +323,16 @@ async function inspect(browserType,locale,width){
         results.push({id:marker,immersive:true,dockHidden:true,route:path,authenticated:false});
       }else{
         await assertPinnedSixDock(page,marker,active);
+        if(caseName==="development-vectors"){
+          const root=page.locator("main[data-daybook-vectors]");
+          await expect(root).toHaveAttribute("data-cabinet-theme","daybook");
+          const stage=root.locator('a[href*="/app/daybook?start=vector"]');
+          await expect(stage).toBeVisible();
+          const geometry=await stage.evaluate(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,display:getComputedStyle(el).display,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}));
+          assert.equal(geometry.display,"flex",marker+" stage action is a real wrapping block");
+          assert.ok(geometry.height>=44&&geometry.width<=geometry.clientWidth,marker+" stage action fits");
+          assert.ok(geometry.scrollWidth<=geometry.clientWidth+1,marker+" no document overflow");
+        }
         results.push({id:marker,pinned:true,route:path,authenticated:false});
       }
       if(browserType===webkit && locale==="ru" && width===390)

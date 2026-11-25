@@ -20,3 +20,15 @@
 .error,.notice{font-size:14px;line-height:1.45;margin:12px 0;border-radius:10px;padding:11px}
 .error{background:#fff0e8;color:#923d2b}.notice{background:#e6f6f1;color:#176e6e}
 @media(max-width:390px){.root{padding:15px 12px}.heading p{font-size:14px}.question label{font-size:17px}}
+
+/* Legacy private context editor adopts My Space without changing questions or saves. */
+:global([data-cabinet-theme="daybook"]) .root{background:var(--hh-cabinet-card);color:var(--hh-cabinet-ink);border-color:var(--hh-cabinet-border);border-radius:18px;box-shadow:var(--hh-cabinet-shadow);margin:10px 0 14px;padding:15px;min-width:0}
+:global([data-cabinet-theme="daybook"]) .heading h2{font:700 clamp(23px,5.8vw,29px)/1.15 Georgia,serif;color:var(--hh-cabinet-ink);overflow-wrap:anywhere}
+:global([data-cabinet-theme="daybook"]) :is(.heading p,.step,.question small,.privacy){color:var(--hh-cabinet-muted)}
+:global([data-cabinet-theme="daybook"]) .count{background:var(--hh-cabinet-surface-soft);border:1px solid var(--hh-cabinet-border);color:var(--hh-cabinet-primary);max-width:100%;overflow-wrap:anywhere}
+:global([data-cabinet-theme="daybook"]) :is(.open,.save){background:var(--hh-cabinet-primary);border:1px solid var(--hh-cabinet-border);color:#fff9e7;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+:global([data-cabinet-theme="daybook"]) .question textarea{background:#fffaf0;border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink);font-size:16px}
+:global([data-cabinet-theme="daybook"]) .navigation button{background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink);min-width:0;overflow-wrap:anywhere}
+:global([data-cabinet-theme="daybook"]) .navigation button:nth-child(2){background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary-hover)}
+:global([data-cabinet-theme="daybook"]) .root :is(button,textarea):focus-visible{outline-color:#a27025}
+@media(max-width:390px){:global([data-cabinet-theme="daybook"]) .root{padding:13px}}
