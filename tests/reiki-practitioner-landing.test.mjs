@@ -117,3 +117,25 @@ test("Pro landing expands all six canonical modules inline after the existing ro
  assert.ok(css.includes("100svh") && css.includes("minmax(0, 1fr)") && css.includes("max-width: 354px"));
  assert.ok(!/\.screen\s*\{[^}]*\bheight\s*:\s*\d+px/i.test(css));
 });
+
+test("Three approved Reiki overview screens immediately follow the second landing screen",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const start=landing.indexOf('data-reiki-system-overview');
+ const end=landing.indexOf('className={styles.foundations}',start);
+ const overview=landing.slice(start,end);
+ assert.ok(landing.indexOf('data-reiki-details-screen')<start && start<end);
+ assert.ok(overview.includes('paths.map') && overview.includes('data-reiki-overview-system={system.key}'));
+ assert.ok(overview.includes('src={artwork.src}') && overview.includes('unoptimized loading="lazy"'));
+ assert.ok(overview.includes('href={academyUrl(locale, system.study)}'));
+ assert.ok(!overview.includes('<MyReikiHeader') && !overview.includes('<ReikiProgramNavigation'));
+ for (const key of ["tantra","kundalini","yggdrasil"]) {
+   const asset=readFileSync(new URL("../public/images/holistic-house/reiki-"+key+"-approved-artwork.webp",import.meta.url));
+   assert.equal(asset.toString("ascii",0,4),"RIFF");
+   assert.equal(asset.toString("ascii",8,12),"WEBP");
+   assert.ok(asset.includes(Buffer.from("VP8L")),"Lossless WebP required");
+ }
+ assert.ok(css.includes("MY_REIKI_APPROVED_SYSTEM_SCREENS_20261125"));
+ assert.ok(css.includes("max-height:30svh") && css.includes("background-repeat:no-repeat,repeat-y"));
+ assert.ok(landing.includes('className={styles.reikiLegacyMaterials}'));
+});

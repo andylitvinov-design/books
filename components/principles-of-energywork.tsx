@@ -371,6 +371,30 @@ const paths = [
   },
 ] as const;
 
+const reikiOverviewArt = [
+  { src: "/images/holistic-house/reiki-tantra-approved-artwork.webp", width: 1024, height: 600 },
+  { src: "/images/holistic-house/reiki-kundalini-approved-artwork.webp", width: 1024, height: 590 },
+  { src: "/images/holistic-house/reiki-yggdrasil-approved-artwork.webp", width: 1024, height: 525 },
+] as const;
+
+const reikiOverviewCopy = {
+  en: [
+    { subtitle: "The energy of life, love, and creativity", description: "Explore vitality, sensuality, connection, and creative expression through a nine-level Reiki path.", levels: "9 levels" },
+    { subtitle: "Awaken your inner power", description: "Discover grounding, balance, chakra awareness, and simple daily energy practices through a three-level Reiki path.", levels: "3 levels" },
+    { subtitle: "The path of power and wisdom", description: "Explore inner strength, runic symbolism, protection, and spiritual development through the World Tree.", levels: "5 levels · 7 modules" },
+  ],
+  ru: [
+    { subtitle: "Энергия жизни, любви и творчества", description: "Исследуйте жизненную энергию, чувственность, связь и творческое самовыражение на пути девяти уровней Рейки.", levels: "9 уровней" },
+    { subtitle: "Пробудите внутреннюю силу", description: "Познакомьтесь с заземлением, балансом, чакрами и ежедневными энергетическими практиками трёх уровней Рейки.", levels: "3 уровня" },
+    { subtitle: "Путь силы и мудрости", description: "Исследуйте внутреннюю силу, руническую символику, защиту и духовное развитие через образ Мирового Древа.", levels: "5 уровней · 7 модулей" },
+  ],
+  es: [
+    { subtitle: "La energía de la vida, el amor y la creatividad", description: "Explora la vitalidad, la sensualidad, la conexión y la expresión creativa en un camino Reiki de nueve niveles.", levels: "9 niveles" },
+    { subtitle: "Despierta tu fuerza interior", description: "Descubre el arraigo, el equilibrio, los chakras y prácticas energéticas diarias en tres niveles Reiki.", levels: "3 niveles" },
+    { subtitle: "El camino de la fuerza y la sabiduría", description: "Explora la fuerza interior, los símbolos rúnicos, la protección y el desarrollo espiritual a través del Árbol del Mundo.", levels: "5 niveles · 7 módulos" },
+  ],
+} as const;
+
 function academyUrl(locale: PublicLocale, path: string) {
   return "/" + locale + "/academy/" + path;
 }
@@ -449,6 +473,25 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
         </div>
         </section>
 
+        <section className={styles.reikiOverview} data-reiki-system-overview aria-label={t.systemsTitle}>
+          {paths.map((system, index) => {
+            const artwork = reikiOverviewArt[index];
+            const copy = reikiOverviewCopy[locale][index];
+            return <article key={system.key} className={styles.reikiOverviewCard} data-reiki-overview-system={system.key} aria-labelledby={"reiki-overview-" + system.key}>
+              <div className={styles.reikiOverviewArtwork}>
+                <Image src={artwork.src} width={artwork.width} height={artwork.height} alt="" sizes="(max-width: 820px) 100vw, 790px" unoptimized loading="lazy" />
+              </div>
+              <div className={styles.reikiOverviewCopy}>
+                <h2 id={"reiki-overview-" + system.key}>{system.title}</h2>
+                <p className={styles.reikiOverviewSubtitle}>{copy.subtitle}</p>
+                <p className={styles.reikiOverviewDescription}>{copy.description}</p>
+                <p className={styles.reikiOverviewLevels}>{copy.levels}</p>
+                <Link className={styles.reikiOverviewLink} href={academyUrl(locale, system.study)}>{t.learn}<ArrowRight size={20} aria-hidden="true" /></Link>
+              </div>
+            </article>;
+          })}
+        </section>
+
         <section className={styles.foundations} data-energywork-screen="foundations" aria-labelledby="energywork-foundations">
           <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
           <div className={styles.foundationGrid}>
@@ -475,6 +518,8 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
             <div><span className={styles.offerKicker}>{locale === "ru" ? "В подарок" : locale === "es" ? "Regalo" : "Complimentary"}</span><h3>{t.giftTitle}</h3><p>{t.giftLead}</p></div>
             <div><span className={styles.offerKicker}>{locale === "ru" ? "Свободный донейшен" : locale === "es" ? "Donación libre" : "Pay what you wish"}</span><h3>{t.donationTitle}</h3><p>{t.donationLead}</p></div>
           </div>
+          <details className={styles.reikiLegacyMaterials}>
+            <summary>{locale === "ru" ? "Материалы и варианты инициации" : locale === "es" ? "Materiales y opciones de iniciación" : "Study materials & initiation options"}<ArrowDown size={18} aria-hidden="true" /></summary>
           <div className={styles.systemGrid}>
             {paths.map((system, index) => (
               <article className={styles.systemCard} key={system.key} id={"energywork-" + system.key} data-reiki-path={system.key} data-energywork-screen={system.key} data-energywork-step={String(index + 2)}>
@@ -500,6 +545,7 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
               </article>
             ))}
           </div>
+          </details>
         </section>
 
         <section className={styles.howSection} id="energywork-how" data-energywork-screen="initiation" data-energywork-step="5" aria-labelledby="energywork-how-title">
