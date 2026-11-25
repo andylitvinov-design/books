@@ -1317,18 +1317,36 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         gain.gain.value=.2;tone.frequency.value=330;
         tone.connect(gain);gain.connect(dest);tone.start();
         const old=Object.getOwnPropertyDescriptor(navigator.mediaDevices,"getUserMedia");
-        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>dest.stream.clone()});
-        window.__hhMontageMic={ctx,tone,old};return true;
+        const stats={requests:0,resumeError:null};
+        // Start the synthetic WebAudio input within the actual Record gesture.
+        // WebKit may otherwise leave the source suspended or clone a muted
+        // synthetic track. The real MediaRecorder and decoded PCM checks stay.
+        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
+          stats.requests++;
+          try { if(ctx.state!=="running")await ctx.resume(); }
+          catch(error){stats.resumeError=String(error?.name||"AudioContextError");throw error;}
+          return dest.stream;
+        }});
+        window.__hhMontageMic={ctx,tone,old,dest,stats};return true;
       });
       if(engine==="chromium")assert.ok(montageMicAvailable,"Chromium Montage microphone fixture available");
       if(montageMicAvailable){
         try{
           const mic=page.locator('[data-video-montage-voice-record]');
-          await mic.click();
-          await expect(mic).toHaveAttribute("aria-pressed","true");
+          if(engine==="webkit")await mic.tap();else await mic.click();
+          try { await expect(mic).toHaveAttribute("aria-pressed","true",{timeout:10000}); }
+          catch(error){
+            console.error("Montage real recorder diagnostic",await page.evaluate(()=>{
+              const f=window.__hhMontageMic;
+              return {state:f?.ctx.state,stats:f?.stats,tracks:f?.dest.stream.getAudioTracks().map(t=>({state:t.readyState,muted:t.muted,enabled:t.enabled})),
+                warning:document.querySelector("[data-video-montage-audio] [role=alert]")?.textContent};
+            }));
+            throw error;
+          }
+          assert.equal(await page.evaluate(()=>window.__hhMontageMic.stats.requests),1,"one deliberate microphone request");
           await page.evaluate(()=>window.__hhMontageMic.ctx.resume());
           await page.waitForTimeout(1500);
-          await mic.click();
+          if(engine==="webkit")await mic.tap();else await mic.click();
           const card=page.locator('[data-video-montage-voice-card]');
           await expect(card).toContainText(/my-voice\.(m4a|webm)/,{timeout:15000});
           await expect(page.locator('[data-video-audio-compact-rights]')).toHaveCount(0);
