@@ -725,3 +725,39 @@ test('PR-target event consolidation keeps protected conflict, Ready stage, sourc
  assert.match(native,/  workflow_run:/);
  assert.doesNotMatch(native,/continue-on-error:\s*true/);
 });
+
+
+test('hourly Vercel skips only fully proven CI-only delta including existing CI contract tests',()=>{
+ const workflow=read('hh-hourly-vercel-production');
+ const {spawnSync}=require('node:child_process');
+ const marker='jq -e --arg live "$live_sha" --arg head "$head_sha" '+String.fromCharCode(39);
+ const start=workflow.indexOf(marker);
+ assert.ok(start>=0,'existing full LIVE-to-HEAD Compare proof is required');
+ const filter=workflow.slice(start+marker.length).split(String.fromCharCode(39))[0];
+ const live='a'.repeat(40),head='b'.repeat(40);
+ const base={status:'ahead',behind_by:0,base_commit:{sha:live},merge_base_commit:{sha:live},
+  ahead_by:1,total_commits:1,commits:[{sha:head}]};
+ const f=(filename,status='modified',extra={})=>({filename,status,...extra});
+ const y=f('.github/workflows/ia-v2.yml'),a=f('tests/ci-workflow-globs.test.mjs'),
+   b=f('tests/ci-heavy-impact.test.mjs'),c=f('tests/pr-fast-lane.test.mjs');
+ const check=(files,expected,extra={})=>{
+  const result=spawnSync('jq',['-e','--arg','live',live,'--arg','head',head,filter],
+   {input:JSON.stringify({...base,files,...extra}),encoding:'utf8',timeout:5000});
+  assert.equal(result.error,undefined);
+  assert.equal(result.status,expected?0:1,result.stderr);
+  assert.equal(result.stdout.trim(),expected?'true':'false');
+ };
+ check([y],true); check([y,a,b,c],true); check([a],true);
+ check([y,f('tests/coaching.test.mjs')],false);
+ check([a,f('app/page.tsx')],false);
+ check([y,f(a.filename,'added')],false);
+ check([f(a.filename,'removed')],false);
+ check([f(a.filename,'modified',{previous_filename:'app/page.tsx'})],false);
+ check([a],false,{behind_by:1});
+ check([a],false,{commits:[{sha:'c'.repeat(40)}]});
+ check(Array.from({length:300},()=>y),false);
+ check([a],false,{ahead_by:2,total_commits:2});
+ check([],false); check([a],false,{status:'diverged'});
+ assert.match(workflow,/cutoff_ms=.*3600000/);
+ assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/);
+});
