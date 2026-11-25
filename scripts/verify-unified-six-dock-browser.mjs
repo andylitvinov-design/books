@@ -719,9 +719,10 @@ try{
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "four optional topic suggestions remain available in More topics");
  const extraDirections=chat.locator('[data-hh-genie-extra-directions]');
- assert.equal(await extraDirections.evaluate(node=>node.open),false,
-   "optional topic suggestions start collapsed under the three needs");
- await extraDirections.locator(':scope > summary').click();
+ // Initial collapsed state is checked before opening Orders; after returning
+ // the mounted conversation may retain the disclosure state.
+ if(!await extraDirections.evaluate(node=>node.open))await extraDirections.locator(':scope > summary').click();
+ await expect(extraDirections.locator("[data-hh-alchemist-more-topics]")).toBeVisible();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
@@ -854,7 +855,7 @@ try{
  await bilingualInput.fill("Хочу денег");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Расскажи, чего ты хочешь или что сейчас мешает…",null,{timeout:10000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("aria-label")==="Что сейчас для вас важно?",null,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
  // The exact owner screenshot phrase must open the real menu, not just appear in the transcript.
@@ -865,7 +866,7 @@ try{
  await bilingualInput.fill("I want to discuss my income");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="What's on your mind?",null,{timeout:10000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("aria-label")==="What's on your mind?",null,{timeout:10000});
  assert.equal(new URL(page.url()).pathname,"/en/app/messages",
    "switching dialogue language does not navigate away from the original route");
  const retainedTurns=await bilingualLog.locator('[data-hh-chat-turn="user"]').allTextContents();
