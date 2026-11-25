@@ -64,7 +64,7 @@ const COPY = {
   },
 }
 
-export default function CabinetFreeCourseBanners({ locale = 'en' }) {
+export default function CabinetFreeCourseBanners({ locale = 'en', savedOnly = false, accountId }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
   const [academyProgress, setAcademyProgress] = useState(null)
@@ -77,10 +77,10 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
   useEffect(() => {
     let alive = true
     appFetch('academy-energywork').then(value => {
-      if (alive && value?.enrolled && typeof value.slideId === 'string') setAcademyProgress(value)
+      if (alive && value?.enrolled && (!accountId || value.accountId === accountId) && typeof value.slideId === 'string') setAcademyProgress(value)
     }).catch(() => {})
     return () => { alive = false }
-  }, [])
+  }, [accountId])
 
   // Existing POST command deletes only this signed-in account's Reiki enrollment and
   // its associated shared reviews/leads. Never remove a card optimistically.
@@ -109,6 +109,8 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
     }
   }
 
+  if (savedOnly && !academyProgress) return null
+
   const savedIndex = academyProgress ? Math.max(0, ENERGYWORK_SEQUENCE.indexOf(academyProgress.slideId)) : 0
   const currentLesson = ENERGYWORK_LESSON_RANGES.find(range => savedIndex >= range.start && savedIndex < range.end)
   const resumeLabel = currentLesson
@@ -135,6 +137,11 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
           <p>{resumeLabel}</p>
           <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
             {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          <Link className={styles.savedDaybookLink}
+            href={'/' + language + '/academy/principles-of-energywork/daybook?slide=' + encodeURIComponent(academyProgress.slideId)}
+            prefetch={false} data-energywork-daybook-resume>
+            {language === 'ru' ? 'Продолжить в Daybook' : 'Continue in Daybook'}<ArrowUpRight size={15} aria-hidden="true" />
           </Link>
           {savedIndex >= ENERGYWORK_SEQUENCE.indexOf('init-photo-01') ? (
             <Link className={styles.savedReviewLink} href={courseHref + '?slide=init-photo-01'}
@@ -184,7 +191,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
         </div>
       </div>
     </dialog>
-    <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
+    {!savedOnly && <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
       <div>
         <span className={styles.eyebrow}><Sparkles size={13} aria-hidden="true" />{t.eyebrow}</span>
@@ -213,6 +220,6 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
         </Link>
       })}
     </div>
-  </section>
+  </section>}
   </>
 }

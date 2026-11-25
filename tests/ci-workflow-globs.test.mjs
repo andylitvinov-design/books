@@ -758,3 +758,38 @@ test('duplicate specialist lint is removed only on protected production PRs; rea
     assert.doesNotMatch(s,/continue-on-error:\s*true/);
   }
 });
+
+
+test('CI reduction phase 2: duplicate payment and Messenger suites execute once; specialist safety is retained',()=>{
+  const billing=workflow('hh-billing-isolated.yml');
+  assert.equal((billing.match(/(?:^| )tests\/service-square-api-cart\.test\.mjs(?=\s|$)/gm)||[]).length,1);
+  for(const name of ['tests/video-credits-postgres.integration.mjs','tests/video-paid-orders-postgres.integration.mjs','tests/square-ledger-isolated.integration.mjs','npm run test:billing:db','postgres:17-alpine']) assert.ok(billing.includes(name),name);
+  const ia=workflow('ia-v2.yml');
+  assert.ok(ia.includes('operatorOnly=operatorOnly&&messengerOnly'));
+  assert.ok(ia.includes('tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs'));
+  assert.ok(ia.includes('run: node --test tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs'));
+  assert.ok(ia.includes('npm run test:app'));
+});
+
+test('CI reduction phase 2: defer only Draft expensive jobs and duplicate production-PR setup/lint',()=>{
+  const gate= "        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const jobGate= "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for(const [file,job] of [['hh-billing-isolated.yml','billing-database'],['release-reaudit.yml','browser']]) {
+    const y=workflow(file);
+    assert.ok(y.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n"));
+    assert.ok(y.includes('  '+job+':\n'+jobGate));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
+  }
+  const install=workflow('holistic-house-mobile-install.yml');
+  assert.ok(install.includes('run: npm ci --no-audit --no-fund\n'+gate));
+  assert.ok(install.includes('name: Lint signed-in install prompt, global PWA registration and onboarding\n'+gate));
+  assert.ok(install.includes('node --test tests/holistic-house-pwa.test.mjs'));
+  const youtube=workflow('youtube-phone-uploader.yml');
+  for(const name of ['Install locked dependencies','Lint practitioner YouTube implementation','Lint owner Telegram-to-phone handoff']) assert.ok(youtube.includes('name: '+name+'\n'+gate));
+  assert.ok(youtube.includes('node --test tests/youtube-phone-upload.test.mjs'));
+  for(const y of [install,youtube]) {
+    assert.ok(y.includes('npm run build'));
+    assert.ok(y.includes('if: github.event_name != \'pull_request\''));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
+  }
+});
