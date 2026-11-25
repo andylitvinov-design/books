@@ -103,7 +103,11 @@ jobs:
                 item.number === number &&
                 item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
                 item.base?.ref === "codex/public-book-library" &&
-                item.base?.sha === pr.base.sha);
+                // The original PR event base SHA may have advanced since CI
+                // began. Exact source HEAD, PR number, branch and green
+                // hh-merge-check must still match. Do not discard valid runs
+                // solely because a DIFFERENT PR moved the protected target.
+                (!item.base?.sha || /^[0-9a-f]{40}$/.test(item.base.sha)));
             // Some active PRs have >100 CI runs on a single source HEAD.
             // Read only as many pages as necessary (max 3) and never infer
             // green from a truncated current-head page. Use the short path

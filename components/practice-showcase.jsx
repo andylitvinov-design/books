@@ -12,6 +12,7 @@ import {
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
 import PracticeWorkProfileIntro, {PracticeWorkProfilePresentation} from './practice-work-profile-intro'
+import PracticeSocialProfile from './practice-social-profile'
 
 const COPY = {
   ru: {
@@ -212,7 +213,7 @@ function countRequests(list) {
   return list.filter(item => item?.status === 'requested').length
 }
 
-export default function PracticeShowcase({ locale = 'en' }) {
+export default function PracticeShowcase({ locale = 'en', presentationStorageOrigin = '' }) {
   const router = useRouter()
   const t = COPY[locale] || COPY.en
   const shortcut = QUICK_CREATE_LABELS[locale] || QUICK_CREATE_LABELS.en
@@ -423,7 +424,9 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   return <div className={styles.screen} data-practice-showcase onClickCapture={interceptGuestWorkLink} data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
-      <PracticeWorkProfileIntro locale={locale} onAction={openAction} activeCount={metric} requestCount={requestMetric} />
+      <PracticeWorkProfileIntro locale={locale} onAction={openAction} activeCount={metric} requestCount={requestMetric}>
+        <PracticeSocialProfile locale={locale} practitioner={practitioner} services={services} signedIn={signedIn} storageOrigin={presentationStorageOrigin} onAction={openAction} />
+      </PracticeWorkProfileIntro>
 
 
       {signedIn && RESUMABLE_ACTIONS.has(nextAction) && <section

@@ -24,8 +24,8 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
 
  // This component never requests microphone permission or starts speech.
  // An optional, already-authorized playback MediaStream can drive real RMS.
- const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex'].includes(photoId)
- const posterPath=photoId?'/images/holistic-house/my-coach-motion/'+photoId+'-still.'+(photoId==='harry'?'svg':'webp'):null
+ const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex','merlin','harry','genie'].includes(photoId)
+ const posterPath=photoId?'/images/holistic-house/my-coach-motion/'+(photoId==='harry'?'harry-soft-still.webp':photoId==='genie'?'genie-calm-loop-poster.webp':photoId+'-still.webp'):null
 
  return <div className={styles.frame} data-coach-avatar="true" data-photo-motion="static" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
   data-avatar-id={profile.id} data-photo-persona={photoId||undefined}
@@ -55,7 +55,7 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
    </svg>
    {photoId&&<div className={styles.livingPortrait} aria-hidden="true">
      <picture className={styles.livingPortraitBase}>
-       <source media="(prefers-reduced-motion: reduce)" type={photoId==='harry'?'image/svg+xml':'image/webp'}
+       <source media="(prefers-reduced-motion: reduce)" type="image/webp"
          srcSet={posterPath}/>
        <Image className={styles.livingPortraitImage}
          src={posterPath}

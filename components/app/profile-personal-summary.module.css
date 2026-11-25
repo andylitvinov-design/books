@@ -1,0 +1,59 @@
+.root{display:grid;gap:12px;color:#153e37;font-family:system-ui,-apple-system,sans-serif}
+.root *{box-sizing:border-box;min-width:0}
+.hero,.card{background:#fffcf7;border:1px solid #e4e2d7;border-radius:23px;overflow:hidden;box-shadow:0 8px 20px #1d46351a}
+.cover{height:145px;background:linear-gradient(180deg,#163f321a,#173c326a),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 49%/cover no-repeat}
+.identity{display:flex;align-items:flex-start;gap:12px;padding:0 18px 14px}
+.avatar{flex:none;margin-top:-42px;width:96px;height:96px;border:5px solid #fffdf8;border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-weight:800;font-size:43px;background:linear-gradient(150deg,#b2e0cf,#f3edd7);box-shadow:0 5px 15px #132e2430}
+.identityText{padding-top:8px;min-width:0}.identityText h1{font:700 clamp(26px,6.5vw,34px)/1.1 Georgia,serif;margin:4px 0 7px;color:#153e37;overflow-wrap:anywhere}.identityText strong{font-size:15px}.identityText p{font-size:15px;line-height:1.4;margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.eyebrow{color:#147961;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800}
+.heroActions{padding:2px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.primary,.outline{min-height:48px;border-radius:15px;padding:9px 12px;display:flex;gap:7px;align-items:center;justify-content:center;text-decoration:none;font-size:15px;font-weight:800;cursor:pointer}
+.primary{background:#087d66;border:1px solid #087d66;color:#fff}.outline{background:#edf7f2;color:#075845;border:1px solid #cfe4db}
+.card{padding:16px;overflow:visible}.heading{display:flex;gap:10px;align-items:center;margin:0 0 12px;color:#087861}.heading h2{margin:0;flex:1;color:#183e36;font:700 clamp(21px,5vw,25px)/1.16 Georgia,serif}.heading a{height:36px;width:36px;display:grid;place-items:center;background:#eaf6ee;border-radius:50%;color:#087861}
+.goalEmpty,.empty{padding:12px;background:#f9f5ed;border-radius:12px;margin:5px 0;color:#65716b;font-size:15px;line-height:1.45}
+.ratings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}.rating{border:1px solid #d6e9dd;background:#eff9f1;border-radius:15px;padding:10px;display:grid;gap:5px}.rating span{font-size:12px;line-height:1.3}.rating strong{font-size:19px}
+.hint{font-size:12px;color:#687a72;line-height:1.4;margin:12px 0 0}.measures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.measure{display:grid;gap:6px;padding:12px;border-radius:15px;background:#f8faf4;border:1px solid #e4ebdf;text-decoration:none;color:#193e38}.measureTop{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;font-size:13px}.measureTop strong{font-size:14px;font-variant-numeric:tabular-nums}.measure small{font-size:11px;color:#657971}.track{height:9px;width:100%;border-radius:8px;display:block;background:#e6e2dc;overflow:hidden}.track>span{height:100%;display:block;background:linear-gradient(90deg,#6fcd3d,#008e70);border-radius:8px}
+.more{display:inline-flex;align-items:center;gap:4px;color:#08755e;text-decoration:none;margin-top:10px;font-size:14px;font-weight:800;min-height:32px}
+.videos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.video{border:1px solid #e7e6da;border-radius:17px;overflow:hidden;background:#fff}.poster{position:relative;aspect-ratio:1.65;display:grid;place-items:center;background-size:cover;background-position:center}.imageSea{background-image:linear-gradient(0deg,#182c2933,#182c2910),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}.imageForest{background-image:linear-gradient(0deg,#182c2933,#182c2910),url('/images/holistic-house/books-library.webp')}.imageLotus{background-image:linear-gradient(0deg,#182c2933,#182c2910),url('/images/holistic-house/support-mock-hero.webp')}
+.play{height:52px;width:52px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#043e32b5;border:2px solid #fff;font:inherit;cursor:pointer}.player{width:100%;height:100%;object-fit:contain;background:#0b2322}.duration{position:absolute;right:8px;bottom:7px;color:#fff;background:#183a34c9;padding:2px 6px;border-radius:6px;font-size:12px}.video>strong{display:block;font-size:15px;line-height:1.3;padding:9px 10px 0}.videoFooter{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:8px 9px}.videoFooter span{display:inline-flex;gap:3px;align-items:center;color:#69796f;font-size:11px}.videoFooter button{min-height:37px;border:1px solid #c7e8d9;border-radius:11px;background:#ebf8f0;color:#07664e;padding:5px 8px;cursor:pointer;font-size:11px;font-weight:750}.videoFooter button:disabled{opacity:.5;cursor:default}.alert{color:#a23c3c}
+.root :is(button,a):focus-visible{outline:3px solid #e6a34e;outline-offset:3px}
+@media(max-width:430px){.cover{height:128px}.identity{padding:0 13px 11px}.avatar{width:79px;height:79px;margin-top:-34px;font-size:37px}.identityText{padding-top:9px}.identityText h1{font-size:27px}.card{padding:13px}.heroActions{padding:4px 13px 13px}.measures{grid-template-columns:1fr}.ratings{grid-template-columns:repeat(3,minmax(0,1fr))}.rating{padding:7px}.rating strong{font-size:16px}.videoFooter{flex-wrap:wrap}}
+@media(max-width:345px){.videos{grid-template-columns:1fr}.heroActions{grid-template-columns:1fr}.rating span{font-size:11px}.identityText h1{font-size:24px}}
+@media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .root { color:var(--hh-cabinet-ink);gap:14px; }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .hero,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .card {
+  border-color:var(--hh-cabinet-border);background:linear-gradient(135deg,#fffaef,var(--hh-cabinet-surface-soft));
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .avatar {
+  border-color:var(--hh-cabinet-surface);color:var(--hh-cabinet-primary);background:var(--hh-cabinet-surface-soft);
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .identityText h1,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .heading h2 { color:var(--hh-cabinet-ink); }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .eyebrow,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .heading,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .more { color:var(--hh-cabinet-primary); }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .primary {
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));border-color:var(--hh-cabinet-border);color:#fff6e3;
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .outline,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .rating,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .measure,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .video {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink);
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .goalEmpty,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .empty { background:var(--hh-cabinet-surface);color:var(--hh-cabinet-muted); }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .hint,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .measure small,
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .videoFooter span { color:var(--hh-cabinet-muted);font-size:14px; }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .rating span { font-size:14px; }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .heading a {
+  min-height:44px;min-width:44px;background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary);
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .more { min-height:44px; }
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .videoFooter button {
+  min-height:44px;background:var(--hh-cabinet-selected);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);font-size:13px;
+}
+:global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .root :is(button,a):focus-visible { outline-color:var(--hh-cabinet-primary); }

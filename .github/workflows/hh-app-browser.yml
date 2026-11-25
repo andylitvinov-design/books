@@ -34,13 +34,17 @@ on:
       - 'supabase/migrations/**'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
       - '!app/api/app/commander/**'
       # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
       - '!components/app/messenger-ai-landing.*'
       - '!components/app/messenger-support-quiz.*'
+      # Public Ali greeting and decorative coach portrait are not authenticated
+      # App/CRM, assessment, cabinet or SQL/RLS changes. Core now runs focused
+      # persona/media contracts. Mixed private changes still run App QA.
+      - '!components/app/ali-persona-audio.js'
+      - '!components/app/coaching-avatar.jsx'
 permissions:
   contents: read
   pull-requests: read
@@ -178,7 +182,7 @@ jobs:
     # A single fail-closed summary avoids two redundant runner allocations.
     needs: browser
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     steps:
       - name: Require every browser and suite

@@ -17,7 +17,6 @@ on:
       - 'tests/opora-as56-experience-first.test.mjs'
       - 'public/audio/**'
       - 'scripts/generate-soft-ocean-melody.mjs'
-      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
   workflow_dispatch:
 

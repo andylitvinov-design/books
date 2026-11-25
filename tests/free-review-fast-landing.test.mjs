@@ -47,3 +47,14 @@ test("request wizard and contact chooser load only after request opens and keep 
   assert.match(enquiry, /id="request-free-review"/);
   assert.match(enquiry, /allowSecureExpressClaim/);
 });
+
+test("free review first-viewport portrait avoids runtime Vercel image transformations", () => {
+  const portrait = readFileSync(new URL("../components/static-portrait.tsx", import.meta.url), "utf8");
+  const manifest = JSON.parse(readFileSync(new URL("../data/static-portrait.json", import.meta.url), "utf8"));
+  assert.match(landing, /kind === "situation"[\s\S]*?<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(landing, /priority sizes="\(max-width: 800px\) 100vw, 48vw"/);
+  assert.match(portrait, /unoptimized: true/);
+  assert.match(portrait, /fetchPriority: "high"/);
+  assert.ok(manifest.variants.length >= 3);
+  assert.ok(manifest.variants.every(v => v.path.includes("/portrait-static/")));
+});

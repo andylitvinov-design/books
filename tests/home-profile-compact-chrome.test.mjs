@@ -18,7 +18,7 @@ test('Home and Profile share real search/menu, compact locale switch and working
   const first=read('components/home-dialogue-entry.tsx')
   assert.match(first, /<SiteNavigation locale=\{locale\} compact \/>/)
   assert.match(first, /data-home-language-switch/)
-  assert.match(first, /data-home-mode-button="business"/)
+  assert.match(first, /data-home-intent-option="goal"/)
   const nav=read('components/site-navigation.tsx')
   const workspace=read('components/app/app-workspace.jsx')
   assert.match(hub, /data-profile-language-switch/)

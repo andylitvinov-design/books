@@ -110,6 +110,95 @@ try {
     return page;
   };
 
+ // Shamanica Business currently has six expandable service shelves beneath
+ // the hero and quiz. Reject stale first-screen-only card assertions: verify
+ // the real six photo-backed categories, their working second level, and
+ // unobstructed fixed seven-item dock on actual narrow mobile viewports.
+ async function checkCompactBusiness(page,locale,width){
+  await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
+  const section=page.locator("[data-shamanica-business]");
+  await visible(section);
+  await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
+  await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
+  await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
+  const shelves=section.locator("[data-business-cabinet-shelves]");
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
+  const artwork = shelves.locator('[data-business-shelf] > span[aria-hidden="true"]');
+  await expect(artwork).toHaveCount(6);
+  const backgrounds = await artwork.evaluateAll(nodes => nodes.map(node => {
+   const style = getComputedStyle(node);
+   const box = node.getBoundingClientRect();
+   return {image: style.backgroundImage, position: style.backgroundPosition, visible: box.width > 0 && box.height > 0 && style.display !== "none"};
+  }));
+  assert.ok(backgrounds.every(({image,visible}) => visible && image.includes("shamanic-cards-business-hd.avif")), "All six categories must display the approved HD artwork");
+  assert.equal(new Set(backgrounds.map(({position}) => position)).size, 6, "Each category must use its own artwork crop");
+  const orderedCards=shelves.locator("[data-business-shelf]");
+  assert.deepEqual(await orderedCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+    ["express","remedies","strategy","artifacts","energy","energywork"],
+    "Business shelves must preserve the six approved categories");
+  await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
+  const m=await page.evaluate(()=>{
+   const cards=[...document.querySelectorAll("[data-business-shelf]")];
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   if(cards.length!==6||!dock)return null;
+   const boxes=cards.map(card=>card.getBoundingClientRect());
+   return {
+    firstTop:boxes[0].top,
+    lastBottom:boxes[5].bottom,
+    dockTop:dock.getBoundingClientRect().top,
+    dockBottom:dock.getBoundingClientRect().bottom,
+    viewportHeight:window.innerHeight,
+    horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
+    withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
+    firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
+    dockVisible:dock.getBoundingClientRect().height>0
+   };
+  });
+  assert.ok(m&&m.lastBottom>m.firstTop,"Business category shelf/dock landmarks missing "+locale+"/"+width);
+  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
+  if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
+  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
+    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
+  if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
+  await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
+   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  await shelves.locator('[data-business-shelf="express"]').click();
+  await expect(shelves).toHaveAttribute("data-expanded","true");
+  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
+  await expect(shelves.locator('[data-business-get-details="express"]')).toHaveCount(1);
+  if(width===390){
+    const express=shelves.locator('[data-business-second-level="express"]');
+    await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
+    await express.locator('[data-business-subservice="express-1"]').click();
+    await expect(express.locator('[data-business-subservice="express-1"]')).toHaveAttribute("aria-pressed","true");
+    if(locale==="en")assert.match(await express.innerText(),/FREE[\s\S]*45 CAD[\s\S]*75 CAD[\s\S]*200 CAD[\s\S]*300 CAD/);
+  }
+  await shelves.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await shelves.locator('[data-business-shelf="strategy"]').click();
+  await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
+  if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
+  await shelves.locator("[data-business-back-to-shelves]").click();
+  const quizDrawer=section.locator("[data-business-extras]");
+  await expect(quizDrawer).not.toHaveAttribute("open", "");
+  await quizDrawer.locator("summary").click();
+  await expect(quizDrawer).toHaveAttribute("open", "");
+  const quiz=section.locator("[data-business-quiz]");
+  await expect(quiz).toBeVisible();
+  await expect(quiz).toHaveAttribute("data-quiz-step","1");
+  await quiz.locator('[data-business-answer="express"]').click();
+  await expect(quiz).toHaveAttribute("data-quiz-step","2");
+  await quiz.locator('[data-business-answer="unclear"]').click();
+  await expect(quiz).toHaveAttribute("data-quiz-step","3");
+  await quiz.locator('[data-business-answer="free"]').click();
+  await expect(section.locator("[data-business-recommendations]")).toBeVisible();
+  await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
+ }
+
   // Mobile Assist keeps issues, questions, answers, and reset in one messenger.
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
@@ -125,8 +214,109 @@ try {
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
-    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
+    const topicCards = quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]');
+    assert.deepEqual(await topicCards.evaluateAll(cards=>cards.map(card=>card.getAttribute("data-services-quiz-choice"))),
+      ["stress_energy","money_growth","relationships_esteem","business_support"],
+      "Topic cards must follow the owner's left/right column order");
+    if (locale === "en") {
+      await expect(quiz.locator('[data-services-quiz-choice="money_growth"]')).toContainText("Grow money & self esteem");
+      await expect(quiz.locator('[data-services-quiz-choice="relationships_esteem"]')).toContainText("Improve relationships");
+      await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
+    }
+
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(10);
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(10);
+    await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
+    await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-entry]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-quiz-next]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-or]")).toHaveCount(0);
+    await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
+    await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
+    await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
+    const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(luxuryBackground.includes("support-therapy-cabinet-hd.webp"),"Real two-chair therapy room image is painted");
+    const hdPhotoDimensions=await page.evaluate(async()=>{
+      const img=new Image();
+      img.src="/images/holistic-house/support-therapy-cabinet-hd.webp";
+      await img.decode();
+      return {width:img.naturalWidth,height:img.naturalHeight};
+    });
+    assert.ok(hdPhotoDimensions.width>=1024&&hdPhotoDimensions.height>=1536,
+      "HD psychotherapy cabinet image must be Retina sharp: "+JSON.stringify(hdPhotoDimensions));
+    const cardPhoto = await quiz.locator('[data-services-quiz-question="topic"] [data-support-choice-photo]').first()
+      .evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(cardPhoto.includes("support-personal-choice-photos-hd.webp"),
+      "All four first-step photos must use the approved photo montage");
+    if (width === 390 && locale === "en") {
+      for (const asset of ["support-therapy-cabinet-hd.webp","support-personal-choice-photos-hd.webp"]) {
+        const response = await page.request.get(origin + "/images/holistic-house/" + asset);
+        assert.equal(response.status(),200,"First-party Support photo must load: " + asset);
+      }
+      const sizes = await quiz.evaluate(el => ({
+        hero:el.querySelector('[data-support-luxe-room]')?.getBoundingClientRect().height,
+        cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
+          .map(card=>card.getBoundingClientRect().height),
+      }));
+      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
+        "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
+    }
+    await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
+    if(width===390 && locale==="en"){
+      const firstScreenFit=await page.evaluate(()=>{
+        const next=document.querySelector("[data-services-quiz-next]");
+        const goal=document.querySelector("[data-services-quiz-goal]");
+        const entry=document.querySelector("[data-services-goal-entry]");
+        const glass=entry?.firstElementChild;
+        const audience=document.querySelector("[data-services-audience]");
+        const room=document.querySelector("[data-support-luxe-room]");
+        const progress=document.querySelector("[data-services-quiz-form] [data-quiz-dot]");
+        const dock=document.querySelector("[data-hh-unified-dock]");
+        if(!next||!goal||!entry||!glass||!audience||!room||!progress||!dock)return null;
+        return {
+          roomBottom:room.getBoundingClientRect().bottom,
+          entryTop:entry.getBoundingClientRect().top,
+          entryBottom:entry.getBoundingClientRect().bottom,
+          audienceTop:audience.getBoundingClientRect().top,
+          audienceBottom:audience.getBoundingClientRect().bottom,
+          progressTop:progress.getBoundingClientRect().top,
+          glassBlur:getComputedStyle(glass).backdropFilter,
+          glassBackground:getComputedStyle(glass).backgroundImage,
+          ctaBottom:next.getBoundingClientRect().bottom,
+          goalBottom:goal.getBoundingClientRect().bottom,
+          nextLeft:next.getBoundingClientRect().left,
+          goalRight:goal.getBoundingClientRect().right,
+          goalTop:goal.getBoundingClientRect().top,
+          nextTop:next.getBoundingClientRect().top,
+          questionTop:document.querySelector("[data-services-quiz-question]")?.getBoundingClientRect().top,
+          dockTop:dock.getBoundingClientRect().top,
+          viewport:innerHeight};
+      });
+      assert.ok(firstScreenFit && firstScreenFit.goalBottom<firstScreenFit.questionTop &&
+        firstScreenFit.nextLeft>=firstScreenFit.goalRight-3 &&
+        Math.abs(firstScreenFit.goalTop-firstScreenFit.nextTop)<12 &&
+        firstScreenFit.goalBottom<firstScreenFit.dockTop-16,
+        "390x844 goal and right-side Next must appear ABOVE four quiz buttons: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit &&
+        firstScreenFit.roomBottom<=firstScreenFit.entryTop+4 &&
+        firstScreenFit.entryBottom<=firstScreenFit.audienceTop+3 &&
+        firstScreenFit.audienceBottom<firstScreenFit.questionTop &&
+        firstScreenFit.progressTop>=firstScreenFit.audienceBottom-3,
+        "Approved order must be room → frosted input/Next → For Me/Business → quiz: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit?.glassBlur?.includes("blur(") &&
+        firstScreenFit.glassBackground?.includes("linear-gradient"),
+        "Goal composer must have real semi-transparent backdrop blur, not opaque cream or a flattened mock: "+
+          JSON.stringify(firstScreenFit));
+    }
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
+    assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
+      cards.map(card => card.getAttribute("data-services-quiz-category"))),
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video",
+       "constellations", "practices", "courses", "tests"],
+      "Keep the six prioritized Support cards and four always-visible follow-up cards in order");
     await expect(quiz.locator("[data-services-shamanica-link]"))
       .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
@@ -134,7 +324,7 @@ try {
     // The approved screenshot is 390px wide. At smaller widths content may
     // scroll, but no controls may disappear sideways or behind a fixed rail.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="learning"]');
+      const last = document.querySelector('[data-services-quiz-category="video"]');
       const dock = document.querySelector("[data-hh-unified-dock]");
       if (!last || !dock) return null;
       return {
@@ -145,11 +335,12 @@ try {
     });
     assert.ok(firstScreen && firstScreen.width <= firstScreen.viewport + 1,
       "Services screenshot UI must not overflow horizontally: " + locale + "/" + width);
-    if (width >= 390) assert.ok(firstScreen.lastBottom <= firstScreen.dockTop + 12,
-      "At 390+ the six image cards should fit above the site dock: " +
-        locale + "/" + width + " " + JSON.stringify(firstScreen));
+    // The approved photo-led layout intentionally continues below the fold.
+    // All six category links remain accessible by scrolling.
+    assert.ok(firstScreen.lastBottom > 0 && firstScreen.dockTop > 0,
+      "Support categories and shared dock must render: " + locale + "/" + width);
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
-      .toHaveText("Encontremos tu apoyo");
+      .toHaveText("Coaching, consultoría y apoyo terapéutico");
     await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
     if (width === 390) {
       await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });
@@ -163,10 +354,28 @@ try {
       () => page.evaluate(() => history.pushState.toString().includes("__NA")),
       { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
     ).toBe(true);
-    // Six photographic first-screen categories stay on /services and expose exactly three matching options.
+    // Before the lower service catalog scroll, validate that the audience switch
+    // really replaces all personal cards and preserves the shared cabinet.
+    await quiz.locator("[data-services-audience] button").nth(1).click();
+    const quickBusiness=quiz.locator("[data-services-business-menu]");
+    await expect(quickBusiness).toHaveAttribute("data-business-step","1");
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(0);
+    await expect(quickBusiness.locator("[data-services-business-category]")).toHaveCount(4);
+    if(width===390 && locale==="en"){
+      const businessFit=await page.evaluate(()=>{
+        const last=document.querySelector('[data-services-business-category="hints"]');
+        const dock=document.querySelector("[data-hh-unified-dock]");
+        return last&&dock?{bottom:last.getBoundingClientRect().bottom,dockTop:dock.getBoundingClientRect().top}:null;
+      });
+      assert.ok(businessFit&&businessFit.bottom>businessFit.dockTop-170,
+        "Business categories must be readable and scrollable, never tiny tiles: "+JSON.stringify(businessFit));
+    }
+    await quiz.locator("[data-services-audience] button").first().click();
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
+        // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
-      therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-      business: "business", tests: "browse", learning: "courses",
+      diagnostics: "consultation", business: "business", homeopathy: "homeopathy",
+      coaching: "coach", psychotherapy: "services", video: "video",
     };
     for (const [category, group] of Object.entries(quickTargets)) {
       const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
@@ -181,37 +390,79 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
+    const extra = quiz.locator("[data-services-extra-categories]");
+    await expect(extra.locator("a[data-services-quiz-category]")).toHaveCount(4);
+    const extraTargets = { constellations:"services",practices:"reiki",courses:"courses",tests:"browse" };
+    for (const [category, group] of Object.entries(extraTargets)) {
+      const card = extra.locator('[data-services-quiz-category="' + category + '"]');
+      await expect(card).toBeVisible();
+      await expect(card).toHaveAttribute("href","#service-group-"+group);
+      await expect(page.locator("#service-group-"+group)).toHaveCount(1);
+    }
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
-    // Business has its own topic, need and start-format branching.
-    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
-    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
-    await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
-    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
-    await expect(submitQuiz).toBeDisabled();
-    await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
-    await expect(submitQuiz).toBeEnabled();
-    await quiz.locator('[data-quiz-dot="3"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-choice="consultation"]').click();
-    await submitQuiz.click();
-    await visible(page.locator("[data-services-quiz-results]"));
-    await visible(quiz.locator("[data-services-quiz-summary]"));
-    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
-    if (width === 390) {
-      await quiz.locator('[data-quiz-dot="1"]').click();
+    // Business is a separate two-step format + offer selector; For Me keeps 4 questions.
+    await quiz.locator("[data-services-audience] button").nth(1).click();
+    const businessBackground=await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.equal(businessBackground,luxuryBackground,"For Business and For Me must share exactly one therapy room image");
+
+    const business = quiz.locator("[data-services-business-menu]");
+    await expect(business).toHaveAttribute("data-business-step", "1");
+    await expect(business.locator("[data-services-business-category]")).toHaveCount(4);
+    const businessCardPhoto=await business.locator('[data-business-card-photo="express"]').evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(businessCardPhoto.includes("support-business-choice-photos-hd.webp"),
+      "All four business cards must use optimized photographic sheet");
+
+    assert.deepEqual(await business.locator("[data-services-business-category]").evaluateAll(cards=>
+      cards.map(card=>card.getAttribute("data-services-business-category"))),
+      ["express","strategy","remedies","hints"]);
+    await business.locator('[data-services-business-category="express"]').click();
+    await expect(business).toHaveAttribute("data-business-step","2");
+    await expect(business.locator("[data-business-options='express'] [data-business-offer]")).toHaveCount(5);
+    await expect(business.locator("[data-business-get-details]")).toHaveCount(0);
+    await business.locator('[data-business-offer="express-1"]').click();
+    await expect(business.locator("[data-business-get-details]")).toHaveCount(1);
+    await business.locator('[data-business-get-details] [data-contact-order]').click();
+    await expect(business.locator('[data-business-get-details] [data-messenger-only-channel]')).toHaveCount(2);
+    const preparedWhatsApp=await business.locator('[data-business-get-details] [data-messenger-only-channel="whatsapp"]').getAttribute("href");
+    assert.ok(new URL(preparedWhatsApp).searchParams.get("text").includes("Advanced Insight · 45 CAD"),
+      "selected paid Express choice preserved in WhatsApp draft");
+    const botLink=await business.locator('[data-business-get-details] [data-messenger-only-channel="telegram"]').getAttribute("href");
+    assert.ok(botLink?.includes("/api/public/telegram-service-entry?service=business&locale="+locale),
+      "Telegram must use existing readiness-gated Ali service route");
+    await business.locator("[data-business-back]").click();
+    await business.locator('[data-services-business-category="strategy"]').click();
+    await expect(business.locator("[data-business-options='strategy'] [data-business-offer]")).toHaveCount(4);
+    await business.locator('[data-business-offer="strategy-3"]').click();
+    await business.locator('[data-business-get-details] [data-contact-order]').click();
+    const strategyDraft=await business.locator('[data-business-get-details] [data-messenger-only-channel="whatsapp"]').getAttribute("href");
+    assert.ok(new URL(strategyDraft).searchParams.get("text").includes("Growth Strategy & Implementation"));
+    if (width===390){
+      await business.locator("[data-business-back]").click();
+      await business.locator('[data-services-business-category="remedies"]').click();
+      await expect(business.locator("[data-business-offer]")).toHaveCount(4);
+      await business.locator("[data-business-back]").click();
+      await business.locator('[data-services-business-category="hints"]').click();
+      await expect(business.locator("[data-business-offer]")).toHaveCount(4);
+      await expect(business.locator('[data-business-offer="hints-0"]')).toContainText("AI Coaching");
+      await expect(business.locator('[data-business-offer="hints-3"]')).toContainText("Human Taoist Hints");
+    }
+    await quiz.locator("[data-services-audience] button").first().click();
+    await expect(business).toHaveCount(0);
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    if (width===390){
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
-      await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","2");
       await expect(quiz.locator('[data-quiz-dot="4"]')).toBeDisabled();
       await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="growth_ideas"]').click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","3");
       await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="any"]').click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","4");
+      await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
-      await submitQuiz.click();
+      await expect(quiz.locator("[data-services-quiz-submit]")).toBeEnabled();
+      await quiz.locator("[data-services-quiz-submit]").click();
       await visible(page.locator("[data-services-quiz-results]"));
-      await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(0);
+      await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);
     }
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an
@@ -229,16 +480,42 @@ try {
       "#consultation", "[data-services-studio-free]", "[data-services-studio-card]",
       "[data-services-studio-paid] > header", "[data-services-studio-paid] > div:last-child",
       "[data-services-meet]", '[data-personal-testimonials="services"]',
-      "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
+      "#method-videos", "[data-services-directory-invitation]"
     ];
     for (const selector of legacyPhoneSelectors) {
       await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
-    // The approved lower page is a compact, one-panel-at-a-time catalogue.
-    // The original messenger and the three real consultation cards stay visible.
-    await visible(page.locator("[data-assist-personal-consultation]"));
+    // The approved 10-category shelf has no duplicate large featured cards.
+    // Older diagnostic formats remain accessible inside the consultation disclosure.
+    await expect(page.locator("[data-assist-personal-consultation]")).toHaveCount(0);
+    await expect(page.locator("[data-services-unified-catalog] [data-service-lead-capture]:visible")).toHaveCount(0);
+    await expect(page.locator("[data-services-directory-invitation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
+    // Owner screenshot: on a phone, every one of the 30 cards must span the
+    // available content all the way to the right safe margin (not end early).
+    // Do not change the first-screen quiz to satisfy this lower-page contract.
+    const offerBounds = await catalog.locator(
+      '[data-services-three-visible] > [data-service-variant]'
+    ).evaluateAll(nodes => nodes.map(node => {
+      const bounds = node.getBoundingClientRect();
+      return {left: bounds.left, right: bounds.right, width: bounds.width, viewport: innerWidth};
+    }));
+    assert.equal(offerBounds.length, 30, "Ten Support directions publish three horizontal offers each");
+    for (const [index, bounds] of offerBounds.entries()) {
+      const rightMargin = bounds.viewport - bounds.right;
+      assert.ok(bounds.left >= 9 && bounds.left <= 26 &&
+        rightMargin >= 9 && rightMargin <= 26 &&
+        Math.abs(bounds.left - rightMargin) <= 3 &&
+        bounds.width >= bounds.viewport - 52,
+        "Compact service cards must reach phone right margin: " +
+          locale + "/" + width + "/" + index + " " + JSON.stringify(bounds));
+    }
+    if (width === 390) {
+      await catalog.locator('[data-services-unified-panel="consultation"]').screenshot({
+        path: output + "/services-" + locale + "-three-horizontal-offers-390.png",
+      });
+    }
     // Browser acceptance must exercise hydrated React handlers, not
     // accidentally tap static SSR buttons before Next router readiness.
     await expect.poll(
@@ -246,10 +523,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
-      "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
+      "consultation", "homeopathy", "services", "business", "browse", "courses",
+      "video", "coach", "reiki", "reading", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 11));
+    const servicePanelIds = new Set(panelIds.slice(0, 10));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
@@ -278,6 +555,47 @@ try {
           const bounds = await control.boundingBox();
           assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
             "Every variant action must fit the phone: " + locale + "/" + width + "/" + id);
+        }
+      }
+    }
+    if (width === 390) {
+      // Regression for the approved three-horizontal-offers mock: no extra
+      // giant category card or duplicate price/action header.
+      const geometry = await catalog.locator(
+        '[data-services-unified-panel][data-services-has-three="true"]'
+      ).evaluateAll(nodes => nodes.map(node => {
+        const measure = element => {
+          if (!element) return null;
+          const r = element.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height };
+        };
+        const direct = selector => node.querySelector(':scope > ' + selector);
+        const headerPrice = direct('[data-support-uniform-preview]')
+          ?.querySelector(':scope > [data-support-uniform-price]');
+        return {
+          id: node.getAttribute("data-services-unified-panel"),
+          overall: measure(node),
+          heading: measure(direct('[data-support-uniform-preview]')),
+          topActions: getComputedStyle(direct('[data-service-card-actions]')).display,
+          headingPrice: getComputedStyle(headerPrice).display,
+          offers: [...node.querySelectorAll(
+            ':scope > [data-services-three-visible] > [data-service-variant]'
+          )].map(measure),
+        };
+      }));
+      assert.equal(geometry.length, 10);
+      for (const group of geometry) {
+        assert.ok(group.overall.height < 700, "Oversized service category: " + locale + "/" + group.id + " " + group.overall.height);
+        assert.ok(group.heading.height < 120, "Oversized service header: " + locale + "/" + group.id);
+        assert.equal(group.topActions, "none", "Duplicate category action row: " + group.id);
+        assert.equal(group.headingPrice, "none", "Duplicate category price badge: " + group.id);
+        assert.equal(group.offers.length, 3);
+        for (const [i, offer] of group.offers.entries()) {
+          assert.ok(offer.height >= 100 && offer.height < 220,
+            "Offer should be a compact horizontal card: " + group.id + "/" + i + " " + offer.height);
+          assert.ok(offer.x >= -1 && offer.x + offer.width <= width + 1, "Offer overflows viewport: " + group.id);
+          if (i) assert.ok(offer.y >= group.offers[i-1].y + group.offers[i-1].height - 1,
+            "Three offers must stack vertically: " + group.id);
         }
       }
     }
@@ -322,6 +640,16 @@ try {
         await assertViewport(page, locale + "/services/unified/" + id);
       }
       await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
+      // The legacy directory is voluntary, not a second giant service card.
+      // A real click still restores the previously published contact actions.
+      const directory = catalog.locator('[data-services-unified-panel="directory"]');
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "true");
+      await expect(directory.locator('[data-service-lead-capture]')).toHaveCount(0);
+      await visible(directory.locator('[data-services-directory-invitation]'));
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "false");
+      await expect(page.locator('[data-services-unified-catalog] [data-service-lead-capture]:visible')).toHaveCount(0);
       // The real prior flows remain mounted for stable site deep links.
       for (const selector of [
         "[data-assist-reiki-session]", "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
@@ -730,21 +1058,21 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // Eleven groups with three published options apiece, including the
-        // distinct Business category in EN, RU and ES. Keep ordering identical.
+        // Ten main categories with three real offers each; esoteric extras
+        // stay inside the voluntary Spiritual Reading disclosure / Shamanica.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(11);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
+          ["consultation","homeopathy","services","business","browse","courses","video","coach","reiki","reading"],
           "The first six category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the eleven service panels displays all three choices without opening an accordion");
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
@@ -765,7 +1093,9 @@ try {
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
         await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
-        await visible(page.locator('[data-services-unified-panel="video"] [data-service-card-actions] button').first());
+        // Legacy panel-level actions are hidden by the approved three-offer layout.
+        // Require a real visible action within the first of the three video offers.
+        await visible(page.locator('[data-services-unified-panel="video"] > [data-services-three-visible] > [data-service-variant] [data-service-card-actions] button').first());
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
@@ -838,6 +1168,7 @@ try {
           "Deep link preserves express/paid consultation offers: " + locale);
         await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
+        await expect(consultation).toBeVisible();
         await consultation.scrollIntoViewIfNeeded();
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }
@@ -1339,7 +1670,13 @@ try {
       }
     }
   }
-
+  for(const locale of ["ru","en","es"]){
+    for(const width of [320,390,430]){
+      const page=await createPage(width);
+      try{await checkCompactBusiness(page,locale,width);}
+      finally{await page.close();}
+    }
+  }
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
   // In isolated CI, getAppConfig() is guaranteed to return 503 before any

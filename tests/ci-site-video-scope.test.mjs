@@ -70,3 +70,24 @@ test('About testimonial gallery retains the real browser suite and original sour
   assert.match(y,/npx[^\n]*eslint[^\n]*components\/about-testimonial-gallery\.tsx/);
   assert.match(y,/node scripts\/verify-site-video-browser\.mjs/);
 });
+
+
+test('strict coach-only dispatcher diff avoids unrelated Site Video Next/WebKit work',()=>{
+  const head='a'.repeat(40),merge='b'.repeat(40),base='c'.repeat(40);
+  const before="import {myCoachGenerativeTurn} from '@/lib/app/coaching-brain'\nconst authGuard = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst unrelated = true;\n";
+  const after="import {myCoachGenerativeTurn,myCoachGenerativeStreamTurn} from '@/lib/app/coaching-brain'\nconst authGuard = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/stream') { return new Response('ok'); }\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst unrelated = true;\n";
+  const z=String.fromCharCode(0),record=[];
+  const git=(_binary,args)=>{
+    record.push(args);
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n';
+    if(args[0]==='diff')return 'M'+z+'app/api/app/[...path]/route.js'+z+'A'+z+'lib/coaching/gemini-voice-catalog.mjs'+z;
+    if(args[0]==='show')return args[1].startsWith(base+':')?before:after;
+    throw Error('unexpected git command');
+  };
+  const args={GITHUB_EVENT_NAME:'pull_request',HH_HEAD_SHA:head,GITHUB_SHA:merge};
+  assert.deepEqual(classifyExactSiteVideo(args,git),{full:false,reason:'EXACT_MY_COACH_ONLY_SHARED_API'});
+  const tampered=(_binary,x)=>x[0]==='show' && x[1]==='HEAD:app/api/app/[...path]/route.js'
+    ? after.replace('const unrelated = true;', 'const unrelated = false;') : git(_binary,x);
+  assert.equal(classifyExactSiteVideo(args,tampered).full,true,'shared non-Coach auth/runtime changes retain full browser');
+  assert.ok(record.some(args=>args[0]==='show'&&args[1]===base+':app/api/app/[...path]/route.js'));
+});

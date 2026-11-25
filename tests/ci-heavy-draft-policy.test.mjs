@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {runInNewContext} from 'node:vm';
 import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflows = [
@@ -101,7 +102,6 @@ test('Draft, failed Core, non-PR and failed specialist cannot pass one-runner re
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
@@ -162,7 +162,6 @@ for (const name of draftStageWorkflows) {
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
-    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const prOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
@@ -216,7 +215,7 @@ test('Energywork cancels superseded PR commits only, never manual verification',
 
 
 const dedupWave2 = [
-  ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build','mobile-browser']],
+  ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build']],
   ['hh-my-progress-release.yml', ['Typecheck', 'Production build'], ['private-progress']],
   ['hh-messenger-notification-build.yml', ['Next.js production build (no provider keys)'], ['notification-build']],
 ];
@@ -240,6 +239,16 @@ test('wave 2: production Ready uses one shared full build but retains real speci
     assert.match(source,/npm run build/);
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
   }
+});
+test('Support Guide checks browser syntax on PRs and runs browser QA on push or dispatch',()=>{
+  const source=read('hh-support-guided-recommendations.yml');
+  const [focused,browser]=source.split(/^  mobile-browser:\n/m);
+  assert.match(focused,/node --check scripts\/verify-holistic-support-guided-card\.mjs/);
+  assert.match(focused,/^  push:/m);
+  assert.match(focused,/^  workflow_dispatch:/m);
+  assert.match(browser,/^    if: \$\{\{ github\.event_name != 'pull_request' \}\}$/m);
+  assert.match(browser,/playwright install --with-deps chromium webkit/);
+  assert.match(browser,/^          node scripts\/verify-holistic-support-guided-card\.mjs$/m);
 });
 test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-production/manual',()=>{
   const source=read('hh-messenger-notification-build.yml');
@@ -453,7 +462,10 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(voiceSource.includes('HH_VOICE_SKIP_GUIDED_PRACTICES==="1"'), 'the opt-out is explicit and CI-only');
   assert.ok(source.includes('Restore Next.js build cache') && source.includes('Restore pinned Playwright WebKit browser'));
   const macosGuard=source.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1] || '';
-  assert.ok(macosGuard.includes("startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-')"));
+  assert.ok(macosGuard.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'Mac WebKit is now required by BASE-owned actual media impact, not a historical branch prefix');
+  assert.ok(source.includes('tested_base:lib/ci/merge-check-light.mjs'),
+    'missing BASE classifier must force real WebKit rather than trusting candidate code');
   assert.ok(!browserGate.includes("codex/mandala-cancel-stale-head-cache-"), 'CI-only PR does not trigger Linux product browser matrix');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);
@@ -522,7 +534,25 @@ for (const [name, jobs] of heavyDraftStage) {
     assert.ok(block);
     const suffix = '$' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
     for (const job of jobs) {
-      assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
+      if(name==='hh-public-performance-audit.yml'&&job==='measure-public'){
+        // #5212 deliberately collects Draft perf(home) evidence before owner review.
+        // Ordinary Drafts must still skip it; this never grants merge/release readiness.
+        const condition=block.match(/^  measure-public:\n    if: (.+)$/m)?.[1];
+        assert.ok(condition,name+'/'+job+' condition missing');
+        const expression=condition.replace(/^\$\{\{\s*|\s*\}\}$/g,'');
+        for(const [event,draft,title,expected] of [
+          ['pull_request',true,'feat: ordinary draft',false],
+          ['pull_request',true,'perf(home): measured candidate',true],
+          ['pull_request',true,'feat: perf(home): embedded prefix',false],
+          ['pull_request',true,'perf(home-other): unrelated',false],
+          ['pull_request',false,'feat: ready candidate',true],
+          ['workflow_dispatch',false,'manual audit',true],
+        ]){
+          const github={event_name:event,event:{pull_request:{draft,title}}};
+          const script='const github='+JSON.stringify(github)+';const startsWith=(value,prefix)=>value.startsWith(prefix);Boolean('+expression+')';
+          assert.equal(runInNewContext(script,{}, {timeout:100}),expected,name+'/'+job+' '+title);
+        }
+      }else assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
     }
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
@@ -954,12 +984,12 @@ test('Core specialist uses slim only on verified non-strict paths, with unchange
   const core = read('hh-pr-core-release.yml');
   const job = core.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0];
   assert.ok(job, 'required specialist job must exist');
-  const fast = "needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT' || needs.scope.outputs.route == 'CORE'";
+  const fast = "needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT'";
   const expr = '$' + '{{ ';
   assert.ok(job.includes("runs-on: " + expr + '(' + fast + ") && 'ubuntu-slim' || 'ubuntu-24.04' }}"),
-    'unknown, FULL and DOCK must use standard Ubuntu');
+    'CORE, unknown, FULL and DOCK must use standard Ubuntu');
   assert.ok(job.includes("timeout-minutes: " + expr + '(' + fast + ') && 12 || 45 }}'),
-    'slim must stay under its 15-minute cap, FULL/DOCK retain original timeout');
+    'slim must stay under its 15-minute cap, CORE/FULL/DOCK retain original timeout');
   assert.ok(job.includes('needs: [scope]'));
   assert.ok(job.includes('Fail closed if mandatory Core failed')); 
   assert.ok(job.includes('[[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true && "$SCOPE_RESULT" == success ]]'));

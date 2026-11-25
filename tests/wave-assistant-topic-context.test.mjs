@@ -10,15 +10,15 @@ const history=[
   {role:"user",text:"Поговорим?"},
   {role:"assistant",text:"Конечно, давайте поговорим 🌿 Я слушаю. О чём вам хочется поговорить?"}
 ];
-test("screenshot regression: third turn 'О тебе' gets a Wave answer, not a generic intake question",()=>{
+test("screenshot regression: third turn 'О тебе' gets an Ali answer, not a generic intake question",()=>{
  const parsed=understandConversationTurn({message:"О тебе",locale:"ru",history});
  assert.equal(parsed.act,"small_talk");assert.equal(parsed.evidence,"explicit_assistant_topic");
- assert.match(parsed.replyFallback,/Я Wave/);assert.doesNotMatch(parsed.replyFallback,/сосредоточиться|сначала|проблема|цель/iu);
+ assert.match(parsed.replyFallback,/Я Ali/);assert.doesNotMatch(parsed.replyFallback,/сосредоточиться|сначала|проблема|цель/iu);
  const native=waveNativeTurn({message:"О тебе",locale:"ru",history});
- assert.ok(native?.reply);assert.match(native.reply,/Wave/);
+ assert.ok(native?.reply);assert.match(native.reply,/Ali/);
  assert.equal(native.modelUsed,false);assert.equal(native.externalCalled,false);
  const rules=ruleConversationReply({message:"О тебе",locale:"ru",history});
- assert.equal(rules.id,"conversation_small_talk");assert.match(rules.reply,/Wave/);
+ assert.equal(rules.id,"conversation_small_talk");assert.match(rules.reply,/Ali/);
 });
 test("RU/EN/ES short assistant self-topic requests work via shared parser and rules",()=>{
  for(const [locale,message] of [
@@ -29,10 +29,10 @@ test("RU/EN/ES short assistant self-topic requests work via shared parser and ru
   const understood=understandConversationTurn({locale,message,history});
   assert.equal(understood.act,"small_talk",message);
   assert.equal(understood.evidence,"explicit_assistant_topic",message);
-  assert.match(understood.replyFallback,/Wave/,message);
+  assert.match(understood.replyFallback,/Ali/,message);
   assert.ok((understood.replyFallback.match(/[?？]/gu)||[]).length<=1,message);
   assert.doesNotMatch(understood.replyFallback,/OpenRouter|Qwen|booked|записал|diagnos/i,message);
-  assert.match(ruleConversationReply({locale,message,history}).reply,/Wave/,message);
+  assert.match(ruleConversationReply({locale,message,history}).reply,/Ali/,message);
  }
 });
 test("assistant self-topic cannot overrule refusals, booking, urgent or personal content",()=>{

@@ -4,14 +4,15 @@ import {readFileSync} from "node:fs";
 import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockAppPath,isUnifiedMobileDockEditorialPath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
 import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("one seven-button dock includes Services and My Coach on existing destinations",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","coach","ai","services","practice","profile"]);
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","reiki","coach","ai","services","practice","profile"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
-   "/"+locale+"/holistic-support/mandala",
+   "/"+locale+"/academy/principles-of-energywork",
    "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/services",
@@ -26,9 +27,9 @@ test("one seven-button dock includes Services and My Coach on existing destinati
 test("shared seven-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanica",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманика",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanica",profile:"Perfil"}
+  en:{mytube:"MyTube",reiki:"My Reiki",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanic",profile:"Profile"},
+  ru:{mytube:"MyTube",reiki:"My Reiki",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманик",profile:"Профиль"},
+  es:{mytube:"MyTube",reiki:"My Reiki",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanic",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
@@ -42,7 +43,7 @@ test("shared seven-tab dock has the approved labels in every language",()=>{
 
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
- assert.ok(dock.includes('["mytube", "video", "practice", "coach", "services"].includes(id)'));
+ assert.ok(dock.includes('["mytube", "reiki", "practice", "coach", "services"].includes(id)'));
  assert.ok(dock.includes('window.matchMedia?.("(display-mode: standalone)")'));
  assert.ok(dock.includes('(window.navigator as Navigator & {standalone?: boolean}).standalone'));
  assert.ok(dock.includes("event.preventDefault();"));
@@ -88,7 +89,13 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"profile");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork"),true,"My Reiki is a primary app destination");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork/learn"),false,"classic learner retains immersive handling");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork/daybook"),false,"Daybook learner retains immersive handling");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/academy/principles-of-energywork"),"reiki");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/academy/principles-of-energywork/daybook"),"reiki");
+  assert.equal(unifiedMobileDockHref(locale,"video"),null,"MyVideo no longer belongs to the dock");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/shamanica"),"practice");
@@ -232,11 +239,17 @@ test("MyTube projects ONLY published public Academy/Library sources; never fabri
  assert.equal(rankDiscoveryVideos(rows,{area:"business"}).length,0);
 });
 
-test("MyTube unified branch triggers real macOS WebKit, without hiding specialist failures",()=>{
+test("MyTube unified dock media changes require BASE-trusted WebKit without hiding specialist failures",()=>{
  const workflow=read(".github/workflows/holistic-support-mandala.yml");
  const guard=workflow.split("  voice-webkit-macos:")[1]?.split("    runs-on:")[0]||"";
+ const preflight=workflow.split("  webkit_preflight:")[1]?.split("  voice-webkit-macos:")[0]||"";
  assert.match(guard,/github.event.pull_request.draft == false/);
- assert.match(guard,/startsWith\(github.head_ref, 'feat\/mytube-unified-six-bottom-'\)/);
+ assert.match(guard,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+ assert.match(guard,/needs: \[webkit_preflight\]/);
+ assert.match(preflight,/git show "\$tested_base:lib\/ci\/merge-check-light\.mjs"/);
+ assert.match(preflight,/requiresRealMediaWebKit\(changed\)/);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"components/unified-mobile-dock.tsx"}]),true);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"tests/unified-six-dock.test.mjs"}]),false);
  assert.doesNotMatch(guard,/if:\s*\$\{\{\s*always\(\)/);
  assert.match(workflow,/runs-on: macos-15/);
  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
@@ -348,4 +361,18 @@ test("IA browser acceptance tests the current seven-slot dock on public and gues
    assert.ok(isUnifiedMobileDockEditorialPath("/"+locale+"/library"));
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/client/tests"));
  }
+});
+
+test("MyVideo is one visible Profile tool with the original public Studio destination",()=>{
+ const profile=read("components/app/profile-space-dashboard.jsx");
+ const workspace=read("components/app/app-workspace.jsx");
+ const css=read("components/app/profile-space-dashboard.module.css");
+ assert.match(profile,/data-profile-my-video/);
+ assert.ok(profile.includes("href={'/' + selected + '/holistic-support/mandala'}"));
+ assert.ok(profile.includes("<strong>MyVideo</strong>"));
+ assert.ok(profile.indexOf("data-profile-my-video")>profile.lastIndexOf("</details>"),"not buried in collapsed account details");
+ assert.ok(workspace.includes("target?.matches('a[data-profile-my-video]')"));
+ assert.ok(workspace.includes("target?.matches('a[data-clarity-reiki-practitioner]')"));
+ assert.match(css,/\.myVideoCard\{/);
+ assert.ok(!read("components/unified-mobile-dock.tsx").includes('video: "MyVideo"'));
 });

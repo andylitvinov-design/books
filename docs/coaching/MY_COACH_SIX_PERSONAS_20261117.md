@@ -13,9 +13,20 @@ cost and consent gates remain OFF unless separately configured. Fish interim lib
 voices may be shared between personas; no film, actor, celebrity or dub voice is copied.
 No new paid model, voice vendor, database, CI workflow or Vercel project is created.
 
-Merlin's first-party still comes from #4748. Harry has a newly authored original
-illustration, without an actor photo. Neither claims to have an MP4 clip until one
-has actually been generated, licensed and tested.
+Merlin retains the first-party still from #4748. Harry's presentation now uses
+the **owner-approved 12-frame animated GIF** (uploaded with a misleading .png
+extension) instead of the earlier warped portrait. The first frame is stored as
+`harry-soft-still.webp`; two silent H.264/yuv420p loops are `harry-soft-calm.mp4`
+for profile/idle/greeting/speaking (7.0s) and `harry-soft-attentive.mp4` for
+the microphone/listening state (8.25s). Both 360×644 at 24fps, created offline by
+smooth temporal frame blending, without stretching, changing face geometry or
+synthesizing speech. The filenames are versioned to avoid stale browser caches.
+All three assets are first-party in the existing My Coach folder; previous
+`harry-still.webp`, `harry-calm.mp4`, `harry-attentive.mp4` remain as rollback.
+Selected profile, coach rail, avatar fallback and video canvas use the same
+approved character. Other persona assets, voice, auth and consent are unchanged.
+Reduced-motion users receive a still, and these videos are NOT lip-synced or a
+live call. Production browser/iPhone E2E remains a separate release check.
 
 **Rights review:** Harry Potter is an existing protected fictional character and
 associated marks/visual identifiers may require commercial permission. Source

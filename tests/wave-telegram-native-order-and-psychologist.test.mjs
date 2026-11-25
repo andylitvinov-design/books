@@ -9,6 +9,8 @@ import {SECRETARY_MODES} from '../lib/assist/secretary-modes.mjs';
 import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.mjs';
 const code=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const countQuestions=value=>(String(value).match(/[?？]/gu)||[]).length;
+const botOffers=Object.fromEntries(Object.entries(TELEGRAM_SERVICE_OPTIONS)
+ .filter(([,offer])=>!offer.channels||offer.channels.includes('telegram_bot')));
 
 test('Secretary and Secretary Psychologist need no OpenRouter key or free-tier entitlement',()=>{
  const env={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
@@ -24,11 +26,11 @@ test('Secretary and Secretary Psychologist need no OpenRouter key or free-tier e
  assert.match(service,/provider:'wave-psychologist-native'/);
  assert.match(service,/wavePsychologistNativeTurn/);
  assert.match(service,/wavePsychologistNativeSummary/);
- assert.match(service,/prior\.ctx\.conversationKind==='general'\?v3CanChat\(env\):v3ServiceIntakeReady\(env\)/);
+ assert.match(service,/v3ServiceIntakeReady\(env\)/);
 });
-test('all thirty published options retain exact title and service code in one Telegram bot',()=>{
- assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,30);
- for(const [id,option] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
+test('all Telegram Bot options retain exact title and service code in one Telegram bot',()=>{
+ assert.equal(Object.keys(botOffers).length,35);
+ for(const [id,option] of Object.entries(botOffers)){
    for(const locale of ['ru','en','es']){
      const start=v3ServiceStart('/start hhitem_'+id+'_'+locale);
      assert.deepEqual(start,{service:option.service,locale,offerId:id});

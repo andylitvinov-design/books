@@ -36,10 +36,10 @@ test("all three placements reuse the existing click-to-load video player and kee
   const showcase = read("components/service-video-showcase.tsx");
   const player = read("components/site-video-player.tsx");
   assert.match(showcase, /<SiteVideoPlayer video=\{video.video\} locale=\{locale\}/);
-  assert.match(player, /playing \? \(/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /\{playing(?: && embedUrl)? \? \(/, 'click-to-load frame stays conditional');
+  assert.match(player, /className="site-video-play"/, 'real accessible play button stays');
   assert.match(player, /youtube-nocookie.com\/embed\/\$\{playbackYouTubeId\}/);
-  assert.match(player, /const externalLink = internalOnly \? null/);
+  assert.match(player, /const externalLink = internalOnly(?: \|\| !verifiedWatchUrl)? \? null/, 'private About must not get an off-site link');
 });
 
 test("personal free review has portrait, locale-matched explainer and twelve vertically stacked videos", () => {

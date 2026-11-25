@@ -11,17 +11,17 @@ const COPY={
  en:{heading:'Choose your AI guide',intro:'Choose the personality you feel most comfortable with. The same intelligence, different voice and style.',
   choose:'Choose',listen:'Listen',loading:'Loading…',retry:'Try audio again',stop:'Stop',close:'Close persona selector',history:'Previous chats',
   note:'These are fictional AI presenters, not human therapists. Changing your guide does not change your chat history.',
-  description:{alex:'Warm and attentive. Helps you understand the bigger picture.',max:'Direct and energetic. Focuses on choices and the next step.',
+  description:{alex:'Warm and imaginative. Helps you find a path to your dream.',max:'Direct and energetic. Focuses on choices and the next step.',
     mira:'Kind and patient. Offers calm support and space to reflect.',sofia:'Thoughtful and composed. Helps you explore meanings and priorities.'}},
  ru:{heading:'Выберите своего ведущего',intro:'С кем вам комфортнее общаться? Интеллект один, но голос и манера общения разные.',
   choose:'Выбрать',listen:'Послушать',loading:'Загрузка…',retry:'Повторить аудио',stop:'Стоп',close:'Закрыть выбор ведущего',history:'Прошлые чаты',
   note:'Это образы ИИ, а не реальные терапевты. При смене ведущего история переписки сохраняется.',
-  description:{alex:'Тёплый и внимательный. Помогает увидеть ситуацию целиком.',max:'Энергичный и конкретный. Помогает перейти к действию.',
+  description:{alex:'Тёплый ИИ-джин. Помогает найти путь к мечте.',max:'Энергичный и конкретный. Помогает перейти к действию.',
     mira:'Бережная и терпеливая. Создаёт пространство для спокойного разговора.',sofia:'Вдумчивая и спокойная. Помогает разобраться в смыслах и приоритетах.'}},
  es:{heading:'Elige tu guía de IA',intro:'Elige con quién te sientas mejor. La misma inteligencia, con otra voz y estilo.',
   choose:'Elegir',listen:'Escuchar',loading:'Cargando…',retry:'Reintentar audio',stop:'Detener',close:'Cerrar selector',history:'Chats anteriores',
   note:'Estos guías son personajes de IA, no terapeutas reales. Tus chats se conservan al cambiar de guía.',
-  description:{alex:'Cálido y atento. Ayuda a comprender toda la situación.',max:'Directo y enérgico. Se enfoca en decisiones y próximos pasos.',
+  description:{alex:'Cercano e imaginativo. Ayuda a encontrar el camino hacia tu sueño.',max:'Directo y enérgico. Se enfoca en decisiones y próximos pasos.',
     mira:'Amable y paciente. Ofrece apoyo y espacio para reflexionar.',sofia:'Serena y reflexiva. Ayuda a explorar prioridades y sentido.'}},
 }
 const BARS=[7,11,6,16,9,20,10,15,8,22,12,7,18,11,15,9,20,7,13,10,17,6]
@@ -39,7 +39,7 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
  useEffect(()=>{
   if(!open){stopAliPersonaAudio();setPlaying(null);return}
   setCandidate(id)
-  void prepareAliNaturalVoice()
+  void prepareAliNaturalVoice(id,locale)
   const previous=document.activeElement
   const onKey=event=>{
    if(event.key==='Escape'){event.preventDefault();onClose()}
@@ -58,7 +58,7 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
    stopAliPersonaAudio()
    if(previous?.isConnected&&typeof previous.focus==='function')previous.focus()
   }
- },[open,id,onClose])
+ },[open,id,locale,onClose])
  const toggleSample=personaId=>{
   if(playing===personaId){stopAliPersonaAudio();setPlaying(null);setAudioPhase('idle');return}
   setAudioFailed(null)

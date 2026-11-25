@@ -20,7 +20,6 @@ import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { spanishMetadata } from "@/lib/spanish-metadata";
@@ -35,35 +34,33 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
   const query = await searchParams;
   if (query?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
-    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
+    <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale="es" /> : <ServicesAssistQuiz locale="es" />}
-        <div className={compactStyles.featured} data-services-featured>
-          <ServicesPersonalConsultationMobile locale="es" />
-        </div>
         <ServicesCompactCatalog locale="es">
           <ServicesCompactPanel id="consultation">
+            <ServicesPersonalConsultationMobile locale="es" />
             <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
           </ServicesCompactPanel>
           <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale="es" splitExtras /></ServicesCompactPanel>
           <ServicesCompactPanel id="business"><BusinessServiceBrowser locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reiki"><AssistReikiSession locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="browse"><ServicesConversionHero locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="magical"><ServicesMagicalHelpMobile locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading">
+            <SpiritualReadingEntry locale="es" />
+            <ServicesMagicalHelpMobile locale="es" />
+          </ServicesCompactPanel>
           <ServicesCompactPanel id="about"><ServicesIntroMedia locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale="es" variant="services" /></ServicesCompactPanel>
           <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="directory">
             <ServicesDirectoryInvitation locale="es" />
-            <CompactLeadCapture locale="es" serviceTitle="Personal service selection with Andrey"
-              title="¿No sabes por dónde empezar?" lead="Deja tu contacto y Andrey te ayudará a elegir el primer paso." />
           </ServicesCompactPanel>
         </ServicesCompactCatalog>
       </ServicesExplorerProvider>

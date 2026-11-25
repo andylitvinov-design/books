@@ -38,7 +38,7 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
   assert.ok(['localhost', '127.0.0.1'].includes(new URL(origin).hostname), 'Candidate-only probe must run locally');
   const { expect } = await import('@playwright/test');
   const context = await browser.newContext({ viewport: { width: 390, height: 900 }, serviceWorkers: 'block' });
-  const result = { repeated: [], hashes: [], errors: [] };
+  const result = { repeated: [], hashes: [], errors: [], stage: 'initial-home', aboutClick: null };
   await context.addInitScript(() => {
     if (window.top !== window) return;
     window.__historyProofDocument = crypto.randomUUID();
@@ -58,21 +58,67 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     key: window.navigation?.currentEntry?.key ?? null, owned: window.__hhOwnsHistoryEntry?.() ?? null,
     pathname: location.pathname, hash: location.hash }));
   const ready = async path => {
-    await expect(page).toHaveURL(origin + path);
+    // This probe exercises the full Next.js Home while the normal entry is
+    // served as a separate, cacheable CDN document. Never conflate their
+    // navigation ownership or assume the CDN shell has a Next router.
+    await expect(page).toHaveURL(origin + path, { timeout: 20000 });
     if (path === "/") await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
   try {
+    // The owner's approved React Home is now canonical at the ordinary URL.
+    // Verify both first-paint identity and the real hydrated Native Navigation path;
+    // an old static shell must not satisfy this security/history provenance proof.
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
+    await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+    await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
+    await expect(page.locator('[data-home-intent-option]')).toHaveCount(3);
+    for (const intent of ['clarity', 'goal', 'business']) {
+      await expect(page.locator(`[data-home-intent-option="${intent}"]`)).toBeVisible();
+    }
+    await expect(page.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
+    await expect(page.locator('[data-home-intent-form]')).toBeVisible();
+    await expect(page.locator('[data-home-methods]')).toBeVisible();
     await ready('/'); result.home = await snapshot();
-    await page.locator('.service-home-about a[href="/en/about"]').click();
-    await ready('/en/about'); result.about = await snapshot();
+    // The lazy catalogue above About can expand when Playwright first scrolls
+    // down to the link. A single real click must land on the intended anchor.
+    // Settle that actual user-visible content before the click, just as in the
+    // cross-policy history matrix. Do not navigate programmatically or retry taps.
+    result.stage = 'prepare-about';
+    const deferredHome = page.locator('[data-home-deferred-sections]');
+    await expect(deferredHome).toHaveCount(1);
+    await deferredHome.scrollIntoViewIfNeeded();
+    await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
+    const aboutLink = page.locator('.service-home-about a[href="/en/about"]');
+    await expect(aboutLink).toHaveCount(1);
+    await expect(aboutLink).toBeVisible();
+    await aboutLink.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+    await expect.poll(() => aboutLink.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return Boolean(hit && node.contains(hit));
+    }), { message: 'About link center must be hit-testable after lazy Home layout' }).toBe(true);
+    await page.evaluate(() => {
+      window.__historyProofAboutClick = null;
+      document.addEventListener('click', event => {
+        const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+        window.__historyProofAboutClick = { href: link?.getAttribute('href') || null, trusted: event.isTrusted };
+      }, { capture: true, once: true });
+    });
+    result.stage = 'click-about';
+    await aboutLink.click();
+    await ready('/en/about');
+    result.aboutClick = await page.evaluate(() => window.__historyProofAboutClick);
+    assert.deepEqual(result.aboutClick, { href: '/en/about', trusted: true }, 'The same-policy navigation must come from a real click on About');
+    result.about = await snapshot();
+    result.stage = 'owned-back-forward';
     for (let i = 0; i < 2; i++) {
       await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/'); result.repeated.push(await snapshot());
       await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.repeated.push(await snapshot());
     }
+    result.stage = 'hash-back-forward';
     // Use a real browser anchor click, not pushState, to exercise hash navigation.
     await page.evaluate(() => {
       const anchor = document.createElement('a'); anchor.id = 'hh-provenance-link';
@@ -86,14 +132,21 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about#hh-provenance-hash'); result.hashes.push(await snapshot());
     await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
     await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/');
+    result.stage = 'reload-home';
     await page.reload({ waitUntil: 'networkidle' }); await ready('/'); result.reloadedHome = await snapshot();
+    result.stage = 'restore-foreign-about';
     await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
     await expect.poll(async () => (await snapshot()).document).not.toBe(result.reloadedHome.document);
     await page.waitForLoadState('networkidle'); await ready('/en/about');
     result.foreignAbout = await snapshot();
     result.events = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__historyProofEvents') || '[]'));
     // Authoritative persisted restoration is covered separately by raw CDP.
+    result.stage = 'assert-provenance';
     return assertHistoryProvenanceEvidence(result);
+  } catch (error) {
+    result.aboutClick ??= await page.evaluate(() => window.__historyProofAboutClick ?? null).catch(() => null);
+    const state = await snapshot().catch(() => null);
+    throw new Error(`${error.message}; stage=${result.stage}; aboutClick=${JSON.stringify(result.aboutClick)}; state=${JSON.stringify(state)}`, { cause: error });
   } finally {
     result.events = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__historyProofEvents') || '[]')).catch(() => []);
     writeFileSync(evidencePath, JSON.stringify(result, null, 2));

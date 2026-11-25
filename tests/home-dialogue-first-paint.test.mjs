@@ -27,10 +27,10 @@ test("public Home has one light conversation-first entry and preserves seven rea
  assert.match(entry,/<SiteNavigation locale=\{locale\} compact \/>/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(entry,/data-home-mode-button="self"/);
- assert.match(entry,/data-home-mode-button="business"/);
- for(const label of ["Для себя","Для бизнеса","For myself","For business","Para mí","Para mi negocio"])
-   assert.ok(entry.includes(label),label);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ for(const id of ["clarity","goal","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ assert.match(entry,/program\.steps\.map/);
  assert.match(dock,/"mytube","video","coach","ai","services","practice","profile"/);
  assert.match(globalDock,/UNIFIED_DOCK_IDS\.map\(id =>/);
 });
@@ -47,11 +47,13 @@ test("initial paint is local and deferred: no media network or large course bund
  assert.match(styles,/ideas-pine-reference\.webp/);
  assert.match(lazy,/IntersectionObserver/);
  assert.match(lazy,/rootMargin:"220px 0px"/);
- assert.match(lazy,/ssr:false/);
- assert.match(content,/ssr:false/);
+ assert.match(lazy,/const HomeDeferredContent = lazy\(/);
+ assert.match(content,/const HomeExpandedCatalog = lazy\(/);
  assert.match(content,/MySpaceTopics/);
- assert.doesNotMatch(content,/^import \{ MySpaceTopics \} from/m);
- assert.match(content,/import\("\.\/my-space-topics"\)/);
+ // The topic component is allowed as a direct import INSIDE the deferred module.
+ // The first-screen observer must not import its CSS-bearing content eagerly.
+ assert.doesNotMatch(lazy,/^import \{ MySpaceTopics \} from/m);
+ assert.match(content,/^import \{ MySpaceTopics \} from/m);
  assert.match(catalog,/HomeFeaturedWorkspace/);
  assert.doesNotMatch(main,/<HomeFeaturedWorkspace|<HomeSectionCarousel|<MySpaceTopics/);
  assert.doesNotMatch(entry,/https:\/\/|<iframe|<video|fetch\(/);
@@ -119,8 +121,9 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt,hint\.id==="business"\?"business":mode\)\}/);
+ assert.match(home,/startConversationWith\(draft\.trim\(\)\?program\.prompt/);
  assert.match(home,/startConversationWith\(draft\)/);
+ assert.match(home,/art\.id==="business"\?"business":"self"/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
  assert.match(chat,/data-home-handoff-pending/);
@@ -131,33 +134,30 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
 });
 
-test("approved scenic Home shows four clear choices above the wide Ali composer in three languages",()=>{
+test("Approved homepage has three program cards, three substeps per program and five methods",()=>{
  const entry=read("components/home-dialogue-entry.tsx");
- const css=read("components/home-dialogue-entry.module.css");
+ const styles=read("components/home-dialogue-entry.module.css");
  const deferred=read("components/home-deferred-content.tsx");
- for(const phrase of ["Energy & Stress Release","Love & Confidence","Money & Growth","Business Support","Holistic House","What do you need today?","Энергия и снятие стресса","Apoyo empresarial"])
-   assert.ok(entry.includes(phrase),phrase);
- for(const id of ["stress","love","money","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
- assert.match(entry,/data-home-free-review/);
- assert.match(entry,/freeReviewTitle:"Understand my situation"/);
- assert.match(entry,/freeReviewDetail:"Get a free personal review"/);
- assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
- assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
- assert.match(entry,/services\/free-situation-review/);
- assert.ok(entry.indexOf("data-home-free-review")<entry.indexOf("data-home-focus-grid"));
- assert.ok(entry.indexOf("data-home-focus-grid")<entry.indexOf("data-home-intent-form"));
- assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
- assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
- assert.match(css,/\.language summary\{min-width:44px\}/);
- assert.match(css,/\{width:44px;min-width:44px\}/);
- assert.match(entry,/data-home-focus-grid/);
- assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-intent-form'));
- assert.match(entry,/data-home-continue-path/);
+ for(const text of ["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса",
+   "В нашей работе мы используем:","ИИ-коучи","Программы","Видео","Тесты","Практики"])
+   assert.ok(entry.includes(text),text);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ for(const id of ["clarity","goal","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ assert.match(entry,/program\.steps\.map/);
+ assert.equal((entry.match(/<form className=\{styles\.composer\}/g)||[]).length,1);
+ assert.match(entry,/useAliPersona\("alex"\)/);
+ assert.match(entry,/data-home-open-ali-persona/);
+ assert.match(entry,/data-home-ali-greeting-play/);
+ assert.match(entry,/data-home-intent-composer/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
- assert.match(css,/\.composer\{display:flex;flex-direction:column/);
- assert.match(css,/\.scene\{[^\n]*ideas-pine-reference\.webp/);
- assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
- assert.doesNotMatch(entry,/data-home-service-action/);
+ assert.match(entry,/data-home-methods/);
+ assert.match(entry,/msg\.tools\.map/);
+ assert.match(entry,/data-home-continue-path/);
+ assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
+ assert.match(styles,/SAMIR_MOCK_FIDELITY_20261123_V2/);
+ assert.match(styles,/scroll-snap-type:x mandatory/);
+ assert.match(styles,/max-height:800px/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
+ assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
 });

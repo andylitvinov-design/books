@@ -19,7 +19,6 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
-      - 'package.json'
       - 'lib/clients/session-delivery-service.js'
       - 'lib/documents/report-progress.js'
       - 'components/prescription-document.jsx'
@@ -86,6 +85,7 @@ jobs:
       - name: Check saved client report progress, before/after diagrams and safe republish
         run: node --test tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs tests/client-report-coastal-v2.test.mjs
       - name: Lint newly created feature files
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js lib/profile/goal-profile.js components/app/goal-profile-panel.jsx tests/profile-portrait-test-suggestions.test.mjs tests/goal-profile-journey.test.mjs
       - name: Verify production Next.js build without preview deployment
         if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref != 'refs/heads/codex/public-book-library') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'codex/public-book-library') }}

@@ -18,9 +18,9 @@ test('all 33 published Services offers use exact signed Telegram RU/EN/ES titles
   }
  }
  assert.equal(published.size,33,'published eleven groups each have three real offers');
- assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,35,'two older course links remain valid');
+ assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,37,'two review offers and two older course links remain valid');
  assert.deepEqual(Object.keys(TELEGRAM_SERVICE_OPTIONS).filter(id=>!published.has(id)).sort(),
-  ['courses_practitioner','courses_yggdrasil']);
+  ['courses_practitioner','courses_yggdrasil','personal_express_review','personal_extended_review']);
  for(const [id,titles] of published){
   assert.ok(Object.hasOwn(TELEGRAM_SERVICE_OPTIONS,id),'missing signed Telegram offer '+id);
   for(const locale of ['ru','en','es'])
@@ -32,14 +32,15 @@ test('all 33 published Services offers use exact signed Telegram RU/EN/ES titles
    assert.equal(offer.title,row.titles[locale]);
    assert.equal(offer.service,row.service);
    const deep='/start hhitem_'+id+'_'+locale;
-   assert.deepEqual(telegramServiceOptionStart(deep),{service:row.service,locale,offerId:id});
-   assert.deepEqual(v3ServiceStart(deep),{service:row.service,locale,offerId:id});
+   const botEnabled=!row.channels||row.channels.includes('telegram_bot');
+   assert.deepEqual(telegramServiceOptionStart(deep),botEnabled?{service:row.service,locale,offerId:id}:null);
+   assert.deepEqual(v3ServiceStart(deep),botEnabled?{service:row.service,locale,offerId:id}:null);
    assert.equal(v3ServiceTitle(row.service,locale,id),offer.title);
    assert.equal(v3ServiceCopy(locale,row.service,id).title,offer.title);
-   assert.equal(telegramServiceOptionRequestUrl(id,locale),
-    '/api/public/telegram-option-entry?offer='+id+'&locale='+locale);
-   assert.equal(telegramServiceOptionDirectBotUrl(id,locale),
-    'https://t.me/holistichouse_bot?start=hhitem_'+id+'_'+locale);
+   assert.equal(telegramServiceOptionRequestUrl(id,locale),botEnabled
+    ?'/api/public/telegram-option-entry?offer='+id+'&locale='+locale:null);
+   assert.equal(telegramServiceOptionDirectBotUrl(id,locale),botEnabled
+    ?'https://t.me/holistichouse_bot?start=hhitem_'+id+'_'+locale:null);
    assert.ok(deep.length<64);
   }
  }

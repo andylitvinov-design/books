@@ -22,7 +22,6 @@ on:
       - 'components/consultation-choice-capture.tsx'
       - 'lib/coaching/intake-model.js'
       - 'tests/private-material-handoff.test.mjs'
-      - 'components/site-video-player.tsx'
       - 'data/service-video-library.ts'
       - 'scripts/ci-heavy-impact.mjs'
       # Shared CI-only impact test is already executed by HH PR Sweep Guard.

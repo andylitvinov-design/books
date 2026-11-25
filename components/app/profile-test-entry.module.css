@@ -25,3 +25,49 @@
 @media(max-width:360px){.panel{padding:13px 10px 18px;border-radius:18px}.choices,.nextSteps{gap:6px}.testCard{padding:9px 6px;gap:5px;min-height:105px}.icon{width:29px;height:29px}.cardText strong{font-size:12px}.cardText small{font-size:11px}.nextSteps a{gap:6px;padding:8px 6px}.nextSteps strong{font-size:12px}}
 @media(min-width:660px){.choices{grid-template-columns:repeat(3,minmax(0,1fr))}.testCard:nth-child(3){grid-column:auto;min-height:100px;align-items:flex-start}.nextSteps{max-width:720px}}
 @media(prefers-reduced-motion:reduce){.testCard,.profileAction,.resultsAction{transition:none}}
+
+/* Shared client-cabinet treatment, without changing the public test entry. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .panel {
+  color: var(--hh-cabinet-ink, #3c291c);
+  background: linear-gradient(135deg, var(--hh-cabinet-surface, #fff6e3), var(--hh-cabinet-surface-soft, #f5e3bf));
+  border-color: var(--hh-cabinet-border, #d7b576);
+  box-shadow: 0 8px 24px #130c0826;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .panel h1 {
+  color: var(--hh-cabinet-ink, #3c291c);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .eyebrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .label { color: var(--hh-cabinet-primary, #006b4e); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .intro { color: var(--hh-cabinet-muted, #695644); font-size: 16px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .testCard,
+:global(.hh-app[data-cabinet-theme="daybook"]) .resultsAction {
+  color: var(--hh-cabinet-ink, #3c291c);
+  background: var(--hh-cabinet-surface, #fff6e3);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  border-radius: 18px;
+  padding: 13px 11px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .testCard:first-child { background: var(--hh-cabinet-selected, #e3f0df); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .icon {
+  width: 36px; height: 36px;
+  color: #fff6e3;
+  background: var(--hh-cabinet-primary, #006b4e);
+  border: 1px solid var(--hh-cabinet-border, #d7b576);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .cardText strong,
+:global(.hh-app[data-cabinet-theme="daybook"]) .nextSteps strong { font-size: 16px; line-height: 1.3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .cardText small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacy { color: var(--hh-cabinet-muted, #695644); font-size: 14px; line-height: 1.45; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .nextSteps small { font-size: 14px; line-height: 1.4; opacity: 1; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .profileAction {
+  color: #fff6e3;
+  background: linear-gradient(120deg, var(--hh-cabinet-primary, #006b4e), var(--hh-cabinet-primary-hover, #00513d));
+  border-color: var(--hh-cabinet-border, #d7b576);
+  border-radius: 18px;
+}
+@media(max-width:430px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .choices,
+  :global(.hh-app[data-cabinet-theme="daybook"]) .nextSteps { grid-template-columns: minmax(0,1fr); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .testCard { min-height: 76px; align-items: center; }
+}

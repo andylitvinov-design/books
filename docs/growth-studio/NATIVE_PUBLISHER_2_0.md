@@ -24,7 +24,7 @@ Current platform matrix:
 | Network | Owned implementation | External prerequisites |
 | --- | --- | --- |
 | Telegram | Native Bot API text/photo/video with owner confirmation | Bot administrator rights and server token |
-| Instagram | Native Meta Graph JPEG Feed and Business JPEG/MP4 Stories | Meta app, verified Business Page and Instagram OAuth, server flag |
+| Instagram | Native Meta Graph JPEG Feed, Business JPEG/MP4 Stories and owner-approved MP4 Reels | Meta app, verified Page and professional Instagram OAuth, server flag |
 | Facebook Pages | New official Meta Graph text/link Page adapter, exact Page and readback | Meta app, pages_manage_posts, CREATE_CONTENT, Facebook-specific flag |
 | YouTube | Existing native RU/EN owner uploader | Verified Google OAuth and channel |
 | TikTok | Draft/assisted only, not direct public posting | Approved Content Posting API, creator grant, app audit |
@@ -98,3 +98,34 @@ timestamp. Repeat this authorization process independently for each network.
 
 Never claim full Metricool/Publer parity or unattended multi-network LIVE
 before these per-platform contracts and physical acceptance pass.
+
+## Native Instagram Reels (owner-reviewed, not unattended)
+
+A Reel is a separate Instagram placement (`reel`) in the **existing**
+Growth Studio composer. A public MP4 from the selected branded site is required;
+private video-library files, client cabinet assets and unreviewed uploads are
+not exposed or published. The public file must answer to HEAD with
+`Content-Type: video/mp4`, without redirect, and be <=1 GB when
+`Content-Length` is provided. Meta's codec, frame-rate and duration validation
+is authoritative: use H.264 or HEVC, AAC, 9:16 recommended, 23-60 FPS,
+3 seconds to 15 minutes.
+
+Only an approved exact revision, selected authorized Instagram
+Business/Creator account and irreversible owner confirmation permit the
+existing Meta Graph API Page token to create one `media_type=REELS` container
+with `video_url`, `caption` and `share_to_feed=true`. The server reads
+`status_code`; it publishes that container only after `FINISHED`.
+Unfinished processing is saved as `delivery_unknown/provider_processing`;
+an owner can resume that same known container without uploading again.
+Ambiguous container creation, publication or readback never triggers a
+blind retry. A confirmed `published` receipt requires a matching numeric
+Meta media ID, `VIDEO` / `REELS` readback, valid provider timestamp and
+real Instagram /reel/ permalink.
+
+The manual phone handoff remains available when Meta OAuth is not connected;
+it is not a provider-confirmed post. The existing flag
+`HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED` remains OFF by default. Reels do
+**not** enable automated scheduling, a second token store, mass publishing
+or paid Metricool/Meta services. The real Live gate still requires exact-HEAD
+CI, protected merge, hourly Vercel release, verified owner OAuth/Meta
+permissions and one explicitly approved public test Reel with real ID/link.

@@ -5,6 +5,7 @@ import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
 import CrmSalesbotAssist from './crm-salesbot-assist'
+import {TELEGRAM_SERVICE_OPTIONS} from '@/lib/assist/telegram-service-options.mjs'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -36,6 +37,16 @@ const copy={
 }
 const names={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
+const serviceStageLabels={
+  review_understanding:{en:'Understanding',ru:'Понимание ситуации',es:'Comprender la situación'},
+  review_outcome:{en:'Desired outcome',ru:'Желаемый результат',es:'Resultado deseado'},
+  review_action:{en:'Next step',ru:'Следующий шаг',es:'Siguiente paso'},
+  confirm:{en:'Awaiting confirmation',ru:'Ожидает подтверждения',es:'Pendiente de confirmación'},
+  submitted:{en:'Enquiry submitted',ru:'Запрос отправлен',es:'Solicitud enviada'},
+  cancelled:{en:'Cancelled',ru:'Отменено',es:'Cancelada'},
+  stopped:{en:'Automation stopped',ru:'Автоответы остановлены',es:'Automatización detenida'},
+  not_started:{en:'Reply unavailable',ru:'Ответ недоступен',es:'Respuesta no disponible'},
+}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
@@ -95,6 +106,10 @@ const officialPortal={
 
 const messageStatuses={
   received:{en:'Received',ru:'Получено',es:'Recibido'},
+  processed:{en:'Processed',ru:'Обработано',es:'Procesado'},
+  send_pending:{en:'Reply sending',ru:'Ответ отправляется',es:'Enviando respuesta'},
+  provider_accepted:{en:'Reply accepted by Telegram',ru:'Telegram принял ответ',es:'Telegram aceptó la respuesta'},
+  delivery_unknown:{en:'Reply delivery unknown — no auto retry',ru:'Доставка ответа неизвестна — без автоповтора',es:'Entrega desconocida — sin reintento automático'},
   draft:{en:'Draft',ru:'Черновик',es:'Borrador'},
   queued:{en:'Processing',ru:'Обрабатывается',es:'Procesando'},
   accepted:{en:'Accepted by provider',ru:'Принято сервисом',es:'Aceptado por el proveedor'},
@@ -704,6 +719,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
             <small>{names[thread.transport||thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            {thread.selectedOfferId&&<small>
+              {TELEGRAM_SERVICE_OPTIONS[thread.selectedOfferId]?.titles?.[lang]||thread.selectedOfferId}
+              {serviceStageLabels[thread.serviceDialogueStage]?.[lang]
+                ?' · '+serviceStageLabels[thread.serviceDialogueStage][lang]:''}
+            </small>}
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -755,7 +775,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
           </div>}
-          {selected.channel==='telegram'&&<div className={styles.contactActions}
+          {['telegram','whatsapp'].includes(selected.channel)&&<div className={styles.contactActions}
             aria-label={lang==='ru'?'Управление беседой':lang==='es'?'Control de conversación':'Conversation control'}>
             <button type="button" className={styles.profileAction}
               disabled={busy||threadLoading}

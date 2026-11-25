@@ -466,3 +466,66 @@
 .walletInfo{display:grid;gap:8px;margin:0;padding:10px;border-radius:12px;background:#fff3e6;color:#6e5842;font:600 12px/1.4 system-ui,sans-serif}.walletInfo p{margin:0}.walletInfo a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;background:#0b866a;color:#fff;text-decoration:none}.walletInfo button{min-height:40px;border:1px solid #b9d0bc;border-radius:10px;background:white;color:#1c614e;font-weight:750}
 .walletMethodLabel{color:#2a5d4b;font:750 12px/1.3 system-ui,sans-serif}.walletMethods{display:grid;grid-template-columns:1fr 1fr;gap:7px}.walletMethods button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:6px;border:1px solid #bed8c8;border-radius:12px;background:white;color:#245b4d;font:750 12px/1.3 system-ui,sans-serif;cursor:pointer}.walletMethods button[aria-pressed=true]{border-color:#087f64;background:#e2f4e8}.walletMethods button:disabled{opacity:.45;cursor:not-allowed}.walletPrivacy{display:flex;align-items:flex-start;gap:6px;margin:0;color:#68796e;font:500 11px/1.38 system-ui,sans-serif}.walletPrivacy svg{flex:none;color:#0a7b62}
 @media(max-width:350px){.walletDialog{padding:12px 10px;gap:8px}.walletPresets{gap:4px}.walletPresets button{font-size:11px;padding:4px 2px}.walletPresets button:last-child{font-size:10px}}
+
+/* Instant personalized preview mirrors one existing Canvas, without recording. */
+.selectedVideo[data-personal-preview="true"]{background:#182d28}
+.selectedVideo[data-personal-preview="true"][data-aspect="portrait"]{
+  width:min(100%,290px);aspect-ratio:9/16;margin-inline:auto}
+.selectedVideo[data-personal-preview="true"][data-aspect="square"]{
+  width:min(100%,420px);aspect-ratio:1/1;margin-inline:auto}
+.selectedVideo [data-ready-sequence-canvas]{
+  display:block;width:100%;height:100%;object-fit:contain;background:#182d28}
+.sequenceControls{display:grid;gap:8px;padding:10px 12px;border:1px solid #d4e7d9;
+  border-radius:13px;background:#f6fbf4}
+.sequenceControls p{margin:0;color:#235845;font:700 13px/1.4 Arial,sans-serif}
+.sequenceControls button{width:100%;min-height:44px;padding:8px 12px;border:1px solid #087c60;
+  border-radius:12px;background:#e4f3e8;color:#126044;font:750 14px/1.25 Arial,sans-serif}
+.sequenceControls input{width:100%;min-height:30px;accent-color:#087c60;touch-action:pan-y}
+.sequenceControls small{font:600 11px/1.25 Arial,sans-serif;color:#5d7264}
+.sequenceControls button:disabled{opacity:.6;cursor:not-allowed}
+
+/* Direct local file actions shown only after verified MP4, never for preview. */
+.localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.localFileActions>a,.localFileActions>button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:9px 10px;border:1px solid #b9d8c7;border-radius:12px;background:#ecf6ef;color:#15614c;text-decoration:none;text-align:center;font:750 13px/1.3 Arial,sans-serif;cursor:pointer}
+.localFileActions>a:focus-visible,.localFileActions>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:350px){.localFileActions{gap:5px}.localFileActions>a,.localFileActions>button{font-size:12px;padding:8px 6px}}
+
+/* Owner 24 Nov Ready: one player, two equal delivery actions, two practice cards.
+   The existing signed uploader and native file actions remain below the main journey. */
+.root[data-ready-layout="delivery"]{gap:9px;padding:clamp(8px,2.1vw,12px);border-color:transparent;background:#fffcf7}
+.root[data-ready-layout="delivery"] .selectedVideo{border-radius:17px}
+.root .selectedVideo[data-personal-preview="true"] .sequenceControls{
+ position:absolute;inset:auto 0 0;display:grid;grid-template-columns:44px auto minmax(0,1fr);
+ align-items:center;gap:7px;padding:4px 8px;background:linear-gradient(transparent,#10201cdd);
+ border:0;border-radius:0;color:#fff}
+.root .selectedVideo[data-personal-preview="true"] .sequenceControls button{
+ display:grid;place-items:center;min-height:44px;padding:0;border:0;background:transparent;color:#fff}
+.root .selectedVideo[data-personal-preview="true"] .sequenceControls small{color:#fff;white-space:nowrap;font-size:11px}
+.root .selectedVideo[data-personal-preview="true"] .sequenceControls input{min-width:0;accent-color:#fff}
+.root [data-ready-prepare-delivery],.root [data-ready-save-choices]{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+:global([data-mandala-mode="video"]) .root [data-ready-prepare-delivery]>button,
+:global([data-mandala-mode="video"]) .root [data-ready-save-choices]>button{
+ display:flex;flex-direction:row;justify-content:center;align-items:center;gap:6px;min-height:44px;
+ padding:8px 5px;border:1px solid #cce5d5;border-radius:15px;background:#edf6ec;color:#125b43;
+ font:750 clamp(11px,3.1vw,15px)/1.2 Arial,Helvetica,sans-serif;overflow-wrap:normal}
+:global([data-mandala-mode="video"]) .root [data-ready-prepare-delivery]>button[data-ready-prepare-telegram],
+:global([data-mandala-mode="video"]) .root [data-ready-save-choices]>button[data-ready-telegram]{
+ background:#e5f4fc;color:#086b9e;border-color:#bcdff3}
+.root [data-ready-prepare-delivery] svg,.root [data-ready-save-choices] svg{width:19px;height:19px;flex:none;color:currentColor}
+.root [data-ready-prepare-delivery] span,.root [data-ready-save-choices] span{overflow-wrap:normal;text-wrap:balance}
+.root[data-ready-layout="delivery"] .journey{grid-template-columns:minmax(0,1fr);gap:8px}
+.root[data-ready-layout="delivery"] .journey>button{grid-template-columns:clamp(90px,28vw,160px) minmax(0,1fr) 18px;gap:10px;min-height:88px;padding:7px;border-radius:18px}
+.root[data-ready-layout="delivery"] .journey .thumbnail{height:75px}
+.root[data-ready-layout="delivery"] > [data-ready-generate-new]{display:flex;align-items:center;justify-content:center;gap:10px;
+ width:100%;min-height:49px;padding:9px 12px;border:0;border-radius:16px;background:linear-gradient(115deg,#0a9877,#065e4b);color:#fff;
+ font:750 clamp(14px,4vw,18px)/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.root[data-ready-layout="delivery"] > [data-ready-generate-new] strong{flex:1}
+.secondaryDelivery{display:grid;gap:8px;margin-top:8px}
+.root .secondaryDelivery [data-ready-secondary-channels]{grid-template-columns:minmax(0,1fr)}
+:global([data-mandala-mode="video"]) .root .secondaryDelivery [data-ready-secondary-channels]>button{
+ display:flex;flex-direction:row;justify-content:center;min-height:44px;gap:7px}
+@media(max-width:350px){
+ .root[data-ready-layout="delivery"] .journey>button{grid-template-columns:82px minmax(0,1fr) 16px;gap:7px;min-height:80px}
+ .root[data-ready-layout="delivery"] .journey .thumbnail{height:65px}
+ .root [data-ready-prepare-delivery] svg,.root [data-ready-save-choices] svg{width:16px;height:16px}
+}

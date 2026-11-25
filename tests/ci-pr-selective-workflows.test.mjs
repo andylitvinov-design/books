@@ -58,6 +58,49 @@ test('second-wave optional QA never gates ordinary PRs while preserving true exe
 });
 
  
+test('shared Site Video player has one canonical owner rather than unrelated Free Review and TTFB gates',()=>{
+  const player='components/site-video-player.tsx';
+  assert.equal(matchesTrigger(trigger('site-video-browser.yml'),[player],TARGET),true);
+  for (const name of ['hh-free-review-live-mobile.yml','hh-public-performance-audit.yml'])
+    assert.equal(matchesTrigger(trigger(name),[player],TARGET),false,
+      name+': player-only edits must not trigger unrelated expensive acceptance');
+  for(const [name,own] of [
+    ['hh-free-review-live-mobile.yml','components/consultation-choice-capture.tsx'],
+    ['hh-public-performance-audit.yml','components/holistic-house-home.tsx'],
+    ['site-video-browser.yml','components/site-video-manager.tsx'],
+    ['site-video-browser.yml','app/api/app/site-video/movie/route.js'],
+    ['site-video-browser.yml','app/[locale]/about/page.tsx'],
+    ['site-video-browser.yml','app/es/about/page.tsx'],
+    ['site-video-browser.yml','app/page.tsx'],
+  ]) assert.equal(matchesTrigger(trigger(name),[own],TARGET),true,
+    name+': actual owner source must still receive full real QA '+own);
+});
+
+test('ten unrelated service/reader/API paths never launch redundant Site Video browser',()=>{
+  const unrelated=[
+    'app/[locale]/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/services/business/page.tsx',
+    'app/es/services/page.tsx',
+    'app/es/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/books/page.tsx',
+    'app/[locale]/books/maya-tradition/page.tsx',
+    'app/es/books/page.tsx',
+    'app/es/courses/page.tsx',
+    'app/[locale]/homeopathy/page.tsx',
+    'app/api/app/unrelated/route.js',
+  ];
+  assert.equal(unrelated.length,10);
+  const site=trigger('site-video-browser.yml');
+  for(const path of unrelated)
+    assert.equal(matchesTrigger(site,[path],TARGET),false,
+      'unrelated change still triggers Site Video: '+path);
+  assert.equal(matchesTrigger(trigger('hh-public-services-production.yml'),
+    ['app/[locale]/services/alchemy-of-soul/page.tsx'],TARGET),true,
+    'actual Public Services consent/order specialist must remain a gate');
+  assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),unrelated,TARGET),true,
+    'required exact HEAD Core must remain active on every functional source PR');
+});
+
 test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
   const ignored = [
     ['practice-visual-browser.yml','AGENTS.md'],
@@ -76,8 +119,6 @@ test('CI scope noise: unrelated shared files do not launch visual/media/SEO spec
   const required = [
     ['practice-visual-browser.yml','app/api/app/practice/service/route.js'],
     ['practice-visual-browser.yml','app/api/app/[...path]/route.js'],
-    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
-    ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
     ['tantra-pdf-source-qa.yml','lib/academy/reiki-guide-pdf.js'],
     ['holistic-house-pdf-graphics.yml','lib/prescriptions/pdf.js'],
     ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
@@ -93,7 +134,6 @@ test('CI scope noise: unrelated shared files do not launch visual/media/SEO spec
     assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,name+': lost real domain/security owner for '+file);
   for(const [name,own,unrelated] of [
     ['practice-visual-browser.yml','app/api/app/practice/service/route.js','app/api/app/unrelated/route.js'],
-    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx','middleware.ts'],
     ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs','app/api/app/practice/editor/route.js']
   ]) assert.equal(matchesTrigger(trigger(name),[unrelated,own],TARGET),true,name+': mixed PR must retain own real QA');
 });
@@ -140,8 +180,15 @@ test('optional workflow routes exclude retired shared fan-out triggers and retai
     assert.ok(routes?.paths?.length, name + ': owner lost product routing');
     assert.equal(routes.paths.includes(contractFile), false,
       name + ': retired migration marker must not dispatch optional owners');
-    assert.equal(routes.paths.includes('.github/workflows/' + name), false,
-      name + ': self-edit must not launch expensive product checks');
+    // Opt-in workflows may list their own YAML for an explicitly labeled
+    // manual QA, but ordinary opened/synchronize PR events must not launch it.
+    if (routes.types?.includes('labeled')) {
+      assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), false,
+        name + ': opt-in workflow must not run on ordinary self-edit PRs');
+    } else {
+      assert.equal(routes.paths.includes('.github/workflows/' + name), false,
+        name + ': self-edit must not launch expensive product checks');
+    }
     assert.equal(matchesTrigger(routes, [contractFile], TARGET), false,
       name + ': retired migration marker must never fan out product QA');
     assert.equal(matchesTrigger(routes, [legacyTrigger], TARGET), false,
@@ -198,8 +245,8 @@ test('high-impact workflows still run their own domain validation on YAML edits'
 });
 
 
-test('Messages wellness specialists start on Ready after a stacked Draft is retargeted to production', () => {
-  for (const name of ['hh-messages-wellness-browser.yml', 'hh-messages-wellness-v2.yml']) {
+test('mandatory Messages checks start on Ready; source-only visual duplication is on demand', () => {
+  for (const name of ['hh-messages-wellness-v2.yml']) {
     const source = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
     assert.match(source, /^  pull_request:\n    types: \[opened, reopened, synchronize, ready_for_review\]\n    branches: \[codex\/public-book-library\]/m,
       name + ': Ready must trigger the real independent PR specialist after base retargeting');
@@ -208,6 +255,13 @@ test('Messages wellness specialists start on Ready after a stacked Draft is reta
     assert.doesNotMatch(source, /continue-on-error:\s*true/,
       name + ': Specialist must still fail closed on a true product regression');
   }
+  const visual=source('hh-messages-wellness-browser.yml');
+  const route=trigger('hh-messages-wellness-browser.yml');
+  assert.deepEqual(route.types,['labeled']);
+  assert.equal(matchesTrigger(route,['components/app/messages-simple-inbox.jsx'],TARGET),false);
+  assert.match(visual,/github.event.label.name == 'qa-optional'/);
+  assert.match(visual,/^  workflow_dispatch:/m);
+  assert.match(visual,/node scripts\/verify-messages-wellness-browser\.mjs/);
 });
 
 
@@ -411,8 +465,18 @@ test('public Ali support screens run one focused conversation owner, not three u
   const owned=source('hh-home-conversation.yml');
   assert.ok(owned.includes('node --test')&&owned.includes('tests/messenger-support-quiz.test.mjs'),
     'public Ali consent/need selection unit test must run, not just trigger');
-  assert.ok(owned.includes('npx eslint')&&owned.includes('components/app/messenger-support-quiz.tsx'),
-    'public Ali component JSX must be linted by focused owner');
+  // Production PRs have one changed-source lint owner (required Core).
+  // The specialist still owns actual conversation contracts and standalone lint.
+  const standaloneLint = owned.slice(owned.indexOf('- name: Check affected TypeScript and React UI'),
+    owned.indexOf("- name: Build with the project's production dependencies"));
+  assert.ok(standaloneLint.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then'),
+    'only protected production PRs may delegate this duplicate lint');
+  assert.ok(standaloneLint.includes('npx --no-install eslint')&&standaloneLint.includes('components/app/messenger-support-quiz.tsx'),
+    'standalone public Ali component lint must remain');
+  const core = source('hh-pr-core-release.yml');
+  assert.ok(core.includes('Lint changed JS/TS sources on PR; full lint for manual/merge queue')&&
+    core.includes('npx --no-install eslint "${files[@]}"')&&core.includes('hh-merge-check:'),
+    'production PRs must retain the mandatory changed-source lint owner');
   const quiz='tests/messenger-support-quiz.test.mjs';
   assert.equal(matchesTrigger(trigger('hh-home-conversation.yml'),[quiz],TARGET),true);
   assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),[quiz],TARGET),true);
@@ -460,4 +524,90 @@ test('cosmetic Profile-only CSS skips heavy private IA but preserves real Core/A
   'mixed styling and private code must not bypass IA');
  assert.equal(matchesTrigger(iaTrigger,['.github/workflows/ia-v2.yml'],TARGET),true,
   'changes to the IA workflow itself must still execute its real tests');
+});
+
+test('First Video automatic PR duplication is retired after mandatory Mandala ownership',()=>{
+  const redundant=trigger('hh-first-video-live-export.yml'),video=source('hh-first-video-live-export.yml');
+  assert.deepEqual(redundant.types,['labeled']);
+  assert.match(video,/github\.event\.label\.name == 'qa-optional'/);
+  assert.match(video,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.match(video,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
+  assert.match(video,/^  workflow_dispatch:/m);
+  assert.equal(matchesTrigger(redundant,['scripts/benchmarking/first-video-live-export.mjs'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['components/mandala-free-video-studio.tsx'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['tests/video-director-chat-live-acceptance.test.mjs'],TARGET),false);
+  const mandala=trigger('holistic-support-mandala.yml');
+  for(const path of ['scripts/benchmarking/first-video-live-export.mjs','scripts/benchmarking/video-director-chat-live-acceptance.mjs','tests/video-director-chat-live-acceptance.test.mjs'])
+    assert.equal(matchesTrigger(mandala,[path],TARGET),true,path+': no required Mandala source owner');
+  const library=trigger('library-public-feed.yml');
+  for(const path of ['components/app/messages-orders-clients.jsx','components/mandala-video-director-chat.tsx'])
+    assert.equal(matchesTrigger(library,[path],TARGET),false,path+': unrelated library browser');
+  assert.equal(matchesTrigger(library,['components/library-feed.tsx'],TARGET),true);
+});
+
+
+test('second-wave visual QA is opt-in or mock-harness-only while protected owners still run',()=>{
+  const visual = [
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
+    ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
+  ];
+  for(const [name,owned] of visual){
+    const yaml=source(name),policy=trigger(name);
+    assert.deepEqual(policy.types,['labeled'],name+': optional QA must not auto-launch on ordinary PR source');
+    assert.equal(matchesTrigger(policy,[owned],TARGET),false,name+': must not block every public content PR');
+    assert.equal(matchesTrigger({...policy,types:null},[owned],TARGET),true,
+      name+': keep exact or glob-matched source path available for opt-in QA');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name+': require explicit opt-in label');
+    assert.match(yaml,/^  workflow_dispatch:/m,name+': retain manually requested QA');
+    assert.match(yaml,/^  push:/m,name+': retain real post-merge production checks');
+  }
+  const mock=trigger('hh-support-mobile-mock-browser.yml');
+  assert.equal(matchesTrigger(mock,['components/holistic-support-mobile.tsx'],TARGET),false,
+    'public support source changes run protected Core and public-services QA, not redundant mock screenshot suite');
+  for(const path of ['scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+    '.github/workflows/hh-support-mobile-mock-browser.yml']){
+    assert.equal(matchesTrigger(mock,[path],TARGET),true,'mock QA must remain mandatory when its own contract changes');
+  }
+  assert.equal(matchesTrigger(trigger('hh-public-services-production.yml'),
+    ['components/holistic-support-mobile.tsx'],TARGET),true,
+    'live public Support user journey must retain its real independent owner');
+  assert.match(source('hh-support-mobile-mock-browser.yml'),/^  workflow_dispatch:/m,
+    'manual screenshot QA remains available');
+  assert.match(source('hh-support-mobile-mock-browser.yml'),/^  push:/m,
+    'production-push original screenshot coverage remains unchanged');
+  for(const name of ['hh-pr-core-release.yml','hh-crm-source-check.yml','hh-billing-isolated.yml',
+    'hh-app-browser.yml','hh-public-services-production.yml']){
+    assert.ok(trigger(name),name+': mandatory security, private, payment or Core gate missing');
+  }
+});
+
+test('Home and Practitioner protected PR source contracts install only the locked standalone TypeScript compiler', () => {
+  const names=['hh-home-conversation.yml','practice-visual-services.yml'];
+  const blocks=names.map(name => {
+    const yaml=source(name);
+    const start=yaml.indexOf('      - name: Install only locked TypeScript for protected PR source contracts');
+    const end=yaml.indexOf('      - name: Install complete dependencies for standalone QA');
+    assert.ok(start>=0 && end>start,name);
+    const block=yaml.slice(start,end);
+    assert.ok(block.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+    assert.ok(block.includes("lock.packages?.['node_modules/typescript']"));
+    assert.ok(block.includes('entry.integrity') && block.includes('entry.resolved'));
+    assert.ok(block.includes('entry.hasInstallScript') && block.includes('peerDependencies'));
+    assert.ok(block.includes('npm ci --prefix "$tmp" --include=dev --ignore-scripts'));
+    assert.ok(block.includes('npm ci --include=dev --no-audit --no-fund'),'unsupported lock metadata must retain full install');
+    assert.ok(yaml.slice(end).includes("github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'"));
+    assert.match(yaml,/^  workflow_dispatch:/m);
+    return block;
+  });
+  assert.equal(blocks[0],blocks[1],'both source-contract owners must use identical lockfile/integrity policy');
+  const home=source(names[0]);
+  const push=home.split(/^  push:/m)[1].split(/^  workflow_dispatch:/m)[0];
+  assert.ok(!push.includes('.github/workflows/hh-home-conversation.yml'),'CI-only edits must not trigger the full postmerge product build');
+  assert.ok(push.includes('components/home-conversation-guide.*') && push.includes('tests/home-conversation-browser.mjs'));
+  assert.ok(home.includes('HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs'));
+  assert.ok(home.includes('HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs'));
+  const practice=source(names[1]);
+  assert.ok(practice.includes('tests/remote-support-privacy-contract.test.mjs'));
+  assert.ok(practice.includes('tests/practice-google-return-and-services-v5.test.mjs'));
 });

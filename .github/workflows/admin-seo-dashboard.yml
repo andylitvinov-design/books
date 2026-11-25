@@ -10,6 +10,9 @@ on:
       - 'tests/admin-seo-dashboard.test.mjs'
       - 'tests/admin-seo-recommendations.test.mjs'
       - 'lib/seo/actionable-recommendations.mjs'
+      - 'lib/seo/seomator-snapshot.mjs'
+      - 'scripts/build-seomator-snapshot.mjs'
+      - 'tests/admin-seomator-audit.test.mjs'
       - 'components/admin-seo-recommendations.jsx'
       - 'app/admin/acquisition/**'
       - 'lib/acquisition/**'
@@ -36,7 +39,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Verify SEO admin privacy, sources and exports
-        run: node --test tests/admin-seo-dashboard.test.mjs tests/admin-seo-recommendations.test.mjs
+        run: node --test tests/admin-seo-dashboard.test.mjs tests/admin-seo-recommendations.test.mjs tests/admin-seomator-audit.test.mjs
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit

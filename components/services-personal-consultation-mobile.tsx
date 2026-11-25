@@ -5,14 +5,16 @@ import { Camera, Video, Zap } from "lucide-react";
 import { ServicesCardActions } from "@/components/services-card-actions";
 import { StaticPortrait } from "@/components/static-portrait";
 import type { PublicLocale } from "@/lib/public-locales";
+import { TELEGRAM_SERVICE_OPTIONS } from "@/lib/assist/telegram-service-options.mjs";
+import { telegramServiceRequestUrl } from "@/lib/assist/telegram-business-request.mjs";
 import styles from "./services-personal-consultation-mobile.module.css";
 
 const copy = {
   ru: {
     title: "Личная консультация",
     lead: "Выберите удобный формат",
-    free: { title: "Экспресс-диагностика", detail: "Быстрый ответ на ваш запрос", tag: "Бесплатно", action: "Пройти сейчас" },
-    remote: { title: "Расширенная диагностика", detail: "Дистанционно по фото", action: "Заказать",
+    free: { title: TELEGRAM_SERVICE_OPTIONS.personal_express_review.titles.ru, detail: "Быстрый ответ на ваш запрос", tag: TELEGRAM_SERVICE_OPTIONS.personal_express_review.price.labels.ru, action: "Пройти сейчас" },
+    remote: { title: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.titles.ru, detail: "Дистанционно по фото", action: "Заказать",
       request: "Хочу заказать расширенный дистанционный разбор по фото. Подскажите условия и безопасный способ передать материалы." },
     live: { title: "Личная диагностика", detail: "Видеосессия с практиком", action: "Записаться",
       request: "Хочу записаться на личную видеосессию с Андреем. Подскажите доступное время и стоимость до оплаты." },
@@ -21,8 +23,8 @@ const copy = {
   en: {
     title: "Personal consultation",
     lead: "Choose your preferred format",
-    free: { title: "Express review", detail: "A quick response to your question", tag: "Free", action: "Start now" },
-    remote: { title: "Extended review", detail: "Remote · with a photo", action: "Request",
+    free: { title: TELEGRAM_SERVICE_OPTIONS.personal_express_review.titles.en, detail: "A quick response to your question", tag: TELEGRAM_SERVICE_OPTIONS.personal_express_review.price.labels.en, action: "Start now" },
+    remote: { title: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.titles.en, detail: "Remote · with a photo", action: "Request",
       request: "I would like an extended remote photo-based review. Please confirm the terms and a secure way to share materials." },
     live: { title: "Personal consultation", detail: "Video session with Andrey", action: "Book a session",
       request: "I would like a personal video session with Andrey. Please confirm availability and pricing before payment." },
@@ -31,8 +33,8 @@ const copy = {
   es: {
     title: "Consulta personal",
     lead: "Elige el formato más cómodo",
-    free: { title: "Revisión exprés", detail: "Una respuesta breve a tu consulta", tag: "Gratis", action: "Empezar" },
-    remote: { title: "Revisión ampliada", detail: "A distancia · con foto", action: "Solicitar",
+    free: { title: TELEGRAM_SERVICE_OPTIONS.personal_express_review.titles.es, detail: "Una respuesta breve a tu consulta", tag: TELEGRAM_SERVICE_OPTIONS.personal_express_review.price.labels.es, action: "Empezar" },
+    remote: { title: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.titles.es, detail: "A distancia · con foto", action: "Solicitar",
       request: "Quisiera una revisión ampliada a distancia con foto. Confirma las condiciones y cómo enviar los materiales de forma segura." },
     live: { title: "Consulta personal", detail: "Videollamada con Andrey", action: "Reservar",
       request: "Quisiera una sesión personal por videollamada con Andrey. Confirma el horario y el precio antes de pagar." },
@@ -60,9 +62,9 @@ const descriptions = {
 } as const;
 
 const priceLabels = {
-  ru: { quote: "По запросу", session: "€100 / 60 мин" },
-  en: { quote: "Price on request", session: "€100 / 60 min" },
-  es: { quote: "Consultar precio", session: "€100 / 60 min" },
+  ru: { quote: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.price.labels.ru, session: "€100 / 60 мин" },
+  en: { quote: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.price.labels.en, session: "€100 / 60 min" },
+  es: { quote: TELEGRAM_SERVICE_OPTIONS.personal_extended_review.price.labels.es, session: "€100 / 60 min" },
 } as const;
 
 /** Mobile-only choice shelf inside the existing Services/Assist page; all orders use established first-party flows. */
@@ -91,7 +93,8 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
           </div>
           <span className={styles.priceTag} data-support-uniform-price data-service-price-kind="free">{t.free.tag}</span>
           <ServicesCardActions locale={locale} title={t.free.title} description={d.free}
-            href={"/" + locale + "/services/free-situation-review"} trackingId="free" />
+            href={"/" + locale + "/services/free-situation-review"}
+            telegramUrl={telegramServiceRequestUrl("personal_express_review", locale) || undefined} trackingId="free" />
         </article>
         <article className={styles.card} data-support-uniform-card data-consultation-choice="remote-photo">
           <div className={styles.photo} data-support-uniform-photo>
@@ -103,7 +106,8 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
           </div>
           <span className={styles.priceTag} data-support-uniform-price data-service-price-kind="quote">{priceLabels[locale].quote}</span>
           <ServicesCardActions locale={locale} title={t.remote.title} description={d.remote}
-            href={"/" + locale + "/services/alchemy-of-soul"} request={t.remote.request} trackingId="remote-photo" />
+            href={"/" + locale + "/services/alchemy-of-soul"} request={t.remote.request}
+            telegramUrl={telegramServiceRequestUrl("personal_extended_review", locale) || undefined} trackingId="remote-photo" />
         </article>
         <article className={styles.card} data-support-uniform-card data-consultation-choice="video">
           <div className={styles.photo} data-support-uniform-photo>

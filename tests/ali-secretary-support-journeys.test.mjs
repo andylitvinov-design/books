@@ -26,19 +26,22 @@ test('four Support topics × four sub-needs continue locally with their selected
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинские документы|AI.model/i);
   const key=aliWelcomePhotoKey({supportTopic:choice.topic});
   assert.ok(aliWelcomePhotoUrl(key)?.includes('/images/holistic-house/'));
-  const goal=aliGuidedIntakeTurn({message:'I would like a clear next step',
+  // Secretary mode does not ask for private feelings even for sensitive quiz topics.
+  const goal=aliGuidedIntakeTurn({message:locale==='ru'?'да':'yes',
     locale,supportSelection:digits});
   assert.equal(goal.stage,'challenge');
-  assert.ok(goal.reply.includes(scenario.questions.challenge));
-  assert.ok(goal.reply.length<250);
-  const next=aliGuidedIntakeTurn({message:'It is hard to decide',
+  assert.equal(len(goal.reply),1);
+  const when=aliGuidedIntakeTurn({message:'tomorrow afternoon',
     locale,stage:goal.stage,slots:goal.slots,supportSelection:digits});
+  assert.equal(when.stage,'situation');
+  const next=aliGuidedIntakeTurn({message:'online',
+    locale,stage:when.stage,slots:when.slots,supportSelection:digits});
   assert.equal(next.stage,'ready');
   assert.equal(len(next.reply),0);
-  assert.ok(next.reply.includes(scenario.title));
-  const draft=aliGuidedIntakeSummary({locale,slots:next.slots});
-  assert.ok(draft.includes('I would like a clear next step'));
-  assert.ok(draft.includes('It is hard to decide'));
+  const draft=aliGuidedIntakeSummary({locale,slots:next.slots,supportSelection:digits});
+  assert.ok(draft.includes(scenario.title));
+  assert.ok(draft.includes('tomorrow afternoon'));
+  assert.ok(draft.includes('online'));
   assert.ok(telegramSupportSummary(locale,digits).length>25);
  }
 });

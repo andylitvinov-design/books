@@ -216,7 +216,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
  const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
- const tabs=ui.indexOf('<div className={styles.sections} role="tablist"')
+ const tabs=ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')
  const orders=ui.indexOf('<div id="hh-orders-panel"')
  assert.ok(tabs!==-1&&header>tabs&&orders>header,'tab switcher appears before shared heading')
  assert.equal(ui.slice(header,tabs).includes('introCard'),false,'no network-dependent banner before tabs')
@@ -233,7 +233,7 @@ test('owner Messenger preserves one chat, Get Support plus six choices and local
  const css=source('components/app/messenger-ai-workspace.module.css')
  const chat=source('components/holistic-agent-chat.tsx')
  const mobile=source('app/[locale]/app/messages/messages-page.css')
- assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
+ assert.ok(ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')<
    ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>'))
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
  assert.match(css,/\.content\{display:flex;flex:1/)
@@ -252,7 +252,8 @@ test('owner Messenger preserves one chat, Get Support plus six choices and local
  assert.match(ai,/onConversationLocaleChange=\{onConversationLocaleChange\}/)
  assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/)
  assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
- assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<>[\s\S]*?<MessengerAiLanding/)
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>[\s\S]*?<MessengerAiLanding/)
+ assert.match(chat,/homeHandoffPreview&&messages\.length===0&&[\s\S]*?data-home-handoff-user-preview/)
  assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
  assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
@@ -343,7 +344,7 @@ test('hidden private dialogs never hide navigation in another folder',()=>{
 test('AI long messages auto-grow safely and scrollback exposes explicit new-reply navigation',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const css=source('components/holistic-agent-chat.module.css')
- assert.match(agent,/input\.style\.height='44px'/)
+ assert.match(agent,/input\.style\.height='44px'|const baseHeight=ongoing\?40:44;\s*input\.style\.height=baseHeight\+"px"/)
  assert.match(agent,/Math\.min\(100,input\.scrollHeight\)/)
  assert.match(agent,/followTail\.current/)
  assert.match(agent,/setNewBelow\(true\)/)
@@ -384,6 +385,9 @@ test('mobile dock follows the actual visual keyboard, not lingering input focus'
  assert.ok(hub.includes('const limit=keyboard?bottom:'))
  assert.ok(hub.includes('sharedKeyboard||window.innerHeight-bottom>92'))
  assert.ok(page.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"])'))
+ assert.ok(!page.includes('body:has(.hh-messages-page [data-hh-immersive-dialogue="true"])'))
  assert.ok(!page.includes(':has(input:focus,textarea:focus)'))
  assert.ok(aiCss.includes('.content{display:flex;flex:1'))
  assert.ok(source('components/holistic-agent-chat.module.css').includes('>.form'))

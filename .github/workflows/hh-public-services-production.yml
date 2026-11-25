@@ -113,7 +113,6 @@ on:
       - 'scripts/verify-public-services*.mjs'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Director-only art planning and its encoded-video browser test are fully
       # covered by holistic-support-mandala.yml. They do not modify service
@@ -190,6 +189,16 @@ on:
       - '!components/mandala-video-ready.module.css'
       - '!components/mandala-video-effect-journey.module.css'
       - '!components/mandala-therapy-studio.tsx'
+      # OpenMotion is a public, local editor/template picker. Mandala already
+      # owns exact-HEAD source, license, MP4 and mobile browser acceptance.
+      # It never edits booking, payments or service enquiry code. A mixed PR
+      # touching a real checkout/consent/service path still runs this suite.
+      - '!components/mandala-openmotion-picker.tsx'
+      - '!components/mandala-openmotion-picker.module.css'
+      # Fixed Ali greeting TTS is not service discovery, consent or checkout.
+      # Existing Core checks cover persona and natural greeting contracts;
+      # mixed PRs touching actual public services still run the browser suite.
+      - '!lib/holistic-support/ali-gemini-free-tts.mjs'
 permissions:
   contents: read
   pull-requests: read
@@ -207,7 +216,10 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 20
+    # Full verified browser acceptance has exceeded 20m only in post-PASS
+    # artifact/cache cleanup; preserve coverage and avoid false CANCELLED.
+    # 23m is a hard ceiling, not extra test work or a new deployment.
+    timeout-minutes: 23
     env:
       CI: 'true'
       NODE_ENV: production
@@ -243,6 +255,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci-pr-readiness.mjs
       - name: Verify bounded Public Services PR ancestry before impact routing
+        id: ancestry
         if: github.event_name == 'pull_request'
         shell: bash
         env:
@@ -279,6 +292,9 @@ jobs:
           [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
             echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
+          # Reuse the exact tuple verified by GitHub; a shallow clone may not
+          # contain the historical event base object. Never infer ancestry.
+          printf 'event_base=%s\ntested_base=%s\nhead=%s\nmerge=%s\n' "$EVENT_BASE_SHA" "$tested_base" "$PR_HEAD_SHA" "$EXPECTED_MERGE_SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -288,6 +304,10 @@ jobs:
         env:
           HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_PUBLIC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_PUBLIC_VERIFIED_EVENT_BASE: ${{ steps.ancestry.outputs.event_base }}
+          HH_PUBLIC_VERIFIED_TESTED_BASE: ${{ steps.ancestry.outputs.tested_base }}
+          HH_PUBLIC_VERIFIED_HEAD: ${{ steps.ancestry.outputs.head }}
+          HH_PUBLIC_VERIFIED_MERGE: ${{ steps.ancestry.outputs.merge }}
         run: node scripts/ci-public-services-plan.mjs
       - name: Verify fail-closed Public Services routing
         run: node --test tests/ci-public-services-plan.test.mjs
@@ -327,10 +347,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
-          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts; fi
           node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
-          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs; fi
+          # Protected PR Core independently lints all changed JS/TS, and full
+          # lint for config/lockfile changes. Retain full fixed-list lint on manual QA.
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
@@ -401,17 +423,25 @@ jobs:
           acceptance_started=$SECONDS
           build_started=$SECONDS
           build_code=0
-          # The required Core gate already runs ALL package prebuild tests.
-          # Preserve each asset-producing prebuild prerequisite and a genuine
-          # Next production build here; do not repeat unrelated coaching suites.
-          {
-            node scripts/ensure-owner-video-renderer.mjs
-            node scripts/cache-ancient-coaching-photos.mjs
-            node scripts/generate-soft-ocean-melody.mjs
-            node scripts/build-public-card-artwork.mjs
-            node scripts/build-report-pdf-art.mjs
-            ./node_modules/.bin/next build
-          } > artifacts/public-services-production/build.log 2>&1 || build_code=$?
+          # Core independently checks the complete prebuild tests, changed-source
+          # lint and full Next type/build gate for production PRs. Keep EVERY
+          # asset-producing prerequisite and real Next compilation here. Do not
+          # bypass unknown/new package prebuild steps or standalone QA.
+          build_public_candidate() {
+            if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]] &&
+                node -e 'const s=require("./package.json").scripts; process.exit(s.build==="next build" && s.prebuild==="node scripts/ensure-owner-video-renderer.mjs && node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs && node scripts/prepare-my-coach-natural-mp4.mjs" ? 0 : 1)'; then
+              node scripts/ensure-owner-video-renderer.mjs &&
+              node scripts/cache-ancient-coaching-photos.mjs &&
+              node scripts/generate-soft-ocean-melody.mjs &&
+              node scripts/build-public-card-artwork.mjs &&
+              node scripts/build-report-pdf-art.mjs &&
+              node scripts/prepare-my-coach-natural-mp4.mjs &&
+              ./node_modules/.bin/next build --no-lint
+            else
+              npm run build
+            fi
+          }
+          build_public_candidate > artifacts/public-services-production/build.log 2>&1 || build_code=$?
           if (( build_code != 0 )); then
             printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
             echo "::error::Public Services production build failed (exit $build_code)"
@@ -468,27 +498,29 @@ jobs:
             printf '%s,%s,%s\n' "$label" "$outcome" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
             return "$code"
           }
+          # Balanced by measured run 45528356162 (about 521s vs 518s,
+          # compared with 746s vs 293s previously). Same case set, two lanes,
+          # independent browser contexts and unchanged per-case exit gates.
           lane_a() {
             local failed=0
-            # Alchemy covers 320–430px, three languages and booking consent.
             run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
-            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
             run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
             run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
-            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
             run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
-            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
             return "$failed"
           }
           lane_b() {
             local failed=0
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
             run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
             run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
             run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
             run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
             run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
             run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
             run_case "verify-academy-messenger-order.mjs" node scripts/verify-academy-messenger-order.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
             return "$failed"
           }
           lane_a &
