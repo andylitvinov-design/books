@@ -2,8 +2,10 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,Play,RotateCcw,Sparkles,Volume2,List,ChevronDown,ChevronRight,X} from 'lucide-react'
-import {getCoachPersona,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {useRouter} from 'next/navigation'
+import {ArrowLeft,Play,RotateCcw,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X} from 'lucide-react'
+import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
+import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
@@ -16,25 +18,26 @@ const words={
     start:'Introductory session with',thematic:'Thematic session',choose:'Choose your session topic',hint:'Choose a program, then a session.',close:'Close topic selection',again:'Listen to the greeting again',
     failed:'The greeting audio could not play. You can try again or start the session.',
     free:'The introduction is free. Live voice starts only when you choose a session.',
-    back:'Choose a different coach'},
+    back:'Choose a different coach',previous:'Previous coach',next:'Next coach'},
  ru:{eyebrow:'ЗНАКОМСТВО С AI-КОУЧЕМ',play:'Послушать приветствие',
     playing:'Коуч приветствует вас…',start:'Вводная сессия с',
     thematic:'Тематическая сессия',choose:'Выберите тему сессии',hint:'Выберите программу, затем занятие.',close:'Закрыть выбор темы',again:'Прослушать приветствие ещё раз',
     failed:'Приветствие не удалось воспроизвести. Повторите попытку или начните сессию.',
     free:'Приветствие бесплатно. Живой разговор начинается только по вашему выбору.',
-    back:'Выбрать другого коуча'},
+    back:'Выбрать другого коуча',previous:'Предыдущий коуч',next:'Следующий коуч'},
  es:{eyebrow:'CONOCE A TU COACH DE IA',play:'Escuchar la bienvenida',
     playing:'Tu coach te está saludando…',start:'Sesión introductoria con',
     thematic:'Sesión temática',choose:'Elige el tema de la sesión',hint:'Elige un programa y después una sesión.',close:'Cerrar selección de tema',again:'Volver a escuchar la presentación',
     failed:'No se pudo reproducir la bienvenida. Puedes intentarlo otra vez o iniciar la sesión.',
     free:'La presentación es gratuita. La sesión de voz empieza solo cuando tú lo decides.',
-    back:'Elegir otro coach'},
+    back:'Elegir otro coach',previous:'Coach anterior',next:'Siguiente coach'},
 }
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
 export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart}){
  const lang=words[locale]?locale:'en',t=words[lang]
+ const router=useRouter()
  const persona=getCoachPersona(personaId)
  const presentation=getCoachPresentation(personaId,lang)
  const [phase,setPhase]=useState('preview')
@@ -45,11 +48,46 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const chosen=useRef(false)
  const player=useRef(null)
  const audioRun=useRef(0)
+ const touchOrigin=useRef(null)
+ const switching=useRef(false)
+ const canSwitch=PUBLIC_COACH_RAIL_IDS.includes(personaId)&&PUBLIC_COACH_RAIL_IDS.length>1
  useEffect(()=>()=>{audioRun.current++;player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;player.current?.cancel?.();player.current=null;
-   topicDialog.current?.close();chosen.current=false;setExpandedGroup(null);
+   topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
    setPhase('preview');setError('')},[personaId,lang])
+ function switchCoach(direction){
+   if(!canSwitch||chosen.current||switching.current)return
+   const nextId=greetingCoachNeighbor(PUBLIC_COACH_RAIL_IDS,personaId,direction)
+   const href=nextId&&coachSessionHref(lang,nextId)
+   if(!href)return
+   switching.current=true
+   touchOrigin.current=null
+   // Invalidate late audio callbacks before stopping the previous greeting.
+   audioRun.current++
+   player.current?.cancel?.()
+   player.current=null
+   setPhase('preview');setError('')
+   // Existing route remounts MyCoachLiveDialogue by persona ID. Do not start Live here.
+   router.push(href)
+ }
+ function beginSwipe(event){
+   if(!canSwitch||switching.current||chosen.current||event.touches.length!==1){
+     touchOrigin.current=null;return
+   }
+   const touch=event.touches[0]
+   touchOrigin.current={id:touch.identifier,x:touch.clientX,y:touch.clientY}
+ }
+ function endSwipe(event){
+   const origin=touchOrigin.current
+   touchOrigin.current=null
+   if(!origin||event.touches.length!==0)return
+   const touch=Array.from(event.changedTouches).find(item=>item.identifier===origin.id)
+   if(!touch)return
+   const direction=greetingSwipeDirection(touch.clientX-origin.x,touch.clientY-origin.y)
+   if(direction)switchCoach(direction)
+ }
  function playGreeting(){
+   if(switching.current||chosen.current)return
    const url=coachIntroAudioPath(personaId,lang)
    if(!url){setError(t.failed);setPhase('complete');return}
    audioRun.current++
@@ -68,7 +106,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    }catch{if(audioRun.current===generation){setPhase('complete');setError(t.failed)}}
  }
  function chooseSession(id){
-   if(chosen.current)return
+   if(chosen.current||switching.current)return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
@@ -86,10 +124,20 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  return <div className={styles.screen} data-my-coach-greeting-gate={personaId}
    data-greeting-phase={phase}>
    <div className={styles.firstView}>
-     <div className={styles.hero}>
+     <div className={styles.hero} data-coach-greeting-swipe={canSwitch?'true':undefined}
+       onTouchStart={beginSwipe} onTouchEnd={endSwipe}
+       onTouchMove={event=>{if(event.touches.length!==1)touchOrigin.current=null}}
+       onTouchCancel={()=>{touchOrigin.current=null}}
+       onClickCapture={event=>{if(switching.current){event.preventDefault();event.stopPropagation()}}}>
        <MyCoachMotionMedia personaId={personaId} phase="greeting" context="greeting" />
        <div className={styles.shade} aria-hidden="true"/>
        <span className={styles.badge}><Sparkles size={16} aria-hidden="true"/>{t.eyebrow}</span>
+       {canSwitch&&<>
+         <button type="button" className={styles.swipePrevious} data-coach-greeting-previous
+           onClick={()=>switchCoach(-1)} aria-label={t.previous}><ChevronLeft size={25} aria-hidden="true"/></button>
+         <button type="button" className={styles.swipeNext} data-coach-greeting-next
+           onClick={()=>switchCoach(1)} aria-label={t.next}><ChevronRight size={25} aria-hidden="true"/></button>
+       </>}
        <div className={styles.heroText}>
          <h1>{label}</h1>
          <p>{localCoachText(persona?.role,lang)}</p>

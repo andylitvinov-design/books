@@ -143,7 +143,7 @@ const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-stud
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
 const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto: (photo: File)=>void;
-  disabled?: boolean; compact?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
+  disabled?: boolean; compact?: boolean; draftPhoto?: File|null; onDraftPhotoSettled?: (file: File)=>void}>(()=>import("./app/video-photo-library").then(module=>module.default));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -2110,6 +2110,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   // External AI generation is not a Canvas effect and cannot spend XP yet.
   const [montagePhotoChoice,setMontagePhotoChoice] = useState<"animate"|"library"|"coach">("library");
   const [montageLibraryTab,setMontageLibraryTab]=useState<"personal"|"animated"|"coaches">("personal");
+  const [montagePhotoDraft,setMontagePhotoDraft]=useState<File|null>(null);
   const [montageCoachPhoto,setMontageCoachPhoto]=useState<"mira"|"max"|"sofia"|"alex"|null>(null);
   // Coach stills are existing first-party assets, not a private upload. Never
   // let the personal-photo preparation pipeline determine their availability.
@@ -10759,9 +10760,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                 onPhotoFileSelected={file=>{
                   setMontagePhotoChoice(current=>current==="coach"?"library":current);
                   setMontageLibraryTab("personal");setMontageCoachPhoto(null);setPhotoConsent(false);
+                  setMontagePhotoDraft(file);
                   setNotice("");selectNativePhoto(file);
                 }}/>
             </label>
+            {photoPending?<p role="status" className={videoStyles.warning} data-video-montage-photo-pending>{locale==="ru"?"Подготавливаем фото на устройстве…":locale==="es"?"Preparando la foto en tu dispositivo…":"Preparing photo on this device…"}</p>:null}
+            {photoError?<p role="alert" className={videoStyles.warning} data-video-montage-photo-error>{ui.photoError}</p>:null}
             <div className={montageRef.photoChoices} data-video-montage-photo-options role="group"
               aria-label={locale==="ru"?"Как использовать фото":locale==="es"?"Cómo usar la foto":"How to use the photo"}>
               {([
@@ -10829,6 +10833,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                       "Upload above or open your saved photos."}</p>}
                   <div className={montageRef.savedPhotoDrawer} data-video-montage-saved-photos>
                     <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing||photoPending}
+                      draftPhoto={montagePhotoDraft}
+                      onDraftPhotoSettled={file=>setMontagePhotoDraft(current=>current===file?null:current)}
                       onSelectPhoto={file=>{
                         setMontagePhotoChoice("library");setMontageLibraryTab("personal");
                         setMontageCoachPhoto(null);setPhotoConsent(false);setNotice("");
