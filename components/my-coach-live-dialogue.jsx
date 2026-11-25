@@ -5,7 +5,7 @@ import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
-import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -188,9 +188,9 @@ const voiceGateText={
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
 const keyInfoCopy={
-  en:{title:'Key Information',show:'Show key information',hide:'Hide key information',finish:'End session and open summary',goal:'Goal / Result',motivation:'Motivation',obstacles:'Obstacles',resources:'Resources',situation:'Current Situation',nextSteps:'Next Steps',complete:'Captured',partial:'Partly clarified',missing:'Not yet clarified'},
-  ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Завершить сессию и открыть резюме',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
-  es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Finalizar sesión y abrir resumen',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
+  en:{title:'Key Information',show:'Show key information',hide:'Hide key information',finish:'Session Insight',goal:'Goal / Result',motivation:'Motivation',obstacles:'Obstacles',resources:'Resources',situation:'Current Situation',nextSteps:'Next Steps',complete:'Captured',partial:'Partly clarified',missing:'Not yet clarified'},
+  ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Инсайт сессии',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
+  es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Insight de sesión',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
 }
 const protocolCopy={
   en:{title:'Your session protocol',subtitle:'Review and keep a private record of the conversation.',turns:'Recorded exchanges',empty:'No completed conversation turns to include yet.',download:'Download PDF',print:'Print / Open PDF',save:'Save in my private account',saving:'Saving…',saved:'Saved privately to your account',consent:'I agree to save this complete text dialogue in my private Holistic House account. Audio is not stored.',consentRequired:'Tick the box to save your protocol.',error:'Could not save this report. Download the PDF instead or try again.',pdfError:'Could not create the PDF. Your dialogue is still visible in this tab.',close:'Back to coaches',resume:'Continue conversation',privacy:'Only the conversation shown here is exported. AI suggestions are not confirmed decisions. No recording or hidden AI reasoning is included.',unsent:'There is an unfinished message or reply. Finish it before ending the session.',limit:'The dialogue is full. Finish and export the protocol before continuing.'},
@@ -1876,7 +1876,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <span>{restoredDraft?'Private':selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
           <small>{restoredDraft?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
         </button>
-        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={lang==='ru'?'Инсайт сессии':lang==='es'?'Insight de sesión':'Session Insight'} title={lang==='ru'?'Инсайт сессии':lang==='es'?'Insight de sesión':'Session Insight'} disabled={protocolOpen} data-coach-finish-with-protocol>
+        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
           <FileText size={19} aria-hidden="true"/><span>{lang==='ru'?'Инсайт':lang==='es'?'Insight':'Insight'}</span>
         </button>
       </div>
