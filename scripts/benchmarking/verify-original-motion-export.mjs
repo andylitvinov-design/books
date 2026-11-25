@@ -83,6 +83,35 @@ try {
   await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
+  // Photo-first Montage must not silently bypass personal-image rights.
+  // This anonymous export chooses a first-party fictional coach still, rather
+  // than fabricating consent to use somebody else's photograph.
+  assert.equal(await styleNext.isEnabled(),false,'PHOTO_FIRST_REQUIRES_EXPLICIT_PHOTO_CHOICE');
+  const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
+  await coachMode.waitFor({state:'visible',timeout:20000});
+  await press(coachMode);
+  assert.equal(await styleNext.isEnabled(),false,'COACH_MODE_REQUIRES_A_PORTRAIT');
+  for(const id of ['mira','max','sofia','alex','mira']){
+    const coachPhoto=page.locator('[data-video-montage-coach="'+id+'"]');
+    await coachPhoto.waitFor({state:'visible',timeout:20000});
+    await press(coachPhoto);
+    await page.waitForFunction(selected=>{
+      const coach=document.querySelector('[data-video-montage-coach="'+selected+'"]');
+      const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
+      return coach?.getAttribute('aria-pressed')==='true' &&
+        next instanceof HTMLButtonElement && !next.disabled;
+    },id,{timeout:15000});
+    assert.equal(await page.locator('[data-video-montage-coach][aria-pressed="true"]').count(),1,
+      'ONLY_ONE_COACH_STILL_SELECTED');
+  }
+  // Coach selection cannot unlock an empty personal library or approve its rights.
+  await press(page.locator('[data-video-montage-photo-choice="library"]'));
+  assert.equal(await styleNext.isEnabled(),false,'COACH_DOES_NOT_AUTHORIZE_PERSONAL_PHOTO');
+  await press(coachMode);
+  assert.equal(await styleNext.isEnabled(),false,'RESELECT_COACH_AFTER_PERSONAL_MODE');
+  await press(page.locator('[data-video-montage-coach="mira"]'));
+  await page.waitForFunction(()=>!document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]')?.disabled,
+    undefined,{timeout:15000});
   await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
@@ -127,7 +156,16 @@ try {
   await page.locator('[data-video-quick-control="editor"]').click();
   await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
-  await textTools.locator(':scope > summary').click();
+  const textSummary=textTools.locator(':scope > summary');
+  await textSummary.waitFor({state:'visible',timeout:15000});
+  // Native <details> toggles closed when its summary is pressed while open.
+  // Settings can preserve its state across real workspace navigation.
+  if(await textTools.getAttribute('open')===null)await press(textSummary);
+  await page.waitForFunction(() => {
+    const tools=document.querySelector('[data-video-concept-text-tools]');
+    const timeline=tools?.querySelector('[data-video-concept-timeline]');
+    return tools?.hasAttribute('open')&&Boolean(timeline?.getClientRects().length);
+  },undefined,{timeout:15000});
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
   // The shared timeline is mounted in Audio, not within the text tools disclosure.
   const timelineAudioTab=page.locator('[data-video-montage-tab="audio"]');
@@ -193,7 +231,39 @@ try {
   }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
-  await page.locator('[data-video-quick-control="editor"]').click();
+  // This is the ORIGINAL-FOOTAGE export contract. Montage now requires a
+  // photo choice, exercised above with a licensed fictional coach still.
+  // Disable that optional portrait using the actual visible visitor control
+  // before comparing full encoded frames to the four source masters.
+  // Do not lower source-identity thresholds or bypass the real MP4 encoder.
+  // Quick Start's checkbox is intentionally hidden under the current
+  // workspace navigation. Select the real visible Montage option instead:
+  // switching from an AI-coach portrait to the personal-photo library with
+  // no personal photo turns off the optional portrait overlay. The original
+  // four licensed motion sources and consent/export gates remain mandatory.
+  const portraitOverlay=page.locator('[data-video-photo-enabled]');
+  assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
+  const editorWorkspace=page.locator('[data-video-quick-control="editor"]');
+  await press(editorWorkspace);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const styleWorkspace=page.locator('[data-video-montage-tab="effects"]');
+  await styleWorkspace.waitFor({state:'visible',timeout:15000});
+  await press(styleWorkspace);
+  const personalPhotoMode=page.locator('[data-video-montage-photo-choice="library"]');
+  await personalPhotoMode.waitFor({state:'visible',timeout:15000});
+  await press(personalPhotoMode);
+  await page.waitForFunction(()=>{
+    const choice=document.querySelector('[data-video-montage-photo-choice="library"]');
+    const checkbox=document.querySelector('[data-video-photo-enabled]');
+    return choice?.getAttribute('aria-pressed')==='true' &&
+      checkbox instanceof HTMLInputElement && !checkbox.checked;
+  },undefined,{timeout:15000});
+  assert.equal(await portraitOverlay.isChecked(),false,'ORIGINAL_MOTION_EXPORT_HAS_NO_PORTRAIT_OVERLAY');
+  assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes=>
+    nodes.map(node=>node.dataset.freeFilmSource)),ids,
+    'MONTAGE_PHOTO_MODE_PRESERVES_ORIGINAL_FOUR_MASTER_SOURCES');
   // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
   await openMontageSettings(page);
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');

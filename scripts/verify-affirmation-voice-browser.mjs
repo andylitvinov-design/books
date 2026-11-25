@@ -24,29 +24,25 @@ async function revealMirrorAdvanced(page,engine="chromium"){
     if(engine==="webkit")await overflow.tap();
     else await overflow.click();
   }else{
-    // Real mobile path: Scope → the existing Goal → Format → Topic.
-    // Do not synthesize a hidden Back/Plan click or bypass consent.
-    const screen=()=>mirror.getAttribute("data-hh-mirror-screen");
-    if(await screen()==="landing"){
+    // The real user now enters Screen 2 (Topic), with free-text behind details.
+    if(await mirror.getAttribute("data-hh-mirror-screen")==="landing"){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==="webkit")await entry.tap();else await entry.click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    }
-    if(await screen()==="purpose"){
-      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
-      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
-      await expect(rest).toBeVisible();
-      if(engine==="webkit")await rest.tap();else await rest.click();
-      const next=goal.locator('[data-video-ideas-goal-next]');
-      await expect(next).toBeEnabled();
-      if(engine==="webkit")await next.tap();else await next.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
     }
-    if(await screen()==="format"){
+    if(await mirror.getAttribute("data-hh-mirror-screen")==="format"){
       const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
-      await expect(format).toBeVisible();
       if(engine==="webkit")await format.tap();else await format.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    }
+    for(let n=0;n<3 && await mirror.getAttribute("data-hh-mirror-step")!=="1";n++){
+      const back=mirror.locator('[data-hh-mirror-back]');
+      if(engine==="webkit")await back.tap();else await back.click();
+    }
+    const details=mirror.locator('[data-hh-mirror-own-description]');
+    if(!await details.evaluate(el=>el.open)){
+      const summary=details.locator('summary');
+      if(engine==="webkit")await summary.tap();else await summary.click();
     }
     const composer=mirror.locator('[data-hh-mirror-composer]');
     for(let step=0;step<3&&!await composer.isVisible();step++){
@@ -212,185 +208,150 @@ async function verifyWorkspaceHydration(browser,locale){
     };
     for(const width of [320,354,390,430])await checkGeometry('[data-hh-mirror-enter]',width);
     await page.setViewportSize({width:390,height:840});
+
+    const quizHero=page.locator('[data-video-live-stage]');
+    const lamps=mirror.locator('[data-hh-mirror-quiz-lightbulb]');
+    const stepIs=async n=>{
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step",String(n));
+      await expect(lamps).toHaveCount(3);
+      await expect(lamps.nth(n-1)).toHaveAttribute("aria-current","step");
+      await expect(quizHero).toBeVisible();
+    };
+    const openDescription=async()=>{
+      const details=mirror.locator('[data-hh-mirror-own-description]');
+      if(!await details.evaluate(el=>el.open))await details.locator('summary').click();
+    };
+    const backLanding=async()=>{
+      await openDescription();
+      const guide=mirror.locator('[data-hh-mirror-guide-menu]');
+      if(await guide.getAttribute("aria-expanded")!=="true")await guide.click();
+      await mirror.locator('[data-hh-mirror-back-landing]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    };
+    const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+    const chooseSecondFormat=async(formatId)=>{
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      const format=mirror.locator('[data-hh-mirror-video-format]');
+      await expect(format).toHaveCount(3);
+      await expect(format.first()).toHaveAttribute("data-hh-mirror-video-format","pro");
+      for(const width of [320,354,390,430]){
+        await page.setViewportSize({width,height:840});
+        const g=await format.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {y:r.y,w:r.width,h:r.height,bottom:r.bottom};}));
+        assert.ok(g[0].w>1.8*g[1].w&&g[0].h>g[1].h,"featured photo dominates "+width);
+        assert.ok(g[1].y>g[0].y&&Math.abs(g[1].y-g[2].y)<3,"two smaller formats below "+width);
+        assert.ok(g[2].bottom<840-64,"formats above fixed dock "+width);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"format no horizontal overflow "+width);
+      }
+      await page.setViewportSize({width:390,height:840});
+      await mirror.locator('[data-hh-mirror-video-format="'+formatId+'"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-selected-format",formatId);
+    };
+    const confirmPurposeAndFormat=async(goalId,formatId)=>{
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+      await expect(purpose.locator('[data-video-ideas-goal-choice]')).toHaveCount(3);
+      await purpose.locator('[data-video-ideas-goal-choice="'+goalId+'"]').click();
+      await purpose.locator('[data-video-ideas-goal-next]').click();
+      await expect(studio).toHaveAttribute("data-active-workspace","editor");
+      await expect(studio).toHaveAttribute("data-hh-mirror-planned-format",formatId);
+    };
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
-    await expect(purpose.locator('[data-video-ideas-goal-choice]')).toHaveCount(3);
+    await chooseSecondFormat("pro");
+    await stepIs(1);
+    const choices=mirror.locator('[data-hh-mirror-goal-choice]');
+    await expect(choices).toHaveCount(4);
+    const ownerOrder={
+      en:["Improve Love & Relationships","Money, Success & Self-Esteem","Ease Stress & Restore Energy","Personal & Business Growth"],
+      ru:["Улучшить любовь и отношения","Деньги, успех и самооценка","Снизить стресс и восстановить энергию","Личностный и бизнес-рост"],
+      es:["Mejorar el amor y las relaciones","Dinero, éxito y autoestima","Aliviar el estrés y recuperar energía","Crecimiento personal y empresarial"]
+    }[locale];
+    for(let i=0;i<4;i++)await expect(choices.nth(i)).toContainText(ownerOrder[i]);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      const options=purpose.locator('[data-video-ideas-goal-choice]');
-      await expect(options).toHaveCount(3);
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
-        false,"Goal page no horizontal overflow at "+width);
-      const bottom=await options.last().evaluate(el=>el.getBoundingClientRect().bottom);
-      assert.ok(bottom<840-112,"Goal cards leave room for Continue above dock "+width);
+      const geometry=await page.evaluate(()=>({
+        overflow:document.documentElement.scrollWidth>innerWidth+1,
+        cardWidths:[...document.querySelectorAll('[data-hh-mirror-goal-choice]')].map(el=>el.getBoundingClientRect().width),
+        video:(()=>{const r=document.querySelector('[data-video-live-stage] [data-video-mandala-hero]')?.getBoundingClientRect();return r?{width:r.width,height:r.height}:null})()
+      }));
+      assert.equal(geometry.overflow,false,"Goal quiz has no overflow at "+width);
+      assert.ok(geometry.cardWidths.length===4&&geometry.cardWidths.every(w=>w>=125),
+        "4 full sized topic tiles at "+width);
+      assert.ok(geometry.video&&geometry.video.height>90&&
+        Math.abs(geometry.video.width/geometry.video.height-16/9)<.33,
+        "the original full-width video retains its proportion at "+width);
     }
     await page.setViewportSize({width:390,height:840});
-    await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
-    await expect(purpose.locator('[data-video-ideas-goal-next]')).toBeEnabled();
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-    for(const width of [320,354,390,430])await checkGeometry('[data-hh-mirror-video-format]',width);
-    for(const [id,credits] of [["basic","250"],["pro","500"],["vip","2 000"]])
-      await expect(mirror.locator('[data-hh-mirror-video-format="'+id+'"]')).toContainText(credits+" XP");
-    await page.setViewportSize({width:390,height:840});
-    await mirror.locator('[data-hh-mirror-back-format]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await expect(purpose.locator('[data-video-ideas-goal-choice="rest"]')).toHaveAttribute("aria-pressed","true");
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-    await expect(page.locator('[data-video-quick-control="video"]')).toHaveAttribute("aria-pressed","true");
-    await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
-    await expect(mirror.locator('[data-hh-mirror-progress]')).toHaveCount(0);
-    await expect(mirror.locator('[data-hh-mirror-ideas-cta]')).toHaveCount(0);
-    await expect(mirror.locator('[data-hh-mirror-play-example]')).toHaveCount(0);
-    await expect(page.locator('[data-video-live-stage]')).toBeHidden();
-    await mirror.locator('[data-hh-mirror-guide-menu]').click();
-    await mirror.locator('[data-hh-mirror-play-example]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
-    await expect(page.locator('[data-video-live-stage]')).toBeVisible();
-    await mirror.locator('[data-hh-mirror-ideas-menu]').click();
-    await expect(mirror.locator('[data-hh-mirror-tier-option]')).toHaveCount(3);
-    await mirror.locator('[data-hh-mirror-tier-option="basic"]').click();
-    await expect(mirror.locator('[data-hh-mirror-ideas-menu]')).toHaveAttribute("aria-expanded","false");
-    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
-    const approvedAxisLabels={
-      en:["Ease Stress & Restore Energy","Improve Love & Relationships","Money, Success & Self-Esteem","Personal & Business Growth"],
-      ru:["Снизить стресс и восстановить энергию","Улучшить любовь и отношения","Деньги, успех и самооценка","Личностный и бизнес-рост"],
-      es:["Aliviar el estrés y recuperar energía","Mejorar el amor y las relaciones","Dinero, éxito y autoestima","Crecimiento personal y empresarial"]
-    }[locale];
-    for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
-      .toContainText(approvedAxisLabels[index]);
-    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
-      await mirror.locator('[data-hh-mirror-guide-menu]').click();
-    await mirror.locator('[data-hh-mirror-back-landing]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-    await mirror.locator('[data-hh-mirror-back-format]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await mirror.locator('[data-hh-mirror-back-purpose]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await mirror.locator('[data-hh-mirror-enter="others"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
-    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
-      await mirror.locator('[data-hh-mirror-guide-menu]').click();
-    await mirror.locator('[data-hh-mirror-back-landing]').click();
-    await mirror.locator('[data-hh-mirror-back-format]').click();
-    await mirror.locator('[data-hh-mirror-back-purpose]').click();
-    await mirror.locator('[data-hh-mirror-enter="work"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await purpose.locator('[data-video-ideas-goal-choice="reframe"]').click();
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    // Approved Goal deliberately has no second hero. Assert actual work input instead.
-    await expect(mirror.locator('[data-hh-mirror-wish]')).toHaveAttribute("placeholder",{
-      en:"Describe your video or service…",ru:"Опишите видео или услугу…",
-      es:"Describe tu vídeo o servicio…"
-    }[locale]);
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
-    const workLabels={
-      en:["Insta Reels","Video About Me","Service Presentation","Client Video Offer"],
-      ru:["Insta Reels","Видео обо мне","Презентация услуги","Видео-предложение клиенту"],
-      es:["Insta Reels","Vídeo sobre mí","Presentación del servicio","Oferta en vídeo para clientes"]
-    }[locale];
-    await expect(workCards).toHaveCount(4);
-    for(let i=0;i<4;i++)await expect(workCards.nth(i)).toContainText(workLabels[i]);
-    for(const width of [320,390,430]){
-      await page.setViewportSize({width,height:840});
-      for(const image of await workCards.locator('img').all()){
-        await image.scrollIntoViewIfNeeded();
-        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
-          {message:"Work photo loads at "+width,timeout:12000}).toBe(true);
-      }
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
-        false,"Work cards do not overflow at "+width);
-    }
-    await page.setViewportSize({width:390,height:840});
-    await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
-    await enterPersonalAfterMontageExtra(page,engine);
-    // Preserve the visitor-selected VIP tier through the new Personal path.
-    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","vip");
-    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
-    // The second-screen Goal is preselected in the SAME canonical Ideas Goal.
-    await expect(page.locator('[data-video-ideas-goal-panel] [data-video-ideas-goal-choice="reframe"]'))
-      .toHaveAttribute("aria-pressed","true",{timeout:15000});
-    await page.locator('[data-video-quick-control="video"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
-    // The removed audience submenu is not a navigational shortcut.
-    // Return through the existing Guide me and approved landing choice.
-    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
-      await mirror.locator('[data-hh-mirror-guide-menu]').click();
-    await mirror.locator('[data-hh-mirror-back-landing]').click();
-    await mirror.locator('[data-hh-mirror-back-format]').click();
-    await mirror.locator('[data-hh-mirror-back-purpose]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await mirror.locator('[data-hh-mirror-enter="others"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
-    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
-      await mirror.locator('[data-hh-mirror-guide-menu]').click();
-    await mirror.locator('[data-hh-mirror-back-landing]').click();
-    await mirror.locator('[data-hh-mirror-back-format]').click();
-    await mirror.locator('[data-hh-mirror-back-purpose]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await mirror.locator('[data-hh-mirror-enter="me"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
-    await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
-    await purpose.locator('[data-video-ideas-goal-next]').click();
-    await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
-    // One-line Next is a real local taxonomy selection and jumps directly
-    // to Goal. No advanced sections, extra copy or paid provider request.
-    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
-      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
-    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
-    await mirror.locator('[data-hh-mirror-next]').click();
-    await enterPersonalAfterMontageExtra(page,engine);
-    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
-    await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
-    // Return to the genuine Goal tab to exercise the second path:
-    // one selected photograph -> exactly two short choices -> Goal.
-    await page.locator('[data-video-quick-control="video"]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","video");
-    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
     await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
-    await expect(mirror).toHaveAttribute('data-hh-mirror-step','2');
+    await stepIs(2);
     const subs=mirror.locator('[data-hh-mirror-subcategory]');
     await expect(subs).toHaveCount(4);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      for(const image of await subs.locator('img').all()){
-        await image.scrollIntoViewIfNeeded();
-        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
-          {message:"Mirror quiz image loads at "+width}).toBe(true);
-      }
-      const metrics=await page.evaluate(()=>({
-        overflow:document.documentElement.scrollWidth>window.innerWidth+1,
-        controls:[...document.querySelectorAll('[data-hh-mirror-subcategory]')]
-          .map(node=>node.getBoundingClientRect().width)
-      }));
-      assert.equal(metrics.overflow,false,"Mirror quiz no horizontal overflow at "+width);
-      assert.ok(metrics.controls.every(value=>value>=125),
-        "Mirror quiz cards remain large enough for "+width);
+      await expect(quizHero).toBeVisible();
+      const widths=await subs.evaluateAll(els=>els.map(el=>el.getBoundingClientRect().width));
+      assert.ok(widths.length===4&&widths.every(w=>w>=125),"stage 2 large cards "+width);
     }
     await page.setViewportSize({width:390,height:840});
     await subs.first().click();
-    await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
+    await stepIs(3);
     await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await expect(mirror.locator('[data-hh-mirror-back-purpose]')).toBeVisible();
+    await confirmPurposeAndFormat("rest","pro");
+    await enterPersonalAfterMontageExtra(page,engine);
+    await page.locator('[data-video-quick-control="video"]').click();
+    await stepIs(1);
+    await backLanding();
+    await mirror.locator('[data-hh-mirror-enter="work"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await chooseSecondFormat("vip");
+    await stepIs(1);
+    const work=mirror.locator('[data-hh-mirror-goal-choice]');
+    await expect(work).toHaveCount(4);
+    await expect(work.first()).toContainText("Insta Reels");
+    await work.first().click();
+    await stepIs(2);
+    await mirror.locator('[data-hh-mirror-subcategory]').first().click();
+    await stepIs(3);
+    await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await confirmPurposeAndFormat("reframe","vip");
+    await enterPersonalAfterMontageExtra(page,engine);
+    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","vip");
+    await page.locator('[data-video-quick-control="video"]').click();
+    await stepIs(1);
+    await backLanding();
+    await mirror.locator('[data-hh-mirror-enter="others"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await chooseSecondFormat("basic");
+    await stepIs(1);
+    await backLanding();
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await chooseSecondFormat("basic");
+    await stepIs(1);
+    await openDescription();
+    await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-ideas-menu]').click();
+    await expect(mirror.locator('[data-hh-mirror-tier-option]')).toHaveCount(3);
+    await mirror.locator('[data-hh-mirror-tier-option="basic"]').click();
+    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
+      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
+    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
+    await mirror.locator('[data-hh-mirror-next]').click();
+    await confirmPurposeAndFormat("rest","basic");
+    await enterPersonalAfterMontageExtra(page,engine);
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    await page.locator('[data-video-quick-control="video"]').click();
+    await stepIs(1);
+    await mirror.locator('[data-hh-mirror-back-to-format]').click();
+    await chooseSecondFormat("pro");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    await stepIs(2);
+    await mirror.locator('[data-hh-mirror-subcategory]').first().click();
+    await stepIs(3);
+    await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await confirmPurposeAndFormat("rest","pro");
     await enterPersonalAfterMontageExtra(page,engine);
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
@@ -586,8 +547,10 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // Authored scene references must match the actual action. Missing
-        // matches show an honest Footage needed sketch, never an unrelated photo.
+        // Scene matches and an explicitly labelled thematic photo story are
+        // distinct promises. Neither is accepted or filmed-action-verified.
+        const illustrativeReferences=await automaticStoryboard
+          .getAttribute("data-storyboard-reference-match")==="illustrative";
         const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
         assert.ok(Number.isSafeInteger(referenceCount)&&referenceCount>=0&&
           referenceCount<=storyboardShotCount,
@@ -595,7 +558,13 @@ async function verifyWorkspaceHydration(browser,locale){
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
           referenceCount?"licensed-photographic-references":"screenplay-scene-sketch");
         assert.equal(await automaticStoryboard.getAttribute("data-storyboard-reference-status"),
-          referenceCount?"editorial_photo_reference_not_action_verified":null);
+          referenceCount?(illustrativeReferences?"illustrative_topic_photos_not_action_verified":
+            "editorial_photo_reference_not_action_verified"):null);
+        if(illustrativeReferences){
+          assert.equal(referenceCount,6,"the photo story needs a complete set before approval");
+          await expect(cards.locator('[data-storyboard-reference-title]')).toHaveCount(6);
+          await expect(automaticStoryboard.locator('[data-storyboard-apply-reference-photos]')).toHaveCount(1);
+        }
         const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
         await expect(referencePhotos).toHaveCount(referenceCount);
         const kinds=await cards.evaluateAll(nodes=>nodes.map(node=>
@@ -1117,7 +1086,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         window.__hhRecordedVideoBlobs=recordedVideos;
         URL.createObjectURL=function(blob){
           const uri=originalCreate.call(URL,blob);
-          if(blob instanceof File && /^holistic-house-voice-\d+\.(?:m4a|webm)$/.test(blob.name))
+          if(blob instanceof File && /^(?:holistic-house-voice-\d+|my-voice)\.(?:m4a|webm)$/.test(blob.name))
             recordedFiles.set(uri,blob);
           if(blob instanceof Blob && blob.type.startsWith("video/"))recordedVideos.set(uri,blob);
           return uri;
@@ -1340,6 +1309,82 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
+      // Deterministic CI microphone input; actual MediaRecorder, File and player.
+      const montageMicAvailable=await page.evaluate(()=>{
+        if(!navigator.mediaDevices||typeof MediaRecorder==="undefined"||
+          !["audio/mp4","audio/webm;codecs=opus","audio/webm"].some(type=>MediaRecorder.isTypeSupported(type)))return false;
+        const ctx=new AudioContext(),tone=ctx.createOscillator(),gain=ctx.createGain(),dest=ctx.createMediaStreamDestination();
+        gain.gain.value=.2;tone.frequency.value=330;
+        tone.connect(gain);gain.connect(dest);tone.start();
+        const devices=navigator.mediaDevices;
+        const old=Object.getOwnPropertyDescriptor(devices,"getUserMedia");
+        const oldDevices=Object.getOwnPropertyDescriptor(navigator,"mediaDevices");
+        const stats={requests:0,resumeError:null};
+        // Start the synthetic WebAudio input within the actual Record gesture.
+        // WebKit may otherwise leave the source suspended or clone a muted
+        // synthetic track. The real MediaRecorder and decoded PCM checks stay.
+        const getSyntheticAudio=async()=>{
+          stats.requests++;
+          try { if(ctx.state!=="running")await ctx.resume(); }
+          catch(error){stats.resumeError=String(error?.name||"AudioContextError");throw error;}
+          return dest.stream;
+        };
+        // WebKit can resolve a different MediaDevices wrapper on a later
+        // gesture. Install the fixture on a stable navigator instance and
+        // verify the exact callable before interacting with the real UI.
+        Object.defineProperty(devices,"getUserMedia",{configurable:true,value:getSyntheticAudio});
+        Object.defineProperty(navigator,"mediaDevices",{configurable:true,value:devices});
+        if(navigator.mediaDevices.getUserMedia!==getSyntheticAudio)throw Error("Montage microphone fixture not installed");
+        window.__hhMontageMic={ctx,tone,old,oldDevices,devices,dest,stats,getSyntheticAudio};return true;
+      });
+      if(engine==="chromium")assert.ok(montageMicAvailable,"Chromium Montage microphone fixture available");
+      if(montageMicAvailable){
+        try{
+          const mic=page.locator('[data-video-montage-voice-record]');
+          if(engine==="webkit")await mic.tap();else await mic.click();
+          try { await expect(mic).toHaveAttribute("aria-pressed","true",{timeout:10000}); }
+          catch(error){
+            console.error("Montage real recorder diagnostic",await page.evaluate(()=>{
+              const f=window.__hhMontageMic;
+              return {state:f?.ctx.state,stats:f?.stats,fixtureInstalled:navigator.mediaDevices?.getUserMedia===f?.getSyntheticAudio,tracks:f?.dest.stream.getAudioTracks().map(t=>({state:t.readyState,muted:t.muted,enabled:t.enabled})),
+                warning:document.querySelector("[data-video-montage-audio] [role=alert]")?.textContent};
+            }));
+            throw error;
+          }
+          assert.equal(await page.evaluate(()=>window.__hhMontageMic.stats.requests),1,"one deliberate microphone request");
+          await page.evaluate(()=>window.__hhMontageMic.ctx.resume());
+          await page.waitForTimeout(1500);
+          if(engine==="webkit")await mic.tap();else await mic.click();
+          const card=page.locator('[data-video-montage-voice-card]');
+          await expect(card).toContainText(/my-voice\.(m4a|webm)/,{timeout:15000});
+          await expect(page.locator('[data-video-audio-compact-rights]')).toHaveCount(0);
+          await expect(page.locator('[data-video-audio-rights]')).toHaveCount(0);
+          const play=card.locator('[data-video-recorded-audio-play]');
+          await expect(play).toBeVisible();await play.click();
+          const audio=card.locator('[data-video-audio-player]');
+          await expect.poll(()=>audio.evaluate(el=>el.currentTime),{timeout:10000}).toBeGreaterThan(.15);
+          const output=await audio.evaluate(async el=>{
+            const file=window.__hhOwnVoiceFiles?.get(el.getAttribute("src"));
+            if(!(file instanceof File))return {muted:el.muted,rms:0};
+            const decoded=await window.__hhMontageMic.ctx.decodeAudioData(await file.arrayBuffer());
+            const samples=decoded.getChannelData(0);
+            let energy=0;for(const sample of samples)energy+=sample*sample;
+            return {muted:el.muted,rms:Math.sqrt(energy/samples.length)};
+          });
+          assert.equal(output.muted,false,"native preview not muted");
+          assert.ok(output.rms>.003,"captured track contains audible PCM");
+        }finally{
+          await page.evaluate(async()=>{
+            const fixture=window.__hhMontageMic;
+            if(fixture.old)Object.defineProperty(fixture.devices,"getUserMedia",fixture.old);
+            else delete fixture.devices.getUserMedia;
+            if(fixture.oldDevices)Object.defineProperty(navigator,"mediaDevices",fixture.oldDevices);
+            else delete navigator.mediaDevices;
+            fixture.dest.stream.getTracks().forEach(track=>track.stop());
+            fixture.tone.stop();await fixture.ctx.close();delete window.__hhMontageMic;
+          });
+        }
+      }
       await page.locator('[data-video-audio-compact-silent]').click();
       const choices=compactGrid.locator('[data-video-audio-compact-select]');
       await choices.nth(0).click();
@@ -2227,46 +2272,49 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        // The Free card only navigates to Ready. The separate Ready button
-        // starts the real local encoder with a second trusted user gesture.
-        await montageProTab.click();
-        await openVideoFormats();
-        await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
-        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
-        await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
-        await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
-        // Safari cannot export from a display:none Canvas; visually keep only
-        // Ready's single public player, and preserve the hidden compositor.
-        const readySourceStage=page.locator("[data-video-live-stage]");
-        const sourceCompositor=await readySourceStage.evaluate(node=>{
-          const box=node.getBoundingClientRect();
-          return {display:getComputedStyle(node).display,width:box.width,height:box.height,
-            canvas:Boolean(node.querySelector("canvas[data-mandala-cinematic-canvas]"))};
-        });
-        assert.notEqual(sourceCompositor.display,"none","Ready must retain Safari's real Canvas");
-        assert.ok(sourceCompositor.canvas&&sourceCompositor.width>0&&sourceCompositor.width<=4&&
-          sourceCompositor.height>0&&sourceCompositor.height<=4,
-          "Ready encoder must remain mounted at 2px without a duplicate visible player");
-        await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
-        const readyGenerate=page.locator("[data-ready-generate]");
-        // The primary action must follow the player immediately on phone.
-        const readyPreview=page.locator("[data-video-ready] [data-aspect]");
-        const previewBox=await readyPreview.boundingBox();
-        const buttonBox=await readyGenerate.boundingBox();
-        if(previewBox&&buttonBox)assert.ok(buttonBox.y>=previewBox.y+previewBox.height-2,
-          "Ready Generate must sit directly beneath the video");
-        await expect(readyGenerate).toBeEnabled({timeout:30000});
-        phase(engine,"montage-free-navigated-ready");
-        // A later Style/Audio edit changes the Story source signature.
-        // Approve the final six decoded photographs AFTER those edits, just
-        // like a real visitor. An old approval must never silently authorize
-        // a changed video, and this step cannot charge or start the encoder.
-        await enterVisibleStudioWorkspace(page,"editor",engine);
-        await expect(editorTab).toHaveAttribute("aria-pressed","true");
+        // Observe genuine credit requests and browser-created output Blobs.
+        // Story approval and format navigation must not start a paid export.
+        const approvalCreditActions=[];
+        const observeApprovalCreditAction=request=>{
+          const path=new URL(request.url()).pathname;
+          if(request.method()==="POST"&&
+            /^\/api\/app\/video-credits\/(?:hold|complete|release)$/.test(path))
+            approvalCreditActions.push(path.split("/").at(-1));
+        };
+        page.on("request",observeApprovalCreditAction);
+        const videosBeforeApproval=await page.evaluate(()=>window.__hhRecordedVideoBlobs.size);
+        // Style/Audio edits can invalidate an earlier Story approval. Resolve
+        // the FINAL source before testing Ready's player or starting an encoder.
+        // Use the visible Story controls, never mutate consent or media state.
         await montageStoryTab.click();
         await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
         const finalStoryboard=page.locator('[data-video-auto-storyboard]');
         await expect(finalStoryboard).toBeVisible();
+        if(await finalStoryboard.getAttribute("data-storyboard-media-ready")!=="true"){
+          // Explicitly ask to use this unapproved Story. Its existing Quality
+          // action cannot approve missing footage or a photographic adaptation.
+          await expect(chooseQuality).toBeEnabled();
+          if(engine==="webkit")await chooseQuality.tap();else await chooseQuality.click();
+          await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
+          await montageProTab.click();
+          await openVideoFormats();
+          const freeFormat=montageProOffer.locator('[data-video-montage-pro-choice="free"]');
+          await expect(freeFormat).toBeEnabled();
+          if(engine==="webkit")await freeFormat.tap();else await freeFormat.click();
+          // Free must reveal the unresolved Story instead of a dead-end Ready.
+          await expect(page.locator("[data-mandala-free-video]"))
+            .toHaveAttribute("data-active-workspace","editor");
+          await expect(page.locator('[data-video-basic-editor]'))
+            .toHaveAttribute("data-montage-panel","concept");
+          await expect(finalStoryboard).toBeVisible();
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+          await expect(page.locator('[data-ready-generating]')).toHaveCount(0);
+          assert.deepEqual(approvalCreditActions,[],"pending Story navigation cannot hold or settle credits");
+          assert.equal(await page.evaluate(()=>window.__hhRecordedVideoBlobs.size),videosBeforeApproval,
+            "pending Story navigation cannot produce an encoded video");
+          phase(engine,"pending-story-revealed-without-export");
+        }
+        // Approve the exact decoded photographs only after the final edits.
         const finalApproval=page.locator('[data-storyboard-apply-reference-photos]');
         if(await page.locator('[data-storyboard-photo-approval-required]').count()){
           await expect(finalApproval).toBeVisible({timeout:20000});
@@ -2274,7 +2322,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await finalApproval.click();
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
-        }else{
+        }else if(await finalStoryboard.getAttribute("data-storyboard-media-ready")!=="true"){
           // An authored screenplay may have no action-matching licensed photos.
           // The editor must NOT claim media is ready or auto-approve unrelated
           // pictures. This Story integrity check is independent of the genuine
@@ -2377,12 +2425,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
           }
           await montageProTab.click();
+        }else{
+          // Already-applied photos are export shots, not reference posters.
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          await montageProTab.click();
         }
+        // Free is navigation only; generation still needs the separate trusted
+        // Ready tap after source approval or a deliberate catalogue selection.
         await openVideoFormats();
-        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
+        const approvedFreeFormat=montageProOffer.locator('[data-video-montage-pro-choice="free"]');
+        await expect(approvedFreeFormat).toBeEnabled();
+        if(engine==="webkit")await approvedFreeFormat.tap();else await approvedFreeFormat.click();
         await expect(page.locator("[data-mandala-free-video]"))
           .toHaveAttribute("data-active-workspace","ready");
+        await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
+        // Safari cannot export from a display:none Canvas; visually keep only
+        // Ready's single public player, and preserve the hidden compositor.
+        const readySourceStage=page.locator("[data-video-live-stage]");
+        const sourceCompositor=await readySourceStage.evaluate(node=>{
+          const box=node.getBoundingClientRect();
+          return {display:getComputedStyle(node).display,width:box.width,height:box.height,
+            canvas:Boolean(node.querySelector("canvas[data-mandala-cinematic-canvas]"))};
+        });
+        assert.notEqual(sourceCompositor.display,"none","Ready must retain Safari's real Canvas");
+        assert.ok(sourceCompositor.canvas&&sourceCompositor.width>0&&sourceCompositor.width<=4&&
+          sourceCompositor.height>0&&sourceCompositor.height<=4,
+          "Ready encoder must remain mounted at 2px without a duplicate visible player");
+        await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
+        const readyGenerate=page.locator("[data-ready-generate]");
+        // The primary action must follow the player immediately on phone.
+        const readyPreview=page.locator("[data-video-ready] [data-aspect]");
+        const previewBox=await readyPreview.boundingBox();
+        const buttonBox=await readyGenerate.boundingBox();
+        if(previewBox&&buttonBox)assert.ok(buttonBox.y>=previewBox.y+previewBox.height-2,
+          "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
+        phase(engine,"montage-free-navigated-ready");
+        await expect(page.locator('[data-ready-generating]')).toHaveCount(0);
+        assert.deepEqual(approvalCreditActions,[],"source approval and Ready navigation cannot hold or settle credits");
+        assert.equal(await page.evaluate(()=>window.__hhRecordedVideoBlobs.size),videosBeforeApproval,
+          "source approval and Ready navigation cannot produce an encoded video");
+        page.off("request",observeApprovalCreditAction);
         // Capture transient real Ready progress before the trusted Generate tap:
         // a fast local export may unmount the seven-question panel immediately.
         await page.evaluate(()=>{

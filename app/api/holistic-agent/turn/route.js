@@ -3,7 +3,8 @@ import { AppError, onlyKeys } from "@/lib/assessments/contracts";
 import { getAppConfig, requireSameOrigin } from "@/lib/app/config";
 import { createRequestAuth } from "@/lib/app/session";
 import { createAppRepository } from "@/lib/app/repository";
-import { consumeRate } from "@/lib/app/database";
+import { consumeRate, consumeRateBatch } from "@/lib/app/database";
+import { waveGeminiPublicEligibility, waveGeminiPublicQuota, waveGeminiPublicReadiness, waveGeminiPublicReply } from "@/lib/holistic-support/wave-gemini-public.mjs";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -15,6 +16,7 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import {isChatModelStatusQuestion,chatModelStatusReply} from "@/lib/holistic-support/chat-model-status.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
@@ -172,6 +174,26 @@ function preflight(text,locale) {
   if(reviewPracticeBoundary(text,locale))return {status:"human_review"};
   return {status:"clear"};
 }
+// Authenticated, no-store readiness for owner acceptance and support.
+// A configured gate does NOT establish Google billing, quota or a successful model call.
+// No conversation content, account identifier, secret, quota reservation or Google request.
+export async function GET(request) {
+  let auth;
+  try {
+    const config=getAppConfig();
+    auth=createRequestAuth(request,config);
+    const actor=await auth.verified();
+    const status=waveGeminiPublicReadiness({
+      eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+    });
+    return auth.apply(NextResponse.json({status,scope:"public_topics",providerCall:false,modelUsed:false},{headers:PRIVATE_HEADERS}));
+  } catch(error) {
+    const e=safeError(error);
+    const response=NextResponse.json({error:e.code},{status:e.status,headers:PRIVATE_HEADERS});
+    return auth?auth.apply(response):response;
+  }
+}
+
 export async function POST(request) {
   let auth;
   try {
@@ -286,6 +308,12 @@ export async function POST(request) {
       }
       return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}));
     };
+    // Answer model-identity questions before generic conversation routing. The
+    // disclosure never represents a successful Gemini call or overrides safety.
+    if(safety.status==="clear"&&!recentUnsafe&&body.judgmentContext==null&&body.judgmentChoice==null&&isChatModelStatusQuestion(body.message)&&(!stateEvent||stateEvent.type==="ordinary")){
+      const reply=chatModelStatusReply({locale:body.locale});
+      return await finish({status:"clarify",reply,source:"chat-model-status",modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,decision:{status:"clarify",message:reply,question:null,suggestions:[]}});
+    }
     // A verified current-session refusal applies to later emotional statements.
     // Safety handoffs and signed continuations retain priority; factual and
     // explicitly requested workflows continue through their normal owners.
@@ -420,6 +448,24 @@ export async function POST(request) {
       mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
       decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
+    // Public-knowledge Gemini is optional presentation, not a second Director.
+    // Exact topic allowlist + verified eligibility; no private text leaves us.
+    const publicGemini=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      !judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)&&
+      body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")
+      ?await waveGeminiPublicReply({message:body.message,locale:body.locale,
+        eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+        reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id)),
+        signal:AbortSignal.timeout(8000)}):null;
+    if(publicGemini)return await finish({
+      status:"clarify",reply:publicGemini.reply,modelUsed:true,source:publicGemini.source,
+      memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:publicGemini.reply,question:null,suggestions:[]},
+    });
     // Native Wave precedes catalog lookups and optional remote inference for
     // narrow conversation/FAQ intents. Safety, signed choices, consent and
     // existing stateful journeys above this point remain authoritative.

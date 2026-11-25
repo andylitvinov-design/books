@@ -3,6 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import {savePrivateMp4} from '@/lib/mandala/signed-private-video-upload.mjs'
+import {inspectPersonalVideoFile,personalVideoDuration,personalVideoFileError} from '@/lib/app/personal-video-file-contract.mjs'
 import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
 import {MATERIAL_TAB_IDS,selectedMaterialTab,materialTabSearch} from '@/lib/app/my-materials-tabs.mjs'
@@ -17,7 +18,11 @@ const COPY={
     progress:'Uploading securely: {percent}%. Keep this tab open.',
     retry:'Upload interrupted. Tap Save again to resume this file without reserving another slot.',
     expired:'Upload expired. Delete the unfinished entry below and start again.',
-    size:'Each file ≤12 MB · Up to 3 videos · Finished MP4 only.',music:'This page stores finished videos, not your original photos.',
+    size:'Each file ≤12 MB · Up to 60 seconds · Up to 3 videos · MP4 only (not MOV).',music:'This tab contains finished videos. Your saved photos are in My Photos.',
+    invalidFile:'Choose a playable MP4. MOV/QuickTime and other formats are not supported.',
+    tooLarge:'This file is larger than 12 MB. Choose a smaller MP4.',
+    invalidDuration:'Choose an MP4 lasting more than zero and no more than 60 seconds.',
+    quota:'The private video storage limit has been reached. Remove unneeded videos or try again later.',
     states:{ready:'Ready',pending:'Upload pending',failed:'Upload failed',deleting:'Delete pending'},
     themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals',health:'Health',life:'Personal growth',gift:'Personal Gift'}},
   ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',myPage:'На Мою страницу',
@@ -28,7 +33,11 @@ const COPY={
     progress:'Безопасная загрузка: {percent}%. Не закрывайте вкладку.',
     retry:'Загрузка прервалась. Нажмите «Сохранить» ещё раз: продолжим без новой записи.',
     expired:'Срок загрузки истёк. Удалите незавершённое видео ниже и повторите попытку.',
-    size:'Каждый файл ≤12 МБ · Не более 3 видео · Только готовый MP4.',music:'Исходные фотографии и пожелания здесь не хранятся.',
+    size:'Каждый файл ≤12 МБ · До 60 секунд · Не более 3 видео · Только MP4 (не MOV).',music:'В этой вкладке — готовые видео. Сохранённые фотографии находятся в «Моих фото».',
+    invalidFile:'Выберите воспроизводимый MP4. MOV/QuickTime и другие форматы не поддерживаются.',
+    tooLarge:'Файл больше 12 МБ. Выберите MP4 меньшего размера.',
+    invalidDuration:'Выберите MP4 длительностью больше нуля и не более 60 секунд.',
+    quota:'Достигнут лимит личного видеохранилища. Удалите ненужные видео или повторите позже.',
     states:{ready:'Готово',pending:'Загрузка не завершена',failed:'Ошибка загрузки',deleting:'Удаление не завершено'},
     themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели',health:'Здоровье',life:'Развитие',gift:'Живая открытка'}},
   es:{title:'Mis vídeos',subtitle:'Biblioteca privada de vídeos terminados en tu cuenta.',new:'Crear vídeo gratuito',myPage:'Publicar en Mi página',
@@ -39,7 +48,11 @@ const COPY={
     progress:'Carga segura: {percent} %. Mantén esta pestaña abierta.',
     retry:'Carga interrumpida. Pulsa Guardar de nuevo para reanudar el mismo archivo.',
     expired:'La carga caducó. Borra el vídeo incompleto de abajo y vuelve a intentarlo.',
-    size:'Cada archivo ≤12 MB · Máximo 3 vídeos · Solo MP4 terminados.',music:'Las fotos originales y los deseos no se guardan aquí.',
+    size:'Cada archivo ≤12 MB · Hasta 60 segundos · Máximo 3 vídeos · Solo MP4 (no MOV).',music:'Esta pestaña contiene los vídeos terminados. Tus fotos guardadas están en Mis fotos.',
+    invalidFile:'Elige un MP4 que se pueda reproducir. MOV/QuickTime y otros formatos no son compatibles.',
+    tooLarge:'El archivo supera los 12 MB. Elige un MP4 más pequeño.',
+    invalidDuration:'Elige un MP4 de más de cero y no más de 60 segundos.',
+    quota:'Se alcanzó el límite de almacenamiento privado. Elimina vídeos innecesarios o vuelve a intentarlo más tarde.',
     states:{ready:'Listo',pending:'Carga pendiente',failed:'Error de carga',deleting:'Eliminación pendiente'},
     themes:{money:'Dinero',relationships:'Relaciones',energy:'Energía',goals:'Objetivos',health:'Salud',life:'Crecimiento personal',gift:'Tarjeta viva'}}
 }
@@ -53,25 +66,23 @@ const MATERIAL_COPY={
     label:'Mis materiales privados',tabs:{avatars:'Avatares IA',videos:'Mis vídeos',photos:'Mis fotos'}}
 }
 const formats={portrait:'9:16',square:'1:1',landscape:'16:9'}
-const limit=12_000_000
 async function verifyMp4(file){
-  if(!file||file.type!=='video/mp4'||file.size<1024||file.size>limit)throw new Error('INVALID_VIDEO')
-  const bytes=new Uint8Array(await file.slice(0,12).arrayBuffer())
-  if(String.fromCharCode(...bytes.slice(4,8))!=='ftyp')throw new Error('INVALID_VIDEO')
+  await inspectPersonalVideoFile(file)
   const url=URL.createObjectURL(file)
+  const video=document.createElement('video')
   try {
     const duration=await new Promise((resolve,reject)=>{
-      const video=document.createElement('video')
       video.preload='metadata'
-      const timer=setTimeout(()=>{video.removeAttribute('src');video.load();reject(new Error('INVALID_VIDEO'))},12000)
+      const timer=setTimeout(()=>reject(personalVideoFileError('INVALID_VIDEO_FILE')),12000)
       video.onloadedmetadata=()=>{clearTimeout(timer);resolve(video.duration)}
-      video.onerror=()=>{clearTimeout(timer);reject(new Error('INVALID_VIDEO'))}
+      video.onerror=()=>{clearTimeout(timer);reject(personalVideoFileError('INVALID_VIDEO_FILE'))}
       video.src=url
     })
-    const matched=[10,15,20,25,30,60].find(x=>Math.abs(x-duration)<=1.25)
-    if(!matched)throw new Error('INVALID_DURATION')
-    return matched
-  } finally {URL.revokeObjectURL(url)}
+    return personalVideoDuration(duration)
+  } finally {
+    video.onloadedmetadata=null;video.onerror=null
+    video.removeAttribute('src');video.load();URL.revokeObjectURL(url)
+  }
 }
 export default function MyPersonalVideos({accountId,locale='en'}){
   const language=locale==='ru'?'ru':locale==='es'?'es':'en'
@@ -91,6 +102,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
   const [play,setPlay]=useState(null)
   const [download,setDownload]=useState(null)
   const generation=useRef(0)
+  const invalidate=useCallback(()=>{generation.current++},[])
   const reload=useCallback(async()=>{
     const epoch=++generation.current
     try{
@@ -109,7 +121,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
     window.addEventListener('popstate',syncTab)
     return()=>window.removeEventListener('popstate',syncTab)
   },[])
-  useEffect(()=>{if(activeTab==='videos')void reload();return()=>{generation.current++}},[reload,activeTab])
+  useEffect(()=>{if(activeTab==='videos')void reload();return invalidate},[reload,activeTab,invalidate])
   function selectMaterialTab(id){
     if(!MATERIAL_TAB_IDS.includes(id))return
     setActiveTab(id)
@@ -151,7 +163,11 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       uploadSessionRef.current=null
       await reload()
     }catch(error){
-      setNotice(error?.code==='PRIVATE_UPLOAD_EXPIRED'?t.expired:
+      setNotice(['PRIVATE_UPLOAD_EXPIRED','VIDEO_UPLOAD_EXPIRED'].includes(error?.code)?t.expired:
+        error?.code==='INVALID_VIDEO_FILE'?t.invalidFile:
+        error?.code==='VIDEO_TOO_LARGE'?t.tooLarge:
+        error?.code==='VIDEO_DURATION_NOT_ALLOWED'?t.invalidDuration:
+        error?.code==='VIDEO_STORAGE_QUOTA'?t.quota:
         error?.code==='INVALID_VIDEO_UPLOAD'||error?.code==='MEDIA_TYPE_NOT_ALLOWED'?
         t.error:t.retry)
       await reload()

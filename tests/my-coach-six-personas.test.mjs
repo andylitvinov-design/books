@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync,statSync} from 'node:fs'
-import {COACH_PERSONAS,PUBLIC_COACH_PERSONA_IDS,PUBLIC_COACH_PERSONAS,getCoachPersona,
+import {COACH_PERSONAS,PUBLIC_COACH_PERSONA_IDS,PUBLIC_COACH_PERSONAS,PUBLIC_COACH_RAIL_IDS,getCoachPersona,
   coachSessionHref,buildCoachBehaviorPolicy} from '../lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '../lib/coaching/persona-presentations.mjs'
 import {COACH_CONVERSATION_VOICES,COACH_STYLE_MOVES} from '../lib/coaching/conversational-persona.mjs'
@@ -17,7 +17,8 @@ test('seven public AI coaches and four historical hidden characters',()=>{
   const catalog=read('components/my-coach-catalog.jsx')
   assert.ok(catalog.includes('const displayedCoaches = visibleList'))
   assert.ok(!catalog.includes('visibleList.slice(0, 4)'))
-  assert.ok(catalog.includes('PUBLIC_COACH_PERSONA_IDS.map(id =>'))
+  assert.ok(catalog.includes('PUBLIC_COACH_RAIL_IDS.map(id =>'))
+  assert.deepEqual([...PUBLIC_COACH_RAIL_IDS].sort(),[...PUBLIC_COACH_PERSONA_IDS].sort())
 })
 test('Merlin and Harry have distinct EN/RU/ES voices, safe stages and session routing',()=>{
   for(const id of ['merlin','harry']){
@@ -67,8 +68,7 @@ test('Harry approved soft portrait is used in rail, profile, avatar and listenin
   const avatar=read('components/app/coaching-avatar.jsx')
   const catalog=read('components/my-coach-catalog.jsx')
   const rail=read('components/my-coach-mira-landing.module.css')
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])"))
-  assert.ok(!media.includes("'merlin','harry','genie'])"))
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry','genie'])"))
   assert.ok(media.includes("MEDIA_ROOT+'harry-soft-still.webp'"))
   assert.ok(media.includes("const harryClip=state==='listening'?'attentive':'calm'"))
   assert.ok(media.includes("personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4'"))
@@ -77,7 +77,7 @@ test('Harry approved soft portrait is used in rail, profile, avatar and listenin
   assert.ok(media.includes("window.matchMedia?.('(prefers-reduced-motion: reduce)')"))
   assert.ok(media.includes('muted loop playsInline autoPlay'))
   assert.ok(avatar.includes("photoId==='harry'?'harry-soft-still.webp'"))
-  assert.ok(avatar.includes("['mira','max','sofia','alex','merlin','harry'].includes(photoId)"))
+  assert.ok(avatar.includes("['mira','max','sofia','alex','merlin','harry','genie'].includes(photoId)"))
   assert.ok(catalog.includes("const stillImage = id === 'harry'"))
   assert.ok(catalog.includes('srcSet={stillImage}'))
   assert.ok(catalog.includes('src={stillImage}'))
