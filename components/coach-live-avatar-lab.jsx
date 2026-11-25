@@ -9,7 +9,7 @@ async function endReceipt(receipt){
   const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'end',receipt}),keepalive:true,cache:'no-store',signal:AbortSignal.timeout(20000)})
   if(!response.ok)throw Error('AVATAR_END_UNCONFIRMED')
 }
-const words={idle:'Ожидание',connecting:'Подключение…',playing:'Тестовое видео',stopping:'Останавливаем поток…',ended:'Остановлено',unavailable:'Не удалось запустить тест. Автоматического повтора нет.', 'end-unconfirmed':'Закрытие у поставщика не подтверждено; проверьте кабинет.'}
+const words={idle:'Ожидание',connecting:'Подключение…',playing:'Тестовое видео',stopping:'Останавливаем поток…',ended:'Остановлено',unavailable:'Не удалось запустить тест. Автоматического повтора нет.', 'not-prepared':'Аватар Sequencer ещё не готов. Подготовка не запущена, средства не списываем со своей стороны.', 'end-unconfirmed':'Закрытие у поставщика не подтверждено; проверьте кабинет.'}
 export default function CoachLiveAvatarLab({status}){
   const [provider,setProvider]=useState('simli'),[target,setTarget]=useState('coach'),[confirmed,setConfirmed]=useState(false)
   const [state,setState]=useState('idle'),[locale,setLocale]=useState('ru')
@@ -35,7 +35,7 @@ export default function CoachLiveAvatarLab({status}){
     if(!confirmed||!status[provider]?.allowed||run.current||document.visibilityState==='hidden')return
     const current={cancelled:false,controller:new AbortController(),timer:null,pcmTimer:null}
     run.current=current;report('connecting')
-    let failed=false
+    let failed=false,failureState='unavailable'
     try{
       const Audio=window.AudioContext||window.webkitAudioContext
       current.context=new Audio()
@@ -48,7 +48,7 @@ export default function CoachLiveAvatarLab({status}){
       if(current.cancelled)return
       // Await a late start response to obtain and settle its receipt.
       const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start',provider,...(provider==='simli'?{target}:{}),syntheticOnly:true,freeOnly:true}),cache:'no-store'})
-      if(!res.ok)throw Error('AVATAR_UNAVAILABLE')
+      if(!res.ok){const error=await res.json().catch(()=>null);if(error?.error==='AVATAR_NOT_PREPARED')failureState='not-prepared';throw Error('AVATAR_UNAVAILABLE')}
       const session=await res.json();current.receipt=session.receipt
       if(provider==='simli'&&session.target!==target)throw Error('AVATAR_ROLE_MISMATCH')
       if(current.cancelled)return
@@ -75,7 +75,7 @@ export default function CoachLiveAvatarLab({status}){
       try{await current.renderer?.stop()}catch{ended=false}
       if(current.receipt){const ok=await (current.endPromise||endReceipt(current.receipt).then(()=>true,()=>false));ended=ended&&ok}
       try{await current.context?.close()}catch{}
-      if(run.current===current){run.current=null;report(!ended?'end-unconfirmed':failed?'unavailable':'ended')}
+      if(run.current===current){run.current=null;report(!ended?'end-unconfirmed':failed?failureState:'ended')}
     }
   }
   const busy=['connecting','playing','stopping'].includes(state)
@@ -92,7 +92,7 @@ export default function CoachLiveAvatarLab({status}){
       <video ref={video} autoPlay playsInline muted style={{width:'100%',maxHeight:'52vh',objectFit:'contain',background:'#222'}}/>
       <audio ref={audio} autoPlay controls/>
       <p><label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/> Только готовое тестовое приветствие; бесплатный аккаунт проверен.</label></p>
-      <button type="button" onClick={start} disabled={!confirmed||!status[provider]?.allowed||busy}>Начать бесплатный тест</button>{' '}
+      <button type="button" onClick={start} disabled={!confirmed||!status[provider]?.allowed||busy||state==='end-unconfirmed'}>Начать бесплатный тест</button>{' '}
       <button type="button" disabled={!busy||state==='stopping'} onClick={()=>cancel()}>Остановить</button>
       <p role="status">{words[state]}</p>
     </section>

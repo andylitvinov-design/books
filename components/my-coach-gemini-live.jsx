@@ -282,6 +282,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
        document.visibilityState==='hidden')return false
     if(r.resumeUnavailable||(r.resumePending&&(!r.resumeHandle||r.reconnects>=3||
        !(Date.parse(r.liveToken?.expiresAt)>Date.now())))){
+      r.resumeUnavailable=true
       notify(t.resumeUnavailable);return false
     }
     const epoch=r.pauseEpoch
@@ -1197,7 +1198,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }).catch(()=>{if(!r.ended)notify(t.audioRoute)})
     }catch{notify(t.audioRoute)}
   }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+    hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}

@@ -16,7 +16,7 @@ export async function POST(request){
     }
     return json(await startOwnerAvatarPilot(body))
   }catch(error){
-    const code=['FREE_PILOT_DISABLED','INVALID_PILOT_REQUEST','INVALID_RECEIPT'].includes(error?.message)?error.message:'AVATAR_UNAVAILABLE'
-    return json({error:code},code==='FREE_PILOT_DISABLED'?409:400)
+    const code=['FREE_PILOT_DISABLED','INVALID_PILOT_REQUEST','INVALID_RECEIPT','AVATAR_NOT_PREPARED','AVATAR_READINESS_UNAVAILABLE'].includes(error?.message)?error.message:'AVATAR_UNAVAILABLE'
+    return json({error:code},['FREE_PILOT_DISABLED','AVATAR_NOT_PREPARED'].includes(code)?409:code==='AVATAR_READINESS_UNAVAILABLE'?503:400)
   }
 }

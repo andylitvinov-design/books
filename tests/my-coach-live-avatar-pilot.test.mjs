@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {pilotPublicStatus,simliPresetForRole,simliTokenBody,sequencerStartBody,LIVE_AVATAR_PRODUCT} from '../lib/coaching/live-avatar-pilot.mjs'
-import {startOwnerAvatarPilot,endOwnerSequencerPilot} from '../lib/coaching/live-avatar-pilot-server.mjs'
+import {startOwnerAvatarPilot,endOwnerSequencerPilot,checkSequencerPrepared} from '../lib/coaching/live-avatar-pilot-server.mjs'
 import {connectSimliAvatar,connectSequencerAvatar,avatarSamplePcm16} from '../lib/coaching/live-avatar-renderers.mjs'
 const request=(provider,target='coach')=>({provider,action:'start',...(provider==='simli'?{target}:{}),syntheticOnly:true,freeOnly:true})
 const env={HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',SIMLI_API_KEY:'fake',HH_SEQUENCER_FREE_ACCOUNT_VERIFIED:'true',SEQUENCER_API_KEY:'fake',SEQUENCER_WORKSPACE_ID:'workspace',SEQUENCER_CHARACTER_ID:'character',HH_COACH_AVATAR_RECEIPT_SECRET:'x'.repeat(32)}
@@ -18,7 +18,7 @@ test('provider payloads use hard duration and no history',()=>{
 })
 test('token response is reduced and signed Sequencer receipt can end only its session',async()=>{
   const calls=[]
-  const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.livekit.cloud',livekitClientToken:'short-lived',secret:'private'}}}
+  const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:options.method==='GET'?{liveCharacter:{id:'character',status:'active',runtimeStatus:'ready'}}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.livekit.cloud',livekitClientToken:'short-lived',secret:'private'}}}
   assert.deepEqual(await startOwnerAvatarPilot(request('simli'),{env,fetcher}),{provider:'simli',target:'coach',sessionToken:'token'})
   const response=await startOwnerAvatarPilot(request('sequencer'),{env,fetcher})
   assert.equal(response.secret,undefined)
@@ -54,7 +54,7 @@ test('Simli does not construct a session after cancellation',async()=>{
 })
 test('Sequencer rejects an unapproved WebSocket origin and ends its allocated session',async()=>{
   const calls=[]
-  const fetcher=async(url)=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://example.org',livekitClientToken:'short-lived'}}}
+  const fetcher=async(url,options)=>{calls.push(url);return {ok:true,json:async()=>options.method==='GET'?{liveCharacter:{id:'character',status:'active',runtimeStatus:'ready'}}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://example.org',livekitClientToken:'short-lived'}}}
   await assert.rejects(startOwnerAvatarPilot(request('sequencer'),{env,fetcher}),/AVATAR_PROVIDER_RESPONSE/)
   assert.match(calls.at(-1),/\/session\/end$/)
 })
@@ -73,4 +73,19 @@ test('Simli roles are pinned to the exact official Lukas and Caesar IDs; no arbi
     await assert.rejects(startOwnerAvatarPilot(invalid,{env,fetcher:()=>assert.fail('network forbidden')}),/INVALID_PILOT_REQUEST/)
   }
   assert.equal(calls.length,2)
+})
+
+test('Sequencer readiness is read-only and refuses an unprepared or mismatched character without allocating',async()=>{
+  const calls=[]
+  for(const liveCharacter of [{id:'character',status:'active',runtimeStatus:'preparing'},{id:'other',status:'active',runtimeStatus:'ready'},null]){
+    const fetcher=async(url,options)=>{calls.push({url,method:options.method});return {ok:true,json:async()=>({liveCharacter})}}
+    await assert.rejects(startOwnerAvatarPilot(request('sequencer'),{env,fetcher}),/AVATAR_NOT_PREPARED/)
+  }
+  assert.equal(calls.length,3)
+  assert.ok(calls.every(c=>c.method==='GET'&&c.url.endsWith('/live-characters/character')))
+})
+test('Sequencer readiness denies failed GET and accepts only active ready matching avatar',async()=>{
+  const config={workspace:'workspace',character:'character',key:'fake'}
+  await assert.rejects(checkSequencerPrepared(config,async()=>({ok:false})),/AVATAR_READINESS_UNAVAILABLE/)
+  assert.equal(await checkSequencerPrepared(config,async()=>({ok:true,json:async()=>({liveCharacter:{id:'character',status:'active',runtimeStatus:'ready'}})})),true)
 })

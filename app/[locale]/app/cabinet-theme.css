@@ -1,7 +1,7 @@
 /* Owner-approved Daybook palette, shared only by the existing client pages.
    Course lessons, Business, practitioner editors and original report readers
    do not opt in. Score, warning and validation colors keep their own meaning. */
-[data-cabinet-theme="daybook"] {
+:is([data-cabinet-theme="daybook"], main.client-entry-shell, main[data-free-entry-landing="tests"]) {
   --hh-cabinet-canvas: #21160d;
   --hh-cabinet-surface: #fff6e3;
   --hh-cabinet-surface-soft: #f5e3bf;
@@ -39,10 +39,10 @@
   color-scheme: light;
 }
 
-body:has(main[data-cabinet-theme="daybook"]) {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) {
   background: #21160d !important;
 }
-body:has(main[data-cabinet-theme="daybook"]) [data-sitewide-antistress-banner] {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-sitewide-antistress-banner] {
   display: none;
 }
 main.hh-app[data-cabinet-theme="daybook"]:not(.hh-app--document-reader) {
@@ -177,24 +177,24 @@ main.hh-app[data-cabinet-theme="daybook"]:has([data-profile-space-dashboard]) {
 }
 
 /* Reuse the real global dock; do not create a second navigation component. */
-body:has(main[data-cabinet-theme="daybook"]) [data-hh-unified-dock] {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-hh-unified-dock] {
   border: 1px solid #d7b576;
   border-bottom: 0;
   border-radius: 30px 30px 0 0;
   background: linear-gradient(180deg, #07523bf5, #012d21fa 70%, #012117) !important;
   box-shadow: 0 -5px 24px #07070480, inset 0 1px #f5d58b59;
 }
-body:has(main[data-cabinet-theme="daybook"]) [data-unified-dock-item] { color: #fff1d6; }
-body:has(main[data-cabinet-theme="daybook"]) [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]) {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item] { color: #fff1d6; }
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]) {
   color: #fff8dc;
   background: #347c3b85;
 }
-body:has(main[data-cabinet-theme="daybook"]) [data-unified-dock-item="ai"] svg {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item="ai"] svg {
   border: 2px solid #f9db94;
   background: radial-gradient(circle at 35% 14%, #13c88d, #00754d 60%, #004532);
   box-shadow: 0 0 0 4px #e8ba6482, 0 1px 18px 3px #e7bf6744;
 }
-body:has(main[data-cabinet-theme="daybook"]) [data-unified-dock-item="ai"] span {
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item="ai"] span {
   color: #fff7de;
   background: linear-gradient(#087953, #03482e);
 }
@@ -210,9 +210,85 @@ body:has(main[data-cabinet-theme="daybook"]) [data-unified-dock-item="ai"] span 
   .hh-app[data-cabinet-theme="daybook"] .hh-heading { margin: 16px 0; }
 }
 @media print {
-  body:has(main[data-cabinet-theme="daybook"]),
+  body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])),
   main.hh-app[data-cabinet-theme="daybook"]:not(.hh-app--document-reader) {
     background: #fff !important;
     color: #21160d;
   }
+}
+
+/* Assessment routes outside the /app layout share the approved profile skin.
+   Explicit root scopes exclude client documents, other landings and courses. */
+main.client-entry-shell {
+  background: radial-gradient(ellipse at 90% 0, #6d502c45, transparent 48%), var(--hh-cabinet-canvas);
+  color: #fff1d4;
+  min-width: 0;
+}
+main.client-entry-shell > .house-header,
+main[data-free-entry-landing="tests"] > .house-header {
+  background: var(--hh-cabinet-canvas);
+  border-color: var(--hh-cabinet-border);
+  color: #fff1d4;
+}
+main.client-entry-shell .house-wordmark,
+main[data-free-entry-landing="tests"] .house-wordmark { color: #fff1d4; }
+main.client-entry-shell .house-wordmark span,
+main[data-free-entry-landing="tests"] .house-wordmark span { color: #ead3ae; }
+main.client-entry-shell :is(.cabinet-signin-hero,.cabinet-guest-runner,.cabinet-guest-result,.cabinet-result-section,.cabinet-test-row,.cabinet-legacy-entry) {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--hh-cabinet-ink);
+  background: var(--hh-cabinet-card);
+  border-color: var(--hh-cabinet-border);
+  border-radius: 20px;
+}
+main.client-entry-shell .cabinet-guest-tests { background: transparent; color: #fff1d4; min-width: 0; }
+main.client-entry-shell :is(.cabinet-tests-heading,.cabinet-tests-heading h2,.cabinet-tests-heading p) { color: #fff1d4; }
+main.client-entry-shell :is(.cabinet-signin-hero h2,.cabinet-signin-hero h3,.cabinet-guest-runner h3,.cabinet-result-hero h3,.cabinet-result-section h4) {
+  color: var(--hh-cabinet-ink);
+  font-family: var(--hh-cabinet-heading-font);
+}
+main.client-entry-shell :is(.cabinet-signin-hero p,.cabinet-guest-runner .cabinet-test-note,.cabinet-result-intro,.cabinet-result-footer .cabinet-test-note,.cabinet-answer-anchors) { color: var(--hh-cabinet-muted); }
+main.client-entry-shell .cabinet-guest-tests > .cabinet-test-note { color: #ead3ae; }
+main.client-entry-shell :is(.cabinet-quick-question,.cabinet-guided-question) {
+  box-sizing: border-box; min-width: 0; max-width: 100%;
+  border: 1px solid var(--hh-cabinet-border);
+  border-radius: 16px;
+  background: var(--hh-cabinet-surface);
+  color: var(--hh-cabinet-ink);
+  padding: clamp(12px,3vw,18px);
+}
+main.client-entry-shell .cabinet-quick-question legend { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+main.client-entry-shell .cabinet-question-number { color: var(--hh-cabinet-primary); }
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale,.hh-test-mode-toggle) button {
+  box-sizing: border-box; min-height: 44px; min-width: 0;
+  border-color: var(--hh-cabinet-border); border-radius: 12px;
+  white-space: normal; overflow-wrap: anywhere;
+}
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale) button:not([class]) {
+  background: #fffaf0; color: var(--hh-cabinet-ink);
+}
+main.client-entry-shell .hh-test-mode-toggle button { background: var(--hh-cabinet-surface-soft); color: var(--hh-cabinet-ink); }
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale,.hh-test-mode-toggle) button[aria-pressed="true"] {
+  background: var(--hh-cabinet-primary); border-color: var(--hh-cabinet-primary); color: #fff9e7;
+}
+main.client-entry-shell :is(.cabinet-test-actions button,.cabinet-save-result,.cabinet-google-button) {
+  min-height: 44px; border-radius: 14px; border-color: var(--hh-cabinet-primary);
+  background: var(--hh-cabinet-primary); color: #fff9e7; white-space: normal;
+}
+main.client-entry-shell .hh-runner-segments > span { background: #e6cda1; }
+main.client-entry-shell .hh-runner-segments > span.is-done { background: #789d73; }
+main.client-entry-shell .hh-runner-segments > span.is-current { background: var(--hh-cabinet-primary); }
+main.client-entry-shell :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { font-size: 16px; border-color: var(--hh-cabinet-border); max-width: 100%; box-sizing: border-box; }
+main.client-entry-shell :is(a,button,summary,input,select,textarea):focus-visible { outline: 3px solid #a27025; outline-offset: 2px; }
+@media (max-width: 759px) {
+  body:has(main:is([data-daybook-vectors],.client-entry-shell,[data-free-entry-landing="tests"])) [data-hh-ihelp-trigger] {
+    top: auto; bottom: calc(var(--hh-unified-nav-height,94px) + 12px); right: max(10px,env(safe-area-inset-right,0px));
+    width: 46px; min-width: 46px; min-height: 46px; padding: 8px; font-size: 0; gap: 0;
+  }
+  body:has(main:is([data-daybook-vectors],.client-entry-shell,[data-free-entry-landing="tests"])) [data-hh-ihelp-trigger] svg { width: 22px; height: 22px; }
+  main.client-entry-shell, main[data-free-entry-landing="tests"] { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+}
+@media print {
+  main.client-entry-shell, main[data-free-entry-landing="tests"] { background: #fff; color: #21160d; }
 }

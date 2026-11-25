@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "../app/cabinet-theme.css";
 import { notFound } from "next/navigation";
 import { FreeEntryLanding } from "@/components/free-entry-landing";
 import { isPublicLocale } from "@/data/academy/catalog";
