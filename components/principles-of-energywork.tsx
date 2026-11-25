@@ -338,9 +338,9 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
   // Native-resolution, artwork-only crops from the approved second-screen reference.
   const detailPhotos = ["/images/holistic-house/reiki-week-sunrise-approved.webp", "/images/holistic-house/reiki-week-lotus-approved.webp", "/images/holistic-house/reiki-week-kundalini-approved.webp", "/images/holistic-house/reiki-week-world-tree-approved.webp", "/images/holistic-house/reiki-week-initiation-approved.webp"];
   const yggdrasilVideos = {
-    en: { kicker: "INTRODUCTORY VIDEOS", title: "Discover Reiki", first: "Flight to the Sun", second: "What really is Reiki Yggdrasil", language: "Original videos" },
-    ru: { kicker: "ВВОДНЫЕ ВИДЕО", title: "Знакомство с Рейки", first: "Полёт к Солнцу", second: "Что такое Рейки Иггдрасиль", language: "Оригинальные видео" },
-    es: { kicker: "VIDEOS INTRODUCTORIOS", title: "Descubre Reiki", first: "Vuelo al Sol", second: "Qué es realmente Reiki Yggdrasil", language: "Videos originales" },
+    en: { kicker: "INTRODUCTORY VIDEOS", title: "Discover Reiki Yggdrasil", first: "Introductory video", second: "What really is Reiki Yggdrasil", language: "Original videos" },
+    ru: { kicker: "ВВОДНЫЕ ВИДЕО", title: "Знакомство с Рейки Иггдрасиль", first: "Вводное видео", second: "Что такое Рейки Иггдрасиль", language: "Оригинальные видео" },
+    es: { kicker: "VIDEOS INTRODUCTORIOS", title: "Descubre Reiki Yggdrasil", first: "Video introductorio", second: "Qué es realmente Reiki Yggdrasil", language: "Videos originales" },
   }[locale];
   return (
     <main className={styles.page} lang={locale} data-reiki-practitioner-landing>
