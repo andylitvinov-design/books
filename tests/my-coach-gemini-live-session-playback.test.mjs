@@ -658,3 +658,100 @@ test('watchdog follows real reply boundaries without minting another credential'
   assert.match(component,/r\.ready=false\s+r\.replyWatch\?\.clear\(\)/)
   assert.match(component,/!r\.bargeDetector\.userActive&&Date\.now\(\)-\(r\.lastHumanAudioAt\|\|0\)>900/)
 })
+
+test('background capture and playback are gated while the same session is paused',()=>{
+  const h=session()
+  h.r.paused=true
+  h.clock.context.state='suspended'
+  h.capture(h.r,new Float32Array(1536).fill(.2))
+  assert.equal(h.sent.length,0)
+  h.receive({audio:[pcm(.5)],output:'A held reply',turnComplete:true})
+  assert.equal(h.r.pendingAudio.length,1)
+  assert.equal(h.events.final.length,0)
+  assert.equal(h.events.gestures.length,0)
+  assert.equal(h.r.liveToken.token,'auth_tokens/synthetic-existing-session')
+  h.r.paused=false
+  h.clock.context.state='running'
+  assert.equal(h.flushPendingAudio(h.r),true)
+  h.clock.advanceTo(1)
+  assert.deepEqual(h.events.final,[{text:'A held reply',interrupted:false}])
+  h.assertLive()
+})
+test('visibility pause parks microphone and preserves same socket, token and history; pagehide closes only transport',()=>{
+  const track={enabled:true,readyState:'live',stop(){this.readyState='ended'}}
+  const sent=[],closed=[],phases=[],notices=[]
+  const token={token:'auth_tokens/existing',expiresAt:'2099-01-01T00:00:00Z'}
+  const socket={close:(...args)=>closed.push(args)}
+  const history=[{role:'user',content:'My name is Jane'}]
+  const r={ready:true,ended:false,introSent:true,liveToken:token,resumeHandle:'checkpoint',
+    reconnects:0,history,socket,stream:{getAudioTracks:()=>[track],getTracks:()=>[track]},
+    context:{suspend:()=>Promise.resolve()},player:{setVolume(){}},pendingMic:[1],
+    replyWatch:{clear(){}},modelTurnComplete:true}
+  const methods=runInNewContext(section('  function pauseSession(','  function interrupt(){')+
+    '\n({pauseSession,parkPausedSocket})',{
+    runtime:{current:r},propsRef:{current:{}},GeminiLiveBargeDetector,Date,
+    phaseChange:value=>phases.push(value),notify:value=>notices.push(value),
+    t:{resumeUnavailable:'unavailable'},sendSocket:(_r,p)=>sent.push(p),
+    preserveUnconfirmedInput(){},setAudioNeedsGesture(){},clearTimeout(){},
+    interrupt(){assert.fail('complete reply must not be discarded')}
+  })
+  assert.equal(methods.pauseSession(),true)
+  assert.equal(r.paused,true)
+  assert.equal(track.enabled,false)
+  assert.equal(r.socket,socket)
+  assert.equal(r.liveToken,token)
+  assert.equal(r.history,history)
+  assert.equal(sent.length,1)
+  assert.equal(sent[0].realtimeInput.audioStreamEnd,true)
+  methods.pauseSession()
+  assert.equal(sent.length,1)
+  assert.equal(closed.length,0)
+  methods.pauseSession({disconnect:true})
+  assert.equal(track.readyState,'ended')
+  assert.equal(r.socket,null)
+  assert.equal(r.resumePending,true)
+  assert.equal(r.resumeUnavailable,false)
+  assert.equal(r.liveToken,token)
+  assert.equal(r.resumeHandle,'checkpoint')
+  assert.equal(r.history,history)
+  assert.equal(closed.length,1)
+  assert.equal(phases.at(-1),'paused')
+})
+test('Play resumes a paused session on its existing connection without minting or greeting',async()=>{
+  const track={enabled:false,readyState:'live'}
+  const token={token:'auth_tokens/existing',expiresAt:'2099-01-01T00:00:00Z'}
+  const socket={readyState:1},history=[{role:'user',content:'My name is Jane'}]
+  const r={paused:true,pauseEpoch:1,ready:true,stream:{getAudioTracks:()=>[track]},
+    context:{state:'running',resume:()=>Promise.resolve()},player:{setVolume(){}},
+    socket,liveToken:token,history,pausedPhase:'listening'}
+  const phases=[],notices=[]
+  const methods=runInNewContext(section('  async function resumePausedSession(','  function interrupt(){')+
+    '\n({resumePausedSession})',{
+    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},
+    navigator:{},prepareCoachIos27LiveDuplex(){},activateCoachIos27LiveDuplex(){},
+    phaseChange:value=>phases.push(value),notify:value=>notices.push(value),
+    flushPendingAudio(){},flushSideband(){},t:{resumeUnavailable:'unavailable'},
+    scheduleReconnect(){assert.fail('healthy socket must not reconnect')},
+    getToken(){assert.fail('resume must never mint a token')},
+    handleAudio(){assert.fail('greeting must not replay')}
+  })
+  assert.equal(await methods.resumePausedSession(r),true)
+  assert.equal(r.paused,false)
+  assert.equal(track.enabled,true)
+  assert.equal(r.socket,socket)
+  assert.equal(r.liveToken,token)
+  assert.equal(r.history,history)
+  assert.equal(phases.at(-1),'listening')
+  r.paused=true;r.resumePending=true;r.resumeUnavailable=true;track.enabled=false
+  assert.equal(await methods.resumePausedSession(r),false)
+  assert.equal(r.paused,true)
+  assert.equal(track.enabled,false)
+  assert.equal(notices.at(-1),'unavailable')
+})
+test('page lifecycle routes visibility and pagehide to pause, retaining explicit stop on unmount',()=>{
+  const lifecycle=section('  useEffect(()=>{\n    const onHidden=', '  useEffect(()=>{\n    const r=runtime.current')
+  assert.match(lifecycle,/visibilityState==='hidden'\)pauseSession\(\)/)
+  assert.match(lifecycle,/onPageHide=\(\)=>pauseSession\(\{disconnect:true\}\)/)
+  assert.match(lifecycle,/removeEventListener\('pagehide',onPageHide\)[\s\S]*stop\(\)/)
+  assert.match(component,/if\(runtime\.current\?\.paused\)\{[\s\S]*?void resumePausedSession\(runtime\.current\)/)
+})
