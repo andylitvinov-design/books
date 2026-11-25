@@ -489,7 +489,7 @@ const audioCopy = {
     recordVoice:"Record my voice",stopVoice:"Finish recording",recordUnavailable:"Microphone is unavailable here. Try Safari or upload an audio file.",
     recordFailed:"Could not record audio. Check microphone permission or use Files.",
     recordTooLarge:"Recording exceeded 15 MB or 3 minutes. Please make a shorter recording.",
-    fileReady:"Voice recorded locally. Confirm audio permission and attach it to the video.",helpTitle:"Audio playback help",
+    fileReady:"Voice recorded locally and attached. Tap Play to listen.",helpTitle:"Audio playback help",
   },
   ru: {
     context:"Под вашу тему",automatic:"Умный подбор",autoOn:"Подобрано по теме",topic:"Тема",favorite:"В избранное",unfavorite:"Убрать из избранного",byFavorites:"Сначала избранные",
@@ -510,7 +510,7 @@ const audioCopy = {
     recordVoice:"Записать голос",stopVoice:"Завершить запись",recordUnavailable:"Микрофон недоступен. Откройте Safari или загрузите аудио из «Файлов».",
     recordFailed:"Записать голос не удалось. Проверьте разрешение на микрофон или загрузите файл.",
     recordTooLarge:"Запись больше 15 МБ или 3 минут. Попробуйте короче.",
-    fileReady:"Голос записан на устройстве. Подтвердите право и прикрепите его к видео.",helpTitle:"Если звук не слышен",
+    fileReady:"Голос записан на устройстве и добавлен к видео. Нажмите Play для прослушивания.",helpTitle:"Если звук не слышен",
   },
   es: {
     context:"Para el tema elegido",automatic:"Selección inteligente",autoOn:"Según el tema",topic:"Tema",favorite:"Favorito",unfavorite:"Quitar favorito",byFavorites:"Primero favoritos",
@@ -531,7 +531,7 @@ const audioCopy = {
     recordVoice:"Grabar voz",stopVoice:"Terminar grabación",recordUnavailable:"El micrófono no está disponible. Prueba Safari o sube un archivo.",
     recordFailed:"No se pudo grabar. Revisa los permisos o utiliza Archivos.",
     recordTooLarge:"La grabación supera 15 MB o 3 minutos. Hazla más corta.",
-    fileReady:"Voz grabada localmente. Confirma los derechos y adjúntala al vídeo.",helpTitle:"Ayuda con el sonido",
+    fileReady:"Voz grabada localmente y añadida al vídeo. Pulsa Reproducir para escuchar.",helpTitle:"Ayuda con el sonido",
   },
 } as const;
 
@@ -2358,6 +2358,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   const [audioStartSeconds,setAudioStartSeconds]=useState(0);
   const [micRecording,setMicRecording] = useState(false);
   const micRef = useRef<{recorder:MediaRecorder;stream:MediaStream;chunks:Blob[];timeout:ReturnType<typeof setTimeout>}|null>(null);
+  const micRequestPendingRef=useRef(false);
   const micSpeechRef=useRef<ReturnType<typeof startDeviceVoiceCapture>|null>(null);
   const [soundPreview,setSoundPreview] = useState(false);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
@@ -2443,7 +2444,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       restore,fileUrl,timer:null as number|null,mixer:null as PreviewGainGroup|null,
       primaryCount:players.length,masterPercent:volume};
     // Web Audio GainNode controls iPhone Safari sound, including mixed film preview.
-    session.mixer=createPreviewGainGroup(session.players,
+    // Play a single microphone recording natively after iOS capture.
+    const nativeOwnVoice=attached.kind==="file"&&uploadedAudio?.recorded&&
+      attached.file===uploadedAudio.file&&!bedUrl;
+    session.mixer=nativeOwnVoice?null:createPreviewGainGroup(session.players,
       session.players.map((player,index)=>index<players.length
         ?(player.muted?0:masterVolume):masterVolume*(musicBed.volumePercent/100)));
     if(session.mixer)session.players.forEach(player=>{try{player.volume=1;}catch{}});
@@ -2499,7 +2503,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     audioPreviewRef.current=node;
   },[]);
   const audioInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
+  const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string;recorded?:true}|null>(null);
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
   // Read a local uploaded audio's duration; no transcription, upload or play.
   useEffect(()=>{
@@ -2520,7 +2524,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     };
   },[uploadedAudio?.url]);
   const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
-  const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
+  const uploadedAudioRef = useRef<{file:File;url:string;recorded?:true}|null>(null);
   const verifiedLibraryAudioFileRef=useRef<File|null>(null);
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
@@ -4880,6 +4884,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   }
   // One GainNode per keyed media element; iPhone Safari ignores audio.volume.
   function ensureAuditionOutput(player:HTMLAudioElement){
+    // Avoid a suspended post-capture AudioContext for the microphone Blob.
+    if(uploadedAudio?.recorded&&player.getAttribute("src")===uploadedAudio.url)return false;
     const current=auditionGainRef.current;
     if(current?.player===player){
       current.mixer.setGains([soundVolume/100]);current.mixer.resume();
@@ -4893,10 +4899,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     return true;
   }
   function toggleSoundPreview(){
-    if(recording || preparing) return;
+    if(recording || preparing || micRecording) return;
     const player=audioPreviewRef.current;
     if(!player || !previewAudioUrl) {setMusicWarning(ui.soundUnavailable);return;}
-    if(!player.paused){stopSoundPreview();return;}
+    if(!player.paused&&!player.ended){stopSoundPreview();return;}
+    if(player.ended){try{player.currentTime=0;}catch{}}
     stopMovieSound();
     setPreviewPlaying(false);
     stopSoundPreview();
@@ -4916,6 +4923,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       stopSoundPreview();
       setMusicWarning(ui.soundUnavailable);
     }
+  }
+  function playSelectedRecording(){
+    if(!uploadedAudio||micRecording||recording||preparing)return;
+    // Switch a stale audition preset or failed player under this trusted tap.
+    flushSync(()=>{setSamplePreviewId(null);setAudioPlaybackError(false);});
+    const player=audioPreviewRef.current;
+    if(!player||player.getAttribute("src")!==uploadedAudio.url){setMusicWarning(ui.soundUnavailable);return;}
+    toggleSoundPreview();
   }
   // The ONE shared native player starts under the same trusted tap in Safari.
   // This never silently attaches audio to the video or uploads client files.
@@ -5021,20 +5036,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     setMusicMvReport(null);
     stopSoundPreview();
-    if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
+    if(uploadedAudioRef.current){
+      const oldUrl=uploadedAudioRef.current.url;
+      setAttachedAudio(current=>current?.kind==="file"&&current.id===oldUrl?null:current);
+      URL.revokeObjectURL(oldUrl);
+    }
     uploadedAudioRef.current=null;
     setUploadedAudio(null);
     setImportedAudioSeconds(null);
     setAudioRights(false);
     if(audioInputRef.current)audioInputRef.current.value="";
   }
-  function chooseAudioFile(file:File|undefined,fromVerifiedMusicLibrary=false){
+  function chooseAudioFile(file:File|undefined,fromVerifiedMusicLibrary=false,fromMicrophone=false){
     if(!file)return;
     if(!isSupportedLocalAudio(file)) {setMusicWarning(ui.audioBadFile);return;}
     clearUploadedAudio();
     verifiedLibraryAudioFileRef.current=fromVerifiedMusicLibrary?file:null;
-    const entry={file,url:URL.createObjectURL(file)};
+    const entry={file,url:URL.createObjectURL(file),...(fromMicrophone?{recorded:true as const}:{})};
     uploadedAudioRef.current=entry;
+    setSamplePreviewId(null);
     setUploadedAudio(entry);
     setAudioPlaybackError(false);
     setAudioDurationInvalid(false);
@@ -5043,9 +5063,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
-    // In the recipient mode, choosing or recording audio is the explicit use action.
-    // Other Studio modes retain their existing rights gate.
-    if(recipientAudioSelected)setAudioRights(true);
+    // A successful explicit microphone recording needs no second rights click.
+    // Never infer microphone provenance from an uploaded filename.
+    if(fromMicrophone||recipientAudioSelected)setAudioRights(true);
     return entry;
   }
   // React StrictMode can replay effects: reuse ONE promise so its first
@@ -5295,10 +5315,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     if(active.recorder.state!=="inactive")active.recorder.stop();
   }
   async function startMicRecording(){
-    if(recording||preparing||micRef.current)return;
+    if(recording||preparing||micRef.current||micRequestPendingRef.current)return;
     if(typeof navigator==="undefined"||!navigator.mediaDevices?.getUserMedia||
       typeof MediaRecorder==="undefined"){setMusicWarning(audioUi.recordUnavailable);return;}
     let stream:MediaStream|null=null;
+    micRequestPendingRef.current=true;
+    stopMovieSound();stopSoundPreview();setPreviewPlaying(false);
     try{
       stream=await navigator.mediaDevices.getUserMedia({audio:true});
       if(!aliveRef.current){stream.getTracks().forEach(track=>track.stop());return;}
@@ -5309,7 +5331,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       const session={recorder,stream,chunks,timeout:setTimeout(stopMicRecording,recipientAudioSelected?59000:180000)};
       micRef.current=session;
       recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
-      recorder.onerror=()=>{micSpeechRef.current?.abort();micSpeechRef.current=null;setMusicWarning(audioUi.recordFailed);};
+      recorder.onerror=()=>{
+        if(micRef.current!==session)return;
+        clearTimeout(session.timeout);micRef.current=null;
+        micSpeechRef.current?.abort();micSpeechRef.current=null;
+        session.stream.getTracks().forEach(track=>track.stop());
+        setMicRecording(false);setMusicWarning(audioUi.recordFailed);
+      };
       const voiceCaptureStart=performance.now();
       recorder.onstop=async()=>{
         clearTimeout(session.timeout);
@@ -5321,7 +5349,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
         micRef.current=null;
         setMicRecording(false);
         if(!chunks.length||!aliveRef.current){setMusicWarning(audioUi.recordFailed);return;}
-        const kind=recorder.mimeType||mime||"audio/mp4";
+        // Use the actual browser-written audio container and codec.
+        const rawKind=chunks.find(chunk=>chunk.type)?.type||recorder.mimeType||mime||"";
+        const kind=rawKind.replace(/^video\/(mp4|webm)/i,"audio/$1");
+        if(!/^audio\/(mp4|webm)(?:;|$)/i.test(kind)){setMusicWarning(audioUi.recordFailed);return;}
         const ext=kind.includes("webm")?"webm":"m4a";
         const file=new File(chunks,"my-voice."+ext,{type:kind});
         if(!isSupportedLocalAudio(file)){setMusicWarning(audioUi.recordTooLarge);return;}
@@ -5331,13 +5362,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
               "Recording exceeds 4 MB. Please record a shorter message.");
           return;
         }
-        const selected=chooseAudioFile(file);
+        const selected=chooseAudioFile(file,false,true);
         if(!selected&&recipientAudioSelected){
           setSttError(locale==="ru"?"Формат записи не поддерживается.":
             locale==="es"?"Formato de audio no compatible.":"Unsupported recording format.");
           return;
         }
-        if(selected&&captured){
+        if(!selected)return;
+        setAttachedAudio({kind:"file",file:selected.file,id:selected.url,nonLoop:true});
+        setSoundVolume(100);setAudioStartSeconds(0);
+        if(captured){
           // A genuine browser speech event, not invented words; event-time bounds are approximate.
           setVoiceTranscript(captured);
           setVoiceVisualPlan(planAudioVisualStoryboard({
@@ -5349,7 +5383,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
         }
         setMusicWarning(audioUi.fileReady);
       };
-      recorder.start(250);
+      // One completed container rather than fragmented timeslices on Safari.
+      recorder.start();
       // Voice capture is attempted only when the visitor explicitly chose Record.
       // On iPhone browser STT may use Apple's or another browser vendor's service.
       micSpeechRef.current=recipientAudioSelected&&spokenAudioLanguage!=="auto"
@@ -5359,8 +5394,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     }catch{
       micSpeechRef.current?.abort();micSpeechRef.current=null;
       stream?.getTracks().forEach(track=>track.stop());
-      setMusicWarning(audioUi.recordFailed);
-    }
+      if(micRef.current){clearTimeout(micRef.current.timeout);micRef.current=null;}
+      setMicRecording(false);setMusicWarning(audioUi.recordFailed);
+    }finally{micRequestPendingRef.current=false;}
   }
   function handleNativeVideoPlaybackFailure(video:HTMLVideoElement){
     if(!result)return;
@@ -6777,6 +6813,57 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
         behavior:"smooth",block:"start",
       })));
   };
+  const inlineRecordingPlayer=Boolean(uploadedAudio)&&(
+    (activeWorkspace==="video"&&recipientAudioSelected)||
+    (activeWorkspace==="editor"&&montagePanel==="audio"&&Boolean(uploadedAudio?.recorded)));
+  const audioPreviewPlayer=previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={setAudioPreviewNode}
+            src={previewAudioUrl} controls={!inlineRecordingPlayer} hidden={inlineRecordingPlayer} preload="metadata" loop={!uploadedAudio}
+            data-video-audio-player data-video-audio-source={uploadedAudio?"user-file":"site-preset"}
+            aria-label={uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.music}
+            onPlay={event=>{
+              const player=event.currentTarget;
+              if(player!==audioPreviewRef.current||player.paused){player.pause();return;}
+              const previous=activeAudioPreviewRef.current;
+              if(previous&&previous!==player)previous.pause();
+              activeAudioPreviewRef.current=player;
+              // Stop the old movie session before acquiring playback routing.
+              stopMovieSound();setPreviewPlaying(false);
+              if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
+              if(!ensureAuditionOutput(player)){
+                player.muted=false;
+                try{player.volume=Math.min(1,Math.max(0,soundVolume/100));}catch{}
+              }
+              setSoundPreview(true);setMusicWarning("");
+            }}
+            onPause={event=>{
+              if(activeAudioPreviewRef.current!==event.currentTarget)return;
+              activeAudioPreviewRef.current=null;
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
+            }}
+            onEnded={event=>{
+              if(activeAudioPreviewRef.current!==event.currentTarget)return;
+              activeAudioPreviewRef.current=null;
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
+            }}
+            onError={event=>{
+              if(event.currentTarget!==audioPreviewRef.current)return;
+              activeAudioPreviewRef.current=null;
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;
+              setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
+            }}
+            onLoadedMetadata={event=>{
+              if(uploadedAudio && uploadedAudio.file!==verifiedLibraryAudioFileRef.current &&
+                Number.isFinite(event.currentTarget.duration) &&event.currentTarget.duration>180){
+                setAudioDurationInvalid(true);
+                setMusicWarning(ui.audioTooLong);
+              }
+            }}/> : null;
+  const recordingPlayButton=uploadedAudio?<button type="button" data-video-recorded-audio-play
+    aria-pressed={soundPreview&&!samplePreviewId} disabled={recording||preparing||micRecording}
+    onClick={playSelectedRecording}>
+    {soundPreview&&!samplePreviewId?<Pause size={17} aria-hidden="true"/>:<Play size={17} aria-hidden="true"/>}
+    {soundPreview&&!samplePreviewId?ui.soundStop:ui.soundPreview}
+  </button>:null;
   const deepAudioPane = (
       <section className={videoStyles.audioSection} id="video-audio" data-video-audio-section aria-labelledby="video-audio-heading">
         <div className={videoStyles.blockHeading}>
@@ -7030,45 +7117,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                 onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
             </label>
           </div>
-          {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={setAudioPreviewNode}
-            src={previewAudioUrl} controls preload="metadata" loop={!uploadedAudio}
-            data-video-audio-player data-video-audio-source={uploadedAudio?"user-file":"site-preset"}
-            aria-label={uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.music}
-            onPlay={event=>{
-              const player=event.currentTarget;
-              if(player!==audioPreviewRef.current||player.paused){player.pause();return;}
-              const previous=activeAudioPreviewRef.current;
-              if(previous&&previous!==player)previous.pause();
-              activeAudioPreviewRef.current=player;
-              // Native controls also honor exclusive audition/film playback.
-              ensureAuditionOutput(player);
-              stopMovieSound();setPreviewPlaying(false);
-              if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
-              setSoundPreview(true);setMusicWarning("");
-            }}
-            onPause={event=>{
-              if(activeAudioPreviewRef.current!==event.currentTarget)return;
-              activeAudioPreviewRef.current=null;
-              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
-            }}
-            onEnded={event=>{
-              if(activeAudioPreviewRef.current!==event.currentTarget)return;
-              activeAudioPreviewRef.current=null;
-              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
-            }}
-            onError={event=>{
-              if(event.currentTarget!==audioPreviewRef.current)return;
-              activeAudioPreviewRef.current=null;
-              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;
-              setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
-            }}
-            onLoadedMetadata={event=>{
-              if(uploadedAudio && uploadedAudio.file!==verifiedLibraryAudioFileRef.current &&
-                Number.isFinite(event.currentTarget.duration) &&event.currentTarget.duration>180){
-                setAudioDurationInvalid(true);
-                setMusicWarning(ui.audioTooLong);
-              }
-            }}/> : null}
+          {!inlineRecordingPlayer?audioPreviewPlayer:null}
           </div>
           {audioPlaybackError && previewAudioUrl ? <div className={videoStyles.audioRecovery} role="alert">
             <button type="button" data-video-audio-retry className={videoStyles.audioDirectLink}
@@ -7077,7 +7126,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
               href={previewAudioUrl} target="_blank" rel="noopener noreferrer"
               data-video-audio-direct>{ui.openAudioDirect}</a> : null}
           </div> : null}
-          {uploadedAudio ? <label className={videoStyles.audioRights}>
+          {uploadedAudio&&!uploadedAudio.recorded ? <label className={videoStyles.audioRights}>
             <input type="checkbox" data-video-audio-rights checked={audioRights}
               onChange={event=>{
                 const checked=event.currentTarget.checked;
@@ -7537,9 +7586,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       </div>
       {uploadedAudio?<div className={videoStyles.recipientAudioSelected}>
         <strong>{uploadedAudio.file.name}</strong><button type="button" disabled={sttBusy} onClick={clearUploadedAudio}>×</button>
-        <small>{locale==="ru"?"Запись готова. Прослушивание доступно в исходном аудиоредакторе.":
-          locale==="es"?"Audio listo. Puedes escucharlo en el editor de audio.":
-          "Audio ready. Listen to it in the original audio editor."}</small></div>:null}
+        {inlineRecordingPlayer?audioPreviewPlayer:null}
+         {recordingPlayButton}
+         {musicWarning?<small role="status">{musicWarning}</small>:null}</div>:null}
       <small data-video-recipient-audio-rights-notice>
         {locale==="ru"?"Используйте только свою запись или аудио, на которое у вас есть разрешение.":
           locale==="es"?"Usa solo tu grabación o audio para el que tienes permiso.":
@@ -8641,6 +8690,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
+        storyApprovalRequired={storySourcePendingRef.current}
+        onReviewStory={()=>{revealPendingStoryApproval();}}
         basicFreeAvailable={basicVideoAccess.allowed}
         basicFreeIssue={basicVideoAccess.reason}
         basicCreditCost={basicVideoAccess.chargeCredits}
@@ -8652,6 +8703,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             ?.scrollIntoView({behavior:"auto",block:"start"}));
         }}
         onGenerateBasicVideo={()=>{
+          // Ready delivery is not permission to replace an unapproved Story
+          // with a previously previewed movie or silently navigate away.
+          if(storySourcePendingRef.current){
+            setNotice(locale==="ru"?"Сначала подтвердите кадры в «Сюжете».":
+              locale==="es"?"Confirma primero las imágenes del guion.":"Approve the selected Story photos first.");
+            return false;
+          }
           if(videoExportMode!=="personal"){
             if(videoExportMode==="openmotion")openExistingMotionPicker();
             else setNotice(expressUnavailable);
@@ -10960,10 +11018,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                   <span>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
                     locale==="ru"?"Записать":locale==="es"?"Grabar":"Record"}</span>
                 </button>
-                {uploadedAudio?<p role="status"><strong>{uploadedAudio.file.name}</strong></p>:<p>
-                  {locale==="ru"?"Ваш голос сохранится только после подтверждения прав.":
-                    locale==="es"?"Confirma los derechos antes de utilizar el audio.":
-                      "Confirm your rights before using your recording."}</p>}
+                {uploadedAudio?.recorded?<>
+                   <p role="status"><strong>{uploadedAudio.file.name}</strong></p>
+                   {inlineRecordingPlayer?audioPreviewPlayer:null}
+                   {recordingPlayButton}
+                 </>:<p>{locale==="ru"?"Запишите свой голос и прослушайте его.":
+                   locale==="es"?"Graba tu voz y escúchala.":"Record your voice and listen to it."}</p>}
               </aside>
             </div>
             <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
@@ -10974,7 +11034,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                   {uploadedAudio?1:attachedPresetIds.length}/3</small>
               </span>
             </div>
-            {uploadedAudio?<div className={videoStyles.audioCompactRights}>
+            {uploadedAudio&&!uploadedAudio.recorded?<div className={videoStyles.audioCompactRights}>
               <label><input type="checkbox" data-video-audio-compact-rights
                 checked={audioRights} onChange={event=>setAudioRights(event.currentTarget.checked)}/>{ui.audioRights}</label>
               <button type="button" data-video-audio-compact-attach
@@ -11119,7 +11179,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                       <Mic size={17}/>{micRecording?audioUi.stopVoice:audioUi.recordVoice}
                     </button>
                   </div>
-                  {uploadedAudio?<label className={videoStyles.audioLibraryRights}>
+                  {uploadedAudio&&!uploadedAudio.recorded?<label className={videoStyles.audioLibraryRights}>
                     <input type="checkbox" data-video-audio-library-rights checked={audioRights}
                       onChange={event=>setAudioRights(event.currentTarget.checked)}/>
                     {ui.audioRights}
