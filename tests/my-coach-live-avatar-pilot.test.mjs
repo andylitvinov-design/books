@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {pilotPublicStatus,simliTokenBody,sequencerStartBody,LIVE_AVATAR_PRODUCT} from '../lib/coaching/live-avatar-pilot.mjs'
 import {startOwnerAvatarPilot,endOwnerSequencerPilot} from '../lib/coaching/live-avatar-pilot-server.mjs'
-import {connectSimliAvatar,connectSequencerAvatar} from '../lib/coaching/live-avatar-renderers.mjs'
+import {connectSimliAvatar,connectSequencerAvatar,avatarSamplePcm16} from '../lib/coaching/live-avatar-renderers.mjs'
 const request=provider=>({provider,action:'start',syntheticOnly:true,freeOnly:true})
 const env={HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',SIMLI_API_KEY:'fake',SIMLI_TEMPLATE_FACE_ID:'template',HH_SEQUENCER_FREE_ACCOUNT_VERIFIED:'true',SEQUENCER_API_KEY:'fake',SEQUENCER_WORKSPACE_ID:'workspace',SEQUENCER_CHARACTER_ID:'character',HH_COACH_AVATAR_RECEIPT_SECRET:'x'.repeat(32)}
 test('disabled by default; no paid product or secrets in status',async()=>{
@@ -18,7 +18,7 @@ test('provider payloads use hard duration and no history',()=>{
 })
 test('token response is reduced and signed Sequencer receipt can end only its session',async()=>{
   const calls=[]
-  const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.example',livekitClientToken:'short-lived',secret:'private'}}}
+  const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.livekit.cloud',livekitClientToken:'short-lived',secret:'private'}}}
   assert.deepEqual(await startOwnerAvatarPilot(request('simli'),{env,fetcher}),{provider:'simli',sessionToken:'token'})
   const response=await startOwnerAvatarPilot(request('sequencer'),{env,fetcher})
   assert.equal(response.secret,undefined)
@@ -39,4 +39,22 @@ test('Sequencer publishes only synthetic destination, never microphone',async()=
   const context={createMediaStreamDestination:()=>({stream:{getAudioTracks:()=>[track]}})}
   const adapter=await connectSequencerAvatar({sdk:{Room,RoomEvent:{},Track:{Kind:{},Source:{Microphone:'mic-label'}}},session:{livekitUrl:'wss://example',livekitClientToken:'synthetic'},context,video:{},audio:{}})
   await adapter.stop();await adapter.stop();assert.deepEqual(calls,['connect','publish','track-stop','disconnect'])
+})
+
+test('Simli PCM sample is mono, bounded, signed little endian at 16kHz',()=>{
+  const buffer={sampleRate:24000,numberOfChannels:2,length:6,getChannelData:()=>new Float32Array([1,1,1,-1,-1,-1])}
+  const result=avatarSamplePcm16(buffer)
+  assert.equal(result.length,8)
+  const data=new DataView(result.buffer);assert.equal(data.getInt16(0,true),32767);assert.equal(data.getInt16(6,true),-32768)
+  assert.throws(()=>avatarSamplePcm16(buffer,16),/AVATAR_SAMPLE_INVALID/)
+})
+test('Simli does not construct a session after cancellation',async()=>{
+  const controller=new AbortController();controller.abort()
+  await assert.rejects(connectSimliAvatar({sdk:{SimliClient:class{constructor(){assert.fail('no connection')}},LogLevel:{ERROR:1}},signal:controller.signal}),/AVATAR_CANCELLED/)
+})
+test('Sequencer rejects an unapproved WebSocket origin and ends its allocated session',async()=>{
+  const calls=[]
+  const fetcher=async(url)=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://example.org',livekitClientToken:'short-lived'}}}
+  await assert.rejects(startOwnerAvatarPilot(request('sequencer'),{env,fetcher}),/AVATAR_PROVIDER_RESPONSE/)
+  assert.match(calls.at(-1),/\/session\/end$/)
 })

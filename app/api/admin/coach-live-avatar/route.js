@@ -14,8 +14,6 @@ export async function POST(request){
     if(body.action==='end'){
       await endOwnerSequencerPilot(body.receipt);return json({ended:true})
     }
-    // Simli is held until the pinned SDK and lockfile are installed and reviewed.
-    if(body.provider!=='sequencer')return json({error:'SIMLI_SDK_PENDING'},409)
     return json(await startOwnerAvatarPilot(body))
   }catch(error){
     const code=['FREE_PILOT_DISABLED','INVALID_PILOT_REQUEST','INVALID_RECEIPT'].includes(error?.message)?error.message:'AVATAR_UNAVAILABLE'
