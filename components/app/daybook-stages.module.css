@@ -291,3 +291,63 @@
 :global([data-cabinet-theme="daybook"]) .workbook .goalBar {grid-template-columns:minmax(0,1fr);gap:0}
 :global([data-cabinet-theme="daybook"]) .workbook .direction {justify-content:flex-start;max-width:none;min-height:44px}
 }
+
+/* Approved mobile Daybook: warm programme rail, brown optional offers, one continuous practice list. */
+:global([data-cabinet-theme="daybook"]) .workbook .goalBar {grid-template-columns:minmax(0,1fr) 70px;align-items:center;gap:10px;background:linear-gradient(125deg,#fffaf0,#f8e3ba);padding:12px 14px;margin:10px 0 12px;border-radius:18px}
+.workbook .goalRing {position:relative;display:grid;place-items:center;width:68px;height:68px;color:#164b37}
+.workbook .goalRing svg {position:absolute;inset:0;width:100%;height:100%}
+.workbook .goalRing strong {position:relative;font-size:18px;font-variant-numeric:tabular-nums}
+.workbook .programTitle {margin:14px 2px 8px;color:#fff4df;font:700 clamp(20px,5vw,27px)/1.2 Georgia,serif}
+.workbook .weekCard {border:1px solid #d7b576;background:linear-gradient(145deg,#fffaf0,#f4dfb7);border-radius:18px;padding:8px 7px 12px;margin:0 0 10px}
+:global([data-cabinet-theme="daybook"]) .workbook .weekButton {flex:1 0 57px;min-width:57px;min-height:58px;border-radius:12px;padding:6px 4px;box-shadow:0 3px 7px #70512319}
+:global([data-cabinet-theme="daybook"]) .workbook .weekButton[aria-pressed=true] {background:linear-gradient(135deg,#087b50,#004c36);border-color:#c9aa69}
+.workbook .timeline {display:flex;align-items:center;justify-content:space-around;position:relative;margin:9px 5px 2px}
+.workbook .timeline:before {content:'';position:absolute;left:6%;right:6%;height:2px;background:#d8b98a}
+.workbook .timeline span {position:relative;width:9px;height:9px;border-radius:50%;background:#d2b181}
+.workbook .timeline span[data-done=true] {background:#087652}
+.workbook .timeline span[data-active=true] {background:#fffbef;border:2px solid #14543c;width:13px;height:13px}
+.workbook .weekCanvas {border:1px solid #e1c692;border-radius:20px;background:linear-gradient(150deg,#fff8e9,#f9e6c5);padding:12px 9px 13px;box-shadow:0 6px 20px #1f160d20}
+:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .weekHeading {padding:2px 4px 10px;gap:8px;grid-template-columns:minmax(0,1fr)}
+:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .weekHeading h2 {color:#39261a;font-size:clamp(21px,5vw,27px)}
+:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .weekHeading p,:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .progress>span {color:#68513b}
+:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .progress strong {color:#175b41}
+:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .progress progress,:global([data-cabinet-theme="daybook"]) .workbook .weekCanvas .progress progress::-webkit-progress-bar {background:#e1c99e}
+.workbook .premiumGroup {display:grid;gap:5px}
+.workbook .premiumCaption {font-size:12px;font-weight:700;color:#77532c;padding:2px 4px}
+.workbook .premiumRow {display:grid;grid-template-columns:34px minmax(0,1fr) auto 15px;align-items:center;gap:7px;width:100%;min-height:54px;padding:7px 8px;border-radius:13px;border:1px solid #b88b4a;background:linear-gradient(125deg,#62401e,#352316);color:#fff8e7;text-align:left;font-family:inherit;margin:0}
+.workbook .premiumRow[aria-pressed=true] {outline:2px solid #d8ad62;outline-offset:1px}
+.workbook .premiumIcon {display:grid;place-items:center;height:34px;width:34px;border-radius:10px;background:#a16d24;color:#ffe1a2}
+.workbook .premiumText,.workbook .practiceText {display:grid;min-width:0;gap:2px}
+.workbook .premiumText strong {font-size:14px;line-height:1.2;font-weight:700;overflow-wrap:anywhere}
+.workbook .premiumText small {font-size:11px;line-height:1.3;color:#f1ddba;overflow-wrap:anywhere}
+.workbook .xp {border-radius:20px;padding:4px 8px;background:#f2ca7a;color:#39230e;font-size:12px;font-weight:800;white-space:nowrap}
+.workbook .premiumDetail {background:#fff9ed;border:1px solid #d6bb89;border-radius:15px;padding:12px}
+.workbook .premiumDetail h3 {font-size:18px;margin:0}
+.workbook .practiceHeading {display:flex;align-items:center;gap:7px;min-height:46px;border:1px solid #e2cda6;border-radius:13px;background:#fff7e7;color:#3c291c;padding:8px 10px;margin:7px 0 2px;text-align:left;font:600 14px/1.3 system-ui,sans-serif}
+.workbook .practiceHeading strong {flex:1;min-width:0}
+.workbook .practiceHeading>span {white-space:nowrap;font-variant-numeric:tabular-nums}
+.workbook .practiceHeading svg {flex:none;color:#886029}
+.workbook .practiceList {display:grid;gap:7px;margin-top:7px}
+.workbook .practiceItem {background:#fffbf1;border:1px solid #e6d3ae;border-radius:15px;box-shadow:0 3px 8px #65462410;min-width:0}
+.workbook .practiceItem[data-current=true] {border-color:#11845b;background:#f2f7e7}
+.workbook .practiceRow {display:grid;grid-template-columns:61px minmax(0,1fr) 58px;align-items:center;gap:8px;width:100%;min-height:82px;padding:7px;border:0;border-radius:14px;background:transparent;color:#3c291c;text-align:left;font-family:inherit;margin:0}
+.workbook .practicePhoto {height:65px;position:relative;border-radius:10px;background-position:center;background-size:cover;background-color:#e6cda1}
+.workbook .practicePhoto[data-photo="0"] {background-image:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.workbook .practicePhoto[data-photo="1"] {background-image:url('/images/holistic-house/hero-olive-incense.webp')}
+.workbook .practicePhoto[data-photo="2"] {background-image:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.workbook .practicePhoto[data-photo="3"] {background-image:url('/images/holistic-house/course-start-heron.webp')}
+.workbook .practicePhoto[data-photo="4"] {background-image:url('/images/holistic-house/magic-mirror-lotus.webp')}
+.workbook .practicePhoto[data-photo="5"] {background-image:url('/images/holistic-house/ideas-pine-reference.webp')}
+.workbook .practicePhoto[data-photo="6"] {background-image:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.workbook .practicePhoto>span {position:absolute;top:3px;right:3px;display:grid;place-items:center;width:22px;height:22px;background:#fff3d7;color:#432b18;border-radius:50%;font-size:12px;font-weight:800}
+.workbook .practiceText strong {font:700 17px/1.2 Georgia,serif;overflow-wrap:anywhere}
+.workbook .practiceText small {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;line-height:1.3;color:#695644}
+.workbook .practiceStatus {display:grid;justify-items:center;gap:3px;color:#006b4e;text-align:center}
+.workbook .practiceStatus small {font-size:10px;line-height:1.2;overflow-wrap:anywhere}
+.workbook .practiceRow[aria-expanded=true] .practiceStatus>svg.lucide-chevron-down {transform:rotate(180deg)}
+.workbook .taskPanel {min-width:0;padding:0 5px 5px}
+:global([data-cabinet-theme="daybook"]) .workbook .practiceItem .sheet {border:0;border-top:1px solid #e2cda6;border-radius:0;background:transparent;padding:12px 7px}
+.workbook .collapse {display:flex;align-items:center;justify-content:flex-end;gap:4px;min-height:44px;border:0;background:transparent;color:#68513b;font-size:13px;margin:0 0 0 auto}
+.workbook .resume {display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:52px;border-radius:999px;border:1px solid #e1bf7c;background:linear-gradient(120deg,#087c54,#004b35);color:#fff8e9;font:700 16px/1.3 system-ui,sans-serif;margin:12px 0 0;padding:10px}
+@media(max-width:359px){.workbook .weekCanvas{padding-inline:7px}.workbook .premiumRow{grid-template-columns:28px minmax(0,1fr) auto 12px;gap:5px;padding-inline:6px}.workbook .premiumIcon{width:28px;height:30px}.workbook .premiumText strong{font-size:13px}.workbook .xp{padding:4px 6px}.workbook .practiceRow{grid-template-columns:48px minmax(0,1fr) 49px;gap:6px}.workbook .practicePhoto{height:57px}.workbook .practiceText strong{font-size:16px}}
+@media(min-width:640px){.workbook .weekCanvas{padding:18px}.workbook .weekCard{padding:12px}.workbook .practiceRow{grid-template-columns:90px minmax(0,1fr) 90px;padding:10px}.workbook .practicePhoto{height:72px}.workbook .premiumRow{min-height:60px}.workbook .practiceText small{font-size:14px}}

@@ -51,7 +51,7 @@ test("EN/RU/ES first screen presents seven visible steps and genuine free/paid r
   const expanded=read("components/home-expanded-catalog.tsx");
   assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
   assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
-  assert.match(read("lib/unified-mobile-dock.mjs"),/"mytube","video","coach","ai","services","practice","profile"/);
+  assert.match(read("lib/unified-mobile-dock.mjs"),/"mytube","reiki","coach","ai","services","practice","profile"/);
   for (const name of ["Free courses","Бесплатные курсы","Cursos gratuitos",
     "Заказать бесплатный письменный разбор","Start free coaching","Request a session · from €50"]) {
     assert.ok(stage.includes(name), "Missing offer: " + name);

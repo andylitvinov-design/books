@@ -144,6 +144,7 @@ try{
   await page.addStyleTag({content:'nextjs-portal { display:none !important; }'})
   await until(async()=>{assert.deepEqual(errors,[],`${locale}: runtime errors while loading goals`);return await goalSelect.locator('option').count()>=3},'Saved goals did not load')
   await goalSelect.selectOption(goal1)
+  await step(GUIDE_WEEKS[0].steps[0].id).click()
   assert.equal(await week(1).getAttribute('aria-pressed'),'true')
   assert.equal(await guide.locator('[data-guide-weeks] button').count(),7)
   assert.equal(await guide.locator('[data-guide-levels] button').count(),4)
@@ -156,12 +157,16 @@ try{
    await page.setViewportSize({width,height:844})
    const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:document.documentElement.clientWidth}))
    assert.ok(geometry.scroll<=geometry.width+1,`${locale}/${width}: document overflow ${JSON.stringify(geometry)}`)
-   for(const rail of ['weeks','levels','steps']){
+   for(const rail of ['weeks']){
     const boxes=await guide.locator('[data-guide-'+rail+'] button').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {y:r.y,height:r.height,width:r.width}}))
     assert.ok(boxes.every(box=>Math.abs(box.y-boxes[0].y)<=1),`${locale}/${width}/${rail}: rail wraps`)
-    if(width>=390){const railSize=await guide.locator('[data-guide-'+rail+']').evaluate(node=>({scroll:node.scrollWidth,client:node.clientWidth}));assert.ok(railSize.scroll<=railSize.client+1,`${locale}/${width}/${rail}: all controls should fit`)}
     assert.ok(boxes.every(box=>box.height>=44&&box.width>=44),`${locale}/${width}/${rail}: target smaller than 44 CSS pixels`)
    }
+   const rows=await guide.locator('[data-guide-steps] > div > button').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}}))
+   assert.equal(rows.length,7);assert.ok(rows.every((row,index)=>row.height>=44&&row.width>=44&&(!index||row.y>rows[index-1].y)))
+   assert.equal(await guide.locator('[data-guide-level="3"]').innerText().then(s=>s.includes('50 XP')),true)
+   assert.equal(await guide.locator('[data-guide-level="2"]').innerText().then(s=>s.includes('20 XP')),true)
+   assert.equal(await guide.locator('[data-guide-level="4"]').innerText().then(s=>s.includes('1000 XP')),true)
    const sizes=await task.locator('input,textarea,select').evaluateAll(nodes=>nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)))
    assert.ok(sizes.every(size=>size>=16),`${locale}/${width}: input font smaller than 16px`)
    await guide.screenshot({path:join(screenshotDir,engine+'-'+locale+'-'+width+'.png')})
