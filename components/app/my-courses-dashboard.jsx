@@ -210,6 +210,19 @@ export default function MyCoursesDashboard({
         </span>
         <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
       </Link>
+      <Link className={styles.bonusCard} data-reiki-practitioner-daybook-bonus
+        href={'/' + (locale==='ru'?'ru':'en') + '/academy/principles-of-energywork/daybook'} prefetch={false}>
+        <span className={styles.bonusPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+            width={176} height={140} alt="" loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.bonusBody}>
+          <small className={styles.bonusEyebrow}>{locale==='ru'?'ДНЕВНИК ПРАКТИКИ':locale==='es'?'DIARIO DE PRÁCTICA':'PRACTICE JOURNAL'}</small>
+          <strong>{locale==='ru'?'Практик Рейки — Daybook':'Reiki Practitioner — Daybook'}</strong>
+          <small>{locale==='ru'?'5 недель · Уроки, практики и ваши записи. Прогресс общий с классической версией.':locale==='es'?'5 semanas · Curso en inglés. Se conserva tu progreso en ambas versiones.':'5 weeks of lessons, practices and reflections. Both formats share your progress.'}</small>
+        </span>
+        <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+      </Link>
     </section>
     <details className={styles.moreFree}>
       <summary>{locale==='ru'?'Все бесплатные программы':'More free programmes'}</summary>
