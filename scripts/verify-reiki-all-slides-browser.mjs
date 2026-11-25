@@ -201,25 +201,22 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       }
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
-      if (id === "kun-voices") {
-        assert.ok(first.includes(locale === "ru" ? "Бреанной" : "Breanna"), where + ": Breanna review is first");
-      }
-      await page.locator("button[data-review-next]").click();
-      await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
-      await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('02 / 0' + expectedReviews);
-      const second = await carousel.locator("blockquote p").innerText();
-      assert.notEqual(second, first, where + ": Next switches quote in place");
-      if (id === "kun-voices") {
-        assert.ok(second.includes(locale === "ru" ? "Риту" : "Ritu"), where + ": Ritu review is second");
+      const seen = [first];
+      for (let n = 1; n < expectedReviews; n++) {
         await page.locator("button[data-review-next]").click();
-        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("03 / 03");
-        const third = await carousel.locator("blockquote p").innerText();
-        assert.ok(third.includes("Aesthesia"), where + ": Aesthesia review is third");
-        assert.notEqual(third, second, where + ": third review is distinct");
-        await page.locator("button[data-review-prev]").click();
-        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("02 / 03");
+        await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText(String(n+1).padStart(2,"0")+" / "+String(expectedReviews).padStart(2,"0"));
+        const quote = await carousel.locator("blockquote p").innerText();
+        assert.ok(Array.from(quote).length >= Array.from(seen[n-1]).length, where + ": shortest review first");
+        assert.ok(!seen.includes(quote), where + ": distinct source review");
+        seen.push(quote);
       }
-      await page.locator("button[data-review-prev]").click();
+      if (id === "kun-voices") {
+        for (const name of [locale === "ru" ? "Бреанной" : "Breanna", locale === "ru" ? "Риту" : "Ritu", "Aesthesia"]) {
+          assert.ok(seen.some(quote => quote.includes(name)), where + ": preserved original " + name + " review");
+        }
+      }
+      for (let n = 1; n < expectedReviews; n++) await page.locator("button[data-review-prev]").click();
       assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
     } else {
       await expect(carousel).toHaveCount(0);
@@ -771,7 +768,7 @@ async function verifyGoldenDaybook(locale) {
   const route = origin+"/"+locale+"/academy/principles-of-energywork/daybook";
   const root = view.locator('[data-reiki-daybook-design="golden-one-screen-v3"]');
   const widths = [{width:390,height:844},{width:320,height:568},{width:390,height:660},{width:430,height:932}];
-  const incidentSlides = new Set(['welcome-02','welcome-video','flight-01','flight-audio']);
+  const incidentSlides = new Set(['welcome-02','welcome-video','flight-01','flight-audio','flight-voices','tan-voices','kun-voices','ygg-voices']);
   const internalScroll = [];
   let checked = 0;
   async function check(id) {
@@ -817,6 +814,26 @@ async function verifyGoldenDaybook(locale) {
         assert.ok(d.rail.height <= 48, "compact five-step rail: "+at);
         assert.ok(d.progress.height <= 56, "compact progress status: "+at);
         assert.equal(d.visibleShare,false,"share belongs in the closed course menu: "+at);
+      }
+      if (id.endsWith("-voices")) {
+        const card = root.locator("[data-meditation-voices]");
+        const quote = card.locator("[data-review-fulltext]");
+        const count = Number(await card.locator("[data-review-count]").getAttribute("data-review-count"));
+        const seen = [];
+        for (let n = 0; n < count; n++) {
+          const metrics = await card.evaluate(el => {
+            const box = el.getBoundingClientRect();
+            const r = el.querySelector("[data-review-fulltext]");
+            const nodes = [...el.querySelectorAll("[data-review-fulltext], cite, [data-review-next], [data-review-prev], a")];
+            return {height:r.clientHeight,overflow:getComputedStyle(r).overflowY,inside:nodes.every(node=>{const b=node.getBoundingClientRect();return b.top>=box.top-1&&b.bottom<=box.bottom+1;})};
+          });
+          assert.ok(metrics.height>=32&&metrics.inside&&metrics.overflow==="auto", "review controls and reading area fit: "+at+" "+JSON.stringify(metrics));
+          const value = await quote.innerText();
+          assert.ok(n===0 || Array.from(value).length>=Array.from(seen[n-1]).length,"shortest first: "+at);
+          seen.push(value);
+          await card.locator("[data-review-next]").click();
+        }
+        assert.equal(new Set(seen).size,count,"all reviews remain accessible: "+at);
       }
       if (incidentSlides.has(id)) {
         assert.ok(d.innerVertical<=3,"owner-reported slide must fit without inner scroll: "+at);
