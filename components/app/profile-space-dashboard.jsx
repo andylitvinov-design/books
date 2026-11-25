@@ -141,7 +141,6 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     setBusinessStage(index)
     if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
   }
-  const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.'] }[selected]
   const navigation = {
     en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
     ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
@@ -225,13 +224,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
     </section>}
-    {section === 'goals' && <section className={styles.scenic} aria-label={diary[1]} data-profile-space-scenic>
-      <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{diary[0]}</p>
-      <h1 className={styles.title}>{diary[1]}</h1>
-      <p className={styles.intro}>{diary[2]}</p>
+    {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId}>
       <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
-    </section>}
-    {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId} />}
+    </ProfileGoalConsole>}
     {section === 'clarity' && <section className={styles.clarity} aria-label={c.tab} data-profile-clarity-support>
       <header className={styles.clarityHero}>
         <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{c.start}</p>
