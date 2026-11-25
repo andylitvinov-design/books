@@ -1007,7 +1007,12 @@ try{
  // actual assistant's response, keep the whole reply visible above the composer.
  const fullAssistantReply=chat.locator('[data-hh-ai-assistant-message]').last();
  await fullAssistantReply.waitFor({state:"visible",timeout:15000});
+ // The free-review link can appear while the asynchronous send is still
+ // releasing the busy gate. A disabled textarea cannot receive focus, so
+ // await the real enabled composer before testing keyboard-driven scrolling.
+ await expect(sessionComposer).toBeEnabled({timeout:15000});
  await sessionComposer.focus();
+ await expect(sessionComposer).toBeFocused({timeout:10000});
  await page.setViewportSize({width:390,height:360});
  await page.waitForFunction(()=>{
    const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
