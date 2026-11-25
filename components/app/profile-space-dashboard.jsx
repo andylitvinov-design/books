@@ -9,7 +9,7 @@ import {
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
-import { REIKI_FREE_COURSE_PATH } from '@/lib/academy/reiki-free-course'
+import { ReikiProfileCourseCard, reikiLandingPath } from '@/components/reiki-practitioner-entry'
 
 const TEXT = {
   en: {
@@ -169,7 +169,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const profile = '/' + selected + '/my-page'
   const stages = [
     [diagnostics[0], diagnostics[2], diagnostics[3], {title:t.insights,href:profile}, {title:c.allTests,href:root+'/tests'}],
-    [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
+    [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:reikiLandingPath(selected)}, cards[1], cards[3], {title:c.consultation,href:personal}],
     [diagnostics[1], {title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
   const stageIcons = [BarChart3,Leaf,Target]
@@ -265,6 +265,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <Link href={personal} className={styles.clarityPersonal} prefetch={false} data-clarity-personal>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
       </Link>
+      <ReikiProfileCourseCard locale={selected} />
       <p className={styles.clarityNotice}>{c.notice}</p>
       <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>

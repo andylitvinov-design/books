@@ -1,0 +1,21 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const read = p => readFileSync(new URL("../" + p, import.meta.url), "utf8");
+test("Reiki landing promotes free Daybook, preserves classic course and links to profile", () => {
+  const landing = read("components/principles-of-energywork.tsx");
+  const entry = read("components/reiki-practitioner-entry.tsx");
+  const profile = read("components/app/profile-space-dashboard.jsx");
+  assert.equal((landing.match(/<ReikiDaybookStart locale=\{locale\}/g) || []).length, 2);
+  assert.ok(landing.includes("data-reiki-profile-link"));
+  assert.ok(landing.includes('"/app/portrait"'));
+  assert.ok(landing.includes("data-energywork-five-steps"));
+  assert.ok(landing.includes("data-energywork-interactive-course"));
+  assert.ok(entry.includes('continueTo: "energywork-daybook"'));
+  assert.ok(entry.includes('await appFetch("bootstrap?view=portrait")'));
+  assert.ok(entry.includes('?.status !== 401'));
+  assert.ok(entry.includes('reikiLandingPath(language) + "/daybook"'));
+  assert.ok(entry.includes("data-clarity-reiki-practitioner"));
+  assert.ok(profile.indexOf("<ReikiProfileCourseCard locale={selected} />") < profile.indexOf("<p className={styles.clarityNotice}"));
+  assert.ok(profile.includes("reikiLandingPath(selected)"));
+});
