@@ -319,7 +319,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const voice=useVoiceCompanion(locale,voiceEnabled);
   useEffect(()=>{
     if(!messengerView||!voiceEnabled)return;
-    if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
+    if(voice.speechLocale!==locale&&!voice.conversing&&!voice.paused)voice.setSpeechLocale(locale);
     const available=voice.voices.filter(item=>item.lang.toLowerCase().startsWith(locale));
     if(available.length&&!voice.conversing&&!voice.paused){
       const ordered=[...available].sort((a,b)=>a.name.localeCompare(b.name));
@@ -2253,7 +2253,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           }}/>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
           aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
-        {proBusy&&<button type="button" onClick={()=>{proAbort.current?.abort();setProBusy(false);}}
+        {proBusy&&<button type="button" onClick={()=>{voice.stopDialogue();proAbort.current?.abort();setProBusy(false);}}
           aria-label={messengerView?t.cancel:undefined}><X size={19} aria-hidden="true"/></button>}
       </div>
       {messengerView&&voicePermissionOpen&&!voice.conversing&&<section
