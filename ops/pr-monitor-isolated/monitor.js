@@ -2,8 +2,8 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-stage-weekly',funnel:'/api/ci-error-funnel?hours=24'});
-const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1',funnel:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-stage-weekly',funnel:'/api/ci-error-funnel?hours=24',open:'/api/pr-open-count'});
+const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1',funnel:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',open:'HH_PR_OPEN_COUNT_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
 const number=n=>safeInt(n)?n.toLocaleString('ru-RU'):'—';
@@ -42,6 +42,10 @@ function activeCI(d){
 function openBacklog(d){
  if(d?.schema!==SCHEMAS.queue||!isTime(d.checked_at)||!safeInt(d.counts?.discovered_open_prs))throw Error('BACKLOG_UNVERIFIED');
  return{open:d.counts.discovered_open_prs,at:d.checked_at};
+}
+function liveOpenCount(d){
+ if(d?.schema!==SCHEMAS.open||d.complete!==true||!isTime(d.generated_at)||!safeInt(d.open))throw Error('OPEN_COUNT_UNVERIFIED');
+ return {open:d.open,at:d.generated_at};
 }
 /* HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN */
 function strictCohort(source, archive, hours) {
@@ -333,7 +337,7 @@ async function readPublicPrContext(pr,fetchImpl){
  finally{clearTimeout(timer);}
 }
 
-const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog,parsePublicPrContext,readPublicPrContext};
+const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog,liveOpenCount,parsePublicPrContext,readPublicPrContext};
 if(typeof module==='object'&&module.exports)module.exports=publicHelpers;
 if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
@@ -467,7 +471,7 @@ function renderStages(d,hours=selectedPeriod){
 
 const recently=at=>isTime(at)&&Math.max(0,Date.now()-Date.parse(at))<75*60000;
 function overviewSources(){
- const x=[['CI',snapshots.ciLive?.generated_at],['PR',snapshots.period?.observed_at],['Очередь',snapshots.queue?.checked_at]]
+ const x=[['CI',snapshots.ciLive?.generated_at],['PR',snapshots.period?.observed_at],['Открытые PR',snapshots.open?.generated_at],['Очередь',snapshots.queue?.checked_at]]
  .filter(([,at])=>isTime(at)).map(([s,at])=>s+': '+stamp(at));
  put('overview-provenance','CI — запуски workflow, не отдельные jobs. '+(x.length?x.join(' · '):'Источники ещё загружаются.'));
 }
@@ -611,15 +615,35 @@ function renderCI(d){
  if(!count)checks.append(dom('p','empty','Недостаточно проверенных job событий.'));
  snapshots.ci=d;updateRecommendations();
 }
+function renderOpenCount(d){
+ const v=liveOpenCount(d);
+ if(!recently(v.at))throw Error('OPEN_COUNT_STALE');
+ snapshots.open=d;
+ put('k-open',number(v.open));put('k-open-note','GitHub · '+stamp(v.at));
+ el('k-open').dataset.stale='false';overviewSources();
+}
+function renderOpenFallback(){
+ if(snapshots.open){
+  const v=liveOpenCount(snapshots.open);
+  put('k-open',number(v.open));put('k-open-note','Последний GitHub · '+stamp(v.at)+' · не LIVE');
+  el('k-open').dataset.stale='true';return;
+ }
+ try{
+  const b=openBacklog(snapshots.queue);
+  put('k-open',number(b.open));put('k-open-note','Срез '+stamp(b.at)+' · не LIVE');
+  el('k-open').dataset.stale='true';
+ }catch{
+  put('k-open','—');put('k-open-note','GitHub недоступен');
+  el('k-open').dataset.stale='true';
+ }
+}
 function renderQueue(d){
  if(d?.schema!==SCHEMAS.queue)throw Error('QUEUE_SCHEMA');
  const counts=d.counts||{};put('k-actionable',number(counts.actionable_prs));put('k-blocked',number(counts.blocked_total));
  put('k-worker',number(counts.worker_dispatches));put('k-production',number(counts.production_prs));
  
  put('queue-asof',d.checked_at?'Срез: '+stamp(d.checked_at):'Время среза неизвестно');
- const b=openBacklog(d);
- put('k-open',recently(b.at)?number(b.open):'—');
- put('k-open-note',recently(b.at)?'Все ветки · '+stamp(b.at):'Срез очереди устарел');
+ // Open PR count has its own GitHub source; dispatcher snapshots must not overwrite it.
  const root=el('queue-states');clear(root);
  const aliases={awaiting_core:'Ожидает Core',core_workflow_queued:'Core в очереди',core_runner_running:'Core выполняется',parent_blocked:'Блокировка базового PR',source_proof_missing:'Нет source proof',conflict_unverified:'Конфликт не проверен',manual_conflict_handoffs:'Ручная передача конфликта',already_handled:'Уже обработано',wake_undelivered:'Wake не доставлен'};
  const list=Object.entries(d.queue_states||{}).filter(([,n])=>safeInt(n)&&n>0).sort((a,b)=>b[1]-a[1]).slice(0,11);
@@ -846,7 +870,7 @@ async function refresh(){
  const atStage=++stageRequestSeq;
  const funnelAtStart=funnelHours,funnelPRAtStart=funnelPR,funnelAtSeq=++funnelSeq;
  if(funnelPRAtStart!==null)void refreshPrContext(funnelPRAtStart,funnelAtSeq);
- const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['queue',renderQueue],['funnel',d=>{if(funnelAtSeq===funnelSeq)renderFunnel(d,funnelAtStart);},funnelUrl(funnelAtStart,funnelPRAtStart)],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
+ const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['open',renderOpenCount],['queue',renderQueue],['funnel',d=>{if(funnelAtSeq===funnelSeq)renderFunnel(d,funnelAtStart);},funnelUrl(funnelAtStart,funnelPRAtStart)],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
  const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
   const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison','funnel'].includes(key)?24000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
   const at=key==='queue'?(data.checked_at||data.generated_at):key==='period'?data.observed_at:data.generated_at;
@@ -855,7 +879,7 @@ async function refresh(){
  for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='stages'&&selectedPeriod===atStart&&stageRequestSeq===atStage)stageMissing('Источник этапов не ответил.');if(key==='comparison'&&selectedPeriod===atStart&&stageRequestSeq===atStage)comparisonMissing('Исторические данные не ответили.');if(key==='ci')put('ci-coverage','CI источник недоступен');
  if(key==='ciLive'){put('k-ci-running','—');put('k-ci-queued','—');put('k-ci-running-note','Источник недоступен');put('k-ci-queued-note','Источник недоступен');}
  if(key==='funnel'&&funnelAtSeq===funnelSeq)funnelMissing('GitHub-квитанции недоступны.');
- if(key==='queue'){put('k-open','—');put('k-open-note','Источник недоступен');}
+ if(key==='open')renderOpenFallback();
  if(key==='period'&&selectedPeriod===atStart){put('k-created','—');put('k-merged','—');put('k-created-note','Источник недоступен');put('k-merged-note','Источник недоступен');}}}
  const oldest=sourceTimes.length?Math.min(...sourceTimes.map(t=>t===null?-Infinity:t)):null;
  const age=oldest===null?Infinity:oldest===-Infinity?Infinity:Math.max(0,Date.now()-oldest);

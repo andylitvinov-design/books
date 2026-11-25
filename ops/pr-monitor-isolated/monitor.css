@@ -71,3 +71,6 @@
 .funnel-incident-list p b{color:#e8f5ff}
 .funnel-incident-list a{font-size:12px;color:#91e4fa;margin-right:13px}
 @media(max-width:750px){.funnel-pagination{justify-content:space-between}.funnel-extra-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.funnel-incident-list summary{font-size:14px}}
+
+/* Current operational counts and existing activity graph above period statistics. */
+.metrics.current-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0 9px}.current-metrics article{min-height:0;padding:9px 10px}.current-metrics strong{margin:4px 0;font-size:clamp(23px,5vw,30px)}.primary-chart,.secondary-chart{grid-template-columns:minmax(0,1fr)}.primary-chart{margin-bottom:8px}.primary-chart svg{max-height:200px}.current-metrics small{overflow-wrap:anywhere}.current-metrics [data-stale="true"]{color:#ffc681}@media(max-width:750px){.current-metrics article{padding:8px 7px;min-height:0}.current-metrics span{font-size:11px}.current-metrics small{font-size:9px}.primary-chart .panel{padding:10px}.primary-chart svg{min-height:0;max-height:160px}.lead .intro{display:none}.lead .eyebrow{font-size:9px}.lead h1{margin:2px 0}.freshness{margin:8px 0}.period-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}

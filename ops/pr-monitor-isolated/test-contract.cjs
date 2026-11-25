@@ -16,7 +16,7 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
 test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
  assert.equal(conf.rewrites.length,10);
  for(const [key,url]of Object.entries(URLS)){
-  if(key==='comparison'||key==='funnel')continue; // Two local read-only serverless functions; no public owner API proxy.
+  if(key==='comparison'||key==='funnel'||key==='open')continue; // Two local read-only serverless functions; no public owner API proxy.
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
   assert.equal(route.destination,'https://holistic-house-pr-monitor.vercel.app'+route.source);
@@ -433,7 +433,7 @@ test('atomic release manifest includes every serverless dependency and all match
  const release=require('./release-integrity.cjs');
  const report=release.auditBundle(root);
  assert.equal(report.schema,'HH_PR_DASHBOARD_ATOMIC_RELEASE_V1');
- assert.equal(report.file_count,8);
+ assert.equal(report.file_count,9);
  assert.match(report.bundle_sha256,/^[a-f0-9]{64}$/);
  assert.ok(report.files.some(x=>x.path==='api/ci-funnel-extensions.cjs'));
  assert.ok(report.files.every(x=>x.bytes>0));
@@ -475,4 +475,23 @@ test('mixed live HTML and current JS are fail-safe, with ten signed stages still
  assert.match(source,/if\(el\('funnel-next'\)\)el\('funnel-next'\)\.addEventListener/);
  assert.match(source,/if\(extra\)extra\.textContent/);
  assert.match(source,/if\(!newApi\)extRoot\.append/);
+});
+
+test('live open count is independent of stale dispatcher snapshot; zero is a real count only on complete response',()=>{
+ const {liveOpenCount}=sandbox.module.exports;
+ const {parseCount}=require('./api/pr-open-count.js')._test;
+ assert.equal(parseCount({total_count:136,incomplete_results:false}),136);
+ assert.equal(parseCount({total_count:0,incomplete_results:false}),0);
+ assert.throws(()=>parseCount({total_count:0,incomplete_results:true}));
+ assert.throws(()=>parseCount({total_count:0}));
+ const at='2026-11-25T12:14:00Z';
+ assert.equal(liveOpenCount({schema:SCHEMAS.open,complete:true,open:136,generated_at:at}).open,136);
+ assert.throws(()=>liveOpenCount({schema:SCHEMAS.open,complete:false,open:0,generated_at:at}));
+ assert.match(js,/\['open',renderOpenCount\]/);
+ assert.match(js,/if\(key==='open'\)renderOpenFallback\(\)/);
+ assert.ok(html.indexOf('id="k-open"')<html.indexOf('id="k-ci-running"'));
+ assert.ok(html.indexOf('id="k-ci-running"')<html.indexOf('id="k-ci-queued"'));
+ assert.ok(html.indexOf('id="k-ci-queued"')<html.indexOf('id="chart-flow"'));
+ assert.ok(html.indexOf('id="chart-flow"')<html.indexOf('class="period-toolbar"'));
+ assert.match(css,/\.metrics\.current-metrics\{grid-template-columns:repeat\(3/);
 });
