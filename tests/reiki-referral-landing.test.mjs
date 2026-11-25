@@ -31,7 +31,10 @@ test("offer truthfully promises a free introduction after completing the course,
     "Andrey will review and arrange the next step personally",
     "Ваши заметки не отправляются Андрею автоматически",
   ]) assert.ok(landing.includes(phrase), phrase);
-  assert.match(landing, /five lesson reports and five course answers/);
+  assert.match(landing, /required lesson reports and study answers/);
+  assert.match(landing, /обязательные учебные отчёты и ответить на вопросы курса/);
+  assert.match(landing, /informes y las respuestas de estudio requeridos/);
+  assert.doesNotMatch(landing, /five lesson reports and five course answers|пять учебных отчётов и ответить на пять вопросов|cinco informes de lección y cinco respuestas/);
   assert.doesNotMatch(landing, /certificate automatically|guaranteed cure|automatic attunement/i);
 });
 
@@ -92,4 +95,28 @@ test("after saved course completion the free initiation is named, not confused w
   assert.match(course, /savedInitiationReady/);
   assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
   assert.match(course, /t\.reviewPrivate/);
+});
+
+
+test("the English referral entry describes the first-lesson Google save gate in all three locales", () => {
+  for (const phrase of [
+    "Lesson 1 is open to guests",
+    "To continue to Lesson 2 and keep your progress, sign in with Google",
+    "The course remains free",
+    "Курс открывается на английском",
+    "Чтобы перейти ко второму уроку и сохранить прогресс",
+    "Курс остаётся бесплатным",
+    "Curso en inglés · Primera lección sin registro",
+    "Para pasar a la segunda y guardar tu progreso, inicia sesión con Google",
+    "El curso sigue siendo gratis",
+  ]) assert.ok(landing.includes(phrase), phrase);
+});
+
+test("the published referral promise matches the learner's actual private-save checkpoint", () => {
+  const learner = read("components/energywork-ai-learner.tsx");
+  assert.match(learner, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\)/);
+  assert.match(learner, /if \(slide\.id === "flight-done" && sync !== "ready"\)/);
+  assert.match(learner, /energyworkCreateFirstLessonHandoff\(answersRef\.current, locale, Date\.now\(\), afterSave\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(landing, /Your reflections are not sent to Andrey automatically/);
 });
