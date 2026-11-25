@@ -1,5 +1,6 @@
 (() => {
   const MONITOR = 'https://holistic-house-pr-monitor.vercel.app'
+  const DIRECTOR = 'https://holistic-house-agents-director.vercel.app'
   const KEY = 'hh.commander.monitor.next.v1'
   const status = document.getElementById('status')
   const button = document.getElementById('continue')
@@ -11,7 +12,7 @@
     try {
       const url = new URL(value, MONITOR)
       if (url.origin !== MONITOR || url.hash || url.pathname.includes('//')) return '/agents.html'
-      const allowed = new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html'])
+      const allowed = new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html','/project-management-public.html'])
       if (!allowed.has(url.pathname)) return '/agents.html'
       if (url.pathname === '/chats.html') {
         const params = [...url.searchParams.entries()]
@@ -24,11 +25,13 @@
   }
 
   function nextPath() {
+    const explicit = new URLSearchParams(location.search).get('next')
+    if (explicit) return safeNext(explicit)
     try {
       const saved = sessionStorage.getItem(KEY)
       if (saved) return safeNext(saved)
     } catch {}
-    return safeNext(new URLSearchParams(location.search).get('next') || '/agents.html')
+    return '/agents.html'
   }
 
   async function fetchWithTimeout(url, options, timeoutMs, label) {
@@ -89,8 +92,10 @@
         typeof data.refreshToken !== 'string' || data.refreshToken.length < 12 || data.refreshToken.length > 4096) {
       throw Error('У этого аккаунта нет подтверждённых прав владельца Agent Commander.')
     }
-    const target = new URL(MONITOR + '/commander-auth.html')
-    target.searchParams.set('next', nextPath())
+    const next = nextPath()
+    // Tasks moved to the isolated Director; only fixed, trusted origins receive credentials.
+    const target = new URL((next === '/project-management-public.html' ? DIRECTOR : MONITOR) + '/commander-auth.html')
+    target.searchParams.set('next', next)
     // The short-lived JWT is in the URL fragment only: it is not sent to servers
     // in HTTP requests or Referer headers. The monitor page removes it immediately.
     target.hash = new URLSearchParams({
@@ -146,12 +151,16 @@
         }
         return
       }
+      if (response.status !== 401 && !(response.ok && data.authenticated === false)) {
+        showAction('Не удалось проверить существующую сессию Holistic House. Повторный Google-вход пока не нужен.', 'session', 'Повторить проверку')
+        return
+      }
     } catch (error) {
-      // A slow auth provider must never leave the owner on an endless spinner.
-      showAction(String(error.message || error) + ' Войдите повторно через Google.', 'google')
+      // A transient provider failure is not evidence that the owner signed out.
+      showAction(String(error.message || error) + ' Повторите проверку существующей сессии.', 'session', 'Повторить проверку')
       return
     }
-    showAction('Сессия не подтверждена. Войдите через Google-аккаунт владельца Holistic House.', 'google')
+    showAction('Активная сессия Holistic House отсутствует. Войдите через свой Google-аккаунт.', 'google')
   }
 
   button.addEventListener('click', () => {
@@ -163,8 +172,15 @@
         .finally(() => { busy = false })
       return
     }
+    if (buttonAction === 'session') {
+      busy = true
+      button.disabled = true
+      start().catch(error => showAction(String(error.message || error), 'session', 'Повторить проверку'))
+        .finally(() => { busy = false })
+      return
+    }
     startGoogle()
   })
 
-  start().catch(error => showAction(String(error.message || error) + ' Войдите повторно через Google.', 'google'))
+  start().catch(error => showAction(String(error.message || error), 'session', 'Повторить проверку'))
 })()
