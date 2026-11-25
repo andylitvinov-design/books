@@ -37,3 +37,24 @@ test("Integrated Profile preserves both Reiki and Video Studio",()=>{
  assert.ok(profile.includes("data-profile-my-video"));
  assert.ok(dock.includes('case "reiki": return prefix+"/academy/principles-of-energywork"'));
 });
+
+
+test("My Reiki has three profile-style program destinations and real curriculum links",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const programs=read("components/reiki-programs.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const page=read("app/[locale]/academy/[[...slug]]/page.tsx");
+ const curriculum=JSON.parse(read("data/academy/yggdrasil-curriculum.json"));
+ assert.deepEqual([...programs.matchAll(/id: "(free|master|pro)", label: "(Free|Master|Pro)"/g)].map(m=>m[1]),["free","master","pro"]);
+ assert.ok(programs.includes('raw === "master" || raw === "pro" ? raw : "free"'));
+ assert.ok(programs.includes('aria-current={id === active ? "page" : undefined}'));
+ assert.ok(landing.indexOf("<ReikiProgramNavigation") < landing.indexOf('data-energywork-screen="intro"'));
+ assert.ok(landing.includes('program !== "free" ? <ReikiAdvancedProgram'));
+ assert.ok(page.includes("program={query.program}"));
+ assert.equal(curriculum.levels.find(l=>l.id===1).steps.length,5);
+ assert.equal(curriculum.levels.filter(l=>l.id>1).length,6);
+ assert.ok(programs.includes("yggdrasilModuleLandings.filter(item => item.levelId > 1)"));
+ assert.ok(programs.includes('base + "/basic-course#" + step.id.toLowerCase()'));
+ assert.ok(css.includes('.reikiProgramTabs a[aria-current="page"]'));
+ assert.ok(css.includes("min-height:44px"));
+});

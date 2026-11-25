@@ -5,6 +5,7 @@ import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake,
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ReikiDaybookStart } from "@/components/reiki-practitioner-entry";
+import { ReikiProgramNavigation, ReikiAdvancedProgram, resolveReikiProgram } from "@/components/reiki-programs";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { EnergyworkReikiCapture } from "@/components/energywork-reiki-capture";
 import { EnergyworkVideoArchive } from "@/components/energywork-video-archive";
@@ -375,7 +376,8 @@ function academyUrl(locale: PublicLocale, path: string) {
   return "/" + locale + "/academy/" + path;
 }
 
-export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
+export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale: PublicLocale; program?: string | string[] }) {
+  const program = resolveReikiProgram(rawProgram);
   const t = translations[locale];
   const v = videoCopy[locale];
   const flight = englishGuidedMeditations.find((item) => item.key === "flight-to-sun");
@@ -400,7 +402,9 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
     <main className={styles.page} lang={locale} data-reiki-practitioner-landing>
       <PublicSiteHeader locale={locale} />
       <div className={`${styles.wrap} ${styles.courseDeck}`}>
+        <ReikiProgramNavigation locale={locale} active={program} />
         <div className={styles.backRow}><Link href={"/" + locale + "/academy"}>← {t.returnAcademy}</Link><Link href={profilePath} prefetch={false} data-reiki-profile-link>{daybookCopy.profile}<ArrowRight size={16} aria-hidden="true" /></Link></div>
+        {program !== "free" ? <ReikiAdvancedProgram locale={locale} program={program} /> : <>
         <section className={styles.hero} data-energywork-screen="intro" aria-labelledby="energywork-title">
           <div className={styles.heroText}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
@@ -553,6 +557,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
         <p className={styles.disclaimer}>{t.notice}</p>
+        </>}
       </div>
     </main>
   );

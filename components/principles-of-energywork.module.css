@@ -1016,3 +1016,29 @@
 .page[data-reiki-practitioner-landing] .disclaimer{color:#395044;}
 @media(min-width:700px){.page[data-reiki-practitioner-landing] .courseDeck{padding:12px 12px 24px;}.page[data-reiki-practitioner-landing] .hero{padding:24px;}.page[data-reiki-practitioner-landing] .hero::before,.page[data-reiki-practitioner-landing] .hero::after{height:330px;}.page[data-reiki-practitioner-landing] .heroLead{max-width:60%;}.page[data-reiki-practitioner-landing] .hero .reikiEntry{max-width:75%;}}
 @media(max-width:374px){.page[data-reiki-practitioner-landing] .courseDeck{padding:5px 5px 16px;}.page[data-reiki-practitioner-landing] .hero{padding:15px 10px 12px;}.page[data-reiki-practitioner-landing] .reikiSyllabus .stepRail a{grid-template-columns:30% minmax(0,1fr) 15px;gap:6px;}}
+
+
+/* MY_REIKI_THREE_PROGRAMS — same capsules as My Profile; separate canonical study pages. */
+.reikiProgramTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:5px 0 8px;}
+.reikiProgramTabs a{display:flex;flex-direction:row;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:6px 3px;gap:5px;box-sizing:border-box;border:1.5px solid #efd19d;border-radius:999px;background:linear-gradient(140deg,#fff8e6,#f8daaa);color:#133c29;box-shadow:0 3px 9px #0c100b35;text-decoration:none;}
+.reikiProgramTabs a[aria-current="page"]{background:linear-gradient(130deg,#00845c,#00402e);color:#fff5d9;border-color:#fbe5ae;box-shadow:0 0 0 1px #e7c169,0 3px 9px #18100855;}
+.reikiProgramTabs strong{min-width:0;font:700 clamp(14px,3.7vw,18px)/1.1 Georgia,serif;white-space:nowrap;}
+.reikiProgramTabs svg{width:clamp(16px,4.6vw,22px);height:clamp(16px,4.6vw,22px);flex:none;}
+.reikiProgramTabs a:focus-visible,.reikiAdvancedCta:focus-visible{outline:3px solid #08714b;outline-offset:3px;}
+.reikiAdvancedHero{position:relative;isolation:isolate;overflow:hidden;display:grid;gap:16px;padding:18px 14px 14px;border:1px solid #e9c583;border-radius:21px;color:#fff5df;background:#21190f;box-shadow:0 5px 16px #20160835;}
+.reikiAdvancedHero::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#21190ff5,#21190fba 55%,#21190f40),url("/academy/reiki-yggdrasil/source/basic-program.jpg") center/cover no-repeat;}
+.reikiAdvancedHero[data-reiki-advanced-hero="pro"]::before{background:linear-gradient(90deg,#21190ff5,#21190fba 55%,#21190f40),url("/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png") center/cover no-repeat;}
+.reikiAdvancedHeroCopy{max-width:620px;display:grid;gap:8px;}
+.reikiAdvancedHeroCopy p{margin:0;font:500 clamp(13px,3.6vw,17px)/1.45 system-ui,sans-serif;color:#fff7e6;text-wrap:pretty;}
+.reikiAdvancedHeroCopy p:first-child{font-size:10px;letter-spacing:.075em;color:#fbe8b4;}
+.reikiAdvancedHeroCopy h1{margin:0;font:700 clamp(27px,7vw,46px)/1.08 Georgia,serif;color:#fff4da;text-wrap:balance;}
+.reikiAdvancedHeroCopy strong{font:700 clamp(15px,4vw,21px)/1.35 Georgia,serif;color:#f6d98c;}
+.reikiAdvancedCta{display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:9px 14px;box-sizing:border-box;text-align:center;border:2px solid #fff4ba;background:linear-gradient(145deg,#fff19b,#ffc520 44%,#e99000);color:#2b210c;border-radius:999px;box-shadow:0 3px 12px #e8a33170;font:700 clamp(16px,4.2vw,22px)/1.15 Georgia,serif;text-decoration:none;}
+.reikiAdvancedCta svg{flex:none;}
+.page[data-reiki-practitioner-landing] .reikiSyllabus .stepRail a>span.reikiAdvancedPhoto{display:grid;position:relative;place-items:center;width:auto;height:auto;min-width:0;min-height:85px;align-self:stretch;overflow:hidden;border-radius:14px;background:linear-gradient(145deg,#134c39,#092e24);color:#fff4da;}
+.reikiAdvancedPhoto img{object-fit:cover;}
+.reikiAdvancedPhoto b{position:relative;z-index:1;display:grid;place-items:center;width:37px;height:37px;border-radius:50%;background:#805a2a;color:#fff6de;border:1px solid #ffe4a4;font:700 18px/1 Georgia,serif;}
+.reikiAdvancedPhoto:has(img) b{position:absolute;left:7px;top:7px;width:28px;height:28px;font-size:15px;}
+.reikiAdvancedNotice{margin:12px 5px 0;color:#395044;font:500 12px/1.5 system-ui,sans-serif;}
+@media(min-width:700px){.reikiProgramTabs a{min-height:55px;}.reikiAdvancedHero{padding:24px;}.reikiAdvancedCta{max-width:560px;}}
+@media(max-width:374px){.reikiProgramTabs{gap:4px;}.reikiProgramTabs a{gap:3px;padding:5px 2px;}.reikiProgramTabs strong{font-size:13px;}.reikiProgramTabs svg{width:15px;height:15px;}}

@@ -31,7 +31,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { seoMetaForAcademyRoute } from "@/data/academy/seo-overrides";
 import type { PublicLocale } from "@/lib/public-locales";
 
-type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[]; start?: string | string[]; lesson?: string | string[] }> };
+type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[]; start?: string | string[]; lesson?: string | string[]; program?: string | string[] }> };
 
 const directionPath: Record<string, AcademyDirectionId> = { reiki: "reiki", mysteries: "mysteries", symbolic: "symbolic", applied: "applied", path: "school", archive: "archive" };
 const prefixCopy: Record<string, Record<PublicLocale, { title: string; description: string }>> = {
@@ -193,7 +193,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
   if (key === "principles-of-energywork/daybook") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} layout="daybook" />;
   if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} />;
-  if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
+  if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} program={query.program} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
   if (key === "temple-studies") return <TempleStudies locale={locale} />;
   if (key === "reiki/kundalini-reiki") return <KundaliniReikiCourse locale={locale} />;
