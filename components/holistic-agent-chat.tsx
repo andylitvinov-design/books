@@ -319,6 +319,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // Only the existing device speech controller handles the AI chat's spoken replies.
   const voice=useVoiceCompanion(locale,voiceEnabled);
   const lukasRef=useRef<AliLukasVideoHandle|null>(null);
+  const latestVoiceTurn=useRef<(text:string)=>void>(()=>{});
   useEffect(()=>{
     if(!messengerView||!voiceEnabled)return;
     if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
@@ -428,13 +429,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // Lukas receives only the new canonical assistant turn. It never starts a new AI turn.
     // User input clears the video speech buffer, without closing the video session.
     if(latest?.role==="user"||!latest){lukasRef.current?.interrupt();if(voiceEnabled)voice.stop();return;}
-    if(latest?.role==="assistant"&&lukasRef.current?.acceptReply(latest.text))return;
+    if(latest?.role==="assistant"){
+      const lastUser=messages.slice(0,-1).reverse().find(row=>row.role==="user");
+      if(latest.localOnly||latest.provisional||lastUser?.localOnly||lastUser?.provisional||
+         (lastUser&&requiresProtectedReply(lastUser.text,locale)))lukasRef.current?.stop();
+      else if(lukasRef.current?.acceptReply(latest.text))return;
+    }
     if(!voiceEnabled)return;
     if(latest?.role==="assistant"){
       voice.stop();
       if(voice.autoRead||voice.conversing)voice.speak(latest.text);
     }
-  },[messages,voiceEnabled,voice.autoRead,voice.conversing,voice.speak,voice.stop]);
+  },[messages,locale,voiceEnabled,voice.autoRead,voice.conversing,voice.speak,voice.stop]);
   const lastAnswerRef=useRef<{message:string;history:Array<{role:"user"|"assistant";text:string}>;decision:AgentDecision;locale:PublicLocale}|null>(null);
   const alternativeAbortRef=useRef<AbortController|null>(null);
   const [alternativeBusy,setAlternativeBusy]=useState(false);
@@ -577,7 +583,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
     // Explicit restore cancels both pending AI and device speech, and must not
     // auto-read historical replies when the Voice Companion is on.
-    controller.current?.abort();voiceAbortRef.current?.abort();voice.stopDialogue();
+    lukasRef.current?.stop();controller.current?.abort();voiceAbortRef.current?.abort();voice.stopDialogue();
     nativeSession.current=null;
     const previous:Message[]=entries.flatMap(item=>[
       {role:"user" as const,text:item.user},
@@ -1280,6 +1286,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(turnLocale!==locale){setLocale(turnLocale);onConversationLocaleChange?.(turnLocale);}
     const turnStarter=messengerStarter[turnLocale],turnCopy=copy[turnLocale];
     const boundaryReply=reviewPracticeBoundary(text,turnLocale)?.reply||turnStarter.safety;
+    // Safety and private context must never reach the free video provider.
+    if(requiresProtectedReply(text,turnLocale))lukasRef.current?.stop();
+    else lukasRef.current?.interrupt();
     if(!text||busy||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(text))))||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
     // Session-only constraints survive the 12-turn provider-safe history window.
@@ -1893,6 +1902,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));
   }
   function sendSelectedTurn(raw:string){
+    // Video is a presentation mode of the canonical Ali route, never My Coach Pro.
+    if(lukasRef.current?.isActive()){void sendTurn(raw);return;}
     if(messengerView&&isChatModelStatusQuestion(raw)){void sendTurn(raw);return;}
     if(messengerView&&proSelected){
       const navigation=!proBusy&&!videoStep&&!contentStep&&!testChatOpen&&psychInterview==="off"
@@ -1964,6 +1975,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     };
   },[locale,authenticated]);
 
+  latestVoiceTurn.current=text=>{
+    if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
+      setDraft(text);voice.stopDialogue();return;
+    }
+    if(requiresProtectedReply(text,locale)){lukasRef.current?.stop();voice.stopDialogue();}
+    setDraft(text);sendSelectedTurn(text);
+  };
   function beginMessengerVoice(){
     if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
       "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
@@ -1979,13 +1997,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         "Microphone unavailable. Check Safari permissions or type instead.");
       return;
     }
-    const launched=voice.startDialogue(text=>{
-      if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
-        setDraft(text);voice.stopDialogue();return;
-      }
-      if(requiresProtectedReply(text,locale))voice.stopDialogue();
-      setDraft(text);sendSelectedTurn(text);
-    },{allowRecorded:voiceRequiresRecorded,consentOnStart:true,
+    lukasRef.current?.interrupt();
+    const launched=voice.startDialogue(text=>latestVoiceTurn.current(text),{allowRecorded:voiceRequiresRecorded,consentOnStart:true,
       recordedPurpose:authenticated?'ali_chat':'public'});
     if(launched){setVoicePermissionOpen(false);setStatus("");}
   }
@@ -2119,14 +2132,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             {messengerView&&!pageHelp&&<MessengerDictationButton locale={locale}
               disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
               resetRevision={nativeDictationRevision}
-              onBegin={()=>{setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);
+              onBegin={()=>{lukasRef.current?.interrupt();setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);
                 voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);}}
               onTranscript={(delta:string)=>setDraft(previous=>appendSpokenAnswer(previous,delta,Math.max(previous.length,contentStep==="brief"?160:proSelected?1200:2000)))}/>}
             {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} accountAuthenticated={authenticated}
               resetRevision={voiceNoteRevision}
               disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
                 (proSelected&&!proReady)||(mode==="owned"&&!agree)}
-              onBegin={()=>{setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);if(voice.conversing)voice.stopDialogue();}}
+              onBegin={()=>{lukasRef.current?.interrupt();setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);if(voice.conversing)voice.stopDialogue();}}
               onSendTranscript={(text,_file,_seconds)=>{
                 if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
                     (proSelected&&!proReady)||(mode==="owned"&&!agree)||!text.trim())return false;
@@ -2136,10 +2149,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             {messengerView&&!pageHelp&&<button type="button"
               data-hh-live-conversation-mic
               onClick={()=>{
-                lukasRef.current?.stop();
                 setNativeDictationRevision(value=>value+1);
                 if(voice.conversing){
-                  if(voice.speaking)voice.interruptReply();
+                  if(lukasRef.current?.isSpeaking()){lukasRef.current.interrupt();voice.resumeAfterExternalReply();}
+                  else if(voice.speaking)voice.interruptReply();
                   else voice.stopDialogue();
                 }else if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
                 else setVoicePermissionOpen(true);
@@ -2197,7 +2210,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           micMarker="data-hh-conversation-mic" instantSend micClassName={styles.recorderToggle}
           accountAuthenticated={authenticated} resetRevision={dictationRevision}
           disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
-          onBegin={()=>{setNativeDictationRevision(value=>value+1);voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
+          onBegin={()=>{lukasRef.current?.interrupt();setNativeDictationRevision(value=>value+1);voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
             setVoiceNoteRevision(value=>value+1);setStatus("");}}
           onSendTranscript={text=>{
             const combined=[draft.trim(),text.trim()].filter(Boolean).join(" ");
@@ -2306,8 +2319,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==="true"&&messengerView&&authenticated&&!pageHelp&&
       <div className={styles.lukasVideoHeader}>
         <AliLukasVideo ref={lukasRef} locale={locale} personaId={persona.id}
-          blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||psychInterview!=="off"||mode==="owned"||voice.conversing||voice.speaking}
-          onActivate={()=>{voice.stopDialogue();stopAliPersonaAudio();}}/>
+          blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected}
+          onActivate={()=>{voice.stopDialogue();stopAliPersonaAudio();}}
+          onSpeaking={()=>voice.markExternalSpeaking()}
+          onSpeechEnd={()=>voice.resumeAfterExternalReply()}
+          onStop={()=>voice.stopDialogue()}
+          onSpeakInput={()=>{if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();else setVoicePermissionOpen(true);}}/>
       </div>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;

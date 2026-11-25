@@ -307,6 +307,19 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    else dictate(receive);
   }
  };
+ const markExternalSpeaking=useCallback(()=>{
+  // External renderer owns audio; microphone must not capture its response.
+  stop();if(mounted.current)setSpeaking(true);
+ },[stop]);
+ const resumeAfterExternalReply=useCallback(()=>{
+  stop();
+  if(!dialogueActive.current||document.hidden)return;
+  const epoch=generation.current;
+  resumeTimer.current=setTimeout(()=>{
+   resumeTimer.current=null;
+   if(epoch===generation.current&&dialogueActive.current&&!document.hidden)resumeDialogue.current?.();
+  },450);
+ },[stop]);
  const interruptReply=()=>{
   if(!dialogueActive.current||!speaking)return;
   stop();
@@ -314,7 +327,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 

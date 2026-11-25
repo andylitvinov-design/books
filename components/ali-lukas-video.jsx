@@ -3,6 +3,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {connectSimliAvatar} from '@/lib/coaching/live-avatar-renderers.mjs'
 import {GeminiLivePcmResampler} from '@/lib/coaching/gemini-live-transport.mjs'
 import {createLukasTurnGate} from '@/lib/coaching/lukas-turn-gate.mjs'
+import {createLukasPlaybackGate} from '@/lib/coaching/lukas-playback-gate.mjs'
 
 const endpoint='/api/admin/coach-live-avatar'
 const consent={freeOnly:true,nonSensitiveTest:true,privacyConsent:true}
@@ -16,14 +17,17 @@ async function post(body,signal){
   if(!r.ok)throw Error('AVATAR_UNAVAILABLE')
   return r
 }
-const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,onActivate},ref){
+const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,onActivate,onSpeaking,onSpeechEnd,onStop,onSpeakInput},ref){
   const t=copy[locale]||copy.en
   const [available,setAvailable]=useState(false),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
   const video=useRef(null),audio=useRef(null),run=useRef(null),mounted=useRef(false),blockedRef=useRef(blocked)
   blockedRef.current=blocked
+  const callbacks=useRef({onSpeaking,onSpeechEnd,onStop,onSpeakInput})
+  callbacks.current={onSpeaking,onSpeechEnd,onStop,onSpeakInput}
   const report=v=>{if(mounted.current)setState(v)}
   function cancelSpeech(current){
     current.gate.invalidate()
+    current.playback.reset()
     current.speechAbort?.abort()
     current.speechAbort=null
     clearInterval(current.pacer)
@@ -38,6 +42,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     current.controller.abort()
     for(const el of [audio.current,video.current])try{if(el){el.pause();el.srcObject=null}}catch{}
     report('stopping')
+    callbacks.current.onStop?.()
     void current.settled.then(async()=>{
       let confirmed=!current.cleanupUnconfirmed
       try{await current.renderer?.stop()}catch{confirmed=false}
@@ -61,6 +66,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     const ac=new AbortController()
     current.speechAbort=ac
     report('speaking')
+    callbacks.current.onSpeaking?.()
     try{
       const response=await post({action:'ali-audio',target:'chatbot',locale,personaId,text:ticket.text,...consent,trainingConsent:true},ac.signal)
       const sample=await current.context.decodeAudioData(await response.arrayBuffer())
@@ -72,8 +78,8 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       const clearOwnTimer=()=>{clearInterval(timer);if(current.pacer===timer)current.pacer=null}
       const send=()=>{
         if(current.stopped||!current.gate.isCurrent(ticket)||blockedRef.current){clearOwnTimer();return}
-        if(offset>=samples.length){clearOwnTimer();report('connected');return}
-        try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length)current.renderer.sendPcm16(bytes);offset=end}
+        if(offset>=samples.length){clearOwnTimer();current.playback.drained();return}
+        try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length){current.playback.sent();current.renderer.sendPcm16(bytes)}offset=end}
         catch{stop(current,'failed')}
       }
       timer=setInterval(send,step/sample.sampleRate*1000);current.pacer=timer;send()
@@ -100,7 +106,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       if(text)void speak(current,text)
     }catch{if(!current.stopped)report('sound')}
   }
-  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop()}))
+  useImperativeHandle(ref,()=>({acceptReply,interrupt,stop:()=>stop(),isActive:()=>Boolean(run.current&&!run.current.stopped),isSpeaking:()=>Boolean(run.current&&!run.current.stopped&&run.current.playback.active())}))
   useEffect(()=>{
     mounted.current=true
     const ac=new AbortController()
@@ -117,7 +123,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   async function start(){
     if(!available||!agreed||blockedRef.current||run.current||document.hidden||!video.current||!audio.current)return
     let settle
-    const current={controller:new AbortController(),gate:createLukasTurnGate(),stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
+    const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
     run.current=current;report('connecting')
     current.deadline=setTimeout(()=>stop(current),55000)
     try{
@@ -132,7 +138,13 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       const session=await response.json()
       if(current.stopped)return
       if(session.target!=='chatbot'||typeof session.sessionToken!=='string')throw Error('AVATAR_ROLE_MISMATCH')
-      const renderer=await connectSimliAvatar({sdk,sessionToken:session.sessionToken,video:video.current,audio:audio.current,signal:current.controller.signal,onDisconnect:()=>stop(current,'failed')})
+      const renderer=await connectSimliAvatar({sdk,sessionToken:session.sessionToken,video:video.current,audio:audio.current,signal:current.controller.signal,onDisconnect:()=>stop(current,'failed'),
+        onSpeaking:()=>{if(!current.stopped)current.playback.speaking()},
+        onSilent:()=>{
+          if(current.stopped||!current.playback.silent())return
+          report('connected')
+          callbacks.current.onSpeechEnd?.()
+        }})
       current.renderer=renderer
       if(current.stopped)return
       current.ready=true
@@ -154,6 +166,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}><strong>{t.title}</strong>
       {live?<button type="button" onClick={()=>stop()}>{t.stop}</button>:<button type="button" disabled={!agreed||blocked||locked} onClick={start}>{t.ready}</button>}
       {state==='sound'&&<button type="button" onClick={()=>void enableSound()}>{t.sound}</button>}
+      {state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
     </div>
     {!locked&&<label style={{fontSize:11,lineHeight:1.3}}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/> {t.consent}</label>}
     <small role="status">{state==='idle'?t.limit:(t[state]||t.failed)}</small>

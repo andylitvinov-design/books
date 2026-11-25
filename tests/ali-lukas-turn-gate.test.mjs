@@ -22,3 +22,19 @@ test('reject empty, invalid or oversized reply without truncation',()=>{
   assert.equal(gate.begin(' x '.repeat(2)).text,'x  x')
   assert.equal(gate.begin('x'.repeat(500)).text.length,500)
 })
+
+import {createLukasPlaybackGate} from '../lib/coaching/lukas-playback-gate.mjs'
+test('microphone resume requires provider speech, input drain, and provider silence',()=>{
+  const gate=createLukasPlaybackGate()
+  assert.equal(gate.silent(),false)
+  gate.sent();gate.speaking();assert.equal(gate.silent(),false)
+  gate.drained();assert.equal(gate.silent(),true);assert.equal(gate.silent(),false)
+  assert.equal(gate.active(),false)
+})
+test('interruption resets the playback evidence; late silence cannot reopen microphone',()=>{
+  const gate=createLukasPlaybackGate()
+  gate.sent();gate.speaking();gate.drained();gate.reset()
+  assert.equal(gate.silent(),false);assert.equal(gate.active(),false)
+  gate.sent();gate.drained();assert.equal(gate.silent(),false)
+  gate.speaking();assert.equal(gate.silent(),true)
+})
