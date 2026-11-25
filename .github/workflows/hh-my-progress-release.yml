@@ -56,7 +56,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm ci --no-audit --no-fund
       - name: My Progress source, ownership and status contracts
-        run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs tests/app-mobile-account-bridge.test.mjs
+        run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs tests/app-mobile-account-bridge.test.mjs tests/support-real-progress-nav.test.mjs tests/support-goal-cabinet-handoff.test.mjs
       - name: Scoped ESLint
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >
