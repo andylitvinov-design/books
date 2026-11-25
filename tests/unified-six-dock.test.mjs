@@ -90,6 +90,9 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"profile");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork"),true,"My Reiki is a primary app destination");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork/learn"),false,"classic learner retains immersive handling");
+  assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/academy/principles-of-energywork/daybook"),false,"Daybook learner retains immersive handling");
   assert.equal(unifiedMobileDockActive("/"+locale+"/academy/principles-of-energywork"),"reiki");
   assert.equal(unifiedMobileDockActive("/"+locale+"/academy/principles-of-energywork/daybook"),"reiki");
   assert.equal(unifiedMobileDockHref(locale,"video"),null,"MyVideo no longer belongs to the dock");

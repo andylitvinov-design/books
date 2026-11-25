@@ -1,5 +1,6 @@
 name: Holistic House Messages wellness two-folder release
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: [codex/public-book-library]
@@ -20,6 +21,7 @@ on:
       - 'lib/practitioners/request-media-policy.mjs'
       - 'supabase/migrations/*private_order_photo_video_media.sql'
       - 'docs/design/MESSAGES_WELLNESS_ORDERS_CLIENTS_20261029.md'
+      - '.github/workflows/hh-messages-wellness-v2.yml'
 permissions:
   contents: read
 concurrency:
@@ -27,6 +29,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   focused:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 16
     steps:
@@ -34,10 +37,18 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      # These contracts use synthetic storage/database and JS SDKs, not an
+      # installed media encoder. Core separately validates the real build.
+      - name: Install locked dependencies for protected PR contracts (no media lifecycle)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Stage checksum-verified FFmpeg before npm lifecycle
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
       - name: Materialize checksum-verified FFmpeg for package runtime
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
@@ -49,14 +60,17 @@ jobs:
       - name: Guest enquiry one-off consent and truthful reply handoff
         run: node --test tests/public-enquiry-reply-handoff.test.mjs tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       - name: Lint guest reply composer and recipient policy
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint components/app/public-enquiry-reply.jsx components/app/public-enquiry-operator-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs lib/practitioners/public-enquiry-operator-contact.js 'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js' tests/public-enquiry-reply-handoff.test.mjs tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       - name: Lint edited Messages components and route
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/messages-bottom-navigation.jsx components/app/practice-request-conversation.jsx lib/mobile-visual-bottom.mjs lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
 
   guest-contact-audit-db:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 14
     services:
@@ -81,10 +95,18 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      # These contracts use synthetic storage/database and JS SDKs, not an
+      # installed media encoder. Core separately validates the real build.
+      - name: Install locked dependencies for protected PR contracts (no media lifecycle)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Stage checksum-verified FFmpeg before npm lifecycle
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
       - name: Materialize checksum-verified FFmpeg for package runtime
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize

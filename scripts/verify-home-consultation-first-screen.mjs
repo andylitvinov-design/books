@@ -141,7 +141,7 @@ for(const engine of [chromium,webkit]){
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
-       ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+       ["mytube","reiki","coach","ai","services","practice","profile"],name+": seven dock targets");
      await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');

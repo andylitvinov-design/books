@@ -255,6 +255,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci-pr-readiness.mjs
       - name: Verify bounded Public Services PR ancestry before impact routing
+        id: ancestry
         if: github.event_name == 'pull_request'
         shell: bash
         env:
@@ -291,6 +292,9 @@ jobs:
           [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
             echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
+          # Reuse the exact tuple verified by GitHub; a shallow clone may not
+          # contain the historical event base object. Never infer ancestry.
+          printf 'event_base=%s\ntested_base=%s\nhead=%s\nmerge=%s\n' "$EVENT_BASE_SHA" "$tested_base" "$PR_HEAD_SHA" "$EXPECTED_MERGE_SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -300,6 +304,10 @@ jobs:
         env:
           HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_PUBLIC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_PUBLIC_VERIFIED_EVENT_BASE: ${{ steps.ancestry.outputs.event_base }}
+          HH_PUBLIC_VERIFIED_TESTED_BASE: ${{ steps.ancestry.outputs.tested_base }}
+          HH_PUBLIC_VERIFIED_HEAD: ${{ steps.ancestry.outputs.head }}
+          HH_PUBLIC_VERIFIED_MERGE: ${{ steps.ancestry.outputs.merge }}
         run: node scripts/ci-public-services-plan.mjs
       - name: Verify fail-closed Public Services routing
         run: node --test tests/ci-public-services-plan.test.mjs
@@ -339,10 +347,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
-          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts; fi
           node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
-          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs; fi
+          # Protected PR Core independently lints all changed JS/TS, and full
+          # lint for config/lockfile changes. Retain full fixed-list lint on manual QA.
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}

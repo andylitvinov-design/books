@@ -23,7 +23,17 @@ const labels={
 // iPhone E2E is a separate acceptance requirement, never impersonated here.
 async function assertPinnedSixDock(page, id, active) {
   const dock=page.locator("[data-hh-unified-dock]");
-  await dock.waitFor({state:"visible",timeout:30000});
+  try { await dock.waitFor({state:"visible",timeout:30000}); }
+  catch(error) {
+    console.error("Pinned dock diagnostic",id,await page.evaluate(()=>{
+      const el=document.querySelector("[data-hh-unified-dock]");
+      return {path:location.pathname,width:innerWidth,height:innerHeight,viewport:visualViewport?.height,
+        display:el?getComputedStyle(el).display:null,keyboard:el?.getAttribute("data-keyboard-open"),
+        editorial:el?.getAttribute("data-hh-editorial-dock"),
+        immersive:!!document.querySelector("main[data-energywork-ai-learner],[data-my-coach-immersive-session]")};
+    }));
+    throw error;
+  }
   if(active)await page.waitForFunction(expected=>{
     const node=document.querySelector("[data-hh-unified-dock]");
     return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
