@@ -4,7 +4,7 @@ import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./pub
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
-import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Play,RefreshCw,Send,MessageCircle,ShieldCheck,Sparkles,UserRound} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Pause,Play,RefreshCw,Send,MessageCircle,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
@@ -34,6 +34,7 @@ type Props={
   onPlaybackError:(player:HTMLVideoElement)=>void;onCancelExport?:()=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
+  storyApprovalRequired?:boolean;onReviewStory?:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
   onSaveDirect:(consentApproved:boolean)=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
   saveStatus:VideoDeliveryStatus;exportMode?:"personal"|"openmotion"|"express";basicFreeAvailable:boolean;
@@ -187,7 +188,7 @@ export function MandalaVideoReady({
   generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,onCancelExport,nativeIphoneMp4Retry=false,
   signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
-  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
+  storyApprovalRequired=false,onReviewStory,onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
   basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal",reelDownloadName=null
 }:Props){
@@ -204,6 +205,7 @@ export function MandalaVideoReady({
   const [walletOpen,setWalletOpen]=useState(false);
   const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  const [pendingDeliveryIntent,setPendingDeliveryIntent]=useState<"save"|"telegram"|null>(null);
   const [fileShareSupported,setFileShareSupported]=useState(false);
   useEffect(()=>setFileShareSupported(typeof navigator.share==="function"&&
     typeof File!=="undefined"),[]);
@@ -365,6 +367,7 @@ export function MandalaVideoReady({
   }
   function chooseDelivery(intent:"save"|"download"|"telegram"|"whatsapp"|"house"="save"){
     if(!verified||!video||disabled)return;
+    setPendingDeliveryIntent(null);
     if(!signedIn||intent==="house"){
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
@@ -457,26 +460,34 @@ export function MandalaVideoReady({
     try{await navigator.clipboard.writeText(text);setNotice(t.copiedText);}
     catch{setNotice(t.copyError);}
   }
-  function generateSelectedVideo(){
-    if(disabled||checking)return;
+  function generateSelectedVideo():boolean{
+    if(disabled||checking||rendering||storyApprovalRequired)return false;
     if(!basicFreeAvailable){
       setVideoGenerationNotice(basicFreeIssue==="guest_used"?t.videoGuestUsed:
         basicFreeIssue==="insufficient"?t.videoInsufficient:
         basicFreeIssue==="checking"?t.videoChecking:t.videoFreeHold);
-      return;
+      return false;
     }
     if(onGenerateBasicVideo()){
       setVideoGenerationNotice("");setActiveOffer(null);setGeneratedOffer(null);
       setCheckinEngaged(false);setCheckinDismissed(false);
-    }else setVideoGenerationNotice(t.videoSetup);
+      if(!courseFlow)setPendingDeliveryIntent("save");
+      return true;
+    }
+    // Show the actual parent error, never an unrelated generic PRO detour.
+    setVideoGenerationNotice("");
+    return false;
   }
   const completed=Boolean(verified&&video);
-  const videoTime=video?`${Math.floor(video.duration/60)}:${String(Math.round(video.duration%60)).padStart(2,"0")}`:"0:00";
+  const personalReadyLayout=exportMode==="personal"&&!courseFlow&&(previewAvailable||completed);
+  const showReadyJourney=completed||personalReadyLayout;
+  const durationSeconds=Math.max(0,Math.round(video?.duration??previewDurationSeconds));
+  const videoTime=`${String(Math.floor(durationSeconds/60)).padStart(2,"0")}:${String(durationSeconds%60).padStart(2,"0")}`;
   const waiting=rendering||checking;
   const pendingStatus=rendering?t.generating:checking?t.verifying:
     previewAvailable
-      ?(locale==="ru"?"Предпросмотр готов · MP4 ещё не создан":
-        locale==="es"?"Vista previa lista · MP4 sin crear":"Preview ready · MP4 not created yet")
+      ?(locale==="ru"?"Предпросмотр готов · MP4 при сохранении":
+        locale==="es"?"Vista previa lista · MP4 al guardar":"Preview ready · export on save")
       :t.notReady;
   const header=<div className={css.selectedVideo} data-aspect={aspect}
     data-video-file={video?"true":undefined}
@@ -496,17 +507,31 @@ export function MandalaVideoReady({
       <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
 
     </div>}
+    {exportMode!=="express"&&!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
+      <button type="button" onClick={onPreviewToggle}
+        disabled={disabled||waiting} data-ready-sequence-play aria-pressed={previewPlaying}
+        aria-label={previewPlaying?(locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"):
+          locale==="ru"?"Смотреть персональную историю":locale==="es"?"Reproducir mi historia":"Play my personal story"}>
+        {previewPlaying?<Pause size={20} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}
+      </button>
+      <small>{Math.floor(previewPositionSeconds)} / {Math.floor(previewDurationSeconds)} s</small>
+      <input type="range" min={0} max={Math.max(1,previewDurationSeconds)}
+        step={0.5} value={Math.min(previewDurationSeconds,previewPositionSeconds)}
+        aria-label={locale==="ru"?"Позиция предпросмотра":locale==="es"?"Posición de vista previa":"Preview position"}
+        disabled={disabled||waiting} onChange={event=>onPreviewSeek(Number(event.currentTarget.value))}
+        data-ready-sequence-seek/>
+    </div>:null}
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
     data-ready-state={completed?"complete":"choose"}
-    data-ready-has-video={video?"true":"false"}
+    data-ready-has-video={video?"true":"false"} data-ready-layout={personalReadyLayout?"delivery":undefined}
     aria-label={view==="login"?t.authTitle:t.ready}>
     {(view==="home"||view==="login")?<>
       <p className={css.readyStatus} role="status" data-ready-status
         data-ready-status-phase={completed?"complete":rendering?"rendering":checking?"verifying":"idle"}>
         {completed?<CheckCircle2 size={19} aria-hidden="true"/>:<Clock3 size={19} aria-hidden="true"/>}
         <strong>{exportMode==="express"?"Express":completed?t.ready:pendingStatus}</strong>
-        {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
+        {completed||(!waiting&&previewAvailable)?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
           rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
       </p>
       {rendering&&onCancelExport?<button type="button" className={css.secondary}
@@ -523,25 +548,6 @@ export function MandalaVideoReady({
             t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
       {exportMode!=="express"?header:null}
-      {exportMode!=="express"&&!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
-        <p>{locale==="ru"?"Ваши сцены и текст · предпросмотр без экспорта":
-          locale==="es"?"Tus escenas y textos · vista previa sin exportar":
-          "Your scenes and captions · preview without exporting"}</p>
-        <button type="button" onClick={onPreviewToggle}
-          disabled={disabled||waiting} data-ready-sequence-play aria-pressed={previewPlaying}>
-          {previewPlaying?(locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"):
-            locale==="ru"?"Смотреть персональную историю":
-              locale==="es"?"Reproducir mi historia":"Play my personal story"}
-        </button>
-        <input type="range" min={0} max={Math.max(1,previewDurationSeconds)}
-          step={0.5} value={Math.min(previewDurationSeconds,previewPositionSeconds)}
-          aria-label={locale==="ru"?"Позиция предпросмотра":
-            locale==="es"?"Posición de vista previa":"Preview position"}
-          disabled={disabled||waiting}
-          onChange={event=>onPreviewSeek(Number(event.currentTarget.value))}
-          data-ready-sequence-seek/>
-        <small>{Math.floor(previewPositionSeconds)} / {Math.floor(previewDurationSeconds)} s · Preview ≠ MP4</small>
-      </div>:null}
       {checking&&video&&!rendering?<button type="button" data-ready-play-verify
         className={css.secondary} onClick={()=>{
           const player=readyPlayerRef.current;
@@ -564,10 +570,26 @@ export function MandalaVideoReady({
             locale==="es"?"Todavía no hay un MP4 Express terminado en español.":
             "No finished verified Express MP4 is available."}
         </p>:null}
-      {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<button type="button" className={css.primary}
-        disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
-        <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
-      </button>:null}
+      {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<>
+        <div className={css.actions} data-ready-prepare-delivery>
+          <button type="button" disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
+            <Download size={21} aria-hidden="true"/><span>{t.save}</span>
+          </button>
+          <button type="button" disabled={disabled||checking}
+            onClick={()=>{if(generateSelectedVideo())setPendingDeliveryIntent("telegram");}} data-ready-prepare-telegram>
+            <Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span>
+          </button>
+        </div>
+        {storyApprovalRequired?<div className={css.exportFailure} role="status" data-ready-story-approval-required>
+          <p>{locale==="ru"?"Сначала подтвердите кадры выбранного сюжета. Предпросмотр не будет сохранён вместо видео.":
+            locale==="es"?"Confirma primero las imágenes del guion. La vista previa no se guardará como vídeo.":
+            "Approve the selected Story photos first. The preview will not be saved as a video."}</p>
+          {onReviewStory?<button type="button" onClick={onReviewStory} data-ready-review-story>
+            {locale==="ru"?"Проверить сюжет":locale==="es"?"Revisar guion":"Review Story"}
+            <ArrowRight size={17} aria-hidden="true"/>
+          </button>:null}
+        </div>:null}
+      </>:null}
       {courseFlow&&!waiting&&exportMode==="personal"?<div className={css.courseChoices} data-ready-course-choices>
         <button type="button" className={css.courseFree} data-ready-course-free
           disabled={disabled||checking} onClick={generateSelectedVideo}>
@@ -604,20 +626,19 @@ export function MandalaVideoReady({
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}
       {completed?<>
-        {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
-          <a href={video.url} download={readyDownloadName}
-            data-ready-direct-download>
-            <Download size={20} aria-hidden="true"/>
-            <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
-              locale==="es"?"Descargar "+video.extension.toUpperCase():
-                "Download "+video.extension.toUpperCase()}</span>
-          </a>
-          {fileShareSupported?<button type="button" onClick={shareVerifiedLocalFile}
-            data-ready-share-file>
-            <Send size={20} aria-hidden="true"/>
-            <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
-          </button>:null}
-        </div>:null}
+        <div className={css.actions} data-ready-save-choices>
+          <button type="button" onClick={()=>chooseDelivery("save")}
+            disabled={disabled||saveStatus.busy||(signedIn&&!cloudConsent&&!saveStatus.savedId)}
+            aria-busy={saveStatus.busy}
+            data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
+          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
+            data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
+        </div>
+        {pendingDeliveryIntent?<p className={css.note} role="status" data-ready-delivery-continuation>
+          {locale==="ru"?"Файл подготовлен. Завершите выбранное действие кнопкой выше.":
+            locale==="es"?"Archivo preparado. Confirma la acción elegida arriba.":
+            "Your file is prepared. Complete the selected action above."}
+        </p>:null}
         {signedIn&&!saveStatus.savedId?<div className={css.linkConsent}>
           <label>
             <input ref={cloudConsentRef} type="checkbox" checked={cloudConsent}
@@ -627,39 +648,12 @@ export function MandalaVideoReady({
             <span>{PRIVATE_VIDEO_SAVE_CONSENT[locale]}</span>
           </label>
         </div>:null}
-        <div className={css.actions} data-ready-save-choices>
-          <button type="button" onClick={()=>chooseDelivery("save")}
-            disabled={disabled||saveStatus.busy||(signedIn&&!cloudConsent&&!saveStatus.savedId)}
-            aria-busy={saveStatus.busy}
-            data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
-            data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("whatsapp")} disabled={disabled||saveStatus.busy}
-            data-ready-whatsapp><MessageCircle size={19} aria-hidden="true"/>
-            <span>{saveStatus.whatsappLinked===false?t.connectWhatsApp:t.whatsapp}</span></button>
-        </div>
         {saveStatus.telegramConnectUrl?<div className={css.linkActions} data-ready-telegram-link-step>
           <a href={saveStatus.telegramConnectUrl} target="_blank" rel="noopener noreferrer"
             data-ready-open-telegram>{t.openTelegramStart}</a>
           <button type="button" onClick={onSendTelegramDirect} disabled={saveStatus.busy}
             data-ready-verify-telegram>{t.telegramVerifySend}</button>
         </div>:null}
-        {saveStatus.whatsappConsentRequired&&!saveStatus.whatsappLinked&&!saveStatus.whatsappConnectUrl?
-          <div className={css.linkConsent} data-ready-whatsapp-link-consent>
-            <label><input type="checkbox" checked={whatsappConsent}
-              onChange={event=>setWhatsAppConsent(event.currentTarget.checked)}/>
-              <span>{t.waLinkConsent}</span></label>
-            <button type="button" onClick={()=>{if(whatsappConsent)onShareWhatsApp(true);}}
-              disabled={!whatsappConsent||saveStatus.busy}
-              data-ready-whatsapp-confirm-link>{t.connectWhatsApp}</button>
-          </div>:null}
-        {saveStatus.whatsappConnectUrl?<div className={css.linkActions} data-ready-whatsapp-link-step>
-          <a href={saveStatus.whatsappConnectUrl} target="_blank" rel="noopener noreferrer"
-            data-ready-open-whatsapp>{t.openWhatsAppStart}</a>
-          <button type="button" onClick={()=>onShareWhatsApp()} disabled={saveStatus.busy}
-            data-ready-verify-whatsapp>{t.whatsappVerify}</button>
-        </div>:null}
-        <p className={css.whatsappLimit}>{t.whatsappLimit}</p>
         {saveStatus.notice?<div className={css.saveStatus} role="status" aria-live="polite"
           data-ready-save-status>
           <span>{saveStatus.busy&&saveStatus.uploadPercent!==null
@@ -672,20 +666,20 @@ export function MandalaVideoReady({
         </div>:null}
       </>:null}
       {!waiting||completed?<>
-      <h3 className={css.nextTitle}>{completed?t.nextSteps:t.videoIdeas}</h3>
-      {completed?<p className={css.nextLead}>{t.nextLead}</p>:null}
+      <h3 className={css.nextTitle}>{showReadyJourney?t.nextSteps:t.videoIdeas}</h3>
+      {showReadyJourney?<p className={css.nextLead}>{t.nextLead}</p>:null}
       <div className={css.journey}>
         <button type="button" onClick={()=>onOpenTherapy("single")} data-ready-meditation
           data-ready-therapy-format="single" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={completed?"/images/holistic-house/ready-save-sunrise-portrait.jpg":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
+            <img src={showReadyJourney?"/images/holistic-house/ready-save-sunrise-portrait.jpg":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
           </div>
           <Headphones size={22} aria-hidden="true"/>
-          <span><strong>{completed?t.meditationNext:t.meditation}</strong><small>{completed?t.meditationNextHint:t.meditationHint}</small></span>
+          <span><strong>{showReadyJourney?t.meditationNext:t.meditation}</strong><small>{showReadyJourney?t.meditationNextHint:t.meditationHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
-        {!completed?<button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
+        {!showReadyJourney?<button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
           aria-expanded={activeOffer==="ritual"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -699,10 +693,10 @@ export function MandalaVideoReady({
           data-ready-therapy-format="course" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={completed?"/images/holistic-house/messenger-zen-stones.svg":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
+            <img src={showReadyJourney?"/images/holistic-house/messenger-zen-stones.svg":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
           </div>
           <BookOpen size={22} aria-hidden="true"/>
-          <span><strong>{completed?t.journeyNext:t.journey}</strong><small>{completed?t.journeyNextHint:t.journeyHint}</small></span>
+          <span><strong>{showReadyJourney?t.journeyNext:t.journey}</strong><small>{showReadyJourney?t.journeyNextHint:t.journeyHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
       </div>
@@ -780,11 +774,48 @@ export function MandalaVideoReady({
           {notice?<p role="status" className={css.note}>{notice}</p>:null}
         </>}
       </section>:null}
-      {completed?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
+      {showReadyJourney?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
         <Sparkles size={23} aria-hidden="true"/>
         <strong>{t.newVideo}</strong>
         <ArrowRight size={22} aria-hidden="true"/>
       </button>:null}
+      {completed?<div className={css.secondaryDelivery} data-ready-secondary-delivery>
+        {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
+          <a href={video.url} download={readyDownloadName}
+            data-ready-direct-download>
+            <Download size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
+              locale==="es"?"Descargar "+video.extension.toUpperCase():
+                "Download "+video.extension.toUpperCase()}</span>
+          </a>
+          {fileShareSupported?<button type="button" onClick={shareVerifiedLocalFile}
+            data-ready-share-file>
+            <Send size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
+          </button>:null}
+        </div>:null}
+        <div className={css.actions} data-ready-secondary-channels>
+          <button type="button" onClick={()=>chooseDelivery("whatsapp")} disabled={disabled||saveStatus.busy}
+            data-ready-whatsapp><MessageCircle size={19} aria-hidden="true"/>
+            <span>{saveStatus.whatsappLinked===false?t.connectWhatsApp:t.whatsapp}</span></button>
+        </div>
+        {saveStatus.whatsappConsentRequired&&!saveStatus.whatsappLinked&&!saveStatus.whatsappConnectUrl?
+          <div className={css.linkConsent} data-ready-whatsapp-link-consent>
+            <label><input type="checkbox" checked={whatsappConsent}
+              onChange={event=>setWhatsAppConsent(event.currentTarget.checked)}/>
+              <span>{t.waLinkConsent}</span></label>
+            <button type="button" onClick={()=>{if(whatsappConsent)onShareWhatsApp(true);}}
+              disabled={!whatsappConsent||saveStatus.busy}
+              data-ready-whatsapp-confirm-link>{t.connectWhatsApp}</button>
+          </div>:null}
+        {saveStatus.whatsappConnectUrl?<div className={css.linkActions} data-ready-whatsapp-link-step>
+          <a href={saveStatus.whatsappConnectUrl} target="_blank" rel="noopener noreferrer"
+            data-ready-open-whatsapp>{t.openWhatsAppStart}</a>
+          <button type="button" onClick={()=>onShareWhatsApp()} disabled={saveStatus.busy}
+            data-ready-verify-whatsapp>{t.whatsappVerify}</button>
+        </div>:null}
+        <p className={css.whatsappLimit}>{t.whatsappLimit}</p>
+      </div>:null}
       </>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay

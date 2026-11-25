@@ -45,7 +45,7 @@ async function installDictationMock(page){
  });
  return calls;
 }
-async function verifyDictation(page,form,marker,calls,baseText){
+async function verifyDictation(page,form,marker,calls,baseText,instant=false){
  const input=form.locator("textarea");
  const mic=form.locator(marker);
  const panel=form.locator("[data-hh-dictation-active]");
@@ -70,14 +70,51 @@ async function verifyDictation(page,form,marker,calls,baseText){
  assert.equal(await input.inputValue(),baseText,"cancel preserves draft");
  await mic.click();
  await phase.waitFor({state:"visible",timeout:10000});
- assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
- await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
+ const sendLabel=instant?"Отправить голосовое сообщение":"Распознать запись";
+ assert.equal(await panel.getByRole("button",{name:sendLabel,exact:true}).isEnabled(),true);
+ if(instant){
+  await page.route("**/api/holistic-agent/turn",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({reply:"Тестовый ответ без внешней модели.",recommendations:[]})}));
+  await panel.getByRole("button",{name:"Остановить запись",exact:true}).click();
+  await form.locator('[data-hh-dictation-phase="ready"]').waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls,"stop alone does not upload");
+ }
+ await panel.getByRole("button",{name:sendLabel,exact:true}).click();
  try{await mic.waitFor({state:"visible",timeout:15000});}catch(error){
   console.error("dictation confirm diagnostic",JSON.stringify({requests:calls.count-initialCalls,...await form.evaluate(root=>({phase:root.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:root.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent,fixture:window.__hhDictationQA,hidden:document.hidden}))}));
   throw error;
  }
  assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
- assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","transcription appends editable Russian text");
+ if(instant){
+  await page.getByText(baseText+" Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","speech is sent to chat, not staged in composer");
+  const readyMic=form.locator(marker+'[data-hh-dictation-ready="true"]:not([disabled])');
+  async function holdMic(){
+   await readyMic.waitFor({state:"visible",timeout:15000});
+   await readyMic.scrollIntoViewIfNeeded();
+   const box=await readyMic.boundingBox();
+   assert.ok(box,"microphone has a real pointer target");
+   const x=box.x+box.width/2,y=box.y+box.height/2;
+   await page.mouse.move(x,y);
+   await page.mouse.down();
+   await phase.waitFor({state:"visible",timeout:10000});
+   await page.getByText("Отпустите для отправки",{exact:true}).waitFor({state:"visible"});
+   // Keep the pointer down long enough to cross the explicit hold threshold.
+   await page.waitForTimeout(400);
+   return {x,y};
+  }
+  const p=await holdMic();
+  await page.mouse.move(p.x-100,p.y,{steps:5});
+  await page.getByText("Отпустите для отмены",{exact:true}).waitFor({state:"visible"});
+  await page.mouse.up();
+  await readyMic.waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls+1,"slide-to-cancel sends nothing");
+  await holdMic();
+  await page.mouse.up();
+  await mic.waitFor({state:"visible",timeout:15000});
+  assert.equal(calls.count,initialCalls+2,"hold release uploads exactly once");
+  await page.getByText("Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","hold release auto-sends without confirmation");
+ }else assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","home transcription remains editable");
  const stats=await page.evaluate(()=>window.__hhDictationQA);
  assert.equal(stats.opened,stats.closed,"all synthetic microphone tracks released");
  assert.ok(stats.opened>=2,"cancel and confirm each acquired microphone");
@@ -141,7 +178,7 @@ for(const engine of [chromium,webkit]){
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
-       ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+       ["mytube","reiki","coach","ai","services","practice","profile"],name+": seven dock targets");
      await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');
@@ -174,7 +211,7 @@ for(const engine of [chromium,webkit]){
       assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
       await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
       const form=page.locator("[data-hh-ai-chat-composer]");
-      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель");
+      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель",true);
       assert.equal(new URL(page.url()).pathname,"/ru/app/messages","dictation alone stays in chat");
       assert.equal(await form.locator("[data-hh-ai-voice-consent]").count(),0,"no old continuous-mode consent gate");
       evidence.push({engine:engine.name(),locale,width,manualDictation:true,cancel:true,confirmed:true,requests:dictationCalls.count});

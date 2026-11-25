@@ -18,17 +18,19 @@ const LIMIT = 2_500_000;
 
 function imageElement(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const reader = new FileReader();
     const image = new window.Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
+    const invalidImage = () => reject(new Error("INVALID_IMAGE"));
+    image.onload = () => resolve(image);
+    image.onerror = invalidImage;
+    reader.onerror = invalidImage;
+    reader.onabort = invalidImage;
+    reader.onload = () => {
+      if (typeof reader.result === "string") image.src = reader.result;
+      else invalidImage();
     };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("INVALID_IMAGE"));
-    };
-    image.src = url;
+    // Course pages allow local data images for decoding before JPEG conversion.
+    reader.readAsDataURL(file);
   });
 }
 

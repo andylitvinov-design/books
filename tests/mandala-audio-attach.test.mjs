@@ -20,10 +20,16 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   for(const hook of ["data-video-audio-context","data-video-audio-kind","data-video-audio-mood",
     "data-video-audio-pace","data-video-audio-search",
     "data-video-audio-sort","data-video-audio-more","data-video-music=",
-    "data-video-audio-player","data-video-audio-upload","data-video-audio-mic",
+    "data-video-audio-upload","data-video-audio-mic",
     "data-video-audio-attach","data-video-audio-attached"]){
     assert.ok(section.includes(hook),hook);
   }
+  // The shared native element is defined once, outside this JSX section.
+  const native=studio.slice(studio.indexOf("const audioPreviewPlayer="),studio.indexOf("const recordingPlayButton="));
+  assert.match(native,/<audio\b[^>]*ref=\{setAudioPreviewNode\}/);
+  assert.match(native,/data-video-audio-player/);
+  assert.match(section,/\{!inlineRecordingPlayer\?audioPreviewPlayer:null\}/);
+  assert.equal((studio.match(/data-video-audio-player\b/g)||[]).length,1,"one shared native audio element");
   assert.doesNotMatch(section,/data-video-audio-length/,"Duration belongs to Montage Settings");
   assert.match(studio,/data-video-montage-preference="duration"/);
   assert.match(section,/visibleAudio\.map\(/);
@@ -75,7 +81,14 @@ test("browser-local mic capture honors device permission, stopping, size, MIME a
   assert.match(studio,/navigator\.mediaDevices\.getUserMedia\(\{audio:true\}\)/);
   assert.match(studio,/new MediaRecorder\(stream,/);
   assert.match(studio,/recorder\.onstop=/);
-  assert.match(studio,/recorder\.start\(250\)/);
+  const mic=studio.slice(studio.indexOf("function startMicRecording()"),studio.indexOf("function handleNativeVideoPlaybackFailure"));
+  assert.match(mic,/recorder\.start\(\)/,"record one complete native container");
+  assert.doesNotMatch(mic,/recorder\.start\(\d+/,"avoid fragmented Safari audio");
+  assert.match(mic,/recorder\.ondataavailable=event=>\{if\(event\.data\.size\)chunks\.push\(event\.data\);\}/);
+  assert.match(mic,/new File\(chunks,"my-voice\."\+ext,\{type:kind\}\)/);
+  assert.match(mic,/chooseAudioFile\(file,false,true\)/,"mark an actual locally recorded file at capture");
+  assert.match(mic,/setAttachedAudio\(\{kind:"file",file:selected\.file,id:selected\.url,nonLoop:true\}\)/);
+  assert.match(studio,/uploadedAudio&&!uploadedAudio\.recorded\s*\?\s*<label/,"imported audio still requires explicit rights");
   assert.match(studio,/180000/);
   assert.match(studio,/session\.stream|getTracks\(\)\.forEach\(track=>track.stop\(\)\)/);
   assert.match(studio,/isSupportedLocalAudio\(file\)/);
