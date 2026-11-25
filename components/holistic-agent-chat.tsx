@@ -665,7 +665,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         setNewBelow(false);
         return;
       }
-      if(followTail.current&&composerFocused.current&&messengerView){
+      if(composerFocused.current&&compact&&messengerView){
         revealFocusedContext();
         return;
       }
@@ -689,21 +689,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const thread=threadRef.current;
     if(!thread)return;
     let frame=0;
-    // Track actual viewport changes separately from ordinary user scroll events.
-    const viewportGeometry=()=>[thread.clientWidth,thread.clientHeight,window.visualViewport?.height??window.innerHeight].join(":");
-    let lastViewportGeometry=viewportGeometry();
     const revealVisibleReply=()=>{
       window.cancelAnimationFrame(frame);
       frame=window.requestAnimationFrame(()=>{
         // The keyboard resizes before the first text message too. A reader
         // manually browsing old turns may still scroll without being pulled.
-        const geometry=viewportGeometry();
-        const keyboardLayoutChanged=geometry!==lastViewportGeometry;
-        lastViewportGeometry=geometry;
         if(composerFocused.current){
-          // Safari can clamp scrollTop on keyboard resize, producing a scroll
-          // event that looks manual. A real resize still reveals the latest reply.
-          if(keyboardLayoutChanged||followTail.current)revealFocusedContext();
+          // A layout/viewport callback is not a manual transcript scroll.
+          revealFocusedContext();
           return;
         }
         if(!messages.length||!followTail.current)return;
