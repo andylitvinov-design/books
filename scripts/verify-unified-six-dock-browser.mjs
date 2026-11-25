@@ -304,10 +304,28 @@ async function inspect(browserType,locale,width){
     for(const [caseName,path,active] of routeCases){
       const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
-      await assertPinnedSixDock(page,marker,active);
+      if(caseName==="ai"){
+        // The untouched AI landing intentionally hides the dock. Verify the
+        // exact exception and real accessible navigation, not a visible footer.
+        const landing=page.locator("[data-hh-ai-landing]");
+        await expect(landing).toBeVisible({timeout:30000});
+        await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
+        await expect(page.locator("[data-hh-unified-dock]")).toBeHidden();
+        await expect(landing.locator("[data-hh-genie-persona-shortcut]")).toBeVisible();
+        await expect(landing.locator("[data-hh-genie-goal-choice]")).toHaveCount(2);
+        const extra=landing.locator("[data-hh-genie-extra-directions]");
+        if(!await extra.evaluate(el=>el.open))await extra.locator("summary").click();
+        for(const section of ["ai","page","orders","clients"]){
+          await expect(extra.locator('[data-hh-chat-shortcut="'+section+'"]')).toBeVisible();
+        }
+        await expect(extra.locator('[data-hh-chat-shortcut="orders"]')).toHaveAttribute("href",prefix+"/app/messages?section=orders");
+        results.push({id:marker,immersive:true,dockHidden:true,route:path,authenticated:false});
+      }else{
+        await assertPinnedSixDock(page,marker,active);
+        results.push({id:marker,pinned:true,route:path,authenticated:false});
+      }
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
-      results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
     if(width===390){
       // Verify the identical sitewide dock on three ordinary editorial pages.
@@ -334,27 +352,26 @@ async function inspect(browserType,locale,width){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       await expect(entry).toBeVisible({timeout:30000});
       await entry.click();
+      // Current owner-approved sequence: audience → format → topic → purpose.
+      // Selecting Basic is only a planning preference; it never renders media.
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
+      await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+      await mirror.locator('[data-hh-mirror-goal-choice="stress"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","2");
+      await mirror.locator('[data-hh-mirror-subcategory="vital-energy"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-step","3");
+      await mirror.locator('[data-hh-mirror-topic="low-energy"]').click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
       const goal=mirror.locator('[data-hh-mirror-purpose-step]');
       await goal.locator('[data-video-ideas-goal-choice="rest"]').click();
       const next=goal.locator('[data-video-ideas-goal-next]');
       await expect(next).toBeEnabled();
       await next.click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-      const composer=mirror.locator('[data-hh-mirror-composer]');
-      for(let step=0;step<3&&!await composer.isVisible();step++){
-        const back=mirror.locator('[data-hh-mirror-back]');
-        await expect(back).toBeVisible();
-        await back.click();
-      }
-      const advanced=composer.locator('[data-hh-mirror-open-advanced]');
-      await expect(advanced).toBeVisible();
-      await expect(advanced).toBeEnabled();
-      await advanced.click();
       await expect(page.locator('[data-mandala-free-video]'))
-        .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+        .toHaveAttribute("data-active-workspace","editor",{timeout:15000});
     }
     await ideaButton.waitFor({state:"visible",timeout:30000});
     await page.waitForFunction(()=>{
@@ -455,19 +472,21 @@ async function inspect(browserType,locale,width){
         }else{
           const entry=mirror.locator('[data-hh-mirror-enter="me"]');
           if(await entry.isVisible())await entry.click();
-          const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
-          if(await purpose.isVisible()){
-            await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
-            await purpose.locator('[data-video-ideas-goal-next]').click();
-          }
-          const basic=mirror.locator('[data-hh-mirror-video-format="basic"]');
-          if(await basic.isVisible())await basic.click();
-          const composer=mirror.locator('[data-hh-mirror-composer]');
-          for(let step=0;step<3&&!await composer.isVisible();step++){
+          const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+          if(await format.isVisible())await format.click();
+          const purposeBack=mirror.locator('[data-hh-mirror-back-purpose]');
+          if(await purposeBack.isVisible())await purposeBack.click();
+          await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+          for(let step=0;step<3&&await mirror.getAttribute("data-hh-mirror-step")!=="1";step++){
             const back=mirror.locator('[data-hh-mirror-back]');
             await expect(back).toBeVisible();
             await back.click();
           }
+          await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
+          const description=mirror.locator('[data-hh-mirror-own-description]');
+          if(!await description.evaluate(node=>node.open))await description.locator(':scope > summary').click();
+          const composer=mirror.locator('[data-hh-mirror-composer]');
+          await expect(composer).toBeVisible();
           const advanced=composer.locator('[data-hh-mirror-open-advanced]');
           await expect(advanced).toBeVisible();
           await expect(advanced).toBeEnabled();
@@ -614,7 +633,22 @@ try{
  },null,{timeout:10000});
  // Owner-approved iHelp first turn: browser geometry is checked on the real
  // Video Studio route, not a static mock. No media render or external AI call.
- await page.locator('[data-video-ihelp-header-trigger]').click();
+ const helpMirror=page.locator('[data-hh-mirror-goals]');
+ const headerHelp=page.locator('[data-video-ihelp-header-trigger]');
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','landing');
+ await expect(headerHelp).toHaveCount(1);
+ await expect(headerHelp).toBeHidden();
+ const helpEntry=helpMirror.locator('[data-hh-mirror-enter="me"]');
+ await expect(helpEntry).toBeVisible();
+ await expect(helpEntry).toBeEnabled();
+ await helpEntry.click();
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','format');
+ await helpMirror.locator('[data-hh-mirror-video-format="basic"]').click();
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','topic');
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-step','1');
+ await expect(headerHelp).toBeVisible();
+ await expect(headerHelp).toBeEnabled();
+ await headerHelp.click();
  const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
  await iHelpDialog.waitFor({state:'visible',timeout:30000});
  const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
@@ -659,20 +693,25 @@ try{
  results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
- // The mobile Ali sections live in the real expandable menu, not an always-visible rail.
+ // The approved untouched landing hides the header and dock. Reach the real
+ // Orders tab through its accessible disclosure, then exercise News and AI.
  const messengerTabs=page.locator("[data-chat-top-tabs]");
  const messengerMenu=page.locator("[data-hh-ai-chat-menu]");
- await messengerMenu.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
-   "Mobile AI menu starts collapsed to leave room for the conversation");
- assert.equal(await messengerTabs.isVisible(),false,
-   "Mobile AI tabs are hidden until the user opens the menu");
- await messengerMenu.click();
- await messengerTabs.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
-   "Mobile AI menu expands on the real tap");
+ const firstLanding=page.locator("[data-hh-ai-landing]");
+ await expect(firstLanding).toBeVisible({timeout:30000});
+ await expect(messengerMenu).toBeHidden();
+ await expect(messengerTabs).toBeHidden();
+ const firstSections=firstLanding.locator("[data-hh-genie-extra-directions]");
+ assert.equal(await firstSections.evaluate(node=>node.open),false);
+ await firstSections.locator(":scope > summary").click();
+ const ordersShortcut=firstSections.locator('[data-hh-chat-shortcut="orders"]');
+ await expect(ordersShortcut).toBeVisible();
+ await ordersShortcut.click();
+ await expect(page.locator('[data-orders-clients-hub][data-section="orders"]')).toBeVisible({timeout:30000});
+ await expect(page.locator("#hh-orders-panel")).toBeVisible();
+ await expect(messengerTabs).toBeVisible();
  assert.equal(await messengerTabs.locator("button").count(),4,
-   "Messenger menu retains the AI, Orders, Clients and News tabs");
+   "Messenger retains AI, Orders, Clients and News");
  const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
  assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
  await news.click();
@@ -696,12 +735,18 @@ try{
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
-   "first screen presents four large conversational problem starters");
+   "four optional topic suggestions remain available in More topics");
+ const extraDirections=chat.locator('[data-hh-genie-extra-directions]');
+ assert.equal(await extraDirections.evaluate(node=>node.open),false,
+   "optional topic suggestions start collapsed under the three needs");
+ await extraDirections.locator(':scope > summary').click();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
    "More topics reveals the remaining four conversational suggestions");
  await moreTopics.click();
+ await expect(chat.locator('[data-hh-alchemist-topic]')).toHaveCount(4);
+ await extraDirections.locator(':scope > summary').click();
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
@@ -827,13 +872,13 @@ try{
  await bilingualInput.fill("Хочу денег");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("aria-label")==="Что сейчас для вас важно?",null,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
  await bilingualInput.fill("I want to discuss my income");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="What's on your mind?",null,{timeout:10000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("aria-label")==="What's on your mind?",null,{timeout:10000});
  assert.equal(new URL(page.url()).pathname,"/en/app/messages",
    "switching dialogue language does not navigate away from the original route");
  const retainedTurns=await bilingualLog.locator('[data-hh-chat-turn="user"]').allTextContents();
