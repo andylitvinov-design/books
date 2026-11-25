@@ -302,3 +302,76 @@ test('Cabinet and My Progress run their real dependency-free contracts before an
     'CI-only policy is verified in PR, not an extra product build after merge');
   assert.ok(push.includes('- name: Production build\n        '+gate+'\n        run: npm run build'));
 });
+
+test('IA reuses only Core prebuild tests on exact protected Messenger UI diffs; real compilation and assets remain',()=>{
+  const ia=read('ia-v2.yml');
+  const start=ia.indexOf('- name: Real IA browser build with verified Core prebuild reuse');
+  const end=ia.indexOf('- name: Full TypeScript outside production PR',start);
+  assert.ok(start>=0 && end>start);
+  const block=ia.slice(start,end);
+  for(const token of ['HEAD^1','HEAD^2','GITHUB_SHA','HH_PR_HEAD','HH_EVENT_BASE',
+    "github.event.pull_request.head.sha","github.event.pull_request.base.sha",
+    'merge-base','--is-ancestor','--no-renames','--name-status',
+    '5e3a459dc70f8bcd5a83e9e8cbe31b0a5dbf0189',
+    '80665a0c3531989d71e93d6e69ef6ef6d53ef900',
+    "if(fields[i]!=='M'",'if(!hasUI)','s.preprebuild','s.postprebuild','s.postbuild',
+    'node scripts/ensure-owner-video-renderer.mjs',
+    'node scripts/cache-ancient-coaching-photos.mjs',
+    'node scripts/generate-soft-ocean-melody.mjs',
+    'node scripts/build-public-card-artwork.mjs',
+    'node scripts/build-report-pdf-art.mjs',
+    'node scripts/prepare-my-coach-natural-mp4.mjs',
+    './node_modules/.bin/next build --no-lint','npm run build']) assert.ok(block.includes(token),token);
+  assert.ok(ia.includes('npm run verify:ia-v2'));
+  assert.ok(ia.includes('tests/helpers/app-db-setup.mjs'));
+  assert.ok(ia.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(core.includes('run: npm run build -- --no-lint'));
+  assert.match(core,/^  hh-merge-check:/m);
+});
+
+test('IA Core proof accepts only exact existing Messenger UI source changes and known policy',()=>{
+  const ia=read('ia-v2.yml');
+  const body=ia.split("<<'HH_IA_CORE_PROOF'\n")[1].split('\n          HH_IA_CORE_PROOF\n')[0]
+    .split('\n').map(line=>line.slice(10)).join('\n');
+  const run=new Function('require','process',body);
+  const merge='a'.repeat(40),base='b'.repeat(40),head='c'.repeat(40);
+  // Use the reviewed manifest shape as a fixture. Future manifest changes
+  // must restore the full build rather than fail this policy test.
+  const prebuild=JSON.parse(body.match(/s\.prebuild!==(\"(?:[^\"\\\\]|\\\\.)*\")/)[1]);
+  const pkg={scripts:{build:'next build',prebuild}};
+  const z=String.fromCharCode(0);
+  function accepted(rows,opts={}){
+    let failed=false;
+    const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_BASE_REF:'codex/public-book-library',GITHUB_SHA:merge,HH_PR_HEAD:head,HH_EVENT_BASE:base,...opts.env};
+    const exit=()=>{failed=true;throw new Error('expected fallback');};
+    const git=(_cmd,args)=>{
+      const rev={'HEAD':merge,'HEAD^1':base,'HEAD^2':head,
+        [base+':.github/workflows/hh-pr-core-release.yml']:opts.core||'5e3a459dc70f8bcd5a83e9e8cbe31b0a5dbf0189',
+        [base+':scripts/ci-quick-route.mjs']:opts.router||'80665a0c3531989d71e93d6e69ef6ef6d53ef900'};
+      if(args[0]==='rev-parse' && rev[args[1]])return rev[args[1]]+'\n';
+      if(args[0]==='merge-base'){if(opts.diverged)throw new Error('diverged');return '';}
+      if(args[0]==='diff')return rows.flat().join(z)+z;
+      throw new Error('unknown git request');
+    };
+    try{run(name=>name==='node:child_process'?{execFileSync:git}:{readFileSync:()=>JSON.stringify(opts.pkg||pkg)},{env,exit});}
+    catch(err){if(!failed)throw err;}
+    return !failed;
+  }
+  const ui=['M','components/app/messages-simple-inbox.jsx'];
+  const testRow=['M','tests/messages-simple-inbox.test.mjs'];
+  assert.equal(accepted([ui]),true);
+  assert.equal(accepted([ui,testRow]),true);
+  for(const rows of [[testRow],[['A',ui[1]]],[['D',ui[1]]],
+    [ui,['M','components/app/messages-bottom-navigation.jsx']],
+    [ui,['M','package.json']],[ui,['M','.github/workflows/ia-v2.yml']],
+    [ui,['M','app/api/app/direct-messages/route.js']],
+    [ui,['M','supabase/migrations/new.sql']]])assert.equal(accepted(rows),false,JSON.stringify(rows));
+  assert.equal(accepted([ui],{env:{GITHUB_EVENT_NAME:'workflow_dispatch'}}),false);
+  assert.equal(accepted([ui],{env:{HH_PR_HEAD:'d'.repeat(40)}}),false);
+  assert.equal(accepted([ui],{env:{GITHUB_SHA:'d'.repeat(40)}}),false);
+  assert.equal(accepted([ui],{env:{HH_EVENT_BASE:'d'.repeat(40)},diverged:true}),false);
+  assert.equal(accepted([ui],{core:'d'.repeat(40)}),false);
+  assert.equal(accepted([ui],{router:'d'.repeat(40)}),false);
+  assert.equal(accepted([ui],{pkg:{...pkg,scripts:{...pkg.scripts,postbuild:'node new-hook.js'}}}),false);
+  assert.equal(accepted([ui],{pkg:{scripts:{...pkg.scripts,prebuild:prebuild+' && node new-test.js'}}}),false);
+});
