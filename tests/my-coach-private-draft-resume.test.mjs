@@ -14,3 +14,11 @@ test('owner/revision guard and private text-only resume',()=>{
  assert.match(ui,/if\(restoredDraft\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
  assert.match(server,/row.state!=='active'\|\|row.revision!==input.revision/)
 })
+test('reviewed draft retains selected course and finalized tombstone cannot recreate deleted report',()=>{
+ const archive=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const writer=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+ assert.ok(archive.includes('courseSessionId:item.courseSessionId'))
+ assert.ok(server.includes('protocol.courseSessionId!==old.courseSessionId'))
+ assert.match(writer,/if\(draft\?\.state==='finalized'&&!existing\)throw new AppError\('MY_COACH_PROTOCOL_CONFLICT',409\)/)
+})

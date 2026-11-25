@@ -16,7 +16,7 @@ function DraftRow({item,t,lang,onAction,busy}){
   // User may explicitly confirm the preferred name and new summary; never
   // carry forward an unchecked inferred opening, profile score or AI goal.
   const {opening:ignored,profileCheckin:ignoredProfile,provenance:ignoredProvenance,...transcript}=p
-  return {...transcript,goal:goal.trim(),clientSummary:summary.trim(),clientNextStep:step.trim(),
+  return {...transcript,courseSessionId:item.courseSessionId,goal:goal.trim(),clientSummary:summary.trim(),clientNextStep:step.trim(),
     ...(name.trim()?{opening:{version:'hh-coach-opening-v1-20261122',completed:false,declined:false,
       name:name.trim(),continuity:'',focus:'',feelings:'',invitationQuote:'',confirmedQuote:'',
       checkmarks:{invitation:false,name:true,continuity:false,focus:false,feelings:false,confirmation:false}}}:{})}
