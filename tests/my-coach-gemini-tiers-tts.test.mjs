@@ -69,7 +69,7 @@ test('failed or overlong Gemini output fails closed without a retry',async()=>{
     {messages},async()=>({status:429,ok:false})),{message:'GEMINI_COACH_RATE_LIMIT'})
 })
 test('eleven personas retain approved, distinct server-allowlisted RU/EN voice candidates',()=>{
-  const counts={mira:6,max:5,sofia:6,alex:4,merlin:6,harry:4,genie:5,lea:4,noah:4,iris:4,ray:4}
+  const counts={mira:6,max:6,sofia:7,alex:5,merlin:6,harry:5,genie:5,lea:4,noah:4,iris:4,ray:4}
   assert.deepEqual(Object.keys(GEMINI_COACH_VOICE_OPTIONS).sort(),Object.keys(counts).sort())
   for(const [id,count] of Object.entries(counts)){
     const opts=coachGeminiVoiceOptions(id)
