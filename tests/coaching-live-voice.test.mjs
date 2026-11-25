@@ -447,7 +447,10 @@ test('My Coach Replay animates large portrait only on actual device or cloud aud
   assert.ok(cloud.includes('onError:fail'))
   assert.match(replay,/setVoiceState\(\{phase:'speaking',beat:0\}\)/)
   assert.match(replay,/setPlaybackNotice\(voiceGate\.naturalUnavailable\)/)
-  assert.match(page,/onHidden=\(\)=>\{if\(document.hidden\)\{stopReplay\(\);setVoiceState\(\{phase:'idle',beat:0\}\)\}\}/)
+  const hidden=page.split('const onHidden=()=>{')[1]?.split("document.addEventListener('visibilitychange',onHidden)")[0]||''
+  assert.match(hidden,/if\(!document\.hidden\)return/)
+  assert.match(hidden,/stopReplay\(\)/)
+  assert.match(hidden,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState\(\{phase:'idle',beat:0\}\)/,'stop replay without overwriting a parked Gemini phase')
   assert.match(replay,/\.catch\(fail\)/)
   assert.ok(replay.includes('audioContext:replayAudioContextRef.current'))
   assert.doesNotMatch(replay,/getUserMedia|MediaRecorder|OPENROUTER_API_KEY|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
