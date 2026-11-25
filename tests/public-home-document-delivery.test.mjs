@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { gunzipSync, gzipSync } from 'node:zlib'
 import { join } from 'node:path'
 import test from 'node:test'
+import { createServer } from 'node:http'
+import { requestHomeDocument } from '../scripts/public-home-http.mjs'
 import { publicHomeDocumentLocale, publicHomeEncoding } from '../lib/public-home-document-request.mjs'
 import { GET, generateStaticParams, revalidate } from '../app/hh-public-document/[locale]/route.js'
 
@@ -95,10 +97,7 @@ test('built canonical cache isolates anonymous, cookie, authorization and router
 }, async () => {
   const origin=new URL(process.env.HH_PUBLIC_HOME_TEST_ORIGIN)
   assert.ok(['localhost','127.0.0.1'].includes(origin.hostname), 'local build only')
-  const request=(path,fields={},method='GET')=>fetch(new URL(path,origin),{
-    method, headers:{accept:'text/html','accept-encoding':'identity',...fields},
-    redirect:'manual', signal:AbortSignal.timeout(20000),
-  })
+  const request=(path,fields={},method='GET')=>requestHomeDocument(new URL(path,origin),{method,headers:fields})
   const isHashDocument=response=>{
     const csp=response.headers.get('content-security-policy')||''
     return /'sha256-/.test(csp)&&!/'nonce-/.test(csp)
@@ -118,6 +117,7 @@ test('built canonical cache isolates anonymous, cookie, authorization and router
     assert.match(body,/data-home-dialogue-entry/)
     const compressed=await request(path,{'accept-encoding':'gzip'})
     assert.equal(compressed.status,200,path+' gzip')
+    assert.equal(compressed.headers.get('content-encoding'),'gzip',path+' gzip wire representation')
     assert.equal(await compressed.text(),body)
     for(const headers of [
       {cookie:'hh_test_session=fixture'},
@@ -125,6 +125,8 @@ test('built canonical cache isolates anonymous, cookie, authorization and router
       {cookie:'hh_test_session=fixture','x-hh-public-home-encoding':'gzip'},
       {'cache-control':'no-cache','x-hh-public-home-encoding':'identity'},
       {rsc:'1','x-hh-public-home-encoding':'identity'},
+      {'sec-fetch-mode':'cors'},
+      {'sec-fetch-dest':'script'},
     ]){
       const excluded=await request(path,headers)
       privateResponse(excluded)
@@ -145,3 +147,32 @@ test('built canonical cache isolates anonymous, cookie, authorization and router
     await response.arrayBuffer()
   }
 })
+
+test('raw navigation audit emits the intended browser metadata and decodes the actual gzip wire body', async () => {
+  const raw = '<!DOCTYPE html><html lang="en">fixture</html>';
+  const gz = gzipSync(raw);
+  const observed = [];
+  const server = createServer((req,res)=>{
+    observed.push(req.headers);
+    if(req.url==='/redirect'){res.writeHead(307,{location:'/'});res.end('redirect');return}
+    res.writeHead(200,{'content-encoding':'gzip','content-type':'text/html'});
+    res.end(gz);
+  });
+  try {
+    await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
+    const origin='http://127.0.0.1:'+server.address().port;
+    const page=await requestHomeDocument(origin+'/',{headers:{'accept-encoding':'gzip'}});
+    assert.equal(observed[0]['sec-fetch-mode'],'navigate');
+    assert.equal(observed[0]['sec-fetch-dest'],'document');
+    assert.equal(observed[0]['accept-encoding'],'gzip');
+    assert.equal(page.wireBytes,gz.length);
+    assert.equal(await page.text(),raw);
+    const redirect=await requestHomeDocument(origin+'/redirect',{headers:{'sec-fetch-mode':'cors',cookie:'fixture=1'}});
+    assert.equal(redirect.status,307);
+    assert.equal(observed.length,2);
+    assert.equal(observed[1]['sec-fetch-mode'],'cors');
+    assert.equal(observed[1].cookie,'fixture=1');
+  } finally {
+    await new Promise(resolve=>server.close(resolve));
+  }
+});

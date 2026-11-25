@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
+import { requestHomeDocument } from "./public-home-http.mjs";
 const paths=["/","/ru","/es"];
 const samirPath="/images/holistic-house/ali-inner-alchemist-hero.webp";
 const samirBytes=readFileSync(new URL("../public"+samirPath,import.meta.url));
@@ -39,7 +40,7 @@ async function main(){
   const origin=new URL(process.argv[2]||"http://127.0.0.1:3000");
   const list=[];
   for(const path of paths){
-    const response=await fetch(new URL(path,origin),{signal:AbortSignal.timeout(20000)});
+    const response=await requestHomeDocument(new URL(path,origin));
     assert.equal(response.status,200,path);
     const data=snapshot(await response.text());
     const unique=[...new Set(data.cssLinks)];
@@ -51,7 +52,7 @@ async function main(){
     }
     assert.ok(data.decodedHtmlBytes<300000,"HTML payload regression >300 KB: "+path);
     assertHeroPreload(data,path);
-    list.push({path,htmlBytes:data.decodedHtmlBytes,cssFiles:unique.length,cssBytes,
+    list.push({path,htmlBytes:data.decodedHtmlBytes,wireHtmlBytes:response.wireBytes,deliveryPolicy:response.headers.get('content-security-policy')?.includes("'sha256-")?'hash':'nonce-or-other',cssFiles:unique.length,cssBytes,
       blockingCssFiles:new Set(data.blockingCssLinks).size,
       heroImage:data.heroImage.src.startsWith("data:")?{...data.heroImage,src:samirPath,delivery:"inline-approved-webp"}:data.heroImage,
       highPriorityImages:data.highPriorityImages});
