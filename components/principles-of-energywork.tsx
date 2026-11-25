@@ -411,6 +411,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <div className={styles.heroActions}>
               <Link href={learnPath} className={styles.primaryButton} data-energywork-interactive-course>{daybookCopy.classic}<ArrowRight size={19} aria-hidden="true" /></Link>
               <div className={styles.heroQuickLinks}>
+                <Link className={styles.ghostButton} href={"/" + (locale === "ru" ? "ru" : "en") + "/academy/principles-of-energywork/daybook"} data-reiki-daybook-entry>{locale === "ru" ? "Открыть курс в Daybook" : locale === "es" ? "Abrir Daybook (en inglés)" : "Open in Daybook"}<BookOpen size={17} aria-hidden="true" /></Link>
                 <a href="#energywork-flight-to-sun" className={styles.ghostButton}>{v.flightCta}<ArrowDown size={16} aria-hidden="true" /></a>
                 <a href="#energywork-systems" className={styles.ghostButton}>{t.start}<ArrowRight size={16} aria-hidden="true" /></a>
                 <Link href={profilePath} className={styles.ghostButton} prefetch={false} data-reiki-profile-link>{daybookCopy.profile}<ArrowRight size={16} aria-hidden="true" /></Link>
