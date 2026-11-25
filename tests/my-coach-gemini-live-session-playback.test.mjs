@@ -557,3 +557,39 @@ test('socket rollover drains a completed reply and resumes the original credenti
   assert.equal(sockets.length,2,'a failed resumption cannot silently open a fresh session')
   assert.equal(stops,1)
 })
+
+
+test('cold microphone startup connects only after the worklet or fallback can consume frames',async()=>{
+  for(const outcome of ['loaded','unavailable','ended-while-loading','ended-then-rejected']){
+    const events=[]
+    let release,reject
+    const loading=new Promise((resolve,fail)=>{release=resolve;reject=fail})
+    const node=id=>({id,connect:target=>events.push(id+' → '+target.id)})
+    class WorkletNode{constructor(){events.push('worklet node');Object.assign(this,node('worklet'),{port:{}})}}
+    const context={
+      sampleRate:48000,destination:{id:'destination'},
+      audioWorklet:{addModule:()=>{events.push('load');return loading}},
+      createMediaStreamSource:()=>{events.push('attach track');return node('mic')},
+      createScriptProcessor:()=>{events.push('fallback node');return node('fallback')},
+      createGain:()=>Object.assign(node('sink'),{gain:{value:1}}),
+    }
+    const r={context,stream:{},ended:false}
+    const install=runInNewContext('('+section('  async function installCapture(','  function connect(')+')',
+      {window:{AudioWorkletNode:WorkletNode},capture(){}})
+    const ready=install(r)
+    assert.deepEqual(events,['load'],'the mic never backs up during the worklet fetch')
+    r.ended=outcome.startsWith('ended')
+    if(outcome==='unavailable'||outcome==='ended-then-rejected')reject(Error('worklet load failed'))
+    else release()
+    await ready
+    if(r.ended){
+      assert.deepEqual(events,['load'],'no capture resources can outlive a stopped session')
+      continue
+    }
+    const kind=outcome==='loaded'?'worklet':'fallback'
+    assert.deepEqual(events,['load',kind+' node','sink → destination',kind+' → sink','attach track','mic → '+kind])
+    assert.equal(r.sink.gain.value,0)
+    assert.equal(r.source.id,'mic')
+    assert.equal(r.processor.id,kind)
+  }
+})

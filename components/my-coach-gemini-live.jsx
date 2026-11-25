@@ -701,10 +701,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   async function installCapture(r){
     const ctx=r.context
-    const source=ctx.createMediaStreamSource(r.stream)
-    const sink=ctx.createGain()
-    sink.gain.value=0
-    sink.connect(ctx.destination)
     let processor
     if(ctx.audioWorklet?.addModule&&typeof window.AudioWorkletNode==='function'){
       try{
@@ -714,6 +710,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         processor.port.onmessage=event=>capture(r,event.data)
       }catch{processor=null}
     }
+    if(r.ended)return
     if(!processor){
       if(typeof ctx.createScriptProcessor!=='function')throw Error('AUDIO_WORKLET_UNAVAILABLE')
       const blockSize=2**Math.ceil(Math.log2(ctx.sampleRate*.032))
@@ -721,9 +718,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       processor.onaudioprocess=event=>capture(r,
         new Float32Array(event.inputBuffer.getChannelData(0)))
     }
-    source.connect(processor)
-    processor.connect(sink)
-    r.source=source;r.processor=processor;r.sink=sink
+    // Attach the track only after the graph is ready to consume current audio.
+    // WebKit can queue old samples in a disconnected MediaStreamAudioSourceNode.
+    r.processor=processor
+    r.sink=ctx.createGain()
+    r.sink.gain.value=0
+    r.sink.connect(ctx.destination)
+    processor.connect(r.sink)
+    r.source=ctx.createMediaStreamSource(r.stream)
+    r.source.connect(processor)
   }
 
   function connect(r,token,{resume=false}={}){
