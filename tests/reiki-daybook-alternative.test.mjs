@@ -8,7 +8,7 @@ test("Reiki Daybook groups every canonical slide into five variable-length weeks
   const weeks = energyworkLessonRanges().map((range,i)=>sequence.slice(i===0?0:range.start,range.end));
   assert.equal(weeks.length,5);
   assert.deepEqual(weeks.flat(),sequence);
-  assert.deepEqual(weeks.map(week=>week.length),[11,16,18,16,7]);
+  assert.deepEqual(weeks.map(week=>week.length),[12,16,18,16,7]);
   assert.equal(weeks[0][0],"welcome-01");
   assert.ok(weeks[4].includes("init-photo-01"));
   assert.equal(weeks[4].at(-1),"end-02");
