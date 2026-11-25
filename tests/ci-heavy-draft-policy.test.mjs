@@ -1002,3 +1002,38 @@ test('Core specialist uses slim only on verified non-strict paths, with unchange
   assert.doesNotMatch(core,/^  hh-specialist:/m);
   assert.doesNotMatch(job, /continue-on-error:\s*true/);
 });
+
+test('source specialist wave: only duplicate production-PR compile and lint are delegated',()=>{
+  const gate="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const ready="    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const configs=[
+    ['practice-material-previews.yml','unit-types-build',['ESLint of changed interactive panels','TypeScript regression','Production Next.js build'],
+      ['tests/practice-material-preview-url.test.mjs','tests/material-library-upload-headers.test.mjs','tests/practice-private-report-materials.test.mjs','tests/client-session-owner-audio-upload.test.mjs']],
+    ['hh-kling-video.yml','kling',['Install dependencies for standalone Kling verification','Scoped ESLint','TypeScript','Next.js build'],
+      ['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
+    ['pro-reiki-master-paths.yml','validate-pro',['ESLint changed implementation','Type-check the application','Validate the Next.js production build'],
+      ['tests/profi-hub.test.mjs','tests/pro-master-search-placement.test.mjs','tests/temple-support-hub.test.mjs']],
+    ['hh-direct-video-notes.yml','media-contract',['Scope lint'],
+      ['tests/direct-message-media-transport.test.mjs','tests/direct-message-video-notes.test.mjs','tests/messages-private-media-pagination.test.mjs']],
+  ];
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/run: npm run build/);
+  assert.ok(core.includes('npx --no-install eslint "${files[@]}"'));
+  for(const [file,job,steps,contracts] of configs){
+    const s=read(file);
+    assert.ok(s.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]'),file+' Ready trigger');
+    assert.ok(s.includes('  '+job+':\n'+ready),file+' Draft guard');
+    assert.match(s,/^  workflow_dispatch:/m);
+    for(const name of steps)assert.ok(s.includes('- name: '+name+'\n        '+gate+'\n        run:'),file+' nonproduction '+name);
+    for(const f of contracts)assert.ok(s.includes(f),file+' lost '+f);
+    assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+  // Only Kling has no third-party imports in its exact source contract graph.
+  // Practice, Pro Reiki and private media retain the complete lockfile install.
+  const kling=read('hh-kling-video.yml');
+  assert.ok(kling.includes('run: node --test tests/kling-video.test.mjs tests/kling-avatar.test.mjs'));
+  assert.ok(kling.includes('run: npm ci --ignore-scripts --no-audit --no-fund'));
+  for(const f of ['practice-material-previews.yml','pro-reiki-master-paths.yml','hh-direct-video-notes.yml'])
+    assert.match(read(f),/^      - run: npm ci /m);
+});
