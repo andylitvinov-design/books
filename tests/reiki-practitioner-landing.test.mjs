@@ -19,3 +19,21 @@ test("Reiki landing promotes free Daybook, preserves classic course and links to
   assert.ok(profile.indexOf("<ReikiProfileCourseCard locale={selected} />") < profile.indexOf("<p className={styles.clarityNotice}"));
   assert.ok(profile.includes("reikiLandingPath(selected)"));
 });
+
+test("Reiki landing uses the actual My Profile photo-led design",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ assert.ok(landing.includes("data-reiki-week-photo={index + 1}"));
+ assert.ok(css.includes("REIKI_MY_PROFILE_20261124"));
+ assert.ok(css.includes('url("/images/holistic-house/andy-about.png")'));
+ assert.ok(css.includes("grid-template-columns:35% minmax(0,1fr) 18px"));
+ assert.ok(css.includes("#fff19b,#ffc520 44%,#e99000"));
+ for(let week=1;week<=5;week++)assert.ok(css.includes('data-reiki-week-photo="'+week+'"'));
+});
+test("Integrated Profile preserves both Reiki and Video Studio",()=>{
+ const profile=read("components/app/profile-space-dashboard.jsx");
+ const dock=read("lib/unified-mobile-dock.mjs");
+ assert.ok(profile.includes("<ReikiProfileCourseCard locale={selected} />"));
+ assert.ok(profile.includes("data-profile-my-video"));
+ assert.ok(dock.includes('case "reiki": return prefix+"/academy/principles-of-energywork"'));
+});

@@ -24,7 +24,7 @@ test('Profile has three ordered top tabs and one three-step Clarity & Support jo
 })
 test('Clarity retains existing tools and account routes without fabricating saved progress',()=>{
  for(const path of ['/development-vectors','/tests','/course?view=courses','/portrait?space=reports','/portrait?space=sessions','/daybook?start=vector','/settings','/practice','/my-page','?view=consultation','?view=meditation']) assert.ok(source.includes(path),path)
- assert.match(source,/REIKI_FREE_COURSE_PATH/)
+ assert.match(source,/reikiLandingPath\(selected\)/)
  assert.match(source,/accountId=\{accountId\}/)
  assert.doesNotMatch(source,/localStorage|sessionStorage/)
  for(const label of ['Clarity & Support','Ясность и поддержка','Claridad y apoyo'])assert.ok(source.includes(label))
