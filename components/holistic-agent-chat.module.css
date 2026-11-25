@@ -1110,3 +1110,47 @@
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions{position:static!important;display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}
+
+
+/* Established AI conversation — compact WhatsApp/Telegram-style composer.
+   Scoped to the actual in-thread form, never the opening card or recording UI.
+   The input has one line when empty and grows only for authored text. */
+@media(max-width:767px){
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not(:has(:global([data-hh-dictation-active="true"]))){
+  display:flex;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:nowrap;gap:4px;min-height:50px;height:auto;
+  margin:0;padding:3px 6px max(3px,env(safe-area-inset-bottom));border:0;border-top:1px solid #e3e8e0;border-radius:0;background:#f8f9f5;box-shadow:none;max-width:100%;overflow:visible;
+ }
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not(:has(:global([data-hh-dictation-active="true"]))){
+  padding-bottom:3px;margin:0;min-height:50px;align-items:center;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea{
+  order:2;flex:1 1 0%;min-width:0;width:0;min-height:40px;max-height:100px;padding:9px 12px;box-sizing:border-box;
+  border:1px solid #dce3db;border-radius:22px;background:#fff;color:#193e34;box-shadow:none;outline:none;resize:none;
+  font:400 16px/20px system-ui,sans-serif;overflow-y:auto;caret-color:#087a60;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea:focus{
+  outline:none;box-shadow:0 0 0 1px #78b7a7;border-color:#78b7a7;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea::placeholder{
+  font-weight:400;color:#82908b;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>.actions{display:contents}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .composerMore{
+  order:1;flex:0 0 40px;min-width:40px;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .composerMore>summary,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.photoShortcut{
+  display:grid;place-items:center;flex:0 0 40px;width:40px;min-width:40px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:#23685a;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.photoShortcut{order:3}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.recorderToggle,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>button[type="submit"]{
+  order:4;display:grid;place-items:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:#087b61;color:#fff;box-shadow:none;
+ }
+ /* Empty: microphone, like WhatsApp. Authored message: send. The + menu
+    retains attachments, voice notes and the live voice conversation. */
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not([data-hh-chat-has-draft="true"]) .actions>button[type="submit"]{display:none}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])[data-hh-chat-has-draft="true"] .actions>.recorderToggle{display:none}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .actions>button:focus-visible,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .composerMore>summary:focus-visible{outline:2px solid #087b61;outline-offset:1px}
+}
