@@ -160,10 +160,14 @@ test('stale watchdog cron backstop verifies queue state and dispatches at most o
  const recent=new Date(NOW-5*60_000).toISOString();
  const historical={id:21,status:'completed',created_at:old,updated_at:old};
  assert.equal(watchdogCronDecision([historical],[],NOW),'WAKE_STALE_WATCHDOG');
- // A late 10-minute tick gets a short grace, but not an extra half-hour stall.
- const withinGrace={...historical,id:31,created_at:new Date(NOW-15*60_000).toISOString()};
- const beyondGrace={...historical,id:32,created_at:new Date(NOW-17*60_000).toISOString()};
+ // A 20-minute tick plus bounded scheduler jitter is healthy; a missed tick is not.
+ const withinGrace={...historical,id:31,created_at:new Date(NOW-25*60_000).toISOString()};
+ const beyondGrace={...historical,id:32,created_at:new Date(NOW-26*60_000).toISOString()};
  assert.equal(watchdogCronDecision([withinGrace],[],NOW),'WATCHDOG_CRON_HEALTHY');
+ for(const minutes of [16,17,19,20,21,24,25]){
+  const scheduled={...historical,created_at:new Date(NOW-minutes*60_000).toISOString()};
+  assert.equal(watchdogCronDecision([scheduled],[],NOW),'WATCHDOG_CRON_HEALTHY',minutes+' minutes');
+ }
  assert.equal(watchdogCronDecision([beyondGrace],[],NOW),'WAKE_STALE_WATCHDOG');
  const recentManual={...historical,id:33,
   created_at:new Date(NOW-10*60_000).toISOString(),
@@ -222,7 +226,7 @@ test('existing queued Watchdog or malformed schedule inventory blocks fallback',
 
 test('trusted production PR event safely wakes old cron once; rejects forged events',async()=>{
  const {trustedWatchdogWakeContext,wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
- const old=new Date(NOW-20*60_000).toISOString();
+ const old=new Date(NOW-30*60_000).toISOString();
  const context={repo:{owner:'andylitvinov-design',repo:'books'},
   ref:'refs/heads/codex/bootstrap-books',eventName:'pull_request_target',
   payload:{action:'opened',pull_request:{number:77,state:'open',draft:false,
