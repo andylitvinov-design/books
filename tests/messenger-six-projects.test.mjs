@@ -25,7 +25,8 @@ test('first screen shows six owner-requested projects with explanatory subtitles
  }
  assert.match(agent,/messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>/)
  assert.match(agent,/data-home-handoff-user-preview/)
- assert.match(agent,/<MessengerSixProjects locale=\{locale\} onSelect=\{startProject\}\/>/)
+ // Selecting a project closes the viewport-safe popup before starting the same flow.
+ assert.match(agent,/<MessengerSixProjects locale=\{locale\} onSelect=\{id=>\{closeComposerMenu\(\);startProject\(id\);\}\}\/>/)
  assert.match(agentCss,/data-hh-messenger-six-projects/)
  assert.match(projectCss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
  assert.match(projectCss,/@media\(min-width:700px\)/)
