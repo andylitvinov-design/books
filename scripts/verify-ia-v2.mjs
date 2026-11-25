@@ -318,6 +318,13 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             const box=await button.boundingBox()
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
           }
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
+          const programNames={en:['Clarity & Stress Relief','Achieving My Goal','Business Support'],ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса'],es:['Claridad y alivio del estrés','Alcanzar mi meta','Apoyo empresarial']}
+          for(const [i,intention] of ['clarity','goal','business'].entries()){
+            await expect(entry.locator('[data-home-intent-option="'+intention+'"]')).toHaveAccessibleName(programNames[locale][i])
+          }
           await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
           // The approved Home hides the redundant journey link; its actual
           // destination remains available via the verified Profile navigation.
@@ -346,6 +353,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()

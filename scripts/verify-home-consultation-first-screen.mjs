@@ -93,7 +93,7 @@ for(const engine of [chromium,webkit]){
    ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"]]
   ]){
    for(const width of [320,354,390,430]){
-    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
     const name=engine.name()+":"+locale+":"+width;const errors=[];
     page.on("pageerror",e=>errors.push(e.message.slice(0,200)));
     page.on("console",m=>{if(m.type()==="error")errors.push(m.text().slice(0,200))});
