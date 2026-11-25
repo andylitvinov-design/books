@@ -301,15 +301,15 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home presents Clarity, Goal and Business program cards.
-          // Verify the real three-program layout, not the retired intent names.
+          // Approved Home presents Clarity, Goal, Business and Reiki program cards.
+          // Verify the real four-program layout, not the retired intent names.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           const choices=entry.locator('[data-home-intent-option]')
-          await expect(choices).toHaveCount(3)
-          for(const intention of ['clarity','goal','business']){
+          await expect(choices).toHaveCount(4)
+          for(const intention of ['clarity','goal','business','reiki']){
             const button=entry.locator('[data-home-intent-option="'+intention+'"]')
             await expect(button).toHaveCount(1)
             await expect(button).toHaveAttribute('type','button')
@@ -317,6 +317,13 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             await expect(button.locator('[class*="programSteps"] > span')).toHaveCount(3)
             const box=await button.boundingBox()
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
+          }
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
+          const programNames={en:['Clarity & Stress Relief','Achieving My Goal','Business Support','Reiki Practic'],ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса','Reiki Practic'],es:['Claridad y alivio del estrés','Alcanzar mi meta','Apoyo empresarial','Reiki Practic']}
+          for(const [i,intention] of ['clarity','goal','business','reiki'].entries()){
+            await expect(entry.locator('[data-home-intent-option="'+intention+'"]')).toHaveAccessibleName(programNames[locale][i])
           }
           await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
           // The approved Home hides the redundant journey link; its actual
@@ -340,12 +347,13 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             }
           })
           assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three programs → five methods '+JSON.stringify(homeLayout))
+            label+': composer → four programs → five methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()

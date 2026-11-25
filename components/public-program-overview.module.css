@@ -57,3 +57,29 @@
 .page :is(a,summary,button):focus-visible{outline:3px solid #fff0bb;outline-offset:2px}
 @media(max-width:375px){.header{padding:7px 8px;gap:4px}.brand>svg{display:none}.brand small{font-size:9px}.headerActions,.siteTools :global(.site-navigation--profile-compact){gap:3px}.hero{padding-left:13px;padding-right:13px;min-height:252px}.heroCopy{max-width:85%}.heroCopy h1{font-size:clamp(32px,9.5vw,39px)}.body{padding:0 9px}.row{padding:9px 8px;gap:6px}.sessionTitle{font-size:15px}.page[data-public-program=goal] .sessionTitle{font-size:15px}.page[data-public-program=goal] .row{gap:5px;padding:7px}.page[data-public-program=goal] .sessionIcon{width:19px;height:19px}.page[data-public-program=goal] .number{width:23px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.chevron{transition:none}}
+
+/* Reiki: five illustrated weeks, one primary action, mobile-first readable cards. */
+.page[data-public-program=reiki]{--deep:#073d36;--surface:#126453;--mid:#237b68;--edge:#e4c87c}
+.page[data-public-program=reiki] .art{background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') 56% center/cover no-repeat}
+.page[data-public-program=reiki] .hero{min-height:245px;padding-bottom:12px}
+.page[data-public-program=reiki] .heroCopy{max-width:84%}
+.reikiEntry{margin:0 0 12px;color:#fff3d4;text-align:center}
+.reikiEntry .cta{margin:0 auto 6px;cursor:pointer;font-family:system-ui,sans-serif;font-size:20px}
+.reikiEntry .cta:disabled{opacity:.75;cursor:wait}
+.reikiEntry small,.reikiEntry [role=alert]{color:#fff0d0!important;font-size:12px;line-height:1.4}
+.reikiWeek{display:grid;grid-template-columns:minmax(79px,29%) minmax(0,1fr);min-height:96px;overflow:hidden;border:1px solid #f3d68f;border-radius:17px;background:linear-gradient(125deg,#237b68,#0b473c);box-shadow:0 3px 9px #0003,inset 0 0 0 1px #ffe0a01f}
+.sessions li:nth-child(2) .reikiWeek{background:linear-gradient(125deg,#a36e29,#5f3713)}
+.sessions li:nth-child(3) .reikiWeek,.sessions li:nth-child(5) .reikiWeek{background:linear-gradient(125deg,#745084,#3c2457);border-color:#edc8ed}
+.reikiPhoto{display:grid;align-items:end;justify-items:center;min-width:0;align-self:stretch;background:linear-gradient(0deg,#12362888,transparent 65%),url('/academy/reiki-yggdrasil/source/toltec-tradition.jpg') center/cover;border-radius:15px 28px 28px 15px;overflow:hidden;color:#ffedb2;padding:8px}
+.sessions li:nth-child(2) .reikiPhoto{background-image:linear-gradient(0deg,#51330a55,transparent),url('/images/holistic-house/tantra-reiki-yin-yang-cover.svg')}
+.sessions li:nth-child(3) .reikiPhoto{background-image:linear-gradient(0deg,#33214d55,transparent),url('/academy/kundalini-reiki/kundalini-manual-level-2.jpg')}
+.sessions li:nth-child(4) .reikiPhoto{background-image:linear-gradient(0deg,#12362877,transparent),url('/academy/reiki-yggdrasil/source/basic-program.jpg')}
+.sessions li:nth-child(5) .reikiPhoto{background-image:linear-gradient(0deg,#33214d55,transparent),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.reikiPhoto svg{filter:drop-shadow(0 1px 4px #30210d)}
+.reikiWeekCopy{display:flex;min-width:0;flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;padding:8px 10px;color:#fff9ed}
+.reikiWeekCopy>small{color:#ffe2a0;font:750 11px/1.2 system-ui}
+.reikiWeekCopy h2{margin:0;color:#fff8e8;font:700 clamp(20px,5.4vw,26px)/1.04 Georgia,serif;overflow-wrap:break-word}
+.reikiWeekCopy p{margin:0;color:#fff8e8;font:500 13px/1.28 system-ui;overflow-wrap:break-word}
+.reikiNote{display:flex;align-items:center;gap:9px;border-radius:15px;margin:12px 0 0;padding:11px;background:#fff1d7;color:#153d32;font:550 13px/1.4 system-ui}
+.reikiNote svg{flex:none;color:#936527}
+@media(max-width:375px){.reikiWeek{grid-template-columns:minmax(68px,27%) minmax(0,1fr)}.reikiWeekCopy{padding:8px}.reikiWeekCopy h2{font-size:20px}}
