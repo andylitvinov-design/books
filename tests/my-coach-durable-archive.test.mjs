@@ -117,3 +117,32 @@ test('returning client never inherits a speech repair as name and older valid na
  assert.equal(result.previous.length,3)
  assert.equal(projectCoachPriorSessions(rows.slice(0,3),'Account Name').preferredName,'Account Name')
 })
+
+import {normalizeMyCoachDraft,draftTranscriptPrefix,validDraftRevision} from '../lib/personal-coaching/protocol-draft.mjs'
+import {createCoachDraftQueue} from '../lib/personal-coaching/protocol-draft-queue.mjs'
+test('autosaved partial protocol remains unreviewed and does not become a reviewed fact',()=>{
+ const value={courseSessionId:'life_direction',protocol:{id:protocolId,personaId:'genie',locale:'ru',startedAt:date,completedAt:date,goal:'not confirmed',clientSummary:'not confirmed',turnLayout:'chronological',turns:[{role:'user',content:'Мой вопрос'}]}}
+ const draft=normalizeMyCoachDraft(value)
+ assert.equal(draft.protocol.provenance,'client_autosaved_unreviewed_draft')
+ assert.equal(draft.protocol.goal,'');assert.equal(draft.protocol.clientSummary,'')
+ assert.equal(draft.protocol.turns[0].unanswered,true)
+ assert.equal(projectCoachPriorSessions([draft.protocol]).hasPreviousSession,false)
+ assert.equal(validDraftRevision(0),false)
+ assert.equal(draftTranscriptPrefix(draft.protocol,{...draft.protocol,turns:[...draft.protocol.turns,{role:'assistant',content:'Reply'}]}),true)
+ assert.equal(draftTranscriptPrefix(draft.protocol,{...draft.protocol,turns:[{role:'user',content:'Changed'}]}),false)
+})
+test('checkpoint queue retries the same revision and only acknowledges matching server receipts',async()=>{
+ const revisions=[];let fail=true
+ const queue=createCoachDraftQueue(async(revision,value)=>{revisions.push(revision);if(fail){fail=false;throw Error('offline')}return {id:value.protocol.id,revision,saved:true}})
+ const value={courseSessionId:'life_direction',protocol:{id:protocolId,turns:[{role:'user',content:'First'}]}}
+ queue.offer(value);assert.equal(await queue.flush(),null);assert.equal(queue.revision(),0)
+ queue.offer({...value,protocol:{...value.protocol,turns:[...value.protocol.turns,{role:'assistant',content:'Reply'}]}})
+ assert.equal(await queue.flush(),2);assert.deepEqual(revisions,[1,1,2]);queue.stop();assert.equal(await queue.flush(),null)
+})
+test('draft API requires account header, origin, separate rate and no provider sharing',()=>{
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(route,/auth\.verified\(\)/);assert.match(route,/requireSameOrigin/);assert.match(route,/ACCOUNT_CHANGED/);assert.match(route,/my-coach-draft-checkpoint/)
+ assert.match(server,/pg_advisory_xact_lock/);assert.match(server,/payload_ciphertext=null/);assert.match(server,/draftTranscriptPrefix/)
+ assert.doesNotMatch(route,/fetch\(/)
+})
