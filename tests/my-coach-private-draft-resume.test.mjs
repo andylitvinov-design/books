@@ -53,3 +53,25 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
  assert.equal(normalizeMyCoachDraft({courseSessionId:'introductory',protocol:{...proto,courseSessionId:'introductory'}}).protocol.courseSessionId,'introductory')
  assert.throws(()=>normalizeMyCoachDraft({courseSessionId:'introductory',protocol:{...proto,courseSessionId:'life_direction'}}),/MY_COACH_DRAFT_INVALID/)
 })
+
+
+import {coachDraftListSummary,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+test('greeting list summary never returns a transcript or private profile',()=>{
+ const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1})
+ assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(route.includes("view:params.get('view')"))
+ assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId"))
+ assert.ok(ui.includes("action:'resume',id:item.id,revision:item.revision,confirmed:true"))
+})
+test('checkpoint cannot erase a known interruption but may append an answer or record a new interruption',()=>{
+ const a={id:'draft',personaId:'mira',startedAt:'start',turns:[{role:'user',content:'Question'},{role:'assistant',content:'Reply',interrupted:true}]}
+ const b={...a,turns:[a.turns[0],{role:'assistant',content:'Reply'}]}
+ assert.equal(draftTranscriptPrefix(a,b),false)
+ assert.equal(draftTranscriptPrefix(b,a),true)
+ assert.equal(draftTranscriptPrefix(a,{...a,turns:[...a.turns,{role:'user',content:'Next'}]}),true)
+})
