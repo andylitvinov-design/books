@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {listCoachDrafts,saveCoachDraft,discardCoachDraft} from '@/lib/app/my-coach-protocol-drafts'
+import {listCoachDrafts,saveCoachDraft,discardCoachDraft,resumeCoachDraft} from '@/lib/app/my-coach-protocol-drafts'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -24,6 +24,9 @@ async function handle(request,write){
    if(input.action==='checkpoint'&&Object.keys(input).every(k=>['action','consent','revision','value'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-checkpoint',actor:actor.id},240,3600)
     result=await saveCoachDraft(config,actor,input)
+   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision'].includes(k))){
+    await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
+    result=await resumeCoachDraft(config,actor,input)
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-discard',actor:actor.id},30,3600)
     result=await discardCoachDraft(config,actor,input)
