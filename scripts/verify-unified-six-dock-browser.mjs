@@ -737,9 +737,18 @@ try{
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "four optional topic suggestions remain available in More topics");
  const extraDirections=chat.locator('[data-hh-genie-extra-directions]');
+ // Initial collapse was verified on firstLanding before opening Orders.
+ // Returning from Orders/News may preserve the user's intentionally opened
+ // native details element. Exercise an actual close and reopen in that case.
+ if(await extraDirections.evaluate(node=>node.open)){
+   await extraDirections.locator(':scope > summary').click();
+ }
+ await expect(extraDirections.locator(':scope > summary')).toBeVisible();
  assert.equal(await extraDirections.evaluate(node=>node.open),false,
-   "optional topic suggestions start collapsed under the three needs");
+   "optional topic suggestions can be collapsed after returning to AI");
  await extraDirections.locator(':scope > summary').click();
+ assert.equal(await extraDirections.evaluate(node=>node.open),true,
+   "optional topic suggestions reopen on explicit user action");
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
