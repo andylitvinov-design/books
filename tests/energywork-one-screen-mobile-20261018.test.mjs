@@ -12,8 +12,8 @@ test("Free landing presents the compact rail, three photo-led systems and initia
  assert.ok(styles.includes("grid-template-columns:minmax(0,31%) minmax(0,1fr) 14px"));
  assert.ok(styles.includes("min-width:0;max-width:100%;overflow-wrap:anywhere"));
 });
-test("Each overview keeps the existing study and free-entry destinations; only original Yggdrasil videos are featured", async () => {
+test("Each overview keeps the existing study and free-entry destinations; the two owner-selected videos are featured", async () => {
  const page=await source();
- for(const marker of ["href={academyUrl(locale, system.free)}","href={academyUrl(locale, system.study)}",'youtubeId="DYo-fG-SyKw"',"youtubeId={yggdrasilMeditation.youtubeId}",'academyUrl(locale, "reiki/yggdrasil/archive")']) assert.ok(page.includes(marker),marker);
+ for(const marker of ["href={academyUrl(locale, system.free)}","href={academyUrl(locale, system.study)}",'youtubeId="lOo93GuzeJ0"','youtubeId="XvMdX5czoOc"','academyUrl(locale, "reiki/yggdrasil/archive")']) assert.ok(page.includes(marker),marker);
  assert.ok(!page.includes("<EnergyworkVideoArchive"));
 });
