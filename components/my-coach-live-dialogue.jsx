@@ -988,7 +988,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let value
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,protocol:{
-        id:protocolIdRef.current,personaId,methodId:restoredMethod.current||visibleMethodId,locale:conversationLang,
+        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
@@ -1394,7 +1394,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,methodId:restoredMethod.current||visibleMethodId,locale:conversationLang,
+      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
