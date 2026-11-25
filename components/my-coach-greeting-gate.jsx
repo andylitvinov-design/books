@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useRouter} from 'next/navigation'
-import {ArrowLeft,Play,RotateCcw,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X} from 'lucide-react'
+import {ArrowLeft,Play,Headphones,History,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X,Info} from 'lucide-react'
 import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
@@ -121,6 +121,11 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const label=name||localCoachText(persona?.name,lang)||''
  const russianNames={mira:'Мирой',max:'Максом',sofia:'Софией',alex:'Алексом',merlin:'Мерлином',harry:'Гарри',genie:'Самиром'}
  const sessionName=lang==='ru'?(russianNames[personaId]||'«'+label+'»'):label
+ const greetingText=presentation?.text||localCoachText(persona?.opening,lang)||''
+ const sentences=greetingText.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)||[greetingText]
+ const shortGreeting=sentences.slice(0,2).join('').trim()
+ const remainingGreeting=sentences.slice(2).join('').trim()
+ const compactCopy={en:{eyebrow:'AI COACH',thematic:'Thematic sessions',again:'Listen to the greeting',more:'Read full greeting'},ru:{eyebrow:'AI-КОУЧ',thematic:'Тематические сессии',again:'Послушать приветствие',more:'Читать приветствие полностью'},es:{eyebrow:'COACH DE IA',thematic:'Sesiones temáticas',again:'Escuchar la bienvenida',more:'Leer la bienvenida completa'}}[lang]
  return <div className={styles.screen} data-my-coach-greeting-gate={personaId}
    data-greeting-phase={phase}>
    <div className={styles.firstView}>
@@ -131,7 +136,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        onClickCapture={event=>{if(switching.current){event.preventDefault();event.stopPropagation()}}}>
        <MyCoachMotionMedia personaId={personaId} phase="greeting" context="greeting" />
        <div className={styles.shade} aria-hidden="true"/>
-       <span className={styles.badge}><Sparkles size={16} aria-hidden="true"/>{t.eyebrow}</span>
+       <span className={styles.badge}><Sparkles size={16} aria-hidden="true"/>{compactCopy.eyebrow}</span>
        {canSwitch&&<>
          <button type="button" className={styles.swipePrevious} data-coach-greeting-previous
            onClick={()=>switchCoach(-1)} aria-label={t.previous}><ChevronLeft size={25} aria-hidden="true"/></button>
@@ -148,21 +153,30 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        {phase==='playing'&&<div className={styles.speaking} role="status">
          <Volume2 size={19} aria-hidden="true"/><span>{t.playing}</span>
        </div>}
-       {phase==='complete'&&<div className={styles.completed}>
-         <p className={styles.greetingQuote}>“{presentation?.text||localCoachText(persona?.opening,lang)}”</p>
-         {privateAutosaveControl}
-         <button type="button" className={styles.primary} data-coach-greeting-start
-           onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={20} fill="currentColor" aria-hidden="true"/>
-           {t.start} {sessionName}</button>
-         <button type="button" className={styles.secondary} data-coach-greeting-thematic ref={topicTrigger}
-           aria-haspopup="dialog" onClick={showTopics}><List size={19} aria-hidden="true"/>{t.thematic}<ChevronDown size={17} aria-hidden="true"/></button>
-         <button type="button" className={styles.replay} data-coach-greeting-replay
-           onClick={playGreeting}><RotateCcw size={19} aria-hidden="true"/>{t.again}</button>
-         {error&&<p className={styles.error} role="status">{error}</p>}
-       </div>}
      </div>
-     <p className={styles.freeNotice}>{t.free}</p>
-     {resumeControl}
+     {phase==='complete'&&<div className={styles.completed}>
+       <div className={styles.quoteCard}>
+         <p className={styles.greetingQuote}>“{shortGreeting}{remainingGreeting?'…':'”'}</p>
+         {remainingGreeting&&<details className={styles.fullGreeting}>
+           <summary>{compactCopy.more}</summary>
+           <p>“{greetingText}”</p>
+         </details>}
+       </div>
+       <div className={styles.consent}>{privateAutosaveControl}</div>
+       <button type="button" className={styles.primary} data-coach-greeting-start
+         onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
+         <span>{t.start} {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+       <div className={styles.actionGrid} data-has-resume={resumeControl?'true':'false'}>
+         <button type="button" className={styles.secondary} data-coach-greeting-thematic ref={topicTrigger}
+           aria-haspopup="dialog" onClick={showTopics}><List size={24} aria-hidden="true"/><span>{compactCopy.thematic}</span></button>
+         {resumeControl&&<div className={styles.resumeTile}><History size={24} aria-hidden="true"/>{resumeControl}</div>}
+         <button type="button" className={styles.replay} data-coach-greeting-replay
+           onClick={playGreeting}><Headphones size={24} aria-hidden="true"/><span>{compactCopy.again}</span></button>
+       </div>
+       {error&&<p className={styles.error} role="status">{error}</p>}
+     </div>}
+     <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}</span></p>
+     {phase!=='complete'&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
