@@ -25,3 +25,31 @@ test('reviewed draft retains selected course and finalized tombstone cannot recr
  assert.ok(server.includes("if(decision==='conflict')throw conflict()"))
  assert.match(writer,/if\(draft\?\.state==='finalized'&&!existing\)throw new AppError\('MY_COACH_PROTOCOL_CONFLICT',409\)/)
 })
+
+import {recoverPrivateOpeningScope} from '../lib/personal-coaching/private-draft-resume.mjs'
+import {coachOpeningProgress,coachOpeningProtocolSnapshot} from '../lib/coaching/coach-opening-protocol.mjs'
+test('private resume preserves explicitly confirmed returning identity and continuity without provider consent',()=>{
+ const messages=['Yes','Correct','Continue','goal','I feel calm','Yes']
+ const priorSession={name:'Mary',topic:'Work'}
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({locale:'en',personaId:'mira',turns:messages,allowPrior:true,priorSession}))
+ const turns=messages.flatMap(content=>[{role:'user',content},{role:'assistant',content:'next'}])
+ const recovered=recoverPrivateOpeningScope({locale:'en',personaId:'mira',opening,turns})
+ assert.equal(recovered.matched,true)
+ const actual=coachOpeningProtocolSnapshot(coachOpeningProgress({locale:'en',personaId:'mira',turns:messages,...recovered}))
+ assert.deepEqual(actual,opening)
+ assert.equal(recovered.priorSession.name,'Mary')
+})
+test('missing or mismatched opening is not promoted to a recovered fact',()=>{
+ const recovered=recoverPrivateOpeningScope({personaId:'mira',locale:'en',turns:[{role:'user',content:'Yes'},{role:'assistant',content:'Name?' }],opening:{name:'Fake',completed:true}})
+ assert.equal(recovered.matched,false);assert.equal(recovered.allowPrior,false)
+})
+
+import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
+test('explicit course marker cannot conflict with the enclosing draft',()=>{
+ const proto={id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'ru',startedAt:'2026-11-25T12:00:00.000Z',completedAt:'2026-11-25T12:00:01.000Z',turnLayout:'chronological',turns:[{role:'user',content:'Да'}]}
+ const legacy=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:proto})
+ assert.equal(legacy.courseSessionId,'introductory')
+ assert.equal(legacy.protocol.courseSessionId,undefined)
+ assert.equal(normalizeMyCoachDraft({courseSessionId:'introductory',protocol:{...proto,courseSessionId:'introductory'}}).protocol.courseSessionId,'introductory')
+ assert.throws(()=>normalizeMyCoachDraft({courseSessionId:'introductory',protocol:{...proto,courseSessionId:'life_direction'}}),/MY_COACH_DRAFT_INVALID/)
+})

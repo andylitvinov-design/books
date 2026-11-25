@@ -47,6 +47,7 @@ import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
+import {recoverPrivateOpeningScope} from '@/lib/personal-coaching/private-draft-resume.mjs'
 import {createCoachDraftQueue} from '@/lib/personal-coaching/protocol-draft-queue.mjs'
 
 const copy={
@@ -287,6 +288,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [autoSaveEnabled,setAutoSaveEnabled]=useState(false)
   const [restoredDraft,setRestoredDraft]=useState(false)
   const initialDraftRevision=useRef(0)
+  const restoredOpeningScope=useRef(null),restoredProfileCheckin=useRef(null),restoredMethod=useRef(null)
+  const resumeInFlight=useRef(false)
   const [resumeList,setResumeList]=useState(null)
   const [resumeBusy,setResumeBusy]=useState(false)
   const [resumeError,setResumeError]=useState(false)
@@ -566,7 +569,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
   const visibleStageIndex=meaningProgressValid?meaningProgress.index:
     progressValid?lastRecordedProgress.index:provisionalIndex
-  const visibleMethodId=lastRecordedProgress?.methodId||
+  const visibleMethodId=restoredMethod.current||lastRecordedProgress?.methodId||
     ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
@@ -593,8 +596,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const confirmedClientTurns=turns.filter(turn=>turn.role==='user'&&turn.unanswered!==true)
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
+  const localOpeningScope=restoredDraft?(restoredOpeningScope.current||{allowPrior:false,priorSession:null}):{allowPrior:allowOpeningPrior,priorSession:openingPrior}
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
-    personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
+    personaId,...localOpeningScope})
   const openingActive=!openingProgress.completed
   // Session 0 is distinct from method coaching. Existing saved values are
   // consulted ONLY in an owner-authorized preview, never from model prose.
@@ -979,12 +983,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const clientRows=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32)
     const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({
       turns:clientRows.map(row=>String(row.content||'').slice(0,160)),locale:conversationLang,
-      personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior,
+      personaId,...localOpeningScope,
     }))
     let value
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,protocol:{
-        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+        id:protocolIdRef.current,personaId,methodId:restoredMethod.current||visibleMethodId,locale:conversationLang,
+        courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
         opening,turns:rows.map((row,index)=>({role:row.role,content:row.content,
@@ -994,8 +999,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }))
       }})
       // A malformed derived profile candidate cannot erase the raw conversation.
-      const profile=profileReviewProgress?coachProfileReviewProtocolSnapshot(profileReviewProgress):
-        profileProgress&&profileReviewStart===null?coachProfileProtocolSnapshot(profileProgress):null
+      const profile=restoredProfileCheckin.current|| (profileReviewProgress?coachProfileReviewProtocolSnapshot(profileReviewProgress):
+        profileProgress&&profileReviewStart===null?coachProfileProtocolSnapshot(profileProgress):null)
       if(profile){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
     }catch{setAutoSaveStatus('error');return}
     if(!autoSaveQueueRef.current)autoSaveQueueRef.current=createCoachDraftQueue(async(revision,snapshot)=>{
@@ -1152,6 +1157,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
+    if(restoredDraft&&restoredProfileCheckin.current&&profileSelected&&!localInterruption){
+      const answer=({ru:'Сохранённые уточнения осей остаются в протоколе. Для новых оценок требуется отдельная проверка профиля; сейчас можно завершить и сохранить этот разговор.',en:'Your saved axis updates remain in this protocol. New ratings need a separate profile review; you can finish and save this conversation.',es:'Las actualizaciones guardadas siguen en el protocolo. Las nuevas valoraciones necesitan otra revisión; puedes terminar y guardar esta conversación.'})[responseLocale]
+      setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
+      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      setDraft('');setSpeechPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
+    }
     if(profileReviewProgress&&!localInterruption){
       const upcoming=coachProfileReviewProgress({
         audit:approvedProfileAudit,
@@ -1197,7 +1208,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
       const stage=legacyStage[semanticStage]||'goal'
       const offlineOpening=!interruption?coachOpeningTurn({locale:responseLocale,
-        message,openingHistory,openingPrior,allowOpeningPrior},personaId):null
+        message,openingHistory,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior},personaId):null
       const offlineReply=interruption||offlineOpening||
         offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
       const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
@@ -1383,7 +1394,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+      id:protocolIdRef.current,personaId,methodId:restoredMethod.current||visibleMethodId,locale:conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
@@ -1391,7 +1402,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
-      ...(profileReviewProgress
+      ...(restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
           (profileReviewStart!==null?{}:
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
@@ -1503,8 +1514,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function restorePrivateDraft(item){
     const owner=protocolOwnerRef.current
-    if(!owner||resumeList?.owner!==owner||resumeBusy||protocolStartedRef.current||turnsRef.current.length)return
-    setResumeBusy(true);setResumeError(false)
+    if(!owner||resumeList?.owner!==owner||resumeBusy||resumeInFlight.current||protocolStartedRef.current||turnsRef.current.length)return
+    resumeInFlight.current=true;setResumeBusy(true);setResumeError(false)
     try{
       const identity=await getCabinetBootstrap('portrait',{refresh:true})
       if(identity?.account?.id!==owner)throw Error('ACCOUNT_CHANGED')
@@ -1516,12 +1527,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       speechRef.current?.stop?.();cancelPendingCoachTurn()
+      if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
       initialDraftRevision.current=result.draft.revision
+      restoredOpeningScope.current=recoverPrivateOpeningScope(p)
+      restoredMethod.current=p.methodId
+      // Sparse historical-review ratings cannot be replayed against a new
+      // baseline. Keep the saved updates and require a fresh review later.
+      restoredProfileCheckin.current=p.profileCheckin?.version===COACH_PROFILE_REVIEW_VERSION?p.profileCheckin:null
       autoSaveRef.current=true;engineManuallySelectedRef.current=true;turnsRef.current=p.turns
       flushSync(()=>{
         setRestoredDraft(true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
         setTurns(p.turns);setSelectedCourseId(recovered.courseSessionId);setSpeechLocale(p.locale)
+        setSelectedGoal('')
+        if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
         setActiveSessionSeconds(p.durationSeconds||0);setSessionClockStarted(true)
         setGreetingAccepted(true);setIntroComplete(true);setPaused(false)
         setAllowOpeningPrior(false);setStagedMemory(null);setContextTopic('');setContextPaused(true)
@@ -1529,12 +1548,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })
       toggleComposer()
     }catch{if(draftMountedRef.current)setResumeError(true)}
-    finally{if(draftMountedRef.current)setResumeBusy(false)}
+    finally{resumeInFlight.current=false;if(draftMountedRef.current)setResumeBusy(false)}
   }
   const keepCoachTab=liveVoiceSelected&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID){
+    if(resumeInFlight.current)return
     // Commit the chosen topic before the synchronous iOS activation gesture.
     // Gemini reads the current courseSessionId from its mounted props ref;
     // opening or dismissing the topic menu never calls this function.
