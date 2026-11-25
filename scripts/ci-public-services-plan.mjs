@@ -964,6 +964,11 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       }
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      // These two exact workflow definitions qualify only as modifications.
+      // A Guard trigger also matches Home YAML, so check status BEFORE generic
+      // owner delegation; otherwise an added file could enter the fast lane.
+      if (CORE_OWNED_MODIFIED_WORKFLOW.has(file) && status !== 'M')
+        return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
       if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
       if (status === 'M') {
