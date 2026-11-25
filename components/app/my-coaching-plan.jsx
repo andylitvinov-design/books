@@ -5,7 +5,9 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
+import MyCoachDraftArchive from './my-coach-draft-archive'
 import DaybookDailySettings from './daybook-daily-settings'
+import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
@@ -372,6 +374,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
    <DaybookDailySettings accountId={accountId} locale={lang} goals={plan?.goals||[]}/>
+   <ReikiHintsSettings key={accountId} accountId={accountId} locale={lang}/>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
      onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
@@ -462,6 +465,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
+   <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>

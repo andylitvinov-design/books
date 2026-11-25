@@ -12,14 +12,14 @@ const editorial = read('data/academy/energywork-ai-curriculum.ts')
 const learner = read('components/energywork-ai-learner.tsx')
 const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 
-test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
+test('All five Reiki lessons retain closing practice; lesson one adds optional Reiki Hints', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 68, 'the duplicate first-lesson save screen is retired while original intros stay')
-  assert.deepEqual(ranges.map(({ count }) => count), [8, 16, 18, 16, 7])
+  assert.equal(sequence.length, 69, 'the duplicate first-lesson save screen is retired while original intros stay')
+  assert.deepEqual(ranges.map(({ count }) => count), [9, 16, 18, 16, 7])
 
   const endings = [
-    { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
+    { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04', hints: 'flight-hints' },
     { first: 'tan-01', practices: ['tan-03'], last: 'tan-done', report: 'tan-04' },
     { first: 'kun-01', practices: ['kun-03'], last: 'kun-done', report: 'kun-04' },
     { first: 'ygg-01', practices: ['ygg-03'], last: 'ygg-done', report: 'ygg-04' },
@@ -36,11 +36,12 @@ test('all five Reiki lessons place music-assisted practice directly before the c
     assert.equal(ids.at(-1), item.last,
       'lesson ' + (lessonIndex + 1) + ' last screen')
     assert.deepEqual(
-      ids.slice(finaleIndex - item.practices.length - (item.photo ? 1 : 0), finaleIndex - (item.photo ? 1 : 0)),
+      ids.slice(finaleIndex - item.practices.length - (item.photo || item.hints ? 1 : 0), finaleIndex - (item.photo || item.hints ? 1 : 0)),
       item.practices,
       'lesson ' + (lessonIndex + 1) + ' practical audio slides immediately precede congratulations',
     )
     if (item.photo) assert.equal(ids.at(-2), item.photo, 'private photo is penultimate');
+    if (item.hints) assert.equal(ids.at(-2), item.hints, 'Reiki Hints is penultimate');
     assert.ok(
       ids.indexOf(item.report) >= 0 && ids.indexOf(item.report) < ids.indexOf(item.practices[0]),
       'lesson ' + (lessonIndex + 1) + ' reflection precedes the final practice',
