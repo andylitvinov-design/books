@@ -5,14 +5,14 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '../lib/whats
 
 const read = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8')
 
-test('My Coach defaults to All: first five AI coaches, then real people; filters preserve full AI directory', () => {
+test('My Coach defaults to All: six public AI coaches, then real people; filters preserve the public directory', () => {
   const catalog = read('components/my-coach-catalog.jsx')
   const css = read('components/my-coach-catalog.module.css')
   assert.match(catalog, /data-my-coach-kind-switch/)
   assert.match(catalog, /const \[directoryMode, setDirectoryMode\] = useState\('all'\)/)
   for (const mode of ['all', 'ai', 'human'])
     assert.ok(catalog.includes("aria-pressed={directoryMode === '" + mode + "'}"), mode)
-  assert.match(catalog, /directoryMode === 'all' \? visibleList\.slice\(0, 5\) : visibleList/)
+  assert.match(catalog, /const displayedCoaches = visibleList/)
   assert.match(catalog, /\{displayedCoaches\.map\(persona =>/)
   assert.match(catalog, /hidden=\{directoryMode === 'human'\}/)
   assert.match(catalog, /hidden=\{directoryMode === 'ai'\}/)

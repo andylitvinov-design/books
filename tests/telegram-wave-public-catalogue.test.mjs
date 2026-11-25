@@ -49,7 +49,7 @@ test('only first-party, fixed, unparameterized links are sent as Telegram text',
 test('Wave handles screenshot identity and money turns without cloud generation',()=>{
  const identity=waveNativeTurn({message:'Расскажи о себе',locale:'ru'});
  const money=waveNativeTurn({message:'Деньги',locale:'ru'});
- assert.match(identity?.reply||'',/Я Wave/);
+ assert.match(identity?.reply||'',/Я Ali/);
  assert.match(money?.reply||'',/доходы, расходы/);
  assert.equal(identity?.externalCalled,false);
  assert.equal(money?.externalCalled,false);

@@ -59,8 +59,14 @@ test('public directory uses moderated service introductions and strict public UR
 test('CSP admits approved Storage media only on public Support mobile, not private reports',()=>{
  const middleware=readFileSync(new URL('../middleware.ts',import.meta.url),'utf8')
  assert.match(middleware,/const supportMobilePublishedMedia =/)
- assert.match(middleware,/supportMobilePublishedMedia\)\)return ''/)
- assert.match(middleware,/supportMobilePublishedMedia \? listingImageOrigin : ''/)
+ assert.match(middleware,/const supportMobilePublishedMedia = .*holistic-support.*\.test\(pathname\)/,
+   'Storage-media capability is restricted to the exact locale Support mobile path')
+ assert.match(middleware,/\|\| supportMobilePublishedMedia \|\| humanSpecialistVideoPage/,
+   'only approved public Support and specialist pages can join the image allowlist')
+ assert.match(middleware,/\(supportMobilePublishedMedia \? listingImageOrigin : ''\)/,
+   'media-src on Support mobile reuses only the validated Storage origin')
+ assert.match(middleware,/url\.protocol==='https:'&&url\.hostname\.endsWith\('\.supabase\.co'\)/,
+   'published Storage origin still must be HTTPS Supabase')
  const allowed=/^\/(en|ru|es)\/holistic-support\/mobile\/?$/
  for(const path of ['/en/holistic-support/mobile','/ru/holistic-support/mobile',
    '/es/holistic-support/mobile/'])assert.ok(allowed.test(path),path)

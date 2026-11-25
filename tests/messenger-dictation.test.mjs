@@ -5,7 +5,6 @@ import {speechResultSegments,appendSpokenAnswer} from '../lib/personal-coaching/
 
 const chat=readFileSync('components/holistic-agent-chat.tsx','utf8');
 const voice=readFileSync('components/app/messenger-dictation-button.jsx','utf8');
-const css=readFileSync('components/holistic-agent-chat.module.css','utf8');
 
 test('AI Messenger text dictation is available independently of voice conversation feature flag',()=>{
   assert.match(chat,/messengerView&&!pageHelp&&<MessengerDictationButton/);
@@ -29,9 +28,10 @@ test('final words append once to the editable existing draft, never auto-send',(
   assert.ok(!voice.includes('sendTurn('));
 });
 
-test('welcome composer is a horizontal flex row with mic and send touch targets',()=>{
-  assert.match(css,/Welcome and ongoing Messenger composers share one iPhone-sized input row/);
-  assert.match(css,/display:flex;align-items:center;flex-wrap:nowrap/);
-  assert.match(css,/\.form \.actions>button\[type="submit"\]/);
-  assert.match(css,/width:44px;min-width:44px;height:44px;min-height:44px/);
+test('editable dictation stays in the extras menu and leaves instant-send microphone intact',()=>{
+  assert.ok(chat.indexOf('data-hh-ai-more')<chat.indexOf('<MessengerDictationButton'));
+  assert.match(chat,/micMarker="data-hh-conversation-mic" instantSend/);
+  assert.match(chat,/onTranscript=\{\(delta:string\)=>setDraft\(previous=>appendSpokenAnswer/);
+  assert.match(voice,/menu.addEventListener\('toggle',onToggle\)/);
+  assert.match(voice,/document.addEventListener\('visibilitychange',onHidden\)/);
 });

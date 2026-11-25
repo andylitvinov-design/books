@@ -64,6 +64,8 @@ import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
 import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
+import { clarityDaybookPath } from '@/lib/app/clarity-program.mjs'
+import {programContinuation,programFromContinuation,programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -71,9 +73,11 @@ import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/prof
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import ProfileSessionsDashboard from '@/components/app/profile-sessions-dashboard'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import MyCoachingPlan from '@/components/app/my-coaching-plan'
+import CoachingDaybook from '@/components/app/coaching-daybook'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -92,6 +96,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
@@ -159,6 +164,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     recordId = path[1],
     root = `/${locale}/app`,
     view = page === 'portrait' ? 'portrait' : 'full'
+  const cabinetTheme = ['course', 'business', 'coaching', 'practice'].includes(page) ? undefined : 'daybook'
   // Avoid showing the previous tab's reduced Profile snapshot as full data.
   const [viewState, setViewState] = useState(() => {
     const cached = peekCabinetBootstrap(view)
@@ -201,10 +207,14 @@ export default function AppWorkspace({ locale, path = [] }) {
   function interceptGuestProfileAction(event) {
     const target=event.target?.closest?.('button,a,[role="button"]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
+      target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
       target.closest('[data-profile-language-switch]') ||
-      target.closest('[data-profile-auth-dialog]')) return
+      target.closest('[data-profile-chrome-navigation]') ||
+      target.closest('[data-profile-auth-dialog]') || target.closest('[data-clarity-start]') || target.closest('[data-clarity-details]') || target.closest('[data-program-start]')) return
     event.preventDefault()
     event.stopPropagation()
+    const program=target.closest('[data-goal-vector-entry]')?'goal':target.closest('[data-business-start],[data-business-daybook-link]')?'business':null
+    if(program){if(!busy)void signin('google',program);return}
     setProfileAuthOpen(true)
   }
   useEffect(()=>{
@@ -243,6 +253,8 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Discovery and OPORA previews are public; a saved lesson belongs to My courses.
   const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
     ? 'discover' : 'saved'
+  // The visual Course index inherits the Profile's unified shell; lesson/discovery views remain unchanged.
+  const courseLanding = page === 'course' && searchParams.get('view') === 'courses' && !searchParams.get('courseId')
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
   const loadEpoch = useRef(0)
   const load = useCallback(async ({ refresh = true } = {}) => {
@@ -340,7 +352,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     savedExitDestination.current=null
     if(destination)router.replace(destination)
   }
-  async function signin(providerChoice = 'google') {
+  async function signin(providerChoice = 'google', daybookProgram = null) {
     signinAttempted.current = true
     setBusy(true)
     setError(null)
@@ -374,13 +386,14 @@ export default function AppWorkspace({ locale, path = [] }) {
             : { continueTo: 'practice-preview' }
           : {}),
         ...(native ? { native: true } : {}),
-        serviceId: searchParams.get('service') || null,
+        serviceId: daybookProgram ? null : searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
+        ...(daybookProgram ? {continueTo:programContinuation(daybookProgram)} : {}),
       })
       if (native) {
         // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
@@ -584,7 +597,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   }
   if (deleted || state === 'deletion')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         <section className="hh-panel">
           <p className="hh-kicker">Holistic House</p>
           <h1>{c.deletion}</h1>
@@ -595,7 +608,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'loading')
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
           : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
             : page === 'settings' ? 'settings'
@@ -608,7 +621,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'ready' && !data)
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
         <h1>{c.loading}</h1>
       </main>
@@ -639,7 +652,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Course/test deep links retain the dedicated Google handoff flows above.
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
-      <main className="hh-app hh-app--cabinet-guest" data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
+      <main className="hh-app hh-app--cabinet-guest" data-cabinet-theme={cabinetTheme} data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
         <ProfileHubTabs locale={locale} active="today" />
         <CabinetGuestOverview
           locale={locale} busy={busy} onSignin={()=>signin('google')}
@@ -658,7 +671,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state !== 'ready')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
@@ -738,8 +751,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
-      {!documentReader && !practiceInner && page !== 'portrait' && <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-cabinet-theme={documentReader ? undefined : cabinetTheme} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+      {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
@@ -771,7 +784,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && (
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <InstantCabinetLink key={id} href={href} prefetch={false}
@@ -789,6 +802,15 @@ export default function AppWorkspace({ locale, path = [] }) {
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
             // First-time phone Messenger entry: return to the selected master
             // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='clarity'){
+              router.replace(clarityDaybookPath(searchParams.get('clarityLocale') || locale))
+              return
+            }
+            const daybookProgram=programFromContinuation(searchParams.get('afterSignIn'))
+            if(page==='portrait'&&daybookProgram){
+              router.replace(programDaybookPath(searchParams.get('programLocale')||locale,daybookProgram))
+              return
+            }
             if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
               try{
                 const chatLocale=searchParams.get('chatLocale')
@@ -805,17 +827,20 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' || page === 'portrait' ? data.account : null} courseLanding={courseLanding} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
              <>
-               {!['path','reports'].includes(searchParams.get('space')) && <>
+               {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <DreamPathMap locale={locale} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
+                 <DreamPathMap locale={locale} />
+                 <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
                </>}
@@ -824,13 +849,16 @@ export default function AppWorkspace({ locale, path = [] }) {
                  <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
                    reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
                </>}
+               {searchParams.get('space') === 'sessions' && <ProfileSessionsDashboard locale={locale}
+                 savedSessions={data.savedSessions || []} services={data.services || []} />}
              </>
            )}
            {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
-          {page === 'course' && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+          {page === 'course' && !courseLanding && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+           {page === 'course' && <div id="my-courses-content" data-course-content aria-hidden="true" />}
            {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
@@ -984,7 +1012,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
@@ -2734,7 +2762,7 @@ function PortfolioPage({ data, locale }) {
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
       {allGroups.length > 0 && (
-        <details className="hh-insights-export">
+        <details id="hh-insights-export" className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
           <ClientReportActions data={data} locale={locale} />
         </details>

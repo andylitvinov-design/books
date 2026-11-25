@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config'
 import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { linkedTelegramCoaching } from '@/lib/crm/telegram-coaching-link'
+import {notifyOwnerAliFreePackage} from '@/lib/crm/telegram-free-package-owner-notice'
+import {sendTelegramDiagnosticPrompt} from '@/lib/crm/messenger-provider'
 
 export const runtime='nodejs'
 export const preferredRegion='yul1'
@@ -20,7 +22,21 @@ export async function POST(request) {
       {op:input?.action==='submit'?'tg-coaching-submit':'tg-coaching-context',ip},
       input?.action==='submit'?4:50,3600)
     const result=await linkedTelegramCoaching(config,input)
-    return NextResponse.json(result,{
+    // Signed CRM receipts are authoritative; never expose hashed user
+    // identifiers or backend-only notification jobs to the browser.
+    const {ownerProgress,clientPrompt,...publicResult}=result
+    if(result.saved===true&&ownerProgress)after(async()=>{
+      try{await notifyOwnerAliFreePackage(config,ownerProgress)}
+      catch{console.error('HH_ALI_FREE_FORM_NOTICE_UNCONFIRMED')}
+    })
+    if(result.saved===true&&clientPrompt)after(async()=>{
+      try{await sendTelegramDiagnosticPrompt({
+        to:clientPrompt.to,locale:clientPrompt.locale,
+        text:clientPrompt.text,keyboard:clientPrompt.keyboard,
+      })}
+      catch{console.error('HH_ALI_FREE_FORM_CLIENT_ACK_UNCONFIRMED')}
+    })
+    return NextResponse.json(publicResult,{
       status:input.action==='submit'?201:200,headers:PRIVATE_HEADERS,
     })
   } catch(error) {

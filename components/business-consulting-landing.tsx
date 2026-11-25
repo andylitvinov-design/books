@@ -8,6 +8,7 @@ import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { telegramBusinessServiceTitle } from "@/lib/assist/telegram-business-request.mjs";
 import { businessConsultingCopy, type BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-consulting-landing.module.css";
 
@@ -154,6 +155,34 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+
+        <section className={styles.mentor} data-business-ai-secretary
+          aria-label={locale === "ru" ? "AI-секретарь для бизнеса" : locale === "es" ? "Asistente IA para negocios" : "AI secretary for business"}>
+          <div className={styles.scenePhoto}><Image src="/images/holistic-house/books-library.webp" alt="" fill
+            sizes="(max-width: 767px) 100vw, 42vw" loading="lazy" /></div>
+          <div className={styles.mentorCopy}>
+            <div>
+              <h2>{locale === "ru" ? "AI-секретарь для бизнеса" : locale === "es" ? "Asistente IA para negocios" : "AI secretary for business"}</h2>
+              <p>{locale === "ru"
+                ? "Пять коротких вопросов в Telegram о вашем бизнесе, заявках, каналах и интеграциях. Без отдельного бота; детали реализации и стоимость согласуем лично."
+                : locale === "es"
+                  ? "Cinco preguntas breves en Telegram sobre tu negocio, canales e integraciones. Sin otro bot; detalles y precio se acuerdan contigo."
+                  : "Five short questions in Telegram about your business, customer channels and integrations. No separate bot; scope and price are agreed directly."}</p>
+            </div>
+            <ContactChannelChooser locale={locale}
+              whatsappUrl={whatsappEnquiryUrl({
+                locale,
+                service:telegramBusinessServiceTitle("ai_secretary",locale) || "AI secretary for business",
+                request:locale === "ru" ? "Хочу обсудить AI-секретаря для моего бизнеса." : locale === "es"
+                  ? "Quiero consultar un asistente IA para mi negocio." : "I'd like to discuss an AI secretary for my business.",
+                pagePath:"/" + locale + "/services/business-consulting",
+              })}
+              label={locale === "ru" ? "Оформить заявку" : locale === "es" ? "Enviar solicitud" : "Request AI secretary"}
+              className={styles.mentorButton} event="service_request_start"
+              attributes={{"data-business-format":"ai-secretary"}} />
           </div>
         </section>
 

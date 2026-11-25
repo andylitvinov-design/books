@@ -333,17 +333,18 @@ test("transient primary model 503 uses confirmed free Gemini 3.1 Lite before Ope
   assert.match(calls[1],/gemini-3\.1-flash-lite:generateContent/);
 });
 
-test("real iPhone Safari 26 chooses WebM first; other browsers keep MP4 first",()=>{
+test("real iPhone Safari 26 avoids unplayable WebM; desktop browser preferences remain",()=>{
   const mp4=["video/mp4;codecs=avc1.42E01E","video/mp4"];
   const webm=["video/webm;codecs=vp8","video/webm"];
   const ua="Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
-  assert.equal(prefersSafariWebm(ua),true);
-  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua}),[...webm,...mp4]);
+  assert.equal(prefersSafariWebm(ua),false);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua}),mp4);
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:"Mozilla/5.0 Chrome/153.0"}),[...mp4,...webm]);
   assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/26.1 Safari/605.1"),true);
   assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/25.0 Safari/605.1"),true);
-  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X)",5),true);
-  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,preferWebm:true}),webm);
+  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X)",5),false);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,preferWebm:true}),[],
+    "iPhone must never auto-render a WebM it cannot decode");
   assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,forceMp4:true}),mp4);
 });
 
@@ -362,9 +363,10 @@ test("iPhone encoder recovery preserves real media, truthful playback state and 
   assert.doesNotMatch(src,/recorder\.start\(500\)/);
 });
 
-test("six one-tap creative templates compile to real free RU/EN/ES video storyboards",()=>{
+test("nine one-tap creative templates compile to real free RU/EN/ES video storyboards",()=>{
   const ids=["morning-light","gentle-pause","inner-confidence",
-    "heart-connection","quiet-evening","work-possibilities"];
+    "heart-connection","quiet-evening","work-possibilities",
+    "choice-story","guide-introduction","forest-breath"];
   assert.deepEqual(VIDEO_QUICK_TEMPLATES.map(template=>template.id),ids);
   assert.ok(Object.isFrozen(VIDEO_QUICK_TEMPLATES));
   for(const template of VIDEO_QUICK_TEMPLATES){

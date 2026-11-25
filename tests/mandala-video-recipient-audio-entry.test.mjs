@@ -20,16 +20,19 @@ test("audio on Goal reuses consented STT, original speech, verified shot matcher
  for(const data of ["data-video-recipient-audio-upload","data-video-recipient-audio-record",
   "data-video-recipient-audio-rights-notice","data-video-recipient-audio-stt-notice",
   "data-video-recipient-audio-transcript",
-  "data-video-recipient-audio-transcribe","data-video-recipient-audio-plan","data-video-recipient-audio-concept",
+  "data-video-recipient-audio-transcribe","data-video-recipient-audio-concept-preview",
   "data-video-recipient-audio-next"])assert.ok(s.includes(data),data);
- assert.match(s,/requestConsentedTimedTranscript\(entry.file,locale,true/);
+ assert.match(s,/requestConsentedTimedTranscript\(\s*entry.file,spokenAudioLanguage,true/);
  assert.match(s,/planAudioVisualStoryboard\(\{/);
  assert.match(s,/audioStoryboardReady=\{audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)&&audioRights\}/);
  assert.match(s,/setAttachedAudio\(\{kind:"file",file:entry.file,id:entry.url,nonLoop:true\}\)/);
 });
 
 test("rights revocation and switching away protect personal audio from recipients",()=>{
- assert.match(s,/if\(!audioPlanApplied\|\|!voiceVisualPlan\?\.canExport\|\|!audioRights\)return/);
+ assert.match(s,/const ready=\(audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)\)\|\|/);
+ assert.match(s,/applyTranscriptVideo\(voiceTranscript\)/);
+ assert.match(s,/if\(!ready\)\{\s*goRecipientAudioToManualMontage\(\)/);
+ assert.match(s,/setActiveWorkspace\("editor"\);setMontagePanel\("concept"\)/);
  assert.match(s,/audioStoryboardReady=\{audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)&&audioRights\}/);
  assert.match(s,/onAudioSelectionChange=\{active=>\{/);
  assert.match(s,/if\(!active&&recipientAudioSelected\)\{/);

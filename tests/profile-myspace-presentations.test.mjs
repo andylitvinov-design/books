@@ -53,3 +53,42 @@ test('RU/EN switch preserves profile sections and video is click-to-play', async
   assert.match(styles, /min-height:40px/)
   assert.doesNotMatch(component + styles, /https?:\/\/files2\.heygen\.ai|Expires=|Signature=/)
 })
+
+test('My Space uses a 16:9 video and visible fallback when EN YouTube has no verified upload', async () => {
+  const [player, styles, presentation] = await Promise.all([
+    read('components/site-video-player.tsx'),
+    read('components/app/profile-hub-tabs.module.css'),
+    read('components/app/profile-presentation-player.jsx'),
+  ])
+  assert.match(player, /const directFallbackLink = isHeygen && !playbackYouTubeId && Boolean\(fallbackPoster\) && !internalOnly/)
+  assert.match(player, /fallbackPoster && !approvedPoster && !localPosterFailed/)
+  assert.match(player, /isHeygen && \(!fallbackPoster \|\| localPosterFailed\)/)
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/)
+  assert.match(player, /mirrorLink \|\| externalLink/)
+  assert.match(player, /showRecovery && !directFallbackLink/)
+  assert.match(styles, /site-video-frame\)\{aspect-ratio:16\/9/)
+  assert.match(presentation, /const youtubeReady=locale==='en'/)
+  assert.match(presentation, /video=\{source\} locale=\{locale\} minimal fallbackPoster=\{poster\}/)
+})
+
+
+test('Life and Work retain their appropriate language and mode switch layouts', async () => {
+  const [css, life, work, browser] = await Promise.all([
+    read('components/app/profile-hub-tabs.module.css'),
+    read('components/app/profile-hub-tabs.jsx'),
+    read('components/practice-work-profile-intro.jsx'),
+    read('scripts/verify-practice-visual-browser.mjs'),
+  ])
+  const controls=life.match(/<div className=\{styles\.profileHeadingActions\}>([\s\S]*?)<\/div>/)?.[1] || ''
+  assert.ok(controls.indexOf('data-profile-language-switch')>=0)
+  assert.ok(controls.indexOf('<ProfileModeSwitch')>controls.indexOf('data-profile-language-switch'))
+  assert.match(css,/\.hub \.heading\{flex-wrap:nowrap;/)
+  assert.match(work,/data-profile-language-switch/)
+  assert.match(work,/data-profile-chrome-navigation/)
+  assert.match(work,/data-profile-mode-switch/)
+  assert.match(work,/data-profile-mode="live"/)
+  assert.match(work,/data-profile-mode="work"/)
+  assert.match(work,/data-work-primary-grid/)
+  assert.match(browser,/data-work-primary-grid/)
+  assert.match(browser,/data-profile-language-switch/)
+});

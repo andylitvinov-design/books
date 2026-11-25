@@ -1,0 +1,42 @@
+.root{box-sizing:border-box;grid-column:1/-1;min-width:0;width:100%;font-family:Arial,Helvetica,sans-serif}
+.root *{box-sizing:border-box}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.controls button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:8px 8px;border:1px solid #16806c;border-radius:12px;text-align:center;cursor:pointer;font:700 clamp(12px,3.4vw,14px)/1.25 Arial,Helvetica,sans-serif;transition:background .14s ease}
+.controls button svg{flex:none;transition:transform .14s ease}
+.controls button[aria-expanded="true"] svg{transform:rotate(180deg)}
+.detailsButton{background:#f0f8f2;color:#075d50}
+.controls .orderButton{background:linear-gradient(130deg,#197b73,#00574e);color:#fff}
+.controls .detailsButton:hover,.controls .detailsButton[aria-expanded="true"]{background:#dcefe4}
+.controls .orderButton:hover,.controls .orderButton[aria-expanded="true"]{background:#00594c}
+.panel{margin-top:9px;padding:12px;border:1px solid #d9e7dc;border-radius:13px;background:#fffefa;color:#25403e}
+.panel[hidden]{display:none!important}
+.panel p{margin:0 0 9px;font:400 13px/1.48 Arial,Helvetica,sans-serif}
+.fullLink{display:inline-flex;align-items:center;gap:7px;min-height:44px;font:700 13px/1.4 Arial,Helvetica,sans-serif;color:#086e5a;text-decoration:underline;text-underline-offset:3px}
+.fullLink svg{flex:none}
+.panel :global([data-messenger-only-contact]){margin:0}
+.panel :global([data-messenger-only-contact] > .body){margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+.panel :global([data-messenger-only-contact] .body > strong){display:block;font:700 13px/1.4 Arial,Helvetica,sans-serif;color:#385751}
+.panel :global([data-messenger-only-contact] .actions){gap:7px}
+.panel :global([data-messenger-only-contact] .actions a){min-height:44px}
+.root :is(button,a):focus-visible{outline:3px solid #0a806c;outline-offset:3px}
+@media(max-width:350px){.controls{gap:5px}.controls button{padding:6px 3px;font-size:12px}.panel{padding:9px}.panel :global([data-messenger-only-contact] .actions){grid-template-columns:repeat(2,minmax(0,1fr))}.panel :global([data-messenger-only-contact] .actions a){gap:3px;padding:8px 3px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.controls button,.controls button svg{transition:none}}
+
+/* Approved inline messenger state: ONE full-width row beneath both card actions.
+   No nested instructional panel, title or surrounding double border. */
+.orderPanel{margin-top:8px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.orderPanel :global([data-compact-messenger="true"]){margin:0!important;max-width:100%;width:100%}
+.orderPanel :global([data-compact-messenger="true"] > div){
+  display:block!important;margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important
+}
+.orderPanel :global([data-compact-messenger="true"] > div > strong){display:none!important}
+.orderPanel :global([data-compact-messenger="true"] [role="group"]){
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important
+}
+.orderPanel :global([data-messenger-only-channel]){min-width:0;min-height:44px;border-radius:12px;white-space:nowrap}
+.orderPanel :global([data-messenger-only-channel] svg){flex:none}
+@media(max-width:350px){
+  .orderPanel :global([data-compact-messenger="true"] [role="group"]){gap:6px!important}
+  .orderPanel :global([data-messenger-only-channel]){padding:6px 3px;font-size:12px}
+}

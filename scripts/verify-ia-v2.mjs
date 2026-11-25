@@ -256,12 +256,133 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of locales) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?full=1&lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
         await resizePublicViewport(page, { width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
+        // The home now owns the compact My Space chrome. Keep all eleven
+        // responsive widths, real interactions, accessibility and lower dock.
+        if(surface==='home'){
+          const entry=page.locator('[data-home-dialogue-entry]')
+          const header=entry.locator('[data-home-dialogue-header]')
+          await expect(entry).toHaveCount(1)
+          await expect(header).toBeVisible()
+          await expect(header.locator('h1')).toHaveText('Holistic House')
+          // The former top marketing ribbon, duplicate brand header and large
+          // Profile dashboard must NEVER displace the first conversation.
+          await expect(page.locator('header.house-header--services')).toHaveCount(0)
+          await expect(page.locator('[data-sitewide-antistress-banner]')).toHaveCount(0)
+          await expect(page.locator('[data-profile-hub-tabs]')).toHaveCount(0)
+          const language=header.locator('[data-home-language-switch]')
+          const languageTrigger=language.locator('summary')
+          const langOptions=language.locator('a[lang]')
+          await expect(languageTrigger).toContainText(locale.toUpperCase())
+          await expect(langOptions).toHaveCount(3)
+          await expect(langOptions.locator('[aria-current="page"]')).toHaveCount(0)
+          await expect(language.locator('a[aria-current="page"]')).toHaveAttribute('lang',locale)
+          const search=header.locator('[data-site-search-trigger]')
+          const menu=header.locator('details.site-main-menu')
+          for(const [name,control] of [['language',languageTrigger],['search',search],['menu',menu.locator('summary')]]){
+            if(width>=360)await inViewport(control,label+'/'+name)
+            else{
+              const box=await control.boundingBox()
+              assert.ok(box&&box.width>=39&&box.height>=44&&box.x>=-1&&
+                box.x+box.width<=width+1,label+': compact 320px '+name+' is tappable')
+            }
+          }
+          const geom=await header.evaluate(node=>{
+            const title=node.querySelector('h1').getBoundingClientRect()
+            const actions=node.lastElementChild.getBoundingClientRect()
+            const rect=node.getBoundingClientRect()
+            return {right:rect.right,overlap:title.right-actions.left,
+              centerGap:Math.abs(title.top+title.height/2-actions.top-actions.height/2)}
+          })
+          assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
+            label+': Holistic House title and tools must share ONE line')
+          // Approved Home presents Clarity, Goal and Business program cards.
+          // Verify the real three-program layout, not the retired intent names.
+          await expect(entry).toHaveAttribute('data-home-mode','self')
+          const form=entry.locator('[data-home-intent-form]')
+          const input=form.locator('[data-home-intent-composer]')
+          const send=form.locator('[data-home-send-to-ali]')
+          const choices=entry.locator('[data-home-intent-option]')
+          await expect(choices).toHaveCount(3)
+          for(const intention of ['clarity','goal','business']){
+            const button=entry.locator('[data-home-intent-option="'+intention+'"]')
+            await expect(button).toHaveCount(1)
+            await expect(button).toHaveAttribute('type','button')
+            await expect(button).toBeVisible()
+            await expect(button.locator('[class*="programSteps"] > span')).toHaveCount(3)
+            const box=await button.boundingBox()
+            assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
+          }
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
+          const programNames={en:['Clarity & Stress Relief','Achieving My Goal','Business Support'],ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса'],es:['Claridad y alivio del estrés','Alcanzar mi meta','Apoyo empresarial']}
+          for(const [i,intention] of ['clarity','goal','business'].entries()){
+            await expect(entry.locator('[data-home-intent-option="'+intention+'"]')).toHaveAccessibleName(programNames[locale][i])
+          }
+          await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
+          // The approved Home hides the redundant journey link; its actual
+          // destination remains available via the verified Profile navigation.
+          const journeyLink=entry.locator('[data-home-continue-path]')
+          await expect(journeyLink).toHaveCount(1)
+          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
+          await expect(journeyLink).toBeHidden()
+          // Same-frame geometry: composer, visible program cards and methods.
+          const homeLayout=await entry.evaluate(root=>{
+            const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
+              '[data-home-methods]']
+              .map(selector=>root.querySelector(selector))
+            if(nodes.some(node=>!node))return null
+            const boxes=nodes.map(node=>node.getBoundingClientRect())
+            return {
+              ordered:nodes.every((node,i)=>i===0||Boolean(
+                nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
+              noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
+              inWidth:boxes.every(box=>box.left>=-1&&box.right<=innerWidth+1),
+            }
+          })
+          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
+            label+': composer → three programs → five methods '+JSON.stringify(homeLayout))
+          await expect(input).toBeVisible()
+          // Approved free-chat entry opens Ali even without a prefilled wish.
+          // Users may also describe their goal first; neither action is blocked.
+          await expect(send).toBeEnabled()
+          await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
+          await expect(send).toBeEnabled()
+          await input.fill('')
+          await expect(send).toBeEnabled()
+          await expect(entry.locator('[data-home-intent-mic]')).toBeVisible()
+          const hero=entry.locator('[data-home-dialogue-hero]')
+          const rect=await hero.boundingBox()
+          assert.ok(rect&&rect.y<700,label+': hero visible in first mobile viewport')
+          await languageTrigger.click()
+          await expect(language).toHaveJSProperty('open',true)
+          await expect(langOptions.first()).toBeVisible()
+          await languageTrigger.click()
+          await expect(language).toHaveJSProperty('open',false)
+          await search.click()
+          await expect(header.locator('[data-site-search-panel]')).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(header.locator('[data-site-search-panel]')).toHaveCount(0)
+          await menu.locator('summary').click()
+          await expect(menu).toHaveJSProperty('open',true)
+          await expect(menu.locator('.site-main-menu-panel [data-nav-item="services"]')).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(menu).toHaveJSProperty('open',false)
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+            label+': no overflow')
+          await header.screenshot({path:evidence+'/header-'+engine+'-'+locale+'-home-'+width+'.png'})
+          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+          if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
+          pass('Dialogue-first Home: '+label)
+          continue
+        }
         const header = page.locator('header.house-header--services')
         await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
@@ -486,7 +607,9 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   if (!messengerOnly) {
-  assert.equal((await go(page, '/')).status(), 200)
+  // The private IA suite verifies the existing full React app. The CDN-first
+  // anonymous Home is covered by a separate Chromium/WebKit first-screen QA.
+  assert.equal((await go(page, '/?full=1')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
     for (const width of [320, 360, 390, 430, 768, 1280]) {

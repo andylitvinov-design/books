@@ -32,12 +32,22 @@ on:
       - 'supabase/migrations/**'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Public practitioner directory/checkout use Public Services acceptance,
       # not synthetic encrypted owner/client IA with Redis and two browsers.
       - '!lib/practitioners/public-*'
       - '!lib/practitioners/taoist-talisman-cart.js'
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
+      - '!components/app/messenger-ai-landing.*'
+      - '!components/app/messenger-support-quiz.*'
+      # Cosmetic-only Profile CSS: Core + App R1 test the responsive design.
+      # Changes to actual Profile JSX, private auth, CRM, security and schema
+      # still launch IA; mixed PRs remain fully protected.
+      - '!components/app/profile-space-dashboard.module.css'
   workflow_dispatch:
 permissions:
   contents: read

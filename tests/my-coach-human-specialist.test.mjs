@@ -62,13 +62,29 @@ test('The question composer uses the existing verified private messaging route; 
   assert.doesNotMatch(client,/exampleMessages|sampleReply|fakeChat|demoThread/)
 })
 
-test('The consultation CTA routes to an existing published service or a practitioner service listing',()=>{
+test('Owner consultation asks for a future day and time before showing Telegram and WhatsApp',()=>{
   assert.match(client,/data-human-specialist-book/)
+  assert.match(client,/aria-expanded=\{bookingOpen\}/)
+  assert.match(client,/data-human-specialist-booking-fields/)
+  assert.match(client,/type="date" required min=\{minBookingDay\}/)
+  assert.match(client,/type="time" required step=\{900\}/)
+  assert.match(client,/validFuturePreference\(preferredDay,preferredTime\)/)
+  assert.match(client,/bookingReady&&bookingWhatsApp&&/)
+  assert.match(client,/data-human-specialist-booking-channels/)
+  assert.match(client,/telegramEnquiryUrlFromWhatsApp\(bookingWhatsApp\)/)
+  assert.match(client,/href=\{bookingWhatsApp\}/)
+  assert.match(client,/bookingTimezone = bookingReady/)
+  assert.match(client,/t\.bookingUnconfirmed/)
+  // Profiles not owned by Andrey retain their own published service route.
+  assert.match(client,/isOwner \? <>/)
   assert.match(client,/href=\{bookingHref\}/)
   assert.match(page,/services\/imagery-therapy/)
   assert.match(page,/getPublicServiceDetailHref\(locale,slug,service\.slug\)/)
   assert.match(page,/practitioner-services/)
   assert.match(css,/\.book\{[^}]*min-height:58px/)
+  assert.match(css,/\.bookingButtons\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(browser,/day alone cannot open booking messengers/)
+  assert.match(browser,/choosing a preferred slot never posts to CRM/)
 })
 
 test('Public specialist recordings survive unavailable optional private app configuration',()=>{
@@ -108,3 +124,31 @@ test('Existing manual Coaching browser gate exercises real specialist mobile int
   assert.match(browser,/no document overflow/)
   assert.match(browser,/artifacts\/coaching-mobile\/human-specialist/)
 })
+
+test('First-viewport specialist layout uses real media, compact controls and a labelled secretary lane',()=>{
+  const ribbon = readFileSync('components/sitewide-antistress-banner.tsx','utf8')
+  const ihelp = readFileSync('components/sitewide-ihelp.tsx','utf8')
+  assert.match(client,/data-human-specialist-quick-actions/)
+  assert.match(client,/data-human-video-details/)
+  assert.match(client,/data-human-channel="secretary"/)
+  assert.match(client,/data-human-channel="human"/)
+  assert.match(client,/data-human-secretary-reply/)
+  assert.match(client,/Ali · AI-секретарь/)
+  assert.match(client,/ruleConversationReply\(\{message:text,locale,history\}\)/)
+  assert.match(client,/if\(channel==='secretary'\)/)
+  assert.match(client,/Automatic replies · your question is not sent to the specialist/)
+  assert.match(css,/\.quickActions\{[^}]*display:grid/)
+  assert.match(css,/\.dialogue \.thread\{[^}]*flex:1/)
+  assert.match(css,/--hh-unified-nav-height/)
+  assert.match(css,/height:var\(--human-view-height,100dvh\)/)
+  assert.match(ribbon,/my-coach\\\/real/)
+  assert.match(ihelp,/my-coach\\\/real/)
+});
+
+test('Booking keeps confirmed future-date messenger gating while compact',()=>{
+  assert.match(client,/bookingOpen&&<section/)
+  assert.match(client,/aria-expanded=\{bookingOpen\}/)
+  assert.match(client,/validFuturePreference\(preferredDay,preferredTime\)/)
+  assert.match(css,/\.bookingAction \.bookingPanel\{position:absolute/)
+  assert.match(css,/max-height:min\(56dvh,470px\)/)
+});

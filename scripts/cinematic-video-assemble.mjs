@@ -5,7 +5,7 @@
  * Never run within a Vercel request or with private media in public CI.
  */
 import {readFile,realpath,stat,mkdir} from 'node:fs/promises';
-import {execFileSync} from 'node:child_process';
+import {execFileSync,spawnSync} from 'node:child_process';
 import {resolve,dirname,relative,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -21,7 +21,10 @@ export function validateAssemblyInput(input){
   if(!input||input.version!=='hh-assembly-1'||!Array.isArray(input.clips)||
      input.clips.length<1||input.clips.length>MAX_CLIPS||!SAFE_LANG.has(input.locale)||
      !['landscape','portrait','square'].includes(input.aspect)||
-     !['silent','licensed_music','narration_with_music'].includes(input.audioMode))fail();
+     !['silent','licensed_music','narration_with_music','narration'].includes(input.audioMode))fail();
+  if(input.fast!==undefined&&typeof input.fast!=='boolean')fail();
+  if(input.fast&&input.clips.length>6)fail();
+  if(input.audioMode==='narration'&&(!input.fast||!input.narration||input.narration.rightsConfirmed!==true))fail();
   if(input.audioMode==='licensed_music'&&(!input.music||input.music.rightsConfirmed!==true))fail();
   if(input.audioMode==='narration_with_music'&&(!input.narration||
     input.narration.rightsConfirmed!==true||!input.music||
@@ -37,9 +40,60 @@ export function validateAssemblyInput(input){
   if(sum>MAX_SECONDS)fail();
   return {seconds:sum,clips:input.clips.length};
 }
+
+/** Offline Fast Assembly for approved local masters: single H.264/AAC export
+ * with burned captions. Not a phone recorder, Vercel Function or public worker. */
+export function buildFastFfmpegArgs(input,files,output,seconds){
+  const [width,height]=input.aspect==='portrait'?[720,1280]:input.aspect==='square'?[720,720]:[1280,720];
+  const args=['-hide_banner','-loglevel','error','-nostdin','-n','-threads','2'];
+  for(const file of files.clips)args.push('-i',file);
+  let voice=null,music=null;
+  if(input.audioMode==='narration'||input.audioMode==='narration_with_music'){
+    voice=args.filter(x=>x==='-i').length;args.push('-i',files.narration);
+  }
+  if(input.audioMode==='licensed_music'||input.audioMode==='narration_with_music'){
+    music=args.filter(x=>x==='-i').length;args.push('-stream_loop','-1','-i',files.music);
+  }
+  const filters=input.clips.map((clip,i)=>
+    '['+i+':v]trim=duration='+clip.seconds+',setpts=PTS-STARTPTS,'+
+    'scale='+width+':'+height+':force_original_aspect_ratio=decrease,'+
+    'pad='+width+':'+height+':(ow-iw)/2:(oh-ih)/2,'+
+    'setsar=1,fps=24,format=yuv420p[v'+i+']');
+  const burn=Boolean(input.subtitles);
+  filters.push(input.clips.map((_,i)=>'[v'+i+']').join('')+
+    'concat=n='+input.clips.length+':v=1:a=0'+(burn?'[vbase]':'[vout]'));
+  if(burn){
+    // FFmpeg parser takes only unambiguous paths already verified under manifest root.
+    if(!/^[A-Za-z0-9_./ -]+$/.test(files.subtitles||''))fail();
+    filters.push("[vbase]subtitles=filename='"+files.subtitles+
+      "':charenc=UTF-8:force_style='Fontname=DejaVu Sans,Fontsize=22,"+
+      "Outline=2,Shadow=1,MarginV=95,Alignment=2'[vout]");
+  }
+  if(voice!==null)filters.push('['+voice+':a]aresample=48000,volume=1.0,'+
+    'asetpts=PTS-STARTPTS,atrim=duration='+seconds+'[voice]');
+  if(music!==null)filters.push('['+music+':a]aresample=48000,volume='+
+    (voice===null?'0.5':'0.16')+
+    ',asetpts=PTS-STARTPTS,atrim=duration='+seconds+'[bed]');
+  if(voice!==null&&music!==null)
+    filters.push('[voice][bed]amix=inputs=2:duration=longest:dropout_transition=0,'+
+      'alimiter=limit=0.89,atrim=duration='+seconds+'[aout]');
+  else if(voice!==null||music!==null)
+    filters.push((voice!==null?'[voice]':'[bed]')+
+      'alimiter=limit=0.89,atrim=duration='+seconds+'[aout]');
+  args.push('-filter_complex',filters.join(';'),'-map','[vout]');
+  if(voice!==null||music!==null)
+    args.push('-map','[aout]','-c:a','aac','-b:a','128k','-ar','48000');
+  else args.push('-an');
+  args.push('-c:v','libx264','-preset','veryfast','-crf','24',
+    '-profile:v','main','-pix_fmt','yuv420p','-r','24',
+    '-movflags','+faststart','-t',String(seconds),output);
+  return args;
+}
+
 export function buildFfmpegArgs(input,files,output){
   const {seconds}=validateAssemblyInput(input);
   if(!files||!Array.isArray(files.clips)||files.clips.length!==input.clips.length||!output)fail();
+  if(input.fast===true)return buildFastFfmpegArgs(input,files,output,seconds);
   const dims=input.aspect==='portrait'?[1080,1920]:input.aspect==='square'?[1080,1080]:[1920,1080];
   const args=['-hide_banner','-loglevel','error','-nostdin','-n'];
   for(const file of files.clips)args.push('-i',file);
@@ -96,9 +150,11 @@ function probe(file){
   const json=JSON.parse(execFileSync('ffprobe',
     ['-v','error','-show_streams','-show_format','-of','json',file],
     {encoding:'utf8',timeout:10000,maxBuffer:512000}));
+  const video=json.streams?.find(s=>s.codec_type==='video');
+  const audio=json.streams?.find(s=>s.codec_type==='audio');
   return {seconds:Number(json.format?.duration||0),
-    hasVideo:json.streams?.some(s=>s.codec_type==='video'&&s.width>0&&s.height>0),
-    hasAudio:json.streams?.some(s=>s.codec_type==='audio')};
+    hasVideo:Boolean(video?.width>0&&video?.height>0),hasAudio:Boolean(audio),
+    videoCodec:video?.codec_name,videoPixelFormat:video?.pix_fmt,audioCodec:audio?.codec_name};
 }
 export async function assembleCinematicVideo(manifestFile,outputFile,{runner=execFileSync}={}){
   const manifestPath=await realpath(resolve(manifestFile));
@@ -119,7 +175,12 @@ export async function assembleCinematicVideo(manifestFile,outputFile,{runner=exe
   }
   if(input.narration){
     files.narration=await safeSource(root,input.narration.file,['.wav','.mp3','.m4a','.aac']);
-    if(!probe(files.narration).hasAudio)fail();
+    const narrationProbe=probe(files.narration);
+    if(!narrationProbe.hasAudio||!Number.isFinite(narrationProbe.seconds))fail();
+    // Never silently truncate a personal voice in the Fast path. Reject
+    // during preflight, before running an expensive FFmpeg video encode.
+    if(input.fast===true&&narrationProbe.seconds>check.seconds+0.25)
+      throw Error('fast_narration_longer_than_video');
   }
   if(input.subtitles)files.subtitles=await safeSource(root,input.subtitles.file,['.srt']);
   const out=inside(root,resolve(root,outputFile));
@@ -130,6 +191,29 @@ export async function assembleCinematicVideo(manifestFile,outputFile,{runner=exe
   const media=probe(out);
   if(!media.hasVideo||Math.abs(media.seconds-check.seconds)>1.5||
      (input.audioMode!=='silent'&&!media.hasAudio))throw Error('cinematic_output_qa_failed');
+  if(input.fast===true){
+    if(media.videoCodec!=='h264'||media.videoPixelFormat!=='yuv420p'||
+       (input.audioMode!=='silent'&&media.audioCodec!=='aac'))
+      throw Error('fast_assembly_codec_invalid');
+    let cursor=0;
+    for(const clip of input.clips){
+      const seek=cursor+Math.min(clip.seconds/2,1.5);
+      const sample=execFileSync('ffmpeg',['-hide_banner','-v','error',
+        '-ss',String(seek),'-i',out,'-frames:v','1','-an','-f','framehash','-'],
+        {encoding:'utf8',timeout:12000,maxBuffer:200000});
+      if(!sample.split('\n').some(line=>/^\d+,/.test(line.trim())))
+        throw Error('fast_assembly_frame_decode_failed');
+      cursor+=clip.seconds;
+    }
+    if(input.audioMode!=='silent'){
+      const volume=spawnSync('ffmpeg',['-hide_banner','-i',out,'-map','0:a:0',
+        '-af','volumedetect','-f','null','-'],
+        {encoding:'utf8',timeout:20000,maxBuffer:200000});
+      const match=String(volume.stderr||'').match(/mean_volume:\s*(-?[\d.]+) dB/);
+      if(volume.status!==0||!match||Number(match[1])<=-55)
+        throw Error('fast_assembly_audio_qa_failed');
+    }
+  }
   return {output:out,seconds:media.seconds,hasAudio:media.hasAudio,clips:check.clips};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){

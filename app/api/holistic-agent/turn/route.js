@@ -3,7 +3,8 @@ import { AppError, onlyKeys } from "@/lib/assessments/contracts";
 import { getAppConfig, requireSameOrigin } from "@/lib/app/config";
 import { createRequestAuth } from "@/lib/app/session";
 import { createAppRepository } from "@/lib/app/repository";
-import { consumeRate } from "@/lib/app/database";
+import { consumeRate, consumeRateBatch } from "@/lib/app/database";
+import { waveGeminiPublicEligibility, waveGeminiPublicQuota, waveGeminiPublicReadiness, waveGeminiPublicReply } from "@/lib/holistic-support/wave-gemini-public.mjs";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -15,12 +16,17 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import {isChatModelStatusQuestion,chatModelStatusReply} from "@/lib/holistic-support/chat-model-status.mjs";
+import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
+import {planDialogueDirectorTurn,publicDialogueDirectorState} from "@/lib/holistic-support/dialogue-director.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
+import { salesMindTurn } from "@/lib/holistic-support/sales-mind.mjs";
+import { planWaveMagicTurn } from "@/lib/holistic-support/wave-magic-director.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -32,6 +38,7 @@ import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-suppo
 import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
 import { createNativeDialogueSession, readNativeDialogueSession, advanceNativeDialogueMessage } from "@/lib/holistic-support/native-dialogue-session-store";
 import { nativeDialogueEventFromUtterance, understandConversationTurn } from "@/lib/holistic-support/conversation-intelligence.mjs";
+import { rankVerifiedSuggestions } from "@/lib/holistic-support/semantic-method-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -118,7 +125,7 @@ function validNativeSession(value) {
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
     "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
-    "judgmentContext","judgmentChoice","nativeSession"]);
+    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -131,6 +138,9 @@ function inputOf(body) {
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
     (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.companionMode !== undefined && body.companionMode !== null && body.companionMode !== "friend") ||
+    (body.companionTone !== undefined && body.companionTone !== null &&
+      (!["friendly","confiding","tender"].includes(body.companionTone) || body.companionMode !== "friend")) ||
     (body.nativeSession !== undefined && body.nativeSession !== null && !validNativeSession(body.nativeSession)) ||
     (body.judgmentContext !== undefined && body.judgmentContext !== null &&
       (typeof body.judgmentContext !== "string" || body.judgmentContext.length > 1600 ||
@@ -139,7 +149,7 @@ function inputOf(body) {
       (!["a","b","helpful","not_helpful"].includes(body.judgmentChoice) ||
         !body.judgmentContext)))
     throw new AppError("INVALID_AGENT_INPUT",400);
-  if (!Array.isArray(body.history) || body.history.length > 6 ||
+  if (!Array.isArray(body.history) || body.history.length > (body.mode==="rules"?12:6) ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
       typeof row.text !== "string" || row.text.length > 4000 ||
       Object.keys(row).some(key => !["role","text"].includes(key))))
@@ -164,6 +174,26 @@ function preflight(text,locale) {
   if(reviewPracticeBoundary(text,locale))return {status:"human_review"};
   return {status:"clear"};
 }
+// Authenticated, no-store readiness for owner acceptance and support.
+// A configured gate does NOT establish Google billing, quota or a successful model call.
+// No conversation content, account identifier, secret, quota reservation or Google request.
+export async function GET(request) {
+  let auth;
+  try {
+    const config=getAppConfig();
+    auth=createRequestAuth(request,config);
+    const actor=await auth.verified();
+    const status=waveGeminiPublicReadiness({
+      eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+    });
+    return auth.apply(NextResponse.json({status,scope:"public_topics",providerCall:false,modelUsed:false},{headers:PRIVATE_HEADERS}));
+  } catch(error) {
+    const e=safeError(error);
+    const response=NextResponse.json({error:e.code},{status:e.status,headers:PRIVATE_HEADERS});
+    return auth?auth.apply(response):response;
+  }
+}
+
 export async function POST(request) {
   let auth;
   try {
@@ -191,6 +221,17 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    // Read-only plan after authentication, safety and throttling; never a permission.
+    const dialogueDirector=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)
+      ?planDialogueDirectorTurn({message:body.message,locale:body.locale,
+        history:body.history,
+        roleHint:routeMindRole({message:body.message,locale:body.locale,
+          history:body.history,selectedGoal:body.selectedGoal}).role,
+        psychologistConsent:false,selectedService:false,safety}):null;
     // Verify signed continuations before reading optional state or producing an
     // early answer. Judgment is evaluated once for this exact safe turn.
     const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
@@ -219,14 +260,29 @@ export async function POST(request) {
     const stateEvent=nativeFrame?nativeDialogueEventFromUtterance({message:body.message,locale:body.locale,state:nativeFrame.state}):null;
     const meditationDeclined=stateEvent?.type==='refuse_meditation' ||
       (nativeFrame?.state.declinedMeditation?.value==='meditation' && stateEvent?.type!=='allow_meditation');
+    // Wave Magic Director shares modes and empathy after host authentication/safety.
+    const wavePlan=planWaveMagicTurn({message:body.message,locale:body.locale,
+      history:body.history,selectedGoal:body.selectedGoal,safety,channel:"web"});
     const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
+      // Exposes only phase and explicit-evidence flags, never a client transcript.
+      if(dialogueDirector&&data?.status!=="safety_handoff")
+        data={...data,dialogueDirector:publicDialogueDirectorState(dialogueDirector)};
+      // Server already verified catalogue provenance; do not invent options.
+      if(Array.isArray(data.suggestions)){
+        const two=data.suggestions.slice(0,2);
+        data={...data,suggestions:two,
+          ...(data.decision?.suggestions?{decision:{...data.decision,suggestions:two}}:{})};
+      }
+      data={...data,alchemy:{version:wavePlan.version,mode:wavePlan.mode,
+        depth:wavePlan.depth,intent:wavePlan.intent,dialogueStage:wavePlan.dialogueStage,
+        nextAction:wavePlan.nextAction,consentRequired:wavePlan.consentRequired}};
       if(nativeFrame){
         const clearChoices=['stop','new_question','cancel_to_talk','decline_booking','clear_topic','clear_goal_statement','refuse_advice','pause_topic','choose'].includes(stateEvent.type) ||
           (stateEvent.type==='refuse_meditation'&&!stateEvent.mixed);
         const hidden=new Set([...(body.feedback?.dismissedIds||[]),...(body.feedback?.completedIds||[])]);
         const suggestions=(clearChoices?[]:(Array.isArray(data.suggestions)?data.suggestions:[]))
           .filter(item=>typeof item?.id==='string'&&SAFE_CONTENT_ID.test(item.id)&&!hidden.has(item.id)&&
-            !(meditationDeclined&&item.id.startsWith('youtube:'))).slice(0,3);
+            !(meditationDeclined&&item.id.startsWith('youtube:'))).slice(0,2);
         const ids=suggestions.map(item=>item.id);
         if(new Set(ids).size!==ids.length)throw new AppError('INVALID_AGENT_SUGGESTIONS',503);
         data={...data,suggestions,...(data.decision?{decision:{...data.decision,suggestions}}:{})};
@@ -252,6 +308,12 @@ export async function POST(request) {
       }
       return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}));
     };
+    // Answer model-identity questions before generic conversation routing. The
+    // disclosure never represents a successful Gemini call or overrides safety.
+    if(safety.status==="clear"&&!recentUnsafe&&body.judgmentContext==null&&body.judgmentChoice==null&&isChatModelStatusQuestion(body.message)&&(!stateEvent||stateEvent.type==="ordinary")){
+      const reply=chatModelStatusReply({locale:body.locale});
+      return await finish({status:"clarify",reply,source:"chat-model-status",modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,decision:{status:"clarify",message:reply,question:null,suggestions:[]}});
+    }
     // A verified current-session refusal applies to later emotional statements.
     // Safety handoffs and signed continuations retain priority; factual and
     // explicitly requested workflows continue through their normal owners.
@@ -355,6 +417,24 @@ export async function POST(request) {
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
         decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
     }
+    // Friend Mind is a selected conversational tone, not an authorization.
+    // All origin, account, rate, safety and signed-choice checks precede it.
+    // Do not read private memory, enter a service funnel, or bypass a real task.
+    const friendTurn=body.mode==="rules" && body.companionMode==="friend" &&
+      safety.status==="clear" && !recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0)
+      ? friendConversationReply({message:body.message,locale:body.locale,
+          history:body.history,tone:body.companionTone||"friendly"}) : null;
+    if(friendTurn)return await finish({
+      status:"clarify",reply:friendTurn.reply,modelUsed:false,
+      mindRole:"friend",source:friendTurn.source,memorySaved:false,userAuthorized:true,
+      suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:"clarify",message:friendTurn.reply,question:null,suggestions:[]},
+    });
     // Preserve the production complaint path after the same safety and consent
     // gates, while committing any verified state through the common finish path.
     const complaint=safety.status==="clear"&&!recentUnsafe &&
@@ -368,6 +448,24 @@ export async function POST(request) {
       mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
       decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
+    // Public-knowledge Gemini is optional presentation, not a second Director.
+    // Exact topic allowlist + verified eligibility; no private text leaves us.
+    const publicGemini=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      !judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)&&
+      body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")
+      ?await waveGeminiPublicReply({message:body.message,locale:body.locale,
+        eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+        reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id)),
+        signal:AbortSignal.timeout(8000)}):null;
+    if(publicGemini)return await finish({
+      status:"clarify",reply:publicGemini.reply,modelUsed:true,source:publicGemini.source,
+      memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:publicGemini.reply,question:null,suggestions:[]},
+    });
     // Native Wave precedes catalog lookups and optional remote inference for
     // narrow conversation/FAQ intents. Safety, signed choices, consent and
     // existing stateful journeys above this point remain authoritative.
@@ -376,7 +474,8 @@ export async function POST(request) {
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
       (!body.chosenAxes||body.chosenAxes.length===0)
-      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history}):null;
+      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history,
+        selectedChoiceId:nativeFrame?.state?.selectedChoiceId??null}):null;
     if(waveReply)return await finish({
       status:"clarify",reply:waveReply.reply,modelUsed:false,
       source:WAVE_NATIVE_ROUTER_VERSION,
@@ -406,6 +505,29 @@ export async function POST(request) {
         });
       }
     }
+    // One shared Ali role decision for the website and Telegram. This is only
+    // editorial routing after existing auth/rate/safety; it grants no actions
+    // or permission to enter a deeper psychologist interview.
+    const aliMode=wavePlan.roleDecision;
+    // Sales Mind only handles genuine service exploration/objections; booking,
+    // factual price lookup and explicit selections stay with Secretary/Consultant.
+    // Keep the same upstream safety, auth, rate, user-context and STOP gates.
+    const salesConversation=safety.status==="clear"&&!recentUnsafe&&!judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode) && aliMode.role==="sales"
+      ? salesMindTurn({message:body.message,locale:body.locale,history:body.history}) : null;
+    if(salesConversation)return await finish({
+      status:salesConversation.status,reply:salesConversation.reply,
+      mindRole:"sales",modelUsed:false,source:"sales-rules",
+      memorySaved:false,userAuthorized:true,suggestions:salesConversation.suggestions,
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:salesConversation.status,message:salesConversation.reply,
+        question:null,suggestions:salesConversation.suggestions},
+    });
     // Preserve the production source-grounded consultant; Judgment and all
     // safety/consent gates remain authoritative before its factual reply.
     const consultation=safety.status==="clear"&&!recentUnsafe&&!judgmentPriority &&
@@ -416,14 +538,18 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
+    // Show at most two published relevant options in ordinary chat.
+    const consultantChoices=Array.isArray(consultation?.suggestions)?
+      consultation.suggestions.slice(0,2):[];
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
-      mindRole:"consultant",modelUsed:false,source:"consultant-rules",
-      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
+      modelUsed:false,source:"consultant-rules",
+      memorySaved:false,userAuthorized:true,suggestions:consultantChoices,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
-        question:null,suggestions:consultation.suggestions},
+        question:null,suggestions:consultantChoices},
     });
     if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
        stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
@@ -603,10 +729,15 @@ export async function POST(request) {
       history:{completedIds},
       feedback:body.feedback||{},
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio,
-        meditationVideos,publishedSourceIds},
+        meditationVideos,publishedSourceIds},limit:2,
     });
-    const decision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
+    const candidateDecision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
       .filter(item=>!item.id?.startsWith('youtube:'))}:rawDecision;
+    // Rank only the verified catalogue: no new link, payment or forced filler.
+    const decision={...candidateDecision,suggestions:rankVerifiedSuggestions({
+      suggestions:candidateDecision.suggestions,sourceOffers:axisOffers,
+      message:body.message,selectedGoal:goal,locale:body.locale,limit:2,
+    })};
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({
       endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
@@ -657,7 +788,7 @@ export async function POST(request) {
           reply:generated.text,intent:fastRule?.id||""})
       : generated.text;
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
-      .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
+      .slice(0,2).map(({id,kind,href,title})=>({id,kind,href,title}));
     return await finish({
       status:decision.status, reply:finalReply, modelUsed:generated.modelUsed,
       mindRole:generated.modelUsed?envelope.mindRole:null,

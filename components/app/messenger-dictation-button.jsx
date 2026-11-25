@@ -8,21 +8,21 @@ import {speechResultSegments} from '@/lib/personal-coaching/speech-text';
 // No recording is stored or sent to a Holistic House server until user presses Send.
 const COPY={
   en:{
-    start:'Dictate a message',stop:'Stop dictation',listening:'Listening…',
+    start:'Dictate into draft',stop:'Stop dictation',listening:'Listening…',
     notice:'Your browser or phone may send microphone audio to its speech-recognition service. Holistic House does not store the recording. Check the recognized text before pressing Send. Continue?',
     unsupported:'Speech recognition is unavailable in this browser. Use keyboard dictation or type.',
     denied:'Microphone access is blocked. Allow it in browser settings or use keyboard dictation.',
     failed:'Speech recognition stopped. Tap the microphone again or use keyboard dictation.',
   },
   ru:{
-    start:'Диктовать сообщение',stop:'Остановить диктовку',listening:'Слушаю…',
+    start:'Диктовать в черновик',stop:'Остановить диктовку',listening:'Слушаю…',
     notice:'Браузер или телефон могут передавать звук своему сервису распознавания речи. Holistic House не сохраняет аудиозапись. Проверьте текст перед отправкой. Продолжить?',
     unsupported:'В этом браузере распознавание речи недоступно. Используйте диктовку клавиатуры или ввод текста.',
     denied:'Микрофон заблокирован. Разрешите доступ в настройках браузера или используйте диктовку клавиатуры.',
     failed:'Распознавание остановилось. Нажмите микрофон ещё раз или используйте диктовку клавиатуры.',
   },
   es:{
-    start:'Dictar un mensaje',stop:'Detener dictado',listening:'Escuchando…',
+    start:'Dictar al borrador',stop:'Detener dictado',listening:'Escuchando…',
     notice:'Tu navegador o teléfono puede enviar el audio a su servicio de reconocimiento. Holistic House no guarda la grabación. Revisa el texto antes de enviarlo. ¿Continuar?',
     unsupported:'El reconocimiento de voz no está disponible. Usa el dictado del teclado o escribe.',
     denied:'El micrófono está bloqueado. Autoriza el acceso en el navegador o usa el dictado del teclado.',
@@ -39,6 +39,7 @@ export function MessengerDictationButton({
   const [interim,setInterim]=useState('');
   const [error,setError]=useState('');
   const captureRef=useRef(null);
+  const buttonRef=useRef(null);
   const consentRef=useRef(false);
   const transcriptCallback=useRef(onTranscript);
   const beginCallback=useRef(onBegin);
@@ -65,6 +66,13 @@ export function MessengerDictationButton({
   },[abortCapture]);
   useEffect(()=>{abortCapture();setError('')},[locale,resetRevision,abortCapture]);
   useEffect(()=>{if(disabled)abortCapture()},[disabled,abortCapture]);
+  useEffect(()=>{
+    const menu=buttonRef.current?.closest('details');
+    if(!menu)return;
+    const onToggle=()=>{if(!menu.open)abortCapture()};
+    menu.addEventListener('toggle',onToggle);
+    return ()=>menu.removeEventListener('toggle',onToggle);
+  },[abortCapture]);
 
   const toggle=()=>{
     if(disabled)return;
@@ -121,10 +129,11 @@ export function MessengerDictationButton({
   };
 
   return <>
-    <button type="button" className={className} data-hh-dictation-mic
+    <button ref={buttonRef} type="button" className={className} data-hh-dictation-mic
       onClick={toggle} disabled={disabled} aria-pressed={listening}
       aria-label={listening?t.stop:t.start} title={listening?t.stop:t.start}>
       {listening?<MicOff size={20} aria-hidden="true"/>:<Mic size={20} aria-hidden="true"/>}
+      <span>{listening?t.stop:t.start}</span>
     </button>
     {(listening||error)&&<output className={statusClassName} data-hh-dictation-status
       role={error?'alert':'status'} aria-live="polite">{error||interim||t.listening}</output>}

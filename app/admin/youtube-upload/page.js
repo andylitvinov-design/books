@@ -23,7 +23,7 @@ export const metadata = {
 }
 
 export default async function YoutubeUploadPage({searchParams}) {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?destination=youtube')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
   const params=await searchParams
   const importTelegramCut=params?.import==='telegramCut'
@@ -139,19 +139,23 @@ export default async function YoutubeUploadPage({searchParams}) {
       <p style={{fontSize:14,margin:'0 0 8px'}}>
         {englishServerConnected
           ?'✅ English YouTube server OAuth connected. HeyGen videos can be uploaded after your per-video approval.'
-          :'🔐 English phone pairing and server upload permission are separate. Approve Google server access once to upload HeyGen videos without a phone.'}
+          :'🔐 Connect @aatapro once with Google. The verified English channel is paired automatically, with no extra phone step.'}
       </p>
       {initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
         Connected phone channel ID: <code>{initialChannels.en.id}</code>
       </p>}
       {!initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
-        First pair your English channel using the phone uploader below.
+        Google verifies that your chosen YouTube channel is exactly @aatapro,
+        then pairs it automatically. No separate phone pairing is required.
       </p>}
-      {telegramVideoConfigured&&initialChannels.en&&<Link prefetch={false}
+      {telegramVideoConfigured?<Link prefetch={false}
         href="/api/admin/telegram-video/youtube/start?target=en">
         {englishServerConnected?'Reconnect AATA Pro server OAuth':
-          'Connect AATA Pro · server-side YouTube upload'}
-      </Link>}
+          'Connect English @aatapro with Google'}
+      </Link>:<p role="status" style={{fontSize:13}}>
+        Google server OAuth is not configured. Check the existing owner video
+        OAuth Web Client settings; no accounts or tokens were changed.
+      </p>}
     </section>
     <HeygenEnYoutubeCatalog locale={locale}/>
     <HeygenEnYoutubePublisher key={heygenVideoId||'manual'} locale={locale}

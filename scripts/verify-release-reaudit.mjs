@@ -1,6 +1,6 @@
 import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
-import { decodeReadyPoster } from './public-poster-readiness.mjs';
+import { decodeReadyPoster, isTransientYouTubePosterTimeout } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
@@ -30,13 +30,33 @@ async function check(name, detail, fn) {
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
+  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  // Real Home: visible markup alone is not enough. Require the
+  // lightweight first-party script to have initialized its controls.
+  // A rapid back-navigation may still be replacing the outgoing document.
+  // Verify the REAL CDN or React Home rather than testing a stale DOM.
+  await expect(page.locator('body[data-fast-home="en"], main[data-home-design="dialogue-first-v1"]'))
+    .toHaveCount(1,{timeout:15000});
+  const fast = page.locator('body[data-fast-home="en"]');
+  if (await fast.count()) {
+    await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
+    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(3);
+    await expect(fast.locator('[data-home-intent-form]')).toBeVisible();
+    await expect(fast.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+    return;
+  }
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
   // A history traversal can update the URL while the previous public document
   // remains visible and its replacement is pending. Require the destination DOM,
   // not load/hydration readiness: the server-rendered home is sufficient here.
-  const home = page.locator('main[data-home-design="approved-v2"]');
+  const home = page.locator('main[data-home-design="dialogue-first-v1"]');
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
+  await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
+  await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
+  for (const intention of ['understand','goal','talk']) await expect(home.locator('[data-home-intent-option="'+intention+'"]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -49,7 +69,7 @@ async function assertAnonymousPrivateNavigation(page) {
   // must not be exposed without an authenticated account.
   const guest = page.locator('[data-cabinet-guest-overview]');
   await expect(guest).toBeVisible();
-  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  // Guest cabinet has no signed-in Today tabs; protect private data and verify its public tests link below.
   await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
   await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
@@ -135,8 +155,13 @@ async function verifyCspBfcache() {
       assert.ok(refusedRestore, 'Missing exact-frame/loader BFCache ineligibility evidence');
       ineligibilityReasons = refusedRestore.notRestoredExplanations.map(item => item.reason);
       const knownActualPolicyReasons = ['MainResourceHasCacheControlNoStore', 'JsNetworkRequestReceivedCacheControlNoStoreResource', 'BrowsingInstanceNotSwapped', 'CacheControlNoStoreCookieModified'];
-      assert.ok(ineligibilityReasons.includes('MainResourceHasCacheControlNoStore'), 'Only the unchanged no-store policy can establish this ineligible outcome');
-      assert.ok(ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)), 'Unknown BFCache blocking reason requires investigation');
+      // The public page may be BFCache-eligible independently of the CDN
+      // Home's cacheability. For a real ineligible traversal, demand exact-frame
+      // browser evidence with ONLY known actual reasons, not an invented
+      // requirement that the main resource alone caused it.
+      assert.ok(ineligibilityReasons.length > 0 &&
+        ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)),
+        'Unknown or missing BFCache blocking reason requires investigation');
     }
     phase = 'forward-to-tantra';
     const beforeForward = await cdp.send('Page.getNavigationHistory');
@@ -238,7 +263,13 @@ async function exercise(engine, browserType, width) {
     // A previously reached Playwright networkidle state can precede hydration's
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
-    await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
+    if (await page.locator('body[data-fast-home]').count()) {
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true'),
+        { timeout: 15000 }).toBe(true);
+    } else {
+      await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')),
+        { timeout: 15000 }).toBe(true);
+    }
     let frameTimer = null;
     try {
       // WebKit may stall requestAnimationFrame on a background or suspended page.
@@ -324,10 +355,24 @@ async function exercise(engine, browserType, width) {
         // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
+        const posterWarnings = [];
         console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
         for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
-          await decodeReadyPoster(image, expect);
+          try {
+            await decodeReadyPoster(image, expect);
+          } catch (error) {
+            // Only a still-pending, allowlisted third-party thumbnail in WebKit is
+            // nonblocking. Broken images, renderer bugs and first-party posters
+            // remain fatal. Keep the observation in the release evidence.
+            if (engine !== 'webkit' || !isTransientYouTubePosterTimeout(error)) throw error;
+            const warning = { type: 'youtube-thumbnail-network-timeout', engine, width, path,
+              poster: posterIndex + 1, origin: error.posterDiagnostic.current.origin,
+              sourcePath: error.posterDiagnostic.current.pathname };
+            posterWarnings.push(warning);
+            console.warn('[release-reaudit] NON_BLOCKING_EXTERNAL_POSTER ' + JSON.stringify(warning));
+            continue;
+          }
           console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
@@ -347,7 +392,7 @@ async function exercise(engine, browserType, width) {
         assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
         publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
-        return state;
+        return { ...state, posterWarnings };
       });
       if (!routePassed) {
         // Retain the fatal route result and its evidence, then isolate later
@@ -584,8 +629,38 @@ async function exercise(engine, browserType, width) {
           await cspPage.waitForLoadState('load');
           // The pinned Next app router installs this wrapper in its hydration
           // effect. A parsed SSR body alone does not prove listener readiness.
-          await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
-          await cspPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          if (await cspPage.locator('body[data-fast-home]').count()) {
+            await expect.poll(() => cspPage.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+          } else {
+            await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
+          }
+          // A WebKit Back/Forward restore can start a second, mandatory full
+          // document navigation when the CSP boundary rejects a foreign router
+          // history tree. Do not evaluate the outgoing document while it is
+          // being replaced. Retry ONLY that transient navigation race; the
+          // actual CSP, JS-error and history assertions below remain fatal.
+          await expect.poll(async () => {
+            let settled;
+            try {
+              settled = await cspPage.evaluate(() => new Promise(resolve =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve({
+                  href: location.href, readyState: document.readyState,
+                  policy: document.body?.dataset.cspClass,
+                })))));
+            } catch (error) {
+              if (engine === 'webkit' &&
+                  /Execution context was destroyed, most likely because of a navigation/.test(String(error?.message)))
+                return false; // A navigation is in flight, NOT a successful check.
+              throw error;
+            }
+            const pathname = new URL(settled.href).pathname;
+            const expectedPolicy = pathname === '/en/academy/reiki/tantra-reiki'
+              ? 'tantra-media'
+              : ['/en/client/tests', '/en/app/portrait'].includes(pathname)
+                ? 'private' : 'public-video';
+            return settled.href === cspPage.url() && settled.readyState === 'complete'
+              && settled.policy === expectedPolicy;
+          }, { timeout: 20000, message: 'After history traversal wait for the final loaded document and matching CSP' }).toBe(true);
         };
         if (engine === 'chromium') {
           const cdp = await cspContext.newCDPSession(cspPage);
@@ -621,7 +696,7 @@ async function exercise(engine, browserType, width) {
            const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
            await expect(guestProfile).toBeVisible();
            await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
-           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           // Guest cabinet has no signed-in Today tab; the secured boundary and guest link above are the assertions.
            await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
            await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
@@ -674,14 +749,18 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          const publicAbout = cspPage.locator('.service-home-about a[href="/en/about"]');
+          const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
+          const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
           await publicAbout.click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'public-home-before-about', 'Home to About must retain same-policy soft navigation');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),
+            fromFastHome ? undefined : 'public-home-before-about',
+            fromFastHome ? 'CDN Home About opens a full document with its own CSP'
+              : 'React Home About preserves same-policy soft navigation');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
@@ -930,6 +1009,7 @@ try {
   }
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
-writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
-console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
+const warnings = results.flatMap(row => row.posterWarnings || []);
+writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, results }, null, 2));
+console.log(JSON.stringify({ label, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');

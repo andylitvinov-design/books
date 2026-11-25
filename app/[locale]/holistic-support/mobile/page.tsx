@@ -12,6 +12,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import { buildSupportLearningCatalog, type PublishedLearningCourse } from "@/lib/holistic-support/learning-catalog";
 import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
+import { HolisticStudyAcademy } from "@/components/holistic-study-academy";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
 
@@ -114,7 +115,10 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
     ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
-  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "pump";
+  // Study is a focused Academy entry. Existing video, services and test views remain intact.
+  if (initialChoice === "pump") return <HolisticStudyAcademy locale={locale}
+    learningItems={buildSupportLearningCatalog(locale, [], [])} />;
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 

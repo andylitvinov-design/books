@@ -1,6 +1,7 @@
 name: Holistic House Cabinet journey
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'lib/app/learning-journey*'
@@ -23,11 +24,10 @@ on:
       - 'lib/app/video-progress.js'
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261023154000_hh_journey_free_intro_availability.sql'
-      - '.github/workflows/hh-cabinet-journey.yml'
       - 'components/app/cabinet-today.*'
       - 'lib/app/cabinet-today.mjs'
       - 'tests/cabinet-today.test.mjs'
-      - '.github/workflows/cabinet-today-ci.yml'
+      - '.github/workflows/hh-cabinet-journey.yml'
 permissions:
   contents: read
 concurrency:
@@ -35,6 +35,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   journey:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -44,13 +45,19 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with: {persist-credentials: false}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with: {node-version: 22, cache: npm}
-      - run: npm ci --include=dev --no-audit --no-fund
+        with:
+          node-version: 22
+          cache: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && 'npm' || '' }}
+      # Pure Node contracts do not need a second application dependency install.
+      - name: Install dependencies for independent nonproduction QA
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --include=dev --no-audit --no-fund
       - name: Verified participation and permissions regressions
         run: node --test tests/cabinet-learning-journey.test.mjs tests/workflow-next-route-filters.test.mjs tests/my-progress.test.mjs
       - name: Cabinet Today role, locale, and account-scoped regressions
         run: node --test tests/cabinet-today.test.mjs
       - name: Scoped ESLint
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint components/app/cabinet-today.jsx components/app/cabinet-journey.jsx components/app/profile-domains.jsx components/app/app-workspace.jsx lib/app/learning-journey.mjs lib/app/learning-journey-repository.js app/api/app/'[...path]'/route.js tests/cabinet-learning-journey.test.mjs components/app/my-progress.jsx components/app/academy-video-progress.jsx lib/app/my-progress.mjs lib/app/video-progress.js app/api/app/video-progress/route.js tests/my-progress.test.mjs
       - name: TypeScript
         # Source-only specialist: one required global tsc in production Core.

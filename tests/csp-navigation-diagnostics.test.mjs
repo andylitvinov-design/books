@@ -215,3 +215,181 @@ test('Telegram anonymous GET is allowed ONLY when exact old Tantra document abor
   for(const time of [99,110,125])
     assert.equal(classifyCspNavigationCancellation({...err,time},info),null);
 });
+
+test('WebKit late Telegram teardown needs verified fetch and <=10ms post-pagehide evidence',()=>{
+  // Run #43669083441: old document pagehide=8666, second error=8667, new init=8711.
+  const tantra=origin+'/en/academy/reiki/tantra-reiki',about=origin+'/en/about';
+  const trace=[
+    {type:'init',time:1000,documentProbe:'tantra',url:tantra},
+    {type:'navigate',time:1195,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:true,navigationType:'traverse',destination:about},
+    {type:'navigate',time:1200,documentProbe:'tantra',url:about,documentClass:'tantra-media',sameDocument:false,navigationType:'replace',destination:about},
+    {type:'pagehide',time:1400,documentProbe:'tantra'},
+    {type:'init',time:1445,documentProbe:'about',url:about},
+  ];
+  const seen=[{type:'fetch-start',path:'/api/public/telegram-diagnostic',rsc:false,documentProbe:'tantra',time:1392}];
+  const err={...diagnostic(origin+'/api/public/telegram-diagnostic',1401),phase:'back-from-tantra'};
+  const info={...detail,lifecycle:trace,fetchTelemetry:seen};
+  assert.equal(classifyCspNavigationCancellation(err,info)?.kind,'webkit-traced-telegram-post-pagehide');
+  for(const override of [
+    {engine:'chromium'},{readiness:'loaded-history'},{fetchTelemetry:[]},
+    {fetchTelemetry:[{...seen[0],documentProbe:'other'}]},
+    {fetchTelemetry:[{...seen[0],time:1199}]},
+    {fetchTelemetry:[{...seen[0],time:1401}]},
+    {fetchTelemetry:[{...seen[0],path:'/api/admin/private'}]},
+    {lifecycle:trace.filter(e=>e.type!=='pagehide')},
+    {lifecycle:trace.filter(e=>e.type!=='navigate'||e.sameDocument)},
+    {lifecycle:trace.filter(e=>e.type!=='init'||e.documentProbe!=='about')},
+    {lifecycle:[...trace,{type:'policy-violation',documentProbe:'tantra',time:1400}]},
+    {lifecycle:[...trace,{type:'window-error',documentProbe:'tantra',time:1400}]},
+    {lifecycle:trace.map(e=>e.type==='init'&&e.documentProbe==='tantra'?{...e,url:about}:e)},
+    {lifecycle:trace.map(e=>e.type==='init'&&e.documentProbe==='about'?{...e,time:1401}:e)},
+  ]) assert.equal(classifyCspNavigationCancellation(err,{...info,...override}),null);
+  for(const time of [1199,1400,1411,1445,1500])
+    assert.equal(classifyCspNavigationCancellation({...err,time},info),null,'time '+time);
+  for(const url of [origin+'/api/public/telegram-diagnostic?x=1',origin+'/api/admin/private','https://other.test/api/public/telegram-diagnostic'])
+    assert.equal(classifyCspNavigationCancellation({...err,stack:diagnostic(url,1401).stack},info),null);
+  assert.equal(classifyCspNavigationCancellation({...err,phase:'initial'},info),null);
+});
+
+test('WebKit rapid Forward from Tests to home needs exact old RSC fetch provenance', () => {
+  // Run 43722642549 / 390px: navigate 5924, fetch 5947, diagnostic 5953,
+  // pagehide 5990 and next home document 6002 (relative times below).
+  const old=origin+'/en/client/tests', home=origin+'/';
+  const life=[
+    {type:'init',time:1000,documentProbe:'tests',url:old},
+    {type:'navigate',time:1024,documentProbe:'tests',documentClass:'private',sameDocument:false,
+      navigationType:'traverse',destination:home},
+    {type:'pagehide',time:1090,documentProbe:'tests'},
+    {type:'init',time:1102,documentProbe:'home',url:home},
+  ];
+  const fetches=[{type:'fetch-start',path:'/',rsc:true,documentProbe:'tests',time:1047}];
+  const state={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const error={...diagnostic(home+'?_rsc=KDPtKEcIGJvAs2D9',1053),phase:'forward-to-public-home'};
+  assert.equal(classifyCspNavigationCancellation(error,state)?.kind,'webkit-hard-navigation-fetch-cancellation');
+  for (const phase of [undefined,'initial','back-to-public-home','forward-to-tantra'])
+    assert.equal(classifyCspNavigationCancellation({...error,phase},state),null);
+  for (const variant of [{engine:'chromium'},{readiness:'loaded-history'},
+    {fetchTelemetry:[]},{fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:false}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'other'}]},
+    {fetchTelemetry:[{...fetches[0],time:1023}]},
+    {fetchTelemetry:[{...fetches[0],time:1054}]},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='navigate')},
+    {lifecycle:life.filter(e=>e.type!=='init'||e.documentProbe!=='home')},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'tests',time:1052}]},
+    {lifecycle:[...life,{type:'window-error',documentProbe:'tests',time:1052}]},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='tests'?{...e,url:origin+'/en/client'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'public-video'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,sameDocument:true}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='pagehide'?{...e,time:1052}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:origin+'/en/about'}:e)},
+  ]) assert.equal(classifyCspNavigationCancellation(error,{...state,...variant}),null);
+  for(const time of [1023,1090,1102,1150])
+    assert.equal(classifyCspNavigationCancellation({...error,time},state),null,'time '+time);
+  for(const url of [home,home+'?_rsc=',home+'?_rsc=x&other=1',
+    origin+'/en/about?_rsc=x','https://other.test/?_rsc=x'])
+    assert.equal(classifyCspNavigationCancellation({...error,stack:diagnostic(url,1053).stack},state),null,url);
+});
+
+test('English My Space metadata cancellation needs the exact old-home fetch plus proven WebKit About teardown',()=>{
+  // Run 43742140905 / 390px: home init=3369, pageshow=3700,
+  // navigate=3723, diagnostic=3869, pagehide=3872,
+  // About init=3881, About DOMContentLoaded=4005.
+  const home=origin+'/',about=origin+'/en/about';
+  const life=[
+    {type:'init',time:1000,documentProbe:'home',url:home},
+    {type:'pageshow',time:1331,documentProbe:'home',documentClass:'public-video'},
+    {type:'navigate',time:1354,documentProbe:'home',documentClass:'public-video',
+      navigationType:'traverse',sameDocument:false,destination:about},
+    {type:'pagehide',time:1503,documentProbe:'home'},
+    {type:'init',time:1512,documentProbe:'about',url:about},
+    {type:'domcontentloaded',time:1636,documentProbe:'about',documentClass:'public-video'},
+  ];
+  const fetches=[{type:'fetch-start',path:'/api/public/english-intro-video',
+    rsc:false,documentProbe:'home',time:1338}];
+  const state={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const diagnosticError={...diagnostic(origin+'/api/public/english-intro-video',1500),
+    phase:'forward-to-public'};
+  assert.equal(classifyCspNavigationCancellation(diagnosticError,state)?.kind,
+    'webkit-traced-english-intro-teardown');
+  for(const phase of [undefined,'initial','forward-to-tantra','forward-to-public-home','back-to-private']){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,phase},state),null);
+  }
+  for(const override of [{engine:'chromium'},{readiness:'loaded-history'},
+    {fetchTelemetry:[]},{fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:true}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'about'}]},
+    {fetchTelemetry:[{...fetches[0],time:999}]},
+    {fetchTelemetry:[{...fetches[0],time:1501}]},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='pageshow')},
+    {lifecycle:life.filter(e=>e.type!=='domcontentloaded')},
+    {lifecycle:life.filter(e=>e.type!=='navigate')},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'private'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,sameDocument:true}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/client'}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:about}:e)},
+    {lifecycle:life.map(e=>e.type==='pagehide'?{...e,time:1499}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='about'?{...e,time:1713}:e)},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'home',time:1498}]},
+    {lifecycle:[...life,{type:'window-error',documentProbe:'home',time:1498}]},
+  ]) assert.equal(classifyCspNavigationCancellation(diagnosticError,
+    {...state,...override}),null,JSON.stringify(override));
+  for(const ms of [1353,1450,1504,1512,1700]){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,time:ms},state),null,'time '+ms);
+  }
+  for(const url of ['/api/public/english-intro-video?session=private',
+    '/api/public/english-intro-video?_rsc=foo',
+    '/api/public/english-intro-video/other','/api/admin/private',
+    '/api/public/telegram-diagnostic','/api/app/guest/bootstrap',
+    '/en/about?_rsc=x','https://other.test/api/public/english-intro-video']){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,
+      stack:diagnostic(url.startsWith('http')?url:origin+url,1500).stack},state),null,url);
+  }
+});
+
+test('English My Space on Back-to-private requires observed old home GET and real private Tests document',()=>{
+  const home=origin+'/',privateTests=origin+'/en/client/tests';
+  const life=[
+    {type:'init',time:1000,documentProbe:'home',url:home},
+    {type:'pageshow',time:1331,documentProbe:'home',documentClass:'public-video'},
+    {type:'navigate',time:1354,documentProbe:'home',documentClass:'public-video',
+      sameDocument:false,navigationType:'traverse',destination:privateTests},
+    {type:'pagehide',time:1503,documentProbe:'home'},
+    {type:'init',time:1512,documentProbe:'private',url:privateTests},
+    {type:'domcontentloaded',time:1636,documentProbe:'private',documentClass:'private'},
+  ];
+  const fetches=[{type:'fetch-start',path:'/api/public/english-intro-video',
+    rsc:false,documentProbe:'home',time:1338}];
+  const info={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const error={...diagnostic(origin+'/api/public/english-intro-video',1500),
+    phase:'back-to-private'};
+  assert.equal(classifyCspNavigationCancellation(error,info)?.kind,'webkit-traced-english-intro-teardown');
+  for(const overrides of [
+    {engine:'chromium'},{readiness:'loaded-history'},{fetchTelemetry:[]},
+    {fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:true}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'private'}]},
+    {fetchTelemetry:[{...fetches[0],time:1501}]},
+    {lifecycle:life.filter(e=>e.type!=='pageshow')},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='domcontentloaded')},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'private'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='domcontentloaded'?{...e,documentClass:'public-video'}:e)},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'home',time:1498}]},
+    {lifecycle:[...life,{type:'unhandled-rejection',documentProbe:'home',time:1498}]},
+  ])assert.equal(classifyCspNavigationCancellation(error,{...info,...overrides}),null,
+    'Only proven old-home teardown may be classified');
+  for(const change of [
+    {phase:'forward-to-public'},{time:1353},{time:1450},{time:1504},
+    {stack:diagnostic(origin+'/api/public/english-intro-video?secret=bad',1500).stack},
+    {stack:diagnostic('https://other.test/api/public/english-intro-video',1500).stack},
+  ])assert.equal(classifyCspNavigationCancellation({...error,...change},info),null);
+});

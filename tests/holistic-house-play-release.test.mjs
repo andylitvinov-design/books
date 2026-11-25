@@ -68,6 +68,28 @@ test('a trusted staged HH build becomes API 36, versioned and signed using envir
   })
 })
 
+test('manual disposable-key compiler smoke uses versions accepted by the real release preparer', () => {
+  const workflow = readSource('.github/workflows/holistic-house-native.yml')
+  const name = '      - name: API 36 signed AAB and APK compiler smoke (disposable key, never published)'
+  const start = workflow.indexOf(name)
+  assert.ok(start >= 0, 'manual compiler smoke step exists')
+  const next = workflow.indexOf('\n      - name:', start + name.length)
+  const step = workflow.slice(start, next < 0 ? undefined : next)
+  const version = key => {
+    const match = step.match(new RegExp("^          " + key + ": '([^']+)'$", 'm'))
+    assert.ok(match, key + ' is explicit in the actual smoke step')
+    return match[1]
+  }
+  fixture(({ run, read }) => {
+    const versionCode = version('HH_PLAY_VERSION_CODE')
+    const versionName = version('HH_PLAY_VERSION_NAME')
+    const result = run({ HH_PLAY_VERSION_CODE: versionCode, HH_PLAY_VERSION_NAME: versionName })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(read('android/app/build.gradle').includes('versionCode ' + versionCode))
+    assert.ok(read('android/app/build.gradle').includes('versionName "' + versionName + '"'))
+  })
+})
+
 test('missing keys, incorrect identity, and unsafe version inputs fail before any file mutation', () => {
   for (const badEnv of [
     { HH_ANDROID_KEYSTORE_PASSWORD: '' },

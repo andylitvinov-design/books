@@ -70,8 +70,20 @@ async function verify(engine, browser, locale, width) {
       assert.equal(await root.locator('[data-offer-action="'+kind+'"]').count(),2,
         label+": two usable compact "+kind+" offers");
     }
-    await root.locator('[data-direction-filter="work-stress"]').click();
-    assert.equal(await root.locator('[data-direction-filter="work-stress"]').getAttribute("aria-pressed"),"true",
+    const workStress = root.locator('[data-direction-filter="work-stress"]');
+    // The server intentionally disables topic controls until the React handler
+    // hydrates. A real WebKit click must commit selection, not merely dispatch
+    // while the button is still pre-hydration or the state update is pending.
+    await page.waitForFunction(() => {
+      const filter = document.querySelector(
+        '[data-direction-offers="business"] [data-direction-filter="work-stress"]');
+      return !!filter && !filter.disabled;
+    }, null, {timeout:15000});
+    await workStress.click();
+    await page.waitForFunction(() => document.querySelector(
+      '[data-direction-offers="business"] [data-direction-filter="work-stress"]')
+      ?.getAttribute("aria-pressed") === "true", null, {timeout:10000});
+    assert.equal(await workStress.getAttribute("aria-pressed"),"true",
       label+": focus selection reacts");
     const sessionMore = root.locator('[data-direction-show-more="session"]');
     await sessionMore.click();

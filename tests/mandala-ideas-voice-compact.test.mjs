@@ -44,7 +44,7 @@ test("My Voice owns real recorder/upload; cloud consent and apply remain Voice-o
  assert.ok(l.includes('getUserMedia({audio:true})'));
  assert.equal((s.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  const mobile=read("components/mandala-video-mobile.module.css");
- assert.match(mobile,/\.ideasSubtabs\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(mobile,/\.ideasSubtabs\{\s*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
  assert.ok(c.includes('>.voiceChoices{order:4;margin-bottom:0}'));
  assert.ok(c.includes('>.action{order:5}'));
 });

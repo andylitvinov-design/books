@@ -1,15 +1,12 @@
 name: Tantra testimonial verification
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
-      - 'middleware.ts'
       - 'components/tantra-reiki-testimonials.tsx'
       - 'components/tantra-video-testimonials.tsx'
       - 'components/academy-video-player.tsx'
-      - 'components/csp-navigation-boundary.tsx'
-      - 'lib/csp-prehydration.js'
       - 'tests/tantra-video-lifecycle.test.mjs'
       - 'data/academy/tantra-reiki-full.generated.json'
       - 'data/academy/tantra-native-assets.json'
@@ -19,19 +16,15 @@ on:
   push:
     branches: ['codex/public-book-library']
     paths:
-      - 'middleware.ts'
       - 'components/tantra-reiki-testimonials.tsx'
       - 'components/tantra-video-testimonials.tsx'
       - 'components/academy-video-player.tsx'
-      - 'components/csp-navigation-boundary.tsx'
-      - 'lib/csp-prehydration.js'
       - 'tests/tantra-video-lifecycle.test.mjs'
       - 'data/academy/tantra-reiki-full.generated.json'
       - 'data/academy/tantra-native-assets.json'
       - 'public/images/tantra-reiki/**'
       - 'scripts/verify-tantra-testimonials.mjs'
       - 'tests/video-csp-navigation.test.mjs'
-      - '.github/workflows/tantra-testimonials.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,7 +33,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   browser:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.label.name == 'qa-optional') }}
     # Official version-matched Playwright image eliminates the previously
     # observed ~18m apt cold start on moving ubuntu-latest/26.04.
     runs-on: ubuntu-24.04

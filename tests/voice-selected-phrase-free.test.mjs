@@ -126,6 +126,7 @@ test("actual voice route never calls paid fallback for guest modes after free pr
   const {runInNewContext}=await import("node:vm");
   const ts=(await import("typescript")).default;
   const voice=await import("../lib/mandala/voice-studio.mjs");
+  const fish=await import("../lib/mandala/voice-studio-fish.mjs");
   const calls=[],rates=[];
   class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status;}}
   class FakeResponse{constructor(body,options={}){this.body=body;this.status=options.status||200;this.headers=options.headers||{};}
@@ -138,6 +139,8 @@ test("actual voice route never calls paid fallback for guest modes after free pr
     "@/lib/app/database":{consumeRate:async(_config,rule)=>rates.push(rule.op)},
     "@/lib/app/http":{readBody:async request=>request.syntheticBody,PRIVATE_HEADERS:{},safeError:e=>({code:e.code||"ERROR",status:e.status||500})},
     "@/lib/mandala/voice-studio.mjs":voice,
+    "@/lib/mandala/voice-studio-fish.mjs":fish,
+    "@/lib/mandala/voice-studio-fish-provider.mjs":{requestFishWav:async()=>{calls.push("fish");throw new AppError("FISH_CALL_FORBIDDEN",500);}},
     "@/lib/mandala/voice-studio-provider.mjs":{requestStudioAudio:async()=>{calls.push("free");throw new AppError("FREE_UNAVAILABLE",503);}},
     "@/lib/mandala/voice-studio-openrouter-provider.mjs":{requestOpenRouterStudioAudio:async()=>{calls.push("paid");return new Uint8Array([1,2,3]);}},
   };
@@ -156,8 +159,28 @@ test("actual voice route never calls paid fallback for guest modes after free pr
     assert.ok(!rates.includes("voice-studio-openrouter-paid-day"),mode+" must not consume paid quota");
   }
   calls.length=0;rates.length=0;
+  const fishBlocked=await exports.POST({syntheticBody:{provider:"fish",mode:"sample",voiceId:"fish-en",language:"en"},headers:new Headers()});
+  assert.equal(fishBlocked.status,503,"unapproved Fish must fail closed");
+  assert.ok(!calls.includes("fish")&&!calls.includes("paid"),"no Fish or paid provider without separate approval");
+  calls.length=0;rates.length=0;
   const custom=await exports.POST({syntheticBody:{mode:"custom",voiceId:"maya",language:"en",text:"Synthetic operator text",consent:true},headers:new Headers()});
   assert.equal(custom.status,200);
   assert.ok(calls.includes("paid"),"the explicitly authenticated optional custom path remains intact");
   assert.ok(rates.includes("voice-studio-openrouter-paid-day"));
+});
+
+test("Fish RU/EN cards are visible and genuine in the existing Therapy phrase Voice picker",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ const policy=read("lib/mandala/voice-studio-fish.mjs");
+ const route=read("app/api/holistic-support/voice/route.js");
+ assert.ok(ui.includes('"fish","own"'),"Fish is the fourth selector, no duplicate editor");
+ assert.ok(ui.includes('data-fish-voice-purpose'),"Coaching/Meditation filters stay on the same page");
+ assert.ok(ui.includes('FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose).map(v=><div'),"approved Fish voices, purpose-filtered");
+ assert.ok(ui.includes('fishAvailableLanguages.includes(v.language)'),"fail closed without activation");
+ assert.ok(ui.includes('provider:"fish",mode:"sample"'),"fixed public Fish sample");
+ assert.ok(ui.includes('provider:"fish",mode:"affirmations"'),"approved phrase goes to Fish itself");
+ assert.ok(ui.includes('voiceGender==="fish"?f.consent'),"Fish data opt-in is independent");
+ assert.ok(ui.includes('onAttach({file,speechFile'),"same WAV and video attachment");
+ assert.ok(policy.includes("'affirmations'"));
+ assert.ok(route.includes('requestFishWav'));
 });

@@ -10,7 +10,12 @@ import {normalizeClientCoachingContext} from '../lib/personal-coaching/client-co
 import {isGrowClarityQuestion,normalizeGrowPlanExtras} from '../lib/personal-coaching/grow-20.mjs'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
-const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+const server=source
+  // The isolated VM fixture has no Node module loader. Strip the new
+  // multi-line archive import as well as the existing single-line imports;
+  // production encryption and owner-scoped archive paths remain unchanged.
+  .replace(/^import \{MY_COACH_PROTOCOL_PAGE_SIZE,[\s\S]*?protocol-archive\.mjs'\n/m,'')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
 const a={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}
 const b={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}
 

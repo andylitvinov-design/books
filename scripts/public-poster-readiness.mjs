@@ -1,3 +1,26 @@
+// Only a pending native WebKit request for an exact public YouTube thumbnail
+// may be reported as a network warning. This does NOT soften decode failures,
+// completed HTTP errors, local posters, missing DOM or source-identity checks.
+const remoteYouTubePosterOrigins = new Set(['https://i.ytimg.com', 'https://img.youtube.com']);
+const remoteYouTubePosterPath = /^\/vi(?:_webp)?\/[A-Za-z0-9_-]{11}\/(?:default|mqdefault|hqdefault|sddefault|maxresdefault)\.(?:jpg|webp)$/;
+
+function isRemoteYouTubePosterAsset(value) {
+  return Boolean(value && remoteYouTubePosterOrigins.has(value.origin)
+    && remoteYouTubePosterPath.test(value.pathname ?? '')
+    && value.search === '' && value.hash === '');
+}
+
+export function isTransientYouTubePosterTimeout(error) {
+  const poster = error?.posterDiagnostic;
+  return Boolean(
+    poster && poster.connected === true && poster.visibility === 'visible'
+    && poster.complete === false && poster.naturalWidth === 0 && poster.naturalHeight === 0
+    && isRemoteYouTubePosterAsset(poster.src) && isRemoteYouTubePosterAsset(poster.current)
+    && /Current poster must finish loading before strict decode/.test(String(error.message ?? ''))
+    && /Timeout 7000ms exceeded while waiting on the predicate/.test(String(error.message ?? ''))
+  );
+}
+
 // Browser lazy loading does not fetch images hidden by a closed disclosure.
 // Open every closed ancestor from outside in through its real summary control.
 export async function openPosterDisclosures(image) {
@@ -79,10 +102,20 @@ export async function decodeReadyPoster(image, expect) {
   } catch (error) {
     const identity = await image.evaluate(el => {
       const path = value => { if (!value) return null; try { const url = new URL(value, document.baseURI); return ['http:', 'https:'].includes(url.protocol) ? url.pathname : null; } catch { return null; } };
-      return { srcPath: path(el.getAttribute('src')), currentSrcPath: path(el.currentSrc), complete: el.complete,
+      const sourceInfo = value => {
+        if (!value) return null;
+        try {
+          const url = new URL(value, document.baseURI);
+          return { origin: url.origin, pathname: url.pathname, search: url.search, hash: url.hash };
+        } catch { return null; }
+      };
+      return { srcPath: path(el.getAttribute('src')), currentSrcPath: path(el.currentSrc),
+        src: sourceInfo(el.getAttribute('src')), current: sourceInfo(el.currentSrc), complete: el.complete,
         naturalWidth: el.naturalWidth, naturalHeight: el.naturalHeight, connected: el.isConnected, visibility: document.visibilityState };
     }).catch(() => ({ unavailable: true }));
-    throw new Error(`${error.message}; poster=${JSON.stringify(identity)}`, { cause: error });
+    const failure = new Error(`${error.message}; poster=${JSON.stringify(identity)}`, { cause: error });
+    failure.posterDiagnostic = identity;
+    throw failure;
   } finally {
     await image.dispose().catch(() => {});
   }

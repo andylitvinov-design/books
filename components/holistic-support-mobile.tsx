@@ -16,6 +16,7 @@ import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/compo
 import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
 import { HolisticUnifiedPath } from "@/components/holistic-unified-path";
+import { HolisticStudyJourney } from "@/components/holistic-study-journey";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -799,7 +800,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
 
   return (
     <main className={styles.page} data-holistic-mobile-alternative
-      data-support-tool-hydrated={photoHydrated?"true":"false"} lang={locale}>
+      data-support-tool-hydrated={photoHydrated?"true":"false"} lang={locale}
+      data-holistic-study-view={choice === "pump" ? "true" : undefined}>
       <div className={styles.container}>
         <header className={styles.compactAppHeader} data-support-app-header>
           <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false} className={styles.compactBrand}>
@@ -923,8 +925,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
           </section>
         </div>
 
-        <HolisticUnifiedPath locale={locale} activeChoice={choice}
-          suggestedFocus={goalSelection ? focus : null} />
+        {choice === "pump" ? <HolisticStudyJourney locale={locale} learningItems={learningItems} /> :
+          <HolisticUnifiedPath locale={locale} activeChoice={choice}
+            suggestedFocus={goalSelection ? focus : null} />}
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide

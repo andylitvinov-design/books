@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockAppPath,isUnifiedMobileDockEditorialPath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
 import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("one seven-button dock includes Services and My Coach on existing destinations",()=>{
@@ -15,7 +16,7 @@ test("one seven-button dock includes Services and My Coach on existing destinati
    "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/services",
-   "/"+locale+"/holistic-support/mobile",
+   "/"+locale+"/shamanica",
    "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
@@ -26,9 +27,9 @@ test("one seven-button dock includes Services and My Coach on existing destinati
 test("shared seven-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Services",practice:"Study",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Услуги",practice:"Обучение",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Servicios",practice:"Estudiar",profile:"Perfil"}
+  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanic",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманик",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanic",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
@@ -83,7 +84,7 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
 
 test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
  for(const locale of ["en","ru","es"]){
-  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
+  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","shamanica","practice",
    "app/messages","app/portrait","app/practice","temple-insights","masters","my-coach","services","services/free-situation-review"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
@@ -91,6 +92,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/shamanica"),"practice");
   // Public Work is the second Profile mode; only the protected editor is Study.
   assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"profile");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
@@ -231,11 +233,17 @@ test("MyTube projects ONLY published public Academy/Library sources; never fabri
  assert.equal(rankDiscoveryVideos(rows,{area:"business"}).length,0);
 });
 
-test("MyTube unified branch triggers real macOS WebKit, without hiding specialist failures",()=>{
+test("MyTube unified dock media changes require BASE-trusted WebKit without hiding specialist failures",()=>{
  const workflow=read(".github/workflows/holistic-support-mandala.yml");
  const guard=workflow.split("  voice-webkit-macos:")[1]?.split("    runs-on:")[0]||"";
+ const preflight=workflow.split("  webkit_preflight:")[1]?.split("  voice-webkit-macos:")[0]||"";
  assert.match(guard,/github.event.pull_request.draft == false/);
- assert.match(guard,/startsWith\(github.head_ref, 'feat\/mytube-unified-six-bottom-'\)/);
+ assert.match(guard,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+ assert.match(guard,/needs: \[webkit_preflight\]/);
+ assert.match(preflight,/git show "\$tested_base:lib\/ci\/merge-check-light\.mjs"/);
+ assert.match(preflight,/requiresRealMediaWebKit\(changed\)/);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"components/unified-mobile-dock.tsx"}]),true);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"tests/unified-six-dock.test.mjs"}]),false);
  assert.doesNotMatch(guard,/if:\s*\$\{\{\s*always\(\)/);
  assert.match(workflow,/runs-on: macos-15/);
  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
-import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
+import { BookOpen, Film, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
@@ -32,6 +32,9 @@ type Props = {
   focus:GuidedMeditationFocus;disabled:boolean;
   /** Optional standalone entry: one meditation + eight-day outline, without a purchase. */
   coursePreview?:boolean;
+  /** Compact Therapy first screen; no change to generator, privacy, consent. */
+  compactTherapy?:boolean;
+  onCourseStart?:()=>void;
   /** Only the approved creative concept; no private draft is sent to AI. */
   approvedVideoConcept?:ApprovedVideoConcept|null;
   /** A locally composed user-approved course script. Never sent to a provider automatically. */
@@ -160,8 +163,32 @@ const courseCopy={
   },
 } as const;
 
+const courseLanding={
+ en:{title:"My video therapy course",tag:"YOUR PERSONAL PATH · 8 VIDEOS",
+  lead:"Eight guided topics shaped by your goal. Review the plan, then continue to Ready.",
+  prompt:"Your main focus",placeholder:"For example: speak up calmly and feel grounded",
+  topics:"Your eight video topics",cost:"Price of the 8-video course",
+  quote:"Quote confirmed before ordering",free:"Generate 1 video free",
+  paid:"Create my personal course · 8 videos",advance:"Advanced meditation scripts",
+  note:"These are eight planned topics, not eight completed films. Payment and delivery require separate confirmation."},
+ ru:{title:"Мой курс видеотерапии",tag:"МОЙ ПУТЬ · 8 ВИДЕО",
+  lead:"Восемь связанных тем под вашу цель. Проверьте план и перейдите во вкладку Ready.",
+  prompt:"Над чем будем работать?",placeholder:"Например: спокойно говорить о своих желаниях",
+  topics:"Программа из восьми видео",cost:"Стоимость курса из 8 видео",
+  quote:"Уточняется до оформления заказа",free:"Сгенерировать 1 видео бесплатно",
+  paid:"Создать личный курс · 8 видео",advance:"Настроить сценарии медитаций",
+  note:"Это план восьми тем, а не восемь готовых роликов. Оплата и доставка подтверждаются отдельно."},
+ es:{title:"Mi curso de vídeo personal",tag:"MI CAMINO · 8 VÍDEOS",
+  lead:"Ocho temas conectados a tu objetivo. Revisa el plan y continúa a Ready.",
+  prompt:"¿En qué quieres trabajar?",placeholder:"Por ejemplo: hablar con calma y confianza",
+  topics:"Plan de ocho vídeos",cost:"Precio del curso de 8 vídeos",
+  quote:"Se confirma antes del pedido",free:"Generar 1 vídeo gratis",
+  paid:"Crear mi curso personal · 8 vídeos",advance:"Editar guiones y meditación",
+  note:"Son ocho temas previstos, no ocho vídeos terminados. El pago y la entrega se confirman aparte."}
+} as const;
+
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,compactTherapy=false,onCourseStart,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated
 }:Props) {
   const t=copy[locale];
   const course=courseCopy[locale];
@@ -210,6 +237,11 @@ export function MandalaPersonalMeditation({
   useEffect(()=>{writerAbortRef.current?.abort();},[signature]);
   useEffect(()=>()=>writerAbortRef.current?.abort(),[]);
   const stale=Boolean(script&&generatedFor!==signature);
+  const landing=courseLanding[locale];
+  const coursePlan=useMemo(()=>buildAdaptiveMeditationOutline({
+    locale,theme:actualTheme,request:effectiveWish||focus.goal,
+    difficulty:focus.difficulty,details:focus.details,
+  }),[locale,actualTheme,effectiveWish,focus.goal,focus.difficulty,focus.details]);
   useEffect(()=>{
     if(!seedScript){
       const previousSeed=seededScriptRef.current;
@@ -459,7 +491,23 @@ export function MandalaPersonalMeditation({
     document.body.appendChild(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),3000);
   };
-  return (
+  // Optional choices remain editable in their existing disclosure.
+  const contextPills=(
+        <div className={css.chips}>
+          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
+          <span>{t.scene}: {scene}</span>
+          <span>{t.sound}: {sound||t.quiet}</span>
+          <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
+        </div>
+  );
+  const extraField=(
+    <label className={css.extra}>{t.extra}
+                <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
+                  data-meditation-extra placeholder={t.placeholder}
+                  onChange={event=>setExtra(event.currentTarget.value)}/>
+              </label>
+  );
+  const fullEditor = (
     <section className={css.panel} id="personal-meditation" data-video-personal-meditation
       aria-labelledby="personal-meditation-heading">
       <header className={css.heading}>
@@ -474,15 +522,15 @@ export function MandalaPersonalMeditation({
           placeholder={course.placeholder} value={courseRequest}
           onChange={event=>setCourseRequest(event.currentTarget.value)}/>
       </label>:null}
-      <div className={css.context} data-meditation-context aria-label={t.filters}>
-        <small>{t.filters}</small>
-        <div className={css.chips}>
-          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
-          <span>{t.scene}: {scene}</span>
-          <span>{t.sound}: {sound||t.quiet}</span>
-          <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
-        </div>
-      </div>
+      {compactTherapy?
+        <details className={css.context} data-meditation-context aria-label={t.filters}>
+          <summary>{t.filters} · {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</summary>
+          {contextPills}
+        </details>:
+        <div className={css.context} data-meditation-context aria-label={t.filters}>
+          <small>{t.filters}</small>
+          {contextPills}
+        </div>}
       <div className={css.quickGrid} data-meditation-main-filters>
             <label>{t.meditationTheme}
               <select data-meditation-topic value={meditationTheme} disabled={disabled}
@@ -508,14 +556,11 @@ export function MandalaPersonalMeditation({
           </select>
         </label>
       </div>
-          <label className={css.extra}>{t.extra}
-            <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
-              data-meditation-extra placeholder={t.placeholder}
-              onChange={event=>setExtra(event.currentTarget.value)}/>
-          </label>
+      {!compactTherapy?extraField:null}
       <details className={css.customize} data-meditation-accents>
         <summary><Sparkles size={16} aria-hidden="true"/>{t.customize}<ChevronDown size={16} aria-hidden="true"/></summary>
         <div className={css.customBody}>
+          {compactTherapy?extraField:null}
           <p>{t.selected}</p>
           <div className={css.accentChips} role="group" aria-label={t.customize}>
             {accents.map(id=><button key={id} type="button" disabled={disabled}
@@ -698,4 +743,34 @@ export function MandalaPersonalMeditation({
       <p className={css.privacy}><Check size={14} aria-hidden="true"/>{t.privacy}</p>
     </section>
   );
+  return coursePreview&&compactTherapy?
+  <section className={css.courseLanding} data-therapy-eight-course-preview>
+    <header className={css.courseLandingHead}><span><BookOpen size={22}/></span>
+      <div><small>{landing.tag}</small><h3>{landing.title}</h3></div><b>01–08</b></header>
+    <p className={css.courseLandingLead}>{landing.lead}</p>
+    <label className={css.courseLandingFocus}>{landing.prompt}
+      <textarea data-therapy-course-focus rows={2} maxLength={160} disabled={disabled}
+        value={courseRequest} placeholder={landing.placeholder}
+        onChange={event=>setCourseRequest(event.currentTarget.value)}/>
+    </label>
+    <strong className={css.courseLandingLabel}><BookOpen size={16}/>{landing.topics}</strong>
+    <ol className={css.courseLandingTopics} data-therapy-eight-topics>
+      {coursePlan.days.map(day=><li key={day.id} data-course-topic={day.number}>
+        <span>{String(day.number).padStart(2,"0")}</span><strong>{day.title}</strong>
+      </li>)}
+    </ol>
+    <div className={css.courseLandingPrice} data-therapy-course-price>
+      <span>{landing.cost}</span><strong>{landing.quote}</strong>
+    </div>
+    <div className={css.courseLandingActions}>
+      <button type="button" disabled={disabled||!onCourseStart} onClick={onCourseStart}
+        data-therapy-go-ready-free><Film size={19}/>{landing.free}</button>
+      <button type="button" disabled={disabled||!onCourseStart} onClick={onCourseStart}
+        data-therapy-go-ready-course><BookOpen size={19}/>{landing.paid}</button>
+    </div>
+    <p className={css.courseLandingNote}>{landing.note}</p>
+    <details className={css.courseLandingAdvanced}><summary>{landing.advance}<ChevronDown size={16}/></summary>
+      {fullEditor}
+    </details>
+  </section>:fullEditor;
 }
