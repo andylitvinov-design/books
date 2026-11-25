@@ -1899,3 +1899,33 @@ test('Public Services, practitioner editor and Home delegate only duplicate PR l
   assert.ok(home.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then'));
   assert.ok(home.includes('HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs'));
 });
+
+test('CI-only Public Services plus Home/Practice lint policy does not build the storefront',()=>{
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const paths=['.github/workflows/hh-public-services-production.yml',
+    '.github/workflows/hh-home-conversation.yml','.github/workflows/practice-visual-services.yml',
+    'scripts/ci-public-services-plan.mjs','tests/ci-public-services-plan.test.mjs',
+    'tests/ci-pr-selective-workflows.test.mjs'];
+  const simulate=rows=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='show')return Buffer.from(workflow(args[1].split('/').at(-1)));
+      if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+      throw Error('Unexpected git request');
+    });
+  const rows=paths.map(path=>['M',path]);
+  const plan=simulate(rows);
+  assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts','INDEPENDENT_OWNER_OR_CORE',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for(const path of ['middleware.ts','app/api/payments/unknown/route.js',
+    'components/holistic-support-mobile.tsx','.github/workflows/unknown-new.yml']){
+    assert.equal(simulate([...rows,['M',path]]).mode,'full',path);
+  }
+  for(const path of paths.slice(1,3)){
+    assert.equal(simulate([['A',path]]).mode,'full',path+' added');
+    assert.equal(simulate([['D',path]]).mode,'full',path+' deleted');
+  }
+  assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'workflow_dispatch'}).cases,'all');
+});

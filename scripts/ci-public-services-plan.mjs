@@ -394,6 +394,14 @@ export function isTrustedMandalaOwnerPath(path, trigger) {
   return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
     !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
 }
+// These two existing workflow definitions have independent Core/actionlint
+// ownership. A modified CI YAML alone cannot alter the served application.
+// Deliberately outside TRUSTED_CI_CONTRACT_FILES: added/deleted YAML still
+// fails closed in the exact name-status planner.
+const CORE_OWNED_MODIFIED_WORKFLOW = new Set([
+  '.github/workflows/hh-home-conversation.yml',
+  '.github/workflows/practice-visual-services.yml',
+]);
 const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
 // BASE Guard is the independent CI/security policy owner. It, not browser
 // checkout/reiki tests, validates changed policy/workflow files in every PR.
@@ -428,7 +436,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
       protectedPublic = true;
       continue;
     }
-    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
+    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_WORKFLOW.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
