@@ -229,11 +229,11 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   const brand=ui.split('<Link className={styles.sessionBrand} ')[1]?.split('>')[0]
   assert.ok(brand)
   assert.ok(brand.includes("href={'/'+lang}"))
-  assert.ok(brand.includes('onClick={interceptSessionExit}'))
+  assert.ok(brand.includes('{...browseProps}'))
   assert.ok(!brand.includes('/coaching/sessions'))
   const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
   assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
-  assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
+  assert.match(ui,/if\(!protocolSaved&&\(turnsRef\.current\.length>0\|\|speechRef\.current\?\.hasLiveSession\?\.\(\)\)\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
 
 test('chronological live voice report preserves greeting, consecutive utterances and trailing client words',()=>{
@@ -321,4 +321,16 @@ test('speech repair and process instructions never become working goals, semanti
     const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
     assert.match(source,/COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/)
   }
+})
+
+test('active coach browsing preserves original tab; coach profile pauses voice',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/const browseProps=keepCoachTab\?\{target:'_blank',rel:'noopener noreferrer'/)
+  const nav=ui.slice(ui.indexOf('  function pauseForNavigation('),ui.indexOf('  function interceptSessionExit('))
+  assert.match(nav,/speechRef\.current\?\.pauseSession\?\.\(\)/)
+  assert.doesNotMatch(nav,/endWithProtocol|\.stop\?\./)
+  const profile=ui.slice(ui.indexOf('  function openCoachProfile('),ui.indexOf('  function toggleComposer('))
+  assert.match(profile,/const kept=speechRef\.current\?\.pauseSession\?\.\(\)===true/)
+  assert.match(profile,/if\(!kept&&!speechRef\.current\?\.hasLiveSession/)
+  assert.match(ui,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState/)
 })
