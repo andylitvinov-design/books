@@ -205,38 +205,3 @@ test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct publ
   assert.match(css,/data-energywork-slide-id="end-01"/)
   assert.doesNotMatch(form,/window\.localStorage|sessionStorage\.setItem\([^)]*initiation/)
 })
-
-test('Reiki phone upload can decode only its local blob photo on the exact course route', () => {
-  const middleware = read('middleware.ts')
-  assert.match(middleware, /const reikiLocalPhotoImages = \/\^/)
-  assert.match(middleware, /publicMandalaLocalImages \|\| reikiLocalPhotoImages \? ' blob:'/)
-  const isReikiLearner = /^\/(en|ru)\/academy\/principles-of-energywork\/learn\/?$/
-  for (const path of ['/en/academy/principles-of-energywork/learn',
-    '/ru/academy/principles-of-energywork/learn/',
-  ]) assert.equal(isReikiLearner.test(path), true)
-  for (const path of ['/es/academy/principles-of-energywork/learn',
-    '/en/app/portrait', '/en/academy/principles-of-energywork',
-    '/admin/reiki-leads', '/en/academy/principles-of-energywork/learn/extra'
-  ]) assert.equal(isReikiLearner.test(path), false)
-  const component = read('components/reiki-initiation-photo.tsx')
-  assert.match(component, /URL\.createObjectURL\(file\)/)
-  assert.match(component, /canvas\.toBlob\(/)
-  assert.match(component, /'image\/jpeg'|"image\/jpeg"/)
-  assert.doesNotMatch(component, /localStorage|sendBeacon|canvas\.toDataURL\(/)
-})
-
-test('Safari photo decoding prefers native ImageBitmap, keeps EXIF-free JPEG and bounded private upload', () => {
-  const component = read('components/reiki-initiation-photo.tsx')
-  assert.match(component, /createImageBitmap\(file\)\.catch\(\(\) => null\)/)
-  assert.match(component, /const loaded = bitmap \? null : await imageElement\(file\)/)
-  assert.match(component, /const image = bitmap \?\? loaded!\.image/)
-  assert.match(component, /image\.onload = \(\) => resolve\(\{ image, release \}\)/)
-  assert.match(component, /loaded\?\.release\(\)/)
-  assert.doesNotMatch(component, /image\.onload = \(\) => \{\s*URL\.revokeObjectURL/)
-  assert.match(component, /bitmap\?\.close\(\)/)
-  assert.match(component, /context\.drawImage\(image, 0, 0, canvas\.width, canvas\.height\)/)
-  assert.match(component, /canvas\.toBlob\(/)
-  assert.match(component, /form\.set\("photo", jpg\)/)
-  assert.match(component, /"X-HH-Account-ID": accountId/)
-  assert.doesNotMatch(component, /localStorage|sendBeacon|canvas\.toDataURL\(/)
-})

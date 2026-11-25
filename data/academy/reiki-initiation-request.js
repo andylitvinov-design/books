@@ -49,8 +49,8 @@ export function readReikiInitiationRequest(raw) {
       donationInitiations: ids(value.donationInitiations).filter((id) => id !== value.freeInitiation),
       motivation: text(value.motivation, 700),
       personalSession: validPersonalSession(value.personalSession) ? value.personalSession : 'none',
-      certificateRequested: value.certificateRequested === true,
-      certificateSystem: value.certificateRequested === true && REIKI_INITIATION_IDS.includes(value.certificateSystem)
+      certificateRequested: prefix === REIKI_REQUEST_PREFIX_V3 && value.certificateRequested === true,
+      certificateSystem: prefix === REIKI_REQUEST_PREFIX_V3 && value.certificateRequested === true && REIKI_INITIATION_IDS.includes(value.certificateSystem)
         ? value.certificateSystem : '',
     }
   } catch {

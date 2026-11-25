@@ -26,7 +26,7 @@ alter table app_private.telegram_owner_video_jobs
   add column if not exists metadata_edit_expires_at timestamptz;
 -- Supabase migration runners may replay this additive file after the
 -- initial MCP DDL; do not fail on an already installed constraint.
-do $
+do $$
 begin
  if not exists (
    select 1 from pg_constraint c
@@ -48,7 +48,7 @@ begin
         metadata_edit_expires_at is not null)
      );
  end if;
-end $;
+end $$;
 -- Retain the existing FORCE RLS and current manager policy.
 alter table app_private.telegram_owner_video_jobs enable row level security;
 alter table app_private.telegram_owner_video_jobs force row level security;

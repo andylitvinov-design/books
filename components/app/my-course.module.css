@@ -325,3 +325,7 @@
   .compactBaselineRoot{gap:7px}
   .compactBaselineNav button{min-height:34px;padding:5px 6px;font-size:11.5px}
 }
+
+/* The one-screen OPORA welcome uses all space available above the cabinet bar.
+   Do not add the generic course layout's bottom gap beneath this single slide. */
+.stressWelcomeRoot { gap: 0; margin-bottom: 0; max-width: none; }

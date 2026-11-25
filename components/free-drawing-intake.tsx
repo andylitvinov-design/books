@@ -8,19 +8,19 @@ import { coachingIntakeEntryTopic } from "@/lib/coaching/intake-model";
 import styles from "./free-drawing-intake.module.css";
 
 const copy = {
-  en: {
-    eyebrow: "FREE WRITTEN SITUATION REVIEW", title: "Prepare your question privately",
-    lead: "Use the existing coaching questionnaire. Sign in to save an encrypted private draft. Saving does not send it to a coach or create a booking. This is not a free live call.",
-    drawing: "If a drawing helps, use paper and a pen to sketch ME, MY GOAL and MY PROBLEM. Keep the photo on your device until a secure handoff has been agreed with your practitioner. This questionnaire does not upload drawings.",
-    action: "Open private coaching questionnaire",
-    privacy: "Do not send private answers, drawings or test results through WhatsApp, Telegram or email. Contact channels are for scheduling and neutral requests only. Your draft is visible only to you. A symbolic written review is not a medical or mental-health diagnosis.",
+en: {
+    eyebrow: "WRITE YOUR QUESTION PRIVATELY", title: "Would you rather write it all down?",
+    lead: "You can use the questionnaire on this website. Sign in to keep a private, encrypted draft. Saving the draft doesn't send it to Andrey or book a session. The free review is a written reply, not a live call.",
+    drawing: "If a drawing feels useful, take a sheet of paper and mark three things: ME, MY GOAL and MY PROBLEM. Keep any photo on your own device for now. This questionnaire can't upload drawings.",
+    action: "Open the private questionnaire",
+    privacy: "Please don't send personal answers, drawings, test results or medical records through a messenger or email. We'll arrange a protected way to share anything needed. This review isn't a medical diagnosis.",
   },
-  ru: {
-    eyebrow: "БЕСПЛАТНЫЙ ПИСЬМЕННЫЙ РАЗБОР", title: "Подготовьте запрос приватно",
-    lead: "Используйте существующую коучинг-анкету. Войдите, чтобы сохранить зашифрованный личный черновик. Сохранение не отправляет его коучу и не создаёт запись. Это не бесплатный созвон.",
-    drawing: "Если рисунок помогает, изобразите ручкой на бумаге Я, МОЯ ЦЕЛЬ и МОЯ ПРОБЛЕМА. Оставьте фото на своём устройстве до согласования защищённой передачи с мастером. Эта анкета не загружает рисунки.",
-    action: "Открыть приватную коучинг-анкету",
-    privacy: "Не отправляйте личные ответы, рисунки и результаты тестов через WhatsApp, Telegram или email. Каналы связи нужны только для согласования времени и нейтральных заявок. Черновик видите только вы. Символический разбор — не медицинский диагноз.",
+ru: {
+    eyebrow: "ЗАПИСАТЬ ВОПРОС ПРИВАТНО", title: "Удобнее сначала всё записать?",
+    lead: "Можно открыть анкету на сайте и спокойно ответить на вопросы. После входа вы сможете сохранить защищённый черновик. Он не отправится мне автоматически и не создаст запись на сессию. Бесплатный разбор — это письменный ответ, а не созвон.",
+    drawing: "Если захочется, нарисуйте на листе три части: «Я», «Моя цель» и «Моя проблема». Фото пока оставьте у себя. Загрузить рисунок через эту анкету нельзя.",
+    action: "Открыть личную анкету",
+    privacy: "Личные ответы, рисунки, результаты тестов и медицинские документы не отправляйте в мессенджеры или по почте. Если они понадобятся, согласуем защищённый способ передачи. Этот разбор не является медицинской диагностикой.",
   },
   es: {
     eyebrow: "REVISIÓN ESCRITA GRATUITA", title: "Prepara tu consulta en privado",

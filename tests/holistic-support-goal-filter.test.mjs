@@ -44,13 +44,13 @@ test("left CTA expands the existing player, keeps portrait quick match, and has 
   assert.match(mainCss, /\.page \.assessment > \.goalFilterTrigger/);
   assert.match(mainCss, /\.page \.profile > \.recommendButton/);
 });
-test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
+test("four goal-filter sectors retain stable legacy data keys in EN/RU/ES", () => {
   for (const sector of ["energy", "money", "love", "meaning"]) {
     assert.match(editor, new RegExp('id: "' + sector + '"'));
     assert.match(editor, new RegExp('' + sector + ': \{'));
   }
   assert.doesNotMatch(editor, /\{ id: "goals", Icon:|^  goals: \{/m);
-  for (const label of ["Фильтр целей и задач", "Сейчас", "Хочу", "Смыслы", "Love & connection", "Sentido"]) {
+  for (const label of ["Фильтр целей и задач", "Сейчас", "Хочу", "Уверенность и гармония", "Love & connection", "Confianza y armonía"]) {
     assert.ok(editor.includes(label), label);
   }
   assert.match(editor, /data-goal-concern=\{option\.id\}/);
@@ -112,7 +112,7 @@ test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
 test("all former Goals questions, tasks and metrics live inside the single Meaning sector", () => {
-  const meaning = editor.split("  meaning: {\n    concerns: [")[1]?.split("  },")[0] ?? "";
+  const meaning = editor.split("  meaning: {")[1]?.split("  },")[0] ?? "";
   for (const id of ["stuck","distraction","procrastination","fear","tooMany","unclearGoals",
     "emptiness","lostPurpose","valueConflict","noInspiration","uncertainty","littleSpace",
     "direction","nextStep","habits","courage","priorities","motivation",
@@ -127,6 +127,40 @@ test("all former Goals questions, tasks and metrics live inside the single Meani
   assert.doesNotMatch(editor, /goals: "goals", meaning: "meaning"/);
   assert.ok(client.includes('const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"]'));
   assert.ok(!client.includes('energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5'));
+});
+
+test("confidence and harmony aligns top scale, guide, profile, questions and positive 1–10 measures", () => {
+  const profile = read("components/holistic-support-course-profiles.tsx");
+  const labels = [
+    ["Тело и энергия", "Уверенность", "Уверенность и гармония"],
+    ["Body & energy", "Confidence", "Confidence & harmony"],
+    ["Cuerpo y energía", "Confianza", "Confianza y armonía"],
+  ];
+  for (const group of labels) {
+    for (const label of group) assert.ok(editor.includes(label) || client.includes(label), label);
+    assert.ok(profile.includes(group[2]), "course profile mirrors " + group[2]);
+    assert.ok(guide.includes(group[2]), "guide mirrors " + group[2]);
+  }
+  assert.match(client, /id === "meaning" \? t\.foci\.goals : t\.foci\[id\]/,
+    "fourth check-in gets short Confidence, while the filter has the long category");
+  const confidence = editor.split("  meaning: {")[1]?.split("  },")[0] ?? "";
+  for (const phrase of ["Стресс и перегрузка", "Сомнения в себе", "Нет чувства стабильности",
+    "Внутренний конфликт", "Потеря смысла", "Нет ясных целей", "Самореализация",
+    "Уверенность в себе", "Внутренняя устойчивость", "Спокойствие и гармония",
+    "Смыслы и ясность целей", "Умение справляться со стрессом"]) {
+    assert.ok(confidence.includes(phrase), phrase);
+  }
+  assert.equal((confidence.match(/\bmake\("/g) || []).length, 24,
+    "12 non-diagnostic concerns and 12 actionable goals");
+  assert.equal((confidence.match(/\baxis\("/g) || []).length, 6,
+    "six independent higher-is-better now/want measures");
+  assert.equal(goalTopicForSelection({ sector: "meaning", concerns: ["tooMany"] }), "health");
+  assert.equal(goalTopicForSelection({ sector: "meaning", concerns: ["fear"] }), "health");
+  assert.equal(goalTopicForSelection({ sector: "meaning", tasks: ["quiet"] }), "health");
+  assert.equal(goalTopicForSelection({ sector: "meaning", tasks: ["direction"] }), "business");
+  assert.equal(rankSupportGoalVideos({ selection: {sector: "meaning", tasks: ["quiet"]},
+    videos: sample, locale: "ru" }).matchedVideo, false,
+    "related public recordings are not represented as exact confidence therapy");
 });
 
 test("mobile readability: narrower categories and larger legible controls", () => {
@@ -223,4 +257,15 @@ test("new TSX parses with no diagnostics", () => {
   });
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")),[]);
+});
+
+
+// A focused input still owns its current value at pointerdown. Both buttons
+// preserve the native click after preventing blur-triggered WebKit remount.
+test("money editor Save and Next keep native click stable with focused numbers", () => {
+  const actions = editor.slice(editor.indexOf('data-support-goal-category-actions'),
+    editor.indexOf('<fieldset', editor.indexOf('data-support-goal-category-actions')));
+  assert.match(actions, /data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{saveCurrent\}/);
+  assert.match(actions, /data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{nextSector\}/);
+  assert.match(editor, /function nextSector\(\)[\s\S]*?flushSync\(\(\) => \{\s*saveCurrent\(\);\s*\}\)/);
 });

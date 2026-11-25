@@ -132,6 +132,12 @@ export type PublicConsultationOffer = {
   serviceId: string;
   title: string;
   practitionerName: string;
+  practitionerSlug: string;
+  professionalTitle: string;
+  shortBio: string;
+  fullBio: string;
+  profilePhoto: string;
+  methods: string[];
   description: string;
   areaKey: string;
   pricingMode: string;
@@ -171,6 +177,12 @@ export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"
           serviceId: service.id,
           title: service.copy.title,
           practitionerName: practitioner.profile.displayName || practitioner.profile.name || service.practitionerName,
+          practitionerSlug: practitioner.slug,
+          professionalTitle: practitioner.profile.professionalTitle || "",
+          shortBio: practitioner.profile.shortBio || "",
+          fullBio: practitioner.profile.fullBio || "",
+          profilePhoto: publicConsultationPhoto(practitioner.profile.photoPath || "", config.supabaseUrl),
+          methods: (practitioner.profile.methods || []).slice(0, 6),
           description: service.copy.shortDescription || "",
           areaKey: service.areaKey,
           pricingMode: service.pricingMode,

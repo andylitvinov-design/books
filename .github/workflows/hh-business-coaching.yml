@@ -4,21 +4,15 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - '.github/workflows/hh-business-coaching.yml'
-      - 'lib/business-coaching/**'
-      - 'lib/app/business-coaching.js'
-      - 'components/app/business-coaching*'
-      - 'tests/business-coaching-90-days.test.mjs'
-  push:
-    branches:
-      - codex/public-book-library
-    paths:
-      - '.github/workflows/hh-business-coaching.yml'
       - 'lib/business-coaching/**'
       - 'lib/app/business-coaching.js'
       - 'components/app/business-coaching*'
       - 'tests/business-coaching-90-days.test.mjs'
   workflow_dispatch:
+concurrency:
+  group: hh-business-coaching-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+
 jobs:
   business-coaching-contract:
     runs-on: ubuntu-latest

@@ -1,0 +1,3 @@
+# Optional service only, never installed on Vercel or visitors' devices.
+# Resolve and lock a known-compatible Linux ARM64 wheel set before production.
+sentence-transformers>=5.1,<6

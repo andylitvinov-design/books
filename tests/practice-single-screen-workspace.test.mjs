@@ -23,12 +23,19 @@ test('a selected practice section replaces stacked screens instead of navigating
  assert.match(workspace,/ownerTools && !activePanel && <details className="hh-practice-more-tools"/)
 })
 
-test('eight persistent tool shortcuts include two distinct Materials/Courses openings and a More drawer',()=>{
- for(const name of ['clients','requests','services','analytics','profile','more']){
-  assert.ok(workspace.includes("choosePanel('"+name+"')"),name)
- }
- assert.match(workspace,/openMaterialsPanel\('articles'\)/)
- assert.match(workspace,/openMaterialsPanel\('courses'\)/)
+test('six primary practitioner entries retain accessible nested client, materials, courses and owner tools',()=>{
+ const nav=workspace.match(/<nav className="hh-practice-v4-grid" data-practice-simple-nav[\s\S]*?<\/nav>/)?.[0]
+ assert.ok(nav,'real six-section practitioner navigation must exist')
+ assert.equal((nav.match(/<button\b/g)||[]).length,6,'exactly six primary entries, no extra More tab')
+ for(const destination of ["?section=clients&tab=chats","choosePanel('clients')","choosePanel('services')","openMaterialsPanel('articles')","isOwner?'marketing':'analytics'","choosePanel('profile')"])
+  assert.ok(nav.includes(destination),'Missing real primary destination: '+destination)
+ assert.doesNotMatch(nav,/choosePanel\('more'\)/,'retired More must not occupy a seventh primary slot')
+ for(const marker of [
+  'data-practice-client-tools','data-practice-service-tools','data-practice-material-tools','data-practice-growth-tools',
+  "choosePanel('requests')","choosePanel('events')","choosePanel('express-reports')","choosePanel('crm')",
+  "openMaterialsPanel('courses')","openOwner('reports')","openOwner('payment')",
+ ]) assert.ok(workspace.includes(marker),'Previously available protected tool missing: '+marker)
+ assert.match(workspace,/activePanel==='more'&&<div/,'legacy More route remains backward compatible')
  assert.match(workspace,/materialShortcut,setMaterialShortcut/)
  assert.match(workspace,/shortcut=\{materialShortcut\} onTabChange=\{setMaterialTab\}/)
  assert.match(workspace,/onClick=\{closePanel\}/)

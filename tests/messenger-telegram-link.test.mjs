@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './client-telegram-reply-relay.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {validClientBotUsername,telegramClientBotMode,telegramClientBotUsername,telegramClientLinkReady,telegramClientSendReady,

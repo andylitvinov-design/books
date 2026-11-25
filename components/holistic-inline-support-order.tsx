@@ -85,12 +85,16 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const t = copy[locale];
+  // A fixed-budget talisman cannot match: its price is unpublished.
+  // Show the existing honest empty-state immediately, even when the public
+  // directory is slow or unavailable. Any still loads verified practitioners.
+  const unpricedTalisman = choice === "talisman" && budget !== "any";
 
   useEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
   useEffect(() => { setTopic(initialGoal); setSearched(Boolean(initialTalismanId)); }, [initialGoal, initialTalismanId]);
 
   useEffect(() => {
-    if (!searched) return;
+    if (!searched || unpricedTalisman) return;
     const controller = new AbortController();
     setFailed(false);
     setMasters(null);
@@ -113,7 +117,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [locale, searched, choice, attempt]);
+  }, [locale, searched, choice, attempt, unpricedTalisman]);
 
   const visibleConsultations = (consultations || [])
     .filter(offer => matchesHolisticGoal(offer.areaKey, topic) &&
@@ -159,18 +163,26 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
         </div>
         <button type="button" data-support-search className={styles.search}
           aria-controls="holistic-inline-results" aria-expanded={searched}
-          onClick={() => setSearched(true)}>{t.search}<span aria-hidden="true">→</span></button>
+          onClick={() => {
+            // React may briefly paint a stale consultation while the new
+            // request effect clears old results. Reset in this same user event.
+            // Every explicit Search is a fresh directory request, including
+            // a second click with unchanged filters; never show stale offers.
+            setMasters(null); setConsultations(null);
+            setAttempt(current => current + 1);
+            setSearched(true);
+          }}>{t.search}<span aria-hidden="true">→</span></button>
         <p className={styles.note}>{t.note}</p>
       </div>}
       <div id="holistic-inline-results" className={styles.results} hidden={!searched}>
-        {searched && !failed && masters === null && consultations === null &&
+        {searched && !unpricedTalisman && !failed && masters === null && consultations === null &&
           <p className={styles.status} role="status">{t.loading}</p>}
-        {searched && failed && <div className={styles.status} role="alert">
+        {searched && !unpricedTalisman && failed && <div className={styles.status} role="alert">
           <p>{t.failed}</p>
           <button className={styles.retry} type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>
         </div>}
-        {searched && choice !== "consultation" && masters && (
-          <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={masters}
+        {searched && choice !== "consultation" && (unpricedTalisman || masters) && (
+          <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={unpricedTalisman ? [] : (masters || [])}
             preferredPractitioner="" mode="inline" selectedKind={choice} initialGoal={topic}
             initialTalismanId={initialTalismanId} compactFinder priceBudget={budget} onClearBudget={() => setBudget("any")}/>
         )}

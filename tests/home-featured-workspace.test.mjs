@@ -22,19 +22,22 @@ test("seven ordered stages with unique media and one visible journey in EN/RU/ES
   assert.match(component, /data-home-journey-count=\{moduleIds\.length\}/);
   assert.match(component, /<h1 id="hh-home-features-title">/);
   assert.match(component, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
-  for (const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]) {
-    const home = read(page);
-    const tags = ["HomeSectionCarousel","HomeMoreDisclosure","HomeFeaturedWorkspace"];
-    let last = -1;
-    for (const tag of tags) {
-      const at = home.indexOf("<" + tag);
-      assert.ok(at > last, page + " ordering of " + tag);
-      last = at;
-    }
-    assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
-    for (const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
-      assert.ok(!home.includes("<" + removed), page + " repeats " + removed);
+  const expanded=read("components/home-expanded-catalog.tsx");
+  const deferred=read("components/home-deferred-sections.tsx");
+  for(const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]){
+    const home=read(page);
+    assert.match(home,/<HomeDialogueEntry locale=/);
+    assert.match(home,/<HomeDeferredSections locale=/);
+    assert.ok(home.indexOf("<HomeDialogueEntry")<home.indexOf("<HomeDeferredSections"),
+      page+" first interactive paint must precede the catalogue");
+    assert.doesNotMatch(home,/<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace/);
+    for(const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
+      assert.ok(!home.includes("<"+removed),page+" repeats "+removed);
   }
+  assert.match(deferred,/IntersectionObserver/);
+  assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
+  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
+  assert.equal((expanded.match(/<HomeFeaturedWorkspace\b/g)||[]).length,1);
   for (const locale of ["en","ru","es"]) assert.deepEqual(Object.keys(copy[locale].modules), expected);
 });
 
@@ -213,8 +216,13 @@ test("all home cards use the approved compact Tests photo-card visual on EN/RU/E
   assert.match(secondary, /background: transparent;/);
   assert.match(secondary, /text-decoration: underline;/);
   assert.doesNotMatch(secondary, /border: 1px/);
-  assert.match(primary, /background: linear-gradient\(108deg, #07899c 0%, #305a93 100%\)/);
-  assert.match(primary, /border: 1px solid #187c9f/);
+  // Color schemes change with the live design; preserve an actual filled,
+  // high-contrast primary action instead of the retired teal gradient.
+  assert.match(primary, /background: #[0-9a-fA-F]{6}; color: #fff;/);
+  assert.match(primary, /border: 1px solid #[0-9a-fA-F]{6}/);
+  // Current approved primary action uses the dark burgundy palette, not the retired turquoise gradient.
+  assert.match(primary, /background: #742c42/);
+  assert.match(primary, /border: 1px solid #742c42/);
   assert.match(css, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);

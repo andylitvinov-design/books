@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
+import { isUnifiedMobileDockPath } from '@/lib/unified-mobile-dock.mjs';
 
 // Compact two-line visual labels. Full translated names remain on aria-label.
 const mobileBarLabels = {
@@ -21,8 +22,11 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // /client and /client/tests are public test-selection pages; other client
   // paths, private account routes and documents must keep the bar hidden.
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
-  // The public practitioner showcase owns a compact five-item bottom bar.
-  const hidden = /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
+  // The shared seven-destination app dock owns Home, Practice, Studio,
+  // Messenger, Master, Profile and Free Analysis. Never mount two footers.
+  const hidden = /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname)
+    || isUnifiedMobileDockPath(pathname)
+    || /^\/(?:ru|en|es)\/(?:practice|mytube|temple-insights)\/?$/.test(pathname)
     || /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname)
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)

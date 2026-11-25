@@ -37,7 +37,7 @@ test("board appears immediately after the theme cards and never sends private da
   const css = read("components/taoist-koan-board.module.css");
   const topic = page.indexOf("<HolisticSupportTopicFilter locale={locale} />");
   const quotes = page.indexOf("<TaoistKoanBoard locale={locale} />");
-  const nextSection = page.indexOf('id="holistic-healing-support"');
+  const nextSection = page.indexOf('id="meditation-practices"');
   assert.ok(topic >= 0 && quotes > topic && nextSection > quotes);
   assert.match(board, /data-taoist-koan-board/);
   assert.match(board, /data-taoist-koan-refresh/);
@@ -57,21 +57,41 @@ test("each Taoist alchemy stage has a distinct, existing local photograph that c
   const board = read("components/taoist-koan-board.tsx");
   const styles = read("components/taoist-koan-board.module.css");
   assert.match(board, /import Image from "next\/image"/);
-  assert.match(board, /const photo = active \? stagePhotos\[active.stage\]/);
+  assert.match(board, /active.id === "small-flame" \? smallFlamePhoto : stagePhotos\[active.stage\]/);
   assert.match(board, /src=\{photo.src\}/);
   assert.match(board, /alt=""/); // Decorative stage photo: the complete quote remains accessible as text.
   assert.match(board, /data-taoist-koan-photo/);
   assert.match(board, /data-taoist-koan-stage=\{active.stage\}/);
   assert.match(board, /sizes="\(max-width: 720px\)/);
   assert.doesNotMatch(board, /unoptimized|https:\/\/|http:\/\/|fetch\(/);
-  const photoPaths = [...board.matchAll(/"\/images\/holistic-house\/[^"]+\.(?:webp|avif)"/g)].map(match => match[0].slice(1, -1));
-  assert.equal(photoPaths.length, 6);
-  assert.equal(new Set(photoPaths).size, 6);
+  const photoPaths = [...board.matchAll(/"\/images\/dao-stages\/[^"]+\.jpg"/g)].map(match => match[0].slice(1, -1));
+  assert.equal(photoPaths.length, 7);
+  assert.equal(new Set(photoPaths).size, 7);
   for (const path of photoPaths) assert.ok(existsSync(new URL("../public" + path, import.meta.url)), `missing photo: ${path}`);
-  for (const stage of [3, 4, 5, 6, 7, 8]) assert.match(board, new RegExp('"' + stage + '": \\{'));
+  for (const stage of [3, 4, 5, 6, 7, 8]) assert.match(board, new RegExp("\\b" + stage + ": \\{"));
   assert.match(styles, /grid-template-columns:minmax\(220px,31%\) minmax\(0,1fr\)/);
   assert.match(styles, /\.photo\{position:relative/);
-  assert.match(styles, /\.photo img\{object-fit:cover\}/);
+  assert.match(styles, /\.photo img\{object-fit:contain\}/);
   assert.match(styles, /@media\(max-width:720px\)/);
-  assert.match(styles, /height:clamp\(156px,46vw,196px\)/);
+  assert.match(styles, /height:clamp\(230px,72vw,315px\)/);
+});
+
+test("the pictured Dao card explains its stage and offers a free personal review through the existing intake", () => {
+  const board = read("components/taoist-koan-board.tsx");
+  const css = read("components/taoist-koan-board.module.css");
+  assert.match(board, /getDaoStage\(active.stage\)/);
+  assert.match(board, /data-tao-stage-explanation/);
+  assert.match(board, /stage.task\[locale\]/);
+  assert.match(board, /data-tao-free-diagnostic/);
+  assert.match(board, /\/dao\/stages#stage-/);
+  assert.match(board, /\/dao\/stages"/);
+  assert.match(board, /\/coaching\/intake\?topic=personal/);
+  for (const phrase of [
+    "Explore all 18 stages of Dao", "Посмотреть все 18 ступеней Дао", "Ver las 18 etapas del Dao",
+    "Request my free personal Dao review", "Заказать бесплатную диагностику ступени Дао",
+    "Solicitar mi evaluación personal gratuita"
+  ]) assert.ok(board.includes(phrase), "missing localized UX: " + phrase);
+  assert.match(css, /\.stageExplanation\{/);
+  assert.match(css, /\.diagnosticAction\{/);
+  assert.match(css, /@media\(max-width:720px\)/);
 });

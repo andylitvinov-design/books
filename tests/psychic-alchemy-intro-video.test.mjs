@@ -5,6 +5,7 @@ import { existingAboutIntroVideo, builtInSiteVideoRecords } from '../lib/site-vi
 const component = readFileSync(new URL('../components/psychic-alchemy-intro-video.tsx', import.meta.url), 'utf8');
 const page = readFileSync(new URL('../app/[locale]/about/page.tsx', import.meta.url), 'utf8');
 const testimonials = readFileSync(new URL('../components/personal-testimonials.tsx', import.meta.url), 'utf8');
+const aboutGallery = readFileSync(new URL('../components/about-testimonial-gallery.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../components/psychic-alchemy-intro-video.module.css', import.meta.url), 'utf8');
 test('intro uses the archived approved final and a stable embed, not expiring media', () => {
   assert.equal(existingAboutIntroVideo.heygenId, 'fd5fcead9b067f9a0649862675a38771');
@@ -28,6 +29,9 @@ test('EN and RU About intros are managed by their locale video slots; biography,
   assert.match(page, /videoKey\("about-intro", typedLocale\)/);
   assert.match(page, /typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId/);
   assert.match(page, /<PsychicAlchemyIntroVideo video=\{aboutIntro\}/);
-  for (const text of ['current.intro.map', 'current.sections.map', '<PersonalTestimonials', 'PersonalConsultationForm locale', 'about-client-cabinet', 'personal-consultation-title']) assert.ok(page.includes(text));
+  for (const text of ['current.intro.map', 'current.sections.map', '<AboutTestimonialGallery', 'primaryVideos=', 'otherLanguageVideos=', 'PersonalConsultationForm locale', 'about-client-cabinet', 'personal-consultation-title']) assert.ok(page.includes(text));
+  assert.match(aboutGallery, /data-about-primary-testimonials/);
+  assert.match(aboutGallery, /data-about-other-language-testimonials/);
+  assert.match(aboutGallery, /<details/);
   assert.match(testimonials, /isAbout \? "testimonials-title"/);
 });

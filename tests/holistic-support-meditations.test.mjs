@@ -92,16 +92,16 @@ function evalTypeScript(path, mocks = {}) {
   const compiled = ts.transpileModule(read(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
-  const module = { exports: {} };
+  const moduleValue = { exports: {} };
   vm.runInNewContext(compiled, {
-    module,
-    exports: module.exports,
+    module: moduleValue,
+    exports: moduleValue.exports,
     require: id => {
       if (Object.prototype.hasOwnProperty.call(mocks, id)) return mocks[id];
       throw new Error("Unexpected source dependency: " + id);
     },
   }, { filename: path, timeout: 1000 });
-  return module.exports;
+  return moduleValue.exports;
 }
 
 test("language-aware meditation selector: EN Flight to the Sun, RU only seven original PsiMaster videos", () => {

@@ -511,7 +511,8 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
-          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list>
+          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list
+            role="region" aria-label={t.reviewsTitle} tabIndex={0}>
             {reviews.map((review) => (
               <article className={styles.reviewCard} key={review.id}
                 data-testimonial-video-id={review.id} data-testimonial-original-audio={review.language}>
@@ -543,7 +544,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.reviewNote} data-alchemy-review-note>{t.reviewsNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" aria-labelledby="alchemy-options-title">
+        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" role="region" tabIndex={0} aria-labelledby="alchemy-options-title">
           <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.optionsKicker}</span>

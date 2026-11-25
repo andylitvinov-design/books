@@ -12,6 +12,77 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
 await mkdir("artifacts/holistic-topic-mobile", { recursive: true });
 const evidence = [];
 
+// A search re-fetches the public catalogue. Waiting only for the first article
+// can succeed on the previous budget, immediately before React clears it.
+// Wait for the exact synthetic result identities, including EUR/CAD exclusion.
+async function waitForConsultationFixtures(page, locale, ids, label) {
+  const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
+  // Playwright waitForFunction must use a synchronous predicate. In WebKit the
+  // previous async predicate yielded a JSHandle to false before results settled.
+  // Wait for an uninterrupted 900-ms exact DOM state in one page.evaluate task,
+  // not a separate post-wait locator that can race React's next commit.
+  const actual = await page.evaluate(wanted => {
+    const results = document.querySelector("#holistic-inline-results");
+    if (!results) throw new Error("Public consultation results container missing");
+    return new Promise((resolve, reject) => {
+      let settled = null;
+      let deadline = null;
+      const exactLinks = () => {
+        if (results.hidden) return null;
+        const articles = [...results.querySelectorAll("article")];
+        const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+          .map(link => link.getAttribute("href")).sort();
+        return articles.length === wanted.length &&
+          links.length === wanted.length &&
+          links.every((href, index) => href === wanted[index]) ? links : null;
+      };
+      const cleanup = () => {
+        observer.disconnect();
+        if (settled !== null) clearTimeout(settled);
+        if (deadline !== null) clearTimeout(deadline);
+      };
+      const check = () => {
+        if (!exactLinks()) {
+          if (settled !== null) clearTimeout(settled);
+          settled = null;
+          return;
+        }
+        if (settled !== null) return;
+        settled = setTimeout(() => {
+          settled = null;
+          // This is the same DOM task as the final accepted snapshot.
+          // Missing, stale or wrong-currency items cannot satisfy it.
+          const links = exactLinks();
+          if (links) { cleanup(); resolve(links); }
+          else check();
+        }, 900);
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(results, { childList: true, subtree: true, attributes: true });
+      deadline = setTimeout(() => {
+        cleanup();
+        reject(new Error("Consultation fixtures did not remain exact for 900 ms"));
+      }, 20000);
+      check();
+    });
+  }, expected);
+  assert.deepEqual(actual, expected,
+    label + " only the requested published EUR fixture; CAD and stale results excluded");
+}
+
+// The user must perform a NEW search against the isolated public directory.
+ // Seeing an old card that happens to satisfy the next budget is insufficient.
+async function searchConsultationFixtures(page, finder) {
+  const fresh = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/public/remote-energy-support-masters" &&
+      url.searchParams.get("kind") === "consultation" &&
+      response.status() === 200;
+  }, {timeout:15000});
+  await finder.locator("[data-support-search]").click();
+  await fresh;
+}
+
 for (const engine of [chromium, webkit]) {
   const browser = await engine.launch({ headless: true });
   try {
@@ -21,6 +92,7 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          serviceWorkers: "block", // Isolate the synthetic practitioner fixture from SW.
         });
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
@@ -50,6 +122,10 @@ for (const engine of [chromium, webkit]) {
             priceOptions: [{ duration: 30, price: 50 }, { duration: 60, price: 100 }],
             reviewCount: 0, reviewAverage: 0,
           }];
+          // A fresh directory response is intentionally asynchronous: keep
+          // the loading/clear commit observable and reject stale previous
+          // result arrays. Fixtures are still isolated and fully synthetic.
+          if (isConsultation) await new Promise(resolve => setTimeout(resolve,75));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
@@ -57,6 +133,18 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
+          // Slow WebKit hydration under concurrent browser suites is not a
+          // functional failure; preserve the React hydration assertion and
+          // allow one bounded 30-second wait with diagnostic page errors.
+          try {
+            await page.waitForFunction(() => {
+              const button = document.querySelector('[data-holistic-topic="business"]');
+              return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
+            }, null, {timeout:engine.name() === "webkit" ? 30000 : 15000});
+          } catch(error) {
+            throw new Error(label + " failed to hydrate topic controls: " + String(error) +
+              "; runtime errors: " + JSON.stringify(errors.slice(-5)));
+          }
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
@@ -109,28 +197,70 @@ for (const engine of [chromium, webkit]) {
 
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="20"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["eur20"], label + " EUR 20");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="100"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
-          await finder.locator('[data-support-theme="relationships"]').click();
-          await finder.locator('[data-support-budget="free"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          // Wait for Relationships to commit before the real budget touch;
+          // selecting two independent React controls without this wait can
+          // race the topic transition under concurrent mobile WebKit load.
+          const relationshipsTheme=finder.locator('[data-support-theme="relationships"]');
+          await relationshipsTheme.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-theme="relationships"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
+          const freeBudget=finder.locator('[data-support-budget="free"]');
+          await freeBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="free"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 
-          await finder.locator('[data-support-choice="talisman"]').click();
-          await finder.locator('[data-support-budget="20"]').click();
+          // Preserve the real published-price safety gate after both React
+          // controls commit. Fast consecutive taps can otherwise search an
+          // older service kind and incorrectly await a non-existent empty state.
+          const talismanChoice = finder.locator('[data-support-choice="talisman"]');
+          await talismanChoice.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-choice="talisman"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          const talismanBudget = finder.locator('[data-support-budget="20"]');
+          await talismanBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="20"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          // A fixed-budget unpriced talisman must be handled locally, even
+          // if the directory cannot return its published practitioners.
+          let talismanRequests = 0;
+          const onTalismanRequest = request => {
+            if (new URL(request.url()).pathname === "/api/public/remote-energy-support-masters")
+              talismanRequests += 1;
+          };
+          page.on("request", onTalismanRequest);
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#remote-results [role="status"]').first().waitFor();
+          const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
+          await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
+          assert.ok((await unpricedTalismanStatus.innerText()).includes({
+            en: "Talisman prices are not published.",
+            ru: "Цены на талисманы не опубликованы.",
+            es: "Los talismanes no tienen precio publicado.",
+          }[locale]), label + " unpriced talisman is explained without inventing a cost");
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
+          page.off("request", onTalismanRequest);
+          assert.equal(talismanRequests, 0, label + " no directory request for a known unpriced budget");
 
           const finalGeometry = await page.evaluate(() => ({
             viewport: document.documentElement.clientWidth,

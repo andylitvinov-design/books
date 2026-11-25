@@ -150,7 +150,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     <section className={styles.editorCard+' '+styles.reportReadyCard} id="session-attached-report">
       <h2>{ru?'Готовый отчёт клиента':'Saved client report'}</h2>
       <p>{ru?
-        'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.':
+        (sourceDocument?.recommendationType==='general'?'Анализ и рекомендации уже находятся в отчёте. Препараты не требуются.':'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.'):
         'Your original report already contains the analysis and recommendations. No additional questionnaire is required to publish it.'}</p>
       <label className={styles.field}><FileText size={18}/>{ru?'Привязанный отчёт (настоящий PDF)':'Attached report (real PDF)'}
         <select value={draft.reportDocumentId||''}
@@ -269,7 +269,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             {ru?'Где показывать запись клиенту':'Where this recording appears'}
             <select value={row.role||'personal'} onChange={e=>setMedia(row.assetId,{role:e.target.value})}>
               <option value="personal">{ru?'Личное обращение вверху':'Personal message (top)'}</option>
-              {asset?.kind==='video'&&<option value="instruction">{ru?'Видео: как принимать препараты':'Video: how to follow the recommendations'}</option>}
+              {asset?.kind==='video'&&<option value="instruction">{ru?(sourceDocument?.recommendationType==='general'?'Обучающее видео':'Видео: как принимать препараты'):(sourceDocument?.recommendationType==='general'?'Educational video':'Video: how to follow the recommendations')}</option>}
               <option value="meditation">{ru?'Дополнительная медитация':'Additional meditation'}</option>
               <option value="additional">{asset?.kind==='video'?(ru?'Материалы — в конце отчёта':'Materials — report footer'):(ru?'Другие материалы':'Other materials')}</option>
               {['audio','video'].includes(asset?.kind)&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
@@ -297,8 +297,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
       <SessionMaterialPicker locale={locale}
         selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
+        placements={plan.materialPlacements||{}}
         disabled={block}
-        onChange={ids=>updatePlan({materialIds:ids})}/>
+        onChange={(ids,placements)=>updatePlan({materialIds:ids,materialPlacements:placements})}/>
       {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
         'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
         'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}

@@ -1,0 +1,11 @@
+# Audio message → timed transcript → verified video (2026-11-06)
+
+The AI Messenger supports a one-time audio upload with an explicit speech-recognition consent checkbox. The server does not persist audio or text. A one-use, same-origin IndexedDB handoff carries the original File and genuine timestamped speech segments to the Video Studio. The handoff is consumed and deleted on access; expired data (15 minutes) is rejected and cleared on the next access, not by a guaranteed background expiry process.
+
+In Video Studio, the user reviews actual segment start/end seconds, confirms audio usage rights, then matches timed concept signals to approved local video footage. The matcher reuses Russian/English/Spanish prompt concept vocabulary and physical source validation: aspect, source rights, real playback length, unique source master/origin/group, excluded motifs. It outputs 4, 6 or 12 chronological clips with exact video-cut timing, a readable scene prompt, and warnings for approximate semantic matches. Existing local Canvas / MediaRecorder render handles export; the original file is attached once and never looped.
+
+Limits: request body 4 MiB (Vercel function max 4.5 MB), video 10/15/20/30/60 seconds, clips above the longest safe voice duration fail visibly rather than cutting off speech. No new video provider, subscription, cloud media storage, silent XP deduction or recurring job is introduced.
+
+Activation requires all three variables to be explicitly verified in the actual free-quota project: HH_AUDIO_STT_FREE_CONFIRMED=true, HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED=true, and HH_FIRST_VIDEO_GROQ_API_KEY. Without them the server returns 503 before transmitting audio. Audio is sent to external Groq Whisper only after consent. Global limits: 3 calls/minute and 20/day. There is no promise that a provider never retains data or that generic 'free' labels guarantee zero future costs.
+
+Proof still needed: green CI/test/build on the exact branch SHA, a real opted-in STT run with segment timestamps, iPhone Safari E2E for live mic, scene timeline, audio playback and MP4 download, and confirmed live Vercel deployment. This PR does not connect Telegram voice intake; that belongs to the pending isolated Telegram queue/webhook PR #3647 with bot media permissions and separate consent.

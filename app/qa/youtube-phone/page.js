@@ -22,8 +22,8 @@ export default async function YoutubePhoneIsolatedQaPage(){
      title={{en:'YouTube upload',ru:'Загрузка в YouTube'}}
      description={{en:'Upload from your phone to the right channel.',ru:'Загрузка с телефона на выбранный канал.'}}/>
    <nav className={styles.mobileLinks} aria-label="Cabinet links">
-     <Link href="/admin">← Cabinet</Link>
-     <Link href="/admin/videos">Website videos</Link>
+     <Link prefetch={false} href="/admin">← Cabinet</Link>
+     <Link prefetch={false} href="/admin/videos">Website videos</Link>
    </nav>
    <YoutubePhoneUploader locale="en" enabled clientId="123456789012-isolated-fixture.apps.googleusercontent.com"
      oauthSource="owner_video" setupAvailable={false}

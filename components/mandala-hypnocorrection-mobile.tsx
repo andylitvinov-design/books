@@ -1,0 +1,381 @@
+"use client";
+
+import { useState } from "react";
+import type { ReactNode } from "react";
+import {
+  ArrowRight, AudioLines, Check, Eye, Headphones, Image as Picture,
+  MapPin, Mic, Play, Quote, Sparkles, Sun,
+} from "lucide-react";
+import type { PublicLocale } from "@/lib/public-locales";
+import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
+import styles from "./mandala-hypnocorrection-mobile.module.css";
+
+export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number; mode?: "sunlight"|"glow"|"waves" };
+type GroupId = "visual" | "audio" | "effects";
+type PosterGroupId = "visual" | "audio" | "phrases";
+type Props = {
+  locale: PublicLocale;
+  initialGroup?: GroupId;
+  disabled: boolean;
+  affirmations: AffirmationSettings;
+  onAffirmationsChange: (settings: AffirmationSettings) => void;
+  light: HypnoLightSettings;
+  onLightChange: (next: HypnoLightSettings) => void;
+  onOpenPhraseEditor: () => void;
+  voiceEditor?: ReactNode;
+  onToggleVoice: () => void;
+  whisperEnabled: boolean;
+  binauralEnabled: boolean;
+  beatHz: number;
+  repeatEverySeconds: number;
+  whisperGain: number;
+  audioEffectBusy: boolean;
+  onToggleWhisper: () => void;
+  onToggleBinaural: () => void;
+  onBeatHzChange: (value: number) => void;
+  onRepeatEveryChange: (value: number) => void;
+  onWhisperGainChange: (value: number) => void;
+  onOpenScenes: () => void;
+  onPickPhoto: () => void;
+  onRemovePhoto: () => void;
+  onCreate: () => void;
+  status?: string;
+  onWavePreset: () => void;
+  hasPhoto: boolean;
+  hasVoiceFile: boolean;
+  voiceActive: boolean;
+  posters: Record<PosterGroupId,string>;
+};
+
+const copy = {
+  ru: {
+    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",effectsTab:"Эффекты",presetTitle:"Визуальные эффекты",presetHelp:"Выбор сразу отображается в видео и сохраняется при экспорте.",applyCreate:"Создать видео",withoutCreate:"Добавить эффекты",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
+    wave:"Быстрая настройка с Wave",waveHelp:"Подберёт мягкие эффекты по вашей цели",try:"Попробовать",
+    suggested:"Предложен мягкий световой ритм и видимые фразы. Измените любой пункт или отключите его.",
+    phrases:"Установки и внушения",phrasesHelp:"Слова поддержки и настройки",
+    text:"Текст на экране",textHelp:"Фразы в вашем видео",
+    frame:"25-й кадр",frameHelp:"Короткие вставки",
+    repeat:"Повторы в аудио",repeatHelp:"Частота и паузы",
+    audio:"Аудио",audioHelp:"Голос, гипнозвук и ритмы",
+    speech:"Озвучка фраз",speechHelp:"Ваш голос или разрешённая запись",
+    whisper:"Гипнозвук",whisperHelp:"Тихие повторы речи",
+    binaural:"Бинауральные ритмы",binauralHelp:"Тихий стереоритм для наушников",
+    visual:"Визуальные эффекты",visualHelp:"Образы, свет и движение",
+    light:"Импульс света",lightHelp:"Волны, лучи и мандала",
+    places:"Места силы",placesHelp:"Сцены из каталога",
+    photo:"Личное фото",photoHelp:"Ваш снимок с правами",
+    meditation:"Личная медитация",meditationHelp:"Текст под вашу цель",
+    generateMeditation:"Создать личную медитацию",meditationDetail:"Текст по вашей цели и утверждённым фразам.",
+    settings:"Настроить",selected:"Включено",disabled:"Выключено",
+    rhythm:"Темп плавных волн",intensity:"Интенсивность",cycles:"циклов/мин",
+    voiceHint:"Сначала создайте голосовую дорожку выбранных фраз. Она будет добавлена прямо в это видео.",
+    pending:"Для тихих повторов сначала создайте и прослушайте озвучку фраз выше.",
+    beatHint:"Нужны стереонаушники. Эффект добавляется в звуковую дорожку; это не медицинская процедура и не гарантирует изменения состояния.",
+    effectBusy:"Подготавливаем аудиодорожку…",
+    science:"Короткие кадры — экспериментальный эффект; нет доказательств коррекции убеждений. Без мигания и медицинских обещаний.",
+    meditationDuration:"Длительность",meditationTime:"3 / 5 / 8 / 12 мин",meditationStyle:"Стиль",meditationStyles:"Расслабление · Энергия",meditationVoice:"Голос",meditationVoices:"Голос устройства или свой",
+    create:"Сформировать видео",credits:"0 кредитов · локальное создание",
+    preview:"Проверить в основном видео",privacy:"Бесплатные эффекты выполняются локально. Персональные файлы не отправляются стороннему ИИ.",
+  },
+  en: {
+    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual",audioTab:"Audio effects",effectsTab:"Effects",presetTitle:"Visual effects",presetHelp:"Your choice appears immediately in the preview and the exported film.",applyCreate:"Generate Video",withoutCreate:"Add Effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
+    wave:"Quick setup with Wave",waveHelp:"Suggests suitable effects based on your goal",try:"Try it",
+    suggested:"Gentle light waves and visible phrases suggested. You can edit or disable any effect.",
+    phrases:"Phrases and suggestions",phrasesHelp:"Supportive words and timing",
+    text:"On-screen text",textHelp:"Readable phrases from your selection",
+    frame:"Brief frame",frameHelp:"Short inserts · experimental",
+    repeat:"Audio repetition",repeatHelp:"Pauses and speech frequency",
+    audio:"Audio",audioHelp:"Voice and sound layers",
+    speech:"Spoken phrases",speechHelp:"Your voice or permitted audio",
+    whisper:"Quiet speech",whisperHelp:"Low-volume audible repetitions",
+    binaural:"Binaural beats",binauralHelp:"Quiet stereo beat for headphones",
+    visual:"Visual effects",visualHelp:"Light, images and motion",
+    light:"Light and energy pulse",lightHelp:"Waves, rays and mandala without flashes",
+    places:"Meaningful places",placesHelp:"Choose from existing video scenes",
+    photo:"Personal photo",photoHelp:"Your photo with rights confirmation",
+    meditation:"Personal meditation",meditationHelp:"A script for your goal",
+    generateMeditation:"Create meditation",meditationDetail:"Opens the existing script editor with local voice preview.",
+    settings:"Configure",selected:"On",disabled:"Off",
+    rhythm:"Smooth wave tempo",intensity:"Intensity",cycles:"cycles/min",
+    voiceHint:"Create a voice track from your selected phrases first. It will be attached directly to this video.",
+    pending:"Create and listen to the spoken phrases above before enabling quiet repetitions.",
+    beatHint:"Stereo headphones are required. This is an optional audio effect, not a medical treatment or a guaranteed way to change your state.",
+    effectBusy:"Preparing the audio track…",
+    science:"Brief frames are experimental; no proven subconscious effects. No strobe flashes or clinical claims.",
+    meditationDuration:"Duration",meditationTime:"3 / 5 / 8 / 12 min",meditationStyle:"Style",meditationStyles:"Calm · Energy",meditationVoice:"Voice",meditationVoices:"Device or your recording",
+    create:"Create video",credits:"0 credits · created on your device",
+    preview:"Preview in main video",privacy:"Free effects run on your device. Personal files are not sent to third-party AI.",
+  },
+  es: {
+    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",effectsTab:"Efectos",presetTitle:"Efectos visuales",presetHelp:"Tu elección aparece de inmediato en la vista previa y en el vídeo exportado.",applyCreate:"Generar vídeo",withoutCreate:"Añadir efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
+    wave:"Ajuste rápido con Wave",waveHelp:"Sugiere efectos adecuados según tu objetivo",try:"Probar",
+    suggested:"Se sugieren ondas de luz suaves y frases visibles. Puedes cambiar o desactivar todo.",
+    phrases:"Frases y sugerencias",phrasesHelp:"Palabras de apoyo y ritmo",
+    text:"Texto en pantalla",textHelp:"Frases legibles de tu selección",
+    frame:"Fotograma breve",frameHelp:"Inserciones cortas · experimental",
+    repeat:"Repetición en audio",repeatHelp:"Pausas y frecuencia de voz",
+    audio:"Audio",audioHelp:"Voz y efectos de sonido",
+    speech:"Frases narradas",speechHelp:"Tu voz o voz autorizada de alguien cercano",
+    whisper:"Voz tenue",whisperHelp:"Repeticiones audibles a bajo volumen",
+    binaural:"Ritmos binaurales",binauralHelp:"Ritmo estéreo suave para auriculares",
+    visual:"Efectos visuales",visualHelp:"Luz, imágenes y movimiento",
+    light:"Pulso de luz y energía",lightHelp:"Ondas, rayos y mandala sin destellos",
+    places:"Lugares especiales",placesHelp:"Elige una escena del catálogo existente",
+    photo:"Foto personal",photoHelp:"Tu foto con confirmación de derechos",
+    meditation:"Meditación personal",meditationHelp:"Texto según tu objetivo",
+    generateMeditation:"Crear meditación",meditationDetail:"Abre el editor de guiones y la vista previa de voz local.",
+    settings:"Configurar",selected:"Sí",disabled:"No",
+    rhythm:"Ritmo de ondas suaves",intensity:"Intensidad",cycles:"ciclos/min",
+    voiceHint:"Primero crea la pista de voz con tus frases elegidas. Se añadirá directamente a este vídeo.",
+    pending:"Primero crea y escucha la voz de tus frases para poder repetirlas suavemente.",
+    beatHint:"Se necesitan auriculares estéreo. Es un efecto de audio opcional, no un tratamiento médico ni garantiza cambios de estado.",
+    effectBusy:"Preparando la pista de audio…",
+    science:"Los fotogramas breves son experimentales y no tienen un efecto subliminal probado. Sin destellos.",
+    meditationDuration:"Duración",meditationTime:"3 / 5 / 8 / 12 min",meditationStyle:"Estilo",meditationStyles:"Calma · Energía",meditationVoice:"Voz",meditationVoices:"Dispositivo o tu grabación",
+    create:"Crear vídeo",credits:"0 créditos · creación local",
+    preview:"Ver en el vídeo principal",privacy:"Los efectos gratuitos se ejecutan en tu dispositivo, sin enviar archivos a IA externa.",
+  },
+} as const;
+
+
+const compactLabels = {
+  ru:{selected:"Выбрано",noFlashes:"Без вспышек",lightModes:["Мягко","Баланс","Ярче"],positions:["Сверху","Центр","Снизу"]},
+  en:{selected:"Selected",noFlashes:"No flashing",lightModes:["Soft","Balanced","Brighter"],positions:["Top","Centre","Bottom"]},
+  es:{selected:"Elegidos",noFlashes:"Sin destellos",lightModes:["Suave","Equilibrado","Más luz"],positions:["Arriba","Centro","Abajo"]},
+} as const;
+const lightOpacities = [.12,.18,.28] as const;
+const textPositions = ["top","center","bottom"] as const;
+
+function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailable,settings,poster,children}:{
+  icon:ReactNode;title:string;help:string;active:boolean;settings:string;poster?:string;children?:ReactNode;
+  onToggle?:()=>void;onConfigure:()=>void;disabled:boolean;unavailable?:boolean;
+}){
+  return <div className={styles.feature} data-hypno-card={title} data-photo={Boolean(poster)}>
+    {poster?<>
+      {/* First-party catalog preview, never a second video player. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={styles.featurePoster} src={poster} alt="" loading="lazy"/>
+    </>:<span className={styles.featureIcon} aria-hidden="true">{icon}</span>}
+    <button type="button" className={styles.featureText} onClick={onConfigure}
+      disabled={disabled} aria-label={title+": "+help}>
+      <strong>{title}</strong><span>{help}</span>
+      <span className={styles.configureLink}>{settings}<ArrowRight size={14} aria-hidden="true"/></span>
+    </button>
+    {onToggle?<button type="button" role="switch" className={styles.switch} aria-checked={active}
+      aria-label={title} data-on={active} disabled={disabled||unavailable} onClick={onToggle}>
+      <span/>
+    </button>:<button type="button" className={styles.featureArrow} onClick={onConfigure}
+      disabled={disabled} aria-label={title}><ArrowRight size={21}/></button>}
+    {children?<div className={styles.featureOptions}>{children}</div>:null}
+  </div>;
+}
+
+export function MandalaHypnocorrectionMobile({
+  locale,initialGroup="visual",disabled,affirmations,onAffirmationsChange,light,onLightChange,
+  onOpenPhraseEditor,onOpenScenes,
+  onPickPhoto,onRemovePhoto,onCreate,status,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
+  voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
+  onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
+}:Props) {
+  const t=copy[locale];
+  const extra=compactLabels[locale];
+  const [activeGroup,setActiveGroup]=useState<GroupId>(initialGroup);
+  const [showLightSettings,setShowLightSettings]=useState(false);
+  const [showSpeechSettings,setShowSpeechSettings]=useState(false);
+  const [showWhisperSettings,setShowWhisperSettings]=useState(false);
+  const [showBinauralSettings,setShowBinauralSettings]=useState(false);
+  const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
+  const visible=affirmations.enabled&&affirmations.visibility.includes("large");
+  const briefFrame=affirmations.enabled&&affirmations.visibility.includes("frame");
+  const toggleVisibility=(mode:"large"|"frame")=>{
+    // Disabled defaults may still carry "large": the first tap must enable,
+    // not silently remove, the previously remembered mode.
+    const current=affirmations.enabled?affirmations.visibility:[];
+    const visibility=current.includes(mode)
+      ?current.filter(value=>value!==mode)
+      :[...current,mode];
+    onAffirmationsChange({...affirmations,visibility,enabled:visibility.length>0});
+  };
+  const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
+  const groups: {id:GroupId;title:string;tab:string;help:string}[]=[
+    {id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp},
+    {id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp},
+    {id:"effects",title:t.presetTitle,tab:t.effectsTab,help:t.presetHelp},
+  ];
+  const visualCount=[light.enabled,visible,briefFrame,hasPhoto].filter(Boolean).length;
+  const audioCount=[voiceActive,whisperEnabled,binauralEnabled].filter(Boolean).length;
+  const intro=<div className={styles.intro} data-hypno-intro>
+    <div className={styles.heading}>
+      <span className={styles.sectionIcon} aria-hidden="true"><Sparkles size={24}/></span>
+      <div><h3>{t.title}</h3><p>{t.sub}</p></div>
+    </div>
+    <section className={styles.wave}>
+      <button type="button" onClick={()=>{
+        onWavePreset();setActiveGroup("visual");setShowLightSettings(false);setNote("wave");
+      }} disabled={disabled} data-hypno-wave>
+        <Sparkles size={17} aria-hidden="true"/>{t.wave}<ArrowRight size={16} aria-hidden="true"/>
+      </button>
+      {note==="wave"?<p role="status" className={styles.note}>{t.suggested}</p>:null}
+    </section>
+  </div>;
+  return <section className={styles.panel} data-hypno-compact="true" data-hypno-mobile lang={locale}
+    aria-label={t.title}>
+    {intro}
+    <div className={styles.groupTabs} role="tablist" aria-label={t.title} data-hypno-tabs>
+      {groups.map(group=><button key={group.id} type="button" id={"hypno-tab-"+group.id}
+        role="tab" aria-selected={activeGroup===group.id} aria-controls={"hypno-group-"+group.id}
+        data-hypno-tab={group.id} onClick={()=>setActiveGroup(group.id)} disabled={disabled}>
+        {group.id==="visual"?<Eye size={20} aria-hidden="true"/>:
+          group.id==="audio"?<AudioLines size={20} aria-hidden="true"/>:
+          <Sparkles size={20} aria-hidden="true"/>}
+        <span>{group.tab}</span>
+      </button>)}
+    </div>
+    {groups.map(group=><section className={styles.group} data-hypno-group={group.id}
+      id={"hypno-group-"+group.id} role="tabpanel" aria-labelledby={"hypno-tab-"+group.id}
+      hidden={activeGroup!==group.id} key={group.id}>
+      <h4 className={styles.srOnly}>{group.title} — {group.help}</h4>
+      <div className={styles.groupContent} data-hypno-options>
+        {group.id==="audio"?<>
+          <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
+            active={voiceActive} onToggle={()=>{
+              if(!hasVoiceFile){setShowSpeechSettings(true);return;}
+              onToggleVoice();
+            }}
+            onConfigure={()=>setShowSpeechSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showSpeechSettings?<div className={styles.settings} data-hypno-speech-settings style={{gridColumn:"1 / -1"}}>
+            {voiceEditor||<p className={styles.note}>{t.voiceHint}</p>}
+          </div>:null}
+          <Feature icon={<AudioLines/>} title={t.whisper} help={t.whisperHelp}
+            active={whisperEnabled} onToggle={()=>{
+              if(!hasVoiceFile){setShowSpeechSettings(true);setNote("voice");return;}
+              onToggleWhisper();
+            }} onConfigure={()=>setShowWhisperSettings(value=>!value)}
+            disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showWhisperSettings?<div className={styles.settings} data-hypno-whisper-settings style={{gridColumn:"1 / -1"}}>
+            <label>{locale==="ru"?"Пауза между повторами":locale==="es"?"Pausa entre repeticiones":"Pause between repetitions"} · {repeatEverySeconds} {locale==="ru"?"сек":"sec"}
+              <input type="range" min="4" max="20" step="1" value={repeatEverySeconds}
+                disabled={disabled||audioEffectBusy} onChange={event=>onRepeatEveryChange(Number(event.currentTarget.value))}/>
+            </label>
+            <label>{locale==="ru"?"Громкость повторов":locale==="es"?"Volumen de repeticiones":"Repetition volume"} · {whisperGain}%
+              <input type="range" min="5" max="30" step="1" value={whisperGain}
+                disabled={disabled||audioEffectBusy} onChange={event=>onWhisperGainChange(Number(event.currentTarget.value))}/>
+            </label>
+            <p className={styles.note}>{hasVoiceFile?locale==="ru"?"Фразы повторяются тихо, с паузой после каждой полной фразы.":locale==="es"?"Las frases se repiten suavemente, con una pausa después de cada frase completa.":"Phrases repeat quietly, with a pause after each complete phrase.":t.voiceHint}</p>
+          </div>:null}
+          <Feature icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
+            active={binauralEnabled} onToggle={onToggleBinaural}
+            onConfigure={()=>setShowBinauralSettings(value=>!value)} disabled={disabled||audioEffectBusy} settings={t.settings}/>
+          {showBinauralSettings?<div className={styles.settings} data-hypno-binaural-settings style={{gridColumn:"1 / -1"}}>
+            <label>{locale==="ru"?"Частота биения":locale==="es"?"Frecuencia del pulso":"Beat frequency"} · {beatHz} Hz
+              <input type="range" min="1" max="12" step="1" value={beatHz}
+                disabled={disabled||audioEffectBusy} onChange={event=>onBeatHzChange(Number(event.currentTarget.value))}/>
+            </label>
+            <p className={styles.note}>{t.beatHint}</p>
+          </div>:null}
+          {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite" data-hypno-audio-effect-busy>{t.effectBusy}</p>:null}
+          {note==="voice"?<p className={styles.note}>{t.voiceHint}</p>:null}
+        </>:null}
+
+        {group.id==="effects"?<div className={styles.visualPresets} data-hypno-visual-effects>
+          <h4>{t.presetTitle}</h4>
+          <p>{t.presetHelp}</p>
+          <div className={styles.visualPresetGrid} role="group" aria-label={t.presetTitle}>
+            {([
+              {id:"none",icon:"○",ru:"Без эффекта",en:"None",es:"Sin efecto"},
+              {id:"sunlight",icon:"☀",ru:"Свет солнца",en:"Sunlight",es:"Luz solar"},
+              {id:"glow",icon:"✧",ru:"Мягкое сияние",en:"Soft glow",es:"Brillo suave"},
+              {id:"waves",icon:"〰",ru:"Волны сияния",en:"Radiant waves",es:"Ondas de luz"}
+            ] as const).map(item=><button key={item.id} type="button"
+              data-hypno-visual-effect={item.id} disabled={disabled}
+              aria-pressed={item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id}
+              onClick={()=>onLightChange({...light,
+                enabled:item.id!=="none",mode:item.id==="none"?"waves":item.id
+              })}>
+              <span aria-hidden="true">{item.icon}</span><strong>{item[locale]}</strong>
+              {(item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id)?<Check size={18} aria-hidden="true"/>:null}
+            </button>)}
+          </div>
+          <label className={styles.visualPresetIntensity} htmlFor="video-hypno-effect-strength">
+            {t.intensity}<strong>{Math.round(light.opacity*100)}%</strong>
+            <input id="video-hypno-effect-strength" type="range" min="5" max="35" step="5"
+              value={Math.round(light.opacity*100)} disabled={!light.enabled||disabled}
+              onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
+          </label>
+          <p className={styles.note} role="status" data-hypno-effect-status>
+            {light.enabled
+              ?locale==="ru"?"Эффект применён · без вспышек · без оплаты до экспорта":locale==="es"?"Efecto aplicado · sin destellos · sin cobro hasta exportar":"Effect applied · no flashes · no charge until export"
+              :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
+          </p>
+        </div>:null}
+        {group.id==="visual"?<>
+          <Feature icon={<Sun/>} title={t.light} help={t.lightHelp}
+            active={light.enabled}
+            onToggle={()=>onLightChange({...light,enabled:!light.enabled})}
+            onConfigure={()=>setShowLightSettings(value=>!value)}
+            disabled={disabled} settings={t.settings}>
+            {lightOpacities.map((opacity,index)=><button key={opacity} type="button"
+              className={styles.effectChip} data-hypno-light-preset={index}
+              aria-pressed={Math.abs(light.opacity-opacity)<.005} disabled={disabled}
+              onClick={()=>onLightChange({...light,enabled:true,opacity})}>
+              {extra.lightModes[index]}
+            </button>)}
+          </Feature>
+          {showLightSettings?<div className={styles.settings} data-hypno-light-settings>
+            <label>{t.rhythm} <strong>{light.cyclesPerMinute} {t.cycles}</strong>
+              <input type="range" min="5" max="8" step="1" value={light.cyclesPerMinute}
+                disabled={disabled} onChange={event=>onLightChange({...light,cyclesPerMinute:Number(event.currentTarget.value)})}/>
+            </label>
+            <label>{t.intensity} <strong>{Math.round(light.opacity*100)}%</strong>
+              <input type="range" min="5" max="35" step="5" value={Math.round(light.opacity*100)}
+                disabled={disabled} onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
+            </label>
+          </div>:null}
+          <Feature icon={<Quote/>} title={t.text} help={t.textHelp}
+            active={visible} onToggle={()=>toggleVisibility("large")}
+            onConfigure={onOpenPhraseEditor} disabled={disabled} settings={t.settings}>
+            {textPositions.map((position,index)=><button key={position} type="button"
+              className={styles.effectChip} data-hypno-text-position={position}
+              aria-pressed={visible&&(affirmations.position??"center")===position}
+              disabled={disabled} onClick={()=>onAffirmationsChange({
+                ...affirmations,position,enabled:true,
+                visibility:affirmations.enabled
+                  ?(affirmations.visibility.includes("large")?affirmations.visibility:[...affirmations.visibility,"large"])
+                  :["large"],
+              })}>
+              {extra.positions[index]}
+            </button>)}
+          </Feature>
+          <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
+            active={briefFrame} onToggle={()=>{toggleVisibility("frame");setNote("frame");}}
+            onConfigure={()=>setNote("frame")} disabled={disabled} settings={t.settings}/>
+          {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
+          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.visual}
+            active={false} onConfigure={onOpenScenes} disabled={disabled} settings={t.chooseScenes}/>
+          <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp}
+            active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
+            onConfigure={onPickPhoto} disabled={disabled} settings={t.choosePhoto}/>
+        </>:null}
+
+      </div>
+    </section>)}
+    <div className={styles.summary} data-hypno-summary aria-live="polite">
+      <span><Check size={17} aria-hidden="true"/>{extra.selected}: {activeGroup==="visual"?visualCount:activeGroup==="audio"?audioCount:Number(light.enabled)}</span>
+      <span className={styles.modeBadge}>{extra.noFlashes}</span>
+    </div>
+    <div className={styles.actions} data-hypno-actions>
+      <button type="button" data-hypno-create className={styles.create} disabled={disabled} onClick={onCreate}>
+        <Sparkles size={23} aria-hidden="true"/><strong>{t.applyCreate}</strong><ArrowRight size={21} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hypno-add-effects className={styles.withoutEffects}
+        disabled={disabled} aria-controls={"hypno-group-"+(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}
+        onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}>
+        <Play size={20} aria-hidden="true"/><strong>{t.withoutCreate}</strong>
+      </button>
+    </div>
+    {status?<p className={styles.note} role="status" aria-live="polite" data-hypno-generate-status>{status}</p>:null}
+    <p className={styles.privacy}>{t.privacy}</p>
+  </section>;
+}

@@ -14,14 +14,47 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // Playwright's label click completes. Verify the actual native radio AND its
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
-  await enquiry.locator('[data-express-focus="' + focus + '"]').click();
-  await page.waitForFunction((target) => {
-    const root = document.querySelector('[data-personal-express-enquiry]');
-    const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
-    const card = root?.querySelector('[data-express-focus="' + target + '"]');
-    return radio instanceof HTMLInputElement && radio.checked
-      && card?.getAttribute("data-selected") === "true";
-  }, focus, { timeout: 3000 });
+  const card = enquiry.locator('[data-express-focus="' + focus + '"]');
+  // The mobile bottom nav is fixed. When expanded content changes height,
+  // WebKit may leave the large label behind that toolbar. A user would scroll
+  // the card into a visible touch position first: do the same, and ASSERT the
+  // real card receives a hit before making exactly ONE native touch tap.
+  // Real touch users scroll before selecting: settle the viewport-aware target
+  // once, without repeating any tap or changing consent on their behalf.
+  await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  await card.scrollIntoViewIfNeeded({timeout:15000});
+  const targetHit = await card.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+    const top = document.elementFromPoint(x,y);
+    return {
+      hittable: !!top && (top === node || node.contains(top)),
+      rect: {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+      obstruction: top?.closest("nav")?.getAttribute("aria-label") || top?.tagName || null,
+    };
+  });
+  assert.ok(targetHit.hittable, "One-tap focus card remains behind navigation after scroll: " + JSON.stringify(targetHit));
+  await card.tap();
+  // WebKit can briefly delay React's selected-card paint while the mobile
+  // anchor settles. Still require BOTH native radio.checked and the real
+  // rendered selected card after a SINGLE user tap (never retry a lost tap).
+  try {
+    await page.waitForFunction((target) => {
+      const root = document.querySelector('[data-personal-express-enquiry]');
+      const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
+      const card = root?.querySelector('[data-express-focus="' + target + '"]');
+      return radio instanceof HTMLInputElement && radio.checked
+        && card?.getAttribute("data-selected") === "true";
+    }, focus, { timeout: 8000 });
+  } catch (error) {
+    const actual = await enquiry.evaluate((root, target) => ({
+      expanded: root.getAttribute("data-expanded"),
+      nativeChecked: root.querySelector('input[name="express-review-focus"][value="' + target + '"]')?.checked ?? null,
+      selectedCard: root.querySelector('[data-express-focus="' + target + '"]')?.getAttribute("data-selected") ?? null,
+      selectedRadio: root.querySelector('input[name="express-review-focus"]:checked')?.value ?? null,
+    }), focus);
+    throw new Error("Single-tap focus was not committed: " + JSON.stringify({focus, actual, reason:String(error)}));
+  }
 }
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
@@ -114,65 +147,99 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
-            "only one CRM-first contact capture");
-          const featured = main.locator("[data-featured-free-review-testimonials]");
-          await featured.waitFor({ state: "visible" });
-          const featuredGeometry = await featured.evaluate(section => {
-            const cards = [...section.querySelectorAll("[data-testimonial-video-id]")];
-            const bounds = cards.map(card => {
-              const r = card.getBoundingClientRect();
-              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+          // The secure messenger handoff is intentionally lazy-mounted only after
+          // this optional inline form is opened; the first screen has no form.
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(), 0,
+            "no unrequested messenger or contact form is mounted on first paint");
+
+          const reviews = main.locator("[data-featured-free-review-testimonials]");
+          await reviews.waitFor({ state: "visible" });
+          const reviewFeed = reviews.locator('[data-review-list-direction="vertical"]');
+          const reviewGeometry = await reviewFeed.evaluate(element => {
+            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
+            const boxes = cards.map(card => {
+              const rect = card.getBoundingClientRect();
+              return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width:rect.width };
+            });
+            const captions = cards.map(card => {
+              const title = card.querySelector(".site-video-title");
+              const link = card.querySelector(".site-video-watch-link");
+              return {
+                title: title?.textContent?.trim() || "",
+                titleColor: title ? getComputedStyle(title).color : "",
+                linkVisible: !!link && getComputedStyle(link).display !== "none",
+              };
             });
             return {
               ids: cards.map(card => card.getAttribute("data-testimonial-video-id")),
-              bounds,
-              loadedIframes: section.querySelectorAll("iframe").length,
-              displayed: cards.every(card => getComputedStyle(card).display !== "none"),
-            };
-          });
-          assert.equal(featuredGeometry.ids.length, 3, "three authentic videos visible without opening archive");
-          assert.equal(new Set(featuredGeometry.ids).size, 3, "no repeated featured video");
-          assert.equal(featuredGeometry.ids[0], locale === "ru" ? "muOnIHllI7E" : "Dk0LBmOivQo",
-            "RU diagnosis story prioritized; EN/ES use original EN testimonials");
-          assert.equal(featuredGeometry.displayed, true, "three videos are not hidden");
-          assert.equal(featuredGeometry.loadedIframes, 0, "no testimonial autoplay");
-          assert.ok(featuredGeometry.bounds.every(r => r.left >= -2 && r.right <= width + 2),
-            "each featured poster fits the viewport");
-          if (width === 390) await page.screenshot({
-            path: output + "/" + name + "-featured-videos.png", animations: "disabled", timeout: 20000 });
-          const reviews = main.locator("[data-review-stories]");
-          assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
-          assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
-          await reviews.locator(":scope > summary").click();
-          const reviewFeed = reviews.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
-          await reviewFeed.waitFor({ state: "visible" });
-          const reviewGeometry = await reviewFeed.evaluate(element => {
-            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
-            return {
               direction: getComputedStyle(element).flexDirection,
               overflowX: getComputedStyle(element).overflowX,
-              ids: cards.map(item => item.getAttribute("data-testimonial-video-id")),
-              boxes: cards.map(item => {
-                const r = item.getBoundingClientRect();
-                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
-              }),
+              boxes, captions,
+              allVisible: cards.every(card => getComputedStyle(card).display !== "none"),
               iframes: element.querySelectorAll("iframe").length,
+              frames: element.querySelectorAll(".site-video-frame").length,
+              documentOverflow: document.documentElement.scrollWidth - window.innerWidth,
             };
           });
-          assert.equal(reviewGeometry.ids.length, 12, "all twelve authentic testimonials remain");
-          assert.equal(new Set(reviewGeometry.ids).size, 12, "no duplicated testimonials");
-          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "m9RfDgK76PU" : "Dk0LBmOivQo",
-            "primary locale audio first");
-          assert.equal(reviewGeometry.direction, "column", "vertical mobile reviews");
-          assert.ok(reviewGeometry.boxes.every((r,i) => i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2),
-            "testimonials vertically aligned");
-          assert.ok(reviewGeometry.boxes.every(r => r.left >= -2 && r.right <= width + 2),
-            "testimonials within viewport");
-          assert.equal(reviewGeometry.iframes, 0, "testimonials do not autoplay");
+          assert.equal(reviewGeometry.ids.length, 12, "all twelve original client videos visible without an extra tap");
+          assert.equal(new Set(reviewGeometry.ids).size, 12, "one card per original recording");
+          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "muOnIHllI7E" : "Dk0LBmOivQo",
+            "Russian express review first in RU; first English original in EN/ES");
+          assert.equal(reviewGeometry.direction, "column", "every review vertically stacked, never a swipe carousel");
+          assert.equal(reviewGeometry.frames, 12, "each recording has a real click-to-play poster");
+          assert.equal(reviewGeometry.iframes, 0, "no video autoplays or loads a third-party player on first paint");
+          assert.ok(reviewGeometry.allVisible, "none of the twelve cards hidden behind an archive");
+          assert.ok(reviewGeometry.boxes.every((r,i) => r.left >= -2 && r.right <= width + 2
+            && (i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2)),
+            "all cards fit phone and stack in normal document flow");
+          assert.ok(reviewGeometry.captions.every(c => c.title.length > 8
+            && c.titleColor === "rgb(20, 61, 58)" && c.linkVisible),
+            "readable dark headings on warm white and genuine YouTube fallback links");
+          assert.ok(reviewGeometry.documentOverflow <= 2, "no sideways page overflow");
+          assert.equal(await main.locator("[data-review-stories]").count(), 0,
+            "no hidden duplicate video archive after the twelve visible reviews");
           record.testimonials = reviewGeometry.ids.length;
-          if (width === 390) await page.screenshot({
-            path: output + "/" + name + "-reviews.png", animations: "disabled", timeout: 20000 });
+          if (width === 390) {
+            const cards = reviewFeed.locator("[data-testimonial-video-id]");
+            await cards.first().screenshot({path: output + "/" + name + "-review-1.png",
+              animations:"disabled", timeout:20000});
+            await cards.last().screenshot({path: output + "/" + name + "-review-12.png",
+              animations:"disabled", timeout:20000});
+          }
+          // The FAQ is the final block after the enquiry. All six native
+          // disclosures are available without JS or a second navigation.
+          const faq = main.locator("[data-free-review-faq]");
+          await faq.waitFor({ state: "visible" });
+          const items = faq.locator("details");
+          assert.equal(await items.count(), 6, "all six localized questions appear at the bottom");
+          assert.equal(await faq.locator("img").count(), 1, "the FAQ has its own real photo");
+          assert.ok((await faq.locator("h2").innerText()).trim().length > 12,
+            "localized FAQ heading is visible");
+          const firstQuestion = items.first();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "FAQ questions start closed, not an intrusive pop-up");
+          const faqTrigger = firstQuestion.locator("summary");
+          const triggerBox = await faqTrigger.boundingBox();
+          assert.ok(triggerBox && triggerBox.height >= 44 && triggerBox.width <= width,
+            "native FAQ row remains a full-width, tappable phone control");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), true,
+            "tap expands one answer in-place");
+          assert.ok((await firstQuestion.locator("p").innerText()).trim().length > 25,
+            "expanded answer contains meaningful, localized guidance");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "second tap collapses the answer");
+          const faqOrder = await main.evaluate(root => {
+            const enquiry = root.querySelector("[data-personal-express-enquiry]");
+            const faq = root.querySelector("[data-free-review-faq]");
+            return !!(enquiry && faq && (enquiry.compareDocumentPosition(faq) & Node.DOCUMENT_POSITION_FOLLOWING));
+          });
+          assert.ok(faqOrder, "FAQ belongs at the bottom, after the enquiry");
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+            "FAQ remains inside iPhone width");
+          record.faq = 6;
+
           const play = video.locator("button.site-video-play");
           await play.waitFor({ state: "visible" });
           await play.click({ timeout: 15000 });
@@ -220,49 +287,35 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "capture must not block page scrolling");
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
             "no modal after clicking the hero CTA");
-          assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
-            "opening the form is not contact consent");
-          // The protected v2 wizard and the legacy compact capture are distinct
-          // safe variants. Neither navigation nor form opening creates a lead.
-          const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
-          if (wizardV2) {
-            const lead = enquiry.locator('[data-free-express-lead]');
-            assert.equal(await lead.locator('textarea').count(), 1, "one short question");
-            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
-              "explicit consent remains unchecked");
-            assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
-              "no CRM receipt from opening the form");
-            const fit = await enquiry.evaluate(root => {
-              const card = root.getBoundingClientRect();
-              const submit = root.querySelector('[data-free-express-lead] button[type="submit"]')?.getBoundingClientRect();
-              const fixedTab = [...document.querySelectorAll('nav')]
-                .filter(nav => getComputedStyle(nav).position === 'fixed')
-                .map(nav => nav.getBoundingClientRect())
-                .find(rect => rect.top > 0 && rect.top < innerHeight);
-              return { cardHeight: card.height, cardTop: card.top, submitBottom: submit?.bottom,
-                tabTop: fixedTab?.top ?? innerHeight,
-                overflow: document.documentElement.scrollWidth - innerWidth };
-            });
-            record.compactLeadFit = fit;
-            assert.ok(fit.cardHeight <= height - 90,
-              "first-contact section is not one mobile screen: " + JSON.stringify(fit));
-            assert.ok(fit.submitBottom <= fit.tabTop - 8,
-              "submit button must sit above fixed bottom tabs: " + JSON.stringify(fit));
-            assert.ok(fit.overflow <= 2, "mobile capture has no horizontal overflow");
-            assert.equal(await page.locator('[data-first-party-consent]').isVisible(), false,
-              "optional visitor analytics prompt cannot cover an open contact form");
-            if (width === 390) await page.screenshot({
-              path: output + "/" + name + "-compact-v2.png",
-              animations: "disabled", timeout: 20000 });
-          } else {
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-            // Telegram's readiness fallback is also role="status" and is NOT a lead.
-            // Inspect only this consented capture's receipt/confirmation statuses.
-            assert.equal(await enquiry.locator('[data-reiki-phone-enquiry] [role="status"]').count(), 0,
-              "no actual lead saved by navigating");
-          }
+          const widget=enquiry.locator('[data-messenger-only-contact]');
+          await widget.waitFor({state:"visible",timeout:15000});
+          assert.equal(await widget.count(), 1, "exactly one opted-in messenger handoff after opening the form");
+          const details=widget.locator('details');
+          if(await details.count()&&await details.getAttribute('open')===null)
+            await details.locator(':scope > summary').click();
+          const wa=widget.locator('a[data-messenger-only-channel="whatsapp"]');
+          const tg=widget.locator('a[data-messenger-only-channel="telegram"]');
+          await wa.waitFor({state:"visible",timeout:10000});
+          await tg.waitFor({state:"visible",timeout:10000});
+          const draft=new URL(await wa.getAttribute('href'));
+          assert.equal(draft.origin,'https://wa.me',"approved WhatsApp contact");
+          assert.ok((draft.searchParams.get('text')||'').length>24,
+            "public review identity and request appear in the messaging draft");
+          assert.equal(await widget.locator('input[type="tel"],input[type="email"],form').count(),0,
+            "email and typed phone cannot be a substitute for verified messenger contact");
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "opening a link does not prove CRM write, booking or delivery");
+          assert.equal(await widget.locator('a[data-messenger-only-channel]').count(),2,
+            "exactly two messenger choices");
+          const fit=await widget.evaluate(node=>({
+            width:node.getBoundingClientRect().width,
+            overflow:document.documentElement.scrollWidth-innerWidth,
+          }));
+          record.compactLeadFit=fit;
+          assert.ok(fit.overflow<=2,"messenger options stay within iPhone width");
+          if(width===390)await page.screenshot({
+            path:output+"/"+name+"-messenger-only.png",animations:"disabled",timeout:20000
+          });
           // Touch users select the full 94px+ labelled card, not the tiny native
           // radio dot. WebKit may still be smoothly scrolling from the hero
           // anchor and a direct input.check() can hit a moving 19px target.
@@ -274,23 +327,37 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             && (width === 320 || width === 430) ? 3 : 1;
           for (let cycle = 0; cycle < cycles; cycle++) {
             await tapFocusAndVerify(page, enquiry, "energy");
-            assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
-              "changing the focus cannot silently opt the user in");
+            assert.equal(await widget.locator('input[type="checkbox"][required]').count(),0,
+              "focus change never creates hidden consent or unverified web submission");
             await tapFocusAndVerify(page, enquiry, "situation");
           }
-          const receiptStatus = wizardV2
-            ? '[data-free-express-receipt]'
-            : '[data-reiki-phone-enquiry] [role="status"]';
-          assert.equal(await enquiry.locator(receiptStatus).count(), 0,
-            "changing focus is not a lead or booking");
-          await enquiry.locator('input[type="tel"]').focus();
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "changing the selected focus never fabricates a CRM lead");
+          if(await details.count())await details.locator(':scope > summary').focus();
           await page.keyboard.press("Escape");
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
           await reveal.click();
+          // A single real WebKit touch/click can commit React's aria-expanded
+          // after Playwright's click has resolved. Do not retry the click or
+          // silently accept a lost tap: require the actual React render within
+          // a bounded window, or fail this exact viewport.
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "true" &&
+              panel instanceof HTMLElement && !panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
           await reveal.click();
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "false" &&
+              panel instanceof HTMLElement && panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");

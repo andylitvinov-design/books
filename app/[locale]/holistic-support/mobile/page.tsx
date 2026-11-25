@@ -8,7 +8,11 @@ import { GREEK_VIDEO_SERIES } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
+import { buildSupportLearningCatalog, type PublishedLearningCourse } from "@/lib/holistic-support/learning-catalog";
 import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
+import { HolisticStudyAcademy } from "@/components/holistic-study-academy";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
 
@@ -26,6 +30,18 @@ function andreyMasterProfile(locale: "en" | "ru" | "es") {
 // These four English originals are already published in the Academy. The
 // current Support page curates only Sun Flight; the alternate screen presents
 // the other three existing, verified recordings without rendering new media.
+const russianMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Авторская визуализация полёта к Солнцу для внимания и воображения.",
+  "tantra-reiki": "Практика Тантра Рейки с Андреем: внимание, присутствие и контакт.",
+  "reiki-yggdrasil": "Знакомство с образом Древа миров в авторской практике Рейки Иггдрасиль.",
+  "kundalini-reiki": "Авторская медитация Кундалини Рейки для знакомства с практикой.",
+};
+const spanishMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Visualización guiada con la imagen del sol para explorar la atención y la imaginación.",
+  "tantra-reiki": "Práctica original de Tantra Reiki guiada por Andrey, con audio en inglés.",
+  "reiki-yggdrasil": "Introducción guiada a Reiki Yggdrasil a través de la grabación original.",
+  "kundalini-reiki": "Meditación guiada original en inglés sobre Kundalini Reiki.",
+};
 const englishThemes: Record<string, MeditationTopic[]> = {
   "flight-to-sun": ["business", "love", "energy", "health"],
   "tantra-reiki": ["love", "energy"],
@@ -99,7 +115,10 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
     ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
-  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "pump";
+  // Study is a focused Academy entry. Existing video, services and test views remain intact.
+  if (initialChoice === "pump") return <HolisticStudyAcademy locale={locale}
+    learningItems={buildSupportLearningCatalog(locale, [], [])} />;
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
@@ -159,6 +178,8 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
     .map((video): SupportMobileVideo => ({
       id: video.youtubeId!,
       title: video.title,
+      description: locale === "ru" ? russianMeditationDescriptions[video.key]
+        : locale === "es" ? spanishMeditationDescriptions[video.key] : video.description,
       topics: englishThemes[video.key] ?? ["energy"],
       program: video.key === "flight-to-sun" ? "sun" : "reiki",
       author: "andrey",
@@ -182,8 +203,18 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
 
   // Public, verified catalogue metadata only; no user test results in this prop.
   const guideTests = buildSupportGuideTestShortlists({ locale });
+  // This existing repository returns approved published practitioner courses only.
+  // Database unavailability never exposes drafts or disables source-backed Academy.
+  let publishedCourses: PublishedLearningCourse[] = [];
+  try {
+    publishedCourses = await createPractitionerCourseRepository(getAppConfig()).catalog();
+  } catch {
+    publishedCourses = [];
+  }
+  const learningItems = buildSupportLearningCatalog(locale, originalMysteryCourses, publishedCourses);
   return (
     <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
-      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests} />
+      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests}
+      learningItems={learningItems} />
   );
 }

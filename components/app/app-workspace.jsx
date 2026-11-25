@@ -10,8 +10,9 @@ import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
+import InstantCabinetLink from './instant-cabinet-link'
 import PracticeRequestConversation from './practice-request-conversation'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
@@ -56,19 +57,32 @@ import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import VideoCreditsPanel from '@/components/app/video-credits-panel'
+import AccountLoginMethods from '@/components/app/account-login-methods'
+import AccountMessagingEntry from '@/components/app/account-messaging-entry'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
-import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
+import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
+import { clarityDaybookPath } from '@/lib/app/clarity-program.mjs'
+import {programContinuation,programFromContinuation,programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
+import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/profile-courses-switch'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
+import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
+import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import ProfileSessionsDashboard from '@/components/app/profile-sessions-dashboard'
+import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
+import MyCoachingPlan from '@/components/app/my-coaching-plan'
+import CoachingDaybook from '@/components/app/coaching-daybook'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
-import { appFetch } from '@/lib/app/client-fetch'
+import { appFetch, clearCabinetBootstrapCache, getCabinetBootstrap, peekCabinetBootstrap } from '@/lib/app/client-fetch'
+import {directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
   readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
   takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
@@ -82,6 +96,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
@@ -120,6 +135,7 @@ function localZone() {
   }
 }
 function goSignedOut(setData) {
+  clearCabinetBootstrapCache()
   setData(null)
   try {
     const channel = new BroadcastChannel('hh-app-session')
@@ -129,26 +145,105 @@ function goSignedOut(setData) {
     /* No persistent browser fallback. */
   }
 }
+// The route stays mounted across first-level tab changes. usePathname
+// observes History API transitions without a new dynamic server round trip.
+export function AppWorkspaceNavigator({ locale, path = [] }) {
+  const pathname = usePathname()
+  const prefix = `/${locale}/app/`
+  const routedPath = typeof pathname === 'string' && pathname.startsWith(prefix)
+    ? pathname.slice(prefix.length).split('/').filter(Boolean)
+    : path
+  return <AppWorkspace locale={locale} path={routedPath} />
+}
+
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
-    searchParams = useSearchParams(),
-    [data, setData] = useState(null),
-    [state, setState] = useState('loading'),
-    [error, setError] = useState(null)
+    searchParams = useSearchParams()
+  const page = path[0] || 'portrait',
+    recordId = path[1],
+    root = `/${locale}/app`,
+    view = page === 'portrait' ? 'portrait' : 'full'
+  const cabinetTheme = ['course', 'business', 'coaching', 'practice'].includes(page) ? undefined : 'daybook'
+  // Avoid showing the previous tab's reduced Profile snapshot as full data.
+  const [viewState, setViewState] = useState(() => {
+    const cached = peekCabinetBootstrap(view)
+    return { view, data: cached, state: cached ? 'ready' : 'loading' }
+  })
+  const data = viewState.view === view ? viewState.data : peekCabinetBootstrap(view)
+  const state = viewState.view === view ? viewState.state : (data ? 'ready' : 'loading')
+  const activeView = useRef(view)
+  activeView.current = view
+  const setData = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.data : peekCabinetBootstrap(view)
+      const next = typeof value === 'function' ? value(previous) : value
+      return { view, data: next, state: current.view === view ? current.state : (next ? 'ready' : 'loading') }
+    })
+  }, [view])
+  const setState = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.state : (peekCabinetBootstrap(view) ? 'ready' : 'loading')
+      return {
+        view,
+        data: current.view === view ? current.data : peekCabinetBootstrap(view),
+        state: typeof value === 'function' ? value(previous) : value,
+      }
+    })
+  }, [view])
+  const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false),
     [nativeApp,setNativeApp] = useState(false),
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
   const [savedInstallContext,setSavedInstallContext]=useState(false)
+  const [telegramAvailable,setTelegramAvailable]=useState(false)
+  const [profileAuthOpen,setProfileAuthOpen]=useState(false)
+  // Preview and Life/Work mode switch stay public; guest account actions require sign-in.
+  function interceptGuestProfileAction(event) {
+    const target=event.target?.closest?.('button,a,[role="button"]')
+    // Public tools must remain reachable before registration. Match the actual
+    // localized first-party destination, not arbitrary private cabinet links.
+    const href=target?.getAttribute('href') || ''
+    if (target?.matches('a[data-profile-my-video]') && /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/.test(href)) return
+    if (target?.matches('a[data-clarity-reiki-practitioner]') && /^\/(?:ru|en|es)\/academy\/principles-of-energywork\/?$/.test(href)) return
+    if (!target || target.closest('[data-profile-mode-switch]') ||
+      target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
+      target.closest('[data-profile-language-switch]') ||
+      target.closest('[data-profile-chrome-navigation]') ||
+      target.closest('[data-profile-auth-dialog]') || target.closest('[data-clarity-start]') || target.closest('[data-clarity-details]') || target.closest('[data-program-start]')) return
+    event.preventDefault()
+    event.stopPropagation()
+    const program=target.closest('[data-goal-vector-entry]')?'goal':target.closest('[data-business-start],[data-business-daybook-link]')?'business':null
+    if(program){if(!busy)void signin('google',program);return}
+    setProfileAuthOpen(true)
+  }
+  useEffect(()=>{
+    if(state==='loading'||state==='ready'||state==='unavailable')return
+    const controller=new AbortController()
+    appFetch('auth/providers',undefined,undefined,{signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setTelegramAvailable(value.telegram===true)})
+      .catch(()=>{/* Fail closed: retain Google when Telegram is unavailable. */})
+    return ()=>controller.abort()
+  },[state])
   // Ephemeral account-scoped handoff: no private Save or report URL in storage.
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const signinAttempted = useRef(false)
-  const page = path[0] || 'portrait',
-    recordId = path[1],
-    root = `/${locale}/app`
+  // Preserve existing report and goal bookmarks when opening a split Profile tab.
+  useEffect(() => {
+    if (page !== 'portrait') return
+    const fragment = window.location.hash
+    const destination = fragment === '#personal-reports' ? 'reports'
+      : fragment === '#hh-development-program' ? 'path' : null
+    if (destination && searchParams.get('space') !== destination)
+      router.replace(root + '/portrait?space=' + destination + fragment, { scroll: false })
+  }, [page, root, router, searchParams])
   const practiceInner = page === 'practice'
   const retestLifetime = useRef({ mounted: false, epoch: 0 })
   const retestScope = useRef(null)
@@ -160,13 +255,18 @@ export default function AppWorkspace({ locale, path = [] }) {
     return () => { lifetime.mounted = false; lifetime.epoch += 1 }
   }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
+  // Discovery and OPORA previews are public; a saved lesson belongs to My courses.
+  const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
+    ? 'discover' : 'saved'
+  // The visual Course index inherits the Profile's unified shell; lesson/discovery views remain unchanged.
+  const courseLanding = page === 'course' && searchParams.get('view') === 'courses' && !searchParams.get('courseId')
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
   const loadEpoch = useRef(0)
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ refresh = true } = {}) => {
     const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
+      const fresh = await getCabinetBootstrap(view, { refresh })
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
@@ -185,12 +285,18 @@ export default function AppWorkspace({ locale, path = [] }) {
               : 'error',
       )
     }
-  }, [page])
+  }, [view, setData, setState])
   useEffect(() => {
-    setState('loading')
-    void load()
+    const cached = peekCabinetBootstrap(view)
+    if (cached) {
+      setData(cached)
+      setState('ready')
+    } else {
+      setState('loading')
+      void load({ refresh: false })
+    }
     return () => { loadEpoch.current += 1 }
-  }, [load])
+  }, [load, view, setData, setState])
   useEffect(() => {
     let channel
     try {
@@ -198,6 +304,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       channel.onmessage = (e) => {
         if (e.data === 'signed-out') {
           retestLifetime.current.epoch += 1
+          clearCabinetBootstrapCache()
           setData(null)
           setState('signed-out')
           router.refresh()
@@ -215,6 +322,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       },
       hide = () => {
         retestLifetime.current.epoch += 1
+        clearCabinetBootstrapCache()
         setData(null)
         setState('loading')
       }
@@ -234,7 +342,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     pendingSaveInstallAccountId.current=null
     if(shouldPauseNewSignupSave({
       pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
-    })){
+    }) || shouldOfferWhatsAppAfterSignup({pendingAccountId,accountId:currentAccountId})){
       savedExitDestination.current=destination
       setSavedInstallContext(true)
       setInstallOfferAccountId(currentAccountId)
@@ -249,7 +357,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     savedExitDestination.current=null
     if(destination)router.replace(destination)
   }
-  async function signin() {
+  async function signin(providerChoice = 'google', daybookProgram = null) {
     signinAttempted.current = true
     setBusy(true)
     setError(null)
@@ -273,19 +381,24 @@ export default function AppWorkspace({ locale, path = [] }) {
       // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
+        ...(providerChoice === 'telegram' ? { provider: 'telegram' } : {}),
+        ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
+        // Private result intent survives Google/Telegram OAuth; never return it to the public test shell.
+        ...(page === 'portrait' && searchParams.get('space') === 'reports' ? { continueTo: 'reports' } : {}),
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
             : { continueTo: 'practice-preview' }
           : {}),
         ...(native ? { native: true } : {}),
-        serviceId: searchParams.get('service') || null,
+        serviceId: daybookProgram ? null : searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
+        ...(daybookProgram ? {continueTo:programContinuation(daybookProgram)} : {}),
       })
       if (native) {
         // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
@@ -489,7 +602,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   }
   if (deleted || state === 'deletion')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         <section className="hh-panel">
           <p className="hh-kicker">Holistic House</p>
           <h1>{c.deletion}</h1>
@@ -500,25 +613,43 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'loading')
     return (
-      <main className="hh-app" aria-busy="true">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.loading}</h1>
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
+        <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
+          : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
+            : page === 'settings' ? 'settings'
+              : ['portfolio', 'reports'].includes(page) ? 'reports' : 'today'} />
+        <section className="hh-panel" role="status" aria-live="polite">
+          <p className="hh-kicker">Holistic House</p>
+          <p>{c.loading}</p>
+        </section>
       </main>
     )
   if (state === 'ready' && !data)
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
         <h1>{c.loading}</h1>
       </main>
     )
-  if (state !== 'ready' && page === 'course' && state !== 'unavailable')
+  // Guest/expired-session/failed-bootstrap course screens stay inside My Space.
+  if (state !== 'ready' && page === 'course')
     return (
-      <main className="hh-app hh-app--course-guest">
-        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
-          errorMessage={error ? message(error, c) : undefined}
-          onRetry={state === 'error' ? load : undefined}
-          legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+      <main className="hh-app hh-app--course-guest" data-profile-courses-guest>
+        <ProfileHubTabs locale={locale} active="courses" />
+        <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
+        {stressSignup
+          ? <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+              onTelegramStart={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+              onRetry={state === 'error' ? load : undefined}
+              legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+          : <ProfileCoursesGuest locale={locale} mode={courseChoiceMode} busy={busy}
+              onSignin={()=>signin('google')} onTelegramSignin={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              loadingError={state === 'error' || state === 'unavailable'}
+              onRetry={state === 'error' ? load : undefined}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined} />}
       </main>
     )
   // Public Cabinet entry explains the personal and practitioner spaces only to
@@ -526,19 +657,27 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Course/test deep links retain the dedicated Google handoff flows above.
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
-      <main className="hh-app hh-app--cabinet-guest">
+      <main className="hh-app hh-app--cabinet-guest" data-cabinet-theme={cabinetTheme} data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
+        <ProfileHubTabs locale={locale} active="today" />
         <CabinetGuestOverview
-          locale={locale} busy={busy} onSignin={signin}
+          locale={locale} busy={busy} onSignin={()=>signin('google')}
+          onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
           unavailable={state === 'unavailable'}
           onRetry={state === 'error' ? load : undefined}
           sessionNotice={state === 'error'}
           errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
         />
+        <ProfileGuestAuthDialog locale={locale} open={profileAuthOpen} busy={busy}
+          telegramAvailable={telegramAvailable}
+          errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+          onGoogle={()=>signin('google')} onTelegram={()=>signin('telegram')}
+          onDismiss={()=>setProfileAuthOpen(false)} />
       </main>
     )
   if (state !== 'ready')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
+        {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
@@ -554,9 +693,20 @@ export default function AppWorkspace({ locale, path = [] }) {
                 : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
-            <button className="hh-primary" onClick={signin} disabled={busy}>
-              {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
-            </button>
+            <>
+              {telegramAvailable && <button className="hh-primary" data-telegram-auth="login"
+                onClick={()=>signin('telegram')} disabled={busy}>
+                {locale==='ru'?'Войти через Telegram':locale==='es'?'Entrar con Telegram':'Continue with Telegram'}
+              </button>}
+              <button className="hh-primary" onClick={()=>signin('google')} disabled={busy}>
+                {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
+              </button>
+              {telegramAvailable && <p className="hh-muted">
+                {locale==='ru'?'Уже есть Google-кабинет? Войдите через Google и привяжите Telegram в настройках.':
+                  locale==='es'?'¿Ya usas Google? Entra con Google y vincula Telegram en Ajustes.':
+                  'Existing Google Cabinet? Sign in with Google first and link Telegram in Settings.'}
+              </p>}
+            </>
           )}
           {page === 'course' && (stressSignup
             ? <Course14DayOverview locale={locale} programId="stress" compact />
@@ -579,6 +729,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', href: root + '/progress', icon: Activity },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My Coaching Plan', href: root + '/my-coaching-plan', icon: Target },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
@@ -589,7 +740,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
-    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My plan', href: root + '/my-coaching-plan', icon: Target },
+    // Settings remains available from the account menu; the bottom dock keeps My Plan visible.
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
@@ -604,8 +756,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : 'hh-app'}>
-      {!documentReader && !practiceInner && <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-cabinet-theme={documentReader ? undefined : cabinetTheme} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+      {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
@@ -614,19 +766,19 @@ export default function AppWorkspace({ locale, path = [] }) {
           <summary>{data.account.displayName || c.account}</summary>
           <div>
             {nav.map(({ id, label, href }) => (
-              <Link key={id} href={href} prefetch={false}
+              <InstantCabinetLink key={id} href={href} prefetch={false}
                 aria-current={navIsActive(id) ? 'page' : undefined}
                 onClick={(event) => event.currentTarget.closest('details.hh-account-menu')?.removeAttribute('open')}
-              >{label}</Link>
+              >{label}</InstantCabinetLink>
             ))}
             <div className="hh-account-menu-secondary">
               <details className="hh-account-more">
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
-                <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
-                <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
-                <Link href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</Link>
-                <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
-                <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
+                <InstantCabinetLink href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/history'} prefetch={false}>{c.history}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/monitoring'} prefetch={false}>{c.monitoring}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/settings'} prefetch={false}>{c.settings}</InstantCabinetLink>
               </details>
               <Link
                 href={`/${locale === 'en' ? 'ru' : 'en'}/app/${page}${recordId ? `/${recordId}` : ''}`}
@@ -637,12 +789,12 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'runs' && (
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
-            <Link key={id} href={href} prefetch={false}
+            <InstantCabinetLink key={id} href={href} prefetch={false}
               aria-current={navIsActive(id) ? 'page' : undefined}
-            >{label}</Link>
+            >{label}</InstantCabinetLink>
           ))}
         </nav>
       )}
@@ -653,27 +805,66 @@ export default function AppWorkspace({ locale, path = [] }) {
           // unfinished onboarding, or a stale/different account.
           const fresh=await load()
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            // First-time phone Messenger entry: return to the selected master
+            // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='clarity'){
+              router.replace(clarityDaybookPath(searchParams.get('clarityLocale') || locale))
+              return
+            }
+            const daybookProgram=programFromContinuation(searchParams.get('afterSignIn'))
+            if(page==='portrait'&&daybookProgram){
+              router.replace(programDaybookPath(searchParams.get('programLocale')||locale,daybookProgram))
+              return
+            }
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
+              try{
+                const chatLocale=searchParams.get('chatLocale')
+                const destination=directMessengerReturnPath(
+                  ['en','ru','es'].includes(chatLocale)?chatLocale:locale,
+                  searchParams.get('to')||null)
+                router.replace(destination)
+                return
+              }catch{/* Malformed continuation does not skip onboarding. */}
+            }
             if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
             else setInstallOfferAccountId(fresh.account.id)
           }
         }} />
       ) : (
         <>
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' || page === 'portrait' ? data.account : null} courseLanding={courseLanding} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
-            <>
-              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
-              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
-              <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-                reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
-            </>
-          )}
-          {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
+             <>
+               {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
+                 <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <DreamPathMap locale={locale} />
+                 <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
+               </>}
+               {searchParams.get('space') === 'path' && <>
+                 <DreamPathMap locale={locale} />
+                 <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
+                 <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
+                 <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
+               </>}
+               {searchParams.get('space') === 'reports' && <>
+                 <ProfileResultsArchive locale={locale} results={data.results || []} />
+                 <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
+                   reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
+               </>}
+               {searchParams.get('space') === 'sessions' && <ProfileSessionsDashboard locale={locale}
+                 savedSessions={data.savedSessions || []} services={data.services || []} />}
+             </>
+           )}
+           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
+          {page === 'course' && !courseLanding && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+           {page === 'course' && <div id="my-courses-content" data-course-content aria-hidden="true" />}
+           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
              ? <TraditionCoaching key={data.account.id + recordId} accountId={data.account.id}
@@ -682,6 +873,7 @@ export default function AppWorkspace({ locale, path = [] }) {
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null}
             accountId={data.account.id} key={data.account.id} showcaseEntry />}
+          {page === 'videos' && <VideoCreditsPanel accountId={data.account.id} locale={locale}/>}
           {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -781,25 +973,43 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
-            <>
-              <Preferences data={data} locale={locale} onDone={load} />
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
-              <SubscriptionSettings />
-              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
-              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
-              <InstallHolisticHouse locale={locale} />
-              {nativeApp
-                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
-                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
-              <Privacy
-                locale={locale}
-                logout={logout}
-                onDeleted={() => {
-                  goSignedOut(setData)
-                  setDeleted(true)
-                }}
-              />
-            </>
+            <div data-profile-settings-disclosures>
+              <ProfileSettingsDisclosure id="hh-settings-account"
+                title={locale === 'ru' ? 'Аккаунт и личные данные' : locale === 'es' ? 'Cuenta y datos' : 'Account & personal data'}
+                subtitle={locale === 'ru' ? 'Имя, язык, часовой пояс и вход' : 'Name, language, time zone and sign-in'}>
+                <Preferences data={data} locale={locale} onDone={load} />
+                {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                  accountId={data.account.id} locale={locale}/>}
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-messengers" deepLinks={['hh-telegram-connect']}
+                title={locale === 'ru' ? 'Telegram и WhatsApp' : 'Telegram & WhatsApp'}
+                subtitle={locale === 'ru' ? 'Подключения, согласия и сообщения' : 'Connections, consent and messages'}>
+                <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
+                <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+                <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-plans"
+                title={locale === 'ru' ? 'Подписка и тарифы' : locale === 'es' ? 'Suscripción y planes' : 'Subscription & plans'}
+                subtitle="Free · Practice €5 · Master €20 · Pro €40">
+                <SubscriptionSettings />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-more" deepLinks={['hh-phone-notifications']}
+                title={locale === 'ru' ? 'Уведомления и приватность' : 'Notifications & privacy'}
+                subtitle={locale === 'ru' ? 'Уведомления, установка и управление данными' : 'Alerts, install and data controls'}>
+                <InstallHolisticHouse locale={locale} />
+                {nativeApp
+                  ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                  : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+                <Privacy
+                  locale={locale}
+                  logout={logout}
+                  onDeleted={() => {
+                    goSignedOut(setData)
+                    setDeleted(true)
+                  }}
+                />
+              </ProfileSettingsDisclosure>
+            </div>
           )}
         </>
       )}
@@ -807,15 +1017,15 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
         ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
         {mobileNav.map(({ id, label, href, icon: Icon }) => (
-          <Link key={id} href={href} prefetch={false}
+          <InstantCabinetLink key={id} href={href} prefetch={false}
             aria-current={navIsActive(id) ? 'page' : undefined}
-          ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
+          ><Icon aria-hidden="true" size={22} /><span>{label}</span></InstantCabinetLink>
         ))}
       </nav>}
     </main>
@@ -884,7 +1094,10 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,saved.sourceKind,saved.resource.id),saved.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      // A completed guest test opens directly in the existing full private report.
+      // Skip optional post-signup install and WhatsApp offers for this result.
+      if(saved.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
     } catch (e) {
       setError(
@@ -917,7 +1130,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,intent.sourceKind,intent.resourceId),intent.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      if(intent.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
       return
     }
@@ -2553,7 +2767,7 @@ function PortfolioPage({ data, locale }) {
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
       {allGroups.length > 0 && (
-        <details className="hh-insights-export">
+        <details id="hh-insights-export" className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
           <ClientReportActions data={data} locale={locale} />
         </details>
@@ -3258,7 +3472,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/portrait#personal-reports')
+      router.replace('/' + locale + '/app/portrait?space=reports#personal-reports')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -3269,7 +3483,7 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+        <Link className="hh-primary" href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
           {ru ? 'К моим отчётам' : 'Back to My Reports'}
         </Link>
       </section>
@@ -3279,7 +3493,7 @@ function SavedReportPage({ id, locale, reload }) {
   return (
     <article className="hh-saved-document-reader" data-canonical-saved-report>
       <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
-        <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+        <Link href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
           {ru ? '← Мои отчёты' : '← My reports'}
         </Link>
         <Link href={'/' + (ru ? 'en' : 'ru') + '/app/reports/' + encodeURIComponent(id)} prefetch={false}>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="880" viewBox="0 0 640 880" role="img" aria-labelledby="title desc">
+<title id="title">Samir the Genie — original character portrait</title><desc id="desc">A kind amber-skinned storyteller in a plum-and-gold robe with a glowing star compass.</desc>
+<defs>
+<radialGradient id="night" cx=".48" cy=".37" r=".9"><stop stop-color="#714579"/><stop offset=".5" stop-color="#36254f"/><stop offset="1" stop-color="#18182e"/></radialGradient>
+<linearGradient id="skin" x1="0" x2="1" y1="0" y2=".7"><stop stop-color="#f5c48c"/><stop offset=".46" stop-color="#c98253"/><stop offset="1" stop-color="#8e4830"/></linearGradient>
+<linearGradient id="robe" x1="0" x2="1"><stop stop-color="#281832"/><stop offset=".5" stop-color="#78426e"/><stop offset="1" stop-color="#352349"/></linearGradient>
+<linearGradient id="sash" x1="0" x2=".7" y1="0" y2="1"><stop stop-color="#79dfc8"/><stop offset="1" stop-color="#167584"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#fff9c7"/><stop offset=".3" stop-color="#f9d783"/><stop offset=".7" stop-color="#c89138" stop-opacity=".48"/><stop offset="1" stop-color="#dfaa44" stop-opacity="0"/></radialGradient>
+<pattern id="stars" width="96" height="110" patternUnits="userSpaceOnUse"><circle cx="18" cy="42" r="1.4" fill="#f8e4b9"/><circle cx="83" cy="89" r="1.1" fill="#ffeac0"/><path d="M61 10v10m-5-5h10" stroke="#efcc8a" stroke-width="1.3"/></pattern>
+<filter id="glow"><feGaussianBlur stdDeviation="13"/></filter></defs>
+<rect width="640" height="880" fill="url(#night)"/><rect width="640" height="880" fill="url(#stars)" opacity=".86"/>
+<path d="M4 168Q160 10 332 56T640 182" fill="none" stroke="#d3ab68" stroke-opacity=".23" stroke-width="13"/>
+<circle cx="125" cy="257" r="127" fill="url(#halo)" filter="url(#glow)"/>
+<g transform="translate(126 256)" stroke="#f2d08b" fill="none" stroke-linecap="round"><circle r="62" stroke-width="5"/><circle r="47" stroke-width="2"/><path d="M-82 0h164M0-82v164M-53-53L53 53M53-53L-53 53" stroke-width="1.5"/><path d="M0-49L14-13 48 0 14 14 0 49-14 13-48 0-14-14Z" fill="#ffdf8b" stroke="#bd8c3c" stroke-width="3"/><circle r="7" fill="#fff7ce"/></g>
+<path d="M48 880q-14-240 111-315l80-63 88 16 97-9q137 65 174 371Z" fill="url(#robe)" stroke="#c79865" stroke-width="10"/>
+<path d="M166 570l73-66 91 21-33 350H121Z" fill="#723f72" stroke="#cda364" stroke-width="8"/>
+<path d="M432 527q116 55 145 180l17 173H442Z" fill="#30203c" stroke="#cda364" stroke-width="8"/>
+<path d="M247 519q70 53 146 0l29 361H231Z" fill="#f4dfc0"/>
+<path d="M282 542q-8 162 25 338h-65l-20-336Z" fill="url(#sash)" stroke="#e1ba70" stroke-width="5"/>
+<path d="M315 500l-14 53 61 35 55-71-17-72Z" fill="url(#skin)" stroke="#8a4b38" stroke-width="6"/>
+<path d="M208 304q-34-91 12-154 38-67 120-74 94 4 122 88 12 51-8 122l-32-28-49-19-75 17-61 55Z" fill="#221d2a" stroke="#a67955" stroke-width="6"/>
+<path d="M219 317q-12-125 122-143 101 2 111 117l-17 129q-24 94-105 104-96-20-116-110Z" fill="url(#skin)" stroke="#8f513b" stroke-width="6"/>
+<path d="M217 333q-30-31-40 9-4 35 37 47M438 331q28-30 35 6-2 44-38 49" fill="url(#skin)" stroke="#975a40" stroke-width="7"/>
+<path d="M239 314q41-23 73-6M361 310q40-15 69 5" stroke="#2f2027" stroke-width="13" stroke-linecap="round"/>
+<path d="M244 347q31-22 59-2M374 346q27-19 53 3" fill="none" stroke="#3c2729" stroke-width="7" stroke-linecap="round"/>
+<ellipse cx="274" cy="346" rx="9" ry="12" fill="#282229"/><ellipse cx="401" cy="343" rx="9" ry="12" fill="#282229"/><circle cx="277" cy="341" r="3" fill="#fff2d7"/><circle cx="404" cy="339" r="3" fill="#fff2d7"/>
+<path d="M340 348q-22 53-16 72l26 7" fill="none" stroke="#a15b3f" stroke-width="7" stroke-linecap="round"/>
+<path d="M285 430q44 20 91 0" fill="none" stroke="#62382f" stroke-width="9" stroke-linecap="round"/>
+<path d="M307 463q24 13 55-2" fill="none" stroke="#fff1d0" stroke-width="5" stroke-linecap="round"/>
+<path d="M279 421q21 17 45 17m46 0q24-6 42-23" fill="none" stroke="#40282a" stroke-width="10" stroke-linecap="round"/>
+<path d="M296 474q35 20 68-3" fill="none" stroke="#4c332f" stroke-width="12" stroke-linecap="round"/>
+<path d="M220 265q14-129 130-119 98 13 103 125-35-34-73-30-83 11-160 24Z" fill="#25202a"/>
+<path d="M232 228q15-91 88-101M368 124q64 20 68 99" fill="none" stroke="#a79081" stroke-opacity=".75" stroke-width="8" stroke-linecap="round"/>
+<path d="M168 620q-87 40-113 115 8 44 63 40 71-32 102-88" fill="url(#skin)" stroke="#a56748" stroke-width="7"/>
+<path d="M101 778q-47-8-70 18 4 38 52 45 35 2 57-25 41 13 65-24 16-30-8-37-48-3-96 23Z" fill="url(#skin)" stroke="#a56848" stroke-width="7"/>
+<path d="M211 670q28 45 54 90" fill="none" stroke="#e0b978" stroke-width="11" stroke-linecap="round"/>
+<path d="M483 577q98 76 108 186" fill="none" stroke="#b58f6e" stroke-width="17" stroke-linecap="round"/>
+<path d="M150 616q53-42 84-51M474 605q65 25 92 100" fill="none" stroke="#edbe71" stroke-width="5" stroke-dasharray="12 16"/>
+<g fill="#e9c17f"><path d="M194 651l10 18 9-18-9-14Zm307 10 10 17 9-17-9-14Z"/><circle cx="486" cy="741" r="5"/><circle cx="154" cy="719" r="5"/></g>
+</svg>

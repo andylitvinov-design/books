@@ -1,4 +1,9 @@
 import test from 'node:test'
+import './crm-telegram-direct-chat.test.mjs'
+import './crm-telegram-direct-flow.test.mjs'
+import './crm-wave-continuity.test.mjs'
+import './telegram-service-ai-intake.test.mjs'
+import './crm-telegram-service-ai-finalize.test.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
@@ -23,13 +28,28 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.equal(first.body,null)
   assert.match(first.reply,/Приветствую! Спасибо за интерес к экспресс-диагностике/)
   assert.match(first.reply,/в течение трех дней/)
-  assert.match(first.reply,/соглашаетесь/)
+  assert.match(first.reply,/Подходит, начинаем\?$/)
+  assert.doesNotMatch(first.reply,/Нажимая «Да, начинаем»/)
   assert.deepEqual(first.keyboard,[['Да, начинаем']])
   assert.equal(first.keyboard.flat().some(x=>x.startsWith('/')),false)
   const random=transitionTelegramDiagnostic(null,msg('some personal story'))
   assert.equal(random.body,null,'no unsolicited personal text can enter CRM')
   assert.equal(random.stage,'consent')
   assert.equal(random.consent,false)
+})
+test('localized intros end with a question and no duplicate disclaimer',()=>{
+  for(const [locale,end,removed] of [
+    ['ru','Подходит, начинаем?','Нажимая «Да, начинаем»'],
+    ['en','Shall we begin?','By choosing'],
+    ['es','¿Empezamos?','Al elegir «Sí, empezamos»'],
+  ]){
+    const first=transitionTelegramDiagnostic(null,{rawText:'/start hhreview_'+locale,locale})
+    assert.equal(first.stage,'consent',locale)
+    assert.equal(first.body,null,locale+' starts without a private lead')
+    assert.ok(first.reply.endsWith(end),locale+' question terminates greeting')
+    assert.equal(first.reply.includes(removed),false,locale+' excludes the redundant paragraph')
+    assert.equal(first.consent,false,locale+' requires an affirmative action')
+  }
 })
 test('six exact owner-authored RU messages are sent in order; photo and drawing remain separate',()=>{
   const steps=[]
@@ -40,7 +60,7 @@ test('six exact owner-authored RU messages are sent in order; photo and drawing 
   r=transitionTelegramDiagnostic(state(r),msg('Цель: деньги, сложность: выбор, подробности: тестовая цель.'));steps.push(r)
   r=transitionTelegramDiagnostic(state(r),msg('',PHOTO));steps.push(r)
   const expected=[
-    "Приветствую! Спасибо за интерес к экспресс-диагностике.\n\nБуду рад помочь.\n\nМы можем провести блиц диагностику текущей ситуации.\nЭто могут быть деньги, работа, отношения, переезд и тп.\n\nВ блиц-формате я могу дать обратную связь:\n- что сейчас происходит\n- в чем причина (где внутренний ступор)\n- что можно сделать с этим.\n\nЧерез этот бот я задам пару вопросов и потом в течение трех дней сделаю личный разбор.\n\nПодходит, начинаем?\n\nНажимая «Да, начинаем», вы соглашаетесь прислать ответы и фото для одного личного разбора без рекламы. Не отправляйте сюда медицинские документы и результаты тестов. В любой момент можно написать «Стоп».",
+    "Приветствую! Спасибо за интерес к экспресс-диагностике.\n\nБуду рад помочь.\n\nМы можем провести блиц диагностику текущей ситуации.\nЭто могут быть деньги, работа, отношения, переезд и тп.\n\nВ блиц-формате я могу дать обратную связь:\n- что сейчас происходит\n- в чем причина (где внутренний ступор)\n- что можно сделать с этим.\n\nЧерез этот бот я задам пару вопросов и потом в течение трех дней сделаю личный разбор.\n\nПодходит, начинаем?",
     "Выбери, пожалуйста, с какой темой сейчас хотелось бы поработать:\n- деньги/ работа\n- энергия/ здоровье\n- отношения\n- другое.",
     "Вышли, пожалуйста, свое фото (лучше недавнее, за последний год, чтобы четко было видно лицо, в полный рост - ну или любое которое есть).",
     "Спасибо. Фото принял.\n\nНапиши, пожалуйста,\n1) в чем ключевая задача (цель)\n2) в чем сложность\n3) любые подробности, которые стоило бы добавить.",
@@ -358,4 +378,57 @@ test('expired-pilot STOP remains terminal even for legacy sessions',()=>{
   assert.match(webhook,/rawText:isStop\?'\/stop':invite\?'\/start hhreview_'/)
   assert.match(webhook,/if\(restricted&&!ownerChat&&!activeGuest&&!invite&&!isStop\)return \{handled:true\}/)
   assert.match(webhook,/approvedPilotGuest:restricted&&!ownerChat/)
+})
+
+test('completed V2 can renew an expired signed questionnaire link without creating a duplicate CRM request',()=>{
+  for(const [locale,command] of [['ru','/form'],['en','questionnaire'],['es','formulario']]){
+    const done={stage:'done',locale,topic:'business',flowVersion:2,
+      consentAt:'2026-11-16T12:00:00Z'}
+    const resumed=transitionTelegramDiagnostic(done,{rawText:command,locale})
+    assert.equal(resumed.stage,'done')
+    assert.equal(resumed.topic,'business')
+    assert.equal(resumed.refreshHandoff,true)
+    assert.equal(resumed.body,null,'renewal must not create another CRM message')
+    assert.equal(resumed.consent,false,'renewal never grants new consent')
+    assert.deepEqual(resumed.keyboard,[])
+    assert.match(resumed.reply,/https:\/\/holistichouse\.vercel\.app\/.*\/coaching\/intake\?topic=business/)
+    const ordinary=transitionTelegramDiagnostic(done,{rawText:'A separate follow-up',locale})
+    assert.equal(ordinary.refreshHandoff,undefined)
+    assert.equal(ordinary.body,'A separate follow-up')
+    assert.equal(ordinary.reply,null)
+    const noConsent=transitionTelegramDiagnostic({...done,consentAt:null},{rawText:command,locale})
+    assert.equal(noConsent.refreshHandoff,undefined,'a missing consent cannot renew the handoff')
+    const stopped=transitionTelegramDiagnostic({...done,stage:'stopped'},{rawText:command,locale})
+    assert.equal(stopped.reply,null,'STOP is permanent for this session')
+  }
+  const hook=read('lib/crm/messenger-webhook.js')
+  assert.match(hook,/next\.refreshHandoff===true/)
+  assert.match(hook,/issueTelegramCoachingHandoff/)
+  assert.match(hook,/next\.stage==='done'/)
+  assert.match(hook,/reply=null/)
+})
+test('completed V2 /help renews a signed form link rather than exposing a public, unlinked questionnaire',()=>{
+  for(const locale of ['ru','en','es']){
+    const done={stage:'done',locale,topic:'business',flowVersion:2,consentAt:'2026-11-16T13:00:00Z'}
+    const help=transitionTelegramDiagnostic(done,{rawText:'/help',locale})
+    assert.equal(help.stage,'done')
+    assert.equal(help.topic,'business')
+    assert.equal(help.body,null,'help cannot create a second CRM message')
+    assert.equal(help.refreshHandoff,true,'signed webhook must reissue a protected handoff')
+    assert.equal(help.consent,false,'help cannot create or extend consent')
+    assert.match(help.reply,/\/coaching\/intake\?topic=business/)
+    assert.deepEqual(help.keyboard,[])
+    const revoked=transitionTelegramDiagnostic({...done,consentAt:null},{rawText:'/help',locale})
+    assert.equal(revoked.reply,null,'revoked consent receives no unsigned public form')
+    assert.equal(revoked.refreshHandoff,undefined)
+    const stopped=transitionTelegramDiagnostic({...done,stage:'stopped'},{rawText:'/help',locale})
+    assert.equal(stopped.reply,null,'STOP blocks reissue')
+    const active=transitionTelegramDiagnostic({...done,stage:'question'},{rawText:'/help',locale})
+    assert.equal(active.stage,'question','earlier interview stages keep their existing help')
+    assert.equal(active.refreshHandoff,undefined)
+  }
+  const webhook=read('lib/crm/messenger-webhook.js')
+  assert.match(webhook,/next\.refreshHandoff===true/)
+  assert.match(webhook,/issueTelegramCoachingHandoff/)
+  assert.match(webhook,/else if\(next\.refreshHandoff\)/)
 })

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "researchMethod": "published_capabilities_to_independent_first_party_design",
+  "sourceEvidence": "OFFICIAL_HELP_PAGES_ONLY",
+  "competitorServiceAccess": "NOT_PERFORMED",
+  "referenceDocs": [
+    {"id":"S01","url":"https://www.canva.com/help/magic-video/","title":"Published video-creation workflows"},
+    {"id":"S02","url":"https://www.canva.com/help/creating-and-editing-videos/","title":"Published multi-track video editing capabilities"},
+    {"id":"S03","url":"https://www.canva.com/help/generate-edit-captions-on-videos/","title":"Published editable caption workflow"}
+  ],
+  "features": [
+    {"id":"F01","name":"Goal-first video entry and prompt revisions","priority":"P0","source":"S01","hhFiles":["components/mandala-first-video-start.tsx","lib/mandala/personal-video-intent.mjs"],"next":"Verify wishes alter the proposed prompt, and regenerate produces a different safe option"},
+    {"id":"F02","name":"Template-first quick video","priority":"P0","source":"S01","hhFiles":["components/mandala-free-video-studio.tsx","components/mandala-video-mobile.module.css"],"next":"Choose a ready local template without complex settings; test mobile tap and preview"},
+    {"id":"F03","name":"Auto scene sequencing and editable storyboard","priority":"P0","source":"S01","hhFiles":["components/mandala-cinematic-director.tsx","lib/mandala/cinematic-director.mjs"],"next":"Prove each scene ID exists, displays the selected visual, and can be changed before export"},
+    {"id":"F04","name":"Multi-track timeline for video, text and sound","priority":"P1","source":"S02","hhFiles":["components/mandala-free-video-studio.tsx"],"next":"Design optional timeline only after reliable base export; do not replace the Auto Director first screen"},
+    {"id":"F05","name":"Clip trim and transition assembly","priority":"P1","source":"S02","hhFiles":["scripts/cinematic-video-assemble.mjs"],"next":"Test two owned clips with trim and transitions; existing CLI alone is not a timeline UI"},
+    {"id":"F06","name":"Separate voice and music tracks","priority":"P0","source":"S02","hhFiles":["components/mandala-free-video-studio.tsx","lib/mandala/local-video-music.ts"],"next":"Ensure attached audio is present in exported MP4, not only preview"},
+    {"id":"F07","name":"Editable timed captions","priority":"P1","source":"S03","hhFiles":["lib/mandala/video-affirmations.ts","components/mandala-video-affirmations.tsx"],"next":"Check phrase timing and burned-in/exported captions; transcription is separate"},
+    {"id":"F08","name":"Video resizing and portrait/square/landscape output","priority":"P1","source":"S02","hhFiles":["components/mandala-free-video-studio.tsx","scripts/cinematic-video-assemble.mjs"],"next":"Verify export pixel dimensions and framing in all three ratios"},
+    {"id":"F09","name":"Reliable downloadable video and playable preview","priority":"P0","source":"S02","hhFiles":["components/mandala-free-video-studio.tsx","scripts/cinematic-video-assemble.mjs"],"next":"P0: create video, independently probe duration/streams, open result and download MP4/WebM on real device"},
+    {"id":"F10","name":"Language-specific UX and content","priority":"P0","source":"S01","hhFiles":["components/mandala-first-video-start.tsx","components/mandala-free-video-studio.tsx"],"next":"Run English, Russian and Spanish public flow separately; never label one language's audio as a translation"}
+  ]
+}

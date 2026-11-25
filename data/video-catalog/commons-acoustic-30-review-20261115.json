@@ -1,0 +1,965 @@
+{
+  "schema": "hh-acoustic-commons-30-candidates-v1",
+  "batchId": "commons-natural-30-20261115",
+  "purpose": "Thirty DIFFERENT physical classical instrumental performances as source candidates for the existing Holistic House importer. NOT music available for public video generation until source rights, original audio, professional sound and owner listening pass.",
+  "sourceProvider": "Wikimedia Commons original files; Open Goldberg Variations; Set Chopin Free; individual CC0 instrument recordings",
+  "status": "CANDIDATE_ONLY_NOT_DOWNLOADED_NOT_PUBLISHED",
+  "policy": {
+    "sourceFormat": [
+      "flac",
+      "ogg"
+    ],
+    "allowListedLicenses": [
+      "CC0-1.0",
+      "PDM-1.0"
+    ],
+    "technicalProbe": "FFprobe real decoded audio, hash, at least 60 seconds",
+    "humanListening": "Must be separately rated >=4/5 for beauty, natural timbre, coherence, mixing, noise",
+    "existingPublishedRegistryUnchanged": true,
+    "existingUserVideoLegacyUnaffected": true,
+    "unapprovedNewTracksPublic": false,
+    "sourceFidelity": "Prefer verified original lossless FLAC or higher-quality Ogg; reject low-bitrate preview copies and misleading re-encodes",
+    "sourceVerification": "All 30 source filenames are indexed in their Wikimedia Commons categories or individual media file pages. This is NOT proof of downloaded sound or completed rights/quality review.",
+    "editorialGate": "Independent human audition score 4/5 or higher plus source SHA1/SHA256 and both composition/recording rights; unchanged generatorEligible=false until physical import"
+  },
+  "candidates": [
+    {
+      "id": "curated-bach-goldberg-aria",
+      "fileName": "Goldberg Variations 01 Aria.ogg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_01_Aria.ogg",
+      "title": "Goldberg Variations: Aria",
+      "name": {
+        "ru": "Бах — Ария из Гольдберг-вариаций",
+        "en": "Bach — Goldberg Aria",
+        "es": "Bach — Aria de las Variaciones Goldberg"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations — original high-bitrate Ogg",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-01",
+      "fileName": "Goldberg Variations BWV 988 02 Variatio 1 a 1 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_02_Variatio_1_a_1_Clav.flac",
+      "title": "Goldberg Variations: Variation 1",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №1",
+        "en": "Bach — Goldberg Variation 1",
+        "es": "Bach — Variación Goldberg 1"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-02",
+      "fileName": "Goldberg Variations BWV 988 03 Variatio 2 a 1 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_03_Variatio_2_a_1_Clav.flac",
+      "title": "Goldberg Variations: Variation 2",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №2",
+        "en": "Bach — Goldberg Variation 2",
+        "es": "Bach — Variación Goldberg 2"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm",
+        "focus"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-03",
+      "fileName": "Goldberg Variations BWV 988 04 Variatio 3 a 1 Clav. Canone all Unisuono.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_04_Variatio_3_a_1_Clav._Canone_all_Unisuono.flac",
+      "title": "Goldberg Variations: Variation 3",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №3",
+        "en": "Bach — Goldberg Variation 3",
+        "es": "Bach — Variación Goldberg 3"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-etude-tristesse",
+      "fileName": "Chopin - 12 Études, Op. 10 - No. 3 in E major 'Tristesse' (Edward Neeman).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_12_%C3%89tudes%2C_Op._10_-_No._3_in_E_major_'Tristesse'_(Edward_Neeman).flac",
+      "title": "Étude Op.10 No.3 — Tristesse",
+      "name": {
+        "ru": "Шопен — Этюд «Печаль»",
+        "en": "Chopin — Tristesse Étude",
+        "es": "Chopin — Estudio «Tristeza»"
+      },
+      "performer": "Edward Neeman",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress",
+        "love"
+      ],
+      "moods": [
+        "calm",
+        "focus"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-05",
+      "fileName": "Goldberg Variations BWV 988 06 Variatio 5 a 1 ovvero 2 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_06_Variatio_5_a_1_ovvero_2_Clav.flac",
+      "title": "Goldberg Variations: Variation 5",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №5",
+        "en": "Bach — Goldberg Variation 5",
+        "es": "Bach — Variación Goldberg 5"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-06",
+      "fileName": "Goldberg Variations BWV 988 07 Variatio 6 a 1 Clav. Canone alla Seconda.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_07_Variatio_6_a_1_Clav._Canone_alla_Seconda.flac",
+      "title": "Goldberg Variations: Variation 6",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №6",
+        "en": "Bach — Goldberg Variation 6",
+        "es": "Bach — Variación Goldberg 6"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "focus",
+        "calm"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-07",
+      "fileName": "Goldberg Variations BWV 988 08 Variatio 7 a 1 ovvero 2 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_08_Variatio_7_a_1_ovvero_2_Clav.flac",
+      "title": "Goldberg Variations: Variation 7",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №7",
+        "en": "Bach — Goldberg Variation 7",
+        "es": "Bach — Variación Goldberg 7"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-08",
+      "fileName": "Goldberg Variations BWV 988 09 Variatio 8 a 2 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_09_Variatio_8_a_2_Clav.flac",
+      "title": "Goldberg Variations: Variation 8",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №8",
+        "en": "Bach — Goldberg Variation 8",
+        "es": "Bach — Variación Goldberg 8"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-09",
+      "fileName": "Goldberg Variations BWV 988 10 Variatio 9 a 1 Clav. Canone alla Terza.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_10_Variatio_9_a_1_Clav._Canone_alla_Terza.flac",
+      "title": "Goldberg Variations: Variation 9",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №9",
+        "en": "Bach — Goldberg Variation 9",
+        "es": "Bach — Variación Goldberg 9"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "business",
+        "stress"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-10",
+      "fileName": "Goldberg Variations BWV 988 11 Variatio 10 a 1 Clav. Fughetta.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_11_Variatio_10_a_1_Clav._Fughetta.flac",
+      "title": "Goldberg Variations: Variation 10",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №10",
+        "en": "Bach — Goldberg Variation 10",
+        "es": "Bach — Variación Goldberg 10"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-cello-sonata-largo",
+      "fileName": "Chopin - Cello Sonata in G minor, Op. 65 - III. Largo (Christopher Harding, Yeonjin Kim).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Cello_Sonata_in_G_minor%2C_Op._65_-_III._Largo_(Christopher_Harding%2C_Yeonjin_Kim).flac",
+      "title": "Cello Sonata Op.65 III — Largo",
+      "name": {
+        "ru": "Шопен — Соната для виолончели, Largo",
+        "en": "Chopin — Cello Sonata: Largo",
+        "es": "Chopin — Sonata para violonchelo: Largo"
+      },
+      "performer": "Christopher Harding and Yeonjin Kim",
+      "composer": "Frédéric Chopin",
+      "instrument": "cello",
+      "categories": [
+        "body",
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-12",
+      "fileName": "Goldberg Variations BWV 988 13 Variatio 12 Canone alla Quarta.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_13_Variatio_12_Canone_alla_Quarta.flac",
+      "title": "Goldberg Variations: Variation 12",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №12",
+        "en": "Bach — Goldberg Variation 12",
+        "es": "Bach — Variación Goldberg 12"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-14",
+      "fileName": "Goldberg Variations BWV 988 15 Variatio 14 a 2 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_15_Variatio_14_a_2_Clav.flac",
+      "title": "Goldberg Variations: Variation 14",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №14",
+        "en": "Bach — Goldberg Variation 14",
+        "es": "Bach — Variación Goldberg 14"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-goldberg-17",
+      "fileName": "Goldberg Variations BWV 988 18 Variatio 17 a 2 Clav.flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_18_Variatio_17_a_2_Clav.flac",
+      "title": "Goldberg Variations: Variation 17",
+      "name": {
+        "ru": "Бах — Гольдберг-вариация №17",
+        "en": "Bach — Goldberg Variation 17",
+        "es": "Bach — Variación Goldberg 17"
+      },
+      "performer": "Kimiko Ishizaka",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "piano",
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Open Goldberg Variations",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-15-2",
+      "fileName": "Chopin - Nocturne No. 5 in F-sharp major, Op. 15 No. 2 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._5_in_F-sharp_major%2C_Op._15_No._2_(Luke_Faulkner).flac",
+      "title": "Nocturne No.5 — Op.15 No.2",
+      "name": {
+        "ru": "Шопен — Ноктюрн №5",
+        "en": "Chopin — Nocturne No.5",
+        "es": "Chopin — Nocturno n.º 5"
+      },
+      "performer": "Luke Faulkner",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-55-2",
+      "fileName": "Chopin - Nocturne No. 16 in E-flat major, Op. 55 No. 2 (Xuan He).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._16_in_E-flat_major%2C_Op._55_No._2_(Xuan_He).flac",
+      "title": "Nocturne No.16 — Op.55 No.2",
+      "name": {
+        "ru": "Шопен — Ноктюрн №16",
+        "en": "Chopin — Nocturne No.16",
+        "es": "Chopin — Nocturno n.º 16"
+      },
+      "performer": "Xuan He",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-72-1",
+      "fileName": "Chopin - Nocturne No. 19 in E minor, Op. 72 No. 1 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._19_in_E_minor%2C_Op._72_No._1_(Luke_Faulkner).flac",
+      "title": "Chopin: Nocturne Op.72 No.1",
+      "name": {
+        "ru": "Шопен — Ноктюрн Op.72 No.1",
+        "en": "Chopin — Nocturne Op.72 No.1",
+        "es": "Chopin — Nocturno Op.72 No.1"
+      },
+      "performer": "Luke Faulkner",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-55-1",
+      "fileName": "Chopin - Nocturne No. 15 in F minor, Op. 55 No. 1 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._15_in_F_minor%2C_Op._55_No._1_(Luke_Faulkner).flac",
+      "title": "Chopin: Nocturne Op.55 No.1",
+      "name": {
+        "ru": "Шопен — Ноктюрн Op.55 No.1",
+        "en": "Chopin — Nocturne Op.55 No.1",
+        "es": "Chopin — Nocturno Op.55 No.1"
+      },
+      "performer": "Luke Faulkner",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-62-2",
+      "fileName": "Chopin - Nocturne No. 18 in E major, Op. 62 No. 2 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._18_in_E_major%2C_Op._62_No._2_(Luke_Faulkner).flac",
+      "title": "Chopin: Nocturne Op.62 No.2",
+      "name": {
+        "ru": "Шопен — Ноктюрн Op.62 No.2",
+        "en": "Chopin — Nocturne Op.62 No.2",
+        "es": "Chopin — Nocturno Op.62 No.2"
+      },
+      "performer": "Luke Faulkner",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-27-1",
+      "fileName": "Chopin - Nocturne No. 7 in C-sharp minor, Op. 27 No. 1 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._7_in_C-sharp_minor%2C_Op._27_No._1_(Luke_Faulkner).flac",
+      "title": "Chopin: Nocturne Op.27 No.1",
+      "name": {
+        "ru": "Шопен — Ноктюрн Op.27 No.1",
+        "en": "Chopin — Nocturne Op.27 No.1",
+        "es": "Chopin — Nocturno Op.27 No.1"
+      },
+      "performer": "Luke Faulkner",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-nocturne-62-1",
+      "fileName": "Chopin - Nocturne No. 17 in B major, Op. 62 No. 1 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._17_in_B_major%2C_Op._62_No._1_(Olga_Gurevich).flac",
+      "title": "Chopin: Nocturne Op.62 No.1",
+      "name": {
+        "ru": "Шопен — Ноктюрн Op.62 No.1",
+        "en": "Chopin — Nocturne Op.62 No.1",
+        "es": "Chopin — Nocturno Op.62 No.1"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-waltz-69-2",
+      "fileName": "Chopin - Waltz No. 10 in B minor, Op. 69 No. 2 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Waltz_No._10_in_B_minor%2C_Op._69_No._2_(Olga_Gurevich).flac",
+      "title": "Chopin: Waltz Op.69 No.2",
+      "name": {
+        "ru": "Шопен — Вальс Op.69 No.2",
+        "en": "Chopin — Waltz Op.69 No.2",
+        "es": "Chopin — Vals Op.69 No.2"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "energy"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-waltz-70-2",
+      "fileName": "Chopin - Waltz No. 12 in F minor, Op. 70 No. 2 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Waltz_No._12_in_F_minor%2C_Op._70_No._2_(Olga_Gurevich).flac",
+      "title": "Chopin: Waltz Op.70 No.2",
+      "name": {
+        "ru": "Шопен — Вальс Op.70 No.2",
+        "en": "Chopin — Waltz Op.70 No.2",
+        "es": "Chopin — Vals Op.70 No.2"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-waltz-b56",
+      "fileName": "Chopin - Waltz No. 14 in E minor, B. 56 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Waltz_No._14_in_E_minor%2C_B._56_(Olga_Gurevich).flac",
+      "title": "Chopin: Waltz in E minor B.56",
+      "name": {
+        "ru": "Шопен — Вальс in E minor B.56",
+        "en": "Chopin — Waltz in E minor B.56",
+        "es": "Chopin — Vals in E minor B.56"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-waltz-34-2",
+      "fileName": "Chopin - Waltz No. 3 in A minor, Op. 34 No. 2 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Waltz_No._3_in_A_minor%2C_Op._34_No._2_(Olga_Gurevich).flac",
+      "title": "Chopin: Waltz Op.34 No.2",
+      "name": {
+        "ru": "Шопен — Вальс Op.34 No.2",
+        "en": "Chopin — Waltz Op.34 No.2",
+        "es": "Chopin — Vals Op.34 No.2"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-chopin-waltz-70-3",
+      "fileName": "Chopin - Waltz No. 13 in D-flat major, Op. 70 No. 3 (Olga Gurevich).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Waltz_No._13_in_D-flat_major%2C_Op._70_No._3_(Olga_Gurevich).flac",
+      "title": "Chopin: Waltz Op.70 No.3",
+      "name": {
+        "ru": "Шопен — Вальс Op.70 No.3",
+        "en": "Chopin — Waltz Op.70 No.3",
+        "es": "Chopin — Vals Op.70 No.3"
+      },
+      "performer": "Olga Gurevich",
+      "composer": "Frédéric Chopin",
+      "instrument": "piano",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "series": "Set Chopin Free / Wikimedia Commons",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-satie-gymnopedie-1",
+      "fileName": "Gymnopedie No. 1..ogg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Gymnopedie_No._1..ogg",
+      "title": "Gymnopédie No. 1",
+      "name": {
+        "ru": "Сати — Гимнопедия №1",
+        "en": "Satie — Gymnopédie No.1",
+        "es": "Satie — Gimnopedia n.º 1"
+      },
+      "performer": "Teknopazzo",
+      "composer": "Erik Satie",
+      "instrument": "piano",
+      "categories": [
+        "body",
+        "stress",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Wikimedia Commons own work",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-satie-gymnopedie-3",
+      "fileName": "Gymnopédie no.3.ogg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Gymnop%C3%A9die_no.3.ogg",
+      "title": "Gymnopédie No. 3",
+      "name": {
+        "ru": "Сати — Гимнопедия №3",
+        "en": "Satie — Gymnopédie No.3",
+        "es": "Satie — Gimnopedia n.º 3"
+      },
+      "performer": "Teknopazzo",
+      "composer": "Erik Satie",
+      "instrument": "piano",
+      "categories": [
+        "stress",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Wikimedia Commons own work",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    },
+    {
+      "id": "curated-bach-cello-1",
+      "fileName": "Bach Cello Suite 1 Prelude (BWV 1007) Played by Chris.ogg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Bach_Cello_Suite_1_Prelude_(BWV_1007)_Played_by_Chris.ogg",
+      "title": "Cello Suite No.1: Prelude",
+      "name": {
+        "ru": "Бах — Прелюдия для виолончели",
+        "en": "Bach — Cello Suite No.1 Prelude",
+        "es": "Bach — Preludio para violonchelo"
+      },
+      "performer": "Fopseh (Chris)",
+      "composer": "Johann Sebastian Bach",
+      "instrument": "cello",
+      "categories": [
+        "body",
+        "stress",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Wikimedia Commons own work",
+      "sourceType": "commons_original_recording_candidate",
+      "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
+      "compositionRights": "public_domain",
+      "musicalEditorialStatus": "pending_human_audition",
+      "ingestStatus": "not_downloaded",
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
+    }
+  ]
+}

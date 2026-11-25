@@ -26,6 +26,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 export default async function AuthenticatedSavedDocument({ params }) {
   const { locale, id } = await params
+  // An ES Cabinet bookmark must open the same verified private report in EN
+  // while the saved-document renderer only supports EN/RU account language.
+  if (locale === 'es' && UUID.test(id || ''))
+    redirect('/en/app/document-view/' + encodeURIComponent(id))
   if (!['en', 'ru'].includes(locale) || !UUID.test(id || '')) notFound()
 
   let saved

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { ProfileHubTabs } from "@/components/app/profile-hub-tabs";
 import { PersonalityProfilesBuilder } from "@/components/personality-profiles-builder";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -98,6 +99,7 @@ export default async function PersonalityProfilesPage({ params }: Props) {
   return (
     <main lang={locale} style={{ maxWidth: "100%", minWidth: 0, overflowX: "clip" }}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <ProfileHubTabs locale={locale} active="create" />
       <PersonalityProfilesBuilder locale={locale} tests={tests} />
     </main>
   );

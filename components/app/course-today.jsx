@@ -433,7 +433,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
      day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
    currentSession:reviewLesson.session,currentCheckin:null,
  }:data
- const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null);setView('path')}
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
  const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return

@@ -3,10 +3,11 @@
  * individually curated vertical HD video (not screenshots, CSS or Canvas
  * imitations). Each scene is layered/graded/branded; raw stock isn't served.
  *
- * Source licence: https://supareels.com/stock-footage-licence
+ * Source licence: https://supareels.com/terms
  * Client photographs NEVER travel to these video CDNs or stock providers.
  */
 import type { VideoTheme, LocalSceneId } from "./holistic-video-themes";
+import extraFreeFilms from "../../data/video-catalog/free-stock-scenes.json";
 export type V2Theme = "money" | "energy" | "life" | "health";
 export type FilmSource = {
   src: string;
@@ -71,7 +72,11 @@ export function getThemedRealFilm(
   theme: VideoTheme,
   scene: LocalSceneId,
 ): FilmSource | null {
-  if (theme !== "energy" && theme !== "life" && theme !== "health") return null;
-  const group = themedRealFilms[theme] as Record<string, FilmSource>;
-  return group[scene] || null;
+  const group = theme === "energy" || theme === "life" || theme === "health"
+    ? themedRealFilms[theme] as Record<string, FilmSource> : null;
+  if (group?.[scene]) return group[scene];
+  const extra=(extraFreeFilms as unknown as Array<{id:string;theme:VideoTheme;status:"approved";video:string;poster:string;durationSeconds:number}>).find(
+    item=>item.status==="approved"&&item.theme===theme&&item.id===scene);
+  return extra ? {src:extra.video,poster:extra.poster,seconds:extra.durationSeconds,
+    mediaType:"video/mp4",quality:"Full HD",width:1080,height:1920} : null;
 }
