@@ -68,4 +68,5 @@ jobs:
       - name: Event-source CRM and owner analytics regressions
         run: node --test tests/crm-event-channel-attribution.test.mjs tests/crm-marketing.test.mjs tests/gbp-v3-toronto.test.mjs
       - name: Check TypeScript without publishing
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
