@@ -52,3 +52,19 @@ test('session stores flags, not actual personal utterance',()=>{
  assert.equal(JSON.stringify(result.session).includes(statement),false)
  assert.equal(result.session.methodId,'oskar')
 })
+
+test('pausing then continuing preserves method milestones and uses active time, not wall time',()=>{
+ const now=Date.now()
+ const initial=newCoachSession(actor,'mira',now-35*60*1000,'oskar')
+ const before={...initial,turnCount:7,evidence:{...initial.evidence,goalRestated:true,desiredOutcome:true}}
+ for(const [locale,message] of [['ru','Давайте продолжим'],['en','Let\'s continue'],['es','Sigamos']]){
+  const result=advanceCoachSession(before,{message,locale,activeSeconds:60},now)
+  assert.equal(result.session.startedAt,before.startedAt)
+  assert.equal(result.session.turnCount,8)
+  assert.equal(result.session.methodId,'oskar')
+  assert.equal(result.session.evidence.goalRestated,true)
+  assert.equal(result.session.evidence.desiredOutcome,true)
+  assert.equal(result.closingOfferDue,false)
+  assert.equal(result.elapsedSeconds,60)
+ }
+})

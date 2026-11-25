@@ -89,3 +89,18 @@ test('opt-in UI retains runtime across Live reconnect and verifies owner',()=>{
  assert.ok(live.includes('!await r.prepareMethodSession()'))
  assert.ok(route.includes("request.headers.get('x-hh-account-id')!==actor.id"))
 })
+
+test('text and Live checkpoint preserve milestones after a long background pause',()=>{
+ const now=Date.now()
+ const initial=startCoachMethodSession({personaId:'mira',methodId:'oskar'},{...ctx,now:now-30*60*1000})
+ const before={...initial,turnCount:5,evidence:{...initial.evidence,desiredOutcome:true}}
+ const token=sealCoachSession(before,config,actor)
+ const continued={...body,message:"Let's continue",elapsedSeconds:30}
+ const prepared=prepareCoachMethodTurn(continued,{...ctx,token,now})
+ assert.equal(prepared.progress.session.evidence.desiredOutcome,true)
+ assert.equal(prepared.progress.session.turnCount,6)
+ const {methodId,...liveBody}=continued
+ const checkpoint=geminiFreeLiveCheckpoint({...liveBody,voiceConsent:true,trainingUseConsent:true},{methodSession:before,now})
+ assert.equal(checkpoint.__methodSession.evidence.desiredOutcome,true)
+ assert.equal(checkpoint.__methodSession.turnCount,6)
+})
