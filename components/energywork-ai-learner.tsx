@@ -613,9 +613,19 @@ function MeditationVoices({ slide, locale }: {
   locale: EnergyworkLocale;
 }) {
   const t = copy[locale];
-  const entries = slide.testimonials ?? [];
+  const originalEntries = slide.testimonials ?? [];
+  // Stable shortest-first order in the language actually being read; never mutate the curriculum.
+  const entries = [...originalEntries].sort((a, b) =>
+    Array.from(a.quote[locale]).length - Array.from(b.quote[locale]).length);
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
+  const originalNumber = currentReview ? originalEntries.indexOf(currentReview) + 1 : 0;
+  const unnamed = currentReview && (/^(sun-example-|kundalini-example-|tantra-level-1$)/.test(currentReview.id) ||
+    currentReview.sourcePath === "reiki/yggdrasil");
+  // Do not assign invented identities to anonymous source material.
+  const attribution = currentReview && (unnamed
+    ? (locale === "ru" ? "Участник " : "Participant ") + String(originalNumber).padStart(2, "0")
+    : currentReview.attribution[locale].split(" · ")[0]);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -631,7 +641,7 @@ function MeditationVoices({ slide, locale }: {
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
             <p data-review-fulltext role="region" tabIndex={0} aria-label={t.voicesFullText}>{currentReview.quote[locale]}</p>
-            <cite>{currentReview.attribution[locale]}</cite>
+            <cite>{attribution}</cite>
           </blockquote>
           {entries.length > 1 ? (
             <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
@@ -1548,6 +1558,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const welcomeOffer = t.welcomeOffer;
   const daybookIntroTitle = locale === "ru" ? "О курсе" : "About the course";
   const daybookWelcome = daybook && slide.id === "welcome-01";
+  const compactVoiceCopy: Record<string, { title: string; body: string }> = locale === "ru" ? {
+    "flight-voices": { title: "Полёт к Солнцу: отзывы", body: "Примеры впечатлений. Ваш опыт может отличаться." },
+    "tan-voices": { title: "Отзывы о Тантра Рейки", body: "Отзывы о курсе, не об этой записи." },
+    "kun-voices": { title: "Отзывы о Кундалини Рейки", body: "Примеры практик с другими мастерами, не об этой записи." },
+    "ygg-voices": { title: "Отзывы о Рейки Иггдрасиль", body: "Отзывы о курсе, не об этой записи." },
+  } : {
+    "flight-voices": { title: "Flight to the Sun: reviews", body: "Shared examples. Your experience may differ." },
+    "tan-voices": { title: "Tantra Reiki reviews", body: "Course reviews, not of this recording." },
+    "kun-voices": { title: "Kundalini Reiki reviews", body: "Examples from other practitioners, not this recording." },
+    "ygg-voices": { title: "Reiki Yggdrasil reviews", body: "Course reviews, not of this recording." },
+  };
+  const daybookVoice = daybook && slide.kind === "voices" ? compactVoiceCopy[slide.id] : undefined;
   const lotusMark = (
     <svg viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M24 34C12 34 8 25 5 15c8 0 15 4 19 19ZM24 34c12 0 16-9 19-19-8 0-15 4-19 19ZM24 34C13 25 17 12 24 3c7 9 11 22 0 31ZM24 34C10 39 3 30 1 25c9 0 15 2 23 9ZM24 34c14 5 21-4 23-9-9 0-15 2-23 9Z"/>
@@ -1592,13 +1614,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
             <div className={styles.content} data-daybook-part={daybook ? "content" : undefined}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               {daybook && slide.kind !== "welcome"
-                ? <h2 id="energywork-slide-title" tabIndex={-1}>{slide.title[locale]}</h2>
+                ? <h2 id="energywork-slide-title" tabIndex={-1}>{daybookVoice?.title ?? slide.title[locale]}</h2>
                 : <h1 id="energywork-slide-title" tabIndex={-1}>{daybook ? db.title : slide.title[locale]}</h1>}
               <p className={styles.description}>{daybook && slide.id === "welcome-video"
                 ? (locale === "ru" ? "Андрей знакомит вас с практикой «Полёт к Солнцу»." : "Andrey introduces the Flight to the Sun practice.")
                 : daybook && slide.kind === "audio-intro"
                   ? (locale === "ru" ? "Послушайте приветствие или перейдите к медитации." : "Listen to the welcome or continue to the meditation.")
-                  : slide.body[locale]}</p>
+                  : daybookVoice?.body ?? slide.body[locale]}</p>
                {daybook ? lessonArt : null}
                {daybook ? lessonVideoBlock : null}
               {slide.introAudioKey && slide.introTopics ? (
