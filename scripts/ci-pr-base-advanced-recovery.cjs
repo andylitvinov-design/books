@@ -95,20 +95,33 @@ function verifiedSourceContainsBase(diff,live,source){
 const BASE_SYNC_LOOKBACK_MS=90*60*1000;
 const BASE_SYNC_MAX_RECENT_MERGES=2;
 const BASE_MERGE_SUBJECT=/^Merge (?:remote-tracking )?branch ['"](?:origin\/)?codex\/public-book-library['"] into \S+/;
+// Exact observed owner/Chat synchronization subjects (#5606, #5609, #5599).
+// These are used only to conservatively HOLD repeat writes; they can never
+// authorize a source mutation or a successful merge.
+const OWNER_BASE_SYNC_SUBJECTS=[
+ /^Merge current protected production after Reiki release into CI reduction #\d+$/,
+ /^Sync protected BASE after verified BASE_ADVANCED \(#\d+\)$/,
+ /^Merge protected production after verified BASE_ADVANCED \(#\d+\)$/,
+];
+function isBaseSyncSubject(subject){
+ return BASE_MERGE_SUBJECT.test(subject)||OWNER_BASE_SYNC_SUBJECTS.some(re=>re.test(subject));
+}
 function classifyRecentBaseSyncs(commits,sourceSha,now=Date.now()){
  const unknown=reason=>({verified:false,hold:true,reason,count:null,retryAt:null});
  if(!SHA.test(sourceSha||'')||!Number.isFinite(now)||
-    !Array.isArray(commits)||!commits.length||commits.length>100)
+    !Array.isArray(commits)||!commits.length||commits.length>250)
    return unknown('BASE_SYNC_HISTORY_UNVERIFIED');
  if(commits.at(-1)?.sha!==sourceSha)
    return unknown('BASE_SYNC_HISTORY_HEAD_CHANGED');
- const recent=[];
+ const recent=[],seen=new Set();
  for(const c of commits){
   if(!SHA.test(c?.sha||'')||!Array.isArray(c.parents)||!c.commit||
      typeof c.commit.message!=='string')
    return unknown('BASE_SYNC_HISTORY_MALFORMED');
+  if(seen.has(c.sha))return unknown('BASE_SYNC_HISTORY_DUPLICATE_SHA');
+  seen.add(c.sha);
   const subject=c.commit.message.split('\n')[0];
-  if(c.parents.length!==2||!BASE_MERGE_SUBJECT.test(subject))continue;
+  if(c.parents.length!==2||!isBaseSyncSubject(subject))continue;
   const at=Date.parse(c.commit.committer?.date||'');
   if(!Number.isFinite(at)||at>now+2*60_000)
    return unknown('BASE_SYNC_HISTORY_TIME_UNVERIFIED');
@@ -360,16 +373,22 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
    // Avoid repeated new source HEADs: retain the existing bounded history
    // budget only when update-branch will actually be necessary.
    const commitsTotal=pr.commits;
-   if(!Number.isSafeInteger(commitsTotal)||commitsTotal<1||commitsTotal>1000)
+   // GitHub's PR commits endpoint is bounded to 250 commits. A partial
+   // trailing page can hide recent synchronization commits on earlier pages.
+   // Read the complete bounded history or hold; never infer zero repeats.
+   if(!Number.isSafeInteger(commitsTotal)||commitsTotal<1||commitsTotal>250)
     return outcome('SKIPPED','BASE_SYNC_HISTORY_COUNT_UNVERIFIED',number);
-   if(commitsTotal>=3){
-    const page=Math.ceil(commitsTotal/100);
-    const listed=(await github.rest.pulls.listCommits({
-     owner,repo,pull_number:number,per_page:100,page
-    })).data;
-    const expected=commitsTotal-100*(page-1);
-    if(!Array.isArray(listed)||listed.length!==expected)
-     return outcome('SKIPPED','BASE_SYNC_HISTORY_INCOMPLETE',number);
+   if(commitsTotal>=2){
+    const listed=[];
+    for(let page=1;page<=Math.ceil(commitsTotal/100);page++){
+     const rows=(await github.rest.pulls.listCommits({
+      owner,repo,pull_number:number,per_page:100,page
+     })).data;
+     const expected=Math.min(100,commitsTotal-100*(page-1));
+     if(!Array.isArray(rows)||rows.length!==expected)
+      return outcome('SKIPPED','BASE_SYNC_HISTORY_INCOMPLETE',number);
+     listed.push(...rows);
+    }
     const burst=classifyRecentBaseSyncs(listed,sourceSha,now);
     if(!burst.verified)return outcome('SKIPPED',burst.reason,number);
     if(burst.hold)return {...outcome('SKIPPED',burst.reason,number),
