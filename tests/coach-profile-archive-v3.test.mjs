@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createCoachProfileSessionV3,coachProfileQuestionV3} from '../lib/coaching/coach-profile-session-v3.mjs'
+import {createCoachProfileSessionV3,coachProfileQuestionV3,applyCoachProfileAnswerV3,requestCoachProfilePriorityV3} from '../lib/coaching/coach-profile-session-v3.mjs'
 import {buildCoachProfileArchiveV3,validateCoachProfileArchiveV3} from '../lib/coaching/coach-profile-archive-v3.mjs'
 const sessionId='11111111-1111-4111-8111-111111111111'
 const recordedAt='2026-11-25T12:00:00.000Z'
@@ -31,4 +31,19 @@ test('reject a fabricated or changed source, wrong role, course, session or time
 test('cannot bind a source twice or append evidence after close',()=>{
  assert.throws(()=>buildCoachProfileArchiveV3({...ledger,events:[...ledger.events,...ledger.events]}),/COACH_PROFILE_ARCHIVE_INVALID/)
  assert.throws(()=>buildCoachProfileArchiveV3({...ledger,events:[{kind:'close'},...ledger.events]}),/COACH_PROFILE_ARCHIVE_INVALID/)
+})
+
+test('archive preserves partial wheel and explicitly chosen priority after server timebox handoff',()=>{
+ const state=applyCoachProfileAnswerV3(initial,q,turn)
+ const priorityQuestion=coachProfileQuestionV3(requestCoachProfilePriorityV3(state))
+ const priorityTurn={id:'user-4',role:'user',content:'Тело и здоровье',final:true,questionId:priorityQuestion.id,recordedAt}
+ const priorityPrompt={id:'coach-3',role:'assistant',content:priorityQuestion.text,final:true,recordedAt}
+ const events=[...ledger.events,{kind:'prioritize'},{kind:'answer',question:priorityQuestion,turn:priorityTurn}]
+ const transcript=[...ledger.transcript,priorityPrompt,priorityTurn]
+ const block=buildCoachProfileArchiveV3({...ledger,events,transcript})
+ assert.deepEqual(block.snapshot.priority.axisIds,['body_health'])
+ assert.equal(block.snapshot.status,'partial')
+ assert.equal(block.snapshot.ratings[1].current.value,null)
+ assert.equal(block.bindings[1].turnIndex,3)
+ assert.equal(validateCoachProfileArchiveV3(block,{...protocol,turns:transcript}).prefix.length,4)
 })
