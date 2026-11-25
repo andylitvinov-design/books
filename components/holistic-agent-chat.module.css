@@ -1013,3 +1013,93 @@
    height:48px;min-height:48px;padding:6px 7px
  }
 }
+
+/* 23 Nov full-screen Samir first turn: single horizontal message bar.
+   Tier selector remains available from the + attachment menu. */
+@media(max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]){
+   position:relative;display:flex;flex-direction:row;align-items:center;
+   gap:5px;min-height:66px;height:66px;padding:4px 5px;border:0;
+   border-radius:34px;background:#fffcf7;box-shadow:0 2px 12px #184a3b32}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) textarea{
+   order:2;flex:1 1 auto;width:0;min-width:0;height:58px;min-height:58px;max-height:60px;
+   padding:9px 6px;resize:none;font-size:clamp(16px,4.15vw,18px);line-height:1.25;
+   background:transparent;border:0;box-shadow:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions{display:contents}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore{
+   position:relative;order:1;flex:none;margin:0}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore>summary{
+   display:grid;place-items:center;width:43px;height:48px;min-width:43px;min-height:48px;
+   border:1px solid #e3d8c9;border-radius:50%;background:#fff8eb;color:#08775c}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .photoShortcut{
+   order:3;display:grid;place-items:center;flex:none;width:34px;min-width:34px;
+   height:44px;min-height:44px;padding:0;border:0;background:transparent;color:#035743}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .recorderToggle{
+   order:4;flex:none;width:35px;min-width:35px;height:44px;min-height:44px;
+   padding:0;border:0;background:transparent;color:#065440}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+   order:5;display:grid;place-items:center;flex:none;width:56px;min-width:56px;
+   height:56px;min-height:56px;margin:0;padding:8px;border-radius:50%;
+   background:linear-gradient(140deg,#14b691,#007956);border:1px solid #007958;
+   color:#fff;box-shadow:0 2px 10px #00684d35}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] svg{
+   display:block;width:25px;height:25px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] span{display:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMenu{
+   position:absolute;left:0;right:auto;top:auto;bottom:calc(100% + 12px);
+   width:min(290px,calc(100vw - 22px));max-height:45dvh;overflow-y:auto;
+   z-index:100;background:#fffdf7;border:1px solid #e1d7c7;border-radius:16px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMenu .freeProSwitch{
+   display:flex;justify-content:flex-start;width:max-content;min-height:40px}
+}
+@media(max-width:355px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore>summary{width:38px;min-width:38px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .photoShortcut{width:29px;min-width:29px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .recorderToggle{width:30px;min-width:30px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+   width:49px;min-width:49px;height:49px;min-height:49px}
+}
+
+/* Approved Samir established chat: large natural bubbles, one composer, no tiers. */
+@media(max-width:760px){
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]{background:transparent;gap:0;min-height:0;overflow:hidden}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.thread{background:transparent;gap:12px;padding:clamp(90px,23dvh,210px) 10px 12px;min-height:0;overflow:auto;scroll-padding-bottom:12px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread :is(.user,.assistant){font:550 19px/1.4 system-ui,sans-serif;letter-spacing:0;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px 14px;border:1px solid #fff8;border-radius:22px;box-shadow:0 4px 15px #24150d45;color:#102e27;max-width:88%}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread>.user{background:#d9f0ce;border-bottom-right-radius:5px;margin-left:auto!important;align-self:flex-end}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread .assistant{background:#fff8ed;border-top-left-radius:5px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar{width:100%;gap:6px;align-items:flex-start}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar p{flex:0 1 auto;min-width:0;max-width:calc(100% - 42px);margin:0!important}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messagePortrait{width:34px;height:34px;border:1px solid #ffe0a3}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar:has([data-hh-voice-turn]) p{max-width:calc(100% - 82px)}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] [data-hh-voice-turn]{font-size:13px;flex:none;min-width:28px!important;min-height:28px!important;margin-inline-start:2px!important;padding:2px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] :is(.projectOptions,.topicChoices,.startActions,.videoOptions,.judgmentChoices){grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] :is(.projectOptions,.topicChoices,.startActions,.videoOptions,.judgmentChoices) :is(button,a){background:linear-gradient(145deg,#fff9e9,#f9dfa9);color:#123c30;border:1px solid #fff2c9;border-radius:15px;min-height:48px;font:700 16px/1.25 system-ui}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .projectOptions :is(button,a) strong{font-size:16px;color:#123c30}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .projectOptions :is(button,a) small{font-size:12px;color:#425e50}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .hiLearningRating{gap:5px;justify-content:center;padding:3px 0;color:#fff;font-size:12px;text-shadow:0 1px 3px #000}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .hiLearningRating button{min-height:34px;padding:4px 7px;background:#25352fc9;border-color:#f6dda5;color:white;text-shadow:none}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]){position:relative;display:flex;align-items:center;flex-direction:row;gap:4px;min-height:66px;height:auto;margin:0 5px max(6px,env(safe-area-inset-bottom));padding:5px;border:1px solid #fff7d8;border-radius:34px;background:#fff8ee;box-shadow:0 3px 16px #171d1b55}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]) textarea{order:2;flex:1 1 0%;width:0;min-width:0;height:54px;min-height:54px;max-height:90px;padding:6px;font:500 16px/1.25 system-ui;border:0;background:transparent;box-shadow:none}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]) .actions{display:contents}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMore{order:1;flex:none;margin:0}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMore>summary{width:40px;min-width:40px;height:44px;border-radius:50%;background:#fff3da;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .photoShortcut{order:3;width:34px;min-width:34px;height:44px;padding:0;border:0;background:transparent;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .recorderToggle{order:4;width:35px;min-width:35px;height:44px;padding:0;border:0;background:transparent;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .actions button[type="submit"]{order:5;width:50px;min-width:50px;height:50px;min-height:50px;border-radius:50%;background:linear-gradient(135deg,#10ad86,#006f53);color:white}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .actions button[type="button"]:not(.photoShortcut):not(.recorderToggle){order:6}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMenu{left:0;right:auto;top:auto;bottom:calc(100% + 8px);max-width:calc(100vw - 24px);max-height:45dvh;overflow:auto}
+ :global([data-keyboard-open="true"]) .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.thread{padding-top:8px}
+}
+@media(max-width:355px){
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread :is(.user,.assistant){font-size:18px;padding:10px 11px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .photoShortcut{width:29px;min-width:29px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .recorderToggle{width:30px;min-width:30px}
+}
+
+/* While dictating, the same composer becomes a single X / waveform / check row.
+   Do not let the landing composer's absolute actions or old live consent take over. */
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;min-height:0!important;padding:8px!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>textarea{display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions{position:static!important;display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}

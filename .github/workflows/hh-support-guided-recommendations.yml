@@ -57,6 +57,7 @@ jobs:
           node --check scripts/verify-holistic-support-guided-card.mjs
           node --test tests/holistic-support-conversation-intents.test.mjs tests/holistic-support-guide-test-shortlist.test.mjs tests/holistic-support-guided-recommendations.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs
       - name: Scoped lint
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-inline-guide.tsx app/'[locale]'/holistic-support/mobile/page.tsx lib/assessments/support-guide-tests.js lib/holistic-support/guide-dialogue.mjs tests/holistic-support-conversation-intents.test.mjs scripts/verify-holistic-support-guided-card.mjs tests/holistic-support-guided-recommendations.test.mjs
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}

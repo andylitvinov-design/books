@@ -112,6 +112,26 @@ test('autoplay-denied media ends in real error, never fake speaking',async()=>{
     onStart:()=>seen.push('speaking'),onBlocked:()=>seen.push('blocked'),
     onError:()=>seen.push('error'),
   })
-  await Promise.resolve()
+  await new Promise(resolve=>setImmediate(resolve))
   assert.deepEqual(seen,['blocked'])
 });
+
+test('direct coach greeting retries media once, then uses localized device narration',async()=>{
+ let attempts=0,spoken=0,starts=0,ends=0
+ class Audio{
+  play(){attempts++;return Promise.reject(Error('transient'))}
+  pause(){} removeAttribute(){} load(){}
+ }
+ class Utterance{constructor(text){this.text=text}}
+ const environment={Audio,SpeechSynthesisUtterance:Utterance,setTimeout,clearTimeout,
+  speechSynthesis:{getVoices:()=>[],speak(utterance){
+    spoken++;assert.equal(utterance.lang,'es-ES');assert.equal(utterance.text,'Hola')
+    utterance.onstart();utterance.onend()
+  }}}
+ startDirectCoachIntroAudio(coachIntroAudioPath('merlin','es'),{
+  environment,fallbackText:'Hola',locale:'es',onStart:()=>starts++,onEnd:()=>ends++,
+ })
+ assert.equal(attempts,1)
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual([attempts,spoken,starts,ends],[2,1,1,1])
+})

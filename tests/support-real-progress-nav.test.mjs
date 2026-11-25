@@ -27,3 +27,15 @@ test('watching local clip is not automatically recorded as completion',()=>{
   assert.match(video,/A self-confirmed learning mark, not an automatic playback record/);
   assert.doesNotMatch(page,/localStorage\.setItem\([^)]*progress/i);
 });
+
+test('Google login retains the canonical My Progress route and Spanish uses EN account fallback',()=>{
+  const workspace=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8');
+  const auth=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
+  assert.ok(workspace.includes("page === 'progress' ? { continueTo: 'progress' }"));
+  assert.equal(auth.split("'cabinet','progress','my-practice'").length-1,2);
+  assert.ok(auth.includes(": continueTo === 'progress'"));
+  assert.ok(auth.includes("${origin}/${locale}/app/progress"));
+  assert.ok(video.includes("const accountLang=lang==='es'?'en':lang"));
+  assert.ok(video.includes("href={'/'+accountLang+'/app/progress'}"));
+  assert.ok(auth.includes('INVALID_CONTINUATION'));
+});

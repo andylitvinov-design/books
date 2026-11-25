@@ -72,15 +72,32 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
    // Production G-L2: use native AuthToken locked Bidi setup, not a
    // LiveConnectConstraints field-mask expansion of session-only fields.
    assert.deepEqual(Object.keys(body).sort(),
-     ['bidiGenerateContentSetup','expireTime','newSessionExpireTime','uses'])
+     ['bidiGenerateContentSetup','expireTime','fieldMask','newSessionExpireTime','uses'])
    assert.equal(Object.hasOwn(body,'liveConnectConstraints'),false)
-   assert.equal(Object.hasOwn(body,'fieldMask'),false)
    const setup=body.bidiGenerateContentSetup
    assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
    assert.deepEqual(setup.generationConfig.responseModalities,['AUDIO'])
    assert.equal(setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
    assert.equal(setup.generationConfig.maxOutputTokens,1100)
-   assert.deepEqual(setup.sessionResumption,{})
+   assert.equal(Object.hasOwn(setup,'sessionResumption'),false)
+   // Apply the documented REST AuthToken precedence to real socket setup.
+   // Fields locked to their absent server default may not be enabled by a client.
+   const locked=body.fieldMask.split(',').sort()
+   assert.deepEqual(locked,[
+     'contextWindowCompression','generationConfig','historyConfig','inputAudioTranscription',
+     'labels','model','outputAudioTranscription','proactivity','realtimeInputConfig','systemInstruction','tools',
+   ])
+   for(const resumption of [{},{handle:'synthetic-previous-session'}]){
+     const effective={...geminiLiveSetupMessage(GEMINI_FREE_LIVE_MODEL,'Sulafat').setup,
+       sessionResumption:resumption,
+       model:'different-model',tools:[{}],historyConfig:{initialHistoryInClientContent:true},
+       systemInstruction:{parts:[{text:'different instruction'}]}}
+     for(const field of locked){
+       if(Object.hasOwn(setup,field))effective[field]=setup[field]
+       else delete effective[field]
+     }
+     assert.deepEqual(effective,{...setup,sessionResumption:resumption})
+   }
    assert.match(setup.systemInstruction.parts[0].text,/coaching method/)
    assert.equal(setup.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS')
    assert.ok(setup.inputAudioTranscription)
@@ -223,12 +240,16 @@ test('discarded speaker frames cannot repopulate captions or create a completed 
  assert.deepEqual(final,['A valid next reply'])
 })
 
-test('quiet human voice ducks and interrupts coach within three microphone frames',()=>{
+test('quiet human voice ducks and interrupts coach after a sustained 120 ms onset at either capture cadence',()=>{
  const detector=new GeminiLiveBargeDetector()
  assert.equal(detector.sample(.001,true),'none')
  assert.equal(detector.sample(.023,true),'duck')
  assert.equal(detector.sample(.025,true),'candidate')
+ assert.equal(detector.sample(.024,true),'candidate')
  assert.equal(detector.sample(.024,true),'interrupt')
+ const fallback=new GeminiLiveBargeDetector()
+ for(let i=0;i<2;i++)assert.notEqual(fallback.sample(.024,true,2048/48),'interrupt')
+ assert.equal(fallback.sample(.024,true,2048/48),'interrupt')
  assert.equal(detector.userActive,true)
  for(let i=0;i<7;i++)detector.sample(.001,false)
  assert.equal(detector.userActive,false)
@@ -251,7 +272,7 @@ test('human already talking before Gemini responds suppresses overlapping coach 
  assert.equal(gate.accept({audio:['next-turn']}),true)
  const source=load('components/my-coach-gemini-live.jsx')
  assert.match(source,/r\.bargeDetector\.userActive/)
- assert.match(source,/r\.player\?\.setVolume\(0\.08\)/)
+ assert.match(source,/r\.player\.setVolume\(\.4\)/)
  assert.match(source,/else if\(event==='interrupt'\)interrupt\(\)/)
  assert.match(source,/r\.player\.stop\(\)/)
  assert.match(source,/if\(partial\)commitOutput\(r\)/)
@@ -384,7 +405,7 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.equal(socketCalls.filter(value=>value.startsWith('geminiLiveStartMessage()')).length,1)
+ assert.equal(socketCalls.filter(value=>value.startsWith('r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage()')).length,1)
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
  assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
@@ -428,7 +449,7 @@ test('Play emits one marked app cue but never fabricated visitor consent',()=>{
  assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
  const client=load('components/my-coach-gemini-live.jsx')
  assert.match(client,/if\(!r\.introSent\)/)
- assert.match(client,/sendSocket\(r,geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/sendSocket\(r,r\.continuing\?geminiLiveContinueMessage\(\):geminiLiveStartMessage\(\)\)/)
  assert.match(client,/r\.sessionStarted=true/)
 })
 test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
@@ -459,14 +480,31 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
  finish(neverHeard)
  assert.equal(committed.at(-1).interrupted,true)
 })
+test('the worklet delivers complete ordered microphone blocks around 32 ms at each device rate',()=>{
+ const source=load('public/audio/my-coach-gemini-live-worklet.js')
+ for(const sampleRate of [16000,44100,48000,96000,192000]){
+   let Worklet
+   runInNewContext(source,{sampleRate,Float32Array,AudioWorkletProcessor:class {},
+     registerProcessor:(_name,processor)=>{Worklet=processor}})
+   const processor=new Worklet(),sent=[]
+   processor.port={postMessage:frame=>sent.push(frame)}
+   let index=0
+   while(sent.length<2){
+     const block=Float32Array.from({length:128},()=>index++)
+     processor.process([[block]])
+   }
+   assert.notEqual(sent[0].buffer,sent[1].buffer)
+   assert.ok(Math.abs(1000*sent[0].length/sampleRate-32)<2)
+   assert.deepEqual([...sent[0],...sent[1]],Array.from({length:index},(_,i)=>i))
+ }
+})
+
 test('iPhone audio resume and bounded network backpressure are wired',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
- const worklet=load('public/audio/my-coach-gemini-live-worklet.js')
- assert.match(worklet,/Float32Array\(1536\)/)
- assert.doesNotMatch(worklet,/Float32Array\(2048\)/)
  assert.match(live,/data-coach-live-resume-audio/)
  assert.match(live,/r\.context\.resume\?\.\(\)/)
- assert.match(live,/r\.pendingAudio\.length>=24/)
+ assert.match(live,/r\.pendingAudio\.length>=MAX_PENDING_AUDIO_CHUNKS/)
+ assert.match(live,/r\.pendingAudioChars\+part\.length>MAX_PENDING_AUDIO_CHARS/)
  assert.match(live,/r\.backpressureChunks>30/)
  assert.match(live,/r\.modelTurnComplete=true\s+finishAudibleTurn\(r\)/)
  assert.match(live,/if\(r\.modelTurnComplete\)finishAudibleTurn\(r\)/)

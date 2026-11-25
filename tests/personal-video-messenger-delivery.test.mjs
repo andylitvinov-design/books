@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs'
 import {telegramPersonalVideoSendReady,telegramClientSendReady} from '../lib/app/client-telegram-policy.js'
+import {personalVideoDuration,validPersonalVideoDuration} from '../lib/app/personal-video-file-contract.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -59,11 +60,26 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  assert.match(upload,/navigator.share/)
  assert.match(upload,/data-video-delivery-status/)
  const archive=source('components/app/my-personal-videos.jsx')
- // The original five lengths remain accepted; 25 seconds is added only
- // for the owner-consented Personal Video Gift upload.
- assert.match(archive,/const matched=\[10,15,20,25,30,60\]/)
+ // Client-uploaded MP4s use the shared 1–60 second duration contract.
+ assert.match(archive,/return personalVideoDuration\(duration\)/)
  assert.match(archive,/health:'Health',life:'Personal growth',gift:'Personal Gift'/)
  assert.doesNotMatch(backend,/wa\.me|api\.whatsapp\.com/)
+})
+
+test('uploaded MP4 durations retain all presets and accept ordinary lengths within 60 seconds',()=>{
+ for(const seconds of [10,15,20,25,30,60,17,59,1]){
+  assert.equal(personalVideoDuration(seconds),seconds)
+  assert.equal(validPersonalVideoDuration(seconds),true)
+ }
+ for(const [seconds,stored] of [[0.5,1],[17.2,18],[59.5,60]]){
+  assert.equal(personalVideoDuration(seconds),stored)
+  assert.equal(validPersonalVideoDuration(stored),true)
+  assert.equal(validPersonalVideoDuration(seconds),false)
+ }
+ for(const seconds of [0,-1,60.01,61,NaN,Infinity,-Infinity,null,undefined,'17']){
+  assert.throws(()=>personalVideoDuration(seconds),{code:'VIDEO_DURATION_NOT_ALLOWED'})
+  assert.equal(validPersonalVideoDuration(seconds),false)
+ }
 })
 
 test('API routes require authenticated account and same-origin writes',()=>{
