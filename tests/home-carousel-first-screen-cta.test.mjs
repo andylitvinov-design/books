@@ -94,6 +94,7 @@ test("paid consultations remain reachable in optional carousel, Ali input owns f
  assert.match(browser,/\["clarity","goal","business"\]\.entries\(\)/);
  assert.match(browser,/data-home-intent-option/);
  assert.match(entry,/data-home-intent-option=\{art\.id\}/);
- assert.match(browser,/"mytube","video","coach","ai","services","practice","profile"/);
+ // The approved seven-slot dock now uses My Reiki; MyVideo lives in Profile.
+ assert.match(browser,/"mytube","reiki","coach","ai","services","practice","profile"/);
  assert.doesNotMatch(browser,/data-home-quick-booking|data-home-quick-cta/);
 });

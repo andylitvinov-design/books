@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, ChevronDown, LockKeyhole, RotateCcw, Target } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
 import {
-  readStagedSupportGoalProfile, clearStagedSupportGoalProfile,
+  readStagedSupportGoalHandoff, bindStagedSupportGoalHandoff,
+  isCurrentSupportGoalHandoff, clearCurrentSupportGoalHandoff,
   normalizeSavedGoalProfile,
 } from "@/lib/holistic-support/saved-goal-profile.mjs";
 import styles from "./support-goal-cabinet.module.css";
@@ -13,6 +14,7 @@ import styles from "./support-goal-cabinet.module.css";
 const COPY = {
   en: {
     title: "My goals and self-ratings", subtitle: "My free Goal Filter profile · private to my account",
+    confirm: "Save the goal ratings from this browser to your signed-in account?", confirmSave: "Save to my account",
     saved: "Saved securely in your Cabinet.", saving: "Saving your selected goals to your account…",
     failed: "Your goal profile was not confirmed as saved. Reconnect and try again.",
     retry: "Try saving again", open: "Open the goal filter", expand: "View saved ratings",
@@ -22,6 +24,7 @@ const COPY = {
   },
   ru: {
     title: "Мои цели и самооценки", subtitle: "Мой профиль фильтра целей · только для меня",
+    confirm: "Сохранить оценки целей из этого браузера в ваш текущий аккаунт?", confirmSave: "Сохранить в мой кабинет",
     saved: "Данные сохранены в личном кабинете.", saving: "Сохраняем выбранные цели в вашем кабинете…",
     failed: "Сохранение профиля целей не подтверждено. Повторите попытку.",
     retry: "Повторить сохранение", open: "Открыть фильтр целей", expand: "Посмотреть сохранённые оценки",
@@ -31,6 +34,7 @@ const COPY = {
   },
   es: {
     title: "Mis metas y valoraciones", subtitle: "Mi perfil del filtro · privado en mi cuenta",
+    confirm: "¿Guardar las valoraciones de este navegador en tu cuenta actual?", confirmSave: "Guardar en mi cuenta",
     saved: "Guardado de forma segura en tu cuenta.", saving: "Guardando tus metas en tu cuenta…",
     failed: "No se confirmó el guardado. Vuelve a intentarlo.",
     retry: "Reintentar", open: "Abrir el filtro de metas", expand: "Ver valoraciones guardadas",
@@ -76,34 +80,45 @@ export default function SupportGoalCabinet({ accountId, locale = "en" }) {
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    const requestOptions = { accountId, signal: controller.signal };
     async function loadAndSave() {
       let staged = null;
       try {
-        staged = readStagedSupportGoalProfile();
+        const handoff = readStagedSupportGoalHandoff();
+        if (handoff && handoff.accountId === null) {
+          setResult({ phase: "confirm", profile: null, justSaved: false, createdAt: handoff.createdAt });
+          return;
+        }
+        const owned = handoff?.accountId === accountId ? handoff : null;
+        staged = owned?.profile ?? null;
         if (staged && active) setResult({ phase: "saving", profile: null, justSaved: false });
-        let current = await appFetch("development-goals", undefined, "GET", { accountId });
+        let current = await appFetch("development-goals", undefined, "GET", requestOptions);
+        if (!active) return;
         if (staged) {
           // Reuse the encrypted account goal record and optimistic revision,
           // never create a second profile, public lead or practitioner contact.
           for (let attempt = 0; attempt < 2; attempt += 1) {
+            if (!active || !isCurrentSupportGoalHandoff(owned)) throw new Error("GOAL_HANDOFF_CHANGED");
             const existing = normalizeSavedGoalProfile(current.goals?.supportProfile);
             if (JSON.stringify(existing) === JSON.stringify(staged)) break;
             try {
               await appFetch("development-goals", {
                 ...current.goals, supportProfile: staged, revision: current.revision,
-              }, "POST", { accountId });
+              }, "POST", requestOptions);
               break;
             } catch (error) {
               if (error?.code !== "DEVELOPMENT_GOALS_CONFLICT" || attempt === 1) throw error;
-              current = await appFetch("development-goals", undefined, "GET", { accountId });
+              current = await appFetch("development-goals", undefined, "GET", requestOptions);
             }
           }
           // A successful HTTP response alone is not confirmation: read back
           // the account-owned sealed record before clearing the handoff.
-          current = await appFetch("development-goals", undefined, "GET", { accountId });
+          current = await appFetch("development-goals", undefined, "GET", requestOptions);
+          if (!active) return;
           const verified = normalizeSavedGoalProfile(current.goals?.supportProfile);
           if (JSON.stringify(verified) !== JSON.stringify(staged)) throw new Error("GOALS_SAVE_UNCONFIRMED");
-          clearStagedSupportGoalProfile();
+          if (!clearCurrentSupportGoalHandoff(owned)) throw new Error("GOAL_HANDOFF_CHANGED");
         }
         if (active) setResult({ phase: "ready",
           profile: normalizeSavedGoalProfile(current.goals?.supportProfile), justSaved: Boolean(staged) });
@@ -112,9 +127,19 @@ export default function SupportGoalCabinet({ accountId, locale = "en" }) {
       }
     }
     loadAndSave();
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [accountId, revision]);
   if (result.phase === "loading") return null;
+  if (result.phase === "confirm") return (
+    <section className={styles.notice} data-support-goal-cabinet-confirm>
+      <LockKeyhole size={20} aria-hidden="true" />
+      <span>{t.confirm}</span>
+      <button type="button" onClick={() => {
+        if (bindStagedSupportGoalHandoff(accountId, result.createdAt)) setRevision(value => value + 1);
+        else setResult({ phase: "error", profile: null, justSaved: false });
+      }}>{t.confirmSave}</button>
+    </section>
+  );
   if (result.phase === "error") return (
     <section className={styles.notice} role="alert" data-support-goal-cabinet-save-error>
       <LockKeyhole size={20} aria-hidden="true" />

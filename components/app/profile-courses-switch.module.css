@@ -17,3 +17,8 @@
 .error{margin:14px 0 0!important;border-color:#eab4b6;background:#fff2f1;color:#8d394b!important}
 @media(min-width:720px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.card{align-items:flex-start;min-height:160px}.card>span{min-height:90px}}
 @media(max-width:350px){.switch{gap:4px;padding:4px}.tab,.active{gap:5px;padding:9px 5px;font-size:12px!important}.tab svg,.active svg{width:16px;height:16px}.guest{padding:12px}.card strong{font-size:15px}}
+.reikiCard{display:flex;min-width:0;flex-direction:column;border:1px solid #d9cdb8;border-radius:16px;background:#fff}
+.reikiCard .card{flex:1;min-height:76px;border:0;border-radius:15px 15px 0 0}
+.reikiCard .card>span{min-height:0}
+.daybookLink{display:flex;align-items:center;gap:9px;min-height:44px;padding:8px 15px;border-top:1px solid #e6dcca;border-radius:0 0 15px 15px;color:#3e4e40!important;background:#faf5ea;font:650 14px/1.35 system-ui,sans-serif;text-decoration:none!important}
+.daybookLink svg{flex:none}.daybookLink svg:last-child{margin-inline-start:auto}.daybookLink:hover{background:#f4ead6}

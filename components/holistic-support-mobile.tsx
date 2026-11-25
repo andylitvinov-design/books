@@ -705,14 +705,18 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
   }) => {
     const profile = normalizeSavedGoalProfile({ version: 1, ...input });
     if (!profile) throw new Error("INVALID_SUPPORT_GOAL_PROFILE");
-    stageSupportGoalProfile(profile);
     try {
-      await appFetch("auth/contact-profile", undefined, "GET");
+      // Fresh, verified account identity; do not infer the owner from a cached
+      // profile, email, browser hints or the account selected later in Google.
+      const cabinet = await appFetch("bootstrap?view=portrait", undefined, "GET");
+      if (typeof cabinet?.account?.id !== "string") throw new Error("ACCOUNT_UNVERIFIED");
+      stageSupportGoalProfile(profile, undefined, undefined, cabinet.account.id);
       window.location.assign("/" + locale + "/app/portrait");
     } catch (error: unknown) {
       if (!(error instanceof Error) || !("status" in error) || error.status !== 401) throw error;
       const started = await appFetch("auth/start", { locale, continueTo: "cabinet" }, "POST");
       if (!started?.redirectUrl || typeof started.redirectUrl !== "string") throw new Error("SIGN_IN_UNAVAILABLE");
+      stageSupportGoalProfile(profile);
       window.location.assign(started.redirectUrl);
     }
   };

@@ -5,6 +5,8 @@ import {
   SUPPORT_GOAL_HANDOFF_KEY, SUPPORT_GOAL_HANDOFF_MAX_AGE_MS,
   normalizeSavedGoalProfile, stageSupportGoalProfile,
   readStagedSupportGoalProfile, clearStagedSupportGoalProfile,
+  readStagedSupportGoalHandoff, bindStagedSupportGoalHandoff,
+  isCurrentSupportGoalHandoff, clearCurrentSupportGoalHandoff,
 } from "../lib/holistic-support/saved-goal-profile.mjs";
 import {
   normalizeDevelopmentGoals, DEVELOPMENT_GOALS_VERSION, DEFAULT_DEVELOPMENT_TARGETS,
@@ -77,6 +79,27 @@ test("only an explicit stage writes transient same-tab data; expires and clears 
   assert.equal(readStagedSupportGoalProfile(store, time), null);
 });
 
+test("goal handoff cannot be rebound across verified accounts or clear a replacement draft", () => {
+  const store = storage(), time = 1000000;
+  const accountA = "11111111-1111-4111-8111-111111111111";
+  const accountB = "22222222-2222-4222-8222-222222222222";
+  stageSupportGoalProfile(sample(), store, time);
+  const anonymous = readStagedSupportGoalHandoff(store, time);
+  assert.equal(anonymous.accountId, null);
+  assert.equal(bindStagedSupportGoalHandoff(accountA, time + 1, store, time), false);
+  assert.equal(bindStagedSupportGoalHandoff(accountA, time, store, time), true);
+  const owned = readStagedSupportGoalHandoff(store, time);
+  assert.equal(owned.accountId, accountA);
+  assert.equal(bindStagedSupportGoalHandoff(accountB, time, store, time), false);
+  assert.equal(readStagedSupportGoalHandoff(store, time).accountId, accountA);
+  assert.equal(isCurrentSupportGoalHandoff(anonymous, store, time), false);
+  stageSupportGoalProfile(sample(), store, time + 1, accountB);
+  assert.equal(clearCurrentSupportGoalHandoff(owned, store, time + 1), false);
+  assert.equal(readStagedSupportGoalHandoff(store, time + 1).accountId, accountB);
+  assert.equal(clearCurrentSupportGoalHandoff(readStagedSupportGoalHandoff(store, time + 1), store, time + 1), true);
+  assert.equal(readStagedSupportGoalHandoff(store, time + 1), null);
+});
+
 test("UI removes obsolete step #4; the last card saves privately then offers actual free tests", () => {
   const editor = read("components/holistic-support-goal-filter.tsx");
   const mobile = read("components/holistic-support-mobile.tsx");
@@ -97,7 +120,8 @@ test("UI removes obsolete step #4; the last card saves privately then offers act
   assert.match(layout, /\.cabinetCard \{ display: grid;/);
   assert.match(mobile, /stageSupportGoalProfile\(profile\)/);
   assert.match(mobile, /continueTo: "cabinet"/);
-  assert.match(mobile, /auth\/contact-profile/);
+  assert.match(mobile, /bootstrap\?view=portrait/);
+  assert.match(mobile, /stageSupportGoalProfile\(profile, undefined, undefined, cabinet\.account\.id\)/);
   assert.match(route, /'cabinet'/);
   assert.match(route, /requireSameOrigin\(request, config\)/);
   assert.match(goals, /seal\(nextGoals, context\(actor\), config\)/);
@@ -105,9 +129,13 @@ test("UI removes obsolete step #4; the last card saves privately then offers act
   assert.match(goals, /where account_id=\$1/);
   assert.match(goals, /DEVELOPMENT_GOALS_CONFLICT/);
   assert.match(workspace, /<SupportGoalCabinet key=\{'support-goals:'/);
-  assert.match(privateCabinet, /readStagedSupportGoalProfile\(\)/);
+  assert.match(privateCabinet, /readStagedSupportGoalHandoff\(\)/);
+  assert.match(privateCabinet, /handoff\?\.accountId === accountId/);
+  assert.match(privateCabinet, /data-support-goal-cabinet-confirm/);
+  assert.match(privateCabinet, /bindStagedSupportGoalHandoff\(accountId, result\.createdAt\)/);
+  assert.match(privateCabinet, /controller\.abort\(\)/);
   assert.match(privateCabinet, /appFetch\("development-goals"/);
-  assert.match(privateCabinet, /clearStagedSupportGoalProfile\(\)/);
+  assert.match(privateCabinet, /clearCurrentSupportGoalHandoff\(owned\)/);
   assert.match(privateCabinet, /GOALS_SAVE_UNCONFIRMED/);
   const verifiedCabinetUI = privateCabinet.split("if (!profile) return null;")[1] ?? "";
   assert.match(verifiedCabinetUI, /data-support-goal-test-continuation/);

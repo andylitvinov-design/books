@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const api=read('app/api/app/support-photo/route.js')
@@ -90,14 +91,36 @@ test('cabinet lists, replaces, and deletes only voluntarily saved private photo'
   assert.match(cabinet,/photo.*never shared/)
 })
 
-test('strict CSP exposes blob previews on Support and signed images only in My Videos',()=>{
+test('strict CSP keeps signed owner photos scoped to My Videos and Video Studio',()=>{
   const policy=read('middleware.ts')
   assert.match(policy,/const privateSupportPhotoCabinet/)
   assert.match(policy,/const privateSupportPhotoOrigin/)
   assert.ok(policy.includes('supportMobilePublishedMedia || privateSupportPhotoCabinet'))
   assert.ok(policy.includes('directMessageStorageOrigin + privateSupportPhotoOrigin'))
-  assert.ok(policy.includes('if (!privateSupportPhotoCabinet) return'))
+  assert.ok(policy.includes('if (!privateSupportPhotoCabinet && !publicMandalaLocalImages) return'))
   assert.ok(policy.includes('url.origin'))
+  const studio=policy.match(/const publicMandalaLocalImages = [^\n]+/)?.[0]
+  const photo=policy.slice(policy.indexOf('const privateSupportPhotoCabinet ='),
+    policy.indexOf('// First-party private Messages uploads'))
+  assert.ok(studio&&photo.includes('const privateSupportPhotoOrigin ='))
+  const source=studio+'\n'+photo+'\nprivateSupportPhotoOrigin'
+  const origin='https://'+'a'.repeat(20)+'.supabase.co'
+  const evaluate=(pathname,url=origin)=>runInNewContext(source,
+    {pathname,URL,process:{env:{HH_APP_SUPABASE_URL:url}}},{timeout:1000})
+  for(const locale of ['ru','en','es'])for(const path of ['/app/videos','/holistic-support/mandala']){
+    assert.equal(evaluate('/'+locale+path),' '+origin)
+    assert.equal(evaluate('/'+locale+path+'/'),' '+origin)
+  }
+  for(const path of ['/','/ru/app/messages','/ru/app/portrait','/ru/app/reports',
+    '/ru/client/123','/ru/app/videos/other','/ru/holistic-support/mandala/other',
+    '/ru/holistic-support/mandala-elsewhere','/api/app/support-photo','/admin']){
+    assert.equal(evaluate(path),'',path)
+  }
+  for(const url of ['', 'not a URL',origin.replace('https:','http:'),
+    origin+'.example.test','https://short.supabase.co','https://untrusted.example.test']){
+    assert.equal(evaluate('/ru/holistic-support/mandala',url),'',url)
+    assert.equal(evaluate('/ru/app/videos',url),'',url)
+  }
 })
 
 test('new mobile layout retains the advisor and a visible photo affordance',()=>{
@@ -125,7 +148,7 @@ test('late initial private-image GET cannot restore a deleted portrait or overri
   // monotonic epoch before applying its result; older responses are ignored.
   assert.match(cabinet,/const photoStorageEpoch=useRef\(0\)/)
   assert.match(cabinet,/const readEpoch=photoStorageEpoch\.current/)
-  assert.match(cabinet,/if\(mounted&&readEpoch===photoStorageEpoch\.current&&data\)/)
+  assert.match(cabinet,/if\(mounted&&readEpoch===photoStorageEpoch\.current\)\{\s*setUrl\(typeof data\.url==='string'\?data\.url:null\)/)
   const save=cabinet.slice(cabinet.indexOf('async function save'),cabinet.indexOf('async function remove'))
   const remove=cabinet.slice(cabinet.indexOf('async function remove'),cabinet.indexOf('return <section'))
   assert.ok(save.indexOf('photoStorageEpoch.current+=1')<save.indexOf('setUrl(result.url)'))
