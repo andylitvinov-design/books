@@ -115,6 +115,10 @@
   text-decoration:underline; text-underline-offset:3px; }
 .savedReviewLink:hover, .savedReviewLink:focus-visible { color:#fff; }
 .savedReviewLink svg { flex:none; }
+.savedDaybookLink{display:inline-flex;align-items:center;gap:7px;min-height:44px;max-width:100%;padding:6px 0;color:#fff4d9;font:650 13px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:4px}
+.savedDaybookLink svg{flex:none}
+.savedDaybookLink:hover{color:#fff}
+.savedDaybookLink:focus-visible{outline:2px solid #fff4d9;outline-offset:2px;border-radius:4px}
 
 /* Owner-only Reiki enrollment removal: visible at any progress status, with an explicit confirmation. */
 .savedCardHeader{display:flex;align-items:flex-start;justify-content:space-between;align-self:stretch;gap:7px;min-width:0}
