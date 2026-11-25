@@ -456,7 +456,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
   const homeHandoffConsumed=useRef(false);
   const homeHandoffDispatching=useRef(false);
-  const homeHandoffPending=useRef<{payload:HomeAliHandoff;message:string;startIndex:number}|null>(null);
+  const homeHandoffPending=useRef<{payload:HomeAliHandoff;message:string;priorLast:Message|null}|null>(null);
   const [homeHandoffPhase,setHomeHandoffPhase]=useState<"idle"|"queued"|"sending"|"retry">("idle");
   const [homeHandoffSettled,setHomeHandoffSettled]=useState(false);
   // While auth/answer loads, the full Home question is already a chat bubble.
@@ -486,6 +486,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }catch{setQualityFailure(true);}
     finally{setQualityPending(false);}
   }
+  const preserveResumeDraft=useRef(false);
+  const resumeRenderPending=useRef(false);
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
     // Explicit restore cancels both pending AI and device speech, and must not
     // auto-read historical replies when the Voice Companion is on.
@@ -498,14 +500,36 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
     setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     lastSpeechTurn.current=previous[previous.length-1]||null;
-    setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
+    setMessages(previous);if(!preserveResumeDraft.current)setDraft("");setChoices([]);setJudgmentView(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     const restoredLocale=detectConversationLocale(entries.at(-1)?.user,locale) as PublicLocale;
-    if(messengerView&&restoredLocale!==locale){setLocale(restoredLocale);onConversationLocaleChange?.(restoredLocale);}
+    if(messengerView&&!preserveResumeDraft.current&&restoredLocale!==locale){setLocale(restoredLocale);onConversationLocaleChange?.(restoredLocale);}
     judgmentClickLock.current=false;setVideoStep(null);setGuidedTrack(null);
     setContentStep(null);setContentVoice(false);setEntryOpen(false);
     setStatus("");setSource("");followTail.current=true;setNewBelow(false);
   }});
+  // Restore consented account context before a new Home message is dispatched.
+  // A pending restore is not yet reflected in the render's messages closure.
+  const autoResumeAttempted=useRef(false);
+  useEffect(()=>{
+    if(!authenticated){autoResumeAttempted.current=false;resumeRenderPending.current=false;return;}
+    if(!messengerView||autoResumeAttempted.current||
+      !["ready","unavailable"].includes(privateTranscript.status))return;
+    autoResumeAttempted.current=true;
+    let homePending=homeHandoffPhase==="queued"||Boolean(homeHandoffPreview);
+    try {homePending=homePending||Boolean(peekHomeAliHandoff(window.sessionStorage,routeLocale));}
+    catch {return;}
+    if(privateTranscript.status!=="ready"||!privateTranscript.consent||!privateTranscript.items.length||
+      messages.length||(!homePending&&draft.trim())||quickPrompt||busy||proBusy||pageHelp||
+      homeHandoffPhase==="sending"||homeHandoffPhase==="retry"||homeHandoffPending.current)return;
+    preserveResumeDraft.current=homePending;
+    resumeRenderPending.current=true;
+    try {privateTranscript.restore();}
+    finally {preserveResumeDraft.current=false;}
+  },[authenticated,messengerView,privateTranscript.status,privateTranscript.consent,
+    privateTranscript.items.length,privateTranscript.restore,messages.length,draft,
+    quickPrompt,busy,proBusy,pageHelp,homeHandoffPhase,homeHandoffPreview,routeLocale]);
+
   useEffect(()=>{
     if(pageHelp){setEntryOpen(true);setPageHelpLink(null);}
   },[pageHelp]);
@@ -536,20 +560,24 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setHomeHandoffPhase("queued");return;
     }
     if(authStatus==="checking"||busy||homeHandoffDispatching.current)return;
+    if(authenticated&&privateTranscript.enabled&&
+      (!autoResumeAttempted.current||resumeRenderPending.current&&!messages.length))return;
+    resumeRenderPending.current=false;
     homeHandoffDispatching.current=true;
-    homeHandoffPending.current={payload:transferred,message,startIndex:messages.length};
+    homeHandoffPending.current={payload:transferred,message,priorLast:messages.at(-1)||null};
     setHomeHandoffSettled(false);setHomeHandoffPhase("sending");
     // The one existing Ali handler enforces public safety/private consent.
     void sendTurn(message).catch(()=>{}).finally(()=>{
       homeHandoffDispatching.current=false;setHomeHandoffSettled(true);
     });
-  },[compact,messengerView,authStatus,routeLocale,homeHandoffPhase,busy,messages.length]);
+  },[compact,messengerView,authStatus,authenticated,privateTranscript.enabled,privateTranscript.status,routeLocale,homeHandoffPhase,busy,messages.length]);
 
   useEffect(()=>{
     const pending=homeHandoffPending.current;
     if(!pending||homeHandoffPhase!=="sending")return;
-    const newTurns=messages.slice(pending.startIndex);
-    const userIndex=newTurns.findIndex(turn=>turn.role==="user");
+    const anchor=pending.priorLast?messages.lastIndexOf(pending.priorLast):-1;
+    const newTurns=pending.priorLast&&anchor<0?[]:messages.slice(anchor+1);
+    const userIndex=newTurns.findIndex(turn=>turn.role==="user"&&turn.text===pending.message);
     // A provisional local reply continues the conversation; it does NOT
     // prove that the Home service handoff was accepted by the server.
     const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant"&&turn.provisional!==true);
@@ -569,10 +597,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!pending||homeHandoffPhase!=="retry")return;
     // Remove only an unpaired user bubble from the failed request.
     setMessages(previous=>{
-      const tail=previous.slice(pending.startIndex);
-      return (tail.length===1&&tail[0].role==="user" ||
-        tail.length===2&&tail[0].role==="user"&&tail[1].role==="assistant"&&tail[1].provisional===true)
-        ?previous.slice(0,pending.startIndex):previous;
+      const anchor=pending.priorLast?previous.lastIndexOf(pending.priorLast):-1;
+      if(pending.priorLast&&anchor<0)return previous;
+      const tail=previous.slice(anchor+1);
+      return (tail[0]?.role==="user"&&tail[0].text===pending.message&&
+        (tail.length===1||tail.length===2&&tail[1].role==="assistant"&&tail[1].provisional===true))
+        ?previous.slice(0,anchor+1):previous;
     });
     homeHandoffPending.current=null;
     setHomeHandoffSettled(false);setStatus("");setHomeHandoffPhase("queued");
@@ -1940,13 +1970,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
             (locale==="ru"?"Начать чат":locale==="es"?"Empezar chat":"Start chat")}</span>}</>:busy?t.loading:t.send}</button>
         {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} variant="dictation"
-          micMarker="data-hh-conversation-mic" micClassName={styles.recorderToggle}
+          micMarker="data-hh-conversation-mic" instantSend micClassName={styles.recorderToggle}
           accountAuthenticated={authenticated} resetRevision={dictationRevision}
           disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
           onBegin={()=>{voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);
             setVoiceNoteRevision(value=>value+1);setStatus("");}}
           onSendTranscript={text=>{
-            setDraft(previous=>((previous?previous+" ":"")+text).slice(0,contentStep==="brief"?160:2000));
+            const combined=[draft.trim(),text.trim()].filter(Boolean).join(" ");
+            const limit=contentStep==="brief"?160:proSelected?1200:2000;
+            // The arrow or deliberate hold release is the Send action.
+            // If the existing conversation gate blocks delivery, retain the
+            // transcript instead of dropping it or changing providers.
+            if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
+              (proSelected&&!proReady)||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(combined))))||
+              combined.length>limit){
+              setDraft(combined);
+              setStatus(combined.length>limit?
+                (locale==="ru"?"Текст сохранён. Сократите сообщение перед отправкой.":locale==="es"?"Texto guardado. Acorta el mensaje antes de enviarlo.":"Text kept. Shorten the message before sending."):
+                (locale==="ru"?"Речь распознана и сохранена. Отправьте текст, когда чат будет готов.":locale==="es"?"Texto guardado. Envíalo cuando el chat esté listo.":"Transcript kept. Send it when the chat is ready."));
+              return true;
+            }
+            setDraft("");
+            sendSelectedTurn(combined);
             return true;
           }}/>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
