@@ -35,7 +35,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,selectedMethod='',onMethodSelect,methodSelectionEnabled=false}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,privateAutosaveControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -150,6 +150,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
        {phase==='complete'&&<div className={styles.completed}>
          <p className={styles.greetingQuote}>“{presentation?.text||localCoachText(persona?.opening,lang)}”</p>
+         {privateAutosaveControl}
          <button type="button" className={styles.primary} data-coach-greeting-start
            onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={20} fill="currentColor" aria-hidden="true"/>
            {t.start} {sessionName}</button>
