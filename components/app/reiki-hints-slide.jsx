@@ -58,14 +58,14 @@ export default function ReikiHintsSlide({accountId,locale='en'}){
    try{sessionStorage.setItem(storageKey,'1')}catch{}
    if(data.telegramConnected){
     const state=await appFetch('notification-channels',undefined,'GET',{accountId})
-    if(state.crmLinked)setCrm(true)
+    if(state.crmLinked){setCrm(true);try{sessionStorage.removeItem(storageKey)}catch{}}
     else if(state.crmLinkAvailable){
-     const result=await appFetch('notification-channels',{action:'link_crm',channel:'telegram',noticeVersion:'hh-telegram-google-crm-link-v1',permissionAccepted:true},'POST',{accountId});setCrm(!!result.crmLinked)
+     const result=await appFetch('notification-channels',{action:'link_crm',channel:'telegram',noticeVersion:'hh-telegram-google-crm-link-v1',permissionAccepted:true},'POST',{accountId});setCrm(!!result.crmLinked);if(result.crmLinked)try{sessionStorage.removeItem(storageKey)}catch{}
     }else setCrm(false)
     return
    }
    const state=await appFetch('notification-channels',undefined,'GET',{accountId})
-   const result=await appFetch('notification-channels',{action:'begin_telegram',channel:'telegram',topics:state.channels?.telegram?.topics||noTopics,locale,noticeVersion:'hh-messenger-contact-v1',permissionAccepted:true},'POST',{accountId})
+   const result=await appFetch('notification-channels',{action:'begin_telegram',channel:'telegram',topics:state.channels?.telegram?.status==='pending' ? state.channels.telegram.topics : noTopics,locale,noticeVersion:'hh-messenger-contact-v1',permissionAccepted:true},'POST',{accountId})
    if(typeof result.linkUrl!=='string'||!result.linkUrl.startsWith('https://t.me/'))throw Error('BAD_LINK')
    setLink(result.linkUrl);window.location.assign(result.linkUrl)
   }catch{setError(t.error)}finally{setBusy(false)}
