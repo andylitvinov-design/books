@@ -104,7 +104,6 @@ const CLARITY = {
   }
 }
 
-
 const BUSINESS = {
   en:{
     label:'BUSINESS PROGRAM',title:'My Business',intro:'Find direction, build structure and grow your business with clarity and support.',
@@ -304,5 +303,8 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false}><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
       </details>
     </section>}
+    {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
+      <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
+    </Link>}
   </div>
 }
