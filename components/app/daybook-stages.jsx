@@ -2,12 +2,12 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,BookOpen,Check,CheckCircle2,ClipboardList,Compass,Flag,LockKeyhole,MessageCircle,NotebookPen,Save,Sparkles,UserRound} from 'lucide-react'
+import {ArrowLeft,ArrowRight,BookOpen,Check,CheckCircle2,ClipboardList,ChevronDown,ChevronRight,Flag,LockKeyhole,MessageCircle,NotebookPen,Save,Zap,UserRound} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {stageRecords,stageReadable} from '@/lib/app/daybook-stages.mjs'
-import {GUIDE_WEEKS,GUIDE_LEVELS,getGuideTask,guideTag,guideText,guideRecords,parseGuideEntry,guideProgress} from '@/lib/app/daybook-guide.mjs'
+import {GUIDE_WEEKS,getGuideTask,guideTag,guideText,guideRecords,parseGuideEntry,guideProgress,guideGoalProgress} from '@/lib/app/daybook-guide.mjs'
 import DaybookGoalContext from './daybook-goal-context'
 import DaybookCoachLink from './daybook-coach-link'
 import css from './daybook-stages.module.css'
@@ -18,7 +18,14 @@ const copy={
  es:{title:'Diario de metas',intro:'Tu guía de coaching, de la intención a la acción.',eyebrow:'MI DAYBOOK',weeks:'Semanas de coaching',week:'Semana',level:'Nivel',levels:'Niveles de trabajo',steps:'Pasos de la semana',step:'Paso',of:'de',shortLevels:['Reflexión','Coach IA','Práctica','Sesión'],start:'Elegir una dirección',review:'Resultados y nuevas posibilidades',reviewTag:'Balance del programa',backToWeeks:'Volver a las semanas',completed:'Completado',progress:'Progreso semanal',save:'Guardar borrador',savePreparation:'Guardar preparación',complete:'Guardar y completar paso',completeReview:'Guardar balance',saved:'Guardado en tu diario y verificado',saving:'Guardando…',failed:'Guardado sin confirmar. Tus respuestas siguen aquí. Reintenta antes de continuar.',retry:'Reintentar guardado',reload:'Recargar diario',discard:'Hay respuestas sin guardar. ¿Salir y descartar los borradores?',unknown:'Carga las entradas restantes para ver tu progreso exacto y continuar.',load:'Cargar entradas',loading:'Cargando…',loadFailed:'No se pudieron cargar todas las entradas. Reintenta.',required:'Completa los campos obligatorios para terminar el paso.',validation:'Revisa las respuestas: completa los campos obligatorios y acorta los textos que superen el límite.',optional:'opcional',noRating:'Sin evaluar',draft:'Borrador sin guardar',draftHint:'Puedes cambiar de semana y paso. Los borradores permanecen en esta página.',goalHint:'Sin meta — borrador sin vincular.',tools:'Recursos para este paso',vectors:'Rueda de vida y ejes de sentido',tests:'Pruebas y autoevaluaciones',plan:'Mi plan de coaching',goals:'Mis metas y acciones',today:'Hoy y revisión semanal',courses:'Cursos y prácticas',videos:'Mi biblioteca de vídeos',coach:'Elegir un coach de IA',human:'Abrir sesiones personales',deeper:'Explorar prácticas',preparation:'Preparar la sesión',preparationHint:'Guarda tu consulta y tus notas. Abrir un formato no confirma el pago ni una sesión realizada.',optionalSupport:'Apoyo opcional para esta semana. Puedes completar el primer nivel por tu cuenta.',priceHint:'El precio y la disponibilidad se confirman antes del pedido. Aquí no se cobran XP.',private:'Tus entradas son privadas y no se comparten automáticamente con un coach.',legacy:'Mis entradas anteriores de esta semana',legacyHint:'Respuestas guardadas del diario anterior. No completan las nuevas tareas automáticamente.',previous:'Paso anterior',next:'Paso siguiente',nextWeek:'Semana siguiente',allDone:'Los siete pasos de esta semana están guardados y completados.',reviewIntro:'Reflexiona sobre tu camino y elige cómo continuar.',summaryDone:'Balance guardado'},
 }
 const routes={vectors:'/development-vectors',tests:'/app/tests',plan:'/app/my-coaching-plan',courses:'/app/course',videos:'/app/videos'}
-const levelIcons=[ClipboardList,MessageCircle,Sparkles,UserRound]
+const levelIcons=[ClipboardList,MessageCircle,Zap,UserRound]
+const premiumOrder=[3,2,4]
+const premiumPrices={2:20,3:50,4:1000}
+const presentation={
+ ru:{program:'Программа достижения цели',practices:'7 практик недели',premium:'Дополнительная поддержка',names:{2:'ИИ-консультация',3:'Экспресс-анализ',4:'Личная консультация'},descs:{2:'Диалог и помощь по теме недели',3:'Разбор ситуации и рекомендации',4:'Индивидуальная сессия с мастером'},next:'Продолжить',open:'Открыть',collapse:'Свернуть',details:'Условия и доступность',all:'Прогресс программы'},
+ en:{program:'Your goal programme',practices:'7 practices this week',premium:'Optional support',names:{2:'AI consultation',3:'Express analysis',4:'Personal consultation'},descs:{2:'Dialogue and guidance for this week',3:'Situation review and recommendations',4:'Individual session with a practitioner'},next:'Continue',open:'Open',collapse:'Collapse',details:'Terms and availability',all:'Programme progress'},
+ es:{program:'Programa de metas',practices:'7 prácticas de la semana',premium:'Apoyo opcional',names:{2:'Consulta con IA',3:'Análisis exprés',4:'Consulta personal'},descs:{2:'Diálogo y orientación semanal',3:'Análisis de la situación y recomendaciones',4:'Sesión individual con un profesional'},next:'Continuar',open:'Abrir',collapse:'Cerrar',details:'Condiciones y disponibilidad',all:'Progreso del programa'}
+}
 const bounded=(value,max)=>Number.isInteger(Number(value))&&Number(value)>=1&&Number(value)<=max?Number(value):1
 function sameWindowNavigation(event,anchor){
  if(!anchor||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||anchor.hasAttribute('download'))return false
@@ -49,6 +56,8 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
  const lang=Object.hasOwn(copy,locale)?locale:'en',c=copy[lang],root='/'+lang
  const review=Number(stageNumber)===8,week=GUIDE_WEEKS[bounded(stageNumber,7)-1],weekId=review?'review':week.id
  const [goalId,setGoalId]=useState(initialGoalId),[level,setLevel]=useState(bounded(initialLevel,4)),[stepNumber,setStepNumber]=useState(bounded(initialStep,7))
+ const [expanded,setExpanded]=useState(false)
+ const p=presentation[lang]
  const [drafts,setDrafts]=useState({}),[statuses,setStatuses]=useState({}),[pending,setPending]=useState(null)
  const effectiveLevel=review?1:level,stepId=review?'summary':effectiveLevel===1?week.steps[stepNumber-1].id:'preparation'
  const task=getGuideTask(weekId,effectiveLevel,stepId),key=JSON.stringify([goalId,weekId,effectiveLevel,stepId])
@@ -56,10 +65,12 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
  const answers=drafts[key]??existing?.answers??{},dirty=Object.hasOwn(drafts,key),hasDrafts=Object.keys(drafts).length>0
  const status=statuses[key]||'',loaded=!hasMore
  const saver=useRef(null),active=useRef(false),inFlight=useRef(false),generation=useRef(0),pendingKey=useRef(null)
- const workbookRef=useRef(null),weeksRail=useRef(null),levelsRail=useRef(null),stepsRail=useRef(null),routeIntent=useRef({goalId:initialGoalId,level:initialLevel,step:initialStep}),lastEntryRequest=useRef(null)
+ const workbookRef=useRef(null),weeksRail=useRef(null),taskRef=useRef(null),routeIntent=useRef({goalId:initialGoalId,level:initialLevel,step:initialStep}),lastEntryRequest=useRef(null)
  const locked=!!pending||inFlight.current,pendingStatus=pending?statuses[pendingKey.current]:''
  const progress=guideProgress(entries,goalId,week.id),completed=loaded&&!dirty&&existing?.completed===true
- const levelInfo=GUIDE_LEVELS.find(item=>item.id===effectiveLevel),LevelIcon=levelIcons[effectiveLevel-1],legacy=review?[]:stageRecords(entries,goalId,week.id)
+ const programme=loaded?guideGoalProgress(entries,goalId):null
+ const nextStep=week.steps.findIndex(item=>parseGuideEntry(guideRecords(entries,goalId,week.id,1,item.id)[0])?.completed!==true)+1
+ const LevelIcon=levelIcons[effectiveLevel-1],legacy=review?[]:stageRecords(entries,goalId,week.id)
  const requiredReady=task.fields.filter(field=>field.required).every(field=>typeof answers[field.id]==='string'&&answers[field.id].trim())
  const hasAnswers=Object.values(answers).some(value=>typeof value==='string'&&value.trim())
  useEffect(()=>{
@@ -73,16 +84,17 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
   const prior=routeIntent.current
   if(prior.goalId!==initialGoalId)setGoalId(initialGoalId)
   if(prior.level!==initialLevel)setLevel(bounded(initialLevel,4))
-  if(prior.step!==initialStep)setStepNumber(bounded(initialStep,7))
+  if(prior.step!==initialStep){setStepNumber(bounded(initialStep,7));setExpanded(true)}
   routeIntent.current={goalId:initialGoalId,level:initialLevel,step:initialStep}
  },[initialGoalId,initialLevel,initialStep,locked])
  useEffect(()=>{
   if(locked||!entryRequest||lastEntryRequest.current===entryRequest)return
   lastEntryRequest.current=entryRequest
-  setGoalId(entryRequest.goalId??null);setLevel(bounded(entryRequest.level,4));setStepNumber(bounded(entryRequest.step,7))
+  setExpanded(true);setGoalId(entryRequest.goalId??null);setLevel(bounded(entryRequest.level,4));setStepNumber(bounded(entryRequest.step,7))
  },[entryRequest,locked])
  useEffect(()=>{onLockChange?.(locked);return()=>onLockChange?.(false)},[locked,onLockChange])
- useEffect(()=>{revealSelection(weeksRail.current);revealSelection(levelsRail.current);revealSelection(stepsRail.current)},[stageNumber,effectiveLevel,stepNumber])
+ useEffect(()=>{revealSelection(weeksRail.current)},[stageNumber])
+ useEffect(()=>{if(new URLSearchParams(window.location.search).has('step'))setExpanded(true)},[])
  useEffect(()=>{
   if(!hasDrafts&&!pending)return undefined
   const leave=event=>{event.preventDefault();event.returnValue=''}
@@ -106,8 +118,9 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
  },[accountId,hasDrafts,pending,c.discard])
  function position(next){onPositionChange?.({level:effectiveLevel,step:review?1:stepNumber,goalId,...next})}
  function navigate(n){if(locked||!ready)return;setStepNumber(1);onStage(n)}
- function chooseLevel(n){if(locked||!ready)return;setLevel(n);position({level:n})}
- function chooseStep(n){if(locked||!ready)return;setStepNumber(n);position({step:n})}
+ function chooseLevel(n){if(locked||!ready)return;setLevel(n);if(n!==1)setExpanded(true);position({level:n})}
+ function chooseStep(n){if(locked||!ready)return;setLevel(1);setExpanded(true);setStepNumber(n);position({level:1,step:n})}
+ function resume(){if(locked||!ready)return;if(!nextStep){navigate(week.number===7?8:week.number+1);return}chooseStep(nextStep);requestAnimationFrame(()=>taskRef.current?.scrollIntoView({block:'nearest'}))}
  function chooseGoal(id){if(locked||!ready)return;setGoalId(id);position({goalId:id})}
  function leave(event){if(!sameWindowNavigation(event,event.currentTarget))return true;if(locked||!ready||(hasDrafts&&!keepsDaybookMounted(event.currentTarget)&&!window.confirm(c.discard))){event.preventDefault();return false}return true}
  function openTab(tab){if(locked||!ready)return;onTab(tab)}
@@ -140,23 +153,9 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
   }finally{if(token===generation.current)inFlight.current=false}
  }
  function resourceLink(name){return routes[name]?<Link key={name} href={root+routes[name]} prefetch={false} onClick={leave}><BookOpen size={18} aria-hidden="true"/><span>{c[name]}</span><ArrowRight size={17} aria-hidden="true"/></Link>:<button type="button" key={name} disabled={locked||!ready} onClick={()=>openTab(name)}><BookOpen size={18} aria-hidden="true"/><span>{c[name]}</span><ArrowRight size={17} aria-hidden="true"/></button>}
- return <div ref={workbookRef} className={css.workbook} data-daybook-guide data-guide-active-week={review?8:week.number}>
-  <header className={css.hero}><span className={css.eyebrow}><NotebookPen size={17} aria-hidden="true"/>{c.eyebrow}</span><h1>{c.title}</h1><p>{c.intro}</p></header>
-  <div className={css.goalBar}>
-   <DaybookGoalContext compact active={ready} accountId={accountId} locale={lang} selectedId={goalId} disabled={locked||!ready} onChange={chooseGoal} onSessionLost={onSessionLost}/>
-   <Link className={css.direction} href={root+'/app/daybook?start=vector'} prefetch={false} onClick={leave}><Compass size={17} aria-hidden="true"/>{c.start}<ArrowRight size={15} aria-hidden="true"/></Link>
-   {!goalId&&<p className={css.goalHint}>{c.goalHint}</p>}
-  </div>
-  <div className={css.weeks} role="group" aria-label={c.weeks} ref={weeksRail} data-guide-weeks>
-   {GUIDE_WEEKS.map(item=>{const count=loaded?guideProgress(entries,goalId,item.id).completed:0;return <button type="button" className={css.weekButton} key={item.id} data-guide-week={item.number} aria-pressed={!review&&week.id===item.id} aria-label={`${c.week} ${item.number}: ${item.title[lang]}`} disabled={locked||!ready} onClick={()=>navigate(item.number)}><span>{c.week}<b>{item.number}</b></span><small>{loaded?`${count} / 7`:'—'}{count===7&&<Check size={13} aria-hidden="true"/>}</small></button>})}
-  </div>
-  {!review&&<div className={css.levels} role="group" aria-label={c.levels} ref={levelsRail} data-guide-levels>{GUIDE_LEVELS.map(item=>{const Icon=levelIcons[item.id-1];return <button type="button" className={css.levelButton} key={item.id} data-guide-level={item.id} aria-pressed={effectiveLevel===item.id} aria-label={`${c.level} ${item.id}: ${item.title[lang]}`} disabled={locked||!ready} onClick={()=>chooseLevel(item.id)}><span><Icon size={17} aria-hidden="true"/>{item.id}</span><strong>{c.shortLevels[item.id-1]}</strong></button>})}</div>}
-  {hasMore&&<aside className={css.notice} role="status"><p>{loadError?c.loadFailed:c.unknown}</p><button type="button" disabled={!ready||loadingAll||locked} onClick={onLoadAll}>{loadingAll?c.loading:c.load}</button></aside>}
-  <div className={css.weekHeading}><div><span className={css.kicker}>{review?c.reviewTag:`${c.week} ${week.number} · ${c.level} ${effectiveLevel}`}</span><h2>{review?c.review:week.title[lang]}</h2><p>{review?c.reviewIntro:week.subtitle[lang]}</p></div>{!review&&<div className={css.progress} data-guide-progress data-completed={loaded?progress.completed:undefined} data-total="7"><span>{c.progress}<strong>{loaded?`${progress.completed} / 7`:'—'}</strong></span><progress max={7} value={loaded?progress.completed:0} aria-label={c.progress}/></div>}</div>
-  {!review&&effectiveLevel===1&&<div className={css.steps} role="group" aria-label={c.steps} ref={stepsRail} data-guide-steps>{week.steps.map((item,index)=>{const record=loaded?parseGuideEntry(guideRecords(entries,goalId,week.id,1,item.id)[0]):null;return <button type="button" className={css.stepButton} key={item.id} data-guide-step={item.id} aria-pressed={stepNumber===index+1} aria-label={`${c.step} ${index+1}: ${item.title[lang]}${record?.completed?` · ${c.completed}`:''}`} disabled={locked||!ready} onClick={()=>chooseStep(index+1)}><small>{c.step}</small><span>{record?.completed?<Check size={19} aria-hidden="true"/>:index+1}</span></button>})}</div>}
-  {!review&&effectiveLevel>1&&<section className={css.offer} aria-label={levelInfo.title[lang]}><div className={css.offerHeading}><span className={css.offerIcon}><LevelIcon size={25} aria-hidden="true"/></span><div><h3>{levelInfo.title[lang]}</h3><span className={css.price}>{levelInfo.priceLabel[lang]}</span></div></div><p>{levelInfo.description[lang]}</p><p className={css.hint}>{c.optionalSupport}</p><Link className={css.offerAction} href={root+(effectiveLevel===2?'/my-coach':effectiveLevel===4?'/app/portrait?space=sessions':'/app/course')} prefetch={false} onClick={leave}>{effectiveLevel===2?c.coach:effectiveLevel===4?c.human:c.deeper}<ArrowRight size={19} aria-hidden="true"/></Link><small>{c.priceHint}</small></section>}
-  <section className={css.sheet} data-guide-task aria-labelledby="daybook-task-title">
+ const taskPanel=<div className={css.taskPanel}><section ref={taskRef} className={css.sheet} data-guide-task aria-labelledby="daybook-task-title">
    <div className={css.taskMeta}><span>{review?c.reviewTag:effectiveLevel===1?`${c.step} ${stepNumber} ${c.of} 7`:c.preparation}</span>{completed&&<span className={css.done}><CheckCircle2 size={16} aria-hidden="true"/>{review?c.summaryDone:c.completed}</span>}{dirty&&<span>{c.draft}</span>}</div>
+   {!review&&effectiveLevel===1&&<button type="button" className={css.collapse} disabled={locked||!ready} onClick={()=>setExpanded(false)}>{p.collapse}<ChevronDown size={16} aria-hidden="true"/></button>}
    <h3 id="daybook-task-title">{task.title[lang]}</h3><p className={css.description}>{task.description[lang]}</p>{effectiveLevel>1&&<p className={css.hint}>{c.preparationHint}</p>}
    <div className={css.fields}>{task.fields.map(field=><label key={field.id} className={css.field}><span>{field.label[lang]}{field.required?<span className={css.requiredMark} aria-hidden="true">{'\u00a0*'}</span>:<small> · {c.optional}</small>}</span>{field.type==='rating'?<select aria-required={field.required} disabled={!ready||!loaded||locked} value={answers[field.id]??''} onChange={event=>change(field.id,event.target.value)}><option value="">{c.noRating}</option>{Array.from({length:11},(_,n)=><option key={n} value={String(n)}>{n} / 10</option>)}</select>:<textarea rows={3} maxLength={1200} aria-required={field.required} disabled={!ready||!loaded||locked} value={answers[field.id]||''} onChange={event=>change(field.id,event.target.value)}/>}</label>)}</div>
    {effectiveLevel===1&&task.fields.some(field=>field.required)&&<p className={css.hint}>{c.required}</p>}
@@ -164,10 +163,36 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
    <p className={css.privacy}><LockKeyhole size={14} aria-hidden="true"/>{c.private}</p>
    {effectiveLevel===2&&current&&!dirty&&<div className={css.coachHandoff}><DaybookCoachLink accountId={accountId} locale={lang} kind="journal" itemId={current.id} revision={current.revision} disabled={locked||!ready} onSessionLost={onSessionLost}/></div>}
   </section>
-  {task.resources?.length>0&&<details className={css.resources}><summary><BookOpen size={18} aria-hidden="true"/>{c.tools}</summary><div className={css.links}>{task.resources.map(resourceLink)}</div></details>}
+  {task.resources?.length>0&&<details className={css.resources}><summary><BookOpen size={18} aria-hidden="true"/>{c.tools}</summary><div className={css.links}>{task.resources.map(resourceLink)}</div></details>}</div>
+ return <div ref={workbookRef} className={css.workbook} data-daybook-guide data-guide-active-week={review?8:week.number} data-guide-layout="weekly-practices">
+  <header className={css.hero}><span className={css.eyebrow}><NotebookPen size={17} aria-hidden="true"/>{c.eyebrow}</span><h1>{c.title}</h1><p>{c.intro}</p></header>
+  <div className={css.goalBar}>
+   <div><DaybookGoalContext compact active={ready} accountId={accountId} locale={lang} selectedId={goalId} disabled={locked||!ready} onChange={chooseGoal} onSessionLost={onSessionLost}/><p className={css.goalHint}>{review?c.reviewTag:c.week+' '+week.number+' '+c.of+' 7'}</p>{!goalId&&<p className={css.goalHint}>{c.goalHint}</p>}</div>
+   <div className={css.goalRing} role="img" aria-label={p.all+': '+(programme?programme.percent+'%':'—')}><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#e7cfa3" strokeWidth="7"/>{programme?.percent>0&&<circle cx="32" cy="32" r="26" fill="none" stroke="#087652" strokeWidth="7" strokeLinecap="round" pathLength="100" strokeDasharray={programme.percent+' 100'} transform="rotate(-90 32 32)"/>}</svg><strong>{programme?programme.percent+'%':'—'}</strong></div>
+  </div>
+  <h2 className={css.programTitle}>{p.program}</h2>
+  <div className={css.weekCard}>
+   <div className={css.weeks} role="group" aria-label={c.weeks} ref={weeksRail} data-guide-weeks>
+    {GUIDE_WEEKS.map(item=>{const count=loaded?guideProgress(entries,goalId,item.id).completed:0;return <button type="button" className={css.weekButton} key={item.id} data-guide-week={item.number} aria-pressed={!review&&week.id===item.id} aria-label={c.week+' '+item.number+': '+item.title[lang]} disabled={locked||!ready} onClick={()=>navigate(item.number)}><span>{c.week}<b>{item.number}</b></span><small>{count===7?<Check size={17} aria-hidden="true"/>:loaded?count+' / 7':'—'}</small></button>})}
+   </div>
+   <div className={css.timeline} aria-hidden="true">{GUIDE_WEEKS.map(item=><span key={item.id} data-done={loaded&&guideProgress(entries,goalId,item.id).completed===7} data-active={!review&&item.id===week.id}/>)}</div>
+  </div>
+  {hasMore&&<aside className={css.notice} role="status"><p>{loadError?c.loadFailed:c.unknown}</p><button type="button" disabled={!ready||loadingAll||locked} onClick={onLoadAll}>{loadingAll?c.loading:c.load}</button></aside>}
+  <div className={css.weekCanvas}>
+   <div className={css.weekHeading}><div><h2>{review?c.review:c.week+' '+week.number+' — '+week.title[lang]}</h2><p>{review?c.reviewIntro:week.subtitle[lang]}</p></div>{!review&&<div className={css.progress} data-guide-progress data-completed={loaded?progress.completed:undefined} data-total="7"><span>{c.progress}<strong>{loaded?progress.completed+' / 7':'—'}</strong></span><progress max={7} value={loaded?progress.completed:0} aria-label={c.progress}/></div>}</div>
+   {!review&&<div data-guide-levels role="group" aria-label={c.levels} className={css.premiumGroup}>
+    <div className={css.premiumCaption}>{p.premium}</div>
+    {premiumOrder.map(n=>{const Icon=levelIcons[n-1];return <button type="button" key={n} className={css.premiumRow} data-guide-level={n} aria-pressed={effectiveLevel===n} disabled={locked||!ready} onClick={()=>chooseLevel(n)}><span className={css.premiumIcon}><Icon size={22} aria-hidden="true"/></span><span className={css.premiumText}><strong>{p.names[n]}</strong><small>{p.descs[n]}</small></span><span className={css.xp}>{premiumPrices[n]} XP</span><ChevronRight size={16} aria-hidden="true"/></button>})}
+    <button type="button" className={css.practiceHeading} data-guide-level="1" aria-pressed={effectiveLevel===1} disabled={locked||!ready} onClick={()=>chooseLevel(1)}><BookOpen size={20} aria-hidden="true"/><strong>{p.practices}</strong><span>{loaded?progress.completed+' / 7':'—'}</span><ChevronDown size={19} aria-hidden="true"/></button>
+   </div>}
+   {!review&&effectiveLevel>1&&<div className={css.premiumDetail}><div className={css.offerHeading}><span className={css.offerIcon}><LevelIcon size={23} aria-hidden="true"/></span><div><h3>{p.names[effectiveLevel]}</h3><span className={css.price}>{premiumPrices[effectiveLevel]} XP</span></div></div><p className={css.hint}>{c.priceHint}</p><Link className={css.offerAction} href={root+(effectiveLevel===2?'/my-coach':effectiveLevel===4?'/app/portrait?space=sessions':'/services/catalog')} prefetch={false} onClick={leave}>{effectiveLevel===2?c.coach:effectiveLevel===4?c.human:p.details}<ArrowRight size={19} aria-hidden="true"/></Link>{taskPanel}</div>}
+   {review?taskPanel:<div className={css.practiceList} role="group" aria-label={c.steps} data-guide-steps>
+    {week.steps.map((item,index)=>{const record=loaded?parseGuideEntry(guideRecords(entries,goalId,week.id,1,item.id)[0]):null;const selected=effectiveLevel===1&&stepNumber===index+1;const opened=selected&&expanded;return <div className={css.practiceItem} key={item.id} data-current={loaded&&nextStep===index+1}><button type="button" className={css.practiceRow} data-guide-step={item.id} aria-pressed={selected} aria-expanded={opened} aria-label={c.step+' '+(index+1)+': '+item.title[lang]+(record?.completed?' · '+c.completed:'')} disabled={locked||!ready} onClick={()=>chooseStep(index+1)}><span className={css.practicePhoto} data-photo={index}><span>{index+1}</span></span><span className={css.practiceText}><strong>{item.title[lang]}</strong><small>{item.description[lang]}</small></span><span className={css.practiceStatus}>{record?.completed?<><CheckCircle2 size={22} aria-hidden="true"/><small>{c.completed}</small></>:<><ChevronDown size={20} aria-hidden="true"/><small>{p.open}</small></>}</span></button>{opened&&taskPanel}</div>})}
+   </div>}
+   {!review&&<button type="button" className={css.resume} disabled={locked||!ready||!loaded} onClick={resume}>{nextStep?p.next+' — '+c.step+' '+nextStep:week.number===7?c.review:c.nextWeek}<ArrowRight size={20} aria-hidden="true"/></button>}
+  </div>
   {legacy.length>0&&<details className={css.legacy}><summary>{c.legacy}</summary><p className={css.hint}>{c.legacyHint}</p>{legacy.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><p>{stageReadable(entry,lang)}</p></article>)}</details>}
   {loaded&&!review&&effectiveLevel===1&&progress.completed===7&&<p className={css.finished}><CheckCircle2 size={20} aria-hidden="true"/>{c.allDone}</p>}
-  {!review&&effectiveLevel===1&&<div className={css.paging}><button type="button" disabled={locked||!ready||stepNumber===1} onClick={()=>chooseStep(stepNumber-1)}><ArrowLeft size={18} aria-hidden="true"/>{c.previous}</button><button type="button" disabled={locked||!ready} onClick={()=>stepNumber<7?chooseStep(stepNumber+1):navigate(week.number===7?8:week.number+1)}>{stepNumber<7?c.next:week.number===7?c.review:c.nextWeek}<ArrowRight size={18} aria-hidden="true"/></button></div>}
   <button type="button" className={css.reviewLink} disabled={locked||!ready} onClick={()=>navigate(review?7:8)}>{review?<ArrowLeft size={18} aria-hidden="true"/>:<Flag size={18} aria-hidden="true"/>}{review?c.backToWeeks:c.review}{!review&&<ArrowRight size={17} aria-hidden="true"/>}</button>
  </div>
 }
