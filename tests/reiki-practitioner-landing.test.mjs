@@ -91,3 +91,29 @@ test("Approved second screen follows quiz without duplicate header and offers fi
  assert.ok(!details.includes("<details") && !details.includes("<AcademyVideoPlayer"));
  assert.ok(css.includes("MY_REIKI_SECOND_SCREEN_20261125") && css.includes(".reikiBenefitGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
+
+
+test("Pro landing expands all six canonical modules inline after the existing roadmap",()=>{
+ const programs=read("components/reiki-programs.tsx");
+ const screens=read("components/reiki-pro-module-screens.tsx");
+ const css=read("components/reiki-pro-module-screens.module.css");
+ const curriculum=JSON.parse(read("data/academy/yggdrasil-curriculum.json"));
+ const map=read("data/academy/yggdrasil-module-map.ts");
+ assert.deepEqual(curriculum.levels.filter(l=>l.id>1).map(l=>l.steps.length),[6,5,5,5,5,6]);
+ const slugs=[...map.matchAll(/slug: "([^"]+)",\s*levelId: (\d+)/g)].filter(m=>Number(m[2])>1).map(m=>m[1]);
+ assert.deepEqual(slugs,["instructor-course","temple-magic","eastern-magic","western-magic","rune-magic","higher-magic"]);
+ assert.ok(programs.includes('href={master ? row.href : "#" + reikiProModuleId(row.id)}'));
+ assert.ok(programs.includes('href={master ? base + "/basic-course" : "#" + reikiProModuleId("instructor-course")}'));
+ assert.ok(programs.includes('{!master && <ReikiProModuleScreens locale={locale} modules={modules} base={base} />}'));
+ assert.ok(programs.indexOf("data-reiki-advanced-row")<programs.indexOf("{!master && <ReikiProModuleScreens"));
+ assert.ok(programs.indexOf("{!master && <ReikiProModuleScreens")<programs.indexOf("className={styles.reikiSecondary}"));
+ assert.ok(screens.includes("curriculum.levels.find(item => item.id === module.levelId)"));
+ assert.ok(screens.includes('return "reiki-pro-" + slug'));
+ assert.ok(screens.includes("id={id}") && screens.includes("data-reiki-pro-module={module.slug}"));
+ assert.ok(screens.includes("src={module.image}") && screens.includes("level.theme[locale]"));
+ assert.ok(screens.includes("level.steps.map(step =>") && screens.includes("step.title[locale]"));
+ assert.ok(screens.includes('href={base + "/" + module.slug}'));
+ assert.ok(!screens.includes("MyReikiHeader") && !screens.includes("ReikiProgramNavigation"));
+ assert.ok(css.includes("100svh") && css.includes("minmax(0, 1fr)") && css.includes("max-width: 354px"));
+ assert.ok(!/\.screen\s*\{[^}]*\bheight\s*:\s*\d+px/i.test(css));
+});
