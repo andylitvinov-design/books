@@ -688,5 +688,5 @@
  .root .inlineComposer{padding-top:8px!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
 }
 
-/* Keep the approved optional directions truly collapsed, including browsers with author display rules. */
-.extraDirections:not([open])>:not(summary){display:none!important}
+/* Closed extra directions must not expose focusable topic controls in Chromium or WebKit. */
+.root .extraDirections:not([open]) > :not(summary){display:none!important}

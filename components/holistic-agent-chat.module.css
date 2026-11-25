@@ -1014,6 +1014,13 @@
  }
 }
 
+/* The three help intents and seven goal steps use real keyboard/touch controls. */
+.dialogueMenu{display:grid;gap:12px;min-width:0}
+.dialogueChoices{display:grid;gap:8px;min-width:0}
+.dialogueChoice{display:flex;align-items:center;min-height:44px;width:100%;padding:10px 12px;text-align:start;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--hh-light-border,#E9DFD1);border-radius:12px;background:var(--hh-light-surface-soft,#F5ECDC);color:var(--hh-light-text,#143D3A);font:inherit;font-weight:600;cursor:pointer}
+.dialogueChoice:focus-visible{outline:3px solid var(--hh-light-focus,#176E6E);outline-offset:3px}
+.dialogueChoice:disabled{opacity:.6;cursor:default}
+
 /* 23 Nov full-screen Samir first turn: single horizontal message bar.
    Tier selector remains available from the + attachment menu. */
 @media(max-width:760px){

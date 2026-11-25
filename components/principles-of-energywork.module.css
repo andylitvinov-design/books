@@ -1083,3 +1083,29 @@
 .page[data-reiki-practitioner-landing] .reikiAdvancedHero::before{background-size:cover;background-position:center;}
 @media(max-width:354px){.page[data-reiki-practitioner-landing]{padding:8px 9px 18px;}.page[data-reiki-practitioner-landing] .courseDeck{padding:5px 5px 16px;}.reikiQuizCard{grid-template-columns:26% minmax(0,1fr);gap:4px;}.reikiQuizCopy strong svg{width:14px;height:14px;}}
 @media(min-width:760px){.page[data-reiki-practitioner-landing]{padding:20px 24px 36px;}.page[data-reiki-practitioner-landing] .hero{padding:24px;}.reikiQuizCard{min-height:112px;}}
+
+/* MY_REIKI_SECOND_SCREEN_20261125 — approved continuation, no duplicate chrome. */
+.reikiDetailsScreen{margin:18px 0 0;padding:12px 0 14px;scroll-margin-top:12px;min-width:0;}
+.page[data-reiki-practitioner-landing] .reikiDetailsScreen .reikiSyllabus{margin:0;padding:0;}
+.reikiDetailsScreen .reikiSyllabus>p{font-size:clamp(12px,3.5vw,16px);letter-spacing:.11em;margin:0 0 5px;}
+.reikiDetailsScreen .reikiSyllabus>h2,.reikiBenefits h2{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;color:#103f30;font:700 clamp(25px,6.5vw,36px)/1.12 Georgia,serif;margin:0 0 12px;}
+.reikiBenefits h2::before,.reikiBenefits h2::after{content:"";height:1px;min-width:8px;flex:1;background:linear-gradient(90deg,transparent,#b9955c);}
+.reikiBenefits h2::after{transform:rotate(180deg);}
+.page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail{gap:7px;}
+.page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail a{min-height:82px;grid-template-columns:32% minmax(0,1fr) 18px;gap:9px;padding:4px 7px 4px 4px;border-radius:16px;background:linear-gradient(135deg,#fffaf0,#f8e8c9);}
+.page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail a>span.reikiWeekPhoto{min-height:74px;border-radius:12px;}
+.reikiDetailsScreen .reikiWeekCopy{gap:2px;padding:4px 0;}
+.reikiDetailsScreen .stepRail a small{font-size:clamp(11px,3vw,14px);letter-spacing:.055em;}
+.reikiDetailsScreen .stepRail a strong{font-size:clamp(19px,5vw,27px);line-height:1.1;}
+.reikiDetailsScreen .stepRail a p{font-size:clamp(13px,3.5vw,17px);line-height:1.25;}
+.reikiBenefits{margin:15px 0 0;}
+.reikiBenefitGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+.reikiBenefitCard{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:8px;min-height:60px;padding:9px 8px;border:1px solid #d7b576;border-radius:14px;background:linear-gradient(135deg,#fffaf0,#f8e8c9);color:#103f30;box-shadow:0 3px 9px #442b1110;}
+.reikiBenefitCard svg{width:100%;height:30px;color:#086044;padding-right:4px;border-right:1px solid #d7b576;}
+.reikiBenefitCard strong{font:700 clamp(13px,3.6vw,17px)/1.2 system-ui,sans-serif;overflow-wrap:anywhere;}
+.reikiDetailsStart .reikiEntry{margin:14px auto 0;max-width:none;}
+.page[data-reiki-practitioner-landing] .reikiDetailsStart .reikiEntry button{min-height:50px;}
+.reikiDetailsStart .reikiEntry small{font-size:12px;color:#695644;}
+.page[data-reiki-practitioner-landing] .reikiDetailsScreen .heroQuickLinks .ghostButton{border-radius:999px;font:700 clamp(13px,3.5vw,17px)/1.2 Georgia,serif;min-height:44px;}
+@media(max-width:354px){.page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail a{grid-template-columns:28% minmax(0,1fr) 15px;gap:6px;}.reikiDetailsScreen .stepRail a strong{font-size:18px;}.reikiBenefitCard{grid-template-columns:28px minmax(0,1fr);gap:5px;padding:7px 5px;}.reikiBenefitCard strong{font-size:12px;}}
+@media(min-width:700px){.reikiDetailsScreen{padding:16px 4px;}.page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail a{min-height:104px;}.reikiBenefitCard{min-height:76px;}}
