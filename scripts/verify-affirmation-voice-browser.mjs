@@ -1316,18 +1316,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const ctx=new AudioContext(),tone=ctx.createOscillator(),gain=ctx.createGain(),dest=ctx.createMediaStreamDestination();
         gain.gain.value=.2;tone.frequency.value=330;
         tone.connect(gain);gain.connect(dest);tone.start();
-        const old=Object.getOwnPropertyDescriptor(navigator.mediaDevices,"getUserMedia");
+        const devices=navigator.mediaDevices;
+        const old=Object.getOwnPropertyDescriptor(devices,"getUserMedia");
+        const oldDevices=Object.getOwnPropertyDescriptor(navigator,"mediaDevices");
         const stats={requests:0,resumeError:null};
         // Start the synthetic WebAudio input within the actual Record gesture.
         // WebKit may otherwise leave the source suspended or clone a muted
         // synthetic track. The real MediaRecorder and decoded PCM checks stay.
-        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>{
+        const getSyntheticAudio=async()=>{
           stats.requests++;
           try { if(ctx.state!=="running")await ctx.resume(); }
           catch(error){stats.resumeError=String(error?.name||"AudioContextError");throw error;}
           return dest.stream;
-        }});
-        window.__hhMontageMic={ctx,tone,old,dest,stats};return true;
+        };
+        // WebKit can resolve a different MediaDevices wrapper on a later
+        // gesture. Install the fixture on a stable navigator instance and
+        // verify the exact callable before interacting with the real UI.
+        Object.defineProperty(devices,"getUserMedia",{configurable:true,value:getSyntheticAudio});
+        Object.defineProperty(navigator,"mediaDevices",{configurable:true,value:devices});
+        if(navigator.mediaDevices.getUserMedia!==getSyntheticAudio)throw Error("Montage microphone fixture not installed");
+        window.__hhMontageMic={ctx,tone,old,oldDevices,devices,dest,stats,getSyntheticAudio};return true;
       });
       if(engine==="chromium")assert.ok(montageMicAvailable,"Chromium Montage microphone fixture available");
       if(montageMicAvailable){
@@ -1338,7 +1346,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           catch(error){
             console.error("Montage real recorder diagnostic",await page.evaluate(()=>{
               const f=window.__hhMontageMic;
-              return {state:f?.ctx.state,stats:f?.stats,tracks:f?.dest.stream.getAudioTracks().map(t=>({state:t.readyState,muted:t.muted,enabled:t.enabled})),
+              return {state:f?.ctx.state,stats:f?.stats,fixtureInstalled:navigator.mediaDevices?.getUserMedia===f?.getSyntheticAudio,tracks:f?.dest.stream.getAudioTracks().map(t=>({state:t.readyState,muted:t.muted,enabled:t.enabled})),
                 warning:document.querySelector("[data-video-montage-audio] [role=alert]")?.textContent};
             }));
             throw error;
@@ -1368,8 +1376,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }finally{
           await page.evaluate(async()=>{
             const fixture=window.__hhMontageMic;
-            if(fixture.old)Object.defineProperty(navigator.mediaDevices,"getUserMedia",fixture.old);
-            else delete navigator.mediaDevices.getUserMedia;
+            if(fixture.old)Object.defineProperty(fixture.devices,"getUserMedia",fixture.old);
+            else delete fixture.devices.getUserMedia;
+            if(fixture.oldDevices)Object.defineProperty(navigator,"mediaDevices",fixture.oldDevices);
+            else delete navigator.mediaDevices;
+            fixture.dest.stream.getTracks().forEach(track=>track.stop());
             fixture.tone.stop();await fixture.ctx.close();delete window.__hhMontageMic;
           });
         }

@@ -182,3 +182,12 @@ test('Samir v3 object keys are separate from v2 and cannot affect other personas
   assert.equal(coachGreetingObjectKey('mira','ru','v3'),null)
   assert.equal(coachGreetingObjectKey('genie','ru','../other'),null)
 })
+
+test('v4 creates separate immutable English keys for the seven public coaches only',()=>{
+  for(const id of ['mira','max','sofia','alex','merlin','harry','genie']){
+    assert.equal(coachGreetingObjectKey(id,'en','v4'),'v4/en/'+id+'.mp3')
+    assert.equal(coachGreetingObjectKey(id,'ru','v4'),null)
+    assert.equal(coachGreetingObjectKey(id,'es','v4'),null)
+  }
+  for(const id of ['lea','noah','iris','ray','meditations'])assert.equal(coachGreetingObjectKey(id,'en','v4'),null)
+})
