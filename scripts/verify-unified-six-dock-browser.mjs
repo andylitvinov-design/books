@@ -1020,6 +1020,8 @@ try{
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
+ // React and the mobile keyboard visibility observer commit independently after a folder switch.
+ await page.locator("[data-hh-unified-dock]").waitFor({state:"visible",timeout:15000});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
