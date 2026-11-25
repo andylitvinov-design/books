@@ -1571,10 +1571,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
+  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Key Insights',summary:'Summary'},ru:{transcript:'Диалог',insights:'Ключевое',summary:'Резюме'},es:{transcript:'Diálogo',insights:'Claves',summary:'Resumen'}}[lang]
+  function showSessionPanel(panel){
+    const root=sessionRootRef.current
+    const progress=root?.querySelector('[data-coach-progress-accordion]')
+    if(panel==='insights'&&progress){
+      progress.open=true
+      progress.querySelector('summary')?.focus({preventScroll:true})
+      progress.scrollIntoView({block:'nearest'})
+      return
+    }
+    if(progress)progress.open=false
+    transcriptRef.current?.scrollIntoView({block:'nearest'})
+  }
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} aria-label="Holistic House">
@@ -1646,7 +1659,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </button>
       <div className={styles.sessionHeroCopy}>
         <span className={styles.sessionHeroBadge}><Sparkles size={14} aria-hidden="true"/>{ui.mode}</span>
-        <p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1>
+        <h1>{name}</h1><p>{localCoachText(persona?.role,lang)||t.coach}</p>
         <small>{localCoachText(persona?.approach,lang)||localCoachText(persona?.description,lang)}</small>
       </div>
       {coachStyle&&!showCaptions&&<span className={styles.coachStyleChip}
@@ -1962,6 +1975,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
+      <nav className={styles.sessionPanelNav} aria-label={lang==='ru'?'Разделы сессии':lang==='es'?'Secciones de la sesión':'Session sections'}>
+        <button type="button" data-coach-panel="transcript" onClick={()=>showSessionPanel('transcript')}><MessageCircle size={17} aria-hidden="true"/><span>{sessionPanelCopy.transcript}</span></button>
+        <button type="button" data-coach-panel="insights" disabled={!sessionHasStarted} onClick={()=>showSessionPanel('insights')}><Sparkles size={17} aria-hidden="true"/><span>{sessionPanelCopy.insights}</span></button>
+        <button type="button" data-coach-panel="summary" disabled={protocolOpen} onClick={endWithProtocol} title={keyInfoUi.finish} aria-label={keyInfoUi.finish}><FileText size={17} aria-hidden="true"/><span>{sessionPanelCopy.summary}</span></button>
+      </nav>
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
@@ -2002,7 +2020,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
             disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady&&!liveVoiceSelected)}>
-            {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
+            <span>{busy?t.sending:t.send}</span><ArrowRight size={20} aria-hidden="true"/>
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
