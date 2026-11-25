@@ -2,14 +2,14 @@ import {telegramSupportUnavailable} from '@/lib/crm/telegram-support-quiz.mjs'
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import {AppError} from '@/lib/assessments/contracts'
-import {channelTransportReady} from '@/lib/crm/messenger-policy'
+import {channelTransportReady,telegramBotBusinessId,telegramBusinessTransportReady} from '@/lib/crm/messenger-policy'
 import {consumeRate} from '@/lib/app/database'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppAccountLink,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto, acknowledgeHolisticBusinessWelcomeCallback, assertHolisticBusinessConnection } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3,finishTelegramFreePackagePhoto,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
@@ -28,8 +28,10 @@ import {archiveWhatsAppAliAcceptedReply} from '@/lib/crm/whatsapp-ali-reply-arch
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
-import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut,secretaryStopped} from '@/lib/crm/telegram-secretary-service'
+import {telegramBusinessWelcomeMenu,telegramBusinessWelcomeClick,telegramBusinessWelcomeTopic} from '@/lib/crm/telegram-business-welcome-menu.mjs'
 import {composeTelegramSecretaryClarification} from '@/lib/crm/telegram-secretary-offers.mjs'
+import {guardBusinessSecretaryReply} from '@/lib/crm/telegram-business-natural-dialogue.mjs'
 
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
@@ -100,6 +102,38 @@ export async function POST(request,{params}){
           await ensureTelegramInlineWebhookUpdates().catch(()=>{})
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
+    }
+    // Business callback buttons are distinct from ordinary bot callbacks.
+    // A signed click is an informational choice, never a booking or consent.
+    if(provider==='telegram'&&String(body.callback_query?.data||'').startsWith('hhbw1:')){
+      const click=telegramBusinessWelcomeClick(body,telegramBotBusinessId(process.env))
+      if(click&&telegramBusinessTransportReady(process.env)){
+        let inbox=null
+        try{
+          await assertHolisticBusinessConnection({connectionId:click.connectionId,to:click.chatId})
+          await acknowledgeHolisticBusinessWelcomeCallback(click.callbackId).catch(()=>{})
+          if(!await secretaryStopped(click,config)){
+            inbox=await captureTelegramBusinessInbox(body,config)
+            if(inbox.matched&&inbox.recorded&&!inbox.humanActive){
+              await consumeRate(config,{op:'hh-tg-business-welcome-topic',connectionId:click.connectionId,
+                chatId:click.chatId,messageId:click.messageId,topic:click.topic},1,86400)
+              await consumeRate(config,{op:'hh-tg-business-welcome-chat',connectionId:click.connectionId,chatId:click.chatId},8,86400)
+              await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
+              if(!await secretaryStopped(click,config)){
+                const plan=telegramBusinessWelcomeTopic(click.locale,click.topic)
+                await setTelegramBusinessReplyState(config,inbox,'send_pending')
+                await sendHolisticBusinessRequestReply({connectionId:click.connectionId,to:click.chatId,...plan})
+                await setTelegramBusinessReplyState(config,inbox,'provider_accepted')
+              }
+            }
+          }
+        }catch(error){
+          const failure=telegramBusinessReplyFailure(error)
+          try{await setTelegramBusinessReplyState(config,inbox,telegramBusinessReplyCrmState(failure))}catch{}
+          console.error('HH_TG_BUSINESS_WELCOME_TOPIC_FAILED:'+failure)
+        }
+      }
+      return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
     }
     // Durable STOP gate for the account secretary, including contacts who
     // have never ordered. This signed update is not a CRM lead.
@@ -218,12 +252,21 @@ export async function POST(request,{params}){
             if(secretary.kind==='clarify')
               await consumeRate(config,{op:'hh-tg-secretary-clarify-chat',
                 connectionId:secretary.connectionId,chatId:secretary.to},12,86400)
+            // Reserve content/clarification fingerprints using the existing HMAC rate bucket.
+            // The exact same response must not be sent for different inbound events.
+            const guarded=await guardBusinessSecretaryReply(secretary,(scope,key)=>consumeRate(config,{
+              op:'hh-tg-secretary-dialogue-dedup-v1',connectionId:secretary.connectionId,
+              chatId:secretary.to,scope,key},1,86400))
+            if(!guarded||await secretaryStopped({connectionId:secretary.connectionId,chatId:secretary.to},config)){
+              try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'processed')}catch{}
+              return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+            }
             // Telemetry failures do not silence otherwise permitted messages.
             try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
             catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
             await sendHolisticBusinessRequestReply({
               connectionId:secretary.connectionId,to:secretary.to,
-              text:secretary.reply,buttons:secretary.buttons||[],
+              text:guarded.reply,buttons:guarded.buttons||[],
             })
             providerAccepted=true
           }catch(error){
@@ -243,16 +286,24 @@ export async function POST(request,{params}){
       if(businessLead?.created){
         let providerAccepted=false
         try{
-          const text=businessLead.locale==='ru'
-            ?'Здравствуйте! Я Ali, помощник Holistic House. Ваше сообщение получено. Чем могу помочь?'
-            :businessLead.locale==='es'
-              ?'¡Hola! Soy Ali, el asistente de Holistic House. Recibimos tu mensaje. ¿En qué puedo ayudarte?'
-              :'Hello! I’m Ali, the Holistic House assistant. We received your message. How can I help?'
+          const welcome=telegramBusinessWelcomeMenu(businessLead.locale)
+          const fallback=composeTelegramSecretaryClarification('hi',welcome.locale)
+          let inlineReady=false
+          try{
+            await ensureTelegramInlineWebhookUpdates(process.env,{businessVerified:true})
+            inlineReady=true
+          }catch{console.error('HH_TG_BUSINESS_WELCOME_INLINE_UNAVAILABLE')}
           // Neutral acknowledgement only, not an approved booking or paid order.
           try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
           catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_STATE_UNAVAILABLE')}
+          // Send one first-party thematic photo BEFORE the text. Photo failure
+          // never blocks the actual reply, nor retries an ambiguous provider send.
+          try{await sendHolisticBusinessWelcomePhoto({connectionId:businessLead.connectionId,
+            to:businessLead.chatId,generalWelcome:true})}
+          catch{console.error('HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED')}
           await sendHolisticBusinessRequestReply({connectionId:businessLead.connectionId,
-            to:businessLead.chatId,text})
+            to:businessLead.chatId,...(inlineReady?{text:welcome.text,welcomeLocale:welcome.locale}:
+              {text:fallback.text,buttons:fallback.buttons})})
           providerAccepted=true
         }catch(error){
           const failure=telegramBusinessReplyFailure(error)

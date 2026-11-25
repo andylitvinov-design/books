@@ -94,6 +94,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
@@ -820,9 +821,11 @@ export default function AppWorkspace({ locale, path = [] }) {
              <>
                {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <DreamPathMap locale={locale} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
+                 <DreamPathMap locale={locale} />
                  <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
