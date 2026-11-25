@@ -7,7 +7,7 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 
 test("Four optional audio welcome screens sit immediately before original guided videos", () => {
   const sequence = energyworkSequence();
-  assert.equal(sequence.length, 68);
+  assert.equal(sequence.length, 69);
   const pairs = [
     ["flight-audio","flight-02","flight"],
     ["tan-audio","tan-02","tantra"],
@@ -21,7 +21,7 @@ test("Four optional audio welcome screens sit immediately before original guided
     assert.ok(curriculum.includes('id: "' + audio + '", phase: "' + lesson + '", kind: "audio-intro"'));
     assert.ok(curriculum.includes('videoKey: "' + ({flight:"flight-to-sun",tantra:"tantra-reiki",kundalini:"kundalini-reiki",yggdrasil:"reiki-yggdrasil"})[lesson] + '"'));
   }
-  assert.deepEqual(energyworkLessonRanges(sequence).map(row => row.count),[8,16,18,16,7]);
+  assert.deepEqual(energyworkLessonRanges(sequence).map(row => row.count),[9,16,18,16,7]);
   assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length, 22,"the four audio screens require no extra private answers");
 });
 
