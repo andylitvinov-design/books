@@ -5,6 +5,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import styles from "./principles-of-energywork.module.css";
+import { ReikiProModuleScreens, reikiProModuleId } from "./reiki-pro-module-screens";
 
 export type ReikiProgram = "free" | "master" | "pro";
 
@@ -81,19 +82,20 @@ export function ReikiAdvancedProgram({ locale, program }: { locale: PublicLocale
         <strong>{master ? t.masterSubtitle : t.proSubtitle}</strong>
         <p>{master ? t.masterLead : t.proLead}</p>
       </div>
-      <Link className={styles.reikiAdvancedCta} href={base + (master ? "/basic-course" : "/instructor-course")} prefetch={false}>{master ? t.masterCta : t.proCta}<ArrowRight size={20} aria-hidden="true" /></Link>
+      <Link className={styles.reikiAdvancedCta} href={master ? base + "/basic-course" : "#" + reikiProModuleId("instructor-course")} prefetch={false}>{master ? t.masterCta : t.proCta}<ArrowRight size={20} aria-hidden="true" /></Link>
     </section>
     <section className={styles.reikiSyllabus} aria-labelledby="reiki-advanced-roadmap">
       <p className={styles.sectionEyebrow}>REIKI YGGDRASIL</p>
       <h2 id="reiki-advanced-roadmap">{master ? t.masterRoadmap : t.proRoadmap}</h2>
       <nav className={styles.stepRail} aria-label={master ? t.masterRoadmap : t.proRoadmap}>
-        {rows.map(row => <Link key={row.id} href={row.href} prefetch={false} data-reiki-advanced-row={row.id}>
+        {rows.map(row => <Link key={row.id} href={master ? row.href : "#" + reikiProModuleId(row.id)} prefetch={false} data-reiki-advanced-row={row.id}>
           <span className={styles.reikiAdvancedPhoto} aria-hidden="true">{row.photo ? <Image src={row.photo} alt="" fill sizes="(max-width: 700px) 35vw, 260px" unoptimized /> : null}<b>{String(row.number).padStart(2,"0")}</b></span>
           <div className={styles.reikiWeekCopy}><small>{master ? t.level : t.module} {row.number}</small><strong>{row.title}</strong><p>{t.details}</p></div>
           <ArrowRight size={19} aria-hidden="true" />
         </Link>)}
       </nav>
     </section>
+    {!master && <ReikiProModuleScreens locale={locale} modules={modules} base={base} />}
     <div className={styles.reikiSecondary}><div className={styles.heroQuickLinks}>
       <Link className={styles.ghostButton} href={base} prefetch={false}>{t.complete}<ArrowRight size={16} aria-hidden="true" /></Link>
       {!master && <Link className={styles.ghostButton} href={programPath(locale, "master")} prefetch={false}>{t.foundation}<ArrowRight size={16} aria-hidden="true" /></Link>}
