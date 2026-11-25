@@ -91,7 +91,10 @@ test("paid consultations remain reachable in optional carousel, Ali input owns f
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
  assert.match(browser,/data-home-intent-composer/);
- assert.match(browser,/data-home-intent-option="goal"/);
- assert.match(browser,/"mytube","video","coach","ai","services","practice","profile"/);
+ assert.match(browser,/\["clarity","goal","business"\]\.entries\(\)/);
+ assert.match(browser,/data-home-intent-option/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ // The approved seven-slot dock now uses My Reiki; MyVideo lives in Profile.
+ assert.match(browser,/"mytube","reiki","coach","ai","services","practice","profile"/);
  assert.doesNotMatch(browser,/data-home-quick-booking|data-home-quick-cta/);
 });

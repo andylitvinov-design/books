@@ -301,45 +301,65 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home now has three entry intentions, not the removed
-          // Self/Business toggle. Exercise all entry and step elements.
+          // Approved Home: three program cards with three benefits each.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           const choices=entry.locator('[data-home-intent-option]')
+          const programs={
+            en:['Clarity & Stress Relief','Achieving My Goal','Business Support'],
+            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса'],
+            es:["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"],
+          }
           await expect(choices).toHaveCount(3)
-          for(const intention of ['understand','goal','talk']){
+          const ids=['clarity','goal','business']
+          assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),ids,label+': approved program order')
+          for(const [index,intention] of ids.entries()){
             const button=entry.locator('[data-home-intent-option="'+intention+'"]')
             await expect(button).toHaveCount(1)
             await expect(button).toHaveAttribute('type','button')
+            await expect(button).toHaveAttribute('aria-label',programs[locale][index])
+            await expect(button).toHaveAccessibleName(programs[locale][index])
             await expect(button).toBeVisible()
+            await expect(button.locator('img')).toHaveCount(1)
+            await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
+            const box=await button.boundingBox()
+            assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
           }
-          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(7)
-          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('data-home-intent-option','understand')
-          await expect(entry.locator('[data-home-request-session]')).toHaveAttribute('data-home-intent-option','goal')
-          // Same-frame geometry: composer, two large choices, gentle Talk
-          // option and seven steps must follow in order without overflow.
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
+          await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
+          const journeyLink=entry.locator('[data-home-continue-path]')
+          await expect(journeyLink).toHaveCount(1)
+          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
+          await expect(journeyLink).toBeHidden()
+          // Same-frame geometry: keep hero, composer, three programs and
+          // methods in order; cards never overlap or overflow at any viewport.
           const homeLayout=await entry.evaluate(root=>{
-            const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-intent-option="talk"]','[data-home-how-it-works]']
-              .map(selector=>root.querySelector(selector))
+            const nodes=['[data-home-dialogue-hero]','[data-home-intent-form]',
+              '[data-home-focus-grid]','[data-home-methods]'].map(selector=>root.querySelector(selector))
             if(nodes.some(node=>!node))return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
+            const cards=[...root.querySelectorAll('[data-home-intent-option]')].map(node=>node.getBoundingClientRect())
             return {
               ordered:nodes.every((node,i)=>i===0||Boolean(
                 nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
               noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
-              inWidth:boxes.every(box=>box.left>=-1&&box.right<=innerWidth+1),
+              inWidth:[...boxes,...cards].every(box=>box.left>=-1&&box.right<=innerWidth+1),
+              cardsSeparate:cards.length===3&&cards.every((a,i)=>cards.slice(i+1).every(b=>
+                a.right<=b.left+1||b.right<=a.left+1||a.bottom<=b.top+1||b.bottom<=a.top+1)),
             }
           })
-          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three intentions → seven steps '+JSON.stringify(homeLayout))
+          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth&&homeLayout.cardsSeparate,
+            label+': hero → composer → three programs → methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()

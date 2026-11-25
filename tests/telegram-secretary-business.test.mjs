@@ -364,3 +364,36 @@ test('Business welcome is a five-topic localized inline menu, free first, no pri
  assert.match(inbox,/business-callback:/);
  assert.match(inbox,/Telegram Business menu selected:/);
 });
+
+
+// Synthetic owner regression: three different messages never receive the same service menu.
+test('Business natural clarification recognizes curiosity, location and free choice',async()=>{
+ const {businessSecretaryNaturalClarification:clarify}=await import('../lib/crm/telegram-business-natural-dialogue.mjs');
+ const messages=['Saw videos of happy people and am curious about it','Am from another city','Free'];
+ const answers=messages.map(message=>clarify(message,'en'));
+ assert.deepEqual(answers.map(a=>a.clarificationReason),['natural_interest','natural_location','natural_free']);
+ assert.equal(new Set(answers.map(a=>a.text)).size,3);
+ assert.match(answers[0].text,/curious/i);
+ assert.match(answers[1].text,/where you're based/i);
+ assert.deepEqual(answers[2].buttons.map(b=>b.url),[TELEGRAM_SITE+'/en/services/free-situation-review',TELEGRAM_SITE+'/en/academy/principles-of-energywork']);
+ for(const locale of ['ru','es'])assert.equal(clarify(locale==='ru'?'Бесплатно':'Gratis',locale).buttons.length,2);
+ for(const message of ['/stop','where are you?','price'])assert.equal(clarify(message,'en'),null);
+ assert.equal(clarify('Free','en',{mediaKind:'voice'}),null);
+});
+
+test('Business duplicate content and clarification intent cannot loop; safety and DB errors remain explicit',async()=>{
+ const {guardBusinessSecretaryReply:guard}=await import('../lib/crm/telegram-business-natural-dialogue.mjs');
+ const seen=new Set(),reserve=async(scope,key)=>{const k=scope+':'+key;if(seen.has(k))throw Object.assign(Error('limit'),{code:'RATE_LIMITED'});seen.add(k)};
+ const planned={reply:'Which service?',kind:'clarify',locale:'en',clarificationReason:'general',buttons:[]};
+ assert.equal(await guard(planned,reserve),planned);
+ const second=await guard({...planned,reply:'Which service!' },reserve);
+ assert.equal(second.clarificationReason,'repeat_handoff');
+ assert.doesNotMatch(second.reply,/Which service/i);
+ assert.equal(await guard({...planned,reply:'What service would you like?'},reserve),null);
+ const urgent={...planned,kind:'safety'};
+ assert.equal(await guard(urgent,reserve),urgent);
+ await assert.rejects(guard(planned,async()=>{throw Error('database unavailable')}),/database unavailable/);
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ assert.match(route,/guardBusinessSecretaryReply\(secretary/);
+ assert.match(route,/text:guarded.reply,buttons:guarded.buttons/);
+});

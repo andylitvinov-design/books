@@ -82,7 +82,7 @@ test('Private onboarding and atomic account-owned save never enroll or share wit
   assert.match(learner,/adult: true, necessary: true, marketing: false/)
   assert.match(learner,/firstLesson: \{ answers: handoff\.answers \}/)
   assert.match(learner,/reikiFlow\?: string, teacherConsent = false/)
-  assert.match(route,/validReikiConsent\(request\.cookies\.get\(REIKI_CONSENT_COOKIE\)\?\.value,body\.reikiFlow,actor\.id,config\)/)
+  assert.match(route,/validReikiConsent\(request\.cookies\?\.get\(REIKI_CONSENT_COOKIE\)\?\.value,body\.reikiFlow,actor\.id,config\)/)
   assert.match(server,/body\.teacherConsent === true && body\.messengerConsent !== true/)
   assert.match(server,/let firstLesson = null/)
   assert.match(server,/energyworkFirstLessonAnswers\(body\.firstLesson\.answers\)/)

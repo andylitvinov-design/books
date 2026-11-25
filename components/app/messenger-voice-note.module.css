@@ -47,3 +47,12 @@
 .dictationPrivacy{margin:0;color:#526c60;font:500 10px/1.32 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
 .dictationPanel .error{margin:1px 0;font-size:12px;text-align:center}
 @media(prefers-reduced-motion:reduce){.waveform i{transition:none}}
+
+/* Messenger-only hold-to-send tray; home dictation remains editable. */
+.dictationPanel[data-hh-instant-voice]{touch-action:none;user-select:none;-webkit-touch-callout:none}
+.dictationPanel[data-hh-instant-voice] .dictationRow{gap:6px;border-radius:999px;padding:4px;background:#e5ede5}
+.dictationPanel .dictationStop{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-width:44px;min-height:44px;border:0;border-radius:50%;padding:0;color:#255b48;background:#fffdfa;cursor:pointer}
+.holdHint{margin:0;text-align:center;font:600 13px/1.3 system-ui,sans-serif;color:#255b48}
+.dictationPanel[data-hh-voice-cancelling] .holdHint{color:#a52420}
+.dictationPanel[data-hh-voice-cancelling] .dictationCancel{background:#a52420;color:#fff;border-color:#a52420}
+.dictationPanel[data-hh-voice-cancelling] .dictationConfirm{opacity:.5}

@@ -18,7 +18,7 @@ export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02','welcome-video',
-  'flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
+  'flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-hints','flight-done',
   'presence-01','presence-04','tan-done',
   'intention-04',
   'paths-01','paths-03',
@@ -116,8 +116,8 @@ export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02','welcome-video',
     ...withClosingPractices(
-      ['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
-      ['flight-03'], 'flight-done'),
+      ['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-hints','flight-done'],
+      ['flight-03','flight-hints'], 'flight-done'),
     ...withClosingPractices(
       [...ENERGYWORK_BRANCH.tantra, 'presence-01','presence-04','tan-done'],
       ['tan-03'], 'tan-done'),

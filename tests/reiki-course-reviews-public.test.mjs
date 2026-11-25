@@ -87,7 +87,11 @@ test('Public review requires separate learner opt-in, owner approval and no PII 
   assert.match(pub,/openSealed\(row\.body_ciphertext/)
   assert.match(publicEndpoint,/Cache-Control':'no-store/)
   assert.match(listing,/data-reiki-public-reviews/)
-  assert.match(landing,/<ReikiPublicReviews locale=\{locale\}/)
+  // Owner replaced the landing review widget with original Yggdrasil introductions; consent and moderation remain intact.
+  assert.doesNotMatch(landing,/<ReikiPublicReviews/)
+  assert.match(landing,/data-reiki-yggdrasil-intro-videos/)
+  assert.match(landing,/youtubeId="lOo93GuzeJ0"/)
+  assert.match(landing,/youtubeId="XvMdX5czoOc"/)
   assert.doesNotMatch(listing,/review\.accountId|review\.email|review\.displayName/)
 })
 

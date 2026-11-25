@@ -434,7 +434,7 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
   "only the separate Ready Generate gesture reaches the original guarded renderer");
  const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
  assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/,
-  "Ready must keep its own explicit generation button");
+  "Ready Save must keep its own explicit guarded export gesture");
  assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
@@ -471,4 +471,21 @@ test('lazy Story recovery waits for the actual mounted source reason without enc
   assert.equal(mounted.notices.filter(Boolean).length,1);
   assert.match(mounted.notices.at(-1),issue==='photos'?/Использовать эти 6 фото/:issue==='duration'?/30 секунд/:/нет полного набора кадров/);
  }
+});
+
+
+test("guided practice uses six-tab deep link and actual Montage Canvas playback",()=>{
+ const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+ const mobile=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
+ const voice=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(guided,/holistic-support\/mandala#guided-video-series/);
+ assert.match(mobile,/holistic-support\/mandala#guided-video-series/);
+ for(const source of [guided,mobile]){assert.match(source,/data-video-quick-control="ready"/);assert.doesNotMatch(source,/data-video-quick-control="practices"/);}
+ assert.match(voice,/data-video-montage-text\] \[data-video-ideas-text-size/);
+ assert.match(voice,/getImageData\(x,y,w,h\)/);
+ assert.match(voice,/await expect\.poll\(phrasePixels,\{timeout:12000\}\)\.not\.toBe\(smallPixels\)/);
+ assert.match(voice,/await previewText\.tap\(\)/);
+ assert.match(voice,/await expect\(filmCanvas\)\.toBeVisible/);
+ assert.match(voice,/\.not\.toBe\(firstFrame\)/);
+ assert.match(voice,/pcm\.stdout\.some\(value=>value!==0\)/);
 });

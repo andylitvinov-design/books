@@ -45,7 +45,7 @@ async function installDictationMock(page){
  });
  return calls;
 }
-async function verifyDictation(page,form,marker,calls,baseText){
+async function verifyDictation(page,form,marker,calls,baseText,instant=false){
  const input=form.locator("textarea");
  const mic=form.locator(marker);
  const panel=form.locator("[data-hh-dictation-active]");
@@ -70,11 +70,51 @@ async function verifyDictation(page,form,marker,calls,baseText){
  assert.equal(await input.inputValue(),baseText,"cancel preserves draft");
  await mic.click();
  await phase.waitFor({state:"visible",timeout:10000});
- assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
- await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
- await mic.waitFor({state:"visible",timeout:15000});
+ const sendLabel=instant?"Отправить голосовое сообщение":"Распознать запись";
+ assert.equal(await panel.getByRole("button",{name:sendLabel,exact:true}).isEnabled(),true);
+ if(instant){
+  await page.route("**/api/holistic-agent/turn",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({reply:"Тестовый ответ без внешней модели.",recommendations:[]})}));
+  await panel.getByRole("button",{name:"Остановить запись",exact:true}).click();
+  await form.locator('[data-hh-dictation-phase="ready"]').waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls,"stop alone does not upload");
+ }
+ await panel.getByRole("button",{name:sendLabel,exact:true}).click();
+ try{await mic.waitFor({state:"visible",timeout:15000});}catch(error){
+  console.error("dictation confirm diagnostic",JSON.stringify({requests:calls.count-initialCalls,...await form.evaluate(root=>({phase:root.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:root.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent,fixture:window.__hhDictationQA,hidden:document.hidden}))}));
+  throw error;
+ }
  assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
- assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","transcription appends editable Russian text");
+ if(instant){
+  await page.getByText(baseText+" Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","speech is sent to chat, not staged in composer");
+  const readyMic=form.locator(marker+'[data-hh-dictation-ready="true"]:not([disabled])');
+  async function holdMic(){
+   await readyMic.waitFor({state:"visible",timeout:15000});
+   await readyMic.scrollIntoViewIfNeeded();
+   const box=await readyMic.boundingBox();
+   assert.ok(box,"microphone has a real pointer target");
+   const x=box.x+box.width/2,y=box.y+box.height/2;
+   await page.mouse.move(x,y);
+   await page.mouse.down();
+   await phase.waitFor({state:"visible",timeout:10000});
+   await page.getByText("Отпустите для отправки",{exact:true}).waitFor({state:"visible"});
+   // Keep the pointer down long enough to cross the explicit hold threshold.
+   await page.waitForTimeout(400);
+   return {x,y};
+  }
+  const p=await holdMic();
+  await page.mouse.move(p.x-100,p.y,{steps:5});
+  await page.getByText("Отпустите для отмены",{exact:true}).waitFor({state:"visible"});
+  await page.mouse.up();
+  await readyMic.waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls+1,"slide-to-cancel sends nothing");
+  await holdMic();
+  await page.mouse.up();
+  await mic.waitFor({state:"visible",timeout:15000});
+  assert.equal(calls.count,initialCalls+2,"hold release uploads exactly once");
+  await page.getByText("Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","hold release auto-sends without confirmation");
+ }else assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","home transcription remains editable");
  const stats=await page.evaluate(()=>window.__hhDictationQA);
  assert.equal(stats.opened,stats.closed,"all synthetic microphone tracks released");
  assert.ok(stats.opened>=2,"cancel and confirm each acquired microphone");
@@ -85,12 +125,12 @@ for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
  try{
   for(const [locale,path,labels] of [
-   ["en","/",["Help me figure it out","I already have a goal"]],
-   ["ru","/ru",["Помоги разобраться","У меня уже есть цель"]],
-   ["es","/es",["Ayúdame a entender","Ya tengo una meta"]]
+   ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support"]],
+   ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса"]],
+   ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"]]
   ]){
    for(const width of [320,354,390,430]){
-    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
     const name=engine.name()+":"+locale+":"+width;const errors=[];
     page.on("pageerror",e=>errors.push(e.message.slice(0,200)));
     page.on("console",m=>{if(m.type()==="error")errors.push(m.text().slice(0,200))});
@@ -105,10 +145,13 @@ for(const engine of [chromium,webkit]){
      assert.equal((await head.locator("h1").innerText()).trim(),"Holistic House",name);
      assert.equal(await root.locator('[data-home-mode-button]').count(),0,name+": no audience tabs");
      assert.equal(await root.locator("[data-home-intent-form]").count(),1,name+": one composer");
-     assert.equal(await root.locator("[data-home-stage-option]").count(),7,name+": seven stage cards");
-     assert.equal(await root.locator("[data-home-intent-option]").count(),3,name+": three conversational entries");
-     assert.ok((await root.locator('[data-home-intent-option="understand"]').innerText()).includes(labels[0]),name);
-     assert.ok((await root.locator('[data-home-intent-option="goal"]').innerText()).includes(labels[1]),name);
+     assert.equal(await root.locator("[data-home-stage-option]").count(),0,name+": no homepage seven-step panel");
+     assert.equal(await root.locator("[data-home-intent-option]").count(),3,name+": three program entries");
+     for(const [i,id] of ["clarity","goal","business"].entries()){
+       const card=root.locator('[data-home-intent-option="'+id+'"]');
+       assert.equal(await card.count(),1,name+": "+id);
+       assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
+     }
      assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
      const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
      assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
@@ -118,43 +161,42 @@ for(const engine of [chromium,webkit]){
      await input.blur();
      await page.evaluate(()=>window.scrollTo(0,0));
      const layout=await root.evaluate(element=>{
-      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-how-it-works]","[data-home-stage-scroll]"];
+      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-methods]"];
       return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
      assert.ok(layout.every(Boolean),name+": all graphic sections rendered");
      assert.ok(layout[0].top<layout[1].top&&layout[1].top<layout[2].top&&layout[2].top<layout[3].top,name+": hierarchy");
-     assert.ok(layout[2].bottom-layout[2].top<=205,name+": compact goal choices");
-     assert.ok(layout[3].bottom-layout[3].top<=185,name+": compact stages");
+
      assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
-     assert.ok(await root.locator("[data-home-stage-scroll]").evaluate(el=>el.scrollWidth<=el.clientWidth+2),name+": all seven stages visible without swipe");
-     const stageBoxes=await root.locator('[data-home-stage-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top}}));
-     assert.equal(stageBoxes.length,7,name+": seven visible steps");
-     assert.ok(stageBoxes.every((s,i)=>s.x>=0&&s.right<=width+2&&(i===0||s.x>=stageBoxes[i-1].x)),name+": steps in one row");
-     const labelsFit=await root.locator('[data-home-stage-option] strong').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+1));
-     assert.ok(labelsFit,name+": no overlapping stage labels");
+     const cards=await root.locator('[data-home-intent-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}}));
+     assert.equal(cards.length,3,name+": three rows");
+     assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
+     const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
+     assert.ok(copyFits,name+": no clipped copy");
      const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
      assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
-       ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+       ["mytube","reiki","coach","ai","services","practice","profile"],name+": seven dock targets");
+     await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');
        const nav=document.querySelector('[data-hh-unified-dock]');
        const orb=nav?.querySelector('[data-unified-dock-item="ai"] svg');
        return {methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top,orbTop:orb?.getBoundingClientRect().top};
      });
-     if(width>=390)assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons above existing dock "+JSON.stringify(fold));
+     assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons reachable above existing dock "+JSON.stringify(fold));
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
      assert.deepEqual(errors,[],name+": no script errors");
-     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),journeyWidth:Math.round(layout[4].width)});
-     if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});
+     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
+     if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
      if(dictationCalls){
       await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
       assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
       await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
       const form=page.locator("[data-hh-ai-chat-composer]");
-      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель");
+      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель",true);
       assert.equal(new URL(page.url()).pathname,"/ru/app/messages","dictation alone stays in chat");
       assert.equal(await form.locator("[data-hh-ai-voice-consent]").count(),0,"no old continuous-mode consent gate");
       evidence.push({engine:engine.name(),locale,width,manualDictation:true,cancel:true,confirmed:true,requests:dictationCalls.count});

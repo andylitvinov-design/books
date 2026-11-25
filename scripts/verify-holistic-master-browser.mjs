@@ -70,7 +70,7 @@ async function verify(engine, locale, width) {
     await dock.waitFor({state:"visible",timeout:30000});
     const dockIds=await dock.locator('[data-unified-dock-item]').evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute('data-unified-dock-item')));
-    assert.deepEqual(dockIds,["mytube","video","coach","ai","services","practice","profile"],
+    assert.deepEqual(dockIds,["mytube","reiki","coach","ai","services","practice","profile"],
       label+": one original seven-destination navigation");
     assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0,
       label+": no duplicate legacy mobile navigation");

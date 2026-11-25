@@ -17,8 +17,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 68, "One consecutive course must have 68 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64,68]);
+assert.equal(expectedSequence.length, 69, "One consecutive course must have 69 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64,69]);
 // Generated at runtime from a local synthetic drawing: no personal or Stock photos.
 let photoFixture = null;
 const pageErrors = [];
@@ -200,27 +200,24 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
           where + ": keep the testimonial reading column wide");
       }
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
-      const first = await carousel.locator("blockquote p").innerText();
-      if (id === "kun-voices") {
-        assert.ok(first.includes(locale === "ru" ? "Бреанной" : "Breanna"), where + ": Breanna review is first");
-      }
-      await page.locator("button[data-review-next]").click();
-      await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
-      await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('02 / 0' + expectedReviews);
-      const second = await carousel.locator("blockquote p").innerText();
-      assert.notEqual(second, first, where + ": Next switches quote in place");
-      if (id === "kun-voices") {
-        assert.ok(second.includes(locale === "ru" ? "Риту" : "Ritu"), where + ": Ritu review is second");
+      const first = await carousel.locator("blockquote p").textContent();
+      const seen = [first];
+      for (let n = 1; n < expectedReviews; n++) {
         await page.locator("button[data-review-next]").click();
-        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("03 / 03");
-        const third = await carousel.locator("blockquote p").innerText();
-        assert.ok(third.includes("Aesthesia"), where + ": Aesthesia review is third");
-        assert.notEqual(third, second, where + ": third review is distinct");
-        await page.locator("button[data-review-prev]").click();
-        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("02 / 03");
+        await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText(String(n+1).padStart(2,"0")+" / "+String(expectedReviews).padStart(2,"0"));
+        const quote = await carousel.locator("blockquote p").textContent();
+        assert.ok(Array.from(quote).length >= Array.from(seen[n-1]).length, where + ": shortest review first");
+        assert.ok(!seen.includes(quote), where + ": distinct source review");
+        seen.push(quote);
       }
-      await page.locator("button[data-review-prev]").click();
-      assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
+      if (id === "kun-voices") {
+        for (const name of [locale === "ru" ? "Бреанной" : "Breanna", locale === "ru" ? "Риту" : "Ritu", "Aesthesia"]) {
+          assert.ok(seen.some(quote => quote.includes(name)), where + ": preserved original " + name + " review");
+        }
+      }
+      for (let n = 1; n < expectedReviews; n++) await page.locator("button[data-review-prev]").click();
+      assert.equal(await carousel.locator("blockquote p").textContent(), first, where + ": Previous restores quote");
     } else {
       await expect(carousel).toHaveCount(0);
       await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(0);
@@ -458,7 +455,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 68 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 69 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   // The optional readiness review is on the final screen, not its own slide.
   await expect(page.locator("[data-initiation-readiness]")).toBeVisible();
@@ -579,7 +576,7 @@ async function verifySaveOnCompletion(page, locale) {
     { waitUntil: "domcontentloaded", timeout: 90000 });
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
   for (const id of ["welcome-video","welcome-01","welcome-02","flight-01","flight-02","flight-voices",
-    "flight-05","flight-04","flight-03"]) {
+    "flight-05","flight-04","flight-03","flight-hints"]) {
     await expect(page.locator("[data-energywork-slide-id]"))
       .toHaveAttribute("data-energywork-slide-id", id);
     if (id === "welcome-02") await page.locator('input[name="welcome-02"][value="beginner"]').check();
@@ -707,6 +704,8 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-03"); // one-minute music-assisted practice before congratulations
   await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-hints");
+  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
   await expect(photo).toHaveAttribute("src",/reiki-approved-sunrise-v3\.webp/);
@@ -724,17 +723,188 @@ async function verifyShortViewport(page,locale) {
   await expectFits("flight-done");
   await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-consent.png",animations:"disabled",timeout:30000});
   await page.locator('button[class*="milestoneBack"]').click();
-  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-03');
+  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-hints');
   await page.locator('button[data-energywork-next]').click();
   await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-done');
   await expect(page.locator('[data-reiki-first-lesson-consent]')).toBeChecked();
   console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:9}));
 }
 
+
+/** Check the actual Daybook DOM for every canonical slide on three phone sizes.
+ * A completed, synthetic account is read-only; never touch a real journal.
+ * Ordinary teaching/quiz/video screens must fit, including all four quiz choices.
+ * Explicitly report exceptional dense forms; never hide their contents.
+ * All navigation and the progress/footer must remain inside the visual viewport.
+ */
+async function verifyGoldenDaybook(locale) {
+  const ctx = await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true,serviceWorkers:"block"});
+  const view = await ctx.newPage();
+  const errors = [];
+  view.on("pageerror", error => errors.push(String(error.message).slice(0,300)));
+  const answers = Object.fromEntries(expectedSequence.map(id => [id, locale === "ru" ? "Тестовый ответ для проверки размеров экрана без личных данных." : "Synthetic course answer for a viewport test, with no personal data."]));
+  answers["welcome-02"] = "master";
+  const fixture = {enrolled:true,accountId:"00000000-0000-4000-8000-000000000001",
+    courseId:"academy-energywork-principles",courseVersion:"2026-10-20.p10",
+    slideId:expectedSequence.at(-1),status:"completed",answers,revision:1,
+    savedAt:new Date().toISOString(),sharingWithTeacher:false,applicationLead:null};
+  const writes = [];
+  await ctx.route("**/*", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.origin !== origin) return route.abort();
+    if (url.pathname === "/api/app/academy-energywork") {
+      if (request.method() !== "GET") {
+        writes.push(request.method());
+        return route.fulfill({status:409,json:{error:"READ_ONLY_FIXTURE"}});
+      }
+      return route.fulfill({status:200,json:fixture});
+    }
+    if (url.pathname === "/api/app/academy-energywork/photo") return route.fulfill({status:200,json:{exists:false}});
+    if (url.pathname === "/api/app/bootstrap") return route.fulfill({status:200,json:{
+      account:{id:fixture.accountId,displayName:"Layout test",onboardingState:"active"},
+      results:[],runs:[],requests:[],consents:[],services:[],
+    }});
+    return route.continue();
+  });
+  const route = origin+"/"+locale+"/academy/principles-of-energywork/daybook";
+  const root = view.locator('[data-reiki-daybook-design="golden-one-screen-v3"]');
+  const widths = [{width:390,height:844},{width:320,height:568},{width:390,height:660},{width:430,height:932}];
+  const incidentSlides = new Set(['welcome-02','welcome-video','flight-01','flight-audio','flight-voices','tan-voices','kun-voices','ygg-voices']);
+  const internalScroll = [];
+  let checked = 0;
+  async function check(id) {
+    await expect(root.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id,{timeout:30000});
+    for (const size of widths) {
+      await view.setViewportSize(size);
+      await view.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const d = await root.evaluate(el => {
+        const shell=el.querySelector('[data-daybook-part="shell"]');
+        const slide=el.querySelector('[data-energywork-slide-id]');
+        const panel=el.querySelector('[data-daybook-part="slide-main"]') || slide;
+        const footer=shell.querySelector(':scope > footer');
+        const progress=el.querySelector('[data-daybook-part="bottom-status"]');
+        const rail=el.querySelector('nav');
+        const rect=node=>{const r=node?.getBoundingClientRect();return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}:null;};
+        const viewport=window.visualViewport;
+        return {viewportHeight:viewport?.height??innerHeight,viewportWidth:innerWidth,
+          root:rect(el),shell:rect(shell),slide:rect(slide),footer:rect(footer),progress:rect(progress),rail:rect(rail),
+          shellOverflow:shell.scrollHeight-shell.clientHeight,rootOverflow:el.scrollHeight-el.clientHeight,
+          outerHorizontal:el.scrollWidth-el.clientWidth,innerHorizontal:panel.scrollWidth-panel.clientWidth,
+          innerVertical:panel.scrollHeight-panel.clientHeight,
+          panel:rect(panel),choices:[...panel.querySelectorAll('label:has(input[type=radio])')].map(rect),
+          visibleShare:[...el.querySelectorAll('[data-reiki-referral-share]')].some(n=>n.getClientRects().length>0 && !n.parentElement.closest('details:not([open])')),
+          documentOverflow:document.documentElement.scrollHeight-document.documentElement.clientHeight,
+          tail:footer!==shell.lastElementChild,header:!!shell.querySelector(':scope > header'),
+          ads:[...document.querySelectorAll('[data-sitewide-capture]')].some(n=>n.getClientRects().length>0),
+          action:rect(footer.querySelector('[data-energywork-next]')||footer.querySelector('button')),
+          theme:getComputedStyle(el).getPropertyValue('--db-ink').trim()};
+      });
+      const at=engineName+" "+locale+" "+id+" "+size.width+"x"+size.height+" "+JSON.stringify(d);
+      const inside=rect=>rect&&rect.top>=-2&&rect.bottom<=d.viewportHeight+2&&rect.left>=-2&&rect.right<=d.viewportWidth+2;
+      for (const name of ["root","shell","slide","footer","rail","action"]) assert.ok(inside(d[name]),name+" outside: "+at);
+      if(id!=="welcome-01") {
+        assert.ok(inside(d.progress),"progress outside: "+at);
+        assert.equal(d.header,false,"redundant heading on internal slide: "+at);
+      }
+      assert.ok(d.slide.height>=65,"card usable: "+at);
+      assert.ok(d.rootOverflow<=2&&d.shellOverflow<=2&&d.documentOverflow<=2,"whole page overflow: "+at);
+      assert.ok(d.outerHorizontal<=2&&d.innerHorizontal<=2,"horizontal overflow: "+at);
+      assert.equal(d.tail,false,"anything after footer: "+at);
+      assert.equal(d.ads,false,"sitewide sales block visible: "+at);
+      if (id !== "welcome-01") {
+        assert.ok(d.rail.height <= 48, "compact five-step rail: "+at);
+        assert.ok(d.progress.height <= 56, "compact progress status: "+at);
+        assert.equal(d.visibleShare,false,"share belongs in the closed course menu: "+at);
+      }
+      if (id.endsWith("-voices")) {
+        const card = root.locator("[data-meditation-voices]");
+        const quote = card.locator("[data-review-fulltext]");
+        const count = Number(await card.locator("[data-review-count]").getAttribute("data-review-count"));
+        const seen = [];
+        for (let n = 0; n < count; n++) {
+          const metrics = await card.evaluate(el => {
+            const box = el.getBoundingClientRect();
+            const r = el.querySelector("[data-review-fulltext]");
+            const nodes = [...el.querySelectorAll("[data-review-heading], [data-review-fulltext], cite, [data-review-next], [data-review-prev], a")];
+            const heading=el.querySelector("[data-review-heading]");
+            const counter=el.querySelector("[data-review-counter]");
+            const label=heading.firstElementChild.getBoundingClientRect();
+            const pill=counter.getBoundingClientRect();
+            const next=el.querySelector("[data-review-next]");
+            const target=next.getBoundingClientRect();
+            return {height:r.clientHeight,overflow:getComputedStyle(r).overflowY,inside:nodes.every(node=>{const b=node.getBoundingClientRect();return b.top>=box.top-1&&b.bottom<=box.bottom+1&&b.left>=box.left-1&&b.right<=box.right+1;}),sameLine:Math.abs((label.top+label.bottom)/2-(pill.top+pill.bottom)/2)<=2,arrow:Math.min(target.width,target.height),dots:el.querySelectorAll("[data-review-dot]").length,activeDots:el.querySelectorAll("[data-review-active=true]").length,italic:getComputedStyle(r).fontStyle==="italic"};
+          });
+          assert.ok(metrics.height>=32&&metrics.inside&&metrics.overflow==="auto", "review controls and reading area fit: "+at+" "+JSON.stringify(metrics));
+          assert.ok(metrics.sameLine&&metrics.arrow>=44&&metrics.dots===count&&metrics.activeDots===1&&metrics.italic,"restored review design: "+at+" "+JSON.stringify(metrics));
+          await expect(card.locator("cite")).not.toContainText(/Anonymous|Аноним/i);
+          const value = await quote.textContent();
+          assert.ok(n===0 || Array.from(value).length>=Array.from(seen[n-1]).length,"shortest first: "+at);
+          seen.push(value);
+          await card.locator("[data-review-next]").click();
+        }
+        assert.equal(new Set(seen).size,count,"all reviews remain accessible: "+at);
+      }
+      if (incidentSlides.has(id)) {
+        assert.ok(d.innerVertical<=3,"owner-reported slide must fit without inner scroll: "+at);
+        if (id==="welcome-02") {
+          assert.equal(d.choices.length,4,"all four experience options: "+at);
+          assert.ok(d.choices.every(r=>r.top>=d.panel.top-1&&r.bottom<=d.panel.bottom+1),"all answers simultaneously visible: "+at);
+        }
+      }
+      if(d.innerVertical>3) internalScroll.push({id,width:size.width,height:size.height,excess:d.innerVertical});
+      checked++;
+    }
+    await view.setViewportSize(widths[0]);
+    if(id.endsWith("-voices")||["welcome-01","welcome-02","welcome-video","flight-01","flight-audio","flight-02","tan-01","kun-01","ygg-01","ygg-study-v2-03","end-01","end-02"].includes(id)){
+      await view.screenshot({path:output+"/"+engineName+"-"+locale+"-golden-"+id+".png",animations:"disabled"});
+    }
+  }
+  try {
+    // Hydration must confirm the mocked account before selecting reached steps.
+    await view.goto(route+"?slide=welcome-01",{waitUntil:"domcontentloaded",timeout:90000});
+    await expect(root.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
+    await expect(root.locator('nav button').last()).toBeEnabled();
+    await check("welcome-01");
+    await root.locator('button[data-energywork-next]').click();
+    for(let i=1;i<expectedSequence.length;i++){
+      const id=expectedSequence[i];
+      const current=await root.locator("[data-energywork-slide-id]").getAttribute("data-energywork-slide-id");
+      if(current!==id){
+        const rangeIndex=lessonRanges.findIndex((range,j)=>i>=(j===0?0:range.start)&&i<range.end);
+        assert.ok(rangeIndex>=0,"canonical range missing "+id);
+        const tab=root.locator("nav").first().locator("button").nth(rangeIndex);
+        if(await tab.getAttribute("aria-pressed")!=="true"){
+          await tab.click();
+          await expect(tab).toHaveAttribute("aria-pressed","true");
+        }
+        if(await root.locator("[data-energywork-slide-id]").getAttribute("data-energywork-slide-id")!==id){
+          const menu=root.locator("[data-daybook-tools]");
+          await menu.locator(":scope > summary").click();
+          const outline=root.locator("[data-daybook-outline]");
+          const journey=menu.locator("button[aria-controls=\"reiki-journey-help\"]");
+          if(await journey.getAttribute("aria-expanded")!=="true") await journey.click();
+          const start=rangeIndex===0?0:lessonRanges[rangeIndex].start;
+          await outline.locator("ol button").nth(i-start).click();
+        }
+      }
+      await check(id);
+    }
+    assert.equal(checked,69*widths.length);
+    assert.deepEqual(writes,[],"reviewing stored screens never writes");
+    assert.deepEqual(errors,[],"no browser errors on Daybook");
+    console.log("REIKI_GOLDEN_DAYBOOK_VIEWPORT_PASS",JSON.stringify({engine:engineName,locale,slides:69,checked,viewports:widths,internalScroll}));
+  } finally { await ctx.close(); }
+}
+
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
 try {
+  if (process.env.HH_REIKI_DAYBOOK_ONLY === "1") {
+    for (const locale of ["en","ru"]) await verifyGoldenDaybook(locale);
+    console.log("REIKI_GOLDEN_ONLY_PASS", JSON.stringify({engine:engineName,slides:69,locales:["en","ru"],viewports:3}));
+  } else {
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
   assert.match(image.headers()["content-type"]||"",/image\/svg\+xml/);
@@ -760,10 +930,12 @@ try {
     await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
   }
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
+  for (const locale of ["en","ru"]) await verifyGoldenDaybook(locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 68,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 69,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  }
 } finally {
   await browser.close();
 }
