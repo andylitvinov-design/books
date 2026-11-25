@@ -486,6 +486,45 @@ async function verifyWorkspaceHydration(browser,locale){
       phase(browser.browserType().name(),"text-hit-targets-"+width);
     }
     await page.setViewportSize({width:390,height:840});
+    // The current Personal journey intentionally has a static photo hero on
+    // mobile. Test the actual Canvas in the visible Standard Montage Text
+    // preview instead of restoring a deleted player or forcing hidden controls.
+    const textSize=page.locator('[data-video-montage-text] [data-video-ideas-text-size]');
+    const filmCanvas=page.locator('[data-mandala-cinematic-canvas]');
+    const heroPlaying=page.locator('[data-video-mandala-hero]');
+    await expect(textSize).toBeVisible();
+    await textSize.press("Home");
+    await expect(textSize).toHaveValue("0");
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    const phrasePixels=()=>filmCanvas.evaluate(async canvas=>{
+      // Read the real existing Canvas; two animation frames let React paint.
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const ctx=canvas.getContext("2d");
+      if(!ctx||!canvas.width||!canvas.height)throw Error("Montage preview Canvas unavailable");
+      const x=Math.floor(canvas.width*.09),y=Math.floor(canvas.height*.57);
+      const w=Math.floor(canvas.width*.82),h=Math.floor(canvas.height*.32);
+      const bytes=ctx.getImageData(x,y,w,h).data;
+      let hash=2166136261;
+      for(let i=0;i<bytes.length;i+=73)hash=Math.imul(hash^bytes[i],16777619)>>>0;
+      return hash;
+    });
+    const smallPixels=await phrasePixels();
+    await textSize.press("End");
+    await expect(textSize).toHaveValue("2");
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    await expect.poll(phrasePixels,{timeout:12000}).not.toBe(smallPixels);
+    // Preview is local, not an export, provider call or payment action.
+    await previewText.tap();
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","true");
+    await expect(filmCanvas).toBeVisible({timeout:15000});
+    const firstFrame=await phrasePixels();
+    await expect.poll(phrasePixels,{timeout:9000,intervals:[450,450,450]}).not.toBe(firstFrame);
+    // Restore the neutral size via the same slider; its real handler pauses
+    // playback and resets the playhead before the next Story check.
+    await textSize.press("ArrowLeft");
+    await expect(textSize).toHaveValue("1");
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    phase(engine,"montage-text-real-canvas-preview");
     await reviewStory.tap();
     await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-concept]')).toBeVisible();
