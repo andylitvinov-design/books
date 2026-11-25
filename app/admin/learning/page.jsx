@@ -77,6 +77,32 @@ export default async function LearningObservatoryPage(){
           </div>)}</div>}
     </section>
     <section className={styles.section}>
+      <h2>Message delivery and archive coverage</h2>
+      <p className={styles.note}>Только события из существующей CRM-переписки,
+        отдельно сохранённой с согласием истории Ali на сайте и
+        разрешённой записи сессий коуча. Личные Telegram Business чаты,
+        несохранённые обращения и сообщения внешних каналов сюда не попадают.
+        Принято провайдером не означает доставлено или прочитано.</p>
+      {snapshot?.receiptSummary===null||!snapshot?.receiptSummary?
+        <p className={styles.empty}>Схема единого индекса ещё не подтверждена:
+          SCHEMA_NOT_DEPLOYED / UNKNOWN. Ноль событий не доказан.</p>:
+        !snapshot.receiptSummary.length?
+          <p className={styles.empty}>NO_DATA за последние 31 день в охваченных
+            архивных источниках. Остальные каналы могут иметь обращения.</p>:
+          <div className={styles.tableScroll}><table><thead><tr>
+            <th>Day</th><th>Stored source</th><th>Channel</th>
+            <th>Direction</th><th>Last state</th><th>Events</th>
+          </tr></thead><tbody>{snapshot.receiptSummary.map((r,i)=><tr
+            key={r.source+':'+r.channel+':'+r.direction+':'+r.delivery+':'+localDay(r.day)+':'+i}>
+            <td>{localDay(r.day)}</td><td>{text(r.source)}</td>
+            <td>{text(r.channel)}</td><td>{text(r.direction)}</td>
+            <td>{text(r.delivery)}</td><td>{r.events}</td>
+          </tr>)}</tbody></table></div>}
+      <p className={styles.note}>Статус покрытия: {snapshot?.receiptStatus??'UNKNOWN'}.
+        Модель, ответившая на конкретное сообщение, не установлена.
+        Для содержательного анализа диалогов необходимо отдельное явное согласие.</p>
+    </section>
+    <section className={styles.section}>
       <h2>Promotion and rollback receipts</h2>
       {!snapshot?.releases?.length?<p className={styles.empty}>Подтверждённых решений о продвижении
         кандидатов пока нет. Исследовательские оценки не считаются LIVE-результатами.</p>:

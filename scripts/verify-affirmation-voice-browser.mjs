@@ -523,9 +523,21 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(filmCanvas).toBeVisible({timeout:15000});
     const firstFrame=await phrasePixels();
     await expect.poll(phrasePixels,{timeout:9000,intervals:[450,450,450]}).not.toBe(firstFrame);
-    // Restore the neutral size via the same slider; its real handler pauses
-    // playback and resets the playhead before the next Story check.
-    await textSize.press("ArrowLeft");
+    // Restore the neutral size using the real visible control. Preview
+    // scrolls to the player; return through the visible Text rail if the
+    // editor has been closed, not a synthetic DOM click or hidden input.
+    if(!await textSizeSettings.locator("summary").isVisible()){
+      await openVisibleMontageText(page,engine,"standard");
+    }
+    await expect(textSizeSettings.locator("summary")).toBeVisible();
+    if(!await textSizeSettings.evaluate(node=>node.open)){
+      await textSizeSettings.locator("summary").tap();
+    }
+    await expect(textSize).toBeVisible();
+    await expect(textSize).toHaveValue("2");
+    // Fill the native range on its visible user control, rather than send
+    // a keyboard ArrowLeft while the WebKit player has focus after scrolling.
+    await textSize.fill("1");
     await expect(textSize).toHaveValue("1");
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
     await textSizeSettings.locator("summary").tap();
