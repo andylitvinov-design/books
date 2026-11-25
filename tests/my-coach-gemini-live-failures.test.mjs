@@ -58,7 +58,7 @@ test('provider token errors return precise safe categories, never upstream body 
         const payload=JSON.parse(options.body)
         assert.ok(payload.bidiGenerateContentSetup)
         assert.equal(Object.hasOwn(payload,'liveConnectConstraints'),false)
-        assert.equal(Object.hasOwn(payload,'fieldMask'),false)
+        assert.ok(payload.fieldMask.split(',').includes('systemInstruction'))
         return {ok:false,status,async json(){throw Error(secretSentinel)}}
       },
     }),error=>error.message===code&&
@@ -78,7 +78,7 @@ test('G-L6 retries one server-owned Free token after transient 5xx without new m
       assert.equal(body.uses,1)
       assert.equal(body.bidiGenerateContentSetup.model,'models/gemini-3.1-flash-live-preview')
       assert.match(body.bidiGenerateContentSetup.systemInstruction.parts[0].text,/coaching method/)
-      assert.equal(Object.hasOwn(body,'fieldMask'),false)
+      assert.equal(body.fieldMask.split(',').includes('sessionResumption'),false)
       bodies.push(options.body)
       return bodies.length===1?{ok:false,status:503}:
         {ok:true,status:200,json:async()=>({name:'auth_tokens/recovered-one-use'})}

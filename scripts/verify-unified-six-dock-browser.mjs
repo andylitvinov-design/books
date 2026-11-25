@@ -875,7 +875,8 @@ try{
    "no completed video is claimed before rendering");
 
  // Language follows the message, not the /en route. Keep both turns in one
- // transcript and verify the composer/region language changes without navigation.
+ // transcript and verify the stable accessible composer label and region language.
+ // The visible suggestion placeholder animates independently of this label.
  await page.goto(origin+"/en/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:30000});
  const bilingualInput=chat.locator("textarea");
@@ -883,13 +884,13 @@ try{
  await bilingualInput.fill("Хочу денег");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
+ await expect(bilingualInput).toHaveAccessibleName("Что сейчас для вас важно?",{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
  await bilingualInput.fill("I want to discuss my income");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="What's on your mind?",null,{timeout:10000});
+ await expect(bilingualInput).toHaveAccessibleName("What's on your mind?",{timeout:10000});
  assert.equal(new URL(page.url()).pathname,"/en/app/messages",
    "switching dialogue language does not navigate away from the original route");
  const retainedTurns=await bilingualLog.locator('[data-hh-chat-turn="user"]').allTextContents();
