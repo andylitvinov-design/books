@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
-import {Mic, Paperclip, Plus, Send, ImageIcon, X} from "lucide-react";
+import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {MessengerDictationButton} from "@/components/app/messenger-dictation-button";
@@ -1959,6 +1959,35 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     };
   },[locale,authenticated]);
 
+  // Long-lived voice callbacks must use the latest chat state, not the
+  // render that originally opened the call.
+  const messengerVoiceTurn=useRef<(text:string)=>void>(()=>{});
+  useLayoutEffect(()=>{
+    messengerVoiceTurn.current=text=>{
+      if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
+        setDraft(text);voice.stopDialogue();return;
+      }
+      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      setDraft(text);sendSelectedTurn(text);
+    };
+  });
+
+  function toggleMessengerVoice(){
+    closeComposerMenu();
+    if(voice.conversing){
+      if(voice.speaking)voice.interruptReply();
+      else voice.stopDialogue();
+      return;
+    }
+    if(voicePermissionOpen){setVoicePermissionOpen(false);return;}
+    setNativeDictationRevision(value=>value+1);
+    setDictationRevision(value=>value+1);
+    setVoiceNoteRevision(value=>value+1);
+    stopAliPersonaAudio();
+    if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
+    else setVoicePermissionOpen(true);
+  }
+
   function beginMessengerVoice(){
     if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
       "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
@@ -1974,13 +2003,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         "Microphone unavailable. Check Safari permissions or type instead.");
       return;
     }
-    const launched=voice.startDialogue(text=>{
-      if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
-        setDraft(text);voice.stopDialogue();return;
-      }
-      if(requiresProtectedReply(text,locale))voice.stopDialogue();
-      setDraft(text);sendSelectedTurn(text);
-    },{allowRecorded:voiceRequiresRecorded,consentOnStart:true,
+    const launched=voice.startDialogue(text=>messengerVoiceTurn.current(text),{
+      allowRecorded:voiceRequiresRecorded,consentOnStart:true,
       recordedPurpose:authenticated?'ali_chat':'public'});
     if(launched){setVoicePermissionOpen(false);setStatus("");}
   }
@@ -2130,14 +2154,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               }}/>}
             {messengerView&&!pageHelp&&<button type="button"
               data-hh-live-conversation-mic
-              onClick={()=>{
-                setNativeDictationRevision(value=>value+1);
-                if(voice.conversing){
-                  if(voice.speaking)voice.interruptReply();
-                  else voice.stopDialogue();
-                }else if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
-                else setVoicePermissionOpen(true);
-              }}
+              onClick={toggleMessengerVoice}
               disabled={!voiceEnabled}
               aria-pressed={voice.conversing}
               aria-expanded={voicePermissionOpen}
@@ -2163,7 +2180,21 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             {resetControl}
           </div>
         </details>:voiceAttachment}
-        {messengerView&&<button type="button"
+        {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
+          className={styles.photoShortcut} data-hh-ai-audio-call
+          onClick={toggleMessengerVoice}
+          disabled={!voice.conversing&&(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||(proSelected&&!proReady))}
+          aria-pressed={voice.conversing}
+          aria-expanded={voicePermissionOpen}
+          aria-controls="hh-ai-voice-onboarding"
+          aria-label={voice.conversing?(voice.speaking?
+            (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
+            (locale==="ru"?"Завершить разговор":locale==="es"?"Terminar conversación":"End conversation")):
+            (locale==="ru"?"Бесплатный аудиоразговор":locale==="es"?"Conversación de audio gratuita":"Free audio conversation")}
+          title={locale==="ru"?"Аудиоразговор":locale==="es"?"Conversación de audio":"Audio conversation"}>
+          <Phone size={21} aria-hidden="true"/>
+        </button>}
+        {messengerView&&(!voiceEnabled||Boolean(pageHelp))&&<button type="button"
           className={styles.photoShortcut} data-hh-ai-photo-shortcut
           onClick={()=>{
             const more=composerMoreRef.current;
