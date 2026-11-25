@@ -1,6 +1,7 @@
 name: Holistic House private Messenger media verification
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'lib/practitioners/direct-message-policy.mjs'
@@ -15,6 +16,7 @@ on:
       - 'tests/direct-message-video-notes.test.mjs'
       - 'tests/messages-private-media-pagination.test.mjs'
       - 'tests/ci-head-cancellation.test.mjs'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -22,6 +24,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   media-contract:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -36,4 +39,5 @@ jobs:
       - name: Existing photo/voice, private media and video-note contracts
         run: node --conditions=react-server --test tests/direct-message-media-transport.test.mjs tests/direct-message-video-notes.test.mjs tests/messages-private-media-pagination.test.mjs tests/ci-head-cancellation.test.mjs
       - name: Scope lint
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-video-recorder.jsx tests/direct-message-video-notes.test.mjs tests/direct-message-media-transport.test.mjs

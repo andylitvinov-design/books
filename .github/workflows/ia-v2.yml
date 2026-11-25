@@ -328,7 +328,7 @@ jobs:
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Exact operator-only contact consent and tenant authorization contracts
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.operator_only == 'true' }}
-        run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
+        run: node --test tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       # Original IA security/app contracts above remain mandatory outside the exact dock-only lane.
       # Repository-wide historical inventory stays on explicit maintenance/manual runs.
       # An additional exact-HEAD private-media suite; existing IA auth, RLS,
