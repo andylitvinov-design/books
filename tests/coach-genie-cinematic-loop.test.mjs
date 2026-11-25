@@ -66,8 +66,8 @@ test("shared selected hero, live session and large avatar follow Samir's 3-state
   assert.match(css,/\.media \.video\.samirLayer\{opacity:0/)
   assert.match(css,/\.media \.video\.samirLayer\[data-samir-visible='true'\]\{opacity:1/)
   assert.match(catalog,/phase="greeting" context="hero"/)
-  assert.match(catalog,/genie-calm-loop-poster\.webp/)
-  assert.match(profile,/genie-calm-loop-poster\.webp/)
+  assert.match(catalog,/genie-natural-opening-v2\.webp/)
+  assert.match(profile,/genie-natural-opening-v2\.webp/)
   assert.match(session,/voiceState\.phase==='thinking'\|\|busy/)
   assert.match(session,/<MyCoachMotionMedia personaId=\{personaId\}/)
   assert.match(avatar,/\['mira','max','sofia','alex','merlin','harry','genie'\]/)
@@ -102,4 +102,20 @@ test('Samir idle reel rotates all three clips, skips missing takes and stops if 
   assert.match(layers,/wanted\.current===name&&next/)
   assert.match(source('components/my-coach-live-dialogue.module.css'),/\.sessionPortrait\[data-persona=genie\]\{background-image:none!important/)
   assert.match(source('components/my-coach-motion-media.module.css'),/\[data-coach-motion-media='genie'\]\[data-coach-motion-context='session'\]\{inset:0;height:100%;width:100%;max-width:none/)
+})
+
+test('Samir first paint uses a versioned frame of an approved current MP4, never the old GIF poster',()=>{
+  const paths=['components/my-coach-motion-media.jsx','components/my-coach-catalog.jsx','components/my-coach-compact-profile.jsx','components/app/coaching-avatar.jsx']
+  for(const path of paths){
+    const code=source(path)
+    assert.ok(code.includes('genie-natural-opening-v2.webp'),path)
+    assert.ok(!code.includes('genie-calm-loop-poster.webp'),path)
+  }
+  const media=source(paths[0])
+  assert.ok(media.includes("fetchPriority={isGenie&&context==='greeting'?'high':undefined}"))
+  const build=source('scripts/prepare-samir-motion-mp4.mjs')
+  assert.ok(build.includes("approvedOpeningSources=[samirMotionFilename('idle'),samirMotionFilename('encourage')]"))
+  assert.ok(build.includes("'-frames:v','1','-c:v','libwebp'"))
+  assert.ok(build.includes("await rename(temporaryPoster,openingPoster)"))
+  assert.ok(build.includes('genie-natural-opening-v2.webp'))
 })

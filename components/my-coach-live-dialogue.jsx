@@ -1526,13 +1526,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!owner||resumeBusy||protocolStartedRef.current)return
     setResumeBusy(true);setResumeError(false)
     try{
-      const suffix=cursor?'?'+new URLSearchParams(cursor).toString():''
-      const response=await fetch('/api/app/my-coach/draft'+suffix,{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':owner}})
+      const query=new URLSearchParams({view:'summary',personaId,...(cursor||{})})
+      const response=await fetch('/api/app/my-coach/draft?'+query.toString(),{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':owner}})
       const result=await response.json().catch(()=>null)
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
-      const items=result.drafts.filter(row=>row?.protocol?.personaId===personaId)
-      setResumeList(previous=>({owner,items:cursor?[...new Map([...(previous?.items||[]),...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
+      const items=result.drafts.filter(row=>row?.personaId===personaId&&Number.isInteger(row.turnCount)&&row.turnCount>0)
+      setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
   }
@@ -1654,7 +1654,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {resumeList&&<p>{({ru:'Приватное текстовое продолжение без нового голосового токена.',en:'Private text continuation without a new voice token.',es:'Continuación privada por texto sin un nuevo token de voz.'})[lang]}</p>}
         {resumeList?.items.map(item=><button key={item.id} type="button" disabled={resumeBusy}
           onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8}}>
-          {new Date(item.updatedAt).toLocaleString(lang)} · {coachCourseFocusLabel(item.courseSessionId,conversationLang)} · {item.protocol.turns.length}
+          {new Date(item.updatedAt).toLocaleString(lang)} · {coachCourseFocusLabel(item.courseSessionId,conversationLang)} · {item.turnCount}
         </button>)}
         {resumeList&&resumeList.items.length===0&&<p>{({ru:'Нет черновиков этого коуча на данной странице.',en:'No drafts for this coach on this page.',es:'No hay borradores de este coach en esta página.'})[lang]}</p>}
         {resumeList?.cursor&&<button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume(resumeList.cursor)}>{({ru:'Ранние сессии',en:'Earlier sessions',es:'Sesiones anteriores'})[lang]}</button>}
