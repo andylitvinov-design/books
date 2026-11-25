@@ -302,3 +302,29 @@ test('Cabinet and My Progress run their real dependency-free contracts before an
     'CI-only policy is verified in PR, not an extra product build after merge');
   assert.ok(push.includes('- name: Production build\n        '+gate+'\n        run: npm run build'));
 });
+
+test('IA reuses only Core prebuild tests on exact protected Messenger UI diffs; real compilation and assets remain',()=>{
+  const ia=read('ia-v2.yml');
+  const start=ia.indexOf('- name: Real IA browser build with verified Core prebuild reuse');
+  const end=ia.indexOf('- name: Full TypeScript outside production PR',start);
+  assert.ok(start>=0 && end>start);
+  const block=ia.slice(start,end);
+  for(const token of ['HEAD^1','HEAD^2','GITHUB_SHA','HH_PR_HEAD','HH_EVENT_BASE',
+    "github.event.pull_request.head.sha","github.event.pull_request.base.sha",
+    'merge-base','--is-ancestor','--no-renames','--name-status',
+    '5e3a459dc70f8bcd5a83e9e8cbe31b0a5dbf0189',
+    '80665a0c3531989d71e93d6e69ef6ef6d53ef900',
+    "if(fields[i]!=='M'",'if(!hasUI)','s.preprebuild','s.postprebuild','s.postbuild',
+    'node scripts/ensure-owner-video-renderer.mjs',
+    'node scripts/cache-ancient-coaching-photos.mjs',
+    'node scripts/generate-soft-ocean-melody.mjs',
+    'node scripts/build-public-card-artwork.mjs',
+    'node scripts/build-report-pdf-art.mjs',
+    'node scripts/prepare-my-coach-natural-mp4.mjs',
+    './node_modules/.bin/next build --no-lint','npm run build']) assert.ok(block.includes(token),token);
+  assert.ok(ia.includes('npm run verify:ia-v2'));
+  assert.ok(ia.includes('tests/helpers/app-db-setup.mjs'));
+  assert.ok(ia.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(core.includes('run: npm run build -- --no-lint'));
+  assert.match(core,/^  hh-merge-check:/m);
+});
