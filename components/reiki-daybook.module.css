@@ -920,3 +920,16 @@
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) [data-daybook-part="slide-main"] {container-type:normal;}
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"]:not([data-daybook-welcome-screen]) [data-daybook-part="content"] {height:auto;}
 }
+
+/* Closed native details may retain layout boxes in Chromium; ensure the
+   hidden course utilities cannot affect the teaching card or be tabbed to. */
+.courseTools:not([open]) > .toolsPanel {display:none;}
+/* On the smallest phones the quiz must fit even with a selected answer. */
+@media (max-height:640px) {
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-part="content"] > span:first-child {font-size:11px;line-height:1.1;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-part="content"] > :is(h1,h2)[id] {font-size:23px;line-height:1.08;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-part="content"] > p {font-size:14px;line-height:1.25;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-question] label:has(input) {padding:4px 6px;font-size:13px;line-height:1.15;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-question]>[role=group] {gap:4px;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-question] > p:last-child:not([role=status]) {margin:3px 0 0;font-size:12px;line-height:1.2;}
+}
