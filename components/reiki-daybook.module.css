@@ -934,6 +934,35 @@
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-id="welcome-02"] [data-daybook-question] > p:last-child:not([role=status]) {margin:3px 0 0;font-size:12px;line-height:1.2;}
 }
 
+/* Approved compact Reiki tools sheet — only this learner menu. */
+.toolsPanel {box-sizing:border-box;padding:12px;max-height:min(60dvh,450px);overflow-x:hidden;}
+.toolsLinks {display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:6px;margin:0 0 8px;}
+.toolsLinks> :is(button,a), .page[data-reiki-daybook-design="golden-one-screen-v3"] .toolsLinks [data-reiki-referral-share]>summary {
+  box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:5px 6px;gap:4px;text-align:center;
+  font:650 clamp(11px,3.3vw,14px)/1.2 system-ui,sans-serif;white-space:normal;
+}
+.toolsLinks> [data-reiki-referral-share] {min-width:0;}
+.toolsLinks> [data-reiki-referral-share][open] {grid-column:1/-1;}
+.toolsLinks> [data-reiki-referral-share][open]>div {position:static;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px;box-shadow:none;}
+.page[data-reiki-daybook-design="golden-one-screen-v3"] .toolsLinks [data-reiki-referral-share]>summary>span {display:inline;}
+.toolsLinks svg {flex:none;}
+.masterQuestion {
+  box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;width:100%;
+  margin:6px 0 8px;padding:9px 11px;border:1px solid #d7ad64;border-radius:12px;
+  background:linear-gradient(115deg,#087953,#00432e);color:#fff9ea;text-decoration:none;
+  font:700 14px/1.3 system-ui,sans-serif;
+}
+.masterQuestion span {flex:1;min-width:0;text-align:center;overflow-wrap:anywhere;}
+.masterQuestion svg {flex:none;}
+.masterQuestion:focus-visible {outline:2px solid #07553d;outline-offset:2px;}
+.toolsPanel>section[data-expanded] {display:flex;flex-direction:column;padding:0;margin:0;overflow:hidden;}
+.toolsPanel>section[data-expanded]>button {order:-1;display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:8px 10px;border:0;background:transparent;color:#392318;text-align:left;font:650 14px/1.3 system-ui,sans-serif;cursor:pointer;}
+.toolsPanel>section[data-expanded]>button>span:nth-child(2) {flex:1;min-width:0;}
+.toolsPanel>section[data-expanded]>button svg {flex:none;}
+.toolsPanel>section[data-expanded]>button[aria-expanded=true]>svg:last-child {transform:rotate(180deg);}
+.toolsPanel>section[data-expanded]>div:not([hidden]) {padding:8px;min-width:0;}
+.toolsPanel .steps {padding-top:6px;}
+
 
 /* Review reading screen: reserve the footer and arrows; only the full quote may scroll. */
 @media screen {

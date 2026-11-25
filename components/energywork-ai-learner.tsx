@@ -1259,6 +1259,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     pagePath: "/" + locale + "/academy/principles-of-energywork/learn",
   });
   const reikiTelegramUrl = telegramEnquiryUrlFromWhatsApp(reikiWhatsAppUrl);
+  const masterQuestionUrl = whatsappEnquiryUrl({
+    locale, service: "Reiki Practitioner",
+    request: locale === "ru" ? "Здравствуйте! У меня вопрос по курсу Reiki Practitioner." : "Hello! I have a question about the Reiki Practitioner course.",
+    pagePath: "/" + locale + "/academy/principles-of-energywork/daybook",
+  });
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
@@ -2083,10 +2088,33 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     </div>
   );
 
+  const daybookOutline = daybook ? (
+    <div className={daybookStyles.steps} data-daybook-outline>
+            <ol>
+              {slides.slice(activeWeek.start, activeWeek.end).map((item, offset) => {
+                const position = activeWeek.start + offset;
+                const isCurrent = index === position;
+                const done = daybookDone(position);
+                return (
+                  <li key={item.id}>
+                    <button type="button" aria-current={isCurrent ? "step" : undefined}
+                      disabled={!daybookCanOpen(position)} onClick={() => { if (!isCurrent) { setProgrammeOpen(false); void jumpToSlide(item.id); } }}>
+                      <span className={daybookStyles.stepNumber}>{done ? <Check size={16} aria-hidden="true" /> : offset + 1}</span>
+                      <span className={daybookStyles.stepTitle}>{item.id === "welcome-01" ? daybookIntroTitle : item.title[locale]}<small>{isCurrent ? db.current : done ? db.done : position > daybookFrontier ? db.locked : ""}</small></span>
+                      {position > daybookFrontier ? <LockKeyhole size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <p>{sync === "checking" ? t.checking : sync === "unavailable" ? t.offline : sync === "ready" ? db.shared : db.guest}</p>
+          </div>
+  ) : null;
   const programme = (
     <section className={styles.programme} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
       <div className={styles.programmeBody} id="reiki-journey-help" hidden={!programmeOpen}>
         <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+        {daybookOutline}
         <div className={styles.programmeSystems}>
           {energyworkPathChoices.map((choice) => (
             <p key={choice.id} className={styles.programmeSystem}>
@@ -2137,7 +2165,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
             {needsCompletionConfirmation ? (locale === "ru" ? "Подтвердить завершение курса" : "Confirm course completion")
               : slide.id === "flight-done" && sync !== "ready"
               ? (sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount)
-              : slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview
+              : slide.kind === "milestone" ? (daybook ? (locale === "ru" ? "Перейти к следующему уроку" : "Continue to next lesson") : t.saveAndContinue) : isMeditationFeedback ? t.saveReview
               : slide.kind === "audio-intro" ? (locale === "ru" ? "Перейти к видео" : "Continue to video")
               : slide.kind === "welcome" ? t.startFree : t.continue}
             {needsCompletionConfirmation ? <Check size={19} aria-hidden="true" /> : <ArrowRight size={19} aria-hidden="true" />}
@@ -2151,8 +2179,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     </footer>
   );
 
-  // The existing outline, Classic, help and course details remain reachable
-  // without consuming permanent height underneath the lesson.
+  // Compact owner-approved tools: preserve navigation in the journey disclosure.
   const courseTools = (
     <details className={daybookStyles.courseTools} data-daybook-tools key={"tools-" + slide.id}>
       <summary aria-label={locale === "ru" ? "Меню курса" : "Course menu"} title={locale === "ru" ? "Меню курса" : "Course menu"}>
@@ -2161,35 +2188,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       <div className={daybookStyles.toolsPanel}>
         <div className={daybookStyles.toolsLinks}>
           <Link href={"/" + locale + "/academy/principles-of-energywork"}>{t.backCourse}</Link>
-          <button type="button" onClick={switchFormat}>{db.classic}</button>
-          <ReikiCourseReferralShare locale={locale} />
           <button type="button" data-daybook-inline-help aria-haspopup="dialog" onClick={(event) => {
             event.currentTarget.closest("details")?.removeAttribute("open");
             window.dispatchEvent(new Event("hh:open-ihelp"));
           }}><MessageCircle size={16} aria-hidden="true" />iHelp</button>
+          <ReikiCourseReferralShare locale={locale} />
         </div>
         {!daybookSaveNeedsAttention ? saveStatusPanel : null}
-        <details className={daybookStyles.steps} data-daybook-outline key={"steps-" + slide.id}>
-            <summary><BookOpen size={18} aria-hidden="true" /><strong>{db.steps}</strong><ChevronDown size={18} aria-hidden="true" /></summary>
-            <ol>
-              {slides.slice(activeWeek.start, activeWeek.end).map((item, offset) => {
-                const position = activeWeek.start + offset;
-                const isCurrent = index === position;
-                const done = daybookDone(position);
-                return (
-                  <li key={item.id}>
-                    <button type="button" aria-current={isCurrent ? "step" : undefined}
-                      disabled={!daybookCanOpen(position)} onClick={() => { if (!isCurrent) void jumpToSlide(item.id); }}>
-                      <span className={daybookStyles.stepNumber}>{done ? <Check size={16} aria-hidden="true" /> : offset + 1}</span>
-                      <span className={daybookStyles.stepTitle}>{item.id === "welcome-01" ? daybookIntroTitle : item.title[locale]}<small>{isCurrent ? db.current : done ? db.done : position > daybookFrontier ? db.locked : ""}</small></span>
-                      {position > daybookFrontier ? <LockKeyhole size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-            <p>{sync === "checking" ? t.checking : sync === "unavailable" ? t.offline : sync === "ready" ? db.shared : db.guest}</p>
-          </details>
+        <a className={daybookStyles.masterQuestion} data-reiki-master-question href={masterQuestionUrl} target="_blank" rel="noopener noreferrer">
+          <MessageCircle size={19} aria-hidden="true" />
+          <span>{locale === "ru" ? "Отправить сообщение / вопрос мастеру" : "Send a message / question to master"}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </a>
         {programme}
       </div>
     </details>

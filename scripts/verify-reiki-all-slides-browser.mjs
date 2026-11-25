@@ -880,7 +880,8 @@ async function verifyGoldenDaybook(locale) {
           const menu=root.locator("[data-daybook-tools]");
           await menu.locator(":scope > summary").click();
           const outline=root.locator("[data-daybook-outline]");
-          await outline.locator(":scope > summary").click();
+          const journey=menu.locator("button[aria-controls=\"reiki-journey-help\"]");
+          if(await journey.getAttribute("aria-expanded")!=="true") await journey.click();
           const start=rangeIndex===0?0:lessonRanges[rangeIndex].start;
           await outline.locator("ol button").nth(i-start).click();
         }
