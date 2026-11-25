@@ -44,7 +44,10 @@ export async function GET(_request, { params }) {
           'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
           'Content-Security-Policy': snapshot.policy,
           'Cache-Control': 'public, max-age=0, s-maxage=3600, must-revalidate',
-          'Vary': 'Accept, Accept-Encoding, Cookie, Authorization, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url',
+          // Dedicated guest-only rewrite target. Middleware recomputes the
+          // representation marker; it never shares cookie-dependent HTML.
+          // Vercel CDN rejects Vary: Cookie (2026-09-30).
+          'Vary': 'Accept, Accept-Encoding, X-HH-Public-Home-Encoding, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url',
         } })
       }
     } catch {

@@ -76,6 +76,9 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
+      - name: Validate compiled anonymous home delivery and strict CSP contract
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        run: node --test tests/public-home-document-build.test.mjs tests/public-home-document-delivery.test.mjs
       - name: Check full production build of Draft performance PR
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
         run: |
@@ -96,6 +99,7 @@ jobs:
             sleep 1
           done
           node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
+          HH_PUBLIC_HOME_TEST_ORIGIN=http://127.0.0.1:3399 node --test tests/public-home-document-delivery.test.mjs
           { echo '## Homepage network first paint (uncompressed)'; echo '```json'; cat /tmp/hh-home-css-metrics.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Build exact protected PR BASE in isolated local worktree for fair Lighthouse comparison
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
@@ -110,11 +114,19 @@ jobs:
           git fetch --no-tags --depth=1 origin "$PR_BASE_SHA"
           baseline_dir="$RUNNER_TEMP/hh-home-baseline"
           git worktree add --detach "$baseline_dir" "$PR_BASE_SHA"
-          # Reuse EXACT same pinned dependencies, no extra package installs,
-          # env secrets, Vercel builds or external publishing. Fail closed if
-          # baseline lockfile differs.
-          cmp package-lock.json "$baseline_dir/package-lock.json"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$baseline_dir/node_modules"
+          # Share node_modules only for identical lockfiles. Otherwise install
+          # BASE's own dependency tree from the existing npm cache offline.
+          # The FFmpeg binary remains the exact checksum-verified CI binary.
+          if cmp -s package-lock.json "$baseline_dir/package-lock.json"; then
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$baseline_dir/node_modules"
+          else
+            binary="$GITHUB_WORKSPACE/node_modules/ffmpeg-static/ffmpeg"
+            echo "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  $binary" | sha256sum --check --status
+            (cd "$baseline_dir" && FFMPEG_BIN="$binary" npm ci --offline --no-audit --no-fund)
+            [[ "$(node -p "require('$baseline_dir/node_modules/ffmpeg-static/package.json').version")" == '5.3.0' ]]
+            install -m 755 "$binary" "$baseline_dir/node_modules/ffmpeg-static/ffmpeg"
+            echo "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  $baseline_dir/node_modules/ffmpeg-static/ffmpeg" | sha256sum --check --status
+          fi
           (cd "$baseline_dir" && npm run build)
       - name: Compare protected BASE vs current PR on same local transport (mobile Lighthouse 13.6)
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}

@@ -61,6 +61,8 @@ test('the delivered document, policy and optional preload come from the same com
     assert.equal(reply.headers.get('set-cookie'), null)
     assert.equal(reply.headers.get('content-encoding'), null)
     assert.match(reply.headers.get('vary'), /Accept-Encoding/)
+    assert.match(reply.headers.get('vary'), /X-HH-Public-Home-Encoding/)
+    assert.doesNotMatch(reply.headers.get('vary'), /(?:^|,\s*)Cookie(?:,|$)/i)
     const encoded = await response('ru-gzip')
     assert.equal(encoded.headers.get('content-encoding'), 'gzip')
     assert.equal(gunzipSync(Buffer.from(await encoded.arrayBuffer())).toString(), snapshot.html)
@@ -84,5 +86,62 @@ test('the delivered document, policy and optional preload come from the same com
     if (previous === undefined) delete process.env.HH_COMPILED_PUBLIC_HOME_BUILD_ID
     else process.env.HH_COMPILED_PUBLIC_HOME_BUILD_ID = previous
     await rm(dir, { recursive: true, force: true })
+  }
+})
+
+
+test('built canonical cache isolates anonymous, cookie, authorization and router requests', {
+  skip: !process.env.HH_PUBLIC_HOME_TEST_ORIGIN,
+}, async () => {
+  const origin=new URL(process.env.HH_PUBLIC_HOME_TEST_ORIGIN)
+  assert.ok(['localhost','127.0.0.1'].includes(origin.hostname), 'local build only')
+  const request=(path,fields={},method='GET')=>fetch(new URL(path,origin),{
+    method, headers:{accept:'text/html','accept-encoding':'identity',...fields},
+    redirect:'manual', signal:AbortSignal.timeout(20000),
+  })
+  const isHashDocument=response=>{
+    const csp=response.headers.get('content-security-policy')||''
+    return /'sha256-/.test(csp)&&!/'nonce-/.test(csp)
+  }
+  const privateResponse=response=>{
+    assert.match(response.headers.get('cache-control')||'',/no-store|private/i)
+    assert.ok(!isHashDocument(response),'excluded request must not receive shared guest document')
+    assert.doesNotMatch(response.headers.get('cache-control')||'',/\bs-maxage=[1-9]/i)
+  }
+  for(const path of ['/', '/ru', '/es']){
+    const first=await request(path)
+    assert.equal(first.status,200,path)
+    assert.ok(isHashDocument(first),path+' guest hash CSP')
+    assert.equal(first.headers.get('set-cookie'),null)
+    assert.doesNotMatch(first.headers.get('vary')||'',/(?:^|,\s*)Cookie(?:,|$)/i)
+    const body=await first.text()
+    assert.match(body,/data-home-dialogue-entry/)
+    const compressed=await request(path,{'accept-encoding':'gzip'})
+    assert.equal(compressed.status,200,path+' gzip')
+    assert.equal(await compressed.text(),body)
+    for(const headers of [
+      {cookie:'hh_test_session=fixture'},
+      {authorization:'Bearer hh-local-fixture'},
+      {cookie:'hh_test_session=fixture','x-hh-public-home-encoding':'gzip'},
+      {'cache-control':'no-cache','x-hh-public-home-encoding':'identity'},
+      {rsc:'1','x-hh-public-home-encoding':'identity'},
+    ]){
+      const excluded=await request(path,headers)
+      privateResponse(excluded)
+      await excluded.arrayBuffer()
+    }
+    const full=await request(path+'?full=1')
+    privateResponse(full)
+    await full.arrayBuffer()
+    const again=await request(path)
+    assert.equal(again.status,200)
+    assert.ok(isHashDocument(again))
+    assert.equal(await again.text(),body)
+  }
+  for(const path of ['/hh-public-document/en','/hh-public-document/ru-gzip','/hh-public-document/es']){
+    const response=await request(path,{'x-hh-public-home-encoding':'identity'})
+    assert.equal(response.status,404)
+    privateResponse(response)
+    await response.arrayBuffer()
   }
 })

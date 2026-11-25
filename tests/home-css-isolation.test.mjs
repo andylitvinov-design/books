@@ -50,3 +50,15 @@ test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no 
   assert.match(content, /const HomeExpandedCatalog = lazy\(/);
   assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
 });
+
+
+test("lazy home topics reserve their collapsed height until mounted, keeping the About link stable", () => {
+  const observer=read("components/home-deferred-sections.tsx");
+  const css=read("app/holistic-house-home.css");
+  const content=read("components/home-deferred-content.tsx");
+  assert.doesNotMatch(observer, /minHeight:visible\?undefined:140/);
+  assert.match(css, /\[data-home-deferred-sections\]:not\(:has\(> \[data-home-deferred-content\]\)\)\s*\{\s*min-block-size: var\(--home-discovery-size\)/);
+  assert.match(css, /contain-intrinsic-block-size: auto var\(--home-discovery-size\)/);
+  assert.match(css, /@media \(scripting: none\) \{\s*\[data-home-deferred-sections\] \{ --home-discovery-size: 140px; \}/);
+  assert.match(content, /<div data-home-deferred-content/);
+});

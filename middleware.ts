@@ -358,6 +358,11 @@ export async function middleware(request: NextRequest) {
     : NextResponse.next({ request: { headers: requestHeaders } })
   for (const { name, value, options } of authCookieChanges) response.cookies.set(name, value, options)
   response.headers.set('Content-Security-Policy', csp)
+  // Canonical Home requests rejected by the guest-document gate must never
+  // share nonce-bound HTML or Flight data. Keep ordinary Home SEO unchanged.
+  if (['/', '/ru', '/es'].includes(pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
+  }
   if (privatePath(request.nextUrl.pathname) || authCookieChanges.length) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
