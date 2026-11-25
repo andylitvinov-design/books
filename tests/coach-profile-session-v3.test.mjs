@@ -54,7 +54,7 @@ test('inner asks only missing values, accepts zero and preserves historical prov
 })
 test('reject wrong question/track/axis, stale revision, duplicate turn, assistant and interim',()=>{
  const s=init(),q=coachProfileQuestionV3(s),u=turn(q,'5','first')
- for(const bad of [{...q,track:'inner'},{...q,axis:'finance'},{...q,id:'forged'},{...q,revision:1}]){
+ for(const bad of [{...q,track:'inner'},{...q,axis:'finance'},{...q,id:'forged'},{...q,revision:1},{...q,text:'Unrelated question?'}]){
   assert.throws(()=>applyCoachProfileAnswerV3(s,bad,u),/COACH_PROFILE_SESSION_INVALID/)
  }
  for(const bad of [{...u,role:'assistant'},{...u,final:false},{...u,interim:true},{...u,questionId:'other'}]){
