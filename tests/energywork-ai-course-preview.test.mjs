@@ -76,7 +76,7 @@ test('Lesson 1 Sun meditation review uses the approved two questions and one ans
 })
 
 test('Lesson 1 practice is followed by the optional Reiki Hints slide and congratulations', () => {
-  assert.deepEqual(energyworkSequence().slice(3, 11), [
+  assert.deepEqual(energyworkSequence().slice(3,12), [
     'flight-01', 'flight-audio', 'flight-02', 'flight-voices', 'flight-05',
     'flight-04', 'flight-03', 'flight-hints', 'flight-done',
   ])
@@ -86,7 +86,7 @@ test('Lesson 1 practice is followed by the optional Reiki Hints slide and congra
   assert.match(lesson, /question: \{ type: "text"/)
   assert.match(curriculum, /slide\.phase === "flight"/)
   assert.doesNotMatch(curriculum, /id: "flight-save"/)
-  assert.equal(energyworkSequence()[11], 'tan-01')
+  assert.equal(energyworkSequence()[12], 'tan-01')
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
