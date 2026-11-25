@@ -6,6 +6,7 @@ import {
   Compass, HeartHandshake, Leaf, LockKeyhole, ShieldCheck, Sparkles, Waves,
 } from 'lucide-react'
 import Course14DayOverview from './course-14-day-overview'
+import OporaFirstWeekInvite from './opora-first-week-invite'
 import { PublicAntistressRouteMap } from '../public-antistress-route-map'
 import { ANTISTRESS_ROUTER_VERSION } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-guest-landing.module.css'
@@ -45,7 +46,7 @@ const COPY = {
     inviteTitle: 'Ваш бесплатный курс готов',
     inviteLead: '8 вопросов для начала, затем 14 коротких занятий по 5–12 минут в день.',
     inviteProgress: 'Прогресс и выбранные упражнения сохраняются приватно в кабинете.',
-    inviteGoogle: 'Войти через Google и начать',
+    inviteGoogle: 'Войти через Google и начать', inviteTelegram: 'Войти через Telegram',
     inviteNote: 'После входа откроется этот курс. Можно продолжить позже.',
     inviteExplore: 'Подробнее о программе',
   },
@@ -83,7 +84,7 @@ const COPY = {
     inviteTitle: 'Your free course is ready',
     inviteLead: 'Start with an 8-question check-in, then explore 14 short lessons at your own pace.',
     inviteProgress: 'Your choices and progress are saved privately in your Cabinet.',
-    inviteGoogle: 'Continue with Google',
+    inviteGoogle: 'Continue with Google', inviteTelegram: 'Continue with Telegram',
     inviteNote: 'After signing in, you will return to this course and can continue anytime.',
     inviteExplore: 'Explore the programme',
   },
@@ -121,7 +122,7 @@ const COPY = {
     inviteTitle: 'Tu curso gratuito está listo',
     inviteLead: 'Empieza con 8 preguntas y sigue 14 clases breves a tu ritmo.',
     inviteProgress: 'Tus elecciones y progreso se guardan de forma privada.',
-    inviteGoogle: 'Continuar con Google',
+    inviteGoogle: 'Continuar con Google', inviteTelegram: 'Continuar con Telegram',
     inviteNote: 'Tras iniciar sesión, volverás a este curso y podrás continuar después.',
     inviteExplore: 'Conocer el programa',
   },
@@ -130,11 +131,16 @@ const COPY = {
 const benefitIcons = [Waves, HeartHandshake, Compass]
 
 export default function CourseGuestLanding({
-  locale = 'en', onStart, busy = false, stressSignup = false, compact = false,
+  locale = 'en', onStart, onTelegramStart, telegramAvailable = false, busy = false, stressSignup = false, compact = false,
   errorMessage, onRetry, legacyText, nonDiagnostic,
 }) {
   const t = COPY[locale] || COPY.en
   const [previewModuleId,setPreviewModuleId]=useState('AS2')
+  // The seven-day preview is mandatory before a guest may request OAuth.
+  if (compact && stressSignup) return <div data-opora-guest-landing data-course-guest-invite>
+    <OporaFirstWeekInvite locale={locale} signedOut onAccept={onStart} busy={busy}
+      errorMessage={errorMessage} onRetry={onRetry} />
+  </div>
   if (compact) return (
     <section className={styles.compactRoot} data-opora-guest-landing data-course-guest-invite aria-labelledby="course-guest-invite-title">
       <figure className={styles.compactPhoto}>
@@ -148,6 +154,10 @@ export default function CourseGuestLanding({
         <button type="button" className={styles.compactGoogle} disabled={busy} onClick={onStart} data-course-google-signin>
           {t.inviteGoogle}<ArrowRight size={19} aria-hidden="true"/>
         </button>
+        {telegramAvailable && <button type="button" className={styles.compactGoogle} disabled={busy}
+          onClick={onTelegramStart} data-course-telegram-signin>
+          {t.inviteTelegram}<ArrowRight size={19} aria-hidden="true"/>
+        </button>}
         <small className={styles.compactNote}>{t.inviteNote}</small>
         <Link className={styles.compactLink} href={`/${locale}/courses/antistress`}>{t.inviteExplore}<ArrowRight size={14} aria-hidden="true"/></Link>
         {errorMessage && <p className={styles.compactError} role="alert">{errorMessage} {onRetry && <button type="button" onClick={onRetry}>{t.retry}</button>}</p>}
@@ -180,6 +190,8 @@ export default function CourseGuestLanding({
               data-antistress-start data-antistress-start-tests={stressSignup ? '' : undefined}>
               {stressSignup ? t.startTests : t.start}<ArrowRight size={18} aria-hidden="true" />
             </button>
+            {telegramAvailable && <button type="button" className={styles.secondary} disabled={busy}
+              onClick={onTelegramStart} data-course-telegram-signin>{t.inviteTelegram}</button>}
             <a href="#opora-guest-plan" className={styles.secondary}>{t.programme}<ArrowRight size={16} aria-hidden="true" /></a>
           </div>
           <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.privacy}</p>

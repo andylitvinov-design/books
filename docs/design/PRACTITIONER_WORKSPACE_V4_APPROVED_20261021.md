@@ -90,3 +90,27 @@ Owner supplied five real iPhone screenshots of **Articles, Services, Courses, Au
 - [ ] Investigate/retest articles API if SERVICE_UNAVAILABLE persists
 
 **Status:** implementation under review; authenticated live owner E2E not established by source or build tests.
+
+## V4.3 · One-screen master workspace (owner request, 2026-10-21)
+
+The owner's actual iPhone capture of Materials > Video revealed a UX defect: **My requests and other large sections stayed stacked immediately below the selected tab**. Even compact material cards did not produce a one-screen workbench.
+
+**Implementation principle:** one **selected** workspace panel at any time, with stable eight-way shortcut navigation (Clients / Requests / Services / Materials / Courses / Analytics / Profile / More). At 320–430px the shortcuts form a compact 4×2 grid (touch height 46px+); desktop may show 8 columns. The active work panel sits immediately below and receives most of the width. Do not solve this by opening additional copies of pages or by disabling vertical scrolling for a necessary form; show core controls first, with optional details/advanced fields inside purposeful disclosures. Keep the global six-item mobile bottom navigation.
+
+- **Materials** and **Courses** are distinct shortcuts into the *existing single* Materials hub. The top-level selection and nested tab stay synchronized without navigation or reload.
+- **Services**, **Analytics**, **Requests**, **Profile**, **Clients**, **Marketing/CRM/Events via More** use existing components, data, and owner gates in one workbench; the old separate full-screen Services return is retired. Existing service save/submit and 20% commission explanatory disclaimer remain.
+- Dashboard-overview-only sections (requests preview, onboarding, public profile CTA, quick actions, advanced owner tools, community examples) are **not rendered below an active section**. Overview still exists when no section is selected.
+- **Video:** Upload is primary, YouTube uses the existing gated admin uploader, and private-client report materials and publication rules are accessible under one collapsed advanced disclosure. A compact default view does not imply those assets are public.
+- The owner-specific legacy reporting, invoice, Reiki audio editor, Google channel authorization and privileged tools **retain their existing protected admin endpoints**. This cosmetic change does not claim to convert them into unguarded in-page editors. Their separate editor journey is future implementation work, with server-side security and provider E2E required.
+- Use real data, preserve EN/RU/ES labels, WCAG-visible focus and 44px+ controls. Do not infer real save, OAuth delivery, publication or payment success from screenshot/source tests.
+
+### V4.3 acceptance / release gates
+
+- [ ] New workspace tests and old V4/source-contract tests pass.
+- [ ] ESLint for changed panels, TypeScript and Next build pass on PR head.
+- [ ] Actual browser widths 320, 375, 390 and 430 show primary material action, no horizontal overflow, scroll/keyboard usable and six-item bottom navigation unobstructed.
+- [ ] Authenticated owner: Articles → new/save/reopen, Services → save/reopen, Courses → new slide/save/reopen, video link moderation, private audio preview/upload and Google channel upload checked separately; keep 3rd-party delivery as unverified until observed.
+- [ ] Vercel production READY at the *exact* merged SHA, verified canonical domain.
+- [ ] No fake CRM lead, booking, billing or permission changes.
+
+**Status:** implementation on feature branch; completion contingent on CI/production and authenticated iPhone E2E. This section is not a claim that such E2E checks have already passed.

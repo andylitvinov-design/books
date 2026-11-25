@@ -14,8 +14,8 @@ export const revalidate = 0;
 
 export const metadata = spanishMetadata(
   "/es/books",
-  "Ideas — orientación y libros | Holistic House",
-  "Escribe tu pregunta y recibe un símbolo del I Ching, tres aforismos por tema o un primer paso gratuito. Explora los libros de Holistic House.",
+  "Tests y coaching — perfil, reflexión y prácticas | Holistic House",
+  "Cuatro caminos: perfil con tests, reflexiones taoístas y del templo, coaching y apoyo práctico. Elige tu primer paso.",
 );
 
 export default function SpanishBooksPage() {

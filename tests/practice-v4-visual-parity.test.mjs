@@ -16,7 +16,7 @@ test('the approved mobile dashboard reuses a real image and opens a flattened li
  assert.match(dashboard,/data-practice-detail-panel="materials"/)
  assert.match(dashboard,/@media\(max-width:350px\)/)
  assert.match(workspace,/data-practice-detail-panel=\{activePanel\}/)
- assert.match(workspace,/document\.getElementById\('hh-practice-workspace-detail'\)\?\.scrollIntoView/)
+ assert.match(workspace,/document\.getElementById\('hh-practice-workspace-top'\)\?\.scrollIntoView/)
  assert.match(workspace,/data-practitioner-v4-dashboard/)
 })
 test('Reiki lessons are featured ahead of an opt-in new course editor',()=>{

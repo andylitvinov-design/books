@@ -42,3 +42,13 @@ test('playback remains click-gated and uses the unchanged stable provider embed'
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.doesNotMatch(player, /<video|setInterval|fetch\(/);
 });
+
+test('RU About retains internal-only player after transcript and EN About retains ten original videos',()=>{
+  const script=readFileSync(new URL('../scripts/verify-ru-about-video.mjs',import.meta.url),'utf8')
+  assert.match(script,/await expect\(intro\.locator\('\.site-video-watch-link'\)\)\.toHaveCount\(0\)/)
+  assert.match(script,/await expect\(intro\.locator\('\.site-video-more'\)\)\.toContainText/)
+  assert.match(script,/data-personal-testimonials="about"/)
+  assert.match(script,/toHaveCount\(10\)/)
+  assert.match(page,/internalOnly/)
+})
+

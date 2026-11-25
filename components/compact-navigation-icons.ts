@@ -1,12 +1,18 @@
-import { BookOpen, BriefcaseBusiness, ClipboardList, GraduationCap, House, Sparkles } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, Flame, FlaskConical, GraduationCap, Heart, House, Landmark, UserRound, HeartHandshake, Sparkles } from 'lucide-react';
 
-// The hamburger's main destinations and the mobile bottom bar share these icons,
-// just as they already share their labels, order and URLs in site-navigation-model.
+// The hamburger and mobile bar share their visitor-facing directions.
 export const compactNavigationIcons = {
   home: House,
-  tests: ClipboardList,
-  services: Sparkles,
-  academy: GraduationCap,
+  analysis: Sparkles,
+  courses: BookOpen,
+  profile: UserRound,
+  alchemy: FlaskConical,
+  insights: Sparkles,
+  support: HeartHandshake,
+  energy: Flame,
+  love: Heart,
   business: BriefcaseBusiness,
   books: BookOpen,
+  pro: GraduationCap,
+  temple: Landmark,
 } as const;

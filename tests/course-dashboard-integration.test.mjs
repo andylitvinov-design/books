@@ -56,7 +56,10 @@ test('other possible course directions stay visible at the free active-course li
   assert.equal(options.flatMap(nodes).filter(node => node.type === 'button').length, 0,
     'a full account can see other directions but cannot bypass the active-course quota')
   h.render({ ...props, canAddCourse: true }); await h.settle()
-  nodes(h.tree).filter(node => node.props?.['data-course-option'])[0].props.children[2].props.onClick()
+  const firstAvailableOption = nodes(h.tree).find(node => node.props?.['data-course-option'] === 'business_focus')
+  const chooseButton = firstAvailableOption && nodes(firstAvailableOption).find(node => node.type === 'button')
+  assert.ok(chooseButton, 'the available recommended course exposes an explicit choice action')
+  chooseButton.props.onClick()
   assert.equal(newCourseRequests, 1, 'an available option opens the existing catalog flow')
   h.unmount()
 })
@@ -168,12 +171,14 @@ test('closing a course uses a keyboard-dismissable native dialog and cancellatio
   const closed = []
   const h = mount('my-courses-dashboard', { props: { courses: [courseA], canManageCourses: true, membership: { occupiedCount: 1, maxActiveCourses: 1 }, onClose: course => closed.push(course.id) } })
   await h.settle()
-  findButton(tiles(h.tree)[0], 'Close course').props.onClick(); await h.settle()
+  const cross = () => nodes(tiles(h.tree)[0]).find(node => node.props?.['data-course-close-cross'] !== undefined)
+  assert.match(cross().props['aria-label'], /Close course/)
+  cross().props.onClick(); await h.settle()
   const dialog = nodes(h.tree).find(node => node.type === 'dialog')
   assert.equal(dialog.props.ref.current.open, true)
   dialog.props.onCancel(); await h.settle()
   assert.deepEqual(closed, [])
-  findButton(tiles(h.tree)[0], 'Close course').props.onClick(); await h.settle()
+  cross().props.onClick(); await h.settle()
   findButton(h.tree, 'Close and save history').props.onClick(); await h.settle()
   assert.deepEqual(closed, ['course-a'])
   h.unmount()
@@ -294,7 +299,11 @@ test('a slow billing-triggered read cannot roll back a course mutation that has 
 test('lifecycle actions stay disabled until the server enables multi-course storage', async () => {
   const h = mount('my-courses-dashboard', { props: { courses: [courseA, courseB], membership: { occupiedCount: 2, maxActiveCourses: 5 }, canManageCourses: false } })
   await h.settle()
-  assert.ok(tiles(h.tree).every(tile => findButton(tile, 'Close course').props.disabled))
+  const cards=tiles(h.tree)
+  assert.equal(cards.length,2)
+  assert.ok(cards.every(tile => nodes(tile).some(button =>
+    button.type==='button' && button.props['aria-label']?.startsWith('Close course: ') && button.props.disabled)),
+    'each course has a disabled accessible close action until permitted')
   assert.equal(findButton(tiles(h.tree)[1], 'Make main').props.disabled, true)
   h.unmount()
 })
@@ -370,4 +379,22 @@ test('a delayed previous-owner default cannot open Today after the account chang
   assert.ok(h.navigations.every(url => !url.includes('owner-a-selected')))
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
+})
+
+test('My Courses checks for saved Reiki when the owner has no personal growth course', async () => {
+  const owner = account('reiki-only-owner')
+  const emptyGrowth = { course: null, courses: [], assessments: {}, access: { ...access, activeCourseCount: 0 } }
+  const index = mount('my-course', {
+    search: '?view=courses', props: { data: owner, locale: 'ru' }, fetcher: () => emptyGrowth,
+  })
+  await index.settle()
+  const saved = findPart(index.tree, 'CabinetFreeCourseBanners')
+  assert.equal(saved.props.savedOnly, true)
+  assert.equal(saved.props.accountId, owner.account.id)
+  assert.equal(saved.props.locale, 'ru')
+  const discovery = mount('my-course', {
+    search: '?view=discover', props: { data: owner, locale: 'ru' }, fetcher: () => emptyGrowth,
+  })
+  await discovery.settle()
+  assert.ok(!findPart(discovery.tree, 'CabinetFreeCourseBanners'))
 })

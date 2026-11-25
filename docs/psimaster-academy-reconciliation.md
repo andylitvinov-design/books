@@ -103,3 +103,36 @@ All **22** published PsiMaster Academy/Archive routes now have a complete Englis
 - Safety filtering is applied after locale selection, so EN and RU use the same public-content policy.
 
 Parity evidence: `docs/psimaster-academy-translation-manifest.csv`.
+
+## Catalogue-language and visual policy — 2026-10-24
+
+Owner's iPhone screenshots showed all 22 historical Russian PsiMaster programme records and
+7 original Russian video-course families in the **English** learning directory, rendered as
+text-only white links instead of the Academy's photo-left course cards.
+
+- **Public EN/ES discovery:** omit records whose only **original** course/video language
+  is Russian. A translated heading/description is *not* an English/Spanish lesson. Also
+  omit the 7-lesson Russian Osiris featured course and the Russian-only video library group
+  from EN/ES displays. Native English video programs remain accessible.
+- **Public RU discovery:** preserve the 22 programme and 7 video-family IDs and their
+  existing Holistic House course routes, original source order and provenance. Present
+  both through the **existing** photo-left `AcademyCourseCardList`, with local course
+  artwork or the actual lesson video poster, a title, original-language label and
+  details/open action. The first 8 text programme records remain collapsible to 22.
+- **Publication honesty:** Russian historical *programme descriptions* are flagged as
+  historical/archival material; their live enrolment and presence of videos are **not**
+  asserted. Seven original video families already have source-linked video IDs, but
+  playback cannot be inferred from an indexed YouTube link. This change does not activate
+  a new course, record progress, create a duplicate enrolment, import media, or charge.
+- **Source preservation:** only public listing selection changes; historical deep links,
+  editorial English translations and original provenance are still retained for existing
+  bookmarks. Sitemap entries use the same locale-source filtered directory records.
+- **Checks required:** focused Node tests, ESLint, TypeScript and production build;
+  WebKit/Chromium screenshots at 320/375/390/430 px for RU photo cards and EN/ES
+  absence; original video playback separately needs provider-backed/browser checks.
+  Deploy only to `codex/public-book-library` and confirm Vercel READY exact production
+  SHA plus canonical `holistichouse.vercel.app` alias.
+
+This policy supersedes any interpretation of the 2026-10-05 **translation parity** as
+permission to advertise Russian recordings as if English-speaking course content exists.
+English archive translations remain source/context reference, not an English course offer.

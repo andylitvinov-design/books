@@ -12,3 +12,18 @@
 /* Full poster can navigate to the original public YouTube source. */
 .poster{text-decoration:none}
 .poster:hover{text-decoration:none}
+
+/* Compact playable introductions in the top section of the approved service. */
+.inService{width:100%;max-width:680px;margin:19px 0 21px;padding:0}
+.inService .heading{margin-bottom:8px}
+.inService .heading h2{margin:4px 0;font:700 16px/1.3 system-ui,sans-serif;color:#f5fffb}
+.inService .eyebrow{color:#abddd4;font-size:11px}
+.inService .screen{aspect-ratio:16/7;max-height:300px;box-shadow:0 8px 24px #001a2c33;border:1px solid #e5ffff55}
+.inService .note{color:#daf2ea}
+.languages{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}
+.languages button{min-height:38px;padding:7px 13px;border:1px solid #b7d5ca;border-radius:999px;background:#fff;color:#345a55;font-size:12px;font-weight:700;cursor:pointer}
+.languages button[aria-pressed=true]{background:#dbeee4;color:#174e48;border-color:#69b5a1}
+.audioScreen{aspect-ratio:auto!important;height:145px!important}
+.audioPlayer{display:grid;place-items:center;padding:18px;width:100%;height:100%}
+.audioPlayer audio{width:100%;max-width:580px}
+@media(max-width:640px){.inService{margin:13px 0 16px}.inService .screen:not(.audioScreen){aspect-ratio:16/9}.languages button{min-height:40px}}

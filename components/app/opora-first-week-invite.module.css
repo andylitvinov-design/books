@@ -1,0 +1,65 @@
+/* One short, self-contained pre-enrolment slide for guest and signed-in OPORA entry.
+   On 320–430px iPhones the seven subjects remain above the single consent CTA. */
+.slide{box-sizing:border-box;display:grid;gap:10px;width:min(100%,740px);min-width:0;margin:0 auto;padding:clamp(12px,2.5vw,22px);
+  border:1px solid #c5dfdb;border-radius:20px;background:linear-gradient(140deg,#f6fcf9,#fffaf3);
+  color:#21465a;box-shadow:0 10px 30px #22584e12}
+.slide *{box-sizing:border-box}
+.header{display:grid;grid-template-columns:minmax(0,1fr) 100px;align-items:center;gap:12px;min-width:0}
+.intro{min-width:0}.kicker{display:block;color:#207b83;font-size:10px;font-weight:850;letter-spacing:.1em}
+.header h1{margin:4px 0 5px!important;color:#183e51!important;font:500 clamp(24px,3.5vw,32px)/1.12 Georgia,serif!important;letter-spacing:-.025em}
+.header p{margin:0!important;color:#506a6e!important;font-size:clamp(12px,1.55vw,14px)!important;line-height:1.35!important}
+.photo{display:block;width:100%;height:106px;border-radius:13px;background:#e9f2ed;object-fit:contain}
+.week h2{margin:0 0 7px!important;font-size:14px!important;line-height:1.2!important;color:#2c6a66!important;font-weight:850!important}
+.days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;list-style:none;padding:0!important;margin:0!important}
+.days li{display:grid;grid-template-columns:25px minmax(0,1fr);align-items:center;gap:6px;min-width:0;min-height:40px;
+  padding:5px 7px;border:1px solid #d9e7e0;border-radius:10px;background:#fffefbdc}
+.dayNumber{display:grid;place-items:center;width:25px;height:25px;border-radius:9px;background:#e7f1e9;color:#387869;font-size:11px;font-weight:850;font-variant-numeric:tabular-nums}
+.days strong{display:block;min-width:0;overflow-wrap:break-word;color:#304e58;font-size:clamp(11.5px,1.6vw,13px);font-weight:750;line-height:1.24}
+.routeNote{margin:0!important;color:#587274!important;font-size:11.5px!important;line-height:1.35!important}
+.accept{display:flex;justify-content:center;align-items:center;gap:9px;width:100%;min-height:48px;padding:10px 12px;
+  border:1px solid #7d2c46;border-radius:12px;background:#89334e;color:#fff;cursor:pointer;font:800 14px/1.25 system-ui,-apple-system,sans-serif;text-align:center;box-shadow:0 3px 0 #61243c}
+.accept:hover:not(:disabled){background:#702a42}.accept:disabled{opacity:.65;cursor:wait}
+.accept svg{flex:none}
+.accept:focus-visible,.explore:focus-visible,.error button:focus-visible{outline:3px solid #b46720;outline-offset:3px}
+.privacy{display:flex;align-items:flex-start;gap:6px;margin:0!important;color:#66797a!important;font-size:10.5px!important;line-height:1.3!important}
+.privacy svg{flex:none;margin-top:1px}
+.explore{justify-self:start;color:#257c84!important;text-decoration:underline!important;text-underline-offset:2px;font-size:11.5px;font-weight:750}
+.error{margin:0!important;border:1px solid #e1acae;background:#fff2f1;border-radius:9px;padding:7px 9px;color:#80343b!important;font-size:12px!important}
+.error button{margin-left:8px;color:inherit;border:0;background:transparent;text-decoration:underline;cursor:pointer}
+@media(max-width:470px){
+  .slide{gap:8px;padding:12px;border-radius:14px}
+  .header{grid-template-columns:minmax(0,1fr) 67px;gap:7px}
+  .header h1{font-size:clamp(23px,6vw,27px)!important;line-height:1.08!important}
+  .header p{font-size:11.5px!important;line-height:1.29!important}
+  .photo{height:75px;border-radius:9px}
+  .week h2{font-size:12.5px!important;margin-bottom:5px!important}
+  .days{gap:5px}
+  .days li{min-height:40px;padding:4px;gap:4px;grid-template-columns:21px minmax(0,1fr);border-radius:8px}
+  .dayNumber{width:21px;height:23px;border-radius:7px;font-size:10px}
+  .days strong{font-size:11.5px;line-height:1.18}
+  .routeNote{font-size:10.5px!important;line-height:1.24!important}
+  .accept{min-height:46px;font-size:13px}
+  .privacy{font-size:10px!important;line-height:1.2!important}
+  .explore{font-size:11px}
+}
+@media(max-width:350px){
+  .slide{padding:9px;gap:6px}
+  .header h1{font-size:22px!important}
+  .header p{font-size:11px!important}
+  .days li{min-height:37px}
+  .days strong{font-size:11px}
+  .accept{min-height:44px}
+}
+@media(max-height:670px) and (max-width:470px){
+  .slide{gap:5px;padding:9px}
+  .header h1{font-size:22px!important;margin:3px 0!important}
+  .header p{font-size:11px!important;line-height:1.2!important}
+  .photo{height:60px}
+  .days{gap:3px}
+  .days li{min-height:35px;padding:3px}
+  .days strong{font-size:11px;line-height:1.13}
+  .routeNote{font-size:10px!important;line-height:1.18!important}
+  .accept{min-height:43px}
+  .privacy{font-size:9.5px!important}
+}
+@media(prefers-reduced-motion:reduce){.slide *{transition:none!important;animation:none!important}}

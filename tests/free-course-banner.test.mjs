@@ -26,6 +26,7 @@ const loaded = { exports: {} }
 runInNewContext(compiled, {
   exports: loaded.exports,
   require: name => name === 'next/link' ? Link
+    : name === './motivator-mind' ? { MotivatorMind: () => null }
     : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
       : require(name),
 })
@@ -102,6 +103,7 @@ test('the actual report renders the optional banner without skill mappings or co
     exports: reportModule.exports,
     require: name => name === 'react' ? isolatedReactState
       : name === './free-course-banner' ? { FreeCourseBanner }
+      : name === './motivator-mind' ? { MotivatorMind: () => null }
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
@@ -156,6 +158,7 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
   const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
     'react': isolatedReactState,
     './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
+    './motivator-mind': { MotivatorMind: () => null },
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
     '@/lib/assessments/result-overview': { assessmentResultOverview },

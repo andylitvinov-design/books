@@ -505,3 +505,10 @@
   }
   .playerOverlay[data-course-quest-one-screen] .guidedCard{padding:9px}
 }
+
+/* Keep the history action obvious on the mobile learning-path screen. */
+.previousLesson{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;
+  border:1px solid #9ddbdc;border-radius:15px;background:#e6f8f7;color:#116f80;
+  padding:10px 14px;font:750 13px/1.35 system-ui,-apple-system,sans-serif;cursor:pointer}
+.previousLesson svg{flex:none}.previousLesson:focus-visible{outline:3px solid #168998;outline-offset:2px}
+.previousLesson:disabled{opacity:.55;cursor:wait}

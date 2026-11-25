@@ -1,0 +1,71 @@
+.page{width:100%;min-width:0;min-height:100vh;overflow-x:clip;background:#f8f3e9;color:#2c4541}
+.siteHeader{max-width:1280px;margin:0 auto;padding:0 clamp(12px,3vw,32px)}
+.main{max-width:1100px;margin:0 auto;padding:18px clamp(14px,3vw,28px) 90px}
+.back,.secondary{display:inline-flex;align-items:center;gap:7px;min-height:44px;
+  font-size:13px;font-weight:800;color:#2c6a65;text-decoration:none}
+.back:hover,.secondary:hover{color:#8a3554}
+.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);overflow:hidden;
+  min-height:400px;background:#fffdf8;border:1px solid #e1d5c5;border-radius:21px;
+  margin-top:12px;box-shadow:0 8px 24px #523f3012}
+.heroText{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:13px;
+  padding:clamp(22px,5vw,48px)}
+.eyebrow{font-size:10px;letter-spacing:.14em;color:#628477;font-weight:850;margin:0}
+.category{color:#82593f;font-size:13px;font-weight:700;margin:0}
+.hero h1{font:400 clamp(34px,4.3vw,57px)/1.08 Georgia,"Times New Roman",serif;color:#293b38;letter-spacing:-.04em;max-width:680px;margin:0}
+.intro{font-size:clamp(15px,1.7vw,18px);line-height:1.5;color:#52645e;margin:0}
+.heroPhoto{position:relative;min-height:370px;background:#e3e7df}
+.heroPhoto img{object-fit:cover;object-position:center}
+.meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:#446c65;font-size:14px;font-weight:750}
+.meta span{display:inline-flex;align-items:center;gap:7px}
+.meta strong{font-size:16px;border-radius:22px;background:#e2f1e7;color:#206456;padding:8px 13px}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:49px;
+  border:1px solid #85364e;border-radius:12px;background:#85364e;color:white;
+  padding:11px 18px;font-size:14px;font-weight:800;text-align:center;text-decoration:none}
+.primary:hover{background:#702c41;color:white}
+.section{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(220px,.6fr);
+  gap:20px;padding:32px 0;border-bottom:1px solid #e1d6c9}
+.section h2{font:400 clamp(27px,3vw,38px)/1.2 Georgia,"Times New Roman",serif;color:#30433d;margin:0 0 12px}
+.section p{font-size:15px;line-height:1.58;color:#52645f;margin:0 0 13px}
+.sectionText{min-width:0}
+.result{padding:23px;background:#e9f3ec;border:1px solid #d2e6d7;border-radius:16px;align-self:start}
+.result span{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:850;color:#247165}
+.result p{margin:12px 0 0;color:#345b53}
+.full{grid-column:1/-1}
+.small{font-size:12px!important;color:#62817a!important}
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+  padding:0;margin:18px 0 0;list-style:none}
+.steps li{display:grid;grid-template-columns:36px minmax(0,1fr);gap:11px;
+  align-items:flex-start;background:#fffefa;border:1px solid #e0d6cb;border-radius:13px;padding:16px}
+.index{font-size:11px;font-weight:900;color:#23776b;background:#e7f4eb;border-radius:10px;
+  width:34px;height:34px;display:grid;place-items:center}
+.steps strong{font-size:12px;color:#6c5241}
+.steps p{font-size:14px;line-height:1.5;margin:7px 0 0;color:#355451}
+.examples{display:grid;gap:9px;margin:14px 0 0;padding-left:24px}
+.examples li{font-size:15px;color:#405a51;line-height:1.5}
+.bottomActions{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin-top:19px}
+:where(.page) a:focus-visible{outline:3px solid #068c8a;outline-offset:3px}
+@media(max-width:720px){
+ .siteHeader{padding-inline:10px}
+ .main{width:100%;max-width:none;padding:8px 0 calc(116px + env(safe-area-inset-bottom))}
+ .back{margin:0 12px}
+ .hero{grid-template-columns:1fr;border-left:0;border-right:0;border-radius:0;margin-top:8px;min-height:0}
+ .heroText{padding:20px 18px 23px}
+ .hero h1{font-size:clamp(31px,8vw,42px)}
+ .intro{font-size:14px}
+ .heroPhoto{min-height:180px;order:-1}
+ .section{grid-template-columns:1fr;padding:24px 13px;gap:12px}
+ .section h2{font-size:28px}
+ .section p{font-size:14px}
+ .result{padding:17px}
+ .steps{grid-template-columns:1fr;margin-top:12px}
+ .steps li{padding:12px 13px}
+ .bottomActions{gap:10px}
+ .bottomActions .primary{flex:1;min-width:0}
+}
+@media(max-width:360px){
+ .heroText{padding:18px 12px}
+ .heroPhoto{min-height:155px}
+ .section{padding-inline:10px}
+ .hero h1{font-size:30px}
+ .primary{font-size:13px;padding:9px 12px}
+}

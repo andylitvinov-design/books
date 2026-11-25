@@ -123,6 +123,7 @@ export function EnergyworkReikiCapture({ locale, course }: { locale: PublicLocal
         </a>
       ) : (
         <ContactChannelChooser
+        stayAfterSave
           locale={locale}
           whatsappUrl={enquiryHref}
           label={action}

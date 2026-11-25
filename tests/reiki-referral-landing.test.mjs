@@ -32,6 +32,9 @@ test("offer truthfully promises a free introduction after completing the course,
     "Ваши заметки не отправляются Андрею автоматически",
   ]) assert.ok(landing.includes(phrase), phrase);
   assert.match(landing, /required lesson reports and study answers/);
+  assert.match(landing, /обязательные учебные отчёты и ответить на вопросы курса/);
+  assert.match(landing, /informes y las respuestas de estudio requeridos/);
+  assert.doesNotMatch(landing, /five lesson reports and five course answers|пять учебных отчётов и ответить на пять вопросов|cinco informes de lección y cinco respuestas/);
   assert.doesNotMatch(landing, /certificate automatically|guaranteed cure|automatic attunement/i);
 });
 
@@ -64,7 +67,7 @@ test("canonical free-course entry starts at the beginning and saved learners can
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
-  assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
+  assert.match(course, /useState\(startAtExperience \? energyworkSlides\(\)\.findIndex\(\(item\) => item\.id === "welcome-02"\) : 0\)/);
   assert.match(course, /const savedIndex = Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)/);
   assert.match(course, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/);
   assert.match(course, /startAtExperience = false/);
@@ -77,8 +80,9 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   const program = read("components/academy-record-page.tsx");
   assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
   assert.match(tantra, /freeCourseBridge\} href=\{REIKI_FREE_COURSE_PATH\}/);
-  assert.match(program, /Start the 5 free lessons/);
-  assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
+  assert.match(program, /Start FREE Online Program Tantra Reiki Practitioner/);
+  assert.match(program, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
+  assert.match(routes, /if \(key === "reiki\/tantra-reiki\/free-initiation"\) return <TantraFreeInitiation/);
   assert.match(routes, /reiki-approved-sunrise-v3\.webp/);
   assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
 });
@@ -91,4 +95,19 @@ test("after saved course completion the free initiation is named, not confused w
   assert.match(course, /savedInitiationReady/);
   assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
   assert.match(course, /t\.reviewPrivate/);
+});
+
+
+test("the English referral entry describes the first-lesson Google save gate in all three locales", () => {
+  for (const phrase of [
+    "Lesson 1 is open to guests",
+    "To continue to Lesson 2 and keep your progress, sign in with Google",
+    "The course remains free",
+    "Курс открывается на английском",
+    "Чтобы перейти ко второму уроку и сохранить прогресс",
+    "Курс остаётся бесплатным",
+    "Curso en inglés · Primera lección sin registro",
+    "Para pasar a la segunda y guardar tu progreso, inicia sesión con Google",
+    "El curso sigue siendo gratis",
+  ]) assert.ok(landing.includes(phrase), phrase);
 });

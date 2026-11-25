@@ -1,0 +1,64 @@
+/* Reuse the approved Home photo-left offer card, controls, expansion and phone breakpoints.
+   Only the themed section wrapper lives here: avoid a second card layout. */
+.section {
+  --accent: #326a63;
+  --border: #cbded5;
+  --wash: #f0f7f2;
+  box-sizing: border-box;
+  width: min(1050px, calc(100% - 24px));
+  min-width: 0;
+  margin: 25px auto 15px;
+  padding: clamp(15px, 2.8vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: linear-gradient(125deg, var(--wash), #fffdfa 70%);
+  color: #3c3932;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.section *, .section *::before, .section *::after { box-sizing: border-box; }
+.section[data-goal-support-theme="love"] {
+  --accent: #7d465a;
+  --border: #e8d2dc;
+  --wash: #fbf2f5;
+}
+.section[data-goal-support-theme="business"] {
+  --accent: #79543c;
+  --border: #e5d6c4;
+  --wash: #f9f3e9;
+}
+.header { margin: 0 0 14px; }
+.kicker {
+  margin: 0 0 6px; color: var(--accent);
+  font: 800 10px/1.4 Arial, Helvetica, sans-serif;
+  letter-spacing: .13em;
+}
+.header h2 {
+  margin: 0; color: var(--accent);
+  font: 400 clamp(28px, 3.5vw, 39px)/1.12 Georgia, "Times New Roman", serif;
+  letter-spacing: -.025em; text-wrap: balance;
+}
+.header > p:last-child {
+  margin: 7px 0 0; color: #6e665e;
+  font: 13px/1.46 Arial, Helvetica, sans-serif;
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 11px;
+}
+.footer { margin: 12px 3px 0; color: #726960; font: 11px/1.45 Arial, Helvetica, sans-serif; }
+@media (max-width: 640px) {
+  .section { width: calc(100% - 12px); margin: 15px auto 10px; padding: 13px 11px; border-radius: 19px; }
+  .header { margin-bottom: 11px; }
+  .header h2 { font-size: clamp(26px, 7.4vw, 34px); }
+  .header > p:last-child { margin-top: 5px; font-size: 12px; }
+  .grid { gap: 9px; }
+  .footer { font-size: 10.5px; }
+}
+@media (max-width: 350px) {
+  .section { padding: 11px 8px; }
+  .header h2 { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section * { animation: none !important; transition: none !important; }
+}

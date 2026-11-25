@@ -26,13 +26,15 @@ const envelopeLimit=Number(route.match(/readBody\(request,(\d+)\)/)?.[1])
 // Exercise the real send service and encryption with a transactional database
 // double. Exclusive request locks queue transactions; shared locks intentionally
 // do not. Quota reads yield so concurrent callers expose a missing exclusive lock.
-function messageDatabase(existingCount=0){
+function messageDatabase(existingCount=0,{verified=true}={}){
   const records=new Map()
   let lockTail=Promise.resolve(),transactions=0
   const transaction=async(_config,_actor,fn)=>{
     transactions++
     let release
     const db={async query(sql,params){
+      if(sql.includes("to_regprocedure('app_private.hh_consultation_messenger_verified(uuid)')"))return {rows:[{ready:true}]}
+      if(sql.includes('app_private.hh_consultation_messenger_verified($1)'))return {rows:[{verified}]}
       if(sql.includes('from app.consultation_requests r')){
         assert.equal(params[0],requestId)
         if(sql.includes('FOR UPDATE OF r')){

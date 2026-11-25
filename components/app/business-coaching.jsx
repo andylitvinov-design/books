@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
-  BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
+  BUSINESS_COURSE_INTAKE_PAUSED, BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
   BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
   businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
-import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
+import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress, businessTrackExample, businessWeekSkill } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
 
 // Decorative first-party CSS illustration: executive notebook on a walnut desk.
@@ -38,8 +38,19 @@ const copy = {
     nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
     overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
     lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
-    draftAction:'Save draft', saveContinue:'Finish & continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
-    ideaSlide:'The idea', actionSlide:'Try it', resultSlide:'My result', goalCanEdit:'You can add habits and indicators later in Edit goals.',
+    draftAction:'Save draft', saveContinue:'Save my lesson and continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
+    ideaSlide:'Skill', actionSlide:'Practice', reflectionSlide:'Reflect', resultSlide:'Result', doneSlide:'Saved',
+    learnedBefore:'Previously practised', firstSkill:'Your first practice starts here.', todaySkill:'Today’s skill',
+    focusHelp:'Optional: start with two quiet minutes. This timer does not mark the action complete.',
+    focusStart:'Start 2 minutes', focusPause:'Pause', focusReset:'Reset', focusDone:'Two minutes done. Continue the real-world task at your own pace.',
+    exampleForMyPath:'Example for my direction (optional)',
+    reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
+    reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
+    reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
+    savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised', viewSavedResult:'Read my saved result', focusWarmup:'Optional 2-minute warm-up',
+    celebrationHelp:'Your actual result is in your private journal. Review any slide or continue when ready.',
+    showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
+    goalCanEdit:'You can add habits and indicators later in Edit goals.',
     unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
     completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
@@ -93,8 +104,19 @@ const copy = {
     nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
     overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
     lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
-    draftAction:'Черновик', saveContinue:'Выполнено · далее', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
-    ideaSlide:'Идея', actionSlide:'Попробовать', resultSlide:'Мой результат', goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
+    draftAction:'Сохранить черновик', saveContinue:'Сохранить урок и продолжить', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
+    ideaSlide:'Навык', actionSlide:'Практика', reflectionSlide:'Мнение', resultSlide:'Итог', doneSlide:'Готово',
+    learnedBefore:'Ранее практиковали', firstSkill:'Это ваша первая практика.', todaySkill:'Навык на сегодня',
+    focusHelp:'Если трудно начать — попробуйте две минуты. Таймер сам по себе не означает выполнения задания.',
+    focusStart:'Начать 2 минуты', focusPause:'Пауза', focusReset:'Сброс', focusDone:'Две минуты прошли. Продолжайте реальное задание в удобном темпе.',
+    exampleForMyPath:'Пример для моего направления (по желанию)',
+    reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
+    reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
+    reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
+    savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали', viewSavedResult:'Прочитать сохранённый результат', focusWarmup:'Разминка на 2 минуты (по желанию)',
+    celebrationHelp:'Фактический результат сохранён в личном дневнике. Вы можете вернуться к любому слайду или продолжить.',
+    showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
+    goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
     unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
     completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
@@ -204,8 +226,27 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
-  const [lessonStage,setLessonStage]=useState(0) // 0 idea, 1 action, 2 private result
+  const [lessonStage,setLessonStage]=useState(0) // 0 skill, 1 action, 2 reflection, 3 result, 4 saved celebration
+  const [reflectionChoice,setReflectionChoice]=useState('')
+  const [focusRemaining,setFocusRemaining]=useState(120),[focusRunning,setFocusRunning]=useState(false)
   const course=state?.course,revision=state?.revision||0
+  // A local optional focus timer: it neither sends personal data nor marks a day completed.
+  useEffect(()=>{
+    if(!focusRunning||tab!=='today'||lessonStage!==1||course?.status!=='active'||focusRemaining===0)return
+    const timer=window.setTimeout(()=>{
+      setFocusRemaining(Math.max(0,focusRemaining-1))
+      if(focusRemaining<=1)setFocusRunning(false)
+    },1000)
+    return()=>window.clearTimeout(timer)
+  },[focusRunning,tab,lessonStage,course?.status,focusRemaining])
+  // Pause synchronously on navigation; avoid effect-driven state update loops.
+  function changeLessonStage(next){setFocusRunning(false);setLessonStage(next)}
+  function changeTab(next){setFocusRunning(false);setTab(next)}
+  useEffect(()=>{
+    const pauseOnHide=()=>{if(document.hidden)setFocusRunning(false)}
+    document.addEventListener('visibilitychange',pauseOnHide)
+    return()=>document.removeEventListener('visibilitychange',pauseOnHide)
+  },[])
   // Cosmetic preference only, never stored with the encrypted client course.
   // Restore after hydration so SSR and the first paint remain consistent.
   useEffect(()=>{
@@ -241,10 +282,12 @@ export default function BusinessCoaching({locale='en',accountId}){
         if(result.course){
           const next=Array.from({length:90},(_,i)=>i+1).find(i=>!result.course.days?.[i]?.done)||90
           setDay(next)
+          setFocusRemaining(120)
           setModuleWeek(Math.min(13,Math.ceil(next/7)))
           setDayNote(result.course.days?.[next]?.note||'')
           setDayResult(result.course.days?.[next]?.result||'')
           setDayDone(Boolean(result.course.days?.[next]?.done))
+          setReflectionChoice(result.course.days?.[next]?.reflectionChoice||'')
           setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
         }
       }
@@ -254,12 +297,19 @@ export default function BusinessCoaching({locale='en',accountId}){
   const progress=useMemo(()=>businessProgress(course),[course])
   const savedDay=course?.days?.[day]||{}
   const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
-    dayDone!==Boolean(savedDay.done)
-  const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90
+    reflectionChoice!==(savedDay.reflectionChoice||'')||dayDone!==Boolean(savedDay.done)
   const selected=businessDayResult(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
   const currentWeekProgress=businessWeekProgress(course,week)
+  const trackExample=businessTrackExample(week,course?.track,lang)
+  const transferableSkill=businessWeekSkill(week,lang)
+  const previousSkills=Array.from({length:day-1},(_,index)=>day-1-index)
+    .filter(previous=>course?.days?.[previous]?.done).slice(0,2).reverse()
+    .map(previous=>({
+      day:previous,
+      skill:course.days[previous].resultLabelSnapshot?.[lang]||businessDayResult(previous,lang).resultLabel,
+    }))
   const openedModule=businessWeekModule(moduleWeek,lang)
   const openedProgress=businessWeekProgress(course,moduleWeek)
   const baseline=course?.surveys?.[0]
@@ -291,43 +341,36 @@ export default function BusinessCoaching({locale='en',accountId}){
   function chooseDay(next){
     const previous=course?.days?.[day]||{}
     const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
-      dayDone!==Boolean(previous.done)
+      reflectionChoice!==(previous.reflectionChoice||'') || dayDone!==Boolean(previous.done)
     if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
-    setLessonStage(0)
+    setFocusRemaining(120)
+    changeLessonStage(0)
     setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
     setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
+    setReflectionChoice(course?.days?.[next]?.reflectionChoice||'')
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
-    setTab('today')
+    changeTab('today')
   }
   async function saveStart(e){
     e.preventDefault()
     if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setStartStep(1)}
+    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setStartStep(1)}
   }
   async function saveDayAndContinue(complete=false){
-    const current=day
-    const advance=complete && current<90
-    // Editing a previously completed day must not silently erase completion.
-    // An unfinished draft on a new day does not mark that day complete.
+    // Actual completion stays server-validated, and the congratulation screen
+    // opens only after a successful encrypted save. Never auto-advance on failure.
     const persistedDone=complete || Boolean(savedDay.done)
     const ok=await command('day',{
-      day:current,done:persistedDone,note:dayNote,result:dayResult,
-      contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
+      day,done:persistedDone,note:dayNote,result:dayResult,
+      reflectionChoice,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
     })
-    if(ok)setDayDone(persistedDone)
-    if(ok && advance){
-      const next=current+1
-      setDay(next)
-      setLessonStage(0)
-      setModuleWeek(Math.min(13,Math.ceil(next/7)))
-      setDayNote(course?.days?.[next]?.note||'')
-      setDayResult(course?.days?.[next]?.result||'')
-      setDayDone(Boolean(course?.days?.[next]?.done))
-      setReviewNote(course?.reviews?.[Math.min(13,Math.ceil(next/7))]?.note||'')
+    if(ok){
+      setDayDone(persistedDone)
+      if(complete)changeLessonStage(4)
     }
   }
   async function saveMetric(e) {
@@ -362,8 +405,27 @@ export default function BusinessCoaching({locale='en',accountId}){
   }
   if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
+  if(!course && BUSINESS_COURSE_INTAKE_PAUSED)return <section className={'hh-panel '+styles.root} data-business-coaching data-business-admissions-paused data-wood-mode={woodMode}>
+    <h1>{lang==='ru'?'90-дневная программа на паузе':'The 90-day programme is paused'}</h1>
+    <p>{lang==='ru'?'Мы временно закрыли новые записи. Уже сохранённые программы и результаты не удалены.':'New starts are temporarily closed. Existing private programmes and saved results are preserved.'}</p>
+    <Link className={styles.primary} href={'/'+lang+'/coaching'}>{lang==='ru'?'Начать личную коуч-сессию':'Start a Personal Coaching Session'}<ArrowRight size={17}/></Link>
+    <Link href={'/'+lang+'/app/course?view=courses'}>{lang==='ru'?'Мои курсы':'My Courses'}</Link>
+  </section>
   if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching
-    data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-course-screen="welcome">
+    data-course-visual="executive-wood-v2" data-business-immersive="reiki" data-wood-mode={woodMode} data-business-course-screen="welcome" data-business-onboarding-step={startStep}>
+    <header className={styles.immersiveHeader} data-business-onboarding-header>
+      <Link className={styles.immersiveClose} href={'/'+lang+'/app/course?view=courses'}
+        aria-label={lang==='ru'?'Закрыть курс':'Close course'}>
+        <X size={21} aria-hidden="true"/>
+      </Link>
+      <div className={styles.immersiveProgress}>
+        <small>{t.title}</small>
+        <div role="progressbar" aria-label={t.begin} aria-valuemin={0} aria-valuemax={3} aria-valuenow={startStep}>
+          <span style={{width:(startStep/3*100)+'%'}}/>
+        </div>
+      </div>
+      <span className={styles.immersiveCount}>{startStep} / 3</span>
+    </header>
     {themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -431,8 +493,35 @@ export default function BusinessCoaching({locale='en',accountId}){
       </form>
     </section>
   </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode}>
-    {themePicker}
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-business-immersive="reiki" data-wood-mode={woodMode} data-business-current-tab={tab}>
+    {tab!=='today'&&themePicker}
+    {tab==='today'&&<header className={styles.immersiveHeader} data-business-lesson-header>
+      <Link className={styles.immersiveClose} href={'/'+lang+'/app/course?view=courses'}
+        aria-label={lang==='ru'?'Закрыть курс':'Close course'}
+        onClick={event=>{
+          if(course.status==='active'&&hasUnsavedDay&&!window.confirm(t.unsavedResult))
+            event.preventDefault()
+        }}>
+        <X size={21} aria-hidden="true"/>
+      </Link>
+      <div className={styles.immersiveProgress}>
+        <small>{t.day} {day} / 90 · {t.title}</small>
+        <div role="progressbar" aria-label={t.progress} aria-valuemin={0} aria-valuemax={90} aria-valuenow={progress.completed}>
+          <span style={{width:progress.percent+'%'}}/>
+        </div>
+      </div>
+      <details className={styles.immersiveMenu}>
+        <summary aria-label={lang==='ru'?'Разделы курса':'Course sections'}
+          title={lang==='ru'?'Разделы курса':'Course sections'}>
+          <ListChecks size={20} aria-hidden="true"/>
+        </summary>
+        <div className={styles.immersiveMenuPanel}>
+          {[['today',t.today],['plan',t.plan],['survey',t.survey],['metrics',t.metrics],['report',t.report]].map(([id,label])=>
+            <button type="button" key={id} aria-current={tab===id?'page':undefined}
+              onClick={()=>changeTab(id)}>{label}<ArrowRight size={15} aria-hidden="true"/></button>)}
+        </div>
+      </details>
+    </header>}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
         <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
@@ -455,15 +544,17 @@ export default function BusinessCoaching({locale='en',accountId}){
     <nav className={styles.tabs} aria-label={t.title}>
       {[['today',t.today,BookOpen],['plan',t.plan,CalendarDays],['survey',t.survey,ClipboardCheck],
         ['metrics',t.metrics,TrendingUp],['report',t.report,Download]].map(([id,label,Icon])=>
-        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)} type="button"><Icon size={16}/>{label}</button>)}
+        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>changeTab(id)} type="button"><Icon size={16}/>{label}</button>)}
     </nav>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
-    {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
+    {notice&&<p role="status" className={tab==='today'?styles.visuallyHidden:styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
+    {course.status!=='active'&&<p className={tab==='today'?styles.visuallyHidden:styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
+    {course.status==='paused'&&tab==='today'&&<button type="button" className={styles.resumeCourse} disabled={busy} onClick={()=>void command('resume')}><PlayCircle size={16}/>{t.resume}</button>}
     {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson data-business-one-screen-lesson>
+      <div className={styles.lessonTopbar}>
       <header className={styles.moduleCompact}>
         <div><span className={styles.moduleEyebrow}>
-          {week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
+          {week===13?t.finalModule:t.week+' '+week+' / 12'} · {t.day} {day} / 90</span>
           <strong>{currentModule.title}</strong></div>
         <div className={styles.moduleStat}>
           <strong>{currentWeekProgress.complete}<span> / {currentWeekProgress.total}</span></strong>
@@ -476,6 +567,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       <details className={styles.lessonBrowse}>
         <summary><ListChecks size={16} aria-hidden="true"/>{t.courseMap}
           <span>{t.day} {day} / 90</span><ChevronDown size={16} aria-hidden="true"/></summary>
+        <div className={styles.lessonBrowseContent}>
         <div className={styles.lessonNavigation}>
           <label className={styles.moduleChooser}>{t.selectModule}
             <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
@@ -484,7 +576,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               </option>)}
             </select>
           </label>
-          <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);setTab('plan')}}>
+          <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);changeTab('plan')}}>
             <ListChecks size={18} aria-hidden="true"/>{t.courseMap}<ArrowRight size={15} aria-hidden="true"/>
           </button>
         </div>
@@ -507,29 +599,80 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" disabled={busy||course.status!=='active'}
           onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
       </details>
+        </div>
       </details>
+      </div>
       <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
-        {[t.ideaSlide,t.actionSlide,t.resultSlide].map((label,index)=>
+        {[t.ideaSlide,t.actionSlide,t.reflectionSlide,t.resultSlide,t.doneSlide].map((label,index)=>
           <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
-            onClick={()=>setLessonStage(index)} aria-label={label}>
+            disabled={index===4&&(!savedDay.done||hasUnsavedDay)}
+            onClick={()=>changeLessonStage(index)} aria-label={label}>
             <span>{index+1}</span>{label}
           </button>)}
       </nav>
       <article className={styles.lessonSlide} data-business-lesson-slide data-lesson-stage={lessonStage}>
+        <div className={styles.lessonPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/books-library.webp" alt=""
+            width={1000} height={620} decoding="async" loading="eager"/>
+        </div>
         <div className={styles.lessonIdentity}>
           <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
         </div>
-        {lessonStage===0&&<div className={styles.oneIdea}>
-          <h2>{selected.resultLabel}</h2>
-          <p>{selected.intro}</p>
+        {lessonStage===0&&<div className={styles.oneIdea} data-business-skill-brief>
+          <h2>{t.todaySkill}</h2>
+          <p className={styles.skillTarget}>{transferableSkill}</p>
+          {previousSkills.length>0&&<details className={styles.skillRecap}>
+            <summary>{t.learnedBefore}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <div className={styles.skillRecapChips}>
+              {previousSkills.map(item=><span key={item.day}>
+                <CheckCircle2 size={14} aria-hidden="true"/>{item.skill}
+              </span>)}
+            </div>
+          </details>}
         </div>}
-        {lessonStage===1&&<div className={styles.oneIdea}>
+        {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
           <h2>{t.practice}</h2>
           <p>{selected.action}</p>
           <small><CheckCircle2 size={16} aria-hidden="true"/>{t.doneWhen}: {selected.doneWhen}</small>
+          {trackExample&&<details className={styles.trackExample} data-business-path-example>
+            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <p>{trackExample}</p>
+          </details>}
+          <details className={styles.focusTimer} data-business-focus-timer>
+            <summary>{t.focusWarmup}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <span>{t.focusHelp}</span>
+            <div className={styles.focusTimerRow}>
+              <strong role="timer" aria-live="off">
+                {String(Math.floor(focusRemaining/60)).padStart(2,'0')}:{String(focusRemaining%60).padStart(2,'0')}
+              </strong>
+              <div className={styles.focusControls} role="group" aria-label={t.focusStart}>
+                <button type="button" disabled={course.status!=='active'||focusRemaining===0}
+                  onClick={()=>setFocusRunning(value=>!value)}>
+                  {focusRunning?<PauseCircle size={17}/>:<PlayCircle size={17}/>}
+                  {focusRunning?t.focusPause:t.focusStart}
+                </button>
+                <button type="button" onClick={()=>{setFocusRunning(false);setFocusRemaining(120)}}>
+                  {t.focusReset}
+                </button>
+              </div>
+            </div>
+            {focusRemaining===0&&<small role="status">{t.focusDone}</small>}
+          </details>
         </div>}
-        {lessonStage===2&&<div className={styles.oneIdea}>
+        {lessonStage===2&&<div className={styles.oneIdea} data-business-one-reflection>
+          <h2>{t.reflectionTitle}</h2>
+          <p className={styles.reflectionFocus}>{selected.resultLabel}</p>
+          <p>{t.reflectionPrompt}</p>
+          <div className={styles.reflectionChoices} role="group" aria-label={t.reflectionPrompt}>
+            {[['agree',t.reflectAgree],['disagree',t.reflectDisagree],['unsure',t.reflectUnsure]].map(([value,label])=>
+              <button key={value} type="button" aria-pressed={reflectionChoice===value}
+                onClick={()=>setReflectionChoice(current=>current===value?'':value)}
+                disabled={course.status!=='active'} data-business-reflection-choice={value}>{label}</button>)}
+          </div>
+          <small>{t.reflectOptional}</small>
+        </div>}
+        {lessonStage===3&&<div className={styles.oneIdea} data-business-private-result>
           <h2>{t.myResult}</h2>
           <p>{selected.resultLabel}</p>
           <label className={styles.textareaLabel}>
@@ -544,40 +687,58 @@ export default function BusinessCoaching({locale='en',accountId}){
                 placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
             </label>
           </details>
-          {course.days?.[day]?.done&&!course.days?.[day]?.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+          {savedDay.done&&!savedDay.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+        </div>}
+        {lessonStage===4&&savedDay.done&&!hasUnsavedDay&&<div className={styles.oneIdea+' '+styles.savedCelebration}
+          data-business-saved-celebration role="status">
+          <span className={styles.celebrationMark}><CheckCircle2 size={26} aria-hidden="true"/></span>
+          <h2>{t.savedCelebration}</h2>
+          <strong>{t.practisedSkill}</strong>
+          <p className={styles.skillTarget}>{transferableSkill}</p>
+          {savedDay.result&&<details className={styles.savedResult}>
+            <summary>{t.viewSavedResult}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <blockquote>{savedDay.result}</blockquote>
+          </details>}
+          <small>{t.returnLater}</small>
         </div>}
       </article>
       <div className={styles.lessonSaveBar} data-business-lesson-save>
-        {lessonStage>0&&<button className={styles.backButton} type="button"
-          onClick={()=>setLessonStage(v=>Math.max(0,v-1))}>
-          <ArrowLeft size={16}/>{t.previousStep}</button>}
-        {lessonStage<2?<button className={styles.primary} type="button"
-          onClick={()=>setLessonStage(v=>Math.min(2,v+1))}>
-          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>:
-          <>
-            <span className={styles.lessonSaveState} aria-live="polite">
-              {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
-                <CheckCircle2 size={17} aria-hidden="true"/>}
-              {hasUnsavedDay?t.unsaved:t.alreadySaved}
-            </span>
-            <button type="button" className={styles.draftButton}
-              disabled={busy||course.status!=='active'||!hasUnsavedDay}
-              onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
-            <button type="button" className={styles.primary}
-              disabled={busy||course.status!=='active'||
-                (!savedLessonCanContinue&&dayResult.trim().length<6)||
-                (!hasUnsavedDay&&day===90&&Boolean(savedDay.done))}
-              onClick={()=>{if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue(true)}}>
-              {savedLessonCanContinue?t.nextLesson:day<90?t.saveContinue:t.saveAction}
-              {day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
-            </button>
-          </>}
+        <button className={styles.backButton} type="button" disabled={lessonStage===0&&day===1}
+          onClick={()=>lessonStage>0?changeLessonStage(value=>value-1):chooseDay(day-1)}>
+          <ArrowLeft size={16} aria-hidden="true"/>{t.previousStep}</button>
+        {lessonStage<3&&<button className={styles.primary} type="button"
+          onClick={()=>changeLessonStage(value=>Math.min(3,value+1))}>
+          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>}
+        {lessonStage===3&&<>
+          <span className={styles.lessonSaveState} aria-live="polite">
+            {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
+              <CheckCircle2 size={17} aria-hidden="true"/>}
+            {hasUnsavedDay?t.unsaved:t.alreadySaved}
+          </span>
+          <button type="button" className={styles.draftButton}
+            disabled={busy||course.status!=='active'||!hasUnsavedDay}
+            onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
+          <button type="button" className={styles.primary}
+            disabled={busy||(!savedDay.done&&!hasUnsavedDay&&course.status!=='active')||
+              ((!savedDay.done||hasUnsavedDay)&&
+                (course.status!=='active'||dayResult.trim().length<6))}
+            onClick={()=>{
+              if(savedDay.done&&!hasUnsavedDay)changeLessonStage(4)
+              else void saveDayAndContinue(true)
+            }}>
+            {savedDay.done&&!hasUnsavedDay?t.showSaved:t.saveContinue}
+            <ArrowRight size={17} aria-hidden="true"/>
+          </button>
+        </>}
+        {lessonStage===4&&<button type="button" className={styles.primary}
+          onClick={()=>day<90?chooseDay(day+1):changeTab('report')}>
+          {day<90?t.nextLesson:t.report}<ArrowRight size={17} aria-hidden="true"/>
+        </button>}
       </div>
-      {lessonStage===2&&dayResult.trim().length>0&&dayResult.trim().length<6&&
+      {lessonStage===3&&dayResult.trim().length>0&&dayResult.trim().length<6&&
         <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
-
     </div>}
-    {course.status==='active'&&<div className={styles.goalEditor}>
+    {course.status==='active'&&tab!=='today'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
         setGoal({...course.goal,target:course.goal.target??''})
         setGoalEditing(true)
@@ -728,6 +889,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               {record.result?<span> — {record.result}</span>:
                 record.done?<span> — {t.legacyCompletion}</span>:null}
               {record.note?<span> · {t.notes}: {record.note}</span>:null}
+              {record.reflectionChoice&&<span> · {t.reflectionSlide}: {({agree:t.reflectAgree,disagree:t.reflectDisagree,unsure:t.reflectUnsure})[record.reflectionChoice]||'—'}</span>}
             </p>)}
           </section>
         })}
@@ -749,7 +911,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       <small className={styles.finePrint}>{t.personal} · {t.reportIntro} · {t.differenceNote}</small>
       <p className={styles.finePrint}><a href="/api/app/export" rel="nofollow">{t.export}</a></p>
     </div>}
-    <footer className={styles.footer}>
+    {tab!=='today'&&<footer className={styles.footer}>
       <span><LockKeyhole size={15}/>{t.privacy}</span>
       <div className={styles.footerActions}>
         {course.status==='active'&&<button type="button" disabled={busy} onClick={()=>command('pause')}><PauseCircle size={17}/>{t.pause}</button>}
@@ -760,12 +922,12 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" className={styles.deleteCourse} disabled={busy} onClick={()=>{
           if(window.confirm(t.deleteWarning)){
             void command('delete',{confirmed:true}).then(ok=>{
-              if(ok){setGoal(initialGoal);setConsent(false);setAnswers({});setTab('today')}
+              if(ok){setGoal(initialGoal);setConsent(false);setAnswers({});changeTab('today')}
             })
           }
         }}>{t.deleteCourse}</button>
       </div>
       <Link href={'/'+lang+'/app/portfolio'}>{t.back} · {lang==='ru'?'Отчёты':'Reports'}</Link>
-    </footer>
+    </footer>}
   </section>
 }

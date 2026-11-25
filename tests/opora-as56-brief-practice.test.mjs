@@ -1,9 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const words={
   ru:{next:'Продолжить',previous:'Назад',help:'Показать мягкую подсказку',pause:'Пауза',back:'Вернуться',
@@ -59,9 +62,10 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
     try{
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
-      for(let i=0;i<(day===1?7:2);i++)await f.click(t.next)
-      assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-      assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
+      await advanceOporaTo(f.h,'practice',t.next)
+      const current=oporaAs60VariedDay(day,locale)
+      assert.ok(textOf(f.h.tree).includes(current.title),'Current 3-step practice has its own day title')
+      assert.ok(textOf(f.h.tree).includes(current.practice),'Practice card shows the real AS-6.0 experiment')
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
       await f.click(t.help)
@@ -83,9 +87,9 @@ for(const locale of ['ru','en','es']){
     test(`AS5.7 ${locale}: neutral return from ${source}, hint initially ${priorHelp?'open':'closed'}, remains safe through Back`,async()=>{
       const f=fixture(locale)
       try{
-        await f.click(t.next);await f.click(t.next)
+        await advanceOporaTo(f.h,'practice',t.next)
         if(priorHelp)await f.click(t.help)
-        if(source!=='practice')await f.click(t.next)
+        if(source!=='practice')await advanceOporaTo(f.h,'feel',t.next)
         await f.click(source==='discomfort'?t.hard:t.pause)
         await f.click(t.neutral);assertNeutral(f,locale)
         if(source!=='practice')await f.click(t.previous)
@@ -117,7 +121,8 @@ for(const locale of ['ru','en','es']){
   test(`AS5.7 ${locale}: ordinary Go back preserves an explicitly opened hint without saving`,async()=>{
     const f=fixture(locale)
     try{
-      await f.click(t.next);await f.click(t.next);await f.click(t.help);await f.click(t.pause);await f.click(t.back)
+      await advanceOporaTo(f.h,'practice',t.next)
+      await f.click(t.help);await f.click(t.pause);await f.click(t.back)
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],true)
       await f.click(t.pause);await f.click(t.end)
       assert.equal(f.saves,0);assert.equal(f.closes,1);assert.deepEqual(f.data,f.original)
@@ -126,6 +131,7 @@ for(const locale of ['ru','en','es']){
 }
 test('AS5.7 validates current trilingual content without resurrecting superseded long guidance',()=>{
   assert.equal(oporaExperienceGuidesValid(),true)
+  assert.equal(oporaAs58Valid(),true)
   assert.equal(OPORA_EXPERIENCE_DESIGN_VERSION,'as-5.7-soft-morning')
   for(const day of [0,15,-1,1.5,null,undefined,'1'])assert.equal(oporaExperienceGuide(day),null)
   assert.match(oporaExperienceGuide(12,'ru'),/мысль, что…/u)

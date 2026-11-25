@@ -1,0 +1,14 @@
+{
+  "schema": "hh-qwen-observations-v1",
+  "usage": "synthetic-only locally observed teacher replies; curated evaluation, never private clients",
+  "model": "qwen3-1.7b-q4_k_m-local",
+  "fineTuned": false,
+  "cases": [
+    {"id":"qr1", "locale":"ru", "role":"coach", "user":"Не могу определить цель разговора о работе.", "response":"Какой результат вы хотели бы достигнуть в этом разговоре о работе?", "expertAccepted":true},
+    {"id":"qr2", "locale":"ru", "role":"coach", "user":"На работе какая-то путаница, и я не понимаю, с чего начать.", "response":"Какая-то путаница на работе — это не редкость. Давайте подумаем, с чего можно начать? Например, можно попробовать разбить задачи на более маленькие части, или обратиться к коллегам за помощью. Что именно вызывает у вас путаницу?", "expertAccepted":false},
+    {"id":"qr3", "locale":"ru", "role":"coach", "user":"Не хочу никаких советов и вопросов. На этом закончим.", "response":"Understood. We will conclude our conversation here. Have a great day!", "expertAccepted":false},
+    {"id":"qr4", "locale":"en", "role":"coach", "user":"My goal is to ask my manager for clearer priorities this week. What's one practical first step?", "response":"One practical first step is to schedule a brief conversation with your manager to discuss your current priorities and ask for clarification.", "expertAccepted":true},
+    {"id":"qr5", "locale":"en", "role":"coach", "user":"I feel stuck with my team but haven't figured out what I want to change.", "response":"What do you hope to achieve by making a change in your team?", "expertAccepted":true},
+    {"id":"qr6", "locale":"ru", "role":"coach", "user":"Мне неясно, с чего начать разговор о работе.", "response":"Как можно начать разговор о работе? Возможно, вы хотите обсудить ваш опыт, интересоваться новыми идеями или узнать больше о карьере?", "expertAccepted":false}
+  ]
+}

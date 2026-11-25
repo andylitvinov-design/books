@@ -1,0 +1,45 @@
+.root{border:1px solid #cfe1da;border-radius:24px;background:linear-gradient(147deg,#f7fbf8 0%,#f4f6ff 100%);padding:clamp(16px,4vw,27px);margin:20px 0 30px;color:#243e3b;box-shadow:0 10px 34px rgba(11,61,58,.06)}
+.heading{display:flex;gap:13px;align-items:flex-start;margin-bottom:20px}
+.symbol{flex:0 0 46px;height:46px;border-radius:15px;background:#dbefe3;color:#1b6852;display:grid;place-items:center}
+.eyebrow{display:block;font-size:12px;letter-spacing:.09em;font-weight:750;color:#367362;margin:3px 0 5px}
+.heading h2{font-size:clamp(22px,4vw,27px);line-height:1.2;margin:0 0 6px;color:#173b35}
+.heading p{font-size:15px;margin:0;line-height:1.5;color:#526a65}
+.status{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 14px;background:#e6f5ed;border-radius:13px;font-size:14px;font-weight:650}
+.status span,.status a{display:inline-flex;align-items:center;gap:7px}
+.status a{color:#145f51;text-decoration:underline;text-underline-offset:3px}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:20px}
+.controls label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;min-width:0}
+.controls .full{grid-column:1/-1}
+.controls select,.controls input{appearance:auto;width:100%;min-width:0;background:#fff;border:1px solid #bdd5d0;border-radius:11px;padding:12px;font:inherit;font-size:16px;color:#243e3b;min-height:47px}
+.controls :is(input,select):focus-visible,.actions button:focus-visible{outline:3px solid #89c8bd;outline-offset:2px}
+.preview{margin-top:21px;padding:12px;border:1px solid #d8e7e1;background:#fff;border-radius:18px}
+.previewHeading{display:flex;align-items:center;gap:8px;padding:0 4px 10px;color:#326955;font-size:14px}
+.previewHeading span{margin-left:auto;color:#6c817b;font-size:13px}
+.bubble{background:#e9f5ec;padding:17px;border-radius:15px 15px 15px 4px;display:flex;flex-direction:column;gap:8px;line-height:1.5}
+.caption,.quote>span{color:#416960;font-size:13px;font-weight:700}
+.bubble strong{font-size:17px;line-height:1.43;overflow-wrap:anywhere}
+.quote{padding:13px 0;border-top:1px solid #d2e3d9;border-bottom:1px solid #d2e3d9;margin-top:4px}
+.quote p{font-size:18px;font-weight:650;line-height:1.52;margin:6px 0;color:#24443b}
+.bubble small{font-size:14px;color:#536a62}
+.fakeButton{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#1b6554;padding:11px 12px;border-radius:9px;font-weight:700;font-size:14px;margin-top:5px}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:22px 0 15px;font-size:14px;line-height:1.48;color:#3a5950;cursor:pointer}
+.consent input{width:20px;height:20px;accent-color:#216c56;flex:0 0 20px;margin-top:1px}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.actions button{border:0;cursor:pointer;padding:13px 17px;border-radius:12px;font-size:16px;font-weight:740;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:47px}
+.primary{background:#1f6651;color:#fff;flex:1 1 210px}
+.secondary{background:#fff;border:1px solid #b9d6ca!important;color:#285b4c}
+.actions button:disabled{opacity:.45;cursor:not-allowed}
+.hint{font-size:13px;line-height:1.5;color:#667972;margin:10px 0}
+.future{display:flex;gap:9px;font-size:13px;line-height:1.5;border-top:1px solid #dbe9e1;padding-top:16px;margin-top:19px;color:#62766e}
+.future svg{flex-shrink:0;margin-top:2px}
+.privacy{display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.5;color:#60756d;margin-top:10px}
+.privacy svg{flex-shrink:0}
+.error{color:#9a2a36;font-size:14px}
+.notice{font-size:14px;font-weight:650;color:#206b4a}
+@media(max-width:440px){.root{padding:16px;border-radius:19px}.controls{gap:11px}.heading{gap:10px}.symbol{flex-basis:40px;height:40px}.preview{padding:9px}.bubble{padding:14px}.quote p{font-size:17px}}
+
+.photoFrame{margin:0 0 12px;overflow:hidden;border-radius:14px;background:#ecf4ee}
+.photo{display:block;width:100%;height:auto;max-height:240px;aspect-ratio:16/9;object-fit:cover}
+.photoFrame figcaption{font-size:11px;padding:4px 10px 7px;color:#597268}
+.photoFrame a{color:inherit;text-decoration:underline}
+@media(max-width:440px){.photo{max-height:190px}.previewHeading{flex-wrap:wrap}.previewHeading span{font-size:12px}}

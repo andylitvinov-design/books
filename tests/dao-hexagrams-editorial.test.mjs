@@ -50,9 +50,9 @@ test("client draws load long new readings only after selection and both reading 
   const dir = readFileSync(new URL("../components/dao-hexagram-directory.tsx", import.meta.url), "utf8");
   assert.match(panel, /import\("@\/data\/dao-hexagrams-editorial\.mjs"\)/, "code split the initial Library bundle");
   assert.match(panel, /getDaoEditorialHexagramText\(number\)/);
-  assert.match(panel, /editorial\.text\.split/);
+  assert.match(panel, /localizedEditorial\.text\.split/);
   assert.match(pages, /getDaoEditorialHexagramText\(number\)/);
-  assert.match(pages, /editorialText\.split/);
+  assert.match(pages, /\(englishText \?\? editorialText\)\.split/);
   assert.ok(dir.includes('Новые трактовки (52)'));
   assert.ok(!/(?:fetch\(|localStorage|sessionStorage|XMLHttpRequest)/.test(panel), "the question must remain private");
 });

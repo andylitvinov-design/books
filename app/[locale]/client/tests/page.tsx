@@ -22,8 +22,8 @@ export default async function PublicTestExplorerPage({ params, searchParams }: {
     : normalizeJourneyFocus(typeof query.focus === 'string' ? query.focus : '')
   const problems = journeyProblemsForTopics(journey, chosenTopics)
   const initialPreferences = focus.length ? { focus, problems } : null
-  return <main lang={locale} style={{maxWidth:'100%',minWidth:0,overflowX:'clip'}}>
+  return <main lang={locale} className="client-entry-shell" data-cabinet-theme="daybook" style={{maxWidth:'100%',minWidth:0,overflowX:'clip'}}>
     <PublicSiteHeader locale={locale as Locale} />
-    <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} initialMode={query.mode === 'course' ? 'course' : 'tests'} initialBrowseFull={query.catalog === 'full'} />
+    <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} initialMode={query.mode === 'course' ? 'course' : 'tests'} initialBrowseFull={query.catalog === 'full'} reviewFirst />
   </main>
 }

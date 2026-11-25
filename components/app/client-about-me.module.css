@@ -1,0 +1,22 @@
+.root{padding:16px 0 18px;border-bottom:1px solid #a6b7bf55}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.heading h2{font-size:21px;line-height:1.25;margin:0}
+.count{font-size:12px;font-variant-numeric:tabular-nums;color:var(--foreground,#263b44);opacity:.72}
+.description{font-size:14px;line-height:1.5;opacity:.82}
+.tabs,.actions,.secondary{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0}
+.tabs button,.actions button,.secondary button,.group{font:inherit;cursor:pointer;color:inherit;border:1px solid #a2b3b8;border-radius:11px;background:var(--card,#fff);min-height:44px;padding:9px 12px}
+.tabs button{flex:1 1 130px;font-size:14px}.tabs .selected{color:#fff;background:#174a5e;border-color:#174a5e}
+.groupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.group{text-align:left;display:grid;gap:5px;font-size:13px;min-height:66px;padding:11px 12px}
+.group small{font-size:11px;opacity:.7}
+.question{padding:16px;border:1px solid #a6b7bf66;border-radius:14px;background:#719da30b}
+.step{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--foreground,#263b44);opacity:.75}
+.step small{font-size:12px}.step .saved{color:#146f60}
+.question label{display:block;font-weight:600;font-size:17px;line-height:1.4;margin:14px 0}
+.question textarea{font:inherit;width:100%;box-sizing:border-box;resize:vertical;min-height:96px;color:inherit;background:var(--card,#fff);border:1px solid #9cabad;border-radius:10px;padding:12px}
+.actions button{flex:1 1 125px}.actions .primary{background:#174a5e;color:#fff;border-color:#174a5e}
+.secondary{margin-bottom:0}.secondary button{font-size:13px;min-height:40px}
+.actions button:disabled,.secondary button:disabled{opacity:.45;cursor:not-allowed}
+.hint,.footer{font-size:12px;line-height:1.45;opacity:.76;margin:10px 0}
+.groupGrid .hint{grid-column:1 / -1}
+@media(max-width:370px){.groupGrid{grid-template-columns:1fr}.question{padding:12px}.question label{font-size:16px}}

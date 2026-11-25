@@ -127,7 +127,7 @@ function OptionalNumber({ label, value, onChange, t }) {
   </label>
 }
 
-export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], paused, finished, onPlay }) {
+export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], paused, finished, onPlay, loadingDay = null }) {
   const t = COPY[locale] || COPY.en
   const [selected, setSelected] = useState(null)
   const [showAllDays, setShowAllDays] = useState(false)
@@ -135,6 +135,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
   const count = Number(progress.practiceCount) || 0
   // Do not incentivize recording sensitive symptoms: only saved lessons earn XP.
   const xp = 20 * count
+  const lastCompleted = [...roadmap].reverse().find(item => item.status === 'completed' && item.day < cycle.day)
   const journeyLength = cycle.durationDays || 14
   const firstVisibleDay = Math.min(Math.max(1, cycle.day - 1), Math.max(1, journeyLength - 4))
   const visibleRoadmap = showAllDays ? roadmap : roadmap.filter(item => item.day >= firstVisibleDay && item.day < firstVisibleDay + 5)
@@ -147,6 +148,12 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         <Sparkles size={18} aria-hidden="true"/><strong>{xp}</strong><small>XP</small>
       </div>
     </header>
+    {lastCompleted && <button className={styles.previousLesson} type="button"
+      data-course-previous-lesson disabled={loadingDay !== null}
+      onClick={() => onPlay(lastCompleted.day)}>
+      <ArrowLeft size={19} aria-hidden="true"/>
+      <span>{locale==='ru'?'Вернуться к предыдущему занятию':'Review a previous lesson'} · {t.lesson} {String(lastCompleted.day).padStart(2,'0')}</span>
+    </button>}
     <div className={styles.mapProgress}><span>{t.progress}: <strong>{count}/{cycle.durationDays || 14}</strong></span>
       <progress max={cycle.durationDays || 14} value={count} aria-label={t.progress}/></div>
     <ol className={styles.path}>
@@ -176,8 +183,9 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
             <div className={styles.previewMeta}><span>{t.lesson} {String(item.day).padStart(2,'0')}</span>
               <span>{complete ? t.done : active ? t.today : item.status === 'past' ? t.missed : t.later}</span></div>
             <p className={styles.journeySummary}>{item.programmeDay?.prompt || item.outcome}</p>
-            {(active || (complete && item.day === cycle.day)) && <button type="button"
-              className={styles.primaryButton} disabled={paused} onClick={onPlay}>
+            {(active || complete) && <button type="button"
+              className={styles.primaryButton} disabled={(active&&paused)||loadingDay!==null}
+              onClick={() => onPlay(item.day)} data-course-open-day={item.day}>
               {complete ? t.revisit : t.launch}<ArrowRight size={17}/></button>}
             {!active && !complete && <small className={styles.previewHint}>
               {item.status === 'past' ? t.past : t.locked}</small>}
@@ -415,8 +423,9 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
       <footer className={styles.playerFooter}>
         {step < 5 && <>
           <div className={styles.footerRow}>
-            {step > 0 && <button type="button" className={styles.secondaryButton} disabled={pending}
-              onClick={() => { setStep(value => value - 1); setSection(0) }}><ArrowLeft size={17}/>{t.back}</button>}
+            <button type="button" className={styles.secondaryButton} disabled={pending}
+              onClick={() => { if(step===0)onClose(); else {setStep(value => value - 1);setSection(0)} }}>
+              <ArrowLeft size={17}/>{t.back}</button>
             {step === 0 && <button type="button" className={styles.secondaryButton} disabled={pending}
               onClick={() => setStep(1)}>{t.skip}</button>}
             {step === 2 && <button type="button" className={styles.secondaryButton} disabled={pending}
@@ -429,8 +438,12 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
           </button>
           <small>{t.pointsNotGrades}</small>
         </>}
-        {step === 5 && <button type="button" className={styles.primaryButton} onClick={onClose}>
-          {t.backMap}<ArrowRight size={18}/></button>}
+        {step === 5 && <>
+          <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
+            <ArrowLeft size={17}/>{t.back}</button>
+          <button type="button" className={styles.primaryButton} onClick={onClose}>
+            {t.backMap}<ArrowRight size={18}/></button>
+        </>}
       </footer>
     </div>
   </div>

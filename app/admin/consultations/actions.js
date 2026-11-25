@@ -7,7 +7,7 @@ import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
-import { parseReportMaterialIds, stageReportMaterials } from '@/lib/consultations/report-material-staging'
+import { parseReportMaterialIds, parseReportMaterialPlacements, stageReportMaterials } from '@/lib/consultations/report-material-staging'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
 import { transaction } from '@/lib/app/database'
@@ -15,7 +15,7 @@ import { selectedMaterialSnapshots } from '@/lib/clients/material-library'
 import { createClientSession, getOwnerSession, saveOwnerDraft } from '@/lib/clients/session-delivery-service'
 
 function input(formData) {
-  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'progressBefore', 'progressAfter', 'recommendationsText', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes']
+  const fields = ['patientName', 'languagePreference', 'recommendationType', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'progressBefore', 'progressAfter', 'recommendationsText', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes']
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
@@ -42,6 +42,9 @@ function safeConsultationError(error) {
   if (/language/i.test(message)) return 'Choose the report language: English or Russian.'
   if (/client|patient name/i.test(message)) return 'Choose an existing client or complete the new client details.'
   if (/material|APP_UNAVAILABLE|database/i.test(message)) return 'The selected materials are unavailable. Refresh the library selection and try again.'
+  if (/General report needs an analysis/i.test(message)) return 'Add an analysis or recommendation before saving the consultation report.'
+  if (/General report cannot contain remedy items/i.test(message)) return 'A consultation report cannot contain remedy items. Change the report format if needed.'
+  if (/type cannot be converted/i.test(message)) return 'This document type cannot be changed. Create a separate report instead.'
   if (/remedy|item|granules|times per day|potency/i.test(message)) return 'Choose a valid remedy and check the prescription fields.'
   return 'Documents could not be saved. Please try again. If the error persists, contact the site administrator.'
 }
@@ -53,10 +56,12 @@ export async function createConsultationAction(previous, formData) {
   if (!store) return { error: 'Documents are temporarily unavailable. Please try again.' }
   let pair
   let selectedMaterialIds = []
+  let selectedPlacements = {}
   let materialConfig
   try {
     const data = input(formData)
     selectedMaterialIds = parseReportMaterialIds(formData.get('materialIdsJson'))
+    selectedPlacements = parseReportMaterialPlacements(formData.get('materialPlacementsJson'), selectedMaterialIds)
     if (selectedMaterialIds.length) {
       if (!deliveryEnabled() || !data.includeRecommendation) throw new Error('INVALID_SESSION_MATERIALS')
       // Check the chosen IDs against the approved, ready catalog BEFORE creating the document.
@@ -72,7 +77,7 @@ export async function createConsultationAction(previous, formData) {
     if (selectedMaterialIds.length) {
       try {
         await stageReportMaterials({ config: materialConfig, store,
-          report: pair.recommendation, materialIds: selectedMaterialIds }, {
+          report: pair.recommendation, materialIds: selectedMaterialIds, materialPlacements: selectedPlacements }, {
           createSession: createClientSession, getSession: getOwnerSession, saveDraft: saveOwnerDraft,
         })
       } catch {
@@ -84,6 +89,14 @@ export async function createConsultationAction(previous, formData) {
     redirect(`/admin/consultations/${pair.recommendation.id}`)
   }
   redirect(`/admin/payments/${pair.payment.id}`)
+}
+
+// General reports use their own protected page and fixed document type.
+export async function createGeneralConsultationAction(previous, formData) {
+  formData.set('recommendationType', 'general')
+  formData.set('itemsJson', '[]')
+  formData.delete('includeDistanceHomeopathy')
+  return createConsultationAction(previous, formData)
 }
 
 export async function updateConsultationAction(id, previous, formData) {
@@ -100,6 +113,8 @@ export async function updateConsultationAction(id, previous, formData) {
   let values
   try {
     values=input(formData)
+    if ((values.recommendationType === 'general') !== (recommendation.recommendationType === 'general'))
+      throw new Error('Report type cannot be converted; create a separate report')
     // A routine re-save must never silently replace the language stored on the document.
     if (['ru', 'en'].includes(recommendation.languagePreference) &&
       values.languagePreference !== recommendation.languagePreference &&
@@ -110,6 +125,13 @@ export async function updateConsultationAction(id, previous, formData) {
   }
   catch (error) { return { error:safeConsultationError(error) } }
   redirect(`/admin/consultations/${id}`)
+}
+
+export async function updateGeneralConsultationAction(id, previous, formData) {
+  formData.set('recommendationType', 'general')
+  formData.set('itemsJson', '[]')
+  formData.delete('includeDistanceHomeopathy')
+  return updateConsultationAction(id, previous, formData)
 }
 
 async function changeConsultationDocumentStatus(consultationId, documentId, status) {

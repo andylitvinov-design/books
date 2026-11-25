@@ -9,6 +9,7 @@ import { DaoDivinationPanel } from "./dao-divination-panel";
 import { archivePhotoFor, daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle, hexagrams, trigramInfo } from "@/data/dao-hexagrams.mjs";
 import authorRecords from "@/data/dao-hexagram-author.json";
 import { getDaoEditorialHexagramText } from "@/data/dao-hexagrams-editorial.mjs";
+import { getDaoEnglishHexagramText } from "@/data/dao-hexagrams-en.mjs";
 import styles from "./dao-hexagrams.module.css";
 
 export type DaoLocale = "ru" | "en" | "es";
@@ -33,13 +34,13 @@ const copy = {
     lead: "Each symbol joins two trigrams. Explore its traditional meaning and the author's original reflective interpretations where available.",
     provenance: "12 verified original author texts remain unchanged. The other 52 now have full newly written interpretations in the same archetypal format, clearly marked as editorial continuations, not original author publications.",
     sourceBook: "Read the source book chapter", caution: "A cultural and reflective reference, not a guaranteed prediction or medical guidance.",
-    authorHeading: "Original interpretation", noteRu: "Original author text in Russian, preserved as written.", referenceHeading: "Traditional reference meaning",
-    editorialHeading: "New interpretation in the author’s style", editorialNote: "New editorial text commissioned for this collection (in Russian); not presented as a previously published original by Andrey.",
+    authorHeading: "Author interpretation · English adaptation", noteRu: "English editorial adaptation of the Russian author original. The original remains unchanged.", referenceHeading: "Traditional reference meaning",
+    editorialHeading: "New interpretation · English adaptation", editorialNote: "English editorial adaptation of the new Russian interpretation; not a previously published original by Andrey.",
     missing: "No verified extended author interpretation was found for this symbol. The card contains a short reference note until the original source is confirmed.",
     photo: "Photo from the original author publication", themePhoto: "Thematic archival Dao collection photo",
     source: "Open original publication", privateArchive: "Source text held in the author's archive; no public link available.",
     back: "← All 64 hexagrams", upper: "Above", lower: "Below", previous: "← Previous", next: "Next →",
-    strategyNote: "Historical quotations and associations are reproduced as written by the author and have not been verified as literal classical quotations.",
+    strategyNote: "English text is an editorial adaptation, not a literal translation or verified classical quotation; the original Russian source is preserved.",
   },
   es: {
     kicker: "Tradición taoísta · I Ching", heading: "64 hexagramas del Libro de los Cambios",
@@ -95,6 +96,7 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
   const labels = copy[locale];
   const author = authorByNumber.get(number);
   const editorialText = author ? null : getDaoEditorialHexagramText(number);
+  const englishText = locale === "en" ? getDaoEnglishHexagramText(number) : null;
   const title = hexagramTitle(item, locale);
   const photo = archivePhotoFor(item, author?.photo);
   const above = trigramInfo[item.upper][locale];
@@ -125,8 +127,8 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
         <article className={styles.originalPanel} aria-label={labels.authorHeading}>
           <p className={styles.kicker}>{labels.authorHeading}</p>
           <h2>{item.hanzi} · {title}</h2>
-          <div className={styles.originalText} lang="ru">
-            {author.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+          <div className={styles.originalText} lang={locale === "en" ? "en" : "ru"}>
+            {(englishText ?? author.text).split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
           </div>
           <p className={styles.provenance}>{labels.strategyNote}</p>
           {author.source ? (
@@ -138,8 +140,8 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
           <p className={styles.kicker}>{labels.editorialHeading}</p>
           <h2>{item.hanzi} · {title}</h2>
           <p className={styles.provenance}>{labels.editorialNote}</p>
-          <div className={styles.originalText} lang="ru">
-            {editorialText.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+          <div className={styles.originalText} lang={locale === "en" ? "en" : "ru"}>
+            {(englishText ?? editorialText).split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
           </div>
           <p className={styles.provenance}>{labels.caution}</p>
         </article>

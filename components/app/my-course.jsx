@@ -9,6 +9,7 @@ import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram, courseProg
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CoursePresetCatalog from './course-preset-catalog'
 import MyCoursesDashboard from './my-courses-dashboard'
+import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import { useSubscription } from './subscription-access'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
@@ -16,6 +17,7 @@ import CourseToday from './course-today'
 import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
 import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
+import OporaFirstWeekInvite from './opora-first-week-invite'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
 import './my-course-theme.css'
@@ -152,7 +154,7 @@ function replaceCourseUrl(courseId) {
   if (courseId) {
     url.searchParams.set('courseId', courseId)
     // A chosen lesson has its own URL. The Courses tab remains an index-only entry.
-    if (url.searchParams.get('view') === 'courses') url.searchParams.delete('view')
+    if (['courses', 'discover'].includes(url.searchParams.get('view'))) url.searchParams.delete('view')
   } else url.searchParams.delete('courseId')
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
 }
@@ -180,6 +182,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const searchParams = useSearchParams()
   // Cabinet navigation opens the complete course list; explicit courseId links still open lessons.
   const coursesIndexEntry = searchParams.get('view') === 'courses'
+  const coursesDiscoverEntry = searchParams.get('view') === 'discover' &&
+    !searchParams.get('courseId') && !searchParams.get('program')
   const router = useRouter()
   const [showCourse, setShowCourse] = useState(false)
   const requestedProgram = searchParams.get('program') === ACTIVE_COURSE_PROGRAM_ID ? getCourseProgram(ACTIVE_COURSE_PROGRAM_ID) : null
@@ -233,19 +237,19 @@ export function MyCourse({ data, locale = 'en' }) {
   useEffect(() => {
     mounted.current = true; generation.current += 1
     actionLock.current = null; newCourseId.current = null
-    setShowCourse(coursesIndexEntry || Boolean(selectedCourseFromUrl())); setBusy(false); setDirectLaunchCourseId(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}
+    setShowCourse(coursesIndexEntry || coursesDiscoverEntry || Boolean(selectedCourseFromUrl())); setBusy(false); setDirectLaunchCourseId(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}
     selectedCourse.current = selectedCourseFromUrl()
-    setView(coursesIndexEntry ? 'list' : selectedCourse.current ? 'detail' : 'list')
-    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !coursesIndexEntry, openPrimaryToday: !coursesIndexEntry })
+    setView(coursesIndexEntry ? 'list' : coursesDiscoverEntry ? 'new' : selectedCourse.current ? 'detail' : 'list')
+    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !coursesIndexEntry && !coursesDiscoverEntry, openPrimaryToday: !coursesIndexEntry && !coursesDiscoverEntry })
     const navigate = () => {
       generation.current += 1; actionLock.current = null; setBusy(false)
       selectedCourse.current = selectedCourseFromUrl()
-      const returningToIndex = new URLSearchParams(window.location.search).get('view') === 'courses'
-      setShowCourse(returningToIndex || Boolean(selectedCourse.current))
-      setView(returningToIndex ? 'list' : selectedCourse.current ? 'detail' : 'list')
-
-
-      void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !returningToIndex })
+      const query = new URLSearchParams(window.location.search)
+      const returningToIndex = query.get('view') === 'courses'
+      const returningToDiscovery = query.get('view') === 'discover' && !query.get('courseId') && !query.get('program')
+      setShowCourse(returningToIndex || returningToDiscovery || Boolean(selectedCourse.current))
+      setView(returningToIndex ? 'list' : returningToDiscovery ? 'new' : selectedCourse.current ? 'detail' : 'list')
+      void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !returningToIndex && !returningToDiscovery })
     }
     window.addEventListener('popstate', navigate)
     return () => {
@@ -253,7 +257,7 @@ export function MyCourse({ data, locale = 'en' }) {
       readController.current?.abort()
       window.removeEventListener('popstate', navigate)
     }
-  }, [refresh, coursesIndexEntry])
+  }, [refresh, coursesIndexEntry, coursesDiscoverEntry])
 
   useEffect(() => {
     if (billingPhase !== 'ready') return
@@ -530,38 +534,36 @@ export function MyCourse({ data, locale = 'en' }) {
     await act('start',{consent:true,programId:intent.programId})
   }
 
-  // One explicit consent action, then the existing private intake. No catalogue,
-  // six-step presentation, duplicate assessment or bypass of server validation.
+  // The first visible slide describes all seven first-week topics, then asks
+  // for an explicit enrolment decision. The existing server-authorized start
+  // and 8-question baseline are still reached only after this affirmative click.
   if (stage === 0 && fastAntistressEntry) return <div className={styles.root} data-my-course>
-    <section className={styles.fastEntry} data-opora-fast-start>
-      <span className={styles.fastKicker}>{ru ? 'ОПОРА · АНТИСТРЕСС' : 'OPORA · STRESS RELIEF'}</span>
-      <h1>{ru ? 'Начните с короткого теста' : 'Start with one short check-in'}</h1>
-      <p>{ru ? '8 вопросов Weekly Pulse помогут подобрать один из 5 уровней программы. Дополнительные тесты — только по желанию.' :
-        'Eight Weekly Pulse questions help suggest one of five learning levels. Extra questionnaires are optional.'}</p>
-      <p className={styles.fastConsent}><LockKeyhole size={18} aria-hidden="true" />{t.consent}</p>
-      {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={()=>refresh()}>{t.retry}</button></p>}
-      <button type="button" className={'hh-primary ' + styles.fastStartButton}
-        disabled={busy||atLimit||(courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled)} onClick={() => void confirmFastStart()} data-opora-fast-consent>
-        {busy ? (ru ? 'Подготавливаем тест…' : 'Preparing your test…')
-          : (ru ? 'Перейти к стартовому тесту' : 'Continue to the first check-in')}
-        <ArrowRight size={19} aria-hidden="true" />
-      </button>
-      <small>{t.note}</small>
-    </section>
+    <div data-opora-fast-start>
+      <OporaFirstWeekInvite locale={locale} busy={busy}
+        disabled={atLimit || (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled)}
+        onAccept={() => void confirmFastStart()}
+        errorMessage={error ? `${t.issue} (${error})` : atLimit ? t.limitReached :
+          (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled) ? t.multiUnavailable : undefined}
+        onRetry={refresh} />
+    </div>
   </div>
 
   const compactBaselineNav = !showDashboard && !stressWelcome && !isHistory && stage === 2 &&
     !state.course?.presetId &&
     courseProgramFromTopics(state.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID
 
-  return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '')} data-my-course>
+  return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '') + (stressWelcome ? ' ' + styles.stressWelcomeRoot : '')} data-my-course>
+    {coursesIndexEntry && view === 'list' && courses.length === 0 && (
+      <CabinetFreeCourseBanners key={accountId} accountId={accountId} locale={locale} savedOnly />
+    )}
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
-      courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
+      courses={courses} accountId={accountId} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
       locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
     {showDashboard && <CourseHomeScreenHabit locale={locale} />}
+    {view === 'new' && atLimit && <p className={styles.error} role="status">{t.limitReached}</p>}
     {compactBaselineNav && <nav className={styles.compactBaselineNav} aria-label={ru ? 'Навигация курса' : locale === 'es' ? 'Navegación del curso' : 'Course navigation'} data-opora-baseline-compact-nav>
       <button type="button" disabled={busy} onClick={() => changeView('list')}>
         <ArrowLeft size={15} aria-hidden="true"/>{ru ? 'Мои курсы' : locale === 'es' ? 'Mis cursos' : 'My courses'}
@@ -594,7 +596,7 @@ export function MyCourse({ data, locale = 'en' }) {
         <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => startSelectedCourse(null, requestedProgram?.id || ACTIVE_COURSE_PROGRAM_ID)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <button type="button" className="hh-primary" disabled={busy || atLimit} onClick={() => startSelectedCourse(null, requestedProgram?.id || ACTIVE_COURSE_PROGRAM_ID)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
         <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.consent}</p>
@@ -612,7 +614,7 @@ export function MyCourse({ data, locale = 'en' }) {
           const Icon = [Waves, ShieldCheck, Target][index]
           return <button className={styles.programCard} key={program.id} type="button"
             data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id}
-             disabled={busy || program.id !== ACTIVE_COURSE_PROGRAM_ID}
+             disabled={busy || atLimit || program.id !== ACTIVE_COURSE_PROGRAM_ID}
              aria-disabled={program.id !== ACTIVE_COURSE_PROGRAM_ID}
              data-coming-soon={program.id !== ACTIVE_COURSE_PROGRAM_ID ? 'true' : undefined}
             onClick={() => startSelectedCourse(null,program.id)}>
@@ -625,7 +627,7 @@ export function MyCourse({ data, locale = 'en' }) {
           </button>
         })}
       </div>
-      <button className={styles.personalTrack} type="button" disabled={busy}
+      <button className={styles.personalTrack} type="button" disabled={busy || atLimit}
         data-course-personal-program onClick={() => startSelectedCourse(null,ACTIVE_COURSE_PROGRAM_ID)}>
         <SlidersHorizontal size={24} aria-hidden="true"/>
         <span><strong>{t.personalCourse}</strong><small>{t.personalPrompt}</small></span>
@@ -639,7 +641,7 @@ export function MyCourse({ data, locale = 'en' }) {
     {!showDashboard && stage === 0 && (view === 'switch' ? <CoursePresetCatalog locale={locale} busy={busy}
       onPreset={startSelectedCourse} onPersonal={() => startSelectedCourse(null)} switchMode /> : <details className={styles.overviewDisclosure} data-course-fixed-presets>
       <summary>{ru?'Курсы с фиксированным набором тестов':'Courses with fixed test sets'}</summary>
-      <CoursePresetCatalog locale={locale} busy={busy} onPreset={startSelectedCourse} onPersonal={() => startSelectedCourse(null)} />
+      <CoursePresetCatalog locale={locale} busy={busy || (view === 'new' && atLimit)} onPreset={startSelectedCourse} onPersonal={() => startSelectedCourse(null)} />
     </details>)}
     {!showDashboard && !isHistory && stage >= 1 && stage <= 2 && !fastAntistressEntry && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>

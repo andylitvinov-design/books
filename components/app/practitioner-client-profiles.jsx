@@ -2,9 +2,9 @@
 import Link from 'next/link'
 import {useEffect,useMemo,useRef,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import PractitionerRequestTasks from './practitioner-request-tasks'
 import {torontoToday} from '@/lib/practitioners/task-policy'
-import PublicEnquiryContact from './public-enquiry-contact'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import {buildPractitionerWorkQueue,filterPractitionerClientGroups,practitionerTaskTarget} from '@/lib/practitioners/client-work-queue'
 import styles from './practitioner-client-profiles.module.css'
@@ -16,12 +16,12 @@ const COPY={
     count:'Clients',requests:'Enquiries',pending:'Need attention',latest:'Last enquiry',
     search:'Search clients',all:'All',open:'Need attention',closed:'Closed',
     openProfile:'View client profile',closeProfile:'Close profile',history:'Request and conversation history',
-    service:'Service',status:'Request status',contact:'Contact provided for this enquiry',
+    service:'Service',status:'Request status',contact:'How to contact',
     requested:'New request',contacted:'Contacted',closedStatus:'Closed',cancelled:'Withdrawn',
     markContacted:'Mark contacted',markClosed:'Close request',none:'No clients yet.',
     filtered:'No clients match the filters.',noNotes:'No initial text provided.',
     privacy:'Only enquiries to your services. Anonymous contacts are not verified; private tests and records stay hidden.',
-    noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
+    noPortal:'Reply via Holistic House. Direct contacts stay hidden; verified channels can receive neutral alerts, not private message text.',viaPortal:'Through Holistic House',awaitPortal:'Guest enquiry: no verified client portal account. Request a secure sign-in before private messaging.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
     recent:'Recent clients',tasks:'Open tasks',overdue:'Overdue',nextActions:'Upcoming actions',taskFilter:'With tasks',alerts:'Phone alerts',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
     today:'Due today',todayFilter:'Tasks today',overdueFilter:'Overdue tasks',
@@ -33,12 +33,12 @@ const COPY={
     count:'Клиентов',requests:'Обращений',pending:'Требуют внимания',latest:'Последнее обращение',
     search:'Поиск клиентов',all:'Все',open:'Требуют внимания',closed:'Закрытые',
     openProfile:'Открыть профиль клиента',closeProfile:'Закрыть профиль',history:'История заявок и переписки',
-    service:'Услуга',status:'Статус заявки',contact:'Контакт, указанный при обращении',
+    service:'Услуга',status:'Статус заявки',contact:'Способ связи',
     requested:'Новая заявка',contacted:'Связались',closedStatus:'Закрыта',cancelled:'Отозвана',
     markContacted:'Отметить связь',markClosed:'Закрыть заявку',none:'Клиентов пока нет.',
     filtered:'По выбранному фильтру клиентов нет.',noNotes:'Первоначальное сообщение не указано.',
     privacy:'Здесь только обращения к вам. Анонимные контакты не подтверждены; личные тесты и чужие заявки недоступны.',
-    noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
+    noPortal:'Отвечайте через Holistic House. Прямые контакты скрыты; подтверждённые каналы получают только нейтральные уведомления.',viaPortal:'Через Holistic House',awaitPortal:'Гостевая заявка: аккаунт клиента не подтверждён. Для защищённого ответа клиент должен войти на сайт.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
     recent:'Последние клиенты',tasks:'Открытые задачи',overdue:'Просрочено',nextActions:'Ближайшие действия',taskFilter:'С задачами',alerts:'Уведомления на телефон',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
     today:'На сегодня',todayFilter:'Задачи на сегодня',overdueFilter:'Просроченные задачи',
@@ -50,12 +50,12 @@ const COPY={
     count:'Clientes',requests:'Solicitudes',pending:'Requieren atención',latest:'Última solicitud',
     search:'Buscar clientes',all:'Todos',open:'Pendientes',closed:'Cerrados',
     openProfile:'Ver perfil del cliente',closeProfile:'Cerrar perfil',history:'Solicitudes y mensajes',
-    service:'Servicio',status:'Estado de solicitud',contact:'Contacto proporcionado',
+    service:'Servicio',status:'Estado de solicitud',contact:'Canal de respuesta',
     requested:'Nueva solicitud',contacted:'Contactado',closedStatus:'Cerrado',cancelled:'Retirado',
     markContacted:'Marcar contactado',markClosed:'Cerrar solicitud',none:'Todavía no hay clientes.',
     filtered:'No hay coincidencias.',noNotes:'Sin mensaje inicial.',
     privacy:'Solo solicitudes a tus servicios. Los contactos anónimos no están verificados; sin datos privados de terceros.',
-    noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
+    noPortal:'Responde a través de Holistic House. Los contactos están ocultos; los canales verificados solo reciben avisos neutrales.',viaPortal:'A través de Holistic House',awaitPortal:'Solicitud invitada: el cliente todavía no tiene una cuenta verificada para la conversación privada.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
     recent:'Clientes recientes',tasks:'Tareas pendientes',overdue:'Atrasadas',nextActions:'Próximas acciones',taskFilter:'Con tareas',alerts:'Alertas al teléfono',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
     today:'Para hoy',todayFilter:'Tareas para hoy',overdueFilter:'Tareas atrasadas',
@@ -73,7 +73,16 @@ const MANUAL_COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onSaveContact,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
+// Remote session states are distinct from a canceled ordinary enquiry.
+const remoteMessageStatus=(status,locale)=>{
+ const labels={
+  en:{reschedule_proposed:'Reschedule proposed',confirmed:'Confirmed',in_progress:'In progress',completed:'Completed',declined:'Declined'},
+  ru:{reschedule_proposed:'Предложен перенос',confirmed:'Подтверждено',in_progress:'В процессе',completed:'Завершено',declined:'Отклонено'},
+  es:{reschedule_proposed:'Cambio de fecha',confirmed:'Confirmada',in_progress:'En curso',completed:'Completada',declined:'Rechazada'},
+ }
+ return (labels[locale]||labels.en)[status]||status
+}
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,onCreateReport,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null,freeExpressV2Enabled=false}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -129,6 +138,12 @@ export default function PractitionerClientProfiles({items=[],services=[],account
     return ()=>abort.abort()
   },[isOwner,accountId,manualRetry])
   const selected=groups.find(item=>item.key===selectedKey)
+  // Current focus comes only from authenticated, practitioner-owned requests.
+  // Never fabricate a consultation, payment, medical summary or follow-up date.
+  const currentRequest=selected?.items.find(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))||selected?.items[0]||null
+  const linkedService=services.find(item=>item.id===currentRequest?.serviceId)
+  const currentTitle=linkedService?.localizedCopy?.[lang]?.title||linkedService?.copy?.title||
+    currentRequest?.serviceTitle||t.service
   const currentDay=torontoToday()
   const queue=useMemo(()=>buildPractitionerWorkQueue(groups,practitionerTasks,currentDay,practitionerTaskSummary),
     [groups,practitionerTasks,currentDay,practitionerTaskSummary])
@@ -282,40 +297,70 @@ export default function PractitionerClientProfiles({items=[],services=[],account
       </aside>
       {selected&&<div className={styles.profile}>
         <>
-          <div className={styles.profileHead}>
-            <h3>{selected.name}</h3>
+          <div className={styles.profileHead} data-practice-client-card>
+            <div className={styles.profileIdentity}>
+              <span className={styles.largeAvatar} aria-hidden="true">{selected.name.slice(0,1).toUpperCase()}</span>
+              <div><h3>{selected.name}</h3>
+                <small>{selected.open>0?(lang==='ru'?'В работе':lang==='es'?'En curso':'In progress'):
+                  (lang==='ru'?'История обращений':lang==='es'?'Historial':'Request history')}</small>
+              </div>
+            </div>
             <button type="button" onClick={()=>{setSelectedKey('');setTaskFocus(null)}}>{t.closeProfile}</button>
           </div>
           <dl className={styles.facts}>
-            <div><dt>{t.contact}</dt><dd>{selected.contact}</dd></div>
+            <div><dt>{t.contact}</dt><dd>{t.viaPortal}</dd></div>
             <div><dt>{t.requests}</dt><dd>{selected.items.length}</dd></div>
             <div><dt>{t.pending}</dt><dd>{selected.open}</dd></div>
           </dl>
+          {currentRequest&&<section className={styles.currentFocus} data-client-current-request aria-label={lang==='ru'?'Текущая заявка':lang==='es'?'Solicitud actual':'Current request'}>
+            <div className={styles.focusHeading}><span>{lang==='ru'?'ТЕКУЩАЯ ЗАЯВКА':lang==='es'?'SOLICITUD ACTUAL':'CURRENT REQUEST'}</span>
+              <small>{currentRequest.status==='requested'?t.requested:
+                currentRequest.status==='contacted'?t.contacted:currentRequest.status}</small>
+            </div>
+            <strong>{currentTitle}</strong>
+            <p>{currentRequest.remoteBooking
+              ?currentRequest.remoteBooking.duration+' min · '+(lang==='ru'?'Дистанционно':lang==='es'?'A distancia':'Remote')+
+                 ' · '+(lang==='ru'?'Время подтверждается отдельно':lang==='es'?'Horario por confirmar':'Time to confirm')
+              :(lang==='ru'?'Условия и время обсуждаются до записи.':lang==='es'?'Condiciones y horario por confirmar.':'Terms and timing are confirmed before booking.')}</p>
+            <a className={styles.focusAction} href={'#client-request-'+currentRequest.id}>
+              {lang==='ru'?'Открыть заявку':lang==='es'?'Abrir solicitud':'Open request'} →
+            </a>
+          </section>}
           <p className={styles.hint}>{t.noPortal}</p>
-          <h4>{t.history}</h4>
+          <h4 id="client-request-history">{t.history}</h4>
           <div className={styles.history}>
             {selected.items.map(request=>{
               const service=services.find(item=>item.id===request.serviceId)
               const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||request.serviceTitle||t.service
-              return <article className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
+              return <article id={'client-request-'+request.id} className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
                   <small>{labelDate(request.createdAt,lang)} · {
-                    request.status==='requested'?t.requested:
-                    request.status==='contacted'?t.contacted:
-                    request.status==='closed'?t.closedStatus:t.cancelled
+                    request.remoteBooking&&['reschedule_proposed','confirmed','in_progress','completed','declined'].includes(request.status)
+                      ?remoteMessageStatus(request.status,lang)
+                      :request.status==='requested'?t.requested:
+                       request.status==='contacted'?t.contacted:
+                       request.status==='closed'?t.closedStatus:t.cancelled
                   }{request.messageCount>0?' · '+t.messageCount+': '+request.messageCount:''}
                   {request.needsReply?' · '+t.awaiting:''}
                   {request.newMessageCount>0?' · '+t.newMessages+': '+request.newMessageCount:''}</small>
                 </div>
-                {request.message&&<p className={styles.original}>{request.message}</p>}
+                {!(isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request))&&request.message&&<p className={styles.original}>{request.message}</p>}
+                {(request.accountRequest===true||request.reportEligible===true) &&
+                  <div className={styles.actions}>
+                    <button type="button" disabled={busy} onClick={()=>onCreateReport?.(request)}>
+                      {lang==='ru'?'Сформировать отчёт':lang==='es'?'Crear informe':'Create report'}
+                    </button>
+                  </div>}
                 {['requested','contacted'].includes(request.status)&&<div className={styles.actions}>
                   {request.status==='requested'&&<button type="button" disabled={busy}
                     onClick={()=>onStatus?.(request,'contacted')}>{t.markContacted}</button>}
                   <button type="button" disabled={busy} onClick={()=>onStatus?.(request,'closed')}>{t.markClosed}</button>
                 </div>}
                 {request.requestKind==='public'
-                  ? <PublicEnquiryContact request={request} locale={lang} busy={busy} onSave={onSaveContact}/>
+                  ? isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request)
+                    ? <FreeExpressOwnerCase request={request} locale={lang} accountId={accountId}/>
+                    : <p className={styles.hint}>{t.awaitPortal}</p>
                   : <>
                       <PractitionerRequestTasks key={'tasks:'+request.id} requestId={request.id}
                         focusTaskId={taskFocus?.requestId===request.id?taskFocus.taskId:''}
@@ -323,7 +368,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                         accountId={accountId} locale={lang} onChanged={()=>onRefresh?.()}/>
                       <PracticeRequestConversation key={request.id} requestId={request.id}
                         accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
-                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId}
+                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId || request.newMessageCount>0}
                         onSaved={()=>onRefresh?.()} onViewed={()=>onRefresh?.()}/>
                     </>}
               </article>

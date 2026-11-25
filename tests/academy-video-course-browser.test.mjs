@@ -26,7 +26,9 @@ test("Academy videos use program → module/category → lesson, not giant showc
   assert.match(server, /videos\/energy-pump-ups/);
   assert.match(client, /program\.courses\.map/);
   assert.match(client, /course\.chapters\.map/);
-  assert.match(client, /chapter\.videos\.map/);
+  // Rating-aware sorting was introduced before this PR. Preserve real chapter
+  // videos and both sorted/unsorted presentation rather than asserting stale JSX.
+  assert.match(client, /sortRated \? sortByStars\(chapter\.videos/);
   assert.match(client, /setPlayingVideo\(null\)/);
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /@media \(max-width: 600px\)/);

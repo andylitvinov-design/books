@@ -1,44 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Compass, Mic, MicOff, RotateCcw, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { StaticPortrait } from "@/components/static-portrait";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, ArrowUp, BookOpen, BriefcaseBusiness, Check, Compass, Heart, Leaf, MessageCircle, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
-  homeGuideDestinations,
-  homeGuideGoals,
+  homeGuideFollowup,
+  homeGuideOpening,
+  homeGuideConversationCue,
+  homeGuideFreeTextStep,
+  homeGuideQuickStarts,
+  chooseHomeGuideOffer,
+  matchHomeGuideReply,
   resolveHomeGuideQuestion,
+  type HomeGuideCategory,
+  type HomeGuideContext,
   type HomeGuideGoal,
+  type HomeGuideOffer,
 } from "@/lib/home-conversation.mjs";
+import { orderGuideClarificationChoices } from "@/lib/home-guide-quality.mjs";
+import {
+  getGuideClarificationPriorities, shareGuideQualityFeedback,
+  type GuideCategory, type GuideSignal,
+} from "@/lib/home-guide-quality-client";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-conversation-guide.module.css";
 
 type Turn = { id: number; role: "visitor" | "guide"; text: string };
-type Context = {
-  lang: PublicLocale;
-  topic: IdeasTopic | null;
-  matched: boolean;
-  urgent: boolean;
-};
-type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type Context = HomeGuideContext;
+type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> };
 type SpeechEngine = {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
+  onstart: (() => void) | null;
   onresult: ((event: SpeechEvent) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
+  abort?: () => void;
 };
 type SpeechConstructor = new () => SpeechEngine;
+type VoiceState = "idle" | "starting" | "listening" | "finishing";
 
 type GuideCopy = {
   eyebrow: string;
   title: string;
   lead: string;
+  portraitCaption: string;
+  filterPrompt: string;
+  filterLabels: Record<HomeGuideCategory, string>;
+  browseTitle: string;
+  browseIntro: string;
+  browseConversation: string;
   welcome: string;
+  chatStatus: string;
+  openChat: string;
+  closeChat: string;
+  starterHint: string;
+  moreWays: string;
+  topicPrompt: Record<IdeasTopic, string>;
   question: string;
   placeholder: string;
   send: string;
@@ -50,6 +74,12 @@ type GuideCopy = {
   topics: string;
   unknown: string;
   followup: string;
+  choiceHint: string;
+  qualityConsent: string;
+  qualityHelp: string;
+  qualityHelpful: string;
+  qualityNotHelpful: string;
+  qualitySaved: string;
   goalLabels: Record<HomeGuideGoal, string>;
   goalResponses: Record<HomeGuideGoal, string>;
   goalActions: Record<HomeGuideGoal, string>;
@@ -59,23 +89,52 @@ type GuideCopy = {
   voiceStart: string;
   voiceStop: string;
   voiceError: string;
+  voiceEmpty: string;
+  voiceDenied: string;
+  voiceKeyboard: string;
+  voiceStarting: string;
+  voiceListening: string;
+  voiceFinishing: string;
+  voiceCancel: string;
+  voiceDone: string;
+  voicePrivacy: string;
+  voiceUnresponsive: string;
+  voiceKeyboardAction: string;
   urgent: string;
   limitation: string;
 };
 
 const copy: Record<PublicLocale, GuideCopy> = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · YOUR STARTING POINT",
+    eyebrow: "HOLISTIC HOUSE · PERSONAL GUIDANCE",
     title: "What's on your mind?",
-    lead: "Tell us what's happening. We'll ask one more question and help you find a useful next step.",
-    welcome: "Hello, I'm your Holistic House site guide. What would you like to explore today?",
+    lead: "Choose a starting point that fits your needs.",
+    portraitCaption: "Andrey Litvinov · founder",
+    filterPrompt: "What are you looking for?",
+    filterLabels: { all: "All", services: "Services", courses: "Courses", tests: "Free tests", free: "Free starts" },
+    browseTitle: "Good places to begin",
+    browseIntro: "A short selection from existing programmes, based on your topic and category.",
+    browseConversation: "Refine in a conversation",
+    welcome: "Hi! I'm the Holistic House website guide. Tell me what's on your mind, or choose a topic below.",
+    chatStatus: "Automated guide · local suggestions",
+    openChat: "Chat with us",
+    closeChat: "Close conversation",
+    starterHint: "No account needed · Typed messages stay on this page",
+    moreWays: "Other options",
+    topicPrompt: {
+      relationships: "Would it help more to understand what is happening, or to try a small practice?",
+      stress: "Would you prefer a free self-check or a calming practice?",
+      resources: "Would you like to try a short practice or check your current resources?",
+      work: "Would a structured course, a free test or personal guidance help more?",
+      direction: "Would a short reflection, a free review or a self-check help you choose a next step?",
+    },
     question: "Your question or situation",
-    placeholder: "I want to understand what to do about…",
-    send: "Let's talk",
+    placeholder: "Ask anything…",
+    send: "Get guidance",
     reset: "Start over",
     askAgain: "You can continue the conversation or ask something else.",
     exampleLabel: "Or start with",
-    examples: ["I'm feeling stressed", "A relationship is difficult", "I need to make a decision", "I want to grow or learn"],
+    examples: ["Feeling stressed", "Relationships", "Need a decision"],
     topic: {
       relationships: "relationships and connection",
       stress: "stress and inner calm",
@@ -86,6 +145,12 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "It sounds like your question may relate to",
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
+    choiceHint: "You can reply in your own words, too.",
+    qualityConsent: "Help improve suggestions: share only the topic and rating, never my messages.",
+    qualityHelp: "Was this suggestion useful?",
+    qualityHelpful: "Yes",
+    qualityNotHelpful: "Not really",
+    qualitySaved: "Thanks — the category-only feedback was saved.",
     goalLabels: {
       understand: "Understand my situation",
       tests: "Explore free tests",
@@ -108,26 +173,56 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Explore Ideas",
     },
     secondary: "Another way to explore",
-    privacyShort: "Private text · How this guide works",
-    privacyDetail: "Your typed question stays in this browser while the page is open. It is not sent to our server, CRM, analytics or an AI provider. This is a local topic-based guide, not an AI therapist or a real-time human conversation. If you choose voice input, your browser or operating system may process audio through its speech recognition provider. You decide whether to enable the microphone. Do not include confidential personal details.",
+    privacyShort: "Private in this browser · How it works",
+    privacyDetail: "Messages stay in this browser and are not sent to our server, CRM, analytics or an AI provider. If you explicitly enable quality feedback, only a broad category and rating are stored privately for 14 days, with aggregated daily counts retained for 60 days. Messages, names and test results are never included. This is an automated site guide, not a therapist or human conversation. Your browser may use its speech provider only when you tap the microphone. Avoid confidential details.",
     voiceStart: "Dictate a question with microphone",
     voiceStop: "Stop voice input",
-    voiceError: "Speech recognition isn't available right now. Please type your question instead.",
+    voiceError: "Speech recognition stopped unexpectedly. You can try again or type your question.",
+    voiceEmpty: "No words heard. Tap the microphone to retry or type your question.",
+    voiceDenied: "Microphone access was not allowed. Enable it in browser settings or type instead.",
+    voiceKeyboard: "Voice dictation is not supported here. Open your keyboard and tap its microphone, or type.",
+    voiceStarting: "Connecting microphone…",
+    voiceListening: "Listening…",
+    voiceFinishing: "Finishing…",
+    voiceCancel: "Cancel recording",
+    voiceDone: "Finish and send",
+    voicePrivacy: "Microphone starts on tap. Your voice isn't stored by this site; your browser may use its speech provider.",
+    voiceUnresponsive: "Speech recognition isn't responding. Use the keyboard microphone or type your question.",
+    voiceKeyboardAction: "Open keyboard",
+
     urgent: "I'm sorry you're facing this. A website guide can't provide emergency help. If you may be in immediate danger or might hurt yourself, contact local emergency services now or reach a trusted person who can stay with you. In Canada and the US you can call or text 988 for suicide crisis support.",
     limitation: "Suggestions are for reflection and navigation, not a diagnosis, treatment or promised result.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · НАЧНЁМ С РАЗГОВОРА",
+    eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА",
     title: "Что сейчас вас волнует?",
-    lead: "Расскажите о ситуации. Я задам уточняющий вопрос и помогу выбрать первый шаг.",
-    welcome: "Здравствуйте! Я помощник сайта Holistic House. С чем хотите разобраться сегодня?",
+    lead: "Выберите, с чего вам удобнее начать.",
+    portraitCaption: "Андрей Литвинов · основатель",
+    filterPrompt: "Что вас интересует?",
+    filterLabels: { all: "Всё", services: "Услуги", courses: "Курсы", tests: "Бесплатные тесты", free: "Бесплатно" },
+    browseTitle: "С чего можно начать",
+    browseIntro: "Короткая подборка существующих предложений по теме вашего запроса.",
+    browseConversation: "Уточнить в диалоге",
+    welcome: "Здравствуйте! Я помощник сайта Holistic House. Расскажите, что вас волнует, или выберите тему ниже.",
+    chatStatus: "Помощник сайта · локальные подсказки",
+    openChat: "Чат с нами",
+    closeChat: "Закрыть диалог",
+    starterHint: "Без регистрации · Текст остаётся на этой странице",
+    moreWays: "Другие варианты",
+    topicPrompt: {
+      relationships: "Хотите сначала разобраться в ситуации или попробовать небольшую практику?",
+      stress: "Начнём с бесплатной самопроверки или практики для спокойствия?",
+      resources: "Вам сейчас полезнее короткая практика или проверка своих ресурсов?",
+      work: "Вам поможет пошаговый курс, бесплатный тест или личная беседа?",
+      direction: "Попробуем короткое упражнение, бесплатный разбор или самопроверку?",
+    },
     question: "Ваш вопрос или ситуация",
-    placeholder: "Хочу разобраться, что делать с…",
-    send: "Обсудить",
+    placeholder: "Спросите…",
+    send: "Получить подсказку",
     reset: "Новый разговор",
     askAgain: "Можно продолжить разговор или задать другой вопрос.",
     exampleLabel: "Или выберите тему",
-    examples: ["Я тревожусь и устаю", "Сложности в отношениях", "Не могу принять решение", "Хочу развиваться и учиться"],
+    examples: ["Стресс и тревога", "Отношения", "Трудно принять решение"],
     topic: {
       relationships: "отношений и близости",
       stress: "тревоги и спокойствия",
@@ -138,6 +233,12 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Похоже, вопрос касается темы",
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
+    choiceHint: "Можно просто ответить своими словами.",
+    qualityConsent: "Улучшать подсказки: сохранять только выбранную тему и оценку, без текста переписки.",
+    qualityHelp: "Подсказка была полезной?",
+    qualityHelpful: "Да",
+    qualityNotHelpful: "Не очень",
+    qualitySaved: "Спасибо — сохранили только обезличенную категорию и оценку.",
     goalLabels: {
       understand: "Разобраться в ситуации",
       tests: "Бесплатные тесты",
@@ -160,26 +261,56 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Открыть Идеи",
     },
     secondary: "Другой способ разобраться",
-    privacyShort: "Ваш вопрос приватен · Как это работает",
-    privacyDetail: "Текст вопроса остаётся в этом браузере, пока открыта страница. Он не передаётся на наш сервер, в CRM, аналитику или AI-провайдеру. Это тематический помощник для навигации, а не AI-терапевт и не живой консультант. При голосовом вводе браузер или операционная система могут обрабатывать звук через сервис распознавания речи. Микрофон включается только по вашему действию. Не вводите конфиденциальные данные.",
+    privacyShort: "Только в этом браузере · Как работает",
+    privacyDetail: "Текст диалога остаётся в браузере и не передаётся серверу, CRM, аналитике или AI-провайдеру. Только при явном согласии сохраняются общая тема и оценка: события до 14 дней, суммарная статистика до 60 дней. Самих сообщений, имён и результатов тестов в базе нет. Это автоматический помощник сайта, не терапевт и не живой консультант. При нажатии микрофона браузер может использовать свой сервис распознавания речи. Не вводите конфиденциальные сведения.",
     voiceStart: "Продиктовать вопрос",
     voiceStop: "Остановить голосовой ввод",
-    voiceError: "Распознавание речи сейчас недоступно. Напишите вопрос текстом.",
+    voiceError: "Голосовой ввод прервался. Попробуйте ещё раз или напишите вопрос.",
+    voiceEmpty: "Речь не распознана. Нажмите микрофон ещё раз или напишите вопрос.",
+    voiceDenied: "Доступ к микрофону запрещён. Разрешите его в настройках браузера или напишите вопрос.",
+    voiceKeyboard: "Здесь диктовка недоступна. Откройте клавиатуру и нажмите её микрофон или напишите вопрос.",
+    voiceStarting: "Подключаю микрофон…",
+    voiceListening: "Слушаю…",
+    voiceFinishing: "Завершаю…",
+    voiceCancel: "Отменить запись",
+    voiceDone: "Завершить и отправить",
+    voicePrivacy: "Микрофон включается по нажатию. Сайт не хранит аудио; браузер может использовать свой сервис распознавания.",
+    voiceUnresponsive: "Распознавание не отвечает. Используйте диктовку с клавиатуры iPhone или напишите вопрос.",
+    voiceKeyboardAction: "Открыть клавиатуру",
+
     urgent: "Мне жаль, что вам сейчас настолько тяжело. Помощник сайта не заменяет экстренную помощь. Если есть непосредственная опасность или риск причинить себе вред, обратитесь в местные экстренные службы или к близкому человеку, который может быть рядом. В Канаде и США можно позвонить или написать на 988.",
     limitation: "Подсказки помогают ориентироваться, но не являются диагнозом, лечением или обещанием результата.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · EMPIEZA CON UNA CONVERSACIÓN",
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PERSONAL",
     title: "¿Qué te preocupa hoy?",
-    lead: "Cuéntanos qué pasa. Haremos una pregunta más para ayudarte a encontrar tu próximo paso.",
-    welcome: "¡Hola! Soy la guía de Holistic House. ¿Sobre qué te gustaría conversar?",
+    lead: "Elige el primer paso que necesitas.",
+    portraitCaption: "Andrey Litvinov · fundador",
+    filterPrompt: "¿Qué estás buscando?",
+    filterLabels: { all: "Todo", services: "Servicios", courses: "Cursos", tests: "Pruebas gratis", free: "Gratis" },
+    browseTitle: "Opciones para empezar",
+    browseIntro: "Una selección breve de programas existentes según tu pregunta.",
+    browseConversation: "Precisar en el diálogo",
+    welcome: "¡Hola! Soy la guía del sitio Holistic House. Cuéntame qué te preocupa o elige un tema.",
+    chatStatus: "Guía automática · sugerencias locales",
+    openChat: "Chatea con nosotros",
+    closeChat: "Cerrar conversación",
+    starterHint: "Sin registro · Tus mensajes escritos permanecen aquí",
+    moreWays: "Otras opciones",
+    topicPrompt: {
+      relationships: "¿Prefieres comprender la situación o probar una práctica sencilla?",
+      stress: "¿Empezamos con una prueba gratuita o con una práctica para relajarte?",
+      resources: "¿Te serviría más una práctica breve o revisar tus recursos personales?",
+      work: "¿Te ayudaría más un curso, una prueba gratuita o una conversación personal?",
+      direction: "¿Prefieres una reflexión, una revisión gratuita o una autoevaluación?",
+    },
     question: "Tu pregunta o situación",
-    placeholder: "Quiero entender qué hacer con…",
-    send: "Conversemos",
+    placeholder: "Pregunta…",
+    send: "Recibir orientación",
     reset: "Nueva conversación",
     askAgain: "Puedes continuar la conversación o preguntar otra cosa.",
     exampleLabel: "O elige un tema",
-    examples: ["Me siento con ansiedad", "Problemas en una relación", "Necesito tomar una decisión", "Quiero aprender y crecer"],
+    examples: ["Estrés y ansiedad", "Relaciones", "Tomar una decisión"],
     topic: {
       relationships: "relaciones y conexión",
       stress: "estrés y calma interior",
@@ -190,6 +321,12 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Parece que tu pregunta podría tratar sobre",
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
+    choiceHint: "También puedes responder con tus propias palabras.",
+    qualityConsent: "Mejorar las sugerencias: compartir solo el tema y la valoración, nunca mis mensajes.",
+    qualityHelp: "¿Te sirvió la sugerencia?",
+    qualityHelpful: "Sí",
+    qualityNotHelpful: "No mucho",
+    qualitySaved: "Gracias. Solo guardamos la categoría y la valoración.",
     goalLabels: {
       understand: "Entender mi situación",
       tests: "Pruebas gratuitas",
@@ -212,28 +349,140 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Explorar Ideas",
     },
     secondary: "Otra opción para explorar",
-    privacyShort: "Texto privado · Cómo funciona",
-    privacyDetail: "Tu texto permanece en este navegador mientras la página esté abierta. No se envía a nuestro servidor, CRM, analítica ni a un proveedor de IA. Esta guía local recomienda rutas por temas: no es una terapeuta de IA ni una conversación humana en directo. Si usas la voz, el navegador o sistema operativo puede enviar audio a su proveedor de reconocimiento. Solo activamos el micrófono cuando lo decides. Evita datos confidenciales.",
+    privacyShort: "Privado en este navegador · Cómo funciona",
+    privacyDetail: "Los mensajes se quedan en este navegador: no se envían al servidor, CRM, analítica ni IA. Solo si aceptas se guarda el tema general y la valoración durante 14 días; los totales diarios se conservan hasta 60 días. Nunca se guardan mensajes, nombres ni resultados de pruebas. Esta es una guía automática, no un terapeuta humano. El micrófono puede usar el servicio de voz del navegador al pulsarlo. Evita información confidencial.",
     voiceStart: "Dictar una pregunta",
     voiceStop: "Detener dictado",
-    voiceError: "El reconocimiento de voz no está disponible. Escribe tu pregunta.",
+    voiceError: "El dictado se interrumpió. Vuelve a intentarlo o escribe tu pregunta.",
+    voiceEmpty: "No se reconocieron palabras. Toca el micrófono otra vez o escribe.",
+    voiceDenied: "No se permitió usar el micrófono. Actívalo en el navegador o escribe.",
+    voiceKeyboard: "El dictado no está disponible aquí. Abre el teclado y toca su micrófono, o escribe.",
+    voiceStarting: "Conectando micrófono…",
+    voiceListening: "Escuchando…",
+    voiceFinishing: "Terminando…",
+    voiceCancel: "Cancelar grabación",
+    voiceDone: "Terminar y enviar",
+    voicePrivacy: "El micrófono se inicia al tocarlo. El sitio no guarda el audio; tu navegador puede procesar la voz.",
+    voiceUnresponsive: "El dictado no responde. Usa el micrófono del teclado o escribe tu pregunta.",
+    voiceKeyboardAction: "Abrir teclado",
+
     urgent: "Lamento que estés pasando por esto. Esta guía no ofrece ayuda de emergencia. Si estás en peligro inmediato o piensas hacerte daño, contacta los servicios de emergencia locales o a alguien de confianza que pueda acompañarte. En Canadá y EE. UU. puedes llamar o enviar un mensaje al 988.",
     limitation: "Estas sugerencias sirven para orientarte; no son diagnósticos, tratamientos ni garantías.",
   },
 };
 
+const quickStartIcons = {
+  stress: Waves,
+  relationships: Heart,
+  direction: Compass,
+  business: BriefcaseBusiness,
+  resources: Leaf,
+  reiki: BookOpen,
+} as const;
+
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
-  const t = copy[locale];
+  const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
-  const [goal, setGoal] = useState<HomeGuideGoal | null>(null);
+  // Keep the entire chat chrome in the language of the visitor's question.
+  const t = copy[context?.lang ?? locale];
+  const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
+  const [qualityConsent, setQualityConsent] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [qualityPending, setQualityPending] = useState(false);
+  const [needsClarification, setNeedsClarification] = useState(false);
+  const [qualityPriorities, setQualityPriorities] = useState<GuideCategory[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [voiceError, setVoiceError] = useState(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [voiceElapsed, setVoiceElapsed] = useState(0);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const questionRef = useRef<HTMLTextAreaElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const speechRef = useRef<SpeechEngine | null>(null);
+  const voiceGenerationRef = useRef(0);
+  const voiceBaseRef = useRef("");
+  const voiceTextRef = useRef("");
+  const voiceDiscardRef = useRef(false);
+  const submitOnEndRef = useRef(false);
+  const voiceStartedAtRef = useRef(0);
+  const voiceFinalRef = useRef(false);
+  const voiceFailureRef = useRef(false);
+  const voiceStartTimerRef = useRef<number | null>(null);
+  const voiceProgressTimerRef = useRef<number | null>(null);
+  const voiceStopTimerRef = useRef<number | null>(null);
   const nextId = useRef(1);
+
+  const closeDialog = useCallback(() => {
+    // Closing must never silently submit an in-progress speech transcript.
+    voiceDiscardRef.current = true;
+    voiceGenerationRef.current += 1;
+    for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+      if (ref.current !== null) window.clearTimeout(ref.current);
+      ref.current = null;
+    }
+    const engine = speechRef.current;
+    speechRef.current = null;
+    try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already closed */ }
+    setVoiceError(null);
+    setVoiceState("idle");
+    setVoiceElapsed(0);
+    setVoiceTranscript("");
+    setIsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus({ preventScroll: true }));
+    function onDialogKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDialog();
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], textarea, summary'
+      )).filter(item => item.getClientRects().length > 0);
+      if (focusable.length === 0) { event.preventDefault(); dialogRef.current.focus(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onDialogKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onDialogKeyDown);
+      document.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
+    };
+  }, [isOpen, closeDialog]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    // Read only public 5+-sample aggregate; no visitor question is transmitted.
+    void getGuideClarificationPriorities().then(categories => {
+      if (active) setQualityPriorities(categories);
+    });
+    return () => { active = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [isOpen, turns, context, recommendations]);
 
   useEffect(() => {
     const speechWindow = window as typeof window & {
@@ -241,8 +490,54 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       webkitSpeechRecognition?: SpeechConstructor;
     };
     setSupportsVoice(Boolean(speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition));
-    return () => { speechRef.current?.stop(); };
+    const shutdown = (restoreUi: boolean) => {
+      voiceGenerationRef.current += 1;
+      voiceDiscardRef.current = true;
+      for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+        if (ref.current !== null) window.clearTimeout(ref.current);
+        ref.current = null;
+      }
+      const engine = speechRef.current;
+      speechRef.current = null;
+      try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Browser already closed */ }
+      if (restoreUi) {
+        setVoiceState("idle");
+        setVoiceElapsed(0);
+        setVoiceTranscript("");
+      }
+    };
+    const onPageHide = () => shutdown(true);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      shutdown(false);
+    };
   }, []);
+
+  useEffect(() => {
+    if (voiceState !== "listening") return;
+    const interval = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - voiceStartedAtRef.current) / 1000);
+      setVoiceElapsed(Math.max(0, elapsed));
+      if (elapsed >= 60 && speechRef.current) {
+        const engine = speechRef.current;
+        const generation = voiceGenerationRef.current;
+        submitOnEndRef.current = true;
+        setVoiceState("finishing");
+        if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+        voiceProgressTimerRef.current = null;
+        try { engine.stop(); } catch { engine.onend?.(); }
+        if (speechRef.current === engine) {
+          voiceStopTimerRef.current = window.setTimeout(() => {
+            if (generation !== voiceGenerationRef.current || speechRef.current !== engine) return;
+            try { engine.abort?.(); } catch { /* Already stopped */ }
+            engine.onend?.();
+          }, 2500);
+        }
+      }
+    }, 500);
+    return () => window.clearInterval(interval);
+  }, [voiceState]);
 
   function appendExchange(question: string, answer: string) {
     const firstId = nextId.current;
@@ -254,21 +549,110 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setTurns(current => [...current, ...exchange].slice(-8));
   }
 
+  function categorizeGuideContext(current: Context): GuideCategory {
+    if (current.interest === "site") return "site";
+    if (current.interest === "courses" || current.interest === "reiki") return "courses";
+    if (current.topic === "relationships") return "love";
+    if (current.topic === "work") return "business";
+    if (current.topic === "resources" || current.topic === "stress") return "energy";
+    return "other";
+  }
+
+  function recordGuideFeedback(category: GuideCategory, signal: GuideSignal, language: PublicLocale): Promise<boolean> {
+    if (!qualityConsent) return Promise.resolve(false);
+    return shareGuideQualityFeedback({ category, signal, locale: language, consent: true });
+  }
+
+  function rateGuideSuggestion(signal: "helpful" | "unhelpful") {
+    if (!context || !qualityConsent || qualityPending || feedbackSaved) return;
+    setQualityPending(true);
+    void recordGuideFeedback(categorizeGuideContext(context), signal, context.lang)
+      .then(saved => { if (saved) setFeedbackSaved(true); })
+      .finally(() => setQualityPending(false));
+  }
+
+  function noteClarifiedChoice(choiceId: string, language: PublicLocale) {
+    if (!needsClarification) return;
+    setNeedsClarification(false);
+    const category = choiceId.startsWith("topic-")
+      ? choiceId.slice(6) as GuideCategory : "other";
+    void recordGuideFeedback(category, category === "other" ? "unresolved" : "clarified", language);
+  }
+
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
-    const result = resolveHomeGuideQuestion(question, locale);
+    setIsOpen(true);
+    // Safety takes priority over choices, small talk and existing recommendations.
+    const safety = resolveHomeGuideQuestion(question, context?.lang ?? locale, context);
+    if (safety.urgent) {
+      appendExchange(question, copy[safety.lang].urgent);
+      setContext(safety);
+      setRecommendations([]);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const replyId = matchHomeGuideReply(question, context);
+    if (replyId && context && !context.urgent) {
+      const selection = chooseHomeGuideOffer(context, replyId, context.lang);
+      if (selection) {
+        const next = homeGuideFollowup(selection.context);
+        const response = selection.offers.length > 0
+          ? selection.response?.[context.lang] ?? copy[context.lang].followup
+          : [selection.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
+            || copy[context.lang].followup;
+        appendExchange(question, response);
+        if (!context.matched) noteClarifiedChoice(replyId, context.lang);
+        setContext(selection.context);
+        setRecommendations(selection.offers);
+        setDraft("");
+        setVoiceError(null);
+        return;
+      }
+    }
+    const cue = homeGuideConversationCue(question, context);
+    if (cue && context) {
+      appendExchange(question, cue.response[context.lang]);
+      if (cue.kind === "alternatives") setRecommendations([]);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const freeStep = context && safety.topic === context.topic
+      && safety.subtopic === context.subtopic && !recommendations.length
+      ? homeGuideFreeTextStep(question, context, safety.lang) : null;
+    if (freeStep) {
+      appendExchange(question, freeStep.response?.[safety.lang] ?? copy[safety.lang].followup);
+      setContext(freeStep.context);
+      setRecommendations(freeStep.offers);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const result = safety;
+    if (!result.matched) setNeedsClarification(true);
+    else if (needsClarification) {
+      setNeedsClarification(false);
+      void recordGuideFeedback(categorizeGuideContext(result), "clarified", result.lang);
+    }
     const responseCopy = copy[result.lang];
-    const answer = result.urgent
-      ? responseCopy.urgent
-      : (result.matched && result.topic
-        ? responseCopy.topics + " «" + responseCopy.topic[result.topic] + "». "
-        : responseCopy.unknown + " ") + responseCopy.followup;
+    const followup = homeGuideFollowup(result);
+    // Continue the topic rather than repeating the same category opening.
+    const sameConversation = context && context.topic === result.topic
+      && context.interest === result.interest && context.subtopic === result.subtopic;
+    const opening = sameConversation
+      ? { en: "I hear you. A little more detail will help me suggest a useful first step.",
+          ru: "Спасибо, что уточнили. Ещё немного контекста поможет выбрать первый шаг.",
+          es: "Gracias por aclararlo. Un poco más de contexto ayudará a elegir un primer paso." }[result.lang]
+      : homeGuideOpening(result)[result.lang];
+    const answer = [opening, followup?.prompt[result.lang] ?? responseCopy.followup]
+      .filter(Boolean).join(" ");
     appendExchange(question, answer);
     setContext(result);
-    setGoal(null);
+    setRecommendations([]);
     setDraft("");
-    setVoiceError(false);
+    setVoiceError(null);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -276,143 +660,428 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     ask(draft);
   }
 
-  function chooseGoal(value: HomeGuideGoal) {
+  function chooseGoal(choiceId: string) {
     if (!context || context.urgent) return;
-    const responseCopy = copy[context.lang];
-    appendExchange(responseCopy.goalLabels[value], responseCopy.goalResponses[value]);
-    setGoal(value);
+    const active = homeGuideFollowup(context);
+    const selected = active?.choices.find(choice => choice.id === choiceId);
+    const result = chooseHomeGuideOffer(context, choiceId, context.lang);
+    if (!selected || !result) return;
+    const next = homeGuideFollowup(result.context);
+    const answer = result.offers.length > 0
+      ? result.response?.[context.lang] ?? copy[context.lang].followup
+      : [result.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
+        || copy[context.lang].followup;
+    appendExchange(selected.label[context.lang], answer);
+    if (!context.matched) noteClarifiedChoice(choiceId, context.lang);
+    setFeedbackSaved(false);
+    setContext(result.context);
+    setRecommendations(result.offers);
+  }
+
+  // Browser speech recognition does not guarantee onend/onerror on iOS Safari.
+  // Every recording needs finite deadlines and an explicit, privacy-safe fallback.
+  function clearVoiceTimers() {
+    for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+      if (ref.current !== null) {
+        window.clearTimeout(ref.current);
+        ref.current = null;
+      }
+    }
+  }
+
+  function finishVoice() {
+    const engine = speechRef.current;
+    if (!engine || voiceState === "finishing") return;
+    submitOnEndRef.current = true;
+    setVoiceState("finishing");
+    if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+    if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+    voiceStartTimerRef.current = null;
+    voiceProgressTimerRef.current = null;
+    try { engine.stop(); } catch { engine.onend?.(); }
+    // iOS Safari can leave stop() pending forever, particularly after video playback.
+    const generation = voiceGenerationRef.current;
+    if (speechRef.current === engine) {
+      voiceStopTimerRef.current = window.setTimeout(() => {
+        if (generation !== voiceGenerationRef.current || speechRef.current !== engine) return;
+        try { engine.abort?.(); } catch { /* Already stopped */ }
+        engine.onend?.();
+      }, 2500);
+    }
+  }
+
+  function cancelVoice() {
+    voiceDiscardRef.current = true;
+    voiceGenerationRef.current += 1; // Ignore late Safari callbacks from a cancelled session.
+    clearVoiceTimers();
+    const engine = speechRef.current;
+    speechRef.current = null;
+    try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already stopped */ }
+    setVoiceState("idle");
+    setVoiceElapsed(0);
+    setVoiceTranscript("");
+    setVoiceError(null);
   }
 
   function toggleVoice() {
-    if (listening) {
-      speechRef.current?.stop();
-      setListening(false);
-      return;
-    }
+    if (voiceState !== "idle") { finishVoice(); return; }
     const speechWindow = window as typeof window & {
       SpeechRecognition?: SpeechConstructor;
       webkitSpeechRecognition?: SpeechConstructor;
     };
     const Speech = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
-    if (!Speech) { setVoiceError(true); return; }
-    const engine = new Speech();
-    engine.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
-    engine.interimResults = false;
-    engine.continuous = false;
-    engine.onresult = (event) => {
-      const words = event.results[0]?.[0]?.transcript?.trim();
-      if (words) setDraft(current => (current.trim() ? current.trim() + " " : "") + words);
+    if (!Speech) {
+      setVoiceError(t.voiceKeyboard);
       questionRef.current?.focus();
+      return;
+    }
+    let engine: SpeechEngine;
+    try { engine = new Speech(); }
+    catch {
+      setVoiceError(t.voiceKeyboard);
+      questionRef.current?.focus();
+      return;
+    }
+
+    // start() MUST be called synchronously by the microphone tap on iPhone.
+    const generation = ++voiceGenerationRef.current;
+    voiceBaseRef.current = draft.trim();
+    voiceTextRef.current = "";
+    voiceFinalRef.current = false;
+    voiceFailureRef.current = false;
+    voiceDiscardRef.current = false;
+    submitOnEndRef.current = false;
+    clearVoiceTimers();
+    setVoiceTranscript("");
+    setVoiceElapsed(0);
+    setVoiceError(null);
+    voiceStartedAtRef.current = 0;
+    engine.lang = (context?.lang ?? locale) === "ru" ? "ru-RU" : (context?.lang ?? locale) === "es" ? "es-ES" : "en-US";
+    engine.interimResults = true;
+    // iOS WebKit has known long-running/restart bugs; prefer a short utterance.
+    const isIosWebKit = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    engine.continuous = !isIosWebKit;
+
+    const sessionIsCurrent = () =>
+      voiceGenerationRef.current === generation && speechRef.current === engine;
+
+    const failUnresponsive = () => {
+      if (!sessionIsCurrent()) return;
+      voiceFailureRef.current = true;
+      setVoiceError(t.voiceUnresponsive);
+      try { engine.abort?.(); } catch { /* Browser service may be hung */ }
+      engine.onend?.();
     };
-    engine.onerror = () => setVoiceError(true);
-    engine.onend = () => { setListening(false); speechRef.current = null; };
+
+    const armProgressWatchdog = () => {
+      if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+      voiceProgressTimerRef.current = window.setTimeout(failUnresponsive, 18000);
+    };
+
+    engine.onstart = () => {
+      if (!sessionIsCurrent()) return;
+      if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+      voiceStartTimerRef.current = null;
+      voiceStartedAtRef.current = Date.now();
+      if (!submitOnEndRef.current) setVoiceState("listening");
+      armProgressWatchdog();
+    };
+    engine.onresult = (event) => {
+      if (!sessionIsCurrent()) return;
+      // WebKit sometimes emits a result without first emitting onstart.
+      if (!voiceStartedAtRef.current) {
+        voiceStartedAtRef.current = Date.now();
+        if (!submitOnEndRef.current) setVoiceState("listening");
+      }
+      if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+      voiceStartTimerRef.current = null;
+      const results = Array.from(event.results);
+      const words = results.map(item => item[0]?.transcript || "")
+        .join(" ").replace(/\s+/g, " ").trim().slice(0, 500);
+      if (words) {
+        voiceTextRef.current = words;
+        voiceFinalRef.current = results.length > 0 && results.every(item => item.isFinal === true);
+        setVoiceTranscript(words);
+        armProgressWatchdog();
+      }
+    };
+    engine.onerror = (event) => {
+      if (!sessionIsCurrent() || voiceDiscardRef.current) return;
+      if (event.error === "aborted" && (submitOnEndRef.current || voiceFailureRef.current)) return;
+      voiceFailureRef.current = true;
+      const denied = event.error === "not-allowed" || event.error === "service-not-allowed";
+      setVoiceError(denied ? t.voiceDenied : event.error === "no-speech" ? t.voiceEmpty : t.voiceError);
+      try { engine.abort?.(); } catch { /* Browser may already be disconnected */ }
+      if (sessionIsCurrent()) {
+        if (voiceStopTimerRef.current !== null) window.clearTimeout(voiceStopTimerRef.current);
+        voiceStopTimerRef.current = window.setTimeout(() => engine.onend?.(), 400);
+      }
+    };
+    engine.onend = () => {
+      if (!sessionIsCurrent()) return;
+      clearVoiceTimers();
+      speechRef.current = null;
+      setVoiceState("idle");
+      setVoiceTranscript("");
+      setVoiceElapsed(0);
+      if (voiceDiscardRef.current) return;
+      const spoken = voiceTextRef.current.trim();
+      const complete = [voiceBaseRef.current, spoken].filter(Boolean).join(" ").slice(0, 500);
+      if (spoken) {
+        // Explicit finish or natural end of a final utterance: no second Send tap.
+        // Interrupted/incomplete speech remains editable, never silently submitted.
+        if (!voiceFailureRef.current && (submitOnEndRef.current || voiceFinalRef.current)) ask(complete);
+        else setDraft(complete);
+      } else {
+        setDraft(voiceBaseRef.current);
+        if (!voiceFailureRef.current) setVoiceError(current => current || t.voiceEmpty);
+      }
+    };
+
     speechRef.current = engine;
-    setVoiceError(false);
-    try { engine.start(); setListening(true); }
-    catch { speechRef.current = null; setListening(false); setVoiceError(true); }
+    setVoiceState("starting");
+    // Allow time for an iOS permission sheet; still recover if WebKit never starts.
+    voiceStartTimerRef.current = window.setTimeout(failUnresponsive, 25000);
+    try { engine.start(); }
+    catch {
+      if (!sessionIsCurrent()) return;
+      clearVoiceTimers();
+      speechRef.current = null;
+      setVoiceState("idle");
+      setVoiceError(t.voiceKeyboard);
+      questionRef.current?.focus();
+    }
   }
 
   function reset() {
-    speechRef.current?.stop();
-    setListening(false);
+    cancelVoice();
     setContext(null);
-    setGoal(null);
+    setRecommendations([]);
+    setQualityConsent(false);
+    setNeedsClarification(false);
+    setFeedbackSaved(false);
+    setQualityPending(false);
     setDraft("");
     setTurns([]);
-    setVoiceError(false);
     questionRef.current?.focus();
   }
 
   const answerCopy = copy[context?.lang ?? locale];
-  const links = context && goal && !context.urgent
-    ? homeGuideDestinations({ goal, topic: context.topic, locale })
-    : null;
+  const followup = homeGuideFollowup(context);
+  const suggestedChoices = context && !context.matched
+    ? orderGuideClarificationChoices(followup?.choices ?? [], qualityPriorities)
+    : followup?.choices ?? [];
+  const recording = voiceState !== "idle";
+  const recordingLabel = voiceState === "starting" ? t.voiceStarting : voiceState === "finishing" ? t.voiceFinishing : t.voiceListening;
+  const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
 
   return (
-    <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide aria-labelledby="home-guide-title">
+    <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide
+      data-guide-phase={turns.length === 0 ? "ready" : "conversation"} aria-labelledby="home-guide-title">
       <div className={styles.intro}>
         <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
         <h2 id="home-guide-title">{t.title}</h2>
         <p className={styles.lead}>{t.lead}</p>
         <div className={styles.scenery} aria-hidden="true" />
+        <figure className={styles.advisorPortrait}>
+          <StaticPortrait src="/images/holistic-house/andy-about.png"
+            alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
+            width={240} height={240}
+            sizes="(max-width: 760px) 58px, 96px" loading="lazy" />
+          <figcaption>{t.portraitCaption}</figcaption>
+        </figure>
       </div>
-      <div className={styles.conversation}>
-        <div className={styles.log} role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
-          {turns.length === 0 ? <p className={styles.guideBubble}>{t.welcome}</p> : null}
-          {turns.map(turn => (
-            <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
-          ))}
-        </div>
 
-        {context && !context.urgent && goal === null ? (
-          <div className={styles.choices} role="group" aria-label={answerCopy.followup} data-home-guide-choices>
-            {homeGuideGoals.map(value => (
-              <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
-                {answerCopy.goalLabels[value]}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {links && goal ? (
-          <div className={styles.result} data-home-guide-result>
-            <Link href={links.primary} className={styles.primaryAction} prefetch={false}>
-              {answerCopy.goalActions[goal]}<ArrowRight size={17} aria-hidden="true" />
-            </Link>
-            <Link href={links.secondary} className={styles.secondaryAction} prefetch={false}>
-              <Compass size={15} aria-hidden="true" />{answerCopy.secondary}<ArrowRight size={15} aria-hidden="true" />
-            </Link>
-            <p className={styles.limitation}>{answerCopy.limitation}</p>
-          </div>
-        ) : null}
-
-        {turns.length === 0 ? (
-          <div className={styles.examples} aria-label={t.exampleLabel}>
-            <span>{t.exampleLabel}</span>
-            {t.examples.map(example => (
-              <button type="button" key={example} onClick={() => ask(example)}>{example}</button>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.restart}>
-            <span>{answerCopy.askAgain}</span>
-            <button type="button" onClick={reset}><RotateCcw size={13} aria-hidden="true" />{t.reset}</button>
-          </div>
-        )}
-
-        <form className={styles.form} onSubmit={submit} aria-label={t.question}>
-          <label className={styles.srOnly} htmlFor="home-guide-question">{t.question}</label>
-          <textarea
-            id="home-guide-question"
-            ref={questionRef}
-            value={draft}
-            onChange={event => setDraft(event.currentTarget.value)}
-            maxLength={500}
-            rows={1}
-            placeholder={t.placeholder}
-            autoComplete="off"
-            aria-label={t.question}
-          />
-          {supportsVoice ? (
-            <button
-              type="button" className={styles.voiceButton}
-              aria-label={listening ? t.voiceStop : t.voiceStart}
-              aria-pressed={listening}
-              title={listening ? t.voiceStop : t.voiceStart}
-              onClick={toggleVoice}
-            >{listening ? <MicOff size={19} aria-hidden="true" /> : <Mic size={19} aria-hidden="true" />}</button>
-          ) : null}
-          <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
-            <Send size={18} aria-hidden="true" />
-            <span>{t.send}</span>
+      <div className={styles.entry} aria-hidden={isOpen}>
+        <p className={styles.topicHeading}>{t.filterPrompt}</p>
+        <nav className={styles.needGrid} aria-label={t.filterPrompt} data-home-guide-needs>
+          {homeGuideQuickStarts(locale).map(item => {
+            const Icon = quickStartIcons[item.id];
+            return (
+              <Link key={item.id} href={item.href} prefetch={false}
+                className={styles.needCard} data-home-guide-need={item.id}>
+                <span className={styles.needIcon}><Icon size={21} aria-hidden="true" /></span>
+                <span className={styles.needCopy}>
+                  <strong>{item.title}</strong>
+                  <small>{item.category}</small>
+                </span>
+                <ArrowRight className={styles.needArrow} size={16} aria-hidden="true" />
+              </Link>
+            );
+          })}
+        </nav>
+        <div className={styles.chatRow}>
+          <button type="button" className={styles.chatLauncher} data-home-guide-launcher
+            onClick={() => setIsOpen(true)}>
+            <MessageCircle size={19} aria-hidden="true" />
+            <span>{t.openChat}</span>
+            <ArrowRight size={17} aria-hidden="true" />
           </button>
-        </form>
-        {voiceError ? <p className={styles.error} role="alert">{t.voiceError}</p> : null}
-        <details className={styles.privacy}>
+          <button type="button" className={styles.chatMic} data-home-guide-launcher-mic
+            aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            onClick={() => { setIsOpen(true); toggleVoice(); }}>
+            <Mic size={21} aria-hidden="true" />
+          </button>
+        </div>
+        <details className={styles.entryPrivacy}>
           <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
           <p>{t.privacyDetail}</p>
         </details>
       </div>
+
+      {isOpen ? (
+        <div className={styles.overlay} data-home-guide-overlay>
+          <button type="button" className={styles.backdrop} tabIndex={-1}
+            aria-label={t.closeChat} onClick={closeDialog} />
+          <div id="home-guide-chat" className={styles.dialog} data-home-guide-dialog
+            role="dialog" aria-modal="true" aria-labelledby="home-guide-chat-title"
+            ref={dialogRef} tabIndex={-1}>
+            <header className={styles.dialogHeader}>
+              <span className={styles.avatar}><Sparkles size={21} aria-hidden="true" /></span>
+              <div className={styles.chatIdentity}>
+                <h3 id="home-guide-chat-title">Holistic House</h3>
+                <p>{t.chatStatus}</p>
+              </div>
+              {turns.length > 0 ? (
+                <button type="button" className={styles.headerAction} onClick={reset} aria-label={t.reset} title={t.reset}>
+                  <RotateCcw size={18} aria-hidden="true" />
+                </button>
+              ) : null}
+              <button type="button" className={styles.headerAction} onClick={closeDialog} aria-label={t.closeChat}>
+                <X size={21} aria-hidden="true" />
+              </button>
+            </header>
+            <div className={styles.chatScroll} ref={chatScrollRef}>
+              <div className={styles.conversation}>
+                <div className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
+                  role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
+                  {turns.length === 0 ? <p className={styles.guideBubble}>{t.welcome}</p> : null}
+                  {turns.map(turn => (
+                    <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
+                  ))}
+                </div>
+
+                {context && !context.urgent && recommendations.length === 0 && followup ? (
+                  <div className={styles.choiceGroup}>
+                    <p className={styles.choiceCaption}>{answerCopy.choiceHint}</p>
+                    <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
+                      {suggestedChoices.slice(0, 3).map(choice => (
+                        <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
+                          {choice.label[context.lang]}
+                        </button>
+                      ))}
+                    </div>
+                    {suggestedChoices.length > 3 ? (
+                      <details className={styles.extraChoices}>
+                        <summary>{t.moreWays}</summary>
+                        <div className={styles.choices}>
+                          {suggestedChoices.slice(3).map(choice => (
+                            <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
+                              {choice.label[context.lang]}
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {context && !context.urgent && recommendations.length > 0 ? (
+                  <div className={styles.result} data-home-guide-result>
+                    {recommendations.map((offer, index) => (
+                      <article key={offer.id} className={styles.offer} data-home-guide-offer={offer.id}>
+                        <span className={styles.offerTag}>{index === 0
+                          ? {en:"Suggested first step",ru:"Рекомендуем начать",es:"Primer paso sugerido"}[context.lang]
+                          : {en:"Another option",ru:"Другой вариант",es:"Otra opción"}[context.lang]}</span>
+                        <h3>{offer.title}</h3>
+                        <p>{offer.benefit}</p>
+                        <p className={styles.offerDetail}>{offer.detail}</p>
+                        <Link href={offer.href} className={index === 0 ? styles.primaryAction : styles.secondaryAction} prefetch={false}>
+                          {offer.action}<ArrowRight size={17} aria-hidden="true" />
+                        </Link>
+                      </article>
+                    ))}
+                    <button type="button" className={styles.changeChoice} data-home-guide-change
+                      onClick={() => setRecommendations([])}>
+                      {{en:"Change my answer",ru:"Изменить выбор",es:"Cambiar respuesta"}[context.lang]}
+                    </button>
+                    <div className={styles.qualityRating}>
+                      <span>{answerCopy.qualityHelp}</span>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("helpful")}>{answerCopy.qualityHelpful}</button>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("unhelpful")}>{answerCopy.qualityNotHelpful}</button>
+                    </div>
+                    {feedbackSaved ? <p className={styles.qualitySaved} role="status">{answerCopy.qualitySaved}</p> : null}
+                    <p className={styles.limitation}>{answerCopy.limitation}</p>
+                  </div>
+                ) : null}
+                {context && !context.urgent ? (
+                  <label className={styles.qualityConsent} data-home-guide-quality-consent>
+                    <input type="checkbox" checked={qualityConsent}
+                      onChange={event => { setQualityConsent(event.currentTarget.checked); setFeedbackSaved(false); }} />
+                    <span>{answerCopy.qualityConsent}</span>
+                  </label>
+                ) : null}
+              </div>
+            </div>
+            <div className={styles.chatFooter}>
+              <form className={styles.form} onSubmit={submit} aria-label={t.question}>
+                {recording ? (
+                  <div className={styles.recording} data-home-voice-recording data-voice-state={voiceState} role="group" aria-label={recordingLabel}>
+                    <span className={styles.recordingDot} data-state={voiceState} aria-hidden="true" />
+                    <span className={styles.recordingMessage} aria-live="off">{voiceTranscript || recordingLabel}</span>
+                    <span className={styles.recordingTime} aria-label={voiceTime}>{voiceTime}</span>
+                    <button type="button" className={styles.cancelVoice} aria-label={t.voiceCancel} onClick={cancelVoice}>
+                      <X size={19} aria-hidden="true" />
+                    </button>
+                    <button type="button" className={styles.finishVoice} aria-label={t.voiceDone}
+                      onClick={finishVoice} disabled={voiceState === "finishing"}>
+                      <Check size={21} aria-hidden="true" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label className={styles.srOnly} htmlFor="home-guide-question">{t.question}</label>
+                    <div className={styles.inputRow}>
+                      <textarea id="home-guide-question" ref={questionRef} value={draft}
+                        onChange={event => setDraft(event.currentTarget.value)}
+                        onKeyDown={event => {
+                          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                            event.preventDefault();
+                            event.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                        maxLength={500} rows={1} placeholder={t.placeholder}
+                        autoComplete="off" aria-label={t.question} />
+                      <button type="button" className={styles.voiceButton}
+                        aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                        title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                        onClick={toggleVoice}><Mic size={20} aria-hidden="true" /></button>
+                      <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
+                        <ArrowUp size={20} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </form>
+              {recording ? <p className={styles.voiceNotice}>{t.voicePrivacy}</p> : null}
+              {voiceError ? (
+                <div className={styles.voiceRecovery} role="alert">
+                  <p className={styles.error}>{voiceError}</p>
+                  <button type="button" onClick={() => questionRef.current?.focus()}>{t.voiceKeyboardAction}</button>
+                </div>
+              ) : null}
+              <details className={styles.privacy}>
+                <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
+                <p>{t.privacyDetail}</p>
+              </details>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

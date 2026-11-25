@@ -24,19 +24,58 @@ test("all approved service videos reuse exactly reviewed EN/RU sources, never ge
   }
 });
 
-test("the Services video gallery is expanded by default after booking and testimonials", () => {
+test("the requested psychotherapy YouTube video is limited to RU service media", () => {
+  const registry = read("data/service-video-library.ts");
+  const showcase = read("components/service-video-showcase.tsx");
+  const landing = read("components/personal-service-landing.tsx");
+  const ruVideo = registry.match(/const hypnotherapyRu: ServiceVideoMedia = \{[\s\S]*?\n\};/);
+  const enVideo = registry.match(/const hypnotherapyEn: ServiceVideoMedia = \{[\s\S]*?\n\};/);
+  assert.ok(ruVideo, "Russian psychotherapy media must be defined");
+  assert.ok(enVideo, "English psychotherapy media must remain defined");
+  assert.match(ruVideo[0], /youtubeId: "eLsjFaKCBhI", language: "ru"/);
+  assert.match(ruVideo[0], /general: false/);
+  assert.doesNotMatch(enVideo[0], /eLsjFaKCBhI/);
+  assert.match(registry, /ru: \{[\s\S]*?hypnotherapy: hypnotherapyRu,/);
+  assert.match(registry, /en: \{[\s\S]*?hypnotherapy: hypnotherapyEn,/);
+  assert.match(registry, /return media\[locale === "es" \? "en" : locale\]\[topic\]/);
+  assert.match(landing, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
+  assert.match(showcase, /heading: "Образная психотерапия — видео о подходе"/);
+});
+
+test("Services MyTube retains its verified method gallery with two accessible compact actions", () => {
   const page = read("app/[locale]/services/page.tsx");
-  const begin = page.indexOf('id="method-videos" open');
-  const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
-  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
-  assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
-  assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);
-  assert.match(page, /id="service-video-hypnotherapy"/);
-  assert.match(page, /id="service-video-alchemy"/);
+  const extras = read("components/services-studio-extras.tsx");
+  const begin = page.indexOf('<ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} />');
+  assert.match(extras, /<details\b[^>]*id="method-videos"[^>]*\bopen(?:\s|>)/);
+  const testimonials = page.indexOf('<ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale} variant="services" />');
+  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials,
+    "Method videos remain accessible under MyTube after booking and testimonials");
+  const catalog = read("components/services-unified-catalog.tsx");
+  assert.match(catalog, /data-services-unified-panel=\{id\}/);
+  assert.match(catalog, /<ServicesCardActions locale=\{context\.locale\} title=\{title\}/);
+  assert.match(catalog, /mytube: "\/mytube"/);
+  const actions = read("components/services-card-actions.tsx");
+  assert.match(actions, /hidden=\{expanded !== "details"\}/);
+  assert.match(actions, /hidden=\{expanded !== "order"\}/);
+  assert.match(actions, /<Link href=\{href\} prefetch=\{false\}/);
+  assert.match(actions, /<MandatoryMessengerActions locale=\{locale\} whatsappUrl=\{messageUrl\}/);
+  assert.match(page, /<ServicesIntroMedia locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-hypnotherapy" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-constellations" locale=\{locale\} \/>/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="hypnotherapy" id="es-service-video-hypnotherapy"/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations"/);
   assert.match(page, /<PublicConsultationCta/);
   const browser = read("scripts/verify-site-video-browser.mjs");
-  assert.match(browser, /getAttribute\('open'\) === null/);
+  // The approved 30-option Services UI tests its two native actions rather
+  // than toggling the legacy method gallery to expose compact offer cards.
+  assert.match(browser, /data-service-card-actions/);
+  assert.match(browser, /toHaveAttribute\('aria-expanded','false'\)/);
+  assert.match(browser, /toHaveAttribute\('aria-expanded','true'\)/);
+  // The separate video release browser still guards real method gallery open state.
+  assert.match(read("scripts/verify-page-video-release.mjs"),
+    /disclosure\.getAttribute\('open'\) === null/);
 });
 
 test("Services cards keep exact method media accessible on-page with transcript if the HeyGen player fails", () => {
@@ -60,12 +99,15 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
   const personal = read("components/personal-service-landing.tsx");
-  const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  const free = read("components/free-entry-landing.tsx");
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
-  assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
-  assert.match(free, /<ServiceVideoShowcase topic="overview" locale=\{locale\}/);
+  assert.match(personal, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
+  assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /const situationVideo = kind !== "situation" \? null/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);
@@ -83,7 +125,10 @@ test("six identity-verified public intro videos use YouTube on Play while retain
     assert.ok(player.includes(id), "published mirror not accessible: " + id);
   }
   assert.match(player, /existingYouTubeMirrors/);
-  assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
+  // Both approved YouTube mirrors and the fallback for an unpaired EN master must be visible.
+  assert.match(player, /\(mirrorLink \|\| \(directFallbackLink && externalLink\)\)/);
+  assert.match(player, /\{mirrorLink \|\| externalLink\}/);
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/);
   assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);

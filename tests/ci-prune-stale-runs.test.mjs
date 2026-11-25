@@ -1,0 +1,777 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { context, eligible, prune, observeCI, summarizeJobs, client, TARGET } from '../scripts/ci-prune-stale-runs.mjs';
+import { readLivePr } from '../scripts/ci-pr-readiness.mjs';
+
+const repo = 'andylitvinov-design/books';
+const ctx = { repo, target: TARGET, number: 5 };
+const OLD = 'a'.repeat(40), NEW = 'b'.repeat(40), MERGE = 'c'.repeat(40), BASE = 'd'.repeat(40);
+const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET, sha: BASE }, head: { ref: 'feat/one', sha: NEW, repo: { full_name: repo } }, ...x });
+const run = (x = {}) => ({ id: 100, path: '.github/workflows/hh-pr-core-release.yml', event: 'pull_request', status: 'queued', head_sha: OLD, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
+
+test('a closed PR exact-head event cancels unlinked Core after verified idle-job force check', async () => {
+  const terminal = pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:'2026-11-03T05:05:59Z'});
+  const pending = run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const actions = [];
+  let done = false;
+  const api = {list:async()=>({workflow_runs:[pending]}),pr:async()=>terminal,
+    run:async()=>done ? {...pending,status:'completed',conclusion:'cancelled'} : pending,
+    compare:async()=>{throw Error('closed PR exact SHA must not require ancestry');},
+    workflowBlob:async()=>({type:'file',sha:BASE}),
+    jobs:async()=>({total_count:2,jobs:[
+      {name:'core-lint-types-build',status:'completed'},
+      {name:'hh-eslint-repair',status:'queued'}]}),
+    cancel:async id=>{actions.push(['cancel',id]);},
+    forceCancel:async id=>{actions.push(['force',id]);done=true;}};
+  const s = await prune(api,{...ctx,closedHeadSha:NEW},{sleep:async()=>{},settleMs:0});
+  assert.deepEqual(actions,[['cancel',100],['force',100]]);
+  assert.deepEqual(s.confirmed,[100]);
+  assert.equal(s.closedCandidates,1);
+});
+
+test('production push sweeps orphan queued Core runs from recent closed PRs', async () => {
+  const terminal=pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:new Date().toISOString()});
+  const pending=run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const cancelled=[];let listing=0;
+  const api={list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{listing++;return [terminal];},
+    pr:async()=>terminal,run:async()=>pending,cancel:async id=>cancelled.push(id),
+    compare:async()=>{throw Error('closed PR needs exact SHA, not compare');}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(listing,1);
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.closedCandidates,1);
+});
+
+test('terminal evidence fails closed on reopened, wrong SHA, fork, wrong dates and association',()=>{
+  const terminal=pr({state:'closed',created_at:'2026-11-03T04:55:00Z',
+    closed_at:'2026-11-03T05:05:59Z'});
+  const pending=run({head_sha:NEW,pull_requests:[],created_at:'2026-11-03T05:05:44Z'});
+  const lease={...ctx,closedHeadSha:NEW};
+  assert.equal(eligible(pending,terminal,lease),true);
+  for(const bad of [
+    {...terminal,state:'open'}, {...terminal,closed_at:null},
+    {...terminal,head:{...terminal.head,sha:OLD}},
+    {...terminal,head:{...terminal.head,repo:{full_name:'fork/repo'}}},
+    {...terminal,base:{ref:'main',sha:BASE}},
+    {...terminal,created_at:'2026-11-03T05:06:01Z'},
+  ]) assert.equal(eligible(pending,bad,lease),false);
+  for(const bad of [
+    {...pending,event:'push'}, {...pending,status:'waiting'},
+    {...pending,head_sha:OLD}, {...pending,head_branch:'other'},
+    {...pending,head_repository:{full_name:'fork/repo'}},
+    {...pending,pull_requests:[{number:6,head:{ref:'feat/one',sha:NEW},base:{ref:TARGET}}]},
+    {...pending,pull_requests:[{},{}]},
+    {...pending,created_at:'2026-11-03T05:06:01Z'}
+  ]) assert.equal(eligible(bad,terminal,lease),false);
+  assert.equal(eligible(pending,terminal,{...ctx,closedHeadSha:OLD}),false);
+  assert.equal(eligible(pending,terminal,{...ctx,headSha:NEW}),false);
+  assert.equal(eligible(pending,terminal,{repo,target:TARGET,number:5}),false);
+  assert.equal(eligible(pending,pr(),ctx),false);
+});
+
+test('trusted PR close event requires same repository, target and closed state',()=>{
+  const env={GITHUB_TOKEN:'fake',GITHUB_REPOSITORY:repo,
+    GITHUB_EVENT_NAME:'pull_request_target',GITHUB_REF:'refs/heads/codex/bootstrap-books'};
+  const event={action:'closed',repository:{full_name:repo},
+    pull_request:{number:5,state:'closed',base:{ref:TARGET},
+      head:{sha:NEW,repo:{full_name:repo}}}};
+  assert.deepEqual(context(env,event),{repo,target:TARGET,number:5,closedHeadSha:NEW});
+  for(const bad of [
+    {...event,action:'opened'}, {...event,action:'reopened'},
+    {...event,pull_request:{...event.pull_request,state:'open'}},
+    {...event,pull_request:{...event.pull_request,head:{sha:OLD,repo:{full_name:'fork/repo'}}}},
+    {...event,pull_request:{...event.pull_request,base:{ref:'main'}}},
+  ]) assert.throws(()=>context(env,bad));
+  assert.throws(()=>context({...env,GITHUB_REF:'refs/heads/untrusted'},event));
+  assert.throws(()=>context({...env,GITHUB_EVENT_NAME:'pull_request'},event));
+});
+
+test('force-cancel only after a normal cancellation remains queued and stale evidence is rechecked', async () => {
+  const actions = [];
+  let finished = false;
+  const api = {
+    list: async () => ({workflow_runs: [run()]}), pr: async () => pr(),
+    run: async () => finished ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead', ahead_by:1}),
+    workflowBlob: async () => ({type:'file',sha:BASE}),
+    jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async id => actions.push(['cancel', id]),
+    forceCancel: async id => { actions.push(['force', id]); finished = true; },
+  };
+  const result = await prune(api,ctx,{sleep:async()=>{}, settleMs:0});
+  assert.deepEqual(actions,[['cancel',100],['force',100]]);
+  assert.deepEqual(result.forced,[100]);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('normal cancellation completing during the wait does not force-cancel', async () => {
+  let cancelled = false, forced = 0;
+  const api = { list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => cancelled ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead',ahead_by:1}), workflowBlob: async () => ({type:'file',sha:BASE}), jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async () => {cancelled = true;}, forceCancel: async () => {forced++;} };
+  const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+  assert.equal(forced,0);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('other workflows do not incur the Core force-cancel wait', async () => {
+  let slept = 0;
+  const other = run({path:'.github/workflows/other.yml'});
+  const api = {list: async () => ({workflow_runs:[other]}), pr: async () => pr(),
+    run: async () => other, compare: async () => ({status:'ahead',ahead_by:1}),
+    cancel: async () => {}, forceCancel: async () => {throw Error('must not force other workflows');}};
+  const result = await prune(api,ctx,{sleep:async()=>{slept++;},settleMs:0});
+  assert.equal(slept,0);
+  assert.deepEqual(result.forced,[]);
+});
+
+test('dry-run never sleeps or invokes either cancellation endpoint', async () => {
+  const api = {list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => run(), compare: async () => ({status:'ahead',ahead_by:1}),
+    cancel: async () => {throw Error('unexpected cancel');},
+    forceCancel: async () => {throw Error('unexpected force');}};
+  const result = await prune(api,ctx,{dryRun:true,sleep:async()=>{throw Error('unexpected sleep');}});
+  assert.deepEqual(result.dryRun,[100]);
+  assert.deepEqual(result.cancelled,[]);
+  assert.deepEqual(result.forced,[]);
+});
+
+test('a competing cancellation completing before force does not produce a false error', async () => {
+  let finished = false;
+  const api = { list: async () => ({workflow_runs:[run()]}), pr: async () => pr(),
+    run: async () => finished ? run({status:'completed', conclusion:'cancelled'}) : run(),
+    compare: async () => ({status:'ahead',ahead_by:1}), workflowBlob: async () => ({type:'file',sha:BASE}), jobs: async () => ({total_count:1,jobs:[{name:'release-ready',status:'queued'}]}),
+    cancel: async () => {}, forceCancel: async () => {finished=true; throw Error('HTTP 409');} };
+  const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.confirmed,[100]);
+});
+
+test('never force a started, current or unverifiable run after cancellation', async () => {
+  for (const mode of ['started','current','compare-error','running-job','incomplete-jobs','unknown-job','other-workflow','changed-workflow','missing-base','base-moved','blob-error']) {
+    let afterCancel = false, forced = 0, afterReads = 0;
+    const api = {
+      list: async () => ({workflow_runs: [run(mode === 'other-workflow' ? {path:'.github/workflows/other.yml'} : {})]}),
+      pr: async () => afterCancel && mode === 'current' ? pr({head:{...pr().head,sha:OLD}}) :
+        afterCancel && mode === 'missing-base' ? pr({base:{ref:TARGET}}) :
+        afterCancel && mode === 'base-moved' && ++afterReads > 1 ? pr({base:{ref:TARGET,sha:MERGE}}) : pr(),
+      run: async () => afterCancel && mode === 'started' ? run({status:'in_progress'}) : run(mode === 'other-workflow' ? {path:'.github/workflows/other.yml'} : {}),
+      compare: async () => { if (afterCancel && mode === 'compare-error') throw Error('unavailable'); return {status:'ahead',ahead_by:1}; },
+      workflowBlob: async ref => { if (mode === 'blob-error') throw Error('unavailable'); return {type:'file',sha:mode === 'changed-workflow' && ref === OLD ? NEW : BASE}; },
+      jobs: async () => mode === 'running-job' ? ({total_count:1,jobs:[{name:'release-ready',status:'in_progress'}]}) :
+        mode === 'incomplete-jobs' ? ({total_count:2,jobs:[{name:'release-ready',status:'queued'}]}) :
+        ({total_count:1,jobs:[{name:mode === 'unknown-job' ? 'unknown-cleanup' : 'release-ready',status:'queued'}]}),
+      cancel: async () => {afterCancel = true;},
+      forceCancel: async () => {forced++;},
+    };
+    const result = await prune(api,ctx,{sleep:async()=>{},settleMs:0});
+    assert.equal(forced,0,mode);
+    assert.deepEqual(result.forced,[],mode);
+  }
+});
+
+test('a live-updated PR association is pruned only with proven old run ancestry', async () => {
+  const linkedCurrent = [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }];
+  const stale = run({ head_sha: OLD, pull_requests: linkedCurrent });
+  const cancelled = [];
+  const api = { list: async () => ({ workflow_runs: [stale] }), pr: async () => pr(),
+    run: async () => stale, compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async id => cancelled.push(id) };
+  assert.deepEqual((await prune(api, ctx)).cancelled, [100]);
+  assert.deepEqual(cancelled, [100]);
+  cancelled.length = 0;
+  api.compare = async () => ({ status: 'diverged', ahead_by: 2 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.deepEqual(cancelled, []);
+  api.compare = async () => { throw Error('compare unavailable'); };
+  const unknown = await prune(api, ctx);
+  assert.deepEqual(unknown.cancelled, []);
+  assert.equal(unknown.partial, true);
+  api.run = async () => ({ ...stale, head_sha: NEW });
+  api.compare = async () => ({ status: 'ahead', ahead_by: 1 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.run = async () => stale;
+  let reads = 0;
+  api.pr = async () => (++reads > 2 ? pr({ head: { ...pr().head, sha: MERGE } }) : pr());
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.deepEqual(cancelled, []);
+});
+
+test('only a verified production push can start a privileged cleanup', () => {
+  const env = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo,
+    GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/' + TARGET };
+  const event = { ref: 'refs/heads/' + TARGET, repository: { full_name: repo } };
+  assert.deepEqual(context(env, event), { repo, target: TARGET, number: null });
+  assert.throws(() => context({ ...env, GITHUB_EVENT_NAME: 'pull_request_target' }, event));
+  assert.throws(() => context({ ...env, GITHUB_EVENT_NAME: 'pull_request' }, event));
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/main' }, event));
+  assert.throws(() => context(env, { ...event, repository: { full_name: 'wrong/repo' } }));
+});
+
+test('never cancel new SHA, production push, running jobs, unrelated or ambiguous PRs', () => {
+  assert.equal(eligible(run(), pr(), ctx), true);
+  for (const data of [
+    { head_sha: NEW }, { event: 'push' }, { event: 'workflow_dispatch' }, { event: 'merge_group' },
+    { status: 'in_progress' }, { status: 'waiting' }, { head_repository: { full_name: 'fork/repo' } },
+    { pull_requests: [] }, { head_branch: 'other' },
+  ]) assert.equal(eligible(run(data), pr(), ctx), false, JSON.stringify(data));
+  assert.equal(eligible(run(), pr({ base: { ref: 'main' } }), ctx), false);
+  assert.equal(eligible(run(), pr({ state: 'closed' }), ctx), false);
+  assert.equal(eligible(run({ head_sha: 'new' }), pr({ state: 'closed' }), ctx), false);
+});
+
+test('re-read exact live run and PR before cancellation; cap and dry-run', async () => {
+  const cancelled = [];
+  const api = { pr: async () => pr(), run: async () => run(), compare: async () => ({ status: 'ahead', ahead_by: 1 }), cancel: async id => cancelled.push(id),
+    list: async () => ({ workflow_runs: [run(), run({ id: 101, head_sha: NEW, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }] }), run({ id: 102 })] }) };
+  const dry = await prune(api, ctx, { limit: 2, dryRun: true });
+  assert.deepEqual(dry.dryRun, [100, 102]); assert.deepEqual(cancelled, []);
+  const result = await prune(api, ctx, { limit: 1 });
+  assert.deepEqual(result.cancelled, [100]); assert.deepEqual(cancelled, [100]);
+  api.run = async () => run({ status: 'in_progress' });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.run = async () => run(); let count = 0;
+  api.pr = async () => (++count > 1 ? pr({ head: { ...pr().head, sha: OLD } }) : pr());
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+});
+
+
+test('GitHub HTTP 409 with queued and zero jobs is reported as unresolved, not cancelled', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 0, jobs: [] }),
+    forceCancel: async () => { throw Error('Never force a jobless GitHub 409'); } };
+  const result = await prune(api, ctx);
+  assert.equal(result.candidates, 1);
+  assert.deepEqual(result.cancelled, []);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.jobless409, [{
+    id: 100, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
+    url: 'https://github.com/' + repo + '/actions/runs/100' }]);
+});
+
+test('409 with known jobs or other errors remains a real cleanup error', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 1, jobs: [{ name: 'core-lint-types-build' }] }) };
+  const withJobs = await prune(api, ctx);
+  assert.equal(withJobs.errors.length, 1);
+  assert.equal(withJobs.jobless409.length, 0);
+  api.jobs = async () => ({ total_count: 0, jobs: [] });
+  api.cancel = async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 403'); };
+  const denied = await prune(api, ctx);
+  assert.equal(denied.errors.length, 1);
+  assert.equal(denied.jobless409.length, 0);
+});
+
+
+test('live PR readiness retries GitHub transient 503 with a fresh exact readback', async () => {
+  const calls=[], pauses=[], status=[503, 502, 200];
+  const live={number:5,head:{sha:NEW},base:{ref:TARGET}};
+  const result=await readLivePr(repo,5,'test-token',{
+    transport:async(url,options)=>{
+      calls.push({url,auth:options.headers.authorization});
+      const s=status.shift();
+      return {ok:s===200,status:s,json:async()=>live};
+    },
+    wait:async ms=>{pauses.push(ms);}
+  });
+  assert.equal(result,live);
+  assert.equal(calls.length,3);
+  assert.deepEqual(pauses,[250,750]);
+  assert.ok(calls.every(c=>c.url.endsWith('/pulls/5')&&c.auth==='Bearer test-token'));
+});
+
+test('live PR readiness fails closed for denied or persistently unavailable GitHub', async () => {
+  for (const denied of [401,403,404,429]) {
+    let reads=0;
+    await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+      reads++;return {ok:false,status:denied};
+    },wait:async()=>{}}),new RegExp('HTTP '+denied));
+    assert.equal(reads,1);
+  }
+  let reads=0;
+  await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+    reads++;return {ok:false,status:503};
+  },wait:async()=>{}}),/HTTP 503/);
+  assert.equal(reads,3);
+});
+
+test('janitor retries ONLY trusted PR GET 503, never changes POST or other GET behavior', async () => {
+  const seen=[],pauses=[];
+  const transport=async(url,options)=>{
+    seen.push({url,method:options.method});
+    const attempt=seen.filter(x=>x.url===url).length;
+    if(url.endsWith('/pulls/5')&&attempt<3)return {ok:false,status:503};
+    if(url.endsWith('/actions/runs/100/cancel'))return {ok:false,status:503};
+    return {ok:true,status:200,json:async()=>({number:5})};
+  };
+  const api=client(repo,'test-token',transport,async ms=>pauses.push(ms));
+  assert.equal((await api.pr(5)).number,5);
+  assert.deepEqual(pauses,[250,750]);
+  assert.equal(seen.filter(x=>x.url.endsWith('/pulls/5')).length,3);
+  await assert.rejects(api.cancel(100),/HTTP 503/);
+  assert.equal(seen.filter(x=>x.url.endsWith('/actions/runs/100/cancel')).length,1);
+});
+
+test('HTTP API uses queued PR filter and POST for cancellation', async () => {
+  const calls = [];
+  const http = async (url, options) => { calls.push([url, options.method]); return { ok: true, json: async () => ({ workflow_runs: [] }) }; };
+  const api = client(repo, 'fake', http);
+  await api.list(1, 'feat/one'); await api.pr(5); await api.run(100); await api.cancel(100); await api.compare(OLD, NEW); await api.forceCancel(100); await api.workflowBlob(OLD);
+  assert.match(calls[0][0], /status=queued/); assert.match(calls[0][0], /branch=feat%2Fone/);
+  assert.match(calls[3][0], /\/actions\/runs\/100\/cancel/); assert.equal(calls[3][1], 'POST');
+  assert.ok(calls[4][0].endsWith('/compare/' + OLD + '...' + NEW)); assert.equal(calls[4][1], 'GET');
+  assert.match(calls[5][0], /\/actions\/runs\/100\/force-cancel/); assert.equal(calls[5][1], 'POST');
+  assert.ok(calls[6][0].includes('/contents/.github/workflows/hh-pr-core-release.yml?ref=' + OLD)); assert.equal(calls[6][1], 'GET');
+});
+
+test('trusted PR-target janitor is separate from strict two-job read-only PR specialist',()=>{
+  const original=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  const target=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.ok(original.includes('  pull_request:'));
+  assert.ok(original.includes("if: github.event_name == 'pull_request'"));
+  assert.ok(original.includes("github.event_name == 'push'"));
+  assert.ok(!original.includes('  pull_request_target:'));
+  assert.ok(!original.includes('  prune-head:'));
+  assert.ok(target.includes('  pull_request_target:'));
+  assert.ok(target.includes('types: [synchronize, closed]'), 'native auto-merge must only wake janitor on synchronize or close');
+  assert.ok(!target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'obsolete premature native callbacks must stay disabled');
+  assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
+  assert.ok(target.includes('  prune-head:'));
+  assert.ok(target.includes("github.event.action == 'closed'"));
+  assert.ok(target.includes('      actions: write'));
+  assert.ok(target.includes('actions: write'));
+  assert.ok(target.includes('pull-requests: read'));
+  assert.ok(target.includes('ref: codex/public-book-library'));
+  assert.ok(target.includes('persist-credentials: false'));
+  assert.ok(!target.includes("ref: ${{ github.event.pull_request.head.sha"));
+  assert.ok(!target.includes('  pull_request:'));
+});
+test('PR-target cancellation is isolated from two-job PR specialist and production push',()=>{
+  const source=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  const target=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.ok(source.includes("group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}"));
+  assert.ok(source.includes("cancel-in-progress: false"));
+  assert.ok(source.includes("github.event_name == 'push' && 'production'"));
+  assert.match(source,/HH_CI_PRUNE_LIMIT: '300'/);
+  assert.ok(target.includes("group: hh-ci-prune-head-${{ github.event.pull_request.number || github.run_id }}"));
+  assert.ok(target.includes("cancel-in-progress: true"));
+  assert.ok(target.includes("HH_CI_PRUNE_LIMIT: '60'"));
+});
+test('different run SHA is only an ancestry candidate; missing linked SHA fails closed', () => {
+  assert.equal(eligible(run({ head_sha: NEW }), pr(), ctx), false);
+  const linked = sha => ({ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha } });
+  assert.equal(eligible(run({ pull_requests: [linked(NEW)] }), pr(), ctx), true);
+  assert.equal(eligible(run({ pull_requests: [linked(undefined)] }), pr(), ctx), false);
+  assert.equal(eligible(run({ pull_requests: [linked('bad')] }), pr(), ctx), false);
+});
+
+test('batch cancels >20 stale queued runs while respecting configured limit and readback', async () => {
+  const cancelled = [];
+  const runs = Array.from({ length: 65 }, (_, i) => run({ id: 1000 + i }));
+  const api = { list: async () => ({ workflow_runs: runs }), pr: async () => pr(),
+    run: async id => runs.find(item => item.id === id), compare: async () => ({ status: 'ahead', ahead_by: 1 }), cancel: async id => cancelled.push(id) };
+  const s = await prune(api, ctx, { limit: 35 });
+  assert.equal(s.cancelled.length, 35);
+  assert.equal(s.confirmed.length, 0);
+  assert.equal(new Set(cancelled).size, 35);
+});
+
+test('runner waiting and runtime are derived from job timestamps only', () => {
+  const stats = summarizeJobs([[
+    { status: 'completed', created_at: '2026-11-01T00:00:00Z', started_at: '2026-11-01T00:02:00Z', completed_at: '2026-11-01T00:07:00Z' },
+    { status: 'completed', created_at: '2026-11-01T00:00:00Z', started_at: '2026-11-01T00:04:00Z', completed_at: '2026-11-01T00:08:00Z' },
+    { status: 'queued', created_at: '2026-11-01T00:08:00Z' },
+  ]], Date.parse('2026-11-01T00:10:00Z'));
+  assert.equal(stats.waitP50Ms, 120000);
+  assert.equal(stats.waitP95Ms, 240000);
+  assert.equal(stats.runnerMs, 540000);
+  assert.equal(stats.queuedJobs, 1);
+});
+
+test('metrics monitor counts new checks separately from jobs actually running', async () => {
+  const api = { recent: async () => ({ workflow_runs: [
+    { id: 1, event: 'pull_request', status: 'queued' },
+    { id: 2, event: 'pull_request', status: 'completed' },
+  ] }), jobs: async id => ({ jobs: id === 1 ? [] : [{ status: 'completed',
+    created_at: '2026-11-01T00:00:00Z', started_at: '2026-11-01T00:01:00Z',
+    completed_at: '2026-11-01T00:06:00Z' }] }) };
+  const m = await observeCI(api, { now: Date.parse('2026-11-01T00:10:00Z'), sampleRuns: 2 });
+  assert.equal(m.newChecks, 2);
+  assert.equal(m.queuedChecks, 1);
+  assert.equal(m.runnerMs, 300000);
+  assert.equal(m.sampledRuns, 2);
+});
+
+test('optional conflict grouping cannot falsely fail a successful protected CI prune',()=>{
+ const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+ const marker='- name: Group unresolved PR merge-conflict candidates (read-only)';
+ const reportMarker='- name: P1 PR-minute loss report — verified time stamps and TOP-3 sample';
+ const idx=yaml.indexOf(marker), reportIdx=yaml.indexOf(reportMarker);
+ assert.ok(idx>reportIdx && reportIdx>0);
+ const prune=yaml.slice(0,reportIdx);
+ const report=yaml.slice(reportIdx,idx);
+ const diag=yaml.slice(idx);
+ assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
+ assert.doesNotMatch(prune,/continue-on-error: true/,'the mutating prune must remain fatal');
+ assert.match(report,/node scripts\/ci-pr-loss-report\.mjs/);
+ assert.match(report,/continue-on-error: true/,'read-only metrics must never block cleanup');
+ assert.match(report,/timeout-minutes: 3/);
+ assert.match(diag,/id: conflict_diagnostic/);
+ assert.match(diag,/continue-on-error: true/);
+ assert.match(diag,/timeout-minutes: 2/);
+ assert.match(diag,/steps\.conflict_diagnostic\.outcome == 'failure'/);
+ assert.match(diag,/Conflict grouping: PARTIAL/);
+ assert.ok(!yaml.includes('  pull_request_target:'));
+ assert.ok(readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8').includes('  pull_request_target:'));
+});
+
+test('a trusted PR synchronize must match exact previous and new same-repo HEADs', () => {
+  const env = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo,
+    GITHUB_EVENT_NAME: 'pull_request_target', GITHUB_REF: 'refs/heads/' + TARGET };
+  const e = { action: 'synchronize', before: OLD, after: NEW,
+    repository: { full_name: repo }, pull_request: { number: 5, base: { ref: TARGET },
+      head: { sha: NEW, repo: { full_name: repo } } } };
+  assert.deepEqual(context(env, e), { repo, target: TARGET, number: 5, headSha: NEW });
+  // pull_request_target uses the repository default ref, even though the PR
+  // targets the separate production branch. This must remain accepted.
+  assert.deepEqual(context({ ...env, GITHUB_REF: 'refs/heads/codex/bootstrap-books' }, e),
+    { repo, target: TARGET, number: 5, headSha: NEW });
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/unrelated' }, e));
+  for (const bad of [
+    { ...e, action: 'opened' }, { ...e, before: NEW },
+    { ...e, after: OLD }, { ...e, after: 'bad' },
+    { ...e, pull_request: { ...e.pull_request, head: { sha: OLD, repo: { full_name: repo } } } },
+    { ...e, pull_request: { ...e.pull_request, head: { sha: NEW, repo: { full_name: 'fork/repo' } } } },
+    { ...e, pull_request: { ...e.pull_request, base: { ref: 'main' } } },
+  ]) assert.throws(() => context(env, bad));
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/main' }, e));
+});
+
+test('open PR running checks are cancellable only for trusted browser workflows', () => {
+ const live = {...ctx,headSha:NEW};
+ for (const path of [
+  '.github/workflows/hh-pr-core-release.yml',
+  '.github/workflows/hh-pr-repair-worker.yml',
+  '.github/workflows/unrecognized-browser.yml',
+  '.github/workflows/site-video-browser.yml@malformed',
+ ]) assert.equal(eligible(run({status:'in_progress',path}),pr(),live),false,path);
+ const browser=run({status:'in_progress',path:'.github/workflows/site-video-browser.yml@refs/pull/5/merge'});
+ assert.equal(eligible(browser,pr(),live),true);
+ assert.equal(eligible(browser,pr(),ctx),false);
+});
+
+test('only a verified PR synchronize cancels an already-running ancestor HEAD, never forces it', async () => {
+  const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
+  const active = run({ id: 301, status: 'in_progress', path: '.github/workflows/site-video-browser.yml@refs/pull/5/merge' });
+  const accepted = [];
+  let completed = false;
+  const api = {
+    list: async (page, branch, status) => {
+      assert.equal(branch, 'feat/one');
+      return { workflow_runs: status === 'in_progress' ? [active] : [] };
+    },
+    pr: async () => pr(),
+    run: async () => completed ? { ...active, status: 'completed', conclusion: 'cancelled' } : active,
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async id => { accepted.push(id); completed = true; },
+    forceCancel: async () => { throw Error('Never force started runs'); },
+  };
+  assert.equal(eligible(active, pr(), ctx), true);
+  assert.equal(eligible(active, pr(), { repo, target: TARGET, number: 5 }), false);
+  const result = await prune(api, ctx, { sleep: async () => {}, settleMs: 0 });
+  assert.deepEqual(accepted, [301]);
+  assert.deepEqual(result.cancelled, [301]);
+  assert.deepEqual(result.confirmed, [301]);
+  assert.deepEqual(result.forced, []);
+});
+
+test('a moved head or non-ancestor history blocks cancellation even during synchronize', async () => {
+  const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
+  const active = run({ id: 302, status: 'in_progress', path: '.github/workflows/site-video-browser.yml' });
+  let cancelled = 0;
+  const api = {
+    list: async (page, branch, status) => ({ workflow_runs: status === 'in_progress' ? [active] : [] }),
+    pr: async () => pr({ head: { ...pr().head, sha: MERGE } }),
+    run: async () => active,
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { cancelled++; },
+  };
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.pr = async () => pr();
+  api.compare = async () => ({ status: 'diverged', ahead_by: 1 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.compare = async () => { throw Error('Compare unavailable'); };
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.equal(cancelled, 0);
+});
+
+test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs Core contracts',()=>{
+  const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  assert.ok(source.includes('pull_request_target:'));
+  assert.ok(source.includes('types: [synchronize, closed]'), 'closed/synchronize trusted janitor preserved');
+  assert.ok(!source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'do not restore native open/Ready fan-out');
+  assert.ok(source.includes('ref: codex/public-book-library'));
+  assert.ok(source.includes("cancel-in-progress: true"));
+  assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
+  assert.ok(core.includes('scripts/ci-prune-stale-runs.mjs|'));
+  assert.ok(core.includes('tests/ci-prune-stale-runs.test.mjs|'));
+});
+test('Core concurrency is stable for a PR, isolated for manual and merge_group', () => {
+  const source = readFileSync('.github/workflows/hh-pr-core-release.yml', 'utf8');
+  assert.ok(source.includes('group: hh-pr-core-' +
+    "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}"),
+    'Core cancellation is limited to first-attempt synchronize or Draft transition');
+  assert.ok(!source.includes('github.event.before != github.event.after'),
+    'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
+});
+
+
+test('merged PR orphan: exact commit association and ancestry permit queued old SHA cancellation', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const calls = [], cancelled = [];
+  const api = {list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{throw Error('unbounded closed-list scan forbidden when commit association exists');},
+    commitPulls:async sha=>{calls.push(['associated',sha]);return [terminal];},
+    pr:async()=>terminal,
+    run:async()=>pending,
+    compare:async (a,b)=>{calls.push(['compare',a,b]);return {status:'ahead',ahead_by:8,behind_by:0};},
+    cancel:async id=>cancelled.push(id)};
+  const result = await prune(api,{repo,target:TARGET,number:null});
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.orphanLookups,1);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+  assert.deepEqual(calls,[['associated',OLD],['compare',OLD,NEW]]);
+});
+
+test('orphan cancellation is fail closed for ambiguous, unmerged, fork and diverged PRs', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const cases = [
+    ['zero association',[],terminal,{status:'ahead',ahead_by:8}],
+    ['ambiguous association',[terminal,terminal],terminal,{status:'ahead',ahead_by:8}],
+    ['unmerged', [{...terminal,merged_at:null}],{...terminal,merged_at:null},{status:'ahead',ahead_by:8}],
+    ['reopened',[terminal],{...terminal,state:'open'},{status:'ahead',ahead_by:8}],
+    ['different SHA',[terminal],pr({...terminal,head:{...terminal.head,sha:MERGE}}),{status:'ahead',ahead_by:8}],
+    ['wrong branch',[{...terminal,head:{...terminal.head,ref:'different'}}],terminal,{status:'ahead',ahead_by:8}],
+    ['different repository',[{...terminal,head:{...terminal.head,repo:{full_name:'fork/other'}}}],terminal,{status:'ahead',ahead_by:8}],
+    ['diverged history',[terminal],terminal,{status:'diverged',ahead_by:8,behind_by:1}],
+    ['not ancestor',[terminal],terminal,{status:'behind',ahead_by:0,behind_by:8}],
+    ['unverified compare',[terminal],terminal,null],
+    ['run after merge',[terminal],terminal,{status:'ahead',ahead_by:8},run({...pending,created_at:'2026-11-12T00:00:00Z'})],
+  ];
+  for (const [label,matches,current,relation,special] of cases) {
+    let cancels=0;
+    const api={list:async()=>({workflow_runs:[special||pending]}),
+      commitPulls:async()=>matches,
+      pr:async()=>current,run:async()=>special||pending,
+      compare:async()=>{if(!relation)throw Error('GitHub unavailable');return relation;},
+      cancel:async()=>{cancels++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancels,0,label);
+    assert.deepEqual(result.cancelled,[],label);
+  }
+});
+
+test('orphan cancellation revalidates queued job and final PR head after compare', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const orphan=run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  for (const type of ['job-started','pr-moved','head-sha-mutated','path-mutated']) {
+    let cancel=0,readRun=0,readPR=0;
+    const api={list:async()=>({workflow_runs:[orphan]}),
+      commitPulls:async()=>[terminal],
+      pr:async()=>{readPR++;return type==='pr-moved'&&readPR>=3
+        ? pr({...terminal,head:{...terminal.head,sha:MERGE}}) : terminal;},
+      run:async()=>{readRun++;return type==='job-started'&&readRun>=2 ? {...orphan,status:'in_progress'} :
+        type==='head-sha-mutated'&&readRun>=2 ? {...orphan,head_sha:MERGE} :
+        type==='path-mutated'&&readRun>=2 ? {...orphan,path:'.github/workflows/other.yml'} : orphan;},
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancel++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancel,0,type);
+    assert.deepEqual(result.cancelled,[],type);
+  }
+});
+
+test('orphan association cache only looks up a commit once and caps unknown batch work', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',closed_at:closedAt,merged_at:closedAt});
+  const queued=Array.from({length:5},(_,i)=>run({id:100+i,pull_requests:[],created_at:'2026-11-11T20:43:45Z'}));
+  let lookup=0;
+  const api={list:async()=>({workflow_runs:queued}),commitPulls:async()=>{lookup++;return [terminal];},
+    pr:async()=>terminal,run:async id=>queued.find(v=>v.id===id),
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),cancel:async()=>{}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(lookup,1);
+  assert.equal(result.orphanAncestorCandidates,5);
+  assert.equal(result.cancelled.length,5);
+});
+
+
+test('trusted production sweep cancels a six-hour-old running orphan only with exact merged ancestry', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const abandoned = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  const cancelled = [], listing = [];
+  const api = {
+    list: async (page,branch,status) => {
+      listing.push(status);
+      return {workflow_runs:status==='in_progress'?[abandoned]:[]};
+    },
+    commitPulls:async()=>[terminal],pr:async()=>terminal,run:async()=>abandoned,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:771,status:'in_progress',name:'worker'}]}),
+    cancel:async id=>cancelled.push(id),
+    forceCancel:async()=>{throw Error('Never force a started old job');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.deepEqual(listing,['in_progress','queued']);
+  assert.deepEqual(cancelled,[100]);
+  assert.deepEqual(result.cancelledRunning,[100]);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+});
+
+test('production sweep cannot cancel recently running, open, ambiguous or changed-state orphans', async () => {
+  const clock=Date.now();
+  const recentStart=new Date(clock-15*60_000).toISOString();
+  const recentClosed=new Date(clock-5*60_000).toISOString();
+  const recent=pr({state:'closed',created_at:new Date(clock-25*60_000).toISOString(),
+    closed_at:recentClosed,merged_at:recentClosed});
+  const longClosed='2026-11-11T23:27:00Z';
+  const historical=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:longClosed,merged_at:longClosed});
+  for (const mode of ['recent','open','unmerged','ambiguous','changed-status','changed-head']) {
+    const start=mode==='recent'?recentStart:'2026-11-11T20:43:45Z';
+    const original=run({pull_requests:[],status:'in_progress',created_at:start});
+    let reads=0,cancelled=0;
+    const api={
+      list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[original]:[]}),
+      commitPulls:async()=>mode==='ambiguous'?[historical,historical]:[mode==='recent'?recent:historical],
+      pr:async()=>mode==='recent'?recent:mode==='open'?pr({...historical,state:'open'}):
+        mode==='unmerged'?pr({...historical,merged_at:null}):historical,
+      run:async()=>{
+        reads++;
+        return mode==='changed-status'&&reads>1?{...original,status:'queued'}:
+          mode==='changed-head'&&reads>1?{...original,head_sha:MERGE}:original;
+      },
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancelled++;},
+    };
+    const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+    assert.equal(cancelled,0,mode);
+    assert.deepEqual(result.cancelledRunning,[],mode);
+  }
+});
+
+test('production sweep classifies GitHub in-progress metadata with completed jobs as advisory', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let cancelCalls = 0;
+  const api = {
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:3,jobs:[
+      {id:101,status:'completed',conclusion:'success'},
+      {id:102,status:'completed',conclusion:'failed'},
+      {id:103,status:'completed',conclusion:'skipped'}]}),
+    cancel:async()=>{cancelCalls++;},
+    forceCancel:async()=>{throw Error('No force cancellation for ghost run');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,0);
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelledRunning,[]);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'RUN_IN_PROGRESS_ALL_JOBS_COMPLETED');
+  assert.equal(result.partial,true);
+});
+
+test('production sweep treats 409 after a proven running job finishes as terminal metadata drift', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let jobProbes=0, cancelCalls=0;
+  const api={
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:751,status:++jobProbes===1?'in_progress':'completed'}]}),
+    cancel:async()=>{cancelCalls++;throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,1);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'GITHUB_IN_PROGRESS_TERMINAL_JOBS_CANCEL_409');
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelled,[]);
+  assert.equal(result.partial,true);
+});
+
+test('production sweep never cancels a running merged-run with unproven job pagination', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const old = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  for(const response of [{total_count:2,jobs:[{id:1,status:'in_progress'}]},null]){
+    let cancelled=0;
+    const api={
+      list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[old]:[]}),
+      commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>old,
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      jobs:async()=>response,
+      cancel:async()=>{cancelled++;},
+    };
+    const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+    assert.equal(cancelled,0);
+    assert.deepEqual(result.errors,[]);
+    assert.deepEqual(result.staleRunningMetadata,[]);
+    assert.equal(result.partial,true);
+  }
+});
+
+test('routine production merges cannot launch the expensive batch orphan sweep', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  const push = yaml.match(/^  push:\n([\s\S]*?)(?=^permissions:)/m)?.[1];
+  assert.ok(push, 'batch janitor must stay available for policy changes');
+  assert.ok(push.includes("    branches: ['codex/public-book-library']"));
+  const paths = [...push.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+  assert.deepEqual(paths, [
+    '.github/workflows/hh-ci-stale-run-prune.yml',
+    'scripts/ci-prune-stale-runs.mjs',
+    'tests/ci-prune-stale-runs.test.mjs',
+  ], 'normal application merges must not wake the repository-wide janitor');
+  const native = readFileSync('.github/workflows/hh-native-auto-merge.yml', 'utf8');
+  assert.match(native, /github\.event\.action == 'synchronize'/);
+  assert.match(native, /github\.event\.action == 'closed'/);
+  assert.match(native, /^  prune-head:$/m);
+  assert.match(yaml, /^  pull_request:$/m);
+});

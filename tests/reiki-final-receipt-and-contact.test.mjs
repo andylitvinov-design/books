@@ -53,20 +53,48 @@ test("WhatsApp and Telegram draft only a generic course-next-step request", () =
     assert.doesNotMatch(message, /end-01|motivation|firstName|email|accountId|\{\s*"answers"/);
     const telegram = telegramEnquiryUrlFromWhatsApp(url);
     assert.equal(new URL(telegram).pathname, "/" + TELEGRAM_USERNAME);
-    assert.equal(new URL(telegram).searchParams.get("text"), message);
+    const tgUrl = new URL(telegram);
+    assert.equal(tgUrl.origin, "https://t.me");
+    assert.deepEqual([...tgUrl.searchParams.keys()], ["text"]);
+    const tgText = tgUrl.searchParams.get("text") || "";
+    // Telegram accepts only the selected public service. The longer WhatsApp
+    // request, course completion details and the public-page URL stay in WhatsApp.
+    assert.match(tgText, /Reiki Practitioner/);
+    assert.doesNotMatch(tgText, /five|пять|initiati|инициац|completed all|Я завершил|https?:\/\/|Page:|Страница:|utm_|end-01|motivation|firstName|email|accountId|answers/i);
   }
   assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
   assert.match(learner, /href=\{reikiTelegramUrl\}/);
   assert.match(learner, /target="_blank" rel="noopener noreferrer"/);
 });
 
-test("finished learners can step Back and jump to any previous lesson", () => {
-  assert.match(learner, /data-reiki-final-revisit/);
-  assert.match(learner, /energyworkLessons\.map\(\(lesson, lessonIndex\) => \(/);
-  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/);
-  assert.match(learner, /<footer className=\{styles\.footer\}>\s*<div className=\{styles\.actions/);
+test("final slide removes the duplicate lesson grid but keeps existing navigation", () => {
+  assert.doesNotMatch(learner, /data-reiki-final-revisit|finalRevisitGrid|finalRevisitButton/);
+  assert.match(learner, /<nav className=\{styles\.journey\} aria-label=\{t\.fiveLessons\}>/);
+  assert.match(learner, /energyworkLessons\.map\(\(lesson, number\) => \(/);
   assert.match(learner, /onClick=\{previous\}/);
-  assert.match(learner, /\{!completed && slide\.id !== "flight-save" \? \(/);
+  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/course\?view=courses"\}/);
+  assert.match(learner, /jumpToSlide\(nextIncompleteSlide \?\? "end-01"\)/);
   assert.match(css, /\.page\[data-reiki-current-kind="finish"\] \.back \{ min-height: 44px; \}/);
   assert.match(css, /@media \(max-width: 430px\)[\s\S]*?\.page\[data-reiki-current-kind="finish"\] \.back \{ display: inline-flex; width: 100%; min-height: 48px; \}/);
+});
+
+test("lesson five closing slide is compact but notes and opt-in flows remain accessible", () => {
+  assert.match(learner, /data-reiki-learning-highlights/);
+  assert.match(learner, /"Your highlights"/);
+  assert.match(learner, /"Ваши итоги"/);
+  assert.doesNotMatch(learner, /A simple summary of your own recorded answers and choices/);
+  for (const section of ["data-reiki-course-journal", "data-reiki-readiness-checklist",
+    "data-reiki-course-resources", "data-reiki-contact-disclosure"]) {
+    assert.ok(learner.includes('<details className={styles.finalDisclosure} ' + section), section);
+  }
+  assert.match(learner, /<pre className=\{styles\.notes\}>/);
+  assert.match(learner, /onClick=\{copyNotes\}/);
+  assert.match(learner, /onClick=\{\(\) => window\.print\(\)\}/);
+  assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
+  assert.match(learner, /href=\{reikiTelegramUrl\}/);
+  assert.match(learner, /checked=\{applicationConsented\}/);
+  assert.match(learner, /disabled=\{busy \|\| !applicationConsented\} onClick=\{applyForInitiation\}/);
+  assert.match(css, /Lesson 5 \/ slide 6: compact, disclosure-first final summary/);
+  assert.match(css, /\.finalDisclosure > summary \{[\s\S]*?min-height: 44px/);
+  assert.match(css, /\.finalDisclosure > summary:focus-visible/);
 });

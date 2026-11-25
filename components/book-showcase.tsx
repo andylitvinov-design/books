@@ -31,7 +31,7 @@ export function BookShowcase({ books, locale }: BookShowcaseProps) {
               height={600}
               priority={index < 2}
               src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)}
-              unoptimized={hasBookCoverArtwork(book.id)}
+              unoptimized={hasBookCoverArtwork(book.id) || book.cover.endsWith('.svg')}
               width={800}
             />
           </figure>

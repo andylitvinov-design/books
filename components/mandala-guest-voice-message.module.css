@@ -1,0 +1,15 @@
+.page{min-height:68vh;background:var(--hh-light-canvas,#fbf5e9);color:#143d3a;padding:24px 14px 100px;font-family:Arial,Helvetica,sans-serif}
+.layout{max-width:780px;margin:0 auto;display:grid;gap:18px}
+.hero,.card{background:var(--hh-light-surface,#fffcf7);border:1px solid #e9dfd1;border-radius:24px;padding:24px;display:grid;gap:14px}
+.hero h1{font-size:clamp(28px,5vw,36px);line-height:1.2;margin:0}.card h2{font-size:23px;margin:0}
+.page p{line-height:1.55;font-size:15px;margin:0;color:#52615f}
+.field{display:grid;gap:8px;font-weight:700;font-size:15px}
+.field textarea,.field input{border:1px solid #b7bdb7;border-radius:14px;width:100%;background:#fff;color:#143d3a;padding:12px 14px;font:inherit;font-size:16px}
+.field textarea{min-height:82px;resize:vertical}
+.check{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;color:inherit;background:transparent;border:0;padding:0;font:inherit;font-size:15px;line-height:1.5;cursor:pointer}.checkIcon{flex:none;width:22px;height:22px;border:2px solid #067a67;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;color:#fff}.check[aria-checked="true"] .checkIcon{background:#067a67}
+.actions{display:flex;flex-wrap:wrap;gap:10px}.button,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:52px;text-decoration:none;font-size:15px;font-weight:800;text-align:center;border-radius:14px;padding:10px 16px;cursor:pointer}
+.button{color:white;background:#067a67;border:2px solid #067a67}.secondary{color:#143d3a;background:#f5ecdc;border:2px solid #d9d0c3}
+.button:disabled{opacity:.5;cursor:not-allowed}.page :is(button,input,textarea,a):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.notice{background:#e6f6f1;padding:11px 14px;border-radius:14px;overflow-wrap:anywhere;font-size:14px}.warning{background:#fbf2de;padding:12px 14px;border-radius:14px;color:#744d16;font-size:14px;line-height:1.5}
+.audio{width:100%;min-height:54px}
+@media(max-width:390px){.page{padding:12px 10px 100px}.hero,.card{padding:18px 15px;border-radius:20px}.actions>*{width:100%}}

@@ -1,0 +1,18 @@
+/* Same 16:9 footprint as the published video; no fake Play button. */
+.pending{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  width:100%;min-height:178px;aspect-ratio:16/9;box-sizing:border-box;
+  padding:clamp(12px,3.5vw,24px);overflow:hidden;border-radius:15px;
+  background:linear-gradient(140deg,rgba(10,36,49,.80),rgba(16,57,56,.63)),
+    url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg") center/cover no-repeat;
+  color:#fff;text-align:center;
+}
+.copy{position:relative;z-index:1;display:grid;justify-items:center;gap:8px;max-width:540px}
+.eyebrow{margin:0;font:700 clamp(10px,2.5vw,12px)/1.2 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#e1f1e9}
+.title{margin:0;font:700 clamp(20px,5vw,30px)/1.12 Georgia,serif;color:#fff}
+.note{margin:0;font:500 clamp(12px,2.7vw,14px)/1.35 system-ui,sans-serif;color:#eef9f6}
+.channelLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;
+  padding:9px 14px;border-radius:12px;background:#f9fff9;color:#075b4e;
+  font:750 clamp(11px,2.8vw,14px)/1.25 system-ui,sans-serif;text-decoration:none}
+.channelLink:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:350px){.pending{min-height:172px;padding:10px}.copy{gap:5px}.channelLink{padding:7px 10px}}

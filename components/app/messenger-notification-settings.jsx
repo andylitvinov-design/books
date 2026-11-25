@@ -2,8 +2,9 @@
 import {useEffect,useRef,useState} from 'react'
 import {BellRing,CheckCircle2,Clock3,MessageCircle,Send,RefreshCw} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
+import WhatsAppAccountLink from './whatsapp-account-link'
 import {
- DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION,
+ DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION,CRM_ACCOUNT_LINK_NOTICE_VERSION,
  MESSENGER_NOTIFICATION_CHANNELS,MESSENGER_NOTIFICATION_TOPICS,
 } from '@/lib/app/messenger-notification-policy'
 import styles from './messenger-notification-settings.module.css'
@@ -15,7 +16,10 @@ const TEXT={
   private:'Private documents and messages stay on the secure Holistic House website.',
   pending:'Awaiting verification',connected:'Telegram verified',off:'Not connected',
   telegram:'Telegram',whatsapp:'WhatsApp',
-  telegramHelp:'Tap Connect Telegram and press Start in the official bot. Return here to confirm your connection.',
+  telegramHelp:'Tap Connect Telegram, then press Start in the official bot. Return here to see your connection status.',
+  telegramConsent:'By connecting, you agree to receive the selected service alerts in Telegram. News and offers remain off without separate consent. Disconnect here anytime.',
+  crmLink:'Link Telegram with CRM',crmUnlink:'Unlink from CRM',crmLinkHelp:'Optional: let your practitioner recognize your Google account when you message the Telegram CRM bot. This does not subscribe you to news. You can unlink here at any time.',crmLinkedNotice:'Telegram linked with your Google account in CRM.',crmUnlinkedNotice:'CRM identity link removed; notification delivery stays connected.',
+  customize:'Alert types (optional)',
   whatsappHelp:'Save an international number. WhatsApp Business verification is required before sending.',
   whatsappLabel:'WhatsApp phone number',telegramLabel:'Telegram username (optional until bot is ready)',saveTelegram:'Save Telegram username',type:'Which alerts do you want?',
   messages:'New private messages',booking:'Bookings and reminders',reports:'Reports ready',
@@ -36,7 +40,10 @@ const TEXT={
   private:'Личная переписка и документы остаются в защищённом кабинете Holistic House.',
   pending:'Ожидает подтверждения',connected:'Telegram подтверждён',off:'Не подключён',
   telegram:'Telegram',whatsapp:'WhatsApp',
-  telegramHelp:'Нажмите «Подключить Telegram», затем Start в официальном боте. Вернитесь сюда и проверьте статус.',
+  telegramHelp:'Нажмите «Подключить Telegram», затем Start в официальном боте. Вернитесь сюда — статус обновится.',
+  telegramConsent:'Нажимая «Подключить Telegram», вы соглашаетесь получать выбранные служебные уведомления. Реклама и новости остаются выключенными без отдельного согласия. Отключить можно здесь в любой момент.',
+  crmLink:'Привязать Telegram к CRM',crmUnlink:'Отвязать от CRM',crmLinkHelp:'По желанию: мастер узнает ваш Google-аккаунт в Telegram-переписке CRM. Это не подписка на новости. Связь можно отключить здесь.',crmLinkedNotice:'Telegram привязан к Google-аккаунту в CRM.',crmUnlinkedNotice:'Связь с CRM удалена; Telegram-уведомления остались подключены.',
+  customize:'Типы уведомлений (необязательно)',
   whatsappHelp:'Сохраните номер с кодом страны. Для отправки требуется подтверждение через официальный WhatsApp Business.',
   whatsappLabel:'Номер WhatsApp',telegramLabel:'Имя Telegram (пока бот не подключён)',saveTelegram:'Сохранить Telegram',type:'Какие уведомления получать?',
   messages:'Новые личные сообщения',booking:'Записи и напоминания',reports:'Готовые отчёты',
@@ -57,7 +64,10 @@ const TEXT={
   private:'Los mensajes y documentos privados permanecen en tu cuenta segura de Holistic House.',
   pending:'Pendiente de verificación',connected:'Telegram verificado',off:'Sin conexión',
   telegram:'Telegram',whatsapp:'WhatsApp',
-  telegramHelp:'Toca Conectar Telegram y luego Start en el bot oficial. Regresa para comprobar el estado.',
+  telegramHelp:'Toca Conectar Telegram y luego Start en el bot oficial. Regresa para ver el estado de conexión.',
+  telegramConsent:'Al conectar Telegram, aceptas recibir los avisos de servicio seleccionados. Las noticias y ofertas permanecen desactivadas sin consentimiento separado. Puedes desconectarlo aquí.',
+  crmLink:'Vincular Telegram al CRM',crmUnlink:'Desvincular del CRM',crmLinkHelp:'Opcional: el profesional podrá reconocer tu cuenta Google en una conversación del bot CRM. No te suscribe a noticias; puedes desvincularla aquí.',crmLinkedNotice:'Telegram vinculado a tu cuenta Google en CRM.',crmUnlinkedNotice:'Se eliminó el vínculo; los avisos Telegram siguen conectados.',
+  customize:'Tipos de avisos (opcional)',
   whatsappHelp:'Guarda tu número internacional. WhatsApp Business debe verificarlo antes de enviar avisos.',
   whatsappLabel:'Número de WhatsApp',telegramLabel:'Usuario de Telegram (antes de activar el bot)',saveTelegram:'Guardar Telegram',type:'¿Qué avisos quieres recibir?',
   messages:'Mensajes privados nuevos',booking:'Reservas y recordatorios',reports:'Informes listos',
@@ -107,6 +117,40 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
    if(sessionRef.current===session)sessionRef.current=null
   }
  },[accountId,t.error])
+ // The cabinet data loads after the browser first sees the #hash URL.
+ // Scroll once the signed-in section exists, including in the installed PWA.
+ useEffect(()=>{
+  if(accountId&&window.location.hash==='#hh-telegram-connect')
+   document.getElementById('hh-telegram-connect')?.scrollIntoView({block:'start'})
+ },[accountId])
+ // Telegram opens outside the PWA. Recheck the verified status when the user
+ // returns; a deep link or a pressed Start button alone is never proof.
+ useEffect(()=>{
+  if(!accountId||view?.channels?.telegram?.status!=='pending')return
+  const session=sessionRef.current
+  if(!session||session.accountId!==accountId)return
+  let refreshing=false
+  async function check(){
+   if(document.visibilityState==='hidden'||working.current||refreshing)return
+   refreshing=true
+   try{
+    const next=await appFetch('notification-channels',undefined,undefined,{
+     accountId:session.accountId,signal:session.controller.signal,
+    })
+    if(sessionRef.current===session){
+     setView(next)
+     if(next.channels?.telegram?.status==='connected')setNotice(t.connected)
+    }
+   }catch{/* The user can still use the manual connection check. */}
+   finally{refreshing=false}
+  }
+  window.addEventListener('focus',check)
+  document.addEventListener('visibilitychange',check)
+  return ()=>{
+   window.removeEventListener('focus',check)
+   document.removeEventListener('visibilitychange',check)
+  }
+ },[accountId,view?.channels?.telegram?.status,t.connected])
  function update(channel,change){
   setDrafts(old=>({...old,[channel]:{...old[channel],...change}}))
   setNotice('');setError('')
@@ -121,9 +165,13 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
   const session=sessionRef.current
   if(!session||working.current||session.accountId!==accountId)return
   const draft=drafts[channel]
-  if(action!=='remove'&&action!=='refresh'&&!draft.permission)return
+  // Clicking Telegram Connect is affirmative, versioned service-alert consent.
+  // WhatsApp continues to require a separate, unchecked opt-in box.
+  if(action!=='remove'&&action!=='refresh'&&channel!=='telegram'&&!draft.permission)return
   if(action==='save'&&!draft.destination.trim()){setError(t.noValue);return}
-  const payload=action==='remove'?{action,channel}:{
+  const payload=(action==='remove'||action==='unlink_crm')?{action,channel}:
+     action==='link_crm'?{action,channel,noticeVersion:CRM_ACCOUNT_LINK_NOTICE_VERSION,
+       permissionAccepted:true}:{
    action,channel,topics:draft.topics,locale:TEXT[locale]?locale:'en',
    noticeVersion:MESSENGER_CONTACT_NOTICE_VERSION,permissionAccepted:true,
    ...(action==='save'?{destination:draft.destination}:{}),
@@ -141,7 +189,8 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
     window.location.assign(next.linkUrl)
     return
    }
-   setNotice(action==='remove'?t.removed:action==='preferences'?t.changed:
+   setNotice(action==='link_crm'?t.crmLinkedNotice:action==='unlink_crm'?t.crmUnlinkedNotice:
+     action==='remove'?t.removed:action==='preferences'?t.changed:
     action==='refresh'?(next.channels?.telegram?.status==='connected'?t.connected:t.pendingNotice):t.saved)
   }catch{
    if(sessionRef.current===session)setError(t.error)
@@ -150,7 +199,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
   }
  }
  if(!accountId)return null
- return <section className={styles.root} aria-label={t.title}>
+ return <section id="hh-telegram-connect" className={styles.root} aria-label={t.title}>
   <header className={styles.header}>
    <span className={styles.kicker}><BellRing size={15}/> HOLISTIC HOUSE</span>
    <h2>{t.title}</h2><p>{t.intro}</p>
@@ -163,6 +212,13 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
      const draft=drafts[channel],isTelegram=channel==='telegram'
      const hasEntry=pending||connected
      const ready=isTelegram&&view.verificationAvailable===true
+     const topicOptions=MESSENGER_NOTIFICATION_TOPICS.map(topic=>
+      <label key={topic} className={topic==='news'?styles.marketing:styles.topic}>
+       <input type="checkbox" checked={draft.topics[topic]}
+        onChange={event=>updateTopic(channel,topic,event.target.checked)}/>
+       <span>{t[topic]}</span>
+      </label>
+     )
      return <article className={styles.card} key={channel}>
       <div className={styles.cardHeader}>
        <strong className={styles.service}>{isTelegram?<Send size={19}/>:<MessageCircle size={19}/>} {t[channel]}</strong>
@@ -186,27 +242,28 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
         onChange={event=>update(channel,{destination:event.target.value})}/>
       </label>}
       <p className={styles.help}>{isTelegram?t.telegramHelp:t.whatsappHelp}</p>
-      <fieldset className={styles.topics} disabled={Boolean(busy)}>
-       <legend>{t.type}</legend>
-       {MESSENGER_NOTIFICATION_TOPICS.map(topic=>
-        <label key={topic} className={topic==='news'?styles.marketing:styles.topic}>
-         <input type="checkbox" checked={draft.topics[topic]}
-          onChange={event=>updateTopic(channel,topic,event.target.checked)}/>
-         <span>{t[topic]}</span>
-        </label>
-       )}
-      </fieldset>
-      <label className={styles.consent}>
+      {isTelegram&&ready&&<p className={styles.quickConsent}>{t.telegramConsent}</p>}
+      {isTelegram&&ready?
+       <details className={styles.advanced}>
+        <summary>{t.customize}</summary>
+        <fieldset className={styles.topics} disabled={Boolean(busy)}>
+         <legend>{t.type}</legend>{topicOptions}
+        </fieldset>
+       </details>:
+       <fieldset className={styles.topics} disabled={Boolean(busy)}>
+        <legend>{t.type}</legend>{topicOptions}
+       </fieldset>}
+      {(!isTelegram||!ready)&&<label className={styles.consent}>
        <input type="checkbox" checked={draft.permission} disabled={Boolean(busy)}
         onChange={event=>update(channel,{permission:event.target.checked})}/>
        <span>{t.agree}</span>
-      </label>
+      </label>}
       <div className={styles.actions}>
        {isTelegram?
         <>
-         {ready?<button type="button" disabled={Boolean(busy)||!draft.permission}
+         {ready?<button type="button" className={connected?styles.secondary:styles.connect} disabled={Boolean(busy)}
           onClick={()=>perform(channel,'begin_telegram')}>
-          {connected?t.reconnect:t.connect}
+          <Send size={16}/>{connected?t.reconnect:t.connect}
          </button>:
           <button type="button" disabled={Boolean(busy)||!draft.permission||!draft.destination.trim()}
            onClick={()=>perform(channel,'save')}>{t.saveTelegram}</button>}
@@ -215,14 +272,21 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
           <RefreshCw size={13}/>{t.refresh}
          </button>}
          {hasEntry&&<button type="button" className={styles.secondary}
-          disabled={Boolean(busy)||!draft.permission} onClick={()=>perform(channel,'preferences')}>{t.savePrefs}</button>}
+          disabled={Boolean(busy)} onClick={()=>perform(channel,'preferences')}>{t.savePrefs}</button>}
         </>:
         <button type="button" disabled={Boolean(busy)||!draft.permission||
          (!hasEntry&&!draft.destination.trim())}
          onClick={()=>perform(channel,draft.destination.trim()?'save':hasEntry?'preferences':'save')}>
          {hasEntry&&!draft.destination.trim()?t.savePrefs:t.save}
         </button>}
-       {hasEntry&&<button type="button" className={styles.secondary} disabled={Boolean(busy)}
+       {isTelegram&&connected&&view.crmLinkAvailable&&<div>
+         <p className={styles.quickConsent}>{t.crmLinkHelp}</p>
+         <button type="button" className={styles.secondary} disabled={Boolean(busy)}
+          onClick={()=>perform(channel,view.crmLinked?'unlink_crm':'link_crm')}>
+          {view.crmLinked?t.crmUnlink:t.crmLink}
+         </button>
+        </div>}
+        {hasEntry&&<button type="button" className={styles.secondary} disabled={Boolean(busy)}
         onClick={()=>perform(channel,'remove')}>{t.remove}</button>}
       </div>
       <p className={styles.disclaimer}>{isTelegram?
@@ -231,6 +295,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
      </article>
     })}
    </div>}
+  <WhatsAppAccountLink accountId={accountId} locale={locale}/>
   <p className={styles.privacy}>{t.private}</p>
   {notice&&<p role="status" aria-live="polite" className={styles.success}>{notice}</p>}
   {error&&view&&<p role="alert" className={styles.error}>{error}</p>}

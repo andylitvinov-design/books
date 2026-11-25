@@ -1,0 +1,139 @@
+{
+  "schema": "hh-native-open-challenge-v2",
+  "synthetic": true,
+  "privateClientData": false,
+  "samples": {
+    "ru": [
+      [
+        "other",
+        "Что входит в состав морской воды?"
+      ],
+      [
+        "other",
+        "Сколько стоит новый велосипед?"
+      ],
+      [
+        "other",
+        "Как прошел матч вчера вечером?"
+      ],
+      [
+        "other",
+        "Где найти хорошую кофейню рядом?"
+      ],
+      [
+        "other",
+        "Какая сегодня погода в Лондоне?"
+      ],
+      [
+        "other",
+        "Что ты думаешь об этой книге?"
+      ],
+      [
+        "emotion",
+        "Я очень переживаю из-за предстоящего разговора"
+      ],
+      [
+        "emotion",
+        "У меня всё валится из рук"
+      ],
+      [
+        "emotion",
+        "Я боюсь, что меня не услышат"
+      ],
+      [
+        "emotion",
+        "Меня расстроил ответ коллеги"
+      ],
+      [
+        "refusal",
+        "Не нужно больше ничего мне советовать"
+      ],
+      [
+        "refusal",
+        "Я передумал, запись мне не нужна"
+      ],
+      [
+        "refusal",
+        "Не хочу говорить о работе"
+      ],
+      [
+        "other",
+        "Можно ли вернуть товар в магазин?"
+      ],
+      [
+        "other",
+        "Посоветуй фильм на выходные"
+      ],
+      [
+        "other",
+        "Кто написал роман Война и мир?"
+      ]
+    ],
+    "en": [
+      [
+        "other",
+        "What is seawater made of?"
+      ],
+      [
+        "other",
+        "How much does a new bicycle cost?"
+      ],
+      [
+        "other",
+        "Who won the football match yesterday?"
+      ],
+      [
+        "other",
+        "Where can I find a coffee shop nearby?"
+      ],
+      [
+        "other",
+        "What is the weather in London today?"
+      ],
+      [
+        "other",
+        "What do you think of this book?"
+      ],
+      [
+        "emotion",
+        "I am anxious about a conversation coming up"
+      ],
+      [
+        "emotion",
+        "Everything seems to be going wrong"
+      ],
+      [
+        "emotion",
+        "I am scared nobody will hear me"
+      ],
+      [
+        "emotion",
+        "My colleague’s reply upset me"
+      ],
+      [
+        "refusal",
+        "Please stop giving me suggestions"
+      ],
+      [
+        "refusal",
+        "I changed my mind and do not need an appointment"
+      ],
+      [
+        "refusal",
+        "I do not want to talk about work"
+      ],
+      [
+        "other",
+        "Can I return a product to the store?"
+      ],
+      [
+        "other",
+        "Recommend a movie for the weekend"
+      ],
+      [
+        "other",
+        "Who wrote the novel War and Peace?"
+      ]
+    ]
+  }
+}

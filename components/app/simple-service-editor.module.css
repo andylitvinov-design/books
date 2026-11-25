@@ -92,3 +92,278 @@
   .priceFields{grid-template-columns:minmax(0,1fr) 92px}
 }
 @media (prefers-reduced-motion:reduce){.advanced>summary svg{transition:none}}
+
+/* Practice Service Studio V1 — real service data in compact, slide-like blocks. */
+.quickForm{gap:11px;background:linear-gradient(135deg,#fffcf6,#f8f0e7);border-color:#dfd1c0;box-shadow:none}
+.headerCopy{flex:1;min-width:0}
+.realStatus{display:inline-flex;align-items:center;border:1px solid #e3d5c4;border-radius:999px;padding:3px 9px;margin-top:8px;
+ background:#f9f1e7;color:#755e4f;font:680 .65rem/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.stageTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;min-width:0}
+.stageTabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:47px;padding:7px 6px;
+ border:1px solid #e1d5c7;border-radius:12px;background:#fffcf7;color:#806c5e;font:720 .72rem/1.25 system-ui,sans-serif;cursor:pointer}
+.stageTabs button strong{min-width:0;overflow-wrap:anywhere;font-weight:700}
+.stageTabs button span{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;
+ background:#eee2d6;color:#6f5648;font:780 .72rem/1.3 system-ui,sans-serif}
+.stageTabs button[aria-pressed=true],.stageTabs .activeStage{background:#dff0ea;border-color:#80bbae;color:#125f5d}
+.stageTabs button[aria-pressed=true] span{background:#177870;color:#fff}
+.stageTabs button:disabled{opacity:.65;cursor:wait}
+.stageTabs button:focus-visible{outline:3px solid #2a8178;outline-offset:2px}
+.stagePanel{display:grid;gap:12px;min-width:0;padding:clamp(9px,1.8vw,17px);border:1px solid #e6dacb;border-radius:16px;
+ background:linear-gradient(155deg,#fffefa,#fff8f1)}
+.panelHead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.panelHead>strong{display:inline-flex;align-items:center;gap:7px;font:760 .84rem/1.35 system-ui,sans-serif;color:#534134}
+.panelHead>strong svg{color:#17736c;flex:none}
+.panelHead>span{display:inline-flex;border-radius:999px;padding:5px 8px;background:#e3f0e9;color:#1d756a;
+ font:740 .59rem/1.2 system-ui,sans-serif;letter-spacing:.06em}
+.stageTip,.note{margin:0!important;color:#786858;font:500 .73rem/1.5 system-ui,sans-serif!important}
+.serviceCanvas{display:grid;grid-template-columns:minmax(155px,.81fr) minmax(0,1.19fr);gap:0;min-width:0;overflow:hidden;
+ border:1px solid #e9daca;border-radius:17px;background:#fffefb;box-shadow:0 5px 17px #51362113}
+.photoCanvas{position:relative;min-height:273px;background:#bfcdbf;overflow:hidden;display:flex;align-items:stretch}
+.photoCanvas>img{display:block;width:100%;height:100%;object-fit:cover;min-height:273px}
+.emptyPhoto{flex:1;min-height:273px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:13px;
+ position:relative;background:radial-gradient(ellipse at 70% 18%,#fff5d5 1%,#ead4b5 24%,transparent 59%),
+ linear-gradient(165deg,#e7dfd0 0%,#bec9b2 57%,#76938a 100%);color:#486d60;isolation:isolate}
+.emptyPhoto::before{content:"";position:absolute;z-index:-1;inset:50% -10% 0;
+ background:linear-gradient(190deg,#8a9f8e,#6c9089);clip-path:polygon(0 48%,28% 13%,48% 58%,68% 31%,100% 50%,100% 100%,0 100%)}
+.emptyPhoto svg{background:#fdf9ebd9;border-radius:50%;box-sizing:content-box;padding:12px}
+.emptyPhoto small{max-width:160px;text-align:center;padding:5px 8px;background:#fff6edc7;border-radius:8px;
+ font:720 .71rem/1.4 system-ui,sans-serif}
+.photoButton{position:absolute;z-index:2;left:9px;right:9px;bottom:9px;min-height:45px;display:flex;align-items:center;justify-content:center;gap:7px;
+ padding:10px;border:1px solid #fff7e7aa;border-radius:10px;background:#fff9efed;color:#365e55;
+ font:750 .77rem/1.3 system-ui,sans-serif;box-shadow:0 3px 12px #372b1a1f;cursor:pointer}
+.photoButton:hover{background:#fffefa}
+.photoButton:disabled{opacity:.66;cursor:wait}
+.contentCanvas{display:flex;flex-direction:column;justify-content:flex-start;gap:13px;min-width:0;padding:clamp(13px,2.4vw,22px)}
+.contentKicker{color:#857367;font:760 .63rem/1.35 system-ui,sans-serif;letter-spacing:.12em;margin:0!important;text-transform:uppercase;overflow-wrap:anywhere}
+.visualTitle,.visualSummary{display:grid;gap:7px;min-width:0}
+.visualTitle>span,.visualSummary>span{font:740 .66rem/1.3 system-ui,sans-serif;color:#947f6e}
+.visualTitle input{width:100%;border:0!important;border-bottom:1px dashed #d5c7b6!important;border-radius:0!important;
+ padding:4px 1px 8px!important;background:transparent!important;color:#3e3028!important;
+ font:720 clamp(1.36rem,3vw,2rem)/1.23 Georgia,serif!important;outline-offset:2px;box-shadow:none!important}
+.visualTitle input::placeholder{color:#99897b}
+.visualSummary textarea{width:100%;max-width:100%;min-height:88px;border:1px dashed #e4d9ce!important;border-radius:10px!important;
+ padding:9px!important;background:#fffcf7!important;color:#423c35!important;
+ font:500 .84rem/1.53 system-ui,sans-serif!important;resize:vertical;box-shadow:none!important}
+.visualSummary textarea::placeholder{color:#968478}
+.visualTitle input:focus-visible,.visualSummary textarea:focus-visible{outline:2px solid #278275!important;outline-offset:2px}
+.previewMeta{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.previewMeta span{padding:5px 9px;border:1px solid #e6d9ca;border-radius:999px;color:#6b5143;background:#f6eee7;
+ font:720 .7rem/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.previewCta{display:grid;gap:7px;margin-top:auto;padding-top:10px;border-top:1px solid #eee2d5}
+.previewCta>span{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;border-radius:10px;
+ padding:11px 13px;background:#0b7776;color:#fff;font:740 .81rem/1.35 system-ui,sans-serif}
+.previewCta small{color:#85756a;font:.69rem/1.45 system-ui,sans-serif}
+.galleryPanel{display:grid;gap:8px;padding:12px;border:1px dashed #b8caba;border-radius:13px;background:#f7fcf7}
+.galleryHeader{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.galleryHeader strong{display:flex;align-items:center;gap:6px;color:#236f63;font:760 .75rem/1.3 system-ui,sans-serif}
+.galleryHeader button{min-height:44px;padding:8px 11px;border:1px solid #cfe0d5;border-radius:10px;background:#fffefa;color:#206c61;cursor:pointer;font:700 .72rem/1.3 system-ui,sans-serif}
+.bookingCard{display:grid;gap:15px;padding:clamp(13px,2vw,21px);border:1px solid #e9dece;border-radius:15px;background:#fffdf9}
+.formatGroup{margin:0;padding:0;border:0;min-width:0}
+.formatGroup>legend{margin-bottom:8px;font:770 .77rem/1.3 system-ui,sans-serif;color:#514138}
+.formatTiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.formatTiles button{min-width:0;min-height:48px;cursor:pointer;border:1px solid #e0d2c4;border-radius:11px;
+ background:#fff9f2;color:#6b584b;padding:9px 7px;font:740 .76rem/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.formatTiles button[aria-pressed=true]{background:#dff0e9;border-color:#7cb2a6;color:#16655d}
+.formatTiles button:disabled{opacity:.5;cursor:wait}
+.bookingCard .field>span{display:flex;align-items:center;gap:5px}
+.bookingCard .field>span svg{color:#277868}
+.bookingPreview{display:flex;flex-wrap:wrap;align-items:center;gap:7px 13px;padding:12px;border-radius:13px;
+ border:1px solid #d7e5dc;background:#edf5ee;color:#426e64}
+.bookingPreview>span{font:690 .72rem/1.3 system-ui,sans-serif}
+.bookingPreview>strong{margin-left:auto;font:790 1.04rem/1.3 system-ui,sans-serif}
+.bookingPreview small{flex-basis:100%;color:#6e7b70;font:.68rem/1.3 system-ui,sans-serif}
+.mediaCard{padding:12px;border:1px solid #e8dccd;border-radius:13px;background:#fffdf9}
+.stepNavigation{display:grid;grid-template-columns:minmax(82px,1fr) auto minmax(96px,1fr);gap:8px;align-items:center;
+ padding:0 2px}
+.stepNavigation>span{text-align:center;color:#837264;font:650 .7rem/1.3 system-ui,sans-serif}
+.stepNavigation button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;
+ border:1px solid #d8c9b9;border-radius:10px;background:#fffefa;color:#644c3e;padding:8px 11px;cursor:pointer;
+ font:750 .75rem/1.3 system-ui,sans-serif}
+.stepNavigation button:last-child{background:#e4f2ed;border-color:#abd0c2;color:#256a60}
+.stepNavigation button:disabled{opacity:.38;cursor:not-allowed}
+.readyNote{font-size:.68rem!important;text-align:right!important;color:#44776a!important}
+.formIssue{margin:0!important;padding:10px 12px;border:1px solid #e9bdb7;border-radius:10px;
+ background:#fff2ed;color:#923f38;font:680 .74rem/1.45 system-ui,sans-serif!important}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.actions .draft,.actions .submit{grid-column:auto;min-width:0;min-height:46px!important;font-size:.76rem!important}
+.actions .pause{grid-column:1/-1}
+.fine{margin:0!important}
+.quickForm :is(button,select,summary):focus-visible{outline:3px solid #287e75!important;outline-offset:2px}
+@media(max-width:650px){
+ .quickForm{padding:10px;gap:10px}
+ .stagePanel{padding:9px}
+ .serviceCanvas{grid-template-columns:minmax(0,1fr)}
+ .photoCanvas,.photoCanvas>img,.emptyPhoto{min-height:125px;max-height:185px}
+ .photoCanvas{aspect-ratio:16/7;overflow:hidden}
+ .emptyPhoto{width:100%;height:100%}
+ .photoButton{right:9px;left:auto;bottom:9px;max-width:calc(100% - 18px);min-height:42px;font-size:.73rem}
+ .contentCanvas{padding:11px 13px;gap:10px}
+ .visualTitle input{font-size:1.45rem!important}
+ .visualSummary textarea{min-height:72px!important}
+ .stageTabs button{gap:4px;font-size:.65rem;padding:7px 3px}
+ .stageTabs button span{width:19px;height:19px}
+ .stepNavigation{gap:5px;grid-template-columns:minmax(74px,1fr) 46px minmax(83px,1fr)}
+ .stepNavigation>span{font-size:.61rem}
+ .readyNote{grid-column:3;font-size:.6rem!important}
+ .actions{position:sticky;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:5;
+ padding:9px;border:1px solid #e2d2c0;border-radius:13px;background:#fffdf9ef;box-shadow:0 -4px 20px #4e362318}
+ .actions .draft,.actions .submit{min-height:47px!important;padding:8px 6px!important}
+ .quickForm:has(input:focus,textarea:focus) .actions{position:static}
+}
+@media(max-width:355px){
+ .stageTabs button{flex-direction:column;min-height:55px}
+ .stageTabs button strong{font-size:.64rem}
+ .actions{gap:5px}
+ .actions .draft,.actions .submit{font-size:.7rem!important}
+ .priceFields{grid-template-columns:minmax(0,1fr) 85px}
+}
+@media(prefers-reduced-motion:reduce){.stageTabs button,.formatTiles button{transition:none}}
+
+/* Mobile one-screen service editor. The same server-backed fields and three stages
+   remain available; only decorative preview chrome is suppressed on narrow phones. */
+.footerControls{display:grid;gap:10px}
+@media(max-width:650px){
+  .quickForm{
+    width:100%;max-width:none;margin:0;padding:2px 2px 66px;gap:6px;
+    border:0;border-radius:0;background:transparent;box-shadow:none;
+  }
+  .quickForm :is(input,textarea,select){min-width:0;max-width:100%}
+  .header{justify-content:flex-end;align-items:center;min-height:37px;margin:0;padding:0 1px}
+  .headerCopy{display:none}
+  .langSelect{flex:0 0 auto;display:flex;align-items:center;gap:7px;max-width:none;margin:0}
+  .langSelect>span{font-size:.68rem;gap:5px}
+  .langSelect select{height:37px;max-width:132px;min-width:104px;font-size:16px}
+  .stageTabs{gap:4px}
+  .stageTabs button{min-height:42px;padding:5px 4px;gap:4px;border-radius:10px;font-size:.68rem}
+  .stageTabs button span{width:20px;height:20px}
+  .stageTabs button strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;overflow-wrap:normal}
+  .stagePanel{gap:5px;padding:0;border:0;border-radius:0;background:transparent}
+  .stagePanel[data-service-slide="presentation"]>.panelHead,
+  .stagePanel[data-service-slide="presentation"]>.stageTip,
+  .stagePanel[data-service-slide="presentation"]>.note{display:none}
+  .serviceCanvas{width:100%;border-radius:12px;box-shadow:none}
+  .photoCanvas,.photoCanvas>img,.emptyPhoto{min-height:80px;max-height:94px}
+  .photoCanvas{aspect-ratio:auto;height:89px}
+  .photoCanvas>img{height:100%}
+  .emptyPhoto{height:100%;gap:4px}
+  .emptyPhoto svg{box-sizing:content-box;width:23px;height:23px;padding:8px}
+  .emptyPhoto small{display:none}
+  .photoButton{
+    bottom:6px;right:7px;left:auto;max-width:calc(100% - 14px);
+    min-height:44px;padding:7px 11px;border-radius:9px;font-size:.72rem;
+  }
+  .contentCanvas{gap:6px;padding:9px 10px}
+  .contentKicker{display:none}
+  .visualTitle,.visualSummary{gap:4px}
+  .visualTitle>span,.visualSummary>span{font-size:.69rem}
+  .visualTitle input{
+    height:40px;min-height:40px!important;padding:6px 3px!important;
+    font:650 16px/1.25 system-ui,-apple-system,sans-serif!important;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .visualSummary textarea{
+    min-height:69px!important;height:72px;padding:8px!important;
+    font:500 16px/1.35 system-ui,-apple-system,sans-serif!important;
+  }
+  .previewMeta{gap:5px}
+  .previewMeta span{padding:4px 8px;font-size:.67rem}
+  /* This is a fake request CTA inside the author's card, not a live
+     booking control. Actual submission stays in the action bar. */
+  .previewCta{display:none}
+  .galleryPanel{padding:9px;gap:6px}
+  .stagePanel[data-service-slide="booking"]>.stageTip,
+  .stagePanel[data-service-slide="details"]>.stageTip{display:none}
+  .bookingCard{gap:9px;padding:10px}
+  .bookingPreview{padding:9px}
+  .mediaCard{padding:8px}
+  .stepNavigation,.actions{
+    display:contents;position:static;padding:0;border:0;border-radius:0;
+    box-shadow:none;background:transparent;
+  }
+  .footerControls{
+    position:fixed;z-index:45;
+    left:max(8px,env(safe-area-inset-left,0px));
+    right:max(8px,env(safe-area-inset-right,0px));
+    bottom:calc(74px + env(safe-area-inset-bottom,0px));
+    display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr);
+    gap:6px;align-items:stretch;max-width:550px;margin:0 auto;padding:6px;
+    border:1px solid #ddcbbb;border-radius:12px;
+    background:#fffdf9f7;box-shadow:0 3px 18px #4b352122;
+  }
+  .footerControls .stepNavigation>span{display:none}
+  .footerControls :is(.stepNavigation>button,.actions>button){
+    min-width:0;min-height:44px!important;margin:0!important;
+    padding:7px 8px!important;border-radius:9px!important;
+    font-size:.73rem!important;line-height:1.18!important;
+    text-align:center;white-space:normal;
+  }
+  .footerControls .stepNavigation>button:first-child{grid-column:1;grid-row:1}
+  .footerControls .previousLabel{display:none}
+  .footerControls .stepNavigation>button:nth-of-type(2){
+    grid-column:3;grid-row:1;
+    background:#0b7776;border-color:#0b7776;color:#fff;
+  }
+  .footerControls .actions>.draft{grid-column:2;grid-row:1}
+  .footerControls .actions>.submit{
+    grid-column:3;grid-row:1;
+    background:#812c49!important;border-color:#812c49!important;color:#fff!important;
+  }
+  .footerControls .actions>.pause{grid-column:1/-1;grid-row:2}
+  .footerControls:has(.stepNavigation>button:first-child:disabled) .stepNavigation>button:first-child{display:none}
+  .footerControls:has(.stepNavigation>button:first-child:disabled) .actions>.draft{grid-column:1/3}
+  .quickForm:has(:is(input,textarea,select):focus) .footerControls{
+    position:static;margin:5px 0 0;box-shadow:none;
+  }
+  .fine{margin:0!important;font-size:.65rem!important;line-height:1.3!important;text-align:center}
+}
+@media(max-width:355px){
+  .stageTabs button{gap:3px;font-size:.61rem;min-height:42px}
+  .stageTabs button strong{font-size:.61rem}
+  .stageTabs button span{width:18px;height:18px}
+  .contentCanvas{padding:8px}
+  .footerControls{gap:4px;padding:5px;grid-template-columns:42px minmax(0,1fr) minmax(0,1fr)}
+  .footerControls :is(.stepNavigation>button,.actions>button){font-size:.68rem!important;padding:6px 4px!important}
+}
+
+/* Reiki service studio: the public filter's supported kinds, timing, report,
+   optional certificate and master-authored prices. Compact at 320–430px. */
+.reikiMode{margin:0;padding:0;border:0;min-width:0}
+.reikiMode>legend{padding:0 0 7px;color:#51443a;font:750 .77rem/1.4 system-ui,sans-serif}
+.reikiKindButtons{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px}
+.reikiKindButtons button{display:grid;place-items:center;min-height:44px;padding:8px 7px;border:1px solid #ddcfbe;border-radius:10px;
+ background:#fffdfa;color:#645548;font:700 .74rem/1.25 system-ui,sans-serif;cursor:pointer;text-align:center;overflow-wrap:anywhere}
+.reikiKindButtons button[aria-pressed=true]{background:#e2f1e9;border-color:#7cac9d;color:#155f55}
+.reikiKindButtons button:disabled{opacity:.55;cursor:wait}
+.reikiPanel{display:grid;gap:14px;min-width:0;padding:clamp(11px,2vw,18px);
+ background:linear-gradient(150deg,#fffcf7,#f8f1e8);border:1px solid #e4d7c6;border-radius:14px}
+.reikiLine{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:9px;min-width:0}
+.reikiChecks{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
+.reikiChecks>label,.reikiCertificate{display:flex;align-items:center;gap:8px;min-height:44px;padding:7px 9px;
+ background:#fffcf8;border:1px solid #e4d7cb;border-radius:10px;color:#54483c;font:660 .72rem/1.35 system-ui,sans-serif;cursor:pointer}
+.reikiChecks input,.reikiCertificate input{flex:none;width:18px;height:18px;accent-color:#267e71;margin:0;cursor:pointer}
+.reikiChecks label:has(input:checked),.reikiCertificate:has(input:checked){background:#e6f3ec;border-color:#92bcae;color:#246357}
+.reikiVariant{display:grid;gap:8px;padding:10px;background:#fffdfa;border:1px solid #e0d2c5;border-radius:12px;min-width:0}
+.reikiRows{display:grid;gap:9px}
+.reikiVariantTop{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.reikiVariantTop strong{font:750 .74rem/1.3 system-ui,sans-serif;color:#605044}
+.reikiVariantTop button{min-height:44px;padding:8px;border:0;border-radius:8px;background:transparent;
+ color:#976c5d;font:700 .7rem/1.25 system-ui,sans-serif;cursor:pointer}
+.reikiAddVariant{width:100%;min-height:44px;padding:8px 12px;margin-top:9px;border:1px dashed #87b5a5;
+ border-radius:11px;background:#eef6ef;color:#196b5c;font:750 .77rem/1.3 system-ui,sans-serif;cursor:pointer}
+.reikiAddVariant:disabled{opacity:.55;cursor:default}
+.reikiDisclaimer{margin:0!important;color:#6b6b60;font:530 .72rem/1.5 system-ui,sans-serif!important}
+.reikiMode :is(button,input,select):focus-visible,.reikiPanel :is(button,input,select):focus-visible{outline:3px solid #238b79!important;outline-offset:2px}
+@media(max-width:650px){
+ .reikiPanel{gap:10px;padding:9px;border-radius:12px}
+ .reikiKindButtons{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ [data-reiki-service-editor] .reikiKindButtons{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reikiKindButtons button{min-height:48px;padding:7px 4px;font-size:.69rem}
+ .reikiChecks{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reikiChecks>label{font-size:.69rem;padding:7px}
+ .reikiVariant{padding:8px}
+ .reikiLine{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:355px){
+ .reikiChecks,.reikiLine{grid-template-columns:1fr}
+ .reikiKindButtons button{font-size:.66rem}
+}

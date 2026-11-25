@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
 import { PublicAntistressRouteMap } from "@/components/public-antistress-route-map";
 import { oporaRecoveryStages } from "@/lib/inner-growth/antistress-recovery-pathway";
@@ -646,6 +647,12 @@ const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
 export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const scenePhotos = [
+    "/images/holistic-house/course-start-heron.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/books-library.webp",
+  ] as const;
   const programme = antiStressBlueprint(locale) as unknown as {
     outcomes: {title:string;text:string}[];
     skills: {id:string;title:string;description:string;days:[number,number];outcome:string}[];
@@ -662,7 +669,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   const methodPath = "/" + locale + "/courses/methodology";
 
   return (
-    <main className={styles.root} lang={locale} data-opora-antistress-landing data-course-visual-style="academy-light">
+    <main className={styles.root} lang={locale} data-opora-antistress-landing data-public-visual-landing="antistress" data-course-visual-style="academy-light">
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <div className={styles.container}>
         <nav className={styles.crumbs} aria-label={t.back}>
@@ -720,9 +727,13 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.challengeGrid}>
             {t.pains.map((pain, index) => {
               const Icon = challengeIcons[index];
-              return <article className={styles.challenge} key={pain.title}>
-                <span className={styles.challengeIcon}><Icon size={22} strokeWidth={1.7} aria-hidden="true" /></span>
-                <h3>{pain.title}</h3><p>{pain.text}</p>
+              return <article className={styles.challenge} key={pain.title} data-antistress-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><img src={scenePhotos[index%scenePhotos.length]}
+                  alt="" loading="lazy" decoding="async" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.challengeIcon}><Icon size={22} strokeWidth={1.7} aria-hidden="true" /></span>
+                  <h3>{pain.title}</h3><p>{pain.text}</p>
+                </div>
               </article>;
             })}
           </div>
@@ -736,9 +747,13 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.outcomeGrid}>
             {programme.outcomes.map((item, index) => {
               const Icon = outcomeIcons[index];
-              return <article className={styles.outcome} key={item.title}>
-                <span className={styles.outcomeIcon}><Icon size={24} aria-hidden="true" /></span>
-                <h3>{item.title}</h3><p>{item.text}</p>
+              return <article className={styles.outcome} key={item.title} data-antistress-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><img src={scenePhotos[(index+1)%scenePhotos.length]}
+                  alt="" loading="lazy" decoding="async" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.outcomeIcon}><Icon size={24} aria-hidden="true" /></span>
+                  <h3>{item.title}</h3><p>{item.text}</p>
+                </div>
               </article>;
             })}
           </div>
@@ -761,7 +776,8 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
               const stageDays=previewModuleId==='AS2'?skill.days:[index * 2 + 1,index * 2 + 2];
               return <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
-                <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
+                <span className={styles.skillArtwork} aria-hidden="true"><img src={scenePhotos[index % scenePhotos.length]}
+                  alt="" loading="lazy" decoding="async" /><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
                   <small>{t.dayWord} {stageDays[0]} + {stageDays[1]}</small>
                   <strong>{previewModuleId==='AS2'?skill.title:(recoveryStages[index]?.title||skill.title)}</strong>
@@ -790,14 +806,19 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             <p>{t.processLead}</p>
           </div>
           <div className={styles.processGrid}>
-            {t.steps.map(step => <article className={styles.processCard} key={step.number}>
-              <span className={styles.processNumber}>{step.number}</span>
-              <h3>{step.title}</h3><p>{step.text}</p>
+            {t.steps.map((step,index) => <article className={styles.processCard} key={step.number} data-antistress-visual-screen={index+1}>
+              <div className={styles.scenePhoto}><img src={scenePhotos[index % scenePhotos.length]} alt=""
+                loading="lazy" decoding="async" /></div>
+              <div className={styles.sceneWords}>
+                <span className={styles.processNumber}>{step.number}</span>
+                <h3>{step.title}</h3><p>{step.text}</p>
+              </div>
             </article>)}
           </div>
         </section>
 
-        <section className={styles.practiceDemo} aria-labelledby="antistress-practice-demo">
+        <section className={styles.practiceDemo} aria-labelledby="antistress-practice-demo" data-antistress-visual-screen="try">
+          <div className={styles.scenePhoto}><img src={scenePhotos[0]} alt="" loading="lazy" decoding="async" /></div>
           <div className={styles.demoCopy}>
             <p className={styles.sectionEyebrow}>{t.samplerEyebrow}</p>
             <h2 id="antistress-practice-demo">{t.samplerTitle}</h2>
@@ -823,15 +844,21 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
 
         <PublicAntistressEvidence locale={locale} />
 
-        <section className={styles.safety} aria-labelledby="antistress-safety">
+        <section className={styles.safety} aria-labelledby="antistress-safety" data-antistress-visual-screen="safety">
+          <div className={styles.scenePhoto}><img src={scenePhotos[1]} alt="" loading="lazy" decoding="async" /></div>
+          <div className={styles.safetyBody}>
           <div className={styles.safetyHeader}>
             <span className={styles.safetyIcon}><ShieldCheck size={31} aria-hidden="true" /></span>
             <div><p className={styles.sectionEyebrow}>{t.trustEyebrow}</p><h2 id="antistress-safety">{t.trustTitle}</h2></div>
           </div>
           <ul className={styles.safetyList}>{t.trustItems.map(item => <li key={item}><Check size={19} aria-hidden="true" />{item}</li>)}</ul>
+          </div>
         </section>
 
-        <section className={styles.section} id="questions" aria-labelledby="antistress-faq">
+        <section className={[styles.section,styles.faqScene].join(" ")} id="questions" aria-labelledby="antistress-faq"
+          data-antistress-visual-screen="faq">
+          <div className={styles.scenePhoto}><img src={scenePhotos[2]} alt="" loading="lazy" decoding="async" /></div>
+          <div className={styles.faqBody}>
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>{t.faqEyebrow}</p>
             <h2 id="antistress-faq">{t.faqTitle}</h2>
@@ -842,9 +869,12 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
               <p>{entry.a}</p>
             </details>)}
           </div>
+          </div>
         </section>
 
-        <section className={styles.final} aria-labelledby="antistress-final">
+        <section className={styles.final} aria-labelledby="antistress-final" data-antistress-visual-screen="start">
+          <div className={styles.scenePhoto}><img src={scenePhotos[0]} alt="" loading="lazy" decoding="async" /></div>
+          <div className={styles.finalContent}>
           <p className={styles.finalEyebrow}><Sparkles size={18} aria-hidden="true" />{t.finalEyebrow}</p>
           <h2 id="antistress-final">{t.finalTitle}</h2>
           <p>{t.finalText}</p>
@@ -853,6 +883,16 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             <Link href={methodPath} className={styles.finalSecondary}>{t.otherLink}<ArrowRight size={17} aria-hidden="true" /></Link>
           </div>
           <p className={styles.finalDisclaimer}><CircleHelp size={16} aria-hidden="true" />{t.legal}</p>
+          </div>
+        </section>
+        <section className={styles.finalCapture} data-antistress-visual-screen="final-capture">
+          <div className={styles.scenePhoto}><img src={scenePhotos[1]} alt="" loading="lazy" decoding="async" /></div>
+          <CompactLeadCapture locale={locale} variant="inline"
+            sourcePath={"/" + locale + "/courses/antistress"}
+            serviceTitle="OPORA Anti-Stress free programme"
+            title={locale==="ru"?"Есть вопрос о программе?":locale==="es"?"¿Tienes una pregunta sobre el programa?":"Have a question about the programme?"}
+            lead={locale==="ru"?"Оставьте контакт для ответа. Бесплатный курс доступен без отправки заявки.":locale==="es"?"Deja un contacto para recibir respuesta. Puedes empezar gratis sin enviar esta solicitud.":"Leave a contact for a reply. You can start the free course without this request."}
+          />
         </section>
       </div>
     </main>

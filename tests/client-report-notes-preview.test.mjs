@@ -125,6 +125,9 @@ test('preview PDF uses admin-only route and never issues a client share link', a
   assert.ok(result.indexOf('consultation-result-documents') < result.lastIndexOf('<CabinetLinkActions'))
 })
 
+const modeAwareReportInitializer = field =>
+  `useState(() => consultation?.${field} ?? getOwnerReportTextTemplate(initialReportLocale, consultation?.recommendationType === 'general' || (!consultation && initialReportKind === 'general') ? 'general' : 'homeopathy').${field})`
+
 test('bilingual practitioner editors expose both separate notes textareas', async () => {
   const [studio, standalone, service, actions] = await Promise.all([
     readFile('components/consultation-form.jsx', 'utf8'),
@@ -142,8 +145,8 @@ test('bilingual practitioner editors expose both separate notes textareas', asyn
   assert.match(studio, /Примечания/)
   assert.ok(studio.indexOf('textarea name="analysis"') < studio.indexOf('textarea name="recommendationsText"'))
   assert.ok(studio.indexOf('textarea name="recommendationsText"') < studio.indexOf('textarea name="additionalNotes"'))
-  assert.match(studio, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
-  assert.match(studio, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
+  assert.ok(studio.includes(modeAwareReportInitializer('analysis')), 'analysis must preserve general/classic draft mode')
+  assert.ok(studio.includes(modeAwareReportInitializer('additionalNotes')), 'notes must preserve general/classic draft mode')
 })
 
 test('owner-authored consultation example is an editable draft only for new records', async () => {
@@ -155,16 +158,16 @@ test('owner-authored consultation example is an editable draft only for new reco
 
   const form = await readFile('components/consultation-form.jsx', 'utf8')
   assert.match(form, /if \(!consultation\) \{/)
-  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.analysis/)
-  assert.match(form, /getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes/)
+  assert.ok(form.includes(modeAwareReportInitializer('analysis')), 'general and classic drafts initialize independently')
+  assert.ok(form.includes(modeAwareReportInitializer('additionalNotes')), 'general and classic notes initialize independently')
   assert.match(form, /consultation-template-notice/)
   assert.match(form, /Проверьте и замените замеры/)
   assert.match(form, /consultation-template-review/)
   assert.match(form, /checked=\{templateReviewed\}/)
   assert.match(form, /required/)
   // Existing consultations still initialize from the persisted patient record.
-  assert.match(form, /useState\(\(\) => consultation\?\.analysis \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.analysis\)/)
-  assert.match(form, /useState\(\(\) => consultation\?\.additionalNotes \?\? getOwnerReportTextTemplate\(initialReportLocale\)\.additionalNotes\)/)
+  assert.ok(form.includes(modeAwareReportInitializer('analysis')), 'existing record and mode must keep proper editable draft')
+  assert.ok(form.includes(modeAwareReportInitializer('additionalNotes')), 'existing notes and mode must keep proper editable draft')
 })
 
 test('the generated private PDF has a distinct clickable remedy description URL', async () => {

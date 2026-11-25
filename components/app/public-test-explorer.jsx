@@ -16,8 +16,8 @@ export function guestStartable(entries) {
       Boolean(entry?.definition))
 }
 
-/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course', initialBrowseFull?: boolean, onGuestStart?: ((entries: object[]) => Promise<void>) | null }} props */
-export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, onGuestStart = null }) {
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course', initialBrowseFull?: boolean, reviewFirst?: boolean, onGuestStart?: ((entries: object[]) => Promise<void>) | null }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, reviewFirst = false, onGuestStart = null }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
@@ -52,10 +52,11 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
     router.push('/' + effectiveLocale + '/app/course?entry=personal')
   }
   return <>
+    {reviewFirst && <TestSelectionCourseBanner locale={locale} showCourse={false} showReview />}
     <TestExplorer locale={locale} audience="guest" embedded={embedded} simpleMode={embedded}
       key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
       initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
-    <TestSelectionCourseBanner locale={locale} showReview />
+    <TestSelectionCourseBanner locale={locale} showReview={!reviewFirst} />
   </>
 }
