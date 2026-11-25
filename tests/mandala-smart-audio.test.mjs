@@ -145,7 +145,11 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/setAttachedAudio\(current=>/);
   assert.match(studio,/current\?\.kind==="presets"/);
   assert.match(studio,/setAudioAuto\(false\);chooseMusic/);
-  assert.match(studio,/controls preload="metadata"/);
+  const native=studio.slice(studio.indexOf("const audioPreviewPlayer="),studio.indexOf("const recordingPlayButton="));
+  assert.match(native,/<audio\b[^>]*ref=\{setAudioPreviewNode\}/);
+  assert.match(native,/controls=\{!inlineRecordingPlayer\}\s+hidden=\{inlineRecordingPlayer\}\s+preload="metadata"/);
+  assert.match(studio,/data-video-recorded-audio-play[\s\S]*?onClick=\{playSelectedRecording\}/);
+  assert.match(studio,/\{inlineRecordingPlayer\?audioPreviewPlayer:null\}\s*\{recordingPlayButton\}/);
   assert.match(studio,/presetAudioUrl\(music\)/);
   assert.match(studio,/isSupportedLocalAudio\(file\)/);
   assert.match(css,/\.audioTrackList\{display:flex;flex-direction:column/);
