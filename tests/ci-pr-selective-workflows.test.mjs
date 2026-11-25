@@ -581,3 +581,33 @@ test('second-wave visual QA is opt-in or mock-harness-only while protected owner
     assert.ok(trigger(name),name+': mandatory security, private, payment or Core gate missing');
   }
 });
+
+test('Home and Practitioner protected PR source contracts install only the locked standalone TypeScript compiler', () => {
+  const names=['hh-home-conversation.yml','practice-visual-services.yml'];
+  const blocks=names.map(name => {
+    const yaml=source(name);
+    const start=yaml.indexOf('      - name: Install only locked TypeScript for protected PR source contracts');
+    const end=yaml.indexOf('      - name: Install complete dependencies for standalone QA');
+    assert.ok(start>=0 && end>start,name);
+    const block=yaml.slice(start,end);
+    assert.ok(block.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+    assert.ok(block.includes("lock.packages?.['node_modules/typescript']"));
+    assert.ok(block.includes('entry.integrity') && block.includes('entry.resolved'));
+    assert.ok(block.includes('entry.hasInstallScript') && block.includes('peerDependencies'));
+    assert.ok(block.includes('npm ci --prefix "$tmp" --include=dev --ignore-scripts'));
+    assert.ok(block.includes('npm ci --include=dev --no-audit --no-fund'),'unsupported lock metadata must retain full install');
+    assert.ok(yaml.slice(end).includes("github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'"));
+    assert.match(yaml,/^  workflow_dispatch:/m);
+    return block;
+  });
+  assert.equal(blocks[0],blocks[1],'both source-contract owners must use identical lockfile/integrity policy');
+  const home=source(names[0]);
+  const push=home.split(/^  push:/m)[1].split(/^  workflow_dispatch:/m)[0];
+  assert.ok(!push.includes('.github/workflows/hh-home-conversation.yml'),'CI-only edits must not trigger the full postmerge product build');
+  assert.ok(push.includes('components/home-conversation-guide.*') && push.includes('tests/home-conversation-browser.mjs'));
+  assert.ok(home.includes('HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs'));
+  assert.ok(home.includes('HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs'));
+  const practice=source(names[1]);
+  assert.ok(practice.includes('tests/remote-support-privacy-contract.test.mjs'));
+  assert.ok(practice.includes('tests/practice-google-return-and-services-v5.test.mjs'));
+});
