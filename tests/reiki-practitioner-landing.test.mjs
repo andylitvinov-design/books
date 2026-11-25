@@ -102,8 +102,8 @@ test("Pro landing expands all six canonical modules inline after the existing ro
  assert.deepEqual(curriculum.levels.filter(l=>l.id>1).map(l=>l.steps.length),[6,5,5,5,5,6]);
  const slugs=[...map.matchAll(/slug: "([^"]+)",\s*levelId: (\d+)/g)].filter(m=>Number(m[2])>1).map(m=>m[1]);
  assert.deepEqual(slugs,["instructor-course","temple-magic","eastern-magic","western-magic","rune-magic","higher-magic"]);
- assert.ok(programs.includes('href={master ? row.href : "#" + reikiProModuleId(row.id)}'));
- assert.ok(programs.includes('href={master ? base + "/basic-course" : "#" + reikiProModuleId("instructor-course")}'));
+ assert.ok(programs.includes('href={master ? "#reiki-master-" + row.id.toLowerCase() : "#" + reikiProModuleId(row.id)}'));
+ assert.ok(programs.includes('href={master ? "#reiki-master-levels" : "#" + reikiProModuleId("instructor-course")}'));
  assert.ok(programs.includes('{!master && <ReikiProModuleScreens locale={locale} modules={modules} base={base} />}'));
  assert.ok(programs.indexOf("data-reiki-advanced-row")<programs.indexOf("{!master && <ReikiProModuleScreens"));
  assert.ok(programs.indexOf("{!master && <ReikiProModuleScreens")<programs.indexOf("className={styles.reikiSecondary}"));
@@ -116,6 +116,38 @@ test("Pro landing expands all six canonical modules inline after the existing ro
  assert.ok(!screens.includes("MyReikiHeader") && !screens.includes("ReikiProgramNavigation"));
  assert.ok(css.includes("100svh") && css.includes("minmax(0, 1fr)") && css.includes("max-width: 354px"));
  assert.ok(!/\.screen\s*\{[^}]*\bheight\s*:\s*\d+px/i.test(css));
+});
+
+test("Master roadmap stays on the same landing and exposes all five original levels", () => {
+  const source = read("components/reiki-programs.tsx");
+  const shared = read("data/academy/yggdrasil-basic-level-copy.ts");
+  const previous = read("components/yggdrasil-program-landing.tsx");
+  const css = read("components/reiki-master-levels.module.css");
+  const basic = JSON.parse(read("data/academy/yggdrasil-curriculum.json")).levels.find(l => l.id === 1);
+  const en = JSON.parse(read("data/academy/yggdrasil-en-settings-l1.json"));
+  assert.deepEqual(basic.steps.map(s => s.number), [1,2,3,4,5]);
+  assert.deepEqual(basic.steps.map(s => s.settings.length), [4,5,8,4,2]);
+  for (const step of basic.steps) {
+    assert.ok(step.id && step.title.en && step.title.ru && step.title.es);
+    for (const setting of step.settings) assert.ok(en[setting.id]?.title && setting.title);
+  }
+  assert.ok(source.includes('href={master ? "#reiki-master-levels"'));
+  assert.ok(source.includes('href={master ? "#reiki-master-" + row.id.toLowerCase() : "#" + reikiProModuleId(row.id)}'));
+  assert.ok(source.includes('id={"reiki-master-" + step.id.toLowerCase()}'));
+  assert.ok(source.indexOf('data-reiki-master-levels') > source.indexOf('data-reiki-advanced-row'));
+  assert.ok(source.indexOf('data-reiki-master-levels') < source.indexOf('className={styles.reikiSecondary}'));
+  assert.ok(source.includes('{master && basic &&'));
+  assert.ok(source.includes('step.settings.map((setting, index)'));
+  assert.ok(source.includes('basicAttunementName(locale, step, setting, index)'));
+  assert.ok(source.includes('basicStepDescriptions[step.number][locale]'));
+  assert.ok(previous.includes('basicStepDescriptions[step.number][locale]'));
+  assert.ok(previous.includes('basicAttunementName(locale, step, setting, index)'));
+  assert.ok(shared.includes('basicSpanishAttunements') && shared.includes('export function basicAttunementName'));
+  assert.ok(source.includes('data-reiki-master-full-level={step.number}'));
+  assert.ok(css.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));
+  assert.ok(css.includes('100svh') && css.includes('object-fit: contain'));
+  assert.ok(css.includes('min-height: 46px'));
+  assert.ok(!source.includes('MyReikiHeader') && !source.includes('ReikiProgramNavigation locale='));
 });
 
 test("Three approved Reiki overview screens immediately follow the second landing screen",()=>{
