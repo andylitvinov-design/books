@@ -21,6 +21,7 @@ test('reviewed draft retains selected course and finalized tombstone cannot recr
  assert.ok(archive.includes('courseSessionId:item.courseSessionId'))
  assert.ok(server.includes('protocol.courseSessionId!==old.courseSessionId'))
  assert.ok(writer.includes('const draft=await assertCoachDraftReview(db,actor,config,protocol,input.draftRevision)'))
- assert.ok(server.includes("if(row.state!=='active'||row.revision!==revision)throw conflict()"))
+ assert.ok(server.includes('coachDraftReviewDecision(row,revision,Boolean(existing))'))
+ assert.ok(server.includes("if(decision==='conflict')throw conflict()"))
  assert.match(writer,/if\(draft\?\.state==='finalized'&&!existing\)throw new AppError\('MY_COACH_PROTOCOL_CONFLICT',409\)/)
 })

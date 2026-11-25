@@ -734,7 +734,8 @@ async function verifyShortViewport(page,locale) {
 
 /** Check the actual Daybook DOM for every canonical slide on three phone sizes.
  * A completed, synthetic account is read-only; never touch a real journal.
- * Only the central content pane may scroll (dense answers, full reviews, forms).
+ * Ordinary teaching/quiz/video screens must fit, including all four quiz choices.
+ * Explicitly report exceptional dense forms; never hide their contents.
  * All navigation and the progress/footer must remain inside the visual viewport.
  */
 async function verifyGoldenDaybook(locale) {
@@ -769,13 +770,15 @@ async function verifyGoldenDaybook(locale) {
   });
   const route = origin+"/"+locale+"/academy/principles-of-energywork/daybook";
   const root = view.locator('[data-reiki-daybook-design="golden-one-screen-v3"]');
-  const widths = [{width:390,height:844},{width:320,height:568},{width:430,height:932}];
+  const widths = [{width:390,height:844},{width:320,height:568},{width:390,height:660},{width:430,height:932}];
+  const incidentSlides = new Set(['welcome-02','welcome-video','flight-01','flight-audio']);
   const internalScroll = [];
   let checked = 0;
   async function check(id) {
     await expect(root.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id,{timeout:30000});
     for (const size of widths) {
       await view.setViewportSize(size);
+      await view.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const d = await root.evaluate(el => {
         const shell=el.querySelector('[data-daybook-part="shell"]');
         const slide=el.querySelector('[data-energywork-slide-id]');
@@ -790,6 +793,8 @@ async function verifyGoldenDaybook(locale) {
           shellOverflow:shell.scrollHeight-shell.clientHeight,rootOverflow:el.scrollHeight-el.clientHeight,
           outerHorizontal:el.scrollWidth-el.clientWidth,innerHorizontal:panel.scrollWidth-panel.clientWidth,
           innerVertical:panel.scrollHeight-panel.clientHeight,
+          panel:rect(panel),choices:[...panel.querySelectorAll('label:has(input[type=radio])')].map(rect),
+          visibleShare:[...el.querySelectorAll('[data-reiki-referral-share]')].some(n=>n.getClientRects().length>0 && !n.parentElement.closest('details:not([open])')),
           documentOverflow:document.documentElement.scrollHeight-document.documentElement.clientHeight,
           tail:footer!==shell.lastElementChild,header:!!shell.querySelector(':scope > header'),
           ads:[...document.querySelectorAll('[data-sitewide-capture]')].some(n=>n.getClientRects().length>0),
@@ -808,11 +813,23 @@ async function verifyGoldenDaybook(locale) {
       assert.ok(d.outerHorizontal<=2&&d.innerHorizontal<=2,"horizontal overflow: "+at);
       assert.equal(d.tail,false,"anything after footer: "+at);
       assert.equal(d.ads,false,"sitewide sales block visible: "+at);
-      if(d.innerVertical>3) internalScroll.push({id,width:size.width,excess:d.innerVertical});
+      if (id !== "welcome-01") {
+        assert.ok(d.rail.height <= 48, "compact five-step rail: "+at);
+        assert.ok(d.progress.height <= 56, "compact progress status: "+at);
+        assert.equal(d.visibleShare,false,"share belongs in the closed course menu: "+at);
+      }
+      if (incidentSlides.has(id)) {
+        assert.ok(d.innerVertical<=3,"owner-reported slide must fit without inner scroll: "+at);
+        if (id==="welcome-02") {
+          assert.equal(d.choices.length,4,"all four experience options: "+at);
+          assert.ok(d.choices.every(r=>r.top>=d.panel.top-1&&r.bottom<=d.panel.bottom+1),"all answers simultaneously visible: "+at);
+        }
+      }
+      if(d.innerVertical>3) internalScroll.push({id,width:size.width,height:size.height,excess:d.innerVertical});
       checked++;
     }
     await view.setViewportSize(widths[0]);
-    if(["welcome-01","welcome-02","welcome-video","flight-01","flight-02","tan-01","kun-01","ygg-01","ygg-study-v2-03","end-01","end-02"].includes(id)){
+    if(["welcome-01","welcome-02","welcome-video","flight-01","flight-audio","flight-02","tan-01","kun-01","ygg-01","ygg-study-v2-03","end-01","end-02"].includes(id)){
       await view.screenshot({path:output+"/"+engineName+"-"+locale+"-golden-"+id+".png",animations:"disabled"});
     }
   }

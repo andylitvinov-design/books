@@ -126,3 +126,22 @@ test("Golden Daybook is viewport-bound on every slide, with all controls and dis
   assert.ok(ui.includes('window.dispatchEvent(new Event("hh:open-ihelp"))'));
   assert.ok(ui.includes('position <= daybookFrontier'));
 });
+
+test("Daybook content fit retains every canonical step and moves ordinary chrome to its menu", () => {
+  const ui = read("components/energywork-ai-learner.tsx");
+  const css = read("components/reiki-daybook.module.css").split("/* One-screen content fit")[1];
+  const audio = read("components/reiki-lesson-intro-audio.tsx");
+  const browser = read("scripts/verify-reiki-all-slides-browser.mjs");
+  assert.ok(css.includes("container-type:size"));
+  assert.ok(css.includes("max-height:min(210px,38cqh)"));
+  assert.ok(css.includes("min-height:44px"));
+  assert.ok(css.includes(".weekTitle,small"));
+  assert.ok(ui.includes("daybookSaveNeedsAttention"));
+  assert.ok(ui.includes("!daybookSaveNeedsAttention ? saveStatusPanel"));
+  assert.ok(ui.includes("forwardOptionalAudio.current = daybook && !alreadyStored"));
+  assert.ok(ui.includes("void next();"));
+  assert.ok(audio.includes("if (ok && !published) onUnpublished?.(lesson)"));
+  assert.ok(browser.includes("owner-reported slide must fit without inner scroll"));
+  assert.ok(browser.includes("all answers simultaneously visible"));
+  assert.ok(browser.includes("width:390,height:660"));
+});

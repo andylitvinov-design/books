@@ -146,3 +146,23 @@ test('draft API requires account header, origin, separate rate and no provider s
  assert.match(server,/pg_advisory_xact_lock/);assert.match(server,/payload_ciphertext=null/);assert.match(server,/draftTranscriptPrefix/)
  assert.doesNotMatch(route,/fetch\(/)
 })
+
+import {coachDraftReviewDecision} from '../lib/personal-coaching/protocol-draft.mjs'
+test('manual saves cannot bypass a live draft or resurrect erased records; exact finalized retries require existing archive',()=>{
+ assert.equal(coachDraftReviewDecision(null,undefined,false),'new')
+ assert.equal(coachDraftReviewDecision(null,0,false),'new')
+ assert.equal(coachDraftReviewDecision(null,1,false),'conflict')
+ for(const revision of [undefined,0,1])assert.equal(coachDraftReviewDecision({state:'discarded',revision:1},revision,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},undefined,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},1,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},2,false),'promote')
+ assert.equal(coachDraftReviewDecision({state:'finalized',revision:2},2,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'finalized',revision:2},2,true),'retry')
+})
+
+test('archive deletion uses the same draft lock and retains an erasure tombstone',()=>{
+ const server=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+ const section=server.slice(server.indexOf('export async function deleteMyCoachProtocol'),server.indexOf('// Session ratings'))
+ assert.match(section,/await lockCoachDraft\(db,actor,input\.id\)/)
+ assert.match(section,/await finalizeCoachDraft\(db,actor,input\.id,draft\)/)
+})
