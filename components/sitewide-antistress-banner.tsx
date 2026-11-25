@@ -90,6 +90,7 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/shamanica(?:\/business)?\/?$/.test(pathname) ||
   // My Reiki is a course-first app destination, with the same chrome as Profile.
   /^\/(?:ru|en|es)\/academy\/principles-of-energywork(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/higher-magic\/?$/.test(pathname) ||
   // MyTube is a video-first dark destination; no generic review promotion over the feed.
   /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname) ||
   // The Services AI dialogue already handles personal situation review.
