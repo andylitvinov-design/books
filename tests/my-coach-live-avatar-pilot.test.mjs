@@ -124,3 +124,31 @@ test('video mirror converts scheduled assistant PCM and drops pending packets on
   relay.schedule(new Float32Array(2400),5,ctx);assert.equal(failed,1)
   relay.schedule(new Float32Array(2400),1.1,ctx);assert.equal(queue.size,0)
 })
+
+test('Simli relay ignores a stale callback after clear even if timer cancellation loses a race',async()=>{
+  const {createSimliSpeechRelay}=await import('../lib/coaching/simli-speech-relay.mjs')
+  const callbacks=[],packets=[]
+  const relay=createSimliSpeechRelay({sendPcm16:p=>packets.push(p),interrupt(){}},{
+    scheduleTimer:fn=>{callbacks.push(fn);return callbacks.length},cancelTimer:()=>{}})
+  const ctx={currentTime:1,state:'running'}
+  relay.schedule(new Float32Array(2400),1.05,ctx)
+  relay.clear();callbacks[0]()
+  assert.equal(packets.length,0)
+  relay.schedule(new Float32Array(2400),1.05,ctx)
+  callbacks[1]();assert.equal(packets.length,1)
+  relay.close()
+})
+test('Simli relay stops on late delivery or inability to clear provider buffer',async()=>{
+  const {createSimliSpeechRelay}=await import('../lib/coaching/simli-speech-relay.mjs')
+  for(const reason of ['late','interrupt']){
+    let fire,failed=0,sent=0
+    const ctx={currentTime:1,state:'running'}
+    const relay=createSimliSpeechRelay({sendPcm16:()=>sent++,interrupt(){if(reason==='interrupt')throw Error('failed')}},{
+      scheduleTimer:fn=>{fire=fn;return 1},cancelTimer:()=>{},onFailure:()=>failed++})
+    relay.schedule(new Float32Array(2400),1.05,ctx)
+    if(reason==='late'){ctx.currentTime=1.5;fire()}else{relay.clear();fire()}
+    assert.equal(failed,1);assert.equal(sent,0)
+    relay.schedule(new Float32Array(2400),1.55,ctx)
+    assert.equal(failed,1)
+  }
+})

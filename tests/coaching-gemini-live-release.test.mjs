@@ -8,3 +8,4 @@ import './my-coach-gemini-live-failures.test.mjs';
 import './my-coach-gemini-approved-voices.test.mjs';
 import './my-coach-webcodecs-stream.test.mjs';
 import './my-coach-stt-recovery.test.mjs';
+import './my-coach-fact-verification.test.mjs';
