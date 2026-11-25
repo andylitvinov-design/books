@@ -20,6 +20,9 @@ export const revalidate=0
 export const preferredRegion='yul1'
 export const maxDuration=60
 
+// Preserve the previous English recording identities even if an old cache key
+// was never populated. New v4 greetings alone use the owner's new EN defaults.
+const LEGACY_EN_GREETING_VOICES=Object.freeze({mira:'Gacrux',max:'Orus',sofia:'Sulafat',alex:'Charon',merlin:'Algenib',harry:'Achird',genie:'Orus'})
 const ARCHIVED_CACHE_CONTROL='public, max-age=31536000, s-maxage=31536000, immutable'
 const CACHE_HEADERS={
   'Content-Type':'audio/mpeg',
@@ -28,7 +31,7 @@ const CACHE_HEADERS={
   'X-Robots-Tag':'noindex, nofollow',
 }
 
-// MP3 bytes are stored only on the first successful v=2 request; every later
+// MP3 bytes are stored only on the first successful versioned request; every later
 // Play and Replay serves the SAME immutable Supabase object, without TTS.
 function storedAudioResponse(stored){
   if(stored.status===416)return new NextResponse(null,{status:416,headers:{
@@ -71,17 +74,18 @@ export async function GET(request){
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|lea|noah|iris|ray)\/?$/.exec(url.pathname)
-    if(!match||!['','?v=2','?v=3'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!match||!['','?v=2','?v=3','?v=4'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
-    const version=url.search==='?v=3'?'v3':'v2'
+    const version=url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
     if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(version==='v4'&&(locale!=='en'||!/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId)))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
     // Record the same authored greeting shown on the coach's introduction card.
     const introduction=intro?.text||coachOpeningIntro(personaId,locale)
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
-    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'
+    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'
     if(useRecordedGreeting){
       // Storage failure must not be interpreted as a cache miss: that would
       // trigger paid TTS again on every transient outage.
@@ -96,7 +100,7 @@ export async function GET(request){
     // fixed editorial greeting leaves the server, never a visitor's words.
     // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
     // no Paid fallback, voice substitution, or repeated synthesis on cache hits.
-    const voiceName=useRecordedGreeting?approvedGeminiVoice(personaId,locale):null
+    const voiceName=useRecordedGreeting?(locale==='en'&&version!=='v4'&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:approvedGeminiVoice(personaId,locale)):null
     const gemini=voiceName?geminiCoachTtsConfig(process.env,'gemini_tts_free'):null
     if(gemini){
       let input
@@ -115,8 +119,8 @@ export async function GET(request){
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
       return await persistGreeting(config,personaId,locale,audio,version)
     }
-    // The newly selected Samir greeting must be Gemini, never a substituted voice.
-    if(version==='v3')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    // New approved versioned greetings must be Gemini, never a substituted voice.
+    if(version==='v3'||version==='v4')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.
