@@ -8,6 +8,7 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
 import { ReikiInitiationPhoto, type ReikiPhoto } from "@/components/reiki-initiation-photo";
+import ReikiHintsSlide from "@/components/app/reiki-hints-slide";
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -1265,7 +1266,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const weekArt = REIKI_DAYBOOK_ART[activeWeek.lesson - 1] ?? REIKI_DAYBOOK_ART[0];
   const diagramArt = slide.kind !== "audio-intro" && Boolean(slide.image?.includes("kundalini-manual"));
   const hasVideo = slide.kind === "video" || slide.id === "paths-01";
-  const displayArtSource = daybook ? (hasVideo || ["welcome-02", "init-photo-01", "end-01", "end-02"].includes(slide.id) ? undefined : slide.kind === "audio-intro" ? REIKI_DAYBOOK_ART[4] : slide.kind === "welcome" ? weekArt : slide.image ?? weekArt) : artSource;
+  const displayArtSource = slide.id === "flight-hints" ? undefined : daybook ? (hasVideo || ["welcome-02", "init-photo-01", "end-01", "end-02"].includes(slide.id) ? undefined : slide.kind === "audio-intro" ? REIKI_DAYBOOK_ART[4] : slide.kind === "welcome" ? weekArt : slide.image ?? weekArt) : artSource;
   // Daybook uses a visible thematic image between copy and activity, as approved.
   // Classic keeps its original background treatment and media.
   const artBackground = !daybook && Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
@@ -1613,7 +1614,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         <section data-daybook-part={daybook ? "sheet" : undefined} className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} data-daybook-density={daybook ? (slide.question || slide.kind === "practice" || slide.kind === "voices" || slide.kind === "milestone" ? "activity" : "lesson") : undefined} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain} data-daybook-part={daybook ? "slide-main" : undefined} tabIndex={daybook ? 0 : undefined} aria-label={daybook ? slide.title[locale] : undefined}>
             <div className={styles.content} data-daybook-part={daybook ? "content" : undefined}>
-              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
+              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.id === "flight-hints" ? "Reiki Hints" : slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               {daybook && slide.kind !== "welcome"
                 ? <h2 id="energywork-slide-title" tabIndex={-1}>{daybookVoice?.title ?? slide.title[locale]}</h2>
                 : <h1 id="energywork-slide-title" tabIndex={-1}>{daybook ? db.title : slide.title[locale]}</h1>}
@@ -1721,12 +1722,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                   </button>
                 </div>
               ) : null}
-              {slide.id === "flight-done" ? (
-                <Link prefetch={false} href={"/" + locale + "/app/my-coaching-plan#reiki-hints"} className={styles.milestoneSaveChoice} data-reiki-hints-entry>
-                  <Sparkles size={19} aria-hidden="true" />
-                  <span><strong>Reiki Hints</strong><small>{locale === "ru" ? "30 дней поддержки в Telegram" : "30 days of support in Telegram"}</small></span>
-                </Link>
-              ) : null}
+              {slide.id === "flight-hints" ? <ReikiHintsSlide key={photoAccountId || "guest"} accountId={photoAccountId} locale={locale} /> : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
                  <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
                    <span className={styles.personalInitiationNoteTitle}><Heart size={17} aria-hidden="true" />{t.initiationVideoNoteTitle}</span>
@@ -2145,7 +2141,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
               ? (sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount)
               : slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview
               : slide.kind === "audio-intro" ? (locale === "ru" ? "Перейти к видео" : "Continue to video")
-              : slide.kind === "welcome" ? t.startFree : t.continue}
+              : slide.id === "flight-hints" ? (locale === "ru" ? "Продолжить" : "Continue") : slide.kind === "welcome" ? t.startFree : t.continue}
             {needsCompletionConfirmation ? <Check size={19} aria-hidden="true" /> : <ArrowRight size={19} aria-hidden="true" />}
           </button>
         ) : null}

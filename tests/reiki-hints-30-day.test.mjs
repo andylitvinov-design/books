@@ -22,7 +22,7 @@ test('explicit consent, valid time and zone, no arbitrary recipient or topic',()
  assert.deepEqual(validateReikiHintsRequest({enabled:false}),{enabled:false})
  for(const patch of [{permissionAccepted:false},{timezone:'no-zone'},{dailyAt:'25:00'},{chatId:'123456'},{consentVersion:'wrong'}])assert.throws(()=>validateReikiHintsRequest({...good,...patch}))
 })
-test('durable claim before transport and finite date range are wired',()=>{
+test('durable claim before transport and finite date range are wired',async()=>{
  const sql=readFileSync(new URL('../supabase/migrations/20261125195701_hh_reiki_hints_30_day.sql',import.meta.url),'utf8')
  assert.match(sql,/primary key\(account_id,local_day\),unique\(account_id,slot\)/)
  assert.match(sql,/between 0 and 29/)
@@ -35,5 +35,7 @@ test('durable claim before transport and finite date range are wired',()=>{
  const cron=readFileSync(new URL('../app/api/internal/direct-message-push/route.js',import.meta.url),'utf8')
  assert.match(cron,/HH_REIKI_HINTS_SEND_APPROVED==='true'/)
  const entry=readFileSync(new URL('../components/energywork-ai-learner.tsx',import.meta.url),'utf8')
- assert.match(entry,/my-coaching-plan#reiki-hints/)
+ assert.match(entry,/slide\.id === "flight-hints" \? <ReikiHintsSlide/)
+ const {energyworkSequence}=await import("../data/academy/energywork-ai-schema.js")
+ const seq=energyworkSequence();assert.equal(seq[seq.indexOf("flight-done")-1],"flight-hints")
 })

@@ -286,6 +286,9 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
     body: l("Did you manage to fly up to the Sun during the Sun meditation?", "Удалось ли вам подняться к Солнцу во время медитации «Полёт к Солнцу»?"),
     question: { type: "text", prompt: l("Describe please how was the Sun energy flow?", "Опишите, пожалуйста, каким был поток солнечной энергии.") } },
+  { id: "flight-hints", phase: "flight", kind: "lesson",
+    title: l("Receive daily Reiki inspiration", "Вдохновение Рейки каждый день"),
+    body: l("One Reiki hint and one photo in Telegram every day for 30 days.", "Одна подсказка Рейки и одна фотография в Telegram ежедневно в течение 30 дней.") },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
@@ -591,7 +594,7 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
     // Single graduation/consent checkpoint after the Sun practice.
     ...withClosingPractices(commonSlides.filter((slide) =>
-      slide.phase === "flight"), ["flight-03"], "flight-done"),
+      slide.phase === "flight"), ["flight-03", "flight-hints"], "flight-done"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),
