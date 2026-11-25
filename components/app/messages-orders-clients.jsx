@@ -307,6 +307,11 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
 
   function chooseSection(value){
     if(!['ai','orders','clients','news'].includes(value))return
+    // A folder switch dismisses the outgoing editor's keyboard without
+    // clearing its draft. Hidden-but-mounted AI must not keep the dock hidden.
+    if(value!==section&&hubRef.current?.contains(document.activeElement)&&
+      document.activeElement?.matches?.('textarea,input,[contenteditable="true"]'))
+      document.activeElement.blur()
     setSection(value)
     const url=new URL(window.location.href)
     url.searchParams.set('section',value)
