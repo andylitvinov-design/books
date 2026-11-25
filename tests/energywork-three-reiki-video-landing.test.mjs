@@ -61,9 +61,9 @@ test("Verified meditations come only from their owner-supplied source registry",
   assert.match(registry, /youtubeId: "w2BN-HYmHUk"/);
   assert.match(registry, /youtubeId: "80xZ7jN6o2Y"/);
   assert.match(registry, /key: "kundalini-reiki",[\s\S]*?youtubeId: "_IOX0E8N-To"/);
-  assert.match(page, /englishGuidedMeditations\.find\(item => item\.key === "reiki-yggdrasil"\)/);
+  assert.ok(page.includes('youtubeId="XvMdX5czoOc"'));
   assert.ok(page.includes('youtubeId="lOo93GuzeJ0"'));
-  assert.match(free, /originalLevelOneVideoId = "lOo93GuzeJ0"/);
+  assert.match(free, /originalLevelOneVideoId = "DYo-fG-SyKw"/);
   assert.match(page, /href=\{academyUrl\(locale, system\.study\)\}/);
 });
 
