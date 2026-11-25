@@ -47,5 +47,7 @@ test('registration uses owner-scoped hash, link and insert without overwrite or 
  assert.ok(!store.includes('crm_consent_ledger')&&!store.includes('crm_email_jobs'))
  assert.ok(api.indexOf('ensureAccount(actor)')<api.indexOf('await syncReikiRegistration(config,actor,auth.client,reikiLocale)'))
  assert.ok(api.includes('verifyReikiRetryProof(actor,retryCookie,config)'))
- assert.ok(entry.includes('reikiRegistration: locale')&&entry.includes('Your journal stays private'))
+ const dialog=read('components/reiki-join-dialog.tsx')
+ assert.ok(entry.includes('reikiRegistration: locale')&&dialog.includes('Your journal stays private'))
+ assert.ok(dialog.indexOf('<p className={styles.note}>{t.note}</p>')<dialog.indexOf('data-reiki-join-google'))
 })

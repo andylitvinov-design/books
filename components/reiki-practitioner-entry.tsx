@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ReikiJoinDialog } from "./reiki-join-dialog";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
@@ -9,9 +10,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./principles-of-energywork.module.css";
 
 const copy = {
-  ru: { start: "Начать бесплатный курс", wait: "Открываем курс…", note: "Google-вход создаёт личный кабинет и сохраняет имя и email в CRM Академии для регистрации на курс. Дневник остаётся личным; без подписки на рассылку.", error: "Не удалось открыть курс. Повторите попытку.", label: "БЕСПЛАТНО · DAYBOOK", title: "Практик Рейки", description: "5 недель · медитации, практики и знакомство с тремя системами Рейки.", details: "Подробнее о курсе" },
-  en: { start: "Start Free Course", wait: "Opening course…", note: "Google sign-in creates your personal account and records your name and email in the Academy CRM for enrollment. Your journal stays private; no mailing subscription.", error: "Could not open the course. Please try again.", label: "FREE · DAYBOOK", title: "Reiki Practitioner", description: "5 weeks of meditations, practices and three Reiki traditions.", details: "Explore the course" },
-  es: { start: "Empezar gratis (EN)", wait: "Abriendo el curso…", note: "Google crea tu cuenta y registra tu nombre y correo en el CRM de la Academia. Tu diario sigue privado, sin suscripción a correos. Curso en EN/RU.", error: "No se pudo abrir el curso. Inténtalo de nuevo.", label: "GRATIS · DAYBOOK", title: "Reiki Practitioner", description: "5 semanas de meditaciones, prácticas y tres tradiciones Reiki (EN/RU).", details: "Ver el curso" },
+  ru: { start: "Начать бесплатный курс", wait: "Открываем курс…", note: "Вход через Google для сохранения вашего прогресса.", error: "Не удалось открыть курс. Повторите попытку.", label: "БЕСПЛАТНО · DAYBOOK", title: "Практик Рейки", description: "5 недель · медитации, практики и знакомство с тремя системами Рейки.", details: "Подробнее о курсе" },
+  en: { start: "Start Free Course", wait: "Opening course…", note: "Google sign-in keeps your progress in your profile.", error: "Could not open the course. Please try again.", label: "FREE · DAYBOOK", title: "Reiki Practitioner", description: "5 weeks of meditations, practices and three Reiki traditions.", details: "Explore the course" },
+  es: { start: "Empezar gratis (EN)", wait: "Abriendo el curso…", note: "Accede con Google para guardar tu progreso. El curso está disponible en inglés y ruso.", error: "No se pudo abrir el curso. Inténtalo de nuevo.", label: "GRATIS · DAYBOOK", title: "Reiki Practitioner", description: "5 semanas de meditaciones, prácticas y tres tradiciones Reiki (EN/RU).", details: "Ver el curso" },
 } as const;
 
 export function reikiLandingPath(locale: PublicLocale) {
@@ -25,6 +26,7 @@ export function ReikiDaybookStart({ locale, className }: { locale: PublicLocale;
   const pending = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   async function begin() {
     if (pending.current) return;
     pending.current = true;
@@ -39,6 +41,21 @@ export function ReikiDaybookStart({ locale, className }: { locale: PublicLocale;
       } catch (failure: unknown) {
         if ((failure as { status?: number })?.status !== 401) throw failure;
       }
+      // Only a verified 401 opens the user-invoked sign-in dialog.
+      setJoinOpen(true);
+    } catch {
+      setError(true);
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+  async function signIn() {
+    if (pending.current || !joinOpen) return;
+    pending.current = true;
+    setBusy(true);
+    setError(false);
+    try {
       const native = isNativeHolisticHouse();
       const response = await appFetch("auth/start", {
         locale: language, continueTo: "energywork-daybook", ...(native ? { native: true } : {}),
@@ -65,7 +82,8 @@ export function ReikiDaybookStart({ locale, className }: { locale: PublicLocale;
       <BookOpen size={20} aria-hidden="true" />{busy ? t.wait : t.start}<ArrowRight size={19} aria-hidden="true" />
     </button>
     <small>{t.note}</small>
-    {error && <p role="alert" className={styles.reikiEntryError}>{t.error}</p>}
+    {error && !joinOpen && <p role="alert" className={styles.reikiEntryError}>{t.error}</p>}
+    {joinOpen && <ReikiJoinDialog locale={locale} busy={busy} error={error ? t.error : ""} onGoogle={() => void signIn()} onDismiss={() => { if (!pending.current) { setJoinOpen(false); setError(false); } }} />}
   </div>;
 }
 

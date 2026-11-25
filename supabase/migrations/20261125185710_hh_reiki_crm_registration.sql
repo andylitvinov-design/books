@@ -26,6 +26,11 @@ create policy crm_reiki_registration_owner_read
  on app_private.crm_reiki_registrations for select to hh_crm_backend
  using(owner_id=(select auth.uid()) and (select app_private.account_active()));
 
+-- Repeat the exact already deployed column-level grants (public enquiry and
+-- Telegram Business migrations) to keep isolated schema replay deterministic.
+grant select(id,owner_id,email_hash,suppressed) on app.crm_contacts to hh_app_backend;
+grant insert(id,owner_id,contact_ciphertext,email_hash,phone_hash,locale,lifecycle,source)
+ on app.crm_contacts to hh_app_backend;
 -- Reuse the existing column grants; no contact ciphertext SELECT or CRM
 -- consent/activity/send permissions are granted to the app backend.
 create policy crm_contact_reiki_registration_lookup on app.crm_contacts
