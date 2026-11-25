@@ -344,7 +344,7 @@ test('hidden private dialogs never hide navigation in another folder',()=>{
 test('AI long messages auto-grow safely and scrollback exposes explicit new-reply navigation',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const css=source('components/holistic-agent-chat.module.css')
- assert.match(agent,/input\.style\.height='44px'/)
+ assert.match(agent,/input\.style\.height='44px'|const baseHeight=ongoing\?40:44;\s*input\.style\.height=baseHeight\+"px"/)
  assert.match(agent,/Math\.min\(100,input\.scrollHeight\)/)
  assert.match(agent,/followTail\.current/)
  assert.match(agent,/setNewBelow\(true\)/)
@@ -385,6 +385,9 @@ test('mobile dock follows the actual visual keyboard, not lingering input focus'
  assert.ok(hub.includes('const limit=keyboard?bottom:'))
  assert.ok(hub.includes('sharedKeyboard||window.innerHeight-bottom>92'))
  assert.ok(page.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"])'))
+ assert.ok(!page.includes('body:has(.hh-messages-page [data-hh-immersive-dialogue="true"])'))
  assert.ok(!page.includes(':has(input:focus,textarea:focus)'))
  assert.ok(aiCss.includes('.content{display:flex;flex:1'))
  assert.ok(source('components/holistic-agent-chat.module.css').includes('>.form'))

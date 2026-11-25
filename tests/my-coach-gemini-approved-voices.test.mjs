@@ -10,9 +10,9 @@ import {
 
 const expected = {
   mira: ['Erinome','Sulafat'],
-  max: ['Orus','Charon'],
+  max: ['Alnilam','Charon'],
   sofia: ['Vindemiatrix','Gacrux'],
-  alex: ['Alnilam','Orus'],
+  alex: ['Enceladus','Orus'],
   merlin: ['Sadaltager','Algenib'],
   harry: ['Achird','Orus'],
   genie: ['Puck','Achird'],

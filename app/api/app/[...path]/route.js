@@ -21,7 +21,7 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {COACH_SESSION_COOKIE,COACH_SESSION_TTL_SECONDS,sealCoachSession} from '@/lib/coaching/session-authority.mjs'
-import {startCoachMethodSession,prepareCoachMethodTurn} from '@/lib/coaching/method-session-transport.mjs'
+import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest} from '@/lib/coaching/method-session-transport.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
@@ -269,7 +269,7 @@ async function handle(request, { params }) {
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira', 'clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) &&
-        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (recipientSlug !== null) {
@@ -383,7 +383,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -465,6 +465,8 @@ async function handle(request, { params }) {
                         ? `${origin}/admin/login?destination=youtubeConnectEn`
                       : continueTo === 'practitioner'
                         ? `${origin}/admin/login`
+                        : continueTo === 'energywork-daybook'
+                          ? `${origin}/${locale}/academy/principles-of-energywork/daybook`
                         : continueTo === 'energywork'
                           ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
@@ -1076,8 +1078,12 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       const vendor=geminiFreeLiveConfig(process.env)
       if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      const liveBody=await readBody(request,2048)
+      let selected
+      try{selected=prepareCoachMethodRequest(liveBody,coachMethodContext())}
+      catch(error){throw methodError(error)}
       let start
-      try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
+      try{start=normalizeGeminiFreeLiveStart(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.
@@ -1116,10 +1122,16 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
+      const checkpointBody=await readBody(request,8192)
+      let selected
+      try{selected=prepareCoachMethodRequest(checkpointBody,coachMethodContext())}
+      catch(error){throw methodError(error)}
       let progress
-      try{progress=geminiFreeLiveCheckpoint(await readBody(request,8192))}
+      try{progress=geminiFreeLiveCheckpoint(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
-      return json(progress)
+      const {__methodSession,...clientProgress}=progress
+      const response=json(clientProgress)
+      return __methodSession?withCoachMethodCookie(response,__methodSession):response
     }
     // Metadata-only check: no client transcript, API key or test generation.
     if (joined === 'my-coach/engines') {

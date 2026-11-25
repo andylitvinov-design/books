@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {startCoachMethodSession,prepareCoachMethodTurn,coachMethodAuthorityInput} from '../lib/coaching/method-session-transport.mjs'
+import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest,coachMethodAuthorityInput} from '../lib/coaching/method-session-transport.mjs'
 import {sealCoachSession} from '../lib/coaching/session-authority.mjs'
 const actor={id:'99999999-0000-4000-8000-000000000001',claims:{session_id:'11111111-0000-4000-8000-000000000001'}}
 const config={encryptionKey:Buffer.alloc(32,15)}
@@ -38,4 +38,23 @@ test('both transports use server-only authority and private scoped cookies',()=>
  assert.equal(route.match(/methodAuthority:prepared.progress/g)?.length,2)
  assert.ok(brain.includes('coachMethodAuthorityInput(normalized.input,methodAuthority)'))
  assert.ok(brain.includes('coachMethodAuthorityInput(parsed.input,methodAuthority)'))
+})
+
+import {geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
+test('explicit Live method uses the same verified cookie and cannot be omitted or changed',()=>{
+ const session=startCoachMethodSession({personaId:'mira',methodId:'oskar'},ctx)
+ const token=sealCoachSession(session,config,actor)
+ const request={...body,voiceConsent:true,trainingUseConsent:true}
+ const selected=prepareCoachMethodRequest(request,{...ctx,token})
+ assert.equal(selected.session.methodId,'oskar')
+ assert.throws(()=>prepareCoachMethodRequest(selected.body,{...ctx,token}),/COACH_SESSION_METHOD_CONFLICT/)
+ assert.throws(()=>prepareCoachMethodRequest(request,ctx),/COACH_SESSION_REQUIRED/)
+ assert.throws(()=>prepareCoachMethodRequest({...request,methodId:'grow'},{...ctx,token}),/COACH_SESSION_METHOD_CONFLICT/)
+ const result=geminiFreeLiveCheckpoint(selected.body,{methodSession:selected.session})
+ assert.equal(result.methodId,'oskar')
+ assert.equal(result.__methodSession.methodId,'oskar')
+ assert.throws(()=>geminiFreeLiveCheckpoint({...selected.body,voiceConsent:false},{methodSession:selected.session}))
+ assert.throws(()=>geminiFreeLiveCheckpoint({...selected.body,authoritativeMethodId:'grow'},{methodSession:selected.session}))
+ const route=readFileSync('app/api/app/[...path]/route.js','utf8')
+ assert.ok(route.includes('const {__methodSession,...clientProgress}=progress'))
 })

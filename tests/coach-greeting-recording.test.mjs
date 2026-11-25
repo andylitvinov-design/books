@@ -213,7 +213,7 @@ test('v4 records all seven exact English coach voices, leaves historical bytes i
     assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),Buffer.from(await first.arrayBuffer()))
     assert.equal(h.syntheses.length,before)
     assert.deepEqual(h.objects.get('v2/en/'+id+'.mp3'),original)
-    assert.equal(coachIntroAudioPath(id,'ru'),'/api/coaching/intro/ru/'+id+'?v='+(id==='genie'?3:2))
+    assert.equal(coachIntroAudioPath(id,'ru'),'/api/coaching/intro/ru/'+id+'?v='+(id==='genie'?3:['alex','max'].includes(id)?4:2))
     assert.equal(coachIntroAudioPath(id,'es'),'/api/coaching/intro/es/'+id+'?v=2')
   }
   assert.equal(h.syntheses.length,7)
@@ -230,5 +230,30 @@ test('missing old English archives retain the historical voice rather than recor
   for(const [id,voice] of Object.entries({mira:'Gacrux',max:'Orus',sofia:'Sulafat',alex:'Charon',harry:'Achird',genie:'Orus'})){
     assert.equal((await h.GET(h.request(id,'en'))).status,200)
     assert.equal(h.syntheses.at(-1).voiceName,voice)
+  }
+})
+
+test('Russian Alex and Max record new immutable v4 tracks while old v2 retains historical voices',async()=>{
+  const h=harness()
+  for(const [id,voice,old] of [['alex','Enceladus','Alnilam'],['max','Alnilam','Orus']]){
+    const legacy=await h.GET(h.request(id,'ru'))
+    assert.equal(legacy.status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,old)
+    const original=Buffer.from(await legacy.arrayBuffer())
+    const path=coachIntroAudioPath(id,'ru')
+    assert.equal(path,'/api/coaching/intro/ru/'+id+'?v=4')
+    const request=new Request('https://holistichouse.vercel.app'+path)
+    const first=await h.GET(request)
+    assert.equal(first.status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,voice)
+    assert.equal(h.syntheses.at(-1).text,getCoachPresentation(id,'ru').text)
+    const bytes=Buffer.from(await first.arrayBuffer()), before=h.syntheses.length
+    assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),bytes)
+    assert.equal(h.syntheses.length,before)
+    assert.deepEqual(h.objects.get('v2/ru/'+id+'.mp3'),original)
+    assert.ok(h.objects.has('v4/ru/'+id+'.mp3'))
+    const disabled=harness({env:{}})
+    assert.equal((await disabled.GET(request)).status,503)
+    assert.equal(disabled.fishCalls,0)
   }
 })
