@@ -111,3 +111,12 @@ test("the English referral entry describes the first-lesson Google save gate in 
     "El curso sigue siendo gratis",
   ]) assert.ok(landing.includes(phrase), phrase);
 });
+
+test("the published referral promise matches the learner's actual private-save checkpoint", () => {
+  const learner = read("components/energywork-ai-learner.tsx");
+  assert.match(learner, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\)/);
+  assert.match(learner, /if \(slide\.id === "flight-done" && sync !== "ready"\)/);
+  assert.match(learner, /energyworkCreateFirstLessonHandoff\(answersRef\.current, locale, Date\.now\(\), afterSave\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(landing, /Your reflections are not sent to Andrey automatically/);
+});
