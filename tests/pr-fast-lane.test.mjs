@@ -525,7 +525,17 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
     assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
   }
   assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
-  assert.match(ia, /run: npm run build/);
+  // IA must always perform real compilation before its isolated browser run.
+  // The reviewed exact Messenger UI lane reuses only Core prebuild tests/lint;
+  // all unproven candidates must still execute the original complete build.
+  const build=ia.split('- name: Real IA browser build with verified Core prebuild reuse')[1]
+    ?.split('- name: Full TypeScript outside production PR')[0];
+  assert.ok(build, 'IA real build step must remain');
+  assert.match(build, /steps\.dock-scope\.outputs\.dock_only != 'true'/);
+  assert.match(build, /if node --input-type=commonjs - <<'HH_IA_CORE_PROOF'/);
+  assert.match(build, /then\s+echo[^\n]*\n[\s\S]*?\.\/node_modules\/\.bin\/next build --no-lint\s+else\s+npm run build\s+fi/);
+  assert.match(build, /HEAD\^1/);
+  assert.match(build, /HEAD\^2/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
 
