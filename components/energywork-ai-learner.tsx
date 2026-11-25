@@ -608,9 +608,10 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original, compact = fals
 
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
-function MeditationVoices({ slide, locale }: {
+function MeditationVoices({ slide, locale, compact = false }: {
   slide: EnergyworkSlide;
   locale: EnergyworkLocale;
+  compact?: boolean;
 }) {
   const t = copy[locale];
   const originalEntries = slide.testimonials ?? [];
@@ -628,10 +629,10 @@ function MeditationVoices({ slide, locale }: {
     : currentReview.attribution[locale].split(" · ")[0]);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
-      <div className={styles.voicesHeading}>
-        <span className={styles.voicesEyebrow}><MessageCircle size={17} aria-hidden="true" />{t.voicesLabel}</span>
+      <div className={styles.voicesHeading} data-review-heading>
+        <span className={styles.voicesEyebrow}><MessageCircle size={17} aria-hidden="true" />{compact ? (locale === "ru" ? "Отзыв" : "Review") : t.voicesLabel}</span>
         {currentReview ? (
-          <span className={styles.voicesIndex} aria-live="polite">
+          <span className={styles.voicesIndex} data-review-counter aria-live="polite">
             {String(active + 1).padStart(2, "0")} / {String(entries.length).padStart(2, "0")}
           </span>
         ) : null}
@@ -651,7 +652,7 @@ function MeditationVoices({ slide, locale }: {
               </button>
               <span className={styles.voicesCount} aria-hidden="true">
                 {entries.map((entry, number) => (
-                  <span key={entry.id} className={number === active ? styles.voiceDotActive : styles.voiceDot} />
+                  <span key={entry.id} data-review-dot data-review-active={number === active ? "true" : undefined} className={number === active ? styles.voiceDotActive : styles.voiceDot} />
                 ))}
               </span>
               <button type="button" data-review-next aria-label={t.voicesNext}
@@ -1559,15 +1560,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const daybookIntroTitle = locale === "ru" ? "О курсе" : "About the course";
   const daybookWelcome = daybook && slide.id === "welcome-01";
   const compactVoiceCopy: Record<string, { title: string; body: string }> = locale === "ru" ? {
-    "flight-voices": { title: "Полёт к Солнцу: отзывы", body: "Примеры впечатлений. Ваш опыт может отличаться." },
-    "tan-voices": { title: "Отзывы о Тантра Рейки", body: "Отзывы о курсе, не об этой записи." },
-    "kun-voices": { title: "Отзывы о Кундалини Рейки", body: "Примеры практик с другими мастерами, не об этой записи." },
-    "ygg-voices": { title: "Отзывы о Рейки Иггдрасиль", body: "Отзывы о курсе, не об этой записи." },
+    "flight-voices": { title: "Отзывы участников", body: "Примеры впечатлений. Каждый опыт уникален." },
+    "tan-voices": { title: "Отзывы участников", body: "Отзывы о курсе, не об этой записи." },
+    "kun-voices": { title: "Отзывы участников", body: "Примеры практик с другими мастерами, не об этой записи." },
+    "ygg-voices": { title: "Отзывы участников", body: "Отзывы о курсе, не об этой записи." },
   } : {
-    "flight-voices": { title: "Flight to the Sun: reviews", body: "Shared examples. Your experience may differ." },
-    "tan-voices": { title: "Tantra Reiki reviews", body: "Course reviews, not of this recording." },
-    "kun-voices": { title: "Kundalini Reiki reviews", body: "Examples from other practitioners, not this recording." },
-    "ygg-voices": { title: "Reiki Yggdrasil reviews", body: "Course reviews, not of this recording." },
+    "flight-voices": { title: "Learner Experiences", body: "Shared examples. Every journey is unique." },
+    "tan-voices": { title: "Learner Experiences", body: "Course reviews, not of this recording." },
+    "kun-voices": { title: "Learner Experiences", body: "Examples from other practitioners, not this recording." },
+    "ygg-voices": { title: "Learner Experiences", body: "Course reviews, not of this recording." },
   };
   const daybookVoice = daybook && slide.kind === "voices" ? compactVoiceCopy[slide.id] : undefined;
   const lotusMark = (
@@ -1744,7 +1745,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                   </p>
                 </aside>
               ) : null}
-              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} /> : null}
+              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} compact={daybook} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
               {slide.id === "init-photo-01" ? (
