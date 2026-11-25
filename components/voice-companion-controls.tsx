@@ -140,17 +140,18 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   setPrefersRecorded(ios27NeedsSpeechRecovery(window.navigator));
   const unwatch=controller.watchVoices(list=>
     setVoices(list.filter(v=>v.lang.toLowerCase().startsWith(speechLocale))));
-  const hide=()=>{if(document.hidden){
-   if(pauseOnHide.current)pauseDialogue();else stopDialogue();
-  }};
+  const suspend=()=>{
+   if(pauseOnHide.current){pauseDialogue();stop();}else stopDialogue();
+  };
+  const hide=()=>{if(document.hidden)suspend();};
   document.addEventListener('visibilitychange',hide);
-  window.addEventListener('pagehide',stopDialogue);
+  window.addEventListener('pagehide',suspend);
   window.addEventListener('hh:voice-companion-stop',stopDialogue);
   return ()=>{
    mounted.current=false;stopDialogue();unwatch();controller.destroy();
    if(speaker.current===controller)speaker.current=null;
    document.removeEventListener('visibilitychange',hide);
-   window.removeEventListener('pagehide',stopDialogue);
+   window.removeEventListener('pagehide',suspend);
    window.removeEventListener('hh:voice-companion-stop',stopDialogue);
   };
  },[enabled,speechLocale,stopDialogue,pauseDialogue]);
@@ -247,7 +248,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
     const text=capture.accept(event.results?.[0]?.[0]?.transcript);
-    if(text){hadSpeech=true;onTranscript(text);setNotice(dialogueActive.current?'':t.captured);}
+    if(text){hadSpeech=true;const live=dialogueActive.current;
+    setNotice(live?'':t.captured);onTranscript(text);}
    };
    instance.onerror=()=>{if(!capture.isActive()||hadSpeech)return;
      stopDialogue();setNotice(t.error);setRecording(false);recognition.current=null;};
@@ -267,7 +269,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   stop();setNotice('');
   const epoch=generation.current;
   const capture=startCoachRecordedTurn({
-   locale:speechLocale,environment:window,purpose:recordedPurpose.current,
+   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,
    onState:state=>{
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
@@ -323,7 +325,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   }
  };
  const interruptReply=()=>{
-  if(!dialogueActive.current||!speaking)return;
+  if(!dialogueActive.current||!speaking||document.hidden)return;
   stop();
   resumeDialogue.current?.();
  };
