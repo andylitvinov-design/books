@@ -1,0 +1,5 @@
+id,kind,url,title,read_at,notes
+S01,official_doc,https://www.amocrm.ru/support/digitalpipeline/salesbot,amoCRM Salesbot overview,2026-10-26,Documentation only and no authorized original-editor access
+S02,official_doc,https://www.amocrm.ru/support/digitalpipeline/trigger_salesbot,amoCRM Salesbot triggers,2026-10-26,Conditions and schedule are source-described not independently clicked
+S03,official_doc,https://www.amocrm.ru/developers/content/digital_pipeline/salesbot,amoCRM Salesbot public developer reference,2026-10-26,Reference nodes only and no proprietary scripts imported
+S04,official_doc,https://www.amocrm.ru/support/digitalpipeline/task_creation_trigger,amoCRM Digital Pipeline task behavior,2026-10-26,Related documented task trigger and not necessarily same bot node

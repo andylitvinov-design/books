@@ -84,27 +84,19 @@ test("new DAO free page is independent of two existing personal service landings
   assert.match(read("components/core-service-detail.module.css"), /@media\(max-width:760px\)/);
 });
 
-test("free diagnostic retains private-safe detailed form, drawing instructions, and illustrative scenes", () => {
+test("free diagnostic reuses private intake, drawing instructions and illustrative scenes", () => {
   const intake = read("components/free-drawing-intake.tsx");
-  const tracking = read("components/acquisition-event-link.tsx");
   const landing = read("components/free-entry-landing.tsx");
   const offer = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(intake, /copyButton: "Copy answers"/);
-  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
-  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /readyRef\.current\?\.focus\(\)/);
-  assert.match(intake, /Nothing has been sent/);
-  const draft = intake.slice(intake.indexOf("const whatsappUrl ="), intake.indexOf("function changeAnswer"));
-  assert.match(draft, /request: t\.whatsappIntro/);
-  assert.match(draft, /topic: t\.options\[topic\]/);
-  assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
-  assert.match(tracking, /onClick\?\.\(\); emit\(event\)/);
+  assert.match(intake, /\/coaching\/intake/);
+  assert.match(intake, /ME, MY GOAL and MY PROBLEM/);
+  assert.match(intake, /Saving does not send it to a coach/);
+  assert.match(intake, /Do not send private answers/);
   assert.match(offer, /kind="situation"/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/report-lighthouse-coast\.webp"/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
+  assert.doesNotMatch(intake, /navigator\.clipboard|ContactChannelChooser|localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
 
 function assertBusinessPriceScope(source) {

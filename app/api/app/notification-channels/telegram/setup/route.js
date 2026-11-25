@@ -6,7 +6,7 @@ import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {registerClientTelegramWebhook,verifyClientBot,ownerAiMenuReady} from '@/lib/app/client-telegram-transport'
 import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername,
-  telegramClientBotMode,telegramClientBotUsername} from '@/lib/app/client-telegram-policy'
+  telegramClientBotMode,telegramClientBotUsername,telegramOwnerPilotReady} from '@/lib/app/client-telegram-policy'
 import {createMessengerNotificationRepository} from '@/lib/app/messenger-notification-repository'
 
 export const runtime='nodejs'
@@ -33,6 +33,7 @@ function readiness(env=process.env){
   return true
  })
  return {configured:telegramClientLinkReady(env),sendingEnabled:telegramClientSendReady(env),
+   ownerPilotEnabled:telegramOwnerPilotReady(env),
    missingKeys,webhookVerified:false,botMode:mode,
    botUsername:mode?telegramClientBotUsername(env):null,
    usingExistingPracticeBot:mode==='shared_practice',

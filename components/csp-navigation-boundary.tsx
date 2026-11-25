@@ -16,7 +16,7 @@ function privatePath(pathname: string) {
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
     || /^\/(ru|en)\/report(?:\/|$)/.test(decoded)
     || /^\/(ru|en)\/prescriptions\//.test(decoded)
-    || /^\/(ru|en)\/app(?:\/|$)/.test(decoded)
+    || /^\/(ru|en|es)\/app(?:\/|$)/.test(decoded)
     || /^\/api\/app(?:\/|$)/.test(decoded)
     || decoded.startsWith('/api/client')
     || decoded.startsWith('/api/prescriptions/')

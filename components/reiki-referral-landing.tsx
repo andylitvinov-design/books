@@ -6,12 +6,13 @@ import { ArrowRight, Check, HeartHandshake, Leaf, PlayCircle, Sparkles } from "l
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { TantraLearnerReviewCards } from "@/components/tantra-learner-review-cards";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./reiki-referral-landing.module.css";
 
 /**
  * Short, shareable, free-first entry to the existing five-lesson Reiki course.
- * This page does not create an enrolment record, collect personal data or
+ * This page does not create an enrolment record or require a lead request to start. It does not
  * imply that course completion automatically grants a teacher-led initiation.
  */
 const copy = {
@@ -22,7 +23,7 @@ const copy = {
     lead: "Five guided lessons with Andrey Litvinov: original meditations, simple energy-awareness practices and an introduction to three Reiki systems. No experience needed.",
     facts: ["5 guided lessons", "3 Reiki systems", "At your own pace"],
     cta: "Start the free course",
-    actionNote: "Free to start · Google sign-in is only needed to save your progress.",
+    actionNote: "Lesson 1 is open to guests · Continue free with Google sign-in and private progress saving.",
     imageAlt: "Woman meditating in the warm light of sunrise",
     teacher: "Guided by Andrey Litvinov",
     teacherRole: "Reiki Master Teacher",
@@ -44,8 +45,8 @@ const copy = {
     faq: [
       { question: "Is the course really free?", answer: "Yes. The five-lesson interactive course is free, as is the introductory Level 1 initiation offered after completing it and confirming the arrangement with Andrey. Optional private one-to-one sessions are separate paid services." },
       { question: "Do I need Reiki experience?", answer: "No. The course starts with the foundations and leads you through all three systems step by step." },
-      { question: "Will I be initiated automatically after the last slide?", answer: "No. Attunement is a separate teacher-guided arrangement. For an initiation request, complete the five lesson reports and five course answers; Andrey will review and arrange the next step personally." },
-      { question: "Do I need to register?", answer: "You can explore the course as a guest. Sign in with Google and choose private saving if you want to keep your progress and prepare a saved initiation request. Your reflections are not sent to Andrey automatically." },
+      { question: "Will I be initiated automatically after the last slide?", answer: "No. Attunement is a separate teacher-guided arrangement. For an initiation request, complete the required lesson reports and study answers; Andrey will review and arrange the next step personally." },
+      { question: "Do I need to register?", answer: "You can try Lesson 1 as a guest. To continue to Lesson 2 and keep your progress, sign in with Google and consent to private saving. The course remains free. Your reflections are not sent to Andrey automatically." },
     ],
     bottomTitle: "Your Reiki journey can begin today",
     bottomLead: "Start with one gentle lesson. Move at your own pace.",
@@ -59,7 +60,7 @@ const copy = {
     lead: "Пять коротких уроков с Андреем Литвиновым: авторские медитации, простые энергетические практики и знакомство с тремя системами Рейки. Опыт не нужен.",
     facts: ["5 уроков", "3 системы Рейки", "В своём темпе"],
     cta: "Начать бесплатный курс",
-    actionNote: "Без оплаты · Вход через Google нужен только для сохранения прогресса.",
+    actionNote: "Курс открывается на английском · Первый урок без регистрации · Далее бесплатно: вход через Google и приватное сохранение прогресса.",
     imageAlt: "Девушка медитирует в тёплом свете рассвета",
     teacher: "Ваш наставник — Андрей Литвинов",
     teacherRole: "Мастер-учитель Рейки",
@@ -81,8 +82,8 @@ const copy = {
     faq: [
       { question: "Что именно бесплатно?", answer: "Все пять уроков и вводная инициация I ступени после завершения курса и согласования с Андреем. Отдельные индивидуальные онлайн-сеансы и консультации являются платными услугами." },
       { question: "Нужен ли опыт в Рейки?", answer: "Нет. Курс подходит для первого знакомства: все три системы изучаются последовательно, простыми шагами." },
-      { question: "Инициация произойдёт автоматически?", answer: "Нет. Инициация проводится отдельно с мастером. Для заявки нужно завершить пять учебных отчётов и ответить на пять вопросов, после чего Андрей лично согласует следующий шаг." },
-      { question: "Нужно ли регистрироваться?", answer: "Курс можно открыть без регистрации. Вход через Google и согласие на приватное сохранение понадобятся, чтобы не потерять прогресс и подготовить сохранённую заявку. Ваши заметки не отправляются Андрею автоматически." },
+      { question: "Инициация произойдёт автоматически?", answer: "Нет. Инициация проводится отдельно с мастером. Для заявки нужно завершить обязательные учебные отчёты и ответить на вопросы курса, после чего Андрей лично согласует следующий шаг." },
+      { question: "Нужно ли регистрироваться?", answer: "Первый урок можно попробовать без регистрации. Чтобы перейти ко второму уроку и сохранить прогресс, войдите через Google и согласитесь на приватное сохранение. Курс остаётся бесплатным. Ваши заметки не отправляются Андрею автоматически." },
     ],
     bottomTitle: "Ваш путь в Рейки начинается здесь",
     bottomLead: "Попробуйте первый урок — без спешки и обязательств.",
@@ -96,7 +97,7 @@ const copy = {
     lead: "Cinco lecciones guiadas por Andrey Litvinov: meditaciones originales, prácticas sencillas de atención a la energía y tres sistemas de Reiki. No necesitas experiencia.",
     facts: ["5 lecciones", "3 sistemas de Reiki", "A tu ritmo"],
     cta: "Empezar el curso gratis (en inglés)",
-    actionNote: "Sin pago · El curso interactivo está disponible en inglés; Google solo para guardar el progreso.",
+    actionNote: "Curso en inglés · Primera lección sin registro · Continúa gratis con Google y guardado privado.",
     imageAlt: "Mujer meditando a la cálida luz del amanecer",
     teacher: "Con Andrey Litvinov",
     teacherRole: "Maestro de Reiki",
@@ -118,8 +119,8 @@ const copy = {
     faq: [
       { question: "¿Qué incluye la oferta gratuita?", answer: "Las cinco lecciones y una iniciación introductoria gratuita de Nivel 1 después de terminar el curso y confirmarla con Andrey. Las sesiones individuales opcionales son servicios de pago." },
       { question: "¿Necesito experiencia previa?", answer: "No. Empezarás por lo básico y conocerás los tres sistemas paso a paso." },
-      { question: "¿La iniciación es automática?", answer: "No. Se organiza por separado con el maestro. Se requieren cinco informes de lección y cinco respuestas para solicitar la revisión; Andrey acuerda personalmente el siguiente paso." },
-      { question: "¿Tengo que crear una cuenta?", answer: "Puedes explorar las lecciones como visitante. Para guardar tu progreso y preparar la solicitud necesitarás iniciar sesión con Google y aceptar el guardado privado. Tus notas no se envían automáticamente." },
+      { question: "¿La iniciación es automática?", answer: "No. Se organiza por separado con el maestro. Completa los informes y las respuestas de estudio requeridos para solicitar la revisión; Andrey acuerda personalmente el siguiente paso." },
+      { question: "¿Tengo que crear una cuenta?", answer: "Puedes probar la primera lección como visitante. Para pasar a la segunda y guardar tu progreso, inicia sesión con Google y acepta el guardado privado. El curso sigue siendo gratis. Tus notas no se envían automáticamente." },
     ],
     bottomTitle: "Tu camino en Reiki puede empezar hoy",
     bottomLead: "Comienza con una lección a tu propio ritmo.",
@@ -132,8 +133,9 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const courseHref = REIKI_FREE_COURSE_PATH;
   const tantraHref = "/" + locale + "/academy/reiki/tantra-reiki";
+  const art = ["/images/holistic-house/reiki-practitioner-sunrise.webp","/images/holistic-house/report-lighthouse-coast.avif","/images/holistic-house/hero-olive-incense.webp"] as const;
   return (
-    <main className={styles.page} data-reiki-referral-landing data-locale={locale}>
+    <main className={styles.page} data-reiki-referral-landing data-public-visual-landing="reiki-referral" data-locale={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.wrap}>
         <section className={styles.hero} aria-labelledby="reiki-referral-title">
@@ -169,9 +171,13 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.benefitGrid}>
             {t.benefits.map((item, index) => {
               const Icon = [PlayCircle, Leaf, HeartHandshake][index];
-              return <article className={styles.benefit} key={item.title}>
-                <span className={styles.benefitIcon}><Icon size={23} aria-hidden="true" /></span>
-                <h3>{item.title}</h3><p>{item.body}</p>
+              return <article className={styles.benefit} key={item.title} data-reiki-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><Image src={art[index%art.length]} alt="" fill unoptimized
+                  sizes="(max-width: 700px) 100vw, 44vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.benefitIcon}><Icon size={23} aria-hidden="true" /></span>
+                  <h3>{item.title}</h3><p>{item.body}</p>
+                </div>
               </article>;
             })}
           </div>
@@ -180,35 +186,55 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.how} aria-labelledby="reiki-referral-how">
           <div><p className={styles.sectionEyebrow}>{t.howEyebrow}</p><h2 id="reiki-referral-how">{t.howTitle}</h2></div>
           <ol className={styles.steps}>
-            {t.steps.map((step, index) => <li key={step.title}>
-              <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
-              <div><h3>{step.title}</h3><p>{step.body}</p></div>
+            {t.steps.map((step, index) => <li key={step.title} data-reiki-visual-screen={index+1}>
+              <div className={styles.scenePhoto}><Image src={art[(index+1)%art.length]} alt="" fill unoptimized
+                sizes="(max-width: 700px) 100vw, 44vw" /></div>
+              <div className={styles.sceneWords}>
+                <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{step.title}</h3><p>{step.body}</p>
+              </div>
             </li>)}
           </ol>
         </section>
 
-        <section className={styles.faq} aria-labelledby="reiki-referral-faq">
-          <h2 id="reiki-referral-faq">{t.faqTitle}</h2>
-          <div className={styles.faqItems}>{t.faq.map((item) => <details key={item.question}>
-            <summary>{item.question}<span aria-hidden="true">+</span></summary>
-            <p>{item.answer}</p>
-          </details>)}</div>
+        <section className={styles.faq} aria-labelledby="reiki-referral-faq" data-reiki-visual-screen="faq">
+          <div className={styles.scenePhoto}><Image src={art[1]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2 id="reiki-referral-faq">{t.faqTitle}</h2>
+            <div className={styles.faqItems}>{t.faq.map((item) => <details key={item.question}>
+              <summary>{item.question}<span aria-hidden="true">+</span></summary>
+              <p>{item.answer}</p>
+            </details>)}</div>
+          </div>
         </section>
 
         <section className={styles.reviews} id="reiki-practitioner-testimonials" aria-labelledby="reiki-practitioner-testimonials-heading">
           <TantraLearnerReviewCards locale={locale} headingId="reiki-practitioner-testimonials-heading" context="practitioner" />
         </section>
 
-        <section className={styles.bottomCta} aria-labelledby="reiki-referral-end">
-          <div><h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p></div>
+        <section className={styles.bottomCta} aria-labelledby="reiki-referral-end" data-reiki-visual-screen="start">
+          <div className={styles.scenePhoto}><Image src={art[0]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p>
           <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" attributes={{ "data-reiki-cta": "footer" }} className={styles.mainCta} prefetch={false}>
             {t.cta}<ArrowRight size={20} aria-hidden="true" />
           </AcquisitionEventLink>
+          </div>
         </section>
         <div className={styles.foot}>
           <Link href={tantraHref}>{t.secondary}</Link>
           <p>{t.footer}</p>
         </div>
+        <section className={styles.finalCapture} data-reiki-visual-screen="final-capture">
+          <div className={styles.scenePhoto}><Image src="/images/holistic-house/andy-about.png"
+            alt="" fill sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <CompactLeadCapture locale={locale} variant="inline"
+            sourcePath={"/"+locale+"/academy/reiki/free-practitioner-course"}
+            serviceTitle="Free Reiki Practitioner course"
+            title={locale==="ru"?"Есть вопрос о бесплатном курсе?":locale==="es"?"¿Tienes preguntas sobre el curso gratuito?":"Have a question about the free course?"}
+            lead={locale==="ru"?"Оставьте контакт, если нужен ответ Андрея. Начать курс можно без этой заявки.":locale==="es"?"Deja un contacto para recibir respuesta. Puedes empezar el curso sin esta solicitud.":"Leave a contact for Andrey to reply. You can start the course without this request."}
+          />
+        </section>
       </div>
     </main>
   );

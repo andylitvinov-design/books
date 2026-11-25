@@ -27,35 +27,36 @@ async function click(h,label){
   b.props.onClick();await h.settle()
 }
 
-test('day 14 closing meditation is exposed without a dropdown on EN/RU/ES',async()=>{
-  for(const [locale,next,save,confidence,pattern] of [
-    ['en','Continue','Save my practice','I managed a little',/Sit comfortably and notice the chair/],
-    ['ru','Продолжить','Сохранить мою практику','Получилось немного',/Сядьте удобно и почувствуйте опору/],
-    ['es','Continuar','Guardar mi práctica','Pude hacerlo un poco',/Siéntate cómodamente y siente el apoyo/]]){
+test('day 14 has exactly one user-started imagery meditation in AS-6.0',async()=>{
+  for(const [locale,next,save,confidence] of [
+    ['en','Continue','Save my practice','I managed a little'],
+    ['ru','Продолжить','Сохранить мою практику','Получилось немного'],
+    ['es','Continuar','Guardar mi práctica','Pude hacerlo un poco']]){
     const f=fixture(locale,14),h=f.h
     try{
-      await advanceOporaTo(h,'closingMeditation',next)
-      assert.match(textOf(h.tree),pattern)
+      await advanceOporaTo(h,'imageryMeditation',next)
+      const card=nodes(h.tree).find(n=>n.props?.['data-opora-experience-channel']==='imagery')
+      assert.ok(card,'Guided imagery is a separate screen for all languages')
       assert.equal(sound(h).length,1)
-      const panel=nodes(h.tree).find(n=>n.props?.['data-opora-final-meditation']==='day-14')
-      assert.ok(panel)
-      assert.equal(nodes(panel).filter(n=>n.type==='details'||n.type==='summary').length,0)
       await click(h,next)
-      assert.equal(sound(h).length,0)
-      assert.equal(screen(h).props['data-opora-current-screen'],'recapFeedback')
+      assert.equal(sound(h).length,0,'Audio unmounts before practice')
+      await advanceOporaTo(h,'recapFeedback',next)
+      assert.equal(sound(h).length,0,'No duplicate closing meditation for AS-6.0')
       await click(h,confidence)
       await click(h,save)
       assert.equal(f.writes,1)
-      assert.equal(sound(h).length,0,'No repeated audio after save')
+      assert.equal(sound(h).length,0,'No audio after session save')
     }finally{h.unmount()}
   }
 })
-test('ordinary days never show the timer but preserve their saved receipt',async()=>{
+test('ordinary days include opt-in audio in imagery only, and preserve their saved receipt',async()=>{
   for(const day of [1,3,4,13]){
     const f=fixture('en',day),h=f.h
     try{
+      await advanceOporaTo(h,'imageryMeditation','Continue')
+      assert.equal(sound(h).length,1,'Daily imagery must provide optional audio')
       await advanceOporaTo(h,'practice','Continue')
-      assert.equal(sound(h).length,0)
+      assert.equal(sound(h).length,0,'Stop sound when leaving imagery')
       await advanceOporaTo(h,'recapFeedback','Continue')
       assert.equal(sound(h).length,0)
       await click(h,'I only explored them today')

@@ -13,6 +13,9 @@ import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings, type YggdrasilModuleLanding } from "@/data/academy/yggdrasil-module-map";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./yggdrasil-basic-landing.module.css";
+import { MyReikiHeader } from "./my-reiki-header";
+import { ReikiProgramNavigation } from "./reiki-programs";
+import proStyles from "./yggdrasil-pro-detail.module.css";
 
 const basicCopy: Record<PublicLocale, {
   kicker: string; free: string; explore: string; five: string;
@@ -91,6 +94,54 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
       previous: "Módulo anterior", next: "Módulo siguiente",
     },
   }[locale];
+
+  // Higher Magic is the first opt-in module detail in the My Reiki visual system.
+  // Keep the legacy module routes unchanged and reuse the full canonical curriculum.
+  if (module.slug === "higher-magic") {
+    const t = {
+      en: { back: "Back to Pro program", kicker: "REIKI YGGDRASIL · PRO · MODULE 06", explore: "Explore the six steps", navigation: "Other modules & school resources" },
+      ru: { back: "Назад в программу Pro", kicker: "РЕЙКИ ИГГДРАСИЛЬ · PRO · МОДУЛЬ 06", explore: "Изучить шесть ступеней", navigation: "Другие модули и материалы школы" },
+      es: { back: "Volver al programa Pro", kicker: "REIKI YGGDRASIL · PRO · MÓDULO 06", explore: "Explorar las seis etapas", navigation: "Otros módulos y materiales de la escuela" },
+    }[locale];
+    const backToPro = "/" + locale + "/academy/principles-of-energywork?program=pro#reiki-pro-higher-magic";
+    return (
+      <main className={proStyles.page} lang={locale} data-my-reiki-module-landing="higher-magic">
+        <div className={proStyles.shell}>
+          <MyReikiHeader locale={locale} program="pro" modulePath="/academy/reiki/yggdrasil/higher-magic" />
+          <ReikiProgramNavigation locale={locale} active="pro" />
+        </div>
+        <article className={proStyles.deck}>
+          <Link className={proStyles.back} href={backToPro} prefetch={false}>← {t.back}</Link>
+          <header className={proStyles.hero} aria-labelledby="higher-magic-title">
+            <div className={proStyles.art}><Image unoptimized src={module.image} alt="" fill sizes="(max-width: 760px) 54vw, 360px" priority /></div>
+            <div className={proStyles.heroCopy}>
+              <p className={proStyles.kicker}>{t.kicker}</p>
+              <h1 id="higher-magic-title">{module.title[locale]}</h1>
+              <p className={proStyles.lead}>{module.lead[locale]}</p>
+              <div className={proStyles.stats}>
+                <span><strong>{level.steps.length}</strong>{copy.steps}</span>
+                <span><strong>{settings}</strong>{copy.attunements}</span>
+                <span><strong>{videos}</strong>{copy.videos}</span>
+              </div>
+              <a href="#yggdrasil-curriculum-title" className={proStyles.cta}>{t.explore}<ArrowDown size={19} aria-hidden="true" /></a>
+            </div>
+          </header>
+          <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={false} visualTheme="my-reiki" />
+          <aside className={proStyles.notice}>{copy.notice}</aside>
+          <PublicConsultationCta locale={locale} />
+          <details className={proStyles.resources}>
+            <summary>{t.navigation}</summary>
+            <YggdrasilSideNavigation locale={locale} activeSlug={module.slug} />
+          </details>
+          <nav className={proStyles.footerNav} aria-label="Reiki Yggdrasil modules">
+            {previous ? <Link href={baseUrl + "/" + previous.slug} prefetch={false}><small>{copy.previous}</small><strong>{previous.title[locale]}</strong></Link> : null}
+            <Link href={baseUrl} prefetch={false}>{copy.back}<ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href={backToPro} prefetch={false}>{t.back}<ArrowRight size={16} aria-hidden="true" /></Link>
+          </nav>
+        </article>
+      </main>
+    );
+  }
 
   return (
     <main className={"academy-reading-shell academy-reading-shell--wide yggdrasil-module-page" + (isBasic ? " " + styles.basicPage : "")} lang={locale}>

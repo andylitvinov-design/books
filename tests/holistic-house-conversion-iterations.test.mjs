@@ -19,16 +19,14 @@ test("iteration 1: home hero offers direct routes, visible photo services and bo
   assert.doesNotMatch(home, /data-home-extra-paths|service-home-progress/);
 });
 
-test("iteration 2: first contact is a real coaching form with a drawing requirement, without server-side storage", () => {
+test("iteration 2: free entry opens one private questionnaire and keeps drawing materials off messengers", () => {
   const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
-  assert.match(intake, /useState<Topic>\("personal"\)/);
-  assert.match(intake, /<textarea required/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
+  assert.match(intake, /\/coaching\/intake/);
   assert.match(intake, /not a medical or mental-health diagnosis/i);
-  assert.match(intake, /Nothing is sent automatically/);
-  assert.match(intake, /handwritten drawing/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|new FormData|sendBeacon|fetch\(/);
+  assert.match(intake, /paper and a pen/);
+  assert.match(intake, /Do not send private answers/);
+  assert.doesNotMatch(intake, /<textarea|navigator\.clipboard|ContactChannelChooser|localStorage|sessionStorage|new FormData|sendBeacon|fetch\(/);
 });
 
 test("iteration 3: grounded personal introduction and contextual testimonial CTA", () => {

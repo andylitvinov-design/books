@@ -37,8 +37,13 @@ test("homepage keeps one free-first journey and the original consented final enq
   const stage = read("components/home-featured-workspace.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
-  assert.match(spanish, /<HomeFeaturedWorkspace locale="es" \/>/);
+  assert.match(home,/<HomeDialogueEntry locale=\{locale\}\s*\/>/);
+  assert.match(spanish,/<HomeDialogueEntry locale="es"\s*\/>/);
+  assert.match(home,/<HomeDeferredSections locale=\{locale\}\s*\/>/);
+  assert.match(spanish,/<HomeDeferredSections locale="es"\s*\/>/);
+  const expanded=read("components/home-expanded-catalog.tsx");
+  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
+  assert.match(expanded,/<HomepageContactCta locale=\{locale\}\s*\/>/);
   assert.match(stage, /data-home-offer-primary=\{offer\.id\}/);
   for (const route of ["/client/tests","/services/free-situation-review","/academy/principles-of-energywork/learn",
     "/services#consultation","/coaching"])
@@ -47,8 +52,10 @@ test("homepage keeps one free-first journey and the original consented final enq
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
   assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.ok(home.indexOf("<HomeFeaturedWorkspace") < home.indexOf("<HomepageContactCta"));
-  assert.ok(spanish.indexOf("<HomeFeaturedWorkspace") < spanish.indexOf("<PublicConsultationCta"));
+  assert.doesNotMatch(home,/<HomeFeaturedWorkspace|<HomepageContactCta/);
+  assert.doesNotMatch(spanish,/<HomeFeaturedWorkspace/);
+  assert.ok(expanded.indexOf("<HomeFeaturedWorkspace")<expanded.indexOf("<HomepageContactCta"));
+  assert.match(spanish,/<PublicConsultationCta locale="es"\s*\/>/);
   assert.doesNotMatch(home, /<HomeFreeDiagnosisBanner|service-home-hero/);
 });
 
@@ -70,7 +77,8 @@ test("known first-party testimonial stills avoid speculative YouTube thumbnail t
   const source = read("components/site-video-player.tsx");
   const testimonials = read("components/personal-testimonials.tsx");
   assert.match(source, /poster && \(!fallbackPoster \|\| localPosterFailed\)/);
-  assert.match(source, /!isHeygen && fallbackPoster && !localPosterFailed/);
+  // Both hosted YouTube and iPhone-safe HeyGen introductions must prefer a first-party poster.
+  assert.match(source, /fallbackPoster && !approvedPoster && !localPosterFailed/);
   assert.match(source, /onError=\{\(\) => setLocalPosterFailed\(true\)\}/);
   assert.match(testimonials, /locallyArchivedVideoPosterIds/);
   assert.match(testimonials, /testimonial-posters\/\$\{item\.id\}\.webp/);
@@ -113,7 +121,7 @@ test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   assert.match(stage, /Request a session · from €50/);
   assert.match(stage, /Заказать бесплатный письменный разбор/);
   assert.match(stage, /This is a request for a written response, not a call/);
-  assert.match(css, /\.offerPrimary \{ background: #742c42/);
+  assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
   assert.doesNotMatch(home, /force-static|s-maxage/);
   assert.match(es, /<PublicConsultationCta locale="es" \/>/);
 });

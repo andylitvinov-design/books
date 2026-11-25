@@ -1,0 +1,36 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8')
+test('owner-authenticated CRM can pause a single Telegram Bot thread',()=>{
+ const api=source('app/api/app/crm/messenger/route.js')
+ const store=source('lib/crm/messenger-store.js')
+ const ui=source('components/app/crm-messenger.jsx')
+ assert.match(api,/action==='set_human_takeover'/)
+ assert.match(api,/onlyKeys\(payload,\['threadId','enabled'\]\)/)
+ assert.match(store,/async setMessengerHumanTakeover/)
+ assert.match(store,/t\.id=\$1 and t\.owner_id=\$2/)
+ assert.match(store,/a\.channel='telegram'/)
+ assert.match(ui,/Отвечаю лично/)
+ assert.match(ui,/Вернуть боту/)
+ assert.match(ui,/aria-pressed=\{selected\.humanTakeover===true\}/)
+})
+test('signed Bot respects takeover and STOP; no broad DB grants',()=>{
+ const bot=source('lib/crm/telegram-companion-service.js')
+ const gate=source('lib/crm/telegram-chat-policy.js')
+ const migration=source('supabase/migrations/20261119023500_hh_crm_owner_handoff_v1.sql')
+ assert.match(bot,/const chat=stop\?\{manual:false,shared:false,shouldPrompt:false\}:/)
+ assert.match(bot,/telegramBotChatMode\(config,keys,archiveCommand\|\|'nudge'\)/)
+ assert.match(gate,/transaction\(config,null,async db=>/)
+ assert.match(gate,/\{inbox:true,practitionerId:PRACTITIONER_ID\}/)
+ assert.match(migration,/a\.external_hash=p_account_hash/)
+ assert.match(migration,/t\.user_hash=p_user_hash/)
+ assert.match(migration,/GRANT EXECUTE ON FUNCTION app_private\.crm_msg_human_takeover_active_v1\(text,text\)\s+TO hh_app_inbox/)
+ assert.doesNotMatch(migration,/GRANT (?:SELECT|INSERT|UPDATE) ON app\.crm_msg_threads/)
+})
+test('only a visible owner tab periodically reads CRM',()=>{
+ const ui=source('components/app/crm-messenger.jsx')
+ assert.match(ui,/document\.visibilityState!=='visible'/)
+ assert.match(ui,/window\.setInterval/)
+ assert.match(ui,/window\.clearInterval/)
+})

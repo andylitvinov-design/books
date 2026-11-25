@@ -1,0 +1,67 @@
+.root{margin:9px -1px 15px;scroll-margin-top:calc(14px + env(safe-area-inset-top, 0px));color:#143d3a}
+.header{margin:4px 2px 9px;text-align:left}
+.header h2{margin:0;color:#17334b;font:700 clamp(22px,5.5vw,26px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+.header p{margin:5px 0 0;color:#5d6a71;font:13px/1.35 Arial,Helvetica,sans-serif}
+.list{display:grid;grid-template-columns:1fr;gap:8px}
+.card{display:grid;grid-template-columns:minmax(0,1fr) 87px;gap:8px;align-items:center;min-width:0;padding:7px;border:1px solid #e9dfd1;border-radius:18px;background:#fffcf7;box-shadow:0 3px 10px #60432b12}
+.product{display:grid;grid-template-columns:67px minmax(0,1fr);align-items:center;gap:9px;min-width:0;color:#143d3a!important;text-decoration:none!important}
+.thumbnail{position:relative;display:block;width:67px;height:74px;overflow:hidden;border-radius:12px;background:#f5ecdc}
+.thumbnail img{object-fit:cover;object-position:center}
+.content{display:flex;min-width:0;flex-direction:column;gap:3px}
+.content strong{color:#17334b;font:700 15px/1.17 Georgia,"Times New Roman",serif}
+.description{color:#5d6a71;font:12px/1.28 Arial,Helvetica,sans-serif}
+.price{color:#096856;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.action{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:44px;padding:6px 7px;border-radius:999px;background:#067a67;color:#fff!important;text-align:center;text-decoration:none!important;font:700 12px/1.1 Arial,Helvetica,sans-serif}
+.action svg{flex:none}
+.all{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;margin-top:10px;padding:8px 12px;border:1.5px solid #087063;border-radius:999px;background:#fffcf7;color:#075247!important;text-decoration:none!important;font:700 13px/1.2 Arial,Helvetica,sans-serif}
+.note{margin:8px 3px 0;color:#5d6a71;font:11px/1.35 Arial,Helvetica,sans-serif}
+.empty{margin:0;padding:14px;border:1px solid #e9dfd1;border-radius:14px;background:#fffcf7;color:#5d6a71;font:13px/1.35 Arial,Helvetica,sans-serif}
+.root :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:350px){.card{grid-template-columns:minmax(0,1fr) 72px;gap:6px;padding:6px}.product{grid-template-columns:53px minmax(0,1fr);gap:7px}.thumbnail{width:53px;height:68px}.content strong{font-size:13px}.description{font-size:11px}.price{font-size:10.5px}.action{padding:5px 3px;font-size:11px}.action svg{width:12px;height:12px}}
+@media(min-width:761px){.header h2{font-size:27px}.card{grid-template-columns:minmax(0,1fr) 105px;padding:11px}.product{grid-template-columns:100px minmax(0,1fr);gap:16px}.thumbnail{width:100px;height:80px}.content strong{font-size:19px}.description{font-size:14px}.price{font-size:13px}}
+
+/* Post-quiz layout: two prioritized topic sections, each with three published offers. */
+.groupList{display:grid;gap:12px;margin-top:10px}
+.groupBlock{overflow:hidden;min-width:0;padding:8px 3px 10px;background:#fffcf7;border:1px solid #e7e0d5;border-radius:21px;box-shadow:0 5px 17px #23473411}
+.groupHeading{padding:2px 10px 10px}
+.groupHeading span{display:block;color:#08765b;font:800 12px/1.25 Arial,Helvetica,sans-serif}
+.groupHeading h3{margin:5px 0 0;color:#103f35;font:700 clamp(19px,5vw,24px)/1.15 Georgia,serif}
+.groupBlock :global([data-services-three-visible]){padding:0 7px;gap:7px}
+.groupBlock :global([data-support-uniform-card]){background:#fffefd}
+.groupPriceNote{margin:10px 6px 0;color:#59685e;font:11px/1.3 Arial,Helvetica,sans-serif}
+@media(max-width:350px){.groupHeading{padding:1px 8px 9px}.groupHeading h3{font-size:19px}.groupBlock :global([data-services-three-visible]){padding:0 5px}}
+
+/* QUIZ_RESULT_COMPACT_CABINET_20261121
+   Only the post-quiz view is restyled; other assistant card consumers stay intact. */
+.quizResult{margin:0;padding:0;color:#174638}
+.quizResult .header{margin:2px 3px 9px}
+.quizResult .header h2{color:#173f35;font:700 clamp(19px,5.1vw,24px)/1.13 Georgia,serif;letter-spacing:-.03em}
+.quizResult .header p{margin-top:4px;color:#656e64;font:12px/1.35 Arial,Helvetica,sans-serif}
+.quizResult .groupList{gap:8px;margin-top:9px}
+.quizResult .groupBlock{padding:8px 3px 9px;border:1px solid #e6d6b8;border-radius:14px;background:#fffdf7;box-shadow:none}
+.quizResult .groupHeading{padding:0 10px 8px}
+.quizResult .groupHeading span{color:#3a8460;font-size:10.5px}
+.quizResult .groupHeading h3{margin:2px 0 0;font-size:clamp(17px,4.6vw,21px);line-height:1.18}
+.quizResult .groupPriceNote{margin:8px 4px 0;font-size:10.5px}
+.quizResult .all{min-height:40px;margin-top:8px;border:1px solid #b9cbb8;border-radius:13px;background:#f4f8ef;font-size:12px}
+.emptyMatch{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #e5d2b2;
+ border-radius:14px;background:#fffdf8}
+.emptyMark{display:grid;flex:none;place-items:center;width:35px;height:35px;border-radius:11px;
+ background:#e8f2e6;color:#075c43}
+.emptyMatch strong{display:block;margin:1px 0 3px;color:#224d3c;font:700 15px/1.2 Georgia,serif}
+.emptyMatch p{margin:0;color:#5e665c;font:12px/1.4 Arial,Helvetica,sans-serif}
+.emptyActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+.emptyActions a,.emptyActions button{display:flex;align-items:center;justify-content:center;gap:5px;
+ min-height:43px;padding:7px 8px;border-radius:13px;text-decoration:none;text-align:center;
+ font:700 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.adjustAction{border:1px solid #016b4b;background:#096c50;color:#fff}
+.freeAction{border:1px solid #bfcdb9;background:#eff6eb;color:#135b46!important}
+.disclosure{margin:8px 3px 0;color:#687066;font:11px/1.3 Arial,Helvetica,sans-serif}
+.disclosure summary{display:inline-flex;align-items:center;min-height:32px;cursor:pointer;
+ text-decoration:underline;text-decoration-color:#a5b6a7;text-underline-offset:3px}
+.disclosure .note{margin:0 0 4px;padding:5px 2px 2px}
+@media(max-width:350px){
+ .quizResult .header h2{font-size:18px}
+ .emptyActions{gap:5px}
+ .emptyActions a,.emptyActions button{font-size:11px;padding:5px}
+}

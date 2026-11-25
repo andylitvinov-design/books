@@ -242,3 +242,65 @@
   .yggdrasilTopCapture .choice:nth-child(3) { grid-column: 1 / -1; min-height: 50px; }
   .yggdrasilTopCapture .action { min-height: 47px; font-size: 13px; }
 }
+
+/* Single-screen Reiki request: the selected initiation shows its phone and
+   messenger buttons immediately, without the old expandable registration. */
+.capture,
+.topCapture,
+.yggdrasilTopCapture {
+  margin-block:12px 20px;
+  padding:15px 17px;
+  border-radius:18px;
+}
+.capture .eyebrow { font-size:10px; gap:7px; letter-spacing:.055em; }
+.capture .eyebrow svg { width:17px; height:17px; }
+.capture .title, .topCapture .title, .yggdrasilTopCapture .title {
+  max-width:none; margin:7px 0 3px;
+  font-size:clamp(23px,3vw,30px); line-height:1.13;
+}
+.capture .lead, .topCapture .lead, .yggdrasilTopCapture .lead {
+  max-width:none; font-size:12px; line-height:1.35;
+}
+.capture .priceLine, .topCapture .priceLine, .yggdrasilTopCapture .priceLine {
+  margin-top:5px; font-size:11px;
+}
+.capture .question, .topCapture .question, .yggdrasilTopCapture .question {
+  margin:10px 0 6px; font-size:12px;
+}
+.capture .choices { gap:7px; }
+.capture .choice,
+.capture .choice:nth-child(3),
+.topCapture .choice,
+.topCapture .choice:nth-child(3),
+.yggdrasilTopCapture .choice,
+.yggdrasilTopCapture .choice:nth-child(3) {
+  min-height:49px; padding:9px 8px; font-size:12px;
+  border-radius:11px; line-height:1.28; gap:6px;
+}
+.capture .choice > svg { width:15px; height:15px; flex:0 0 15px; }
+.capture .action, .topCapture .action, .yggdrasilTopCapture .action {
+  min-height:47px; margin-top:10px;
+  padding:9px 11px; font-size:13px;
+  border-radius:11px;
+}
+.capture .checklistLink { margin-top:6px; font-size:11px; }
+@media (max-width:640px) {
+  .capture,.topCapture,.yggdrasilTopCapture { margin:9px auto 18px; padding:13px 13px 15px; }
+  .capture .title,.topCapture .title,.yggdrasilTopCapture .title { font-size:clamp(22px,6.4vw,27px); }
+  .capture .lead,.topCapture .lead,.yggdrasilTopCapture .lead { font-size:11.5px; }
+  .capture .choices, .topCapture .choices, .yggdrasilTopCapture .choices {
+    grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;
+  }
+  .capture .choice,.topCapture .choice,.yggdrasilTopCapture .choice {
+    min-height:51px; padding:8px 7px; font-size:11.5px;
+  }
+  .capture .choice:nth-child(3),.topCapture .choice:nth-child(3),.yggdrasilTopCapture .choice:nth-child(3) {
+    grid-column:1/-1; min-height:43px; padding:8px;
+  }
+  .capture .question { margin-top:9px; }
+}
+@media (max-width:350px) {
+  .capture,.topCapture,.yggdrasilTopCapture { padding:12px 10px 14px; }
+  .capture .eyebrow { font-size:9px; }
+  .capture .choice,.topCapture .choice,.yggdrasilTopCapture .choice { font-size:11px; }
+}

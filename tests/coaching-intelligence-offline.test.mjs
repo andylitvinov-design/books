@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {
-  coachingStageKey,authoredFollowupFor,draftCoachingActionPlan,
+  coachingStageKey,authoredFollowupFor,coachingControlForAnswer,draftCoachingActionPlan,
   displayCoachingAnswer,COACHING_P1_VERSION,
 } from '../lib/personal-coaching/offline-intelligence.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -24,17 +24,34 @@ test('localized, versioned, answer-aware followups with no speculative AI analys
   assert.notEqual(choice.prompt.en,written.prompt.en)
 })
 
-test('no more than one per stage or two per session, danger and unknown stages return no followup',()=>{
+test('one gentle followup per stage, up to five per session; safety returns a blocking control and unknown stages skip it',()=>{
   const reality={id:'a',stepKey:'reality'}
   assert.equal(authoredFollowupFor(reality,''),null)
-  assert.equal(authoredFollowupFor(reality,'kill myself'),null)
-  assert.equal(authoredFollowupFor(reality,'покончить с собой'),null)
-  assert.equal(authoredFollowupFor(reality,'quiero morir'),null)
+  assert.equal(authoredFollowupFor(reality,'kill myself').controlStatus,'safety_hold')
+  assert.equal(authoredFollowupFor(reality,'покончить с собой').controlStatus,'safety_hold')
+  assert.equal(authoredFollowupFor(reality,'quiero morir').controlStatus,'safety_hold')
   assert.equal(authoredFollowupFor({id:'c',stepKey:'review'},'A note'),null)
   const prev={a:{stage:'reality',text:'My own note'}}
   assert.equal(authoredFollowupFor({id:'b',stepKey:'obstacle'},'An obstacle',prev),null)
   assert.ok(authoredFollowupFor({id:'b',stepKey:'options'},'An option',prev))
   assert.equal(authoredFollowupFor({id:'c',stepKey:'options'},'An option',{...prev,b:{stage:'options',text:'My note'}}),null)
+  const goal=authoredFollowupFor({id:'g',stepKey:'goal'},'My meaningful change',prev)
+  assert.equal(goal.key,'goal_text_v1')
+  for(const locale of ['en','ru','es'])assert.ok(goal.prompt[locale].length>25)
+  const resources=authoredFollowupFor({id:'k',stepKey:'knowhow'},'I can ask a friend')
+  const action=authoredFollowupFor({id:'w',stepKey:'will'},'One small call')
+  assert.equal(resources.stage,'resources')
+  assert.equal(action.stage,'action')
+  for(const locale of ['en','ru','es']){
+    assert.ok(resources.prompt[locale].length>25)
+    assert.ok(action.prompt[locale].length>25)
+  }
+  assert.equal(authoredFollowupFor({id:'a',stepKey:'will'},'My step',{
+    g:{stage:'goal'},r:{stage:'reality'},k:{stage:'resources'},o:{stage:'options'},w:{stage:'action'},
+  }),null)
+  assert.equal(authoredFollowupFor({id:'o',stepKey:'options'},'One option',{
+    ...prev,g:{stage:'goal',text:'Reason'},o:{stage:'options',text:'Direction'},
+  }),null)
 })
 
 test('action plan draft uses direct user evidence and leaves missing entries blank',()=>{
@@ -111,11 +128,11 @@ test('continuity and unsubmitted followup safeguards reuse the same private acco
 test('backend keeps saved reflections and approved plans owner encrypted and optimistic-revision guarded',()=>{
   const src=source('lib/app/personal-coaching.js'),api=source('app/api/app/[...path]/route.js')
   for(const literal of ["input.action==='reflection'","input.action==='plan'",
-    'course.current.reflections={','course.current.actionPlan={','readRow(db,actor,true)',
+    'course.current.reflections={','course.current.actionPlan=plan','readRow(db,actor,true)',
     'seal(course,sealContext(actor),config)','authoredFollowupFor(question,original,course.current.reflections)',
     'PERSONAL_COACH_REFLECTION_UNAVAILABLE','PERSONAL_COACH_PLAN_INVALID'])
     assert.ok(src.includes(literal),literal)
-  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note'\]\)/)
+  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note','turnId'\]\)/)
   assert.match(api,/await auth\.verified\(\)/)
   assert.match(api,/savePersonalCoaching\(config, actor, await readBody\(request, 8192\)\)/)
   assert.doesNotMatch(src,/process\.env\.GEMINI|\bfetch\(/)
@@ -143,4 +160,91 @@ test('changed JSX modules parse before Vercel build',()=>{
     const errors=parsed.parseDiagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error)
     assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
   }
+})
+
+
+test('adaptive methodology selects a focused follow-up for overload, ambivalence and advice requests',()=>{
+  const overload=authoredFollowupFor({id:'overload',stepKey:'reality'},'У меня слишком много дел, я не успеваю')
+  assert.equal(overload.intervention,'prioritize')
+  assert.equal(overload.prompt.ru,'Что из этого важнее всего в ближайшие семь дней?')
+  const ambivalence=authoredFollowupFor({id:'ambivalence',stepKey:'action'},'I am afraid to start')
+  assert.equal(ambivalence.intervention,'explore_ambivalence')
+  assert.match(ambivalence.prompt.en,/what makes you want to move forward/i)
+  const advice=authoredFollowupFor({id:'advice',stepKey:'options'},'What should I do?')
+  assert.equal(advice.intervention,'offer_advice_with_permission')
+  assert.match(advice.prompt.en,/Would you like me/i)
+})
+
+test('methodology adapts across EN/RU/ES, including contradiction and priority stage',()=>{
+  const contradiction=authoredFollowupFor({id:'c',stepKey:'reality'},
+    'On one hand I want to leave, but at the same time I want to stay')
+  assert.equal(contradiction.intervention,'check_contradiction')
+  for(const locale of ['en','ru','es']){
+    assert.ok(contradiction.prompt[locale].length>20)
+    const priority=authoredFollowupFor({id:'p',stepKey:'priority'},'choice:important')
+    assert.ok(priority.prompt[locale].length>20)
+  }
+})
+
+test('safety, stop and pause produce terminal controls, never ordinary follow-up questions',()=>{
+  for(const [message,expected] of [
+    ['I want to kill myself','safety_hold'],
+    ['I want to stop now','stopped'],
+    ['Please pause','paused'],
+  ]){
+    const control=authoredFollowupFor({id:'s',stepKey:'reality'},message)
+    assert.equal(control.controlStatus,expected)
+    assert.match(control.key,/^control_(?:safety_hold|stopped|paused)_v2$/)
+    assert.notEqual(control.key,'reality_text_v1')
+    assert.equal(control.methodologyVersion,'hh-coaching-methodology-v2')
+  }
+})
+
+test('adaptive metadata contains only controlled reason codes and no client text',()=>{
+  const result=authoredFollowupFor({id:'a',stepKey:'reality'},'I am afraid to start')
+  assert.equal(result.methodologyVersion,'hh-coaching-methodology-v2')
+  assert.equal(result.intervention,'explore_ambivalence')
+  assert.equal(JSON.stringify(result).includes('afraid to start'),false)
+})
+
+
+test('safety, pause and stop return explicit control states instead of silent fallthrough',()=>{
+  const safety=authoredFollowupFor({id:'safe',stepKey:'reality'},'I want to kill myself')
+  assert.equal(safety.controlStatus,'safety_hold')
+  assert.ok(safety.prompt.ru.length>20)
+  const pause=authoredFollowupFor({id:'pause',stepKey:'reality'},'Please pause')
+  assert.equal(pause.controlStatus,'paused')
+  const stop=authoredFollowupFor({id:'stop',stepKey:'reality'},'I want to stop now')
+  assert.equal(stop.controlStatus,'stopped')
+})
+
+test('runner renders a blocking control state and resumes only after explicit user action',()=>{
+  const ui=source('components/app/personal-coaching.jsx')
+  assert.match(ui,/if\(item\.controlStatus\)\{/)
+  assert.match(ui,/setSessionControl\(item\)/)
+  assert.match(ui,/: sessionControl \? <div/)
+  assert.match(ui,/sessionControl\.controlStatus==='safety_hold'/)
+  assert.match(ui,/onClick=\{\(\)=>visit\(index\+1,session\?\.answers\)\}/)
+})
+
+
+test('stop, pause and safety controls are detected independently of question stage or position',()=>{
+  for(const [message,status] of [
+    ['I want to kill myself','safety_hold'],
+    ['покончить с собой','safety_hold'],
+    ['I want to stop now','stopped'],
+    ['Please pause','paused'],
+  ]){
+    const control=coachingControlForAnswer(message,'en')
+    assert.equal(control.controlStatus,status)
+  }
+  assert.equal(coachingControlForAnswer('I have completed my goal','en'),null)
+})
+
+test('final question path checks control intent before completion',()=>{
+  const ui=source('components/app/personal-coaching.jsx')
+  assert.match(ui,/function offerSessionControl\(answer\)/)
+  assert.match(ui,/if\(offerSessionControl\(answer\)\)return/)
+  assert.match(ui,/if\(!skip&&offerSessionControl\(answer\)\)return/)
+  assert.ok(ui.indexOf('if(!skip&&offerSessionControl(answer))return')<ui.indexOf("commandAfterSave(saved,'complete')"))
 })

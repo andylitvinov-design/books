@@ -24,10 +24,24 @@ export async function POST(request){
    if(request.headers.get('x-hh-account-id')!==actor.id)
      throw new AppError('ACCOUNT_CHANGED',409)
    if(!practitionerEmailAllowed(actor))throw new AppError('ACCESS_DENIED',403)
-   // This action has no parameters. Reject even streamed request bodies
-   // without buffering user-controlled bytes into server memory.
-   if(request.body!==null||Number(request.headers.get('content-length')||0)>0)
-     throw new AppError('INVALID_BODY',400)
+   // Next's Node adapter wraps even an empty POST in a stream. Check EOF,
+   // never parse a payload or buffer it; a nonempty or stalled stream fails closed.
+   const length=request.headers.get('content-length')
+   if(length!==null&&length!=='0')throw new AppError('INVALID_BODY',400)
+   if(request.body){
+     const reader=request.body.getReader()
+     let timeout
+     try{
+       const chunk=await Promise.race([
+         reader.read(),
+         new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new AppError('INVALID_BODY',400)),1000)}),
+       ])
+       if(!chunk.done)throw new AppError('INVALID_BODY',400)
+     }finally{
+       clearTimeout(timeout)
+       void reader.cancel().catch(()=>{})
+     }
+   }
    const result=await sendOwnerTelegramPilot(config,actor)
    return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){

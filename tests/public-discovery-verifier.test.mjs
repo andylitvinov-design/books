@@ -41,6 +41,8 @@ function compile(source, react, modules = {}, browser = {}) {
       if (name === './simple-test-picker') return { SimpleTestPicker: 'SimpleTestPicker' }
       if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
       if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }
+      if (name === './research-directory') return { ResearchDirectory: 'ResearchDirectory' }
+      if (name === './goal-profile-panel') return { GoalProfilePanel: 'GoalProfilePanel' }
       if (name === './test-scale-guide') return { TestScaleGuide: 'TestScaleGuide' }
       throw new Error('Unexpected dependency: ' + name)
     },
@@ -87,7 +89,7 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   render()
   const collections = availableTestCollections(pickerProps.catalogEntries)
   assert.deepEqual(collectionCards().map(node => node.props['data-test-collection']), collections.map(item => item.id))
-  const title = locale === 'ru' ? 'Подборки тестов по темам' : locale === 'es' ? 'Colecciones de pruebas por tema' : 'Test collections by topic'
+  const title = locale === 'ru' ? 'Подборки тестов по темам (необязательно)' : locale === 'es' ? 'Colecciones de pruebas por tema (opcional)' : 'Test collections by topic (optional)'
   assert.ok(nodes(tree).some(node => node.type === 'h2' && accessibleText(node) === title))
   const more = () => nodes(tree).find(node => node.props['aria-controls'] === 'hh-test-curated-grid')
   assert.equal(more().props['aria-expanded'], false)
@@ -189,6 +191,8 @@ function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
         if (selector === '[data-portrait-sectors]') return all.filter(node => node.props['data-portrait-sectors'])
         if (selector === '[data-portrait-sector]') return all.filter(node => node.props['data-portrait-sector'])
         if (selector === '[data-portrait-sector-all]') return all.filter(node => node.props['data-portrait-sector-all'])
+        if (selector === '[data-portrait-view="axes"]') return all.filter(node => node.props['data-portrait-view'] === 'axes')
+        if (selector === '[data-portrait-view="chart"]') return all.filter(node => node.props['data-portrait-view'] === 'chart')
         if (selector === '[data-sector-point]') return all.filter(node => node.props['data-sector-point'])
         const sector = selector.match(/^\[data-portrait-sector="([^" ]+)"\]$/)
         if (sector) return all.filter(node => node.props['data-portrait-sector'] === sector[1])
@@ -339,7 +343,7 @@ function collectionChipHarness(locale, fault = null, width = 390) {
     heading = nodes(root).find(node => node.type === 'h2')
     const cards = nodes(root).filter(node => node.props['data-test-collection'])
     const expanded = root.props['data-expanded'] === 'true'
-    const collapsedCount = width <= 760 ? 4 : 8
+    const collapsedCount = 2
     // Match accepted CSS: display:none removes a card and its descendants from
     // the accessibility tree; the offscreen heading remains accessible.
     for (const [index, card] of cards.entries()) for (const node of nodes(card)) node.cssHidden = !expanded && index >= collapsedCount
@@ -418,8 +422,8 @@ test('collection heading stays accessible offscreen; visible chip rows and real 
   assert.ok(rule)
   for (const declaration of [/position:\s*absolute/, /width:\s*1px/, /height:\s*1px/, /clip:\s*rect\(0, 0, 0, 0\)/]) assert.match(rule, declaration)
   assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curatedCard:nth-child\(n\+3\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curated\[data-expanded="true"\]\s+\.curatedCard\s*\{\s*display:\s*flex/)
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
   assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'assert.deepEqual(shown,expected', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)

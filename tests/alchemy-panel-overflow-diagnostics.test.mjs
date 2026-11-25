@@ -7,14 +7,14 @@ import test from "node:test";
 import { captureAlchemyPanelOverflow, collectAlchemyPanelGeometry } from "../scripts/helpers/alchemy-panel-overflow-diagnostics.mjs";
 
 const source = await readFile(new URL("../scripts/verify-public-services-production.mjs", import.meta.url), "utf8");
-const start = source.indexOf("          const panelHeights =", source.indexOf('if (kind === "alchemy" && width <= 390)'));
+const start = source.indexOf("          const panelHeights =", source.indexOf('const locale = "es"'));
 const end = source.indexOf("          assert.equal(await page.locator('details[data-alchemy-extended-guide]')", start);
 assert.ok(start >= 0 && end > start, "Test executes the actual production measurement and strict assertion block");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const check = new AsyncFunction("main", "page", "locale", "width", "output", "captureAlchemyPanelOverflow", "assert", "console", source.slice(start, end));
-const names = ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"];
+const names = ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"];
 
-async function fixture(t, { height = 824, screenshotError = false, geometryError = false, count = 8 } = {}) {
+async function fixture(t, { height = 824, screenshotError = false, geometryError = false, count = 10 } = {}) {
   const output = await mkdtemp(join(tmpdir(), "alchemy-overflow-diagnostics-"));
   t.after(() => rm(output, { recursive: true, force: true }));
   const calls = [];
@@ -113,7 +113,7 @@ test("A geometry failure still permits screenshots and JSON with the original me
   await assert.rejects(f.run(), error => originalOverflow(error, 824));
   const evidence = await f.json();
   assert.equal(evidence.geometry, null);
-  assert.equal(evidence.panelHeights.length, 8);
+  assert.equal(evidence.panelHeights.length, 10);
   assert.equal(evidence.screenshot.captured, true);
   assert.deepEqual(evidence.captureErrors.map(item => item.stage), ["geometry"]);
 });
@@ -126,9 +126,9 @@ test("An unwritable artifact target does not mask the strict assertion", async t
   assert.equal(f.calls.some(call => call.diagnosticError?.includes("ENOTDIR")), true);
 });
 
-test("The original eight-panel count assertion remains in force", async t => {
-  const f = await fixture(t, { count: 7 });
-  await assert.rejects(f.run(), { code: "ERR_ASSERTION", message: "Eight compact Alchemy panels\n\n7 !== 8\n" });
+test("The ten-panel count assertion remains in force", async t => {
+  const f = await fixture(t, { count: 9 });
+  await assert.rejects(f.run(), { code: "ERR_ASSERTION", message: "Ten Alchemy chapters including video and public sample report\n\n9 !== 10\n" });
   assert.deepEqual(f.calls, []);
 });
 

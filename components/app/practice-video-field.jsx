@@ -2,6 +2,8 @@
 import {useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {PRESENTATION_MAX_BYTES} from '@/lib/practitioners/presentation-contract.js'
+import ServiceIntroductionEditor from './service-introduction-editor'
+import PracticeYoutubeShare from './practice-youtube-share'
 
 const copy={
   en:{title:'Video presentation',tip:'Introduce yourself or explain this service in a short video. It will be reviewed before appearing publicly.',
@@ -33,7 +35,14 @@ async function api(path,body){
  if(!r.ok)throw new Error(value.error||'PRESENTATION_UPLOAD_FAILED')
  return value
 }
-export default function PracticeVideoField({value,onChange,locale='en',onBusyChange=()=>{}}){
+export default function PracticeVideoField(props){
+  if(Array.isArray(props.introductions))
+    return <ServiceIntroductionEditor locale={props.locale} value={props.introductions}
+      onChange={props.onIntroductionsChange} onBusyChange={props.onBusyChange}/>
+  return <LegacyPracticeVideoField {...props}/>
+}
+// The profile video uses its previous dedicated single-video workflow.
+function LegacyPracticeVideoField({value,onChange,locale='en',onBusyChange=()=>{}}){
  const t=copy[locale]||copy.en
  const [mode,setMode]=useState(value?.kind==='upload'?'upload':'link')
  const [busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -84,6 +93,7 @@ export default function PracticeVideoField({value,onChange,locale='en',onBusyCha
        </div>}
    {value&&<button type="button" className="hh-practice-presentation-remove" disabled={busy}
      onClick={()=>{onChange(null);setFilename('');setError('')}}>{t.remove}</button>}
+   {value?.kind==='upload'&&<PracticeYoutubeShare video={value} locale={locale} initialTitle="Master presentation"/>}
    {error&&<p role="alert" className="hh-practice-error">{error}</p>}
    <p className="hh-fine">{t.notice}</p>
  </section>

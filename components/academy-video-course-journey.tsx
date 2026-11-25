@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Copy, MessageCircleQuestion, PlayCircle, RotateCcw } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
@@ -40,7 +40,7 @@ const labels = {
     questions: "Какие вопросы, комментарии или идеи возникли после этого видео?",
     placeholder: "Напишите вопросы или комментарии (необязательно)…", privacy: "Заметки остаются только в этой вкладке браузера. Они не отправляются преподавателю, в кабинет или CRM.",
     prev: "Назад", toReflection: "Вопросы и комментарии", nextVideo: "Следующее видео", finish: "Завершить курс",
-    complete: "Курс пройден", completeText: "Вы посмотрели все уроки. При желании скопируйте свои заметки, прежде чем закрыть вкладку.",
+    complete: "Курс пройден", completeText: "Вы дошли до конца курса. При желании скопируйте свои заметки, прежде чем закрыть вкладку.",
     copy: "Скопировать заметки", copied: "Заметки скопированы", copyError: "Не удалось скопировать. Выделите текст вручную.",
     noNotes: "Вы пока не оставили комментариев.", restart: "Начать заново и очистить заметки",
     youtube: "Открыть оригинал", mediaMissing: "Видео недоступно для вставки. Откройте оригинальную запись, если ссылка доступна.",
@@ -81,7 +81,7 @@ function safeExternalVideo(url: string | undefined): { youtubeId?: string; ifram
 }
 
 export function AcademyVideoCourseJourney({
-  locale, courseId, title, description, poster, lessons,
+  locale, courseId, title, description, poster, lessons, renderVideoExtras,
 }: {
   locale: PublicLocale;
   courseId: string;
@@ -89,6 +89,7 @@ export function AcademyVideoCourseJourney({
   description?: string;
   poster?: string;
   lessons: VideoCourseLesson[];
+  renderVideoExtras?: (lesson: VideoCourseLesson) => ReactNode;
 }) {
   const t = labels[locale];
   const rootRef = useRef<HTMLElement>(null);
@@ -239,6 +240,7 @@ export function AcademyVideoCourseJourney({
                     </button>
                 ) : <p className={styles.mediaError}>{t.mediaMissing}</p>}
                 {lesson.body ? <p className={styles.videoCaption}>{lesson.body}</p> : null}
+                {renderVideoExtras?.(lesson)}
               </div>
             ) : (
               <div className={styles.reflectionStage}>

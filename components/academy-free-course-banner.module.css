@@ -168,3 +168,8 @@
 }
 @media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
 @media print { .banner { display: none; } }
+
+/* Price applies to the free online entry, never to personal initiations. */
+.pricePill { display:inline-flex; align-items:center; width:fit-content; padding:4px 9px;
+ border-radius:999px; background:#e3f5e7; border:1px solid #b8dfc4; color:#126347;
+ font-size:11px; font-weight:850; line-height:1.2; }

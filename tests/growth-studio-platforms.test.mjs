@@ -16,8 +16,13 @@ test('all 13 Publer-type networks and independent event workflows have a truthfu
  for(const provider of publer){
    assert.equal(GROWTH_CHANNELS.includes(provider),true,provider)
    assert.ok(CHANNEL_CAPABILITIES[provider],provider)
-   assert.equal(CHANNEL_CAPABILITIES[provider].supportsDirectPosting,false)
+   assert.equal(CHANNEL_CAPABILITIES[provider].supportsDirectPosting,provider==='facebook',
+     provider+' code support is not a credential or delivered post')
+   if(provider==='facebook')assert.equal(CHANNEL_CAPABILITIES[provider].mode,'meta_page_opt_in')
  }
+ const facebook=reviewGrowthPublication({...publicCopy,channel:'facebook',mediaUrl:'https://holistichouse.vercel.app/reel.mp4'})
+ assert.ok(facebook.issues.includes('facebook_media_not_supported'))
+ assert.equal(facebook.connected,false,'adapter availability is not OAuth consent')
  assert.equal(new Set(GROWTH_PUBLICATION_NETWORKS).size,GROWTH_PUBLICATION_NETWORKS.length)
  assert.ok(GROWTH_PUBLICATION_NETWORKS.includes('eventbrite'))
  assert.ok(GROWTH_PUBLICATION_NETWORKS.includes('meetup'))
@@ -82,4 +87,57 @@ test('not connected account does not sneak into already verified channel permiss
  const {status,...fields}=publicCopy
  const model=normalizePostFields(fields)
  assert.equal(model.brand,'holistic_house')
+})
+
+test('draft preflight checks Instagram conversion and Google Business media limits without pretending to publish',()=>{
+ const jpeg=reviewGrowthPublication({...publicCopy,channel:'instagram',sourceUrl:'',mediaUrl:'/images/post.jpg',mediaAlt:'Public illustration'})
+ assert.ok(!jpeg.issues.includes('instagram_image_conversion_required'))
+ const png=reviewGrowthPublication({...publicCopy,channel:'instagram',sourceUrl:'',mediaUrl:'/images/post.png',mediaAlt:'Public illustration'})
+ assert.ok(png.issues.includes('instagram_image_conversion_required'))
+ assert.equal(png.canPublishNow,false)
+ const webp=reviewGrowthPublication({...publicCopy,channel:'instagram',sourceUrl:'',mediaUrl:'/images/post.webp',mediaAlt:'Public illustration'})
+ assert.ok(webp.issues.includes('instagram_image_conversion_required'))
+ const business=reviewGrowthPublication({...publicCopy,channel:'google_business',mediaUrl:'/media/intro.mp4'})
+ assert.ok(business.issues.includes('google_business_video_unsupported'))
+ assert.ok(!CHANNEL_CAPABILITIES.google_business.formats.includes('video'))
+ assert.equal(business.connected,false)
+})
+
+test('preflight shows image alt requirement and exact Unicode character budget including UTM link',()=>{
+ const noAlt=reviewGrowthPublication({...publicCopy,channel:'facebook',sourceUrl:'',mediaUrl:'/images/photo.jpg',mediaAlt:''})
+ assert.ok(noAlt.issues.includes('image_alt_required'))
+ const withAlt=reviewGrowthPublication({...publicCopy,channel:'facebook',sourceUrl:'',mediaUrl:'/images/photo.jpg',mediaAlt:'Public photo'})
+ assert.ok(!withAlt.issues.includes('image_alt_required'))
+ const noLink=reviewGrowthPublication({...publicCopy,channel:'bluesky',caption:'😊'.repeat(300),sourceUrl:''})
+ assert.equal(noLink.characterLimit,300)
+ assert.equal(noLink.characterCount,300)
+ assert.equal(noLink.campaignLinkIncluded,false)
+ const withLink=reviewGrowthPublication({...publicCopy,channel:'bluesky',caption:'😊'.repeat(300)})
+ assert.ok(withLink.issues.includes('text_too_long'))
+ assert.ok(withLink.characterCount>300)
+ assert.equal(withLink.campaignLinkIncluded,true)
+ const telegramPhoto=reviewGrowthPublication({...publicCopy,mediaUrl:'/images/photo.png',mediaAlt:'Public photo'})
+ assert.equal(telegramPhoto.characterLimit,1024)
+ const telegramText=reviewGrowthPublication(publicCopy)
+ assert.equal(telegramText.characterLimit,4096)
+})
+
+test('a synthetic Telegram verified flag alone never represents connected permissions',()=>{
+ const forged=reviewGrowthPublication(publicCopy,{telegramConfigured:false,telegramChannelVerified:true})
+ assert.equal(forged.canPublishNow,false)
+ assert.equal(forged.connected,false)
+ assert.ok(forged.issues.includes('telegram_not_configured'))
+})
+
+test('existing compact composer visibly explains preflight and preserves manual mode',()=>{
+ const source=readFileSync(new URL('../components/growth-studio.jsx',import.meta.url),'utf8')
+ assert.match(source,/const draftPreflight=reviewGrowthPublication/)
+ assert.match(source,/draftPreflight\.characterCount/)
+ assert.match(source,/draftPreflight\.characterLimit/)
+ assert.match(source,/draftPreflight\.campaignLinkIncluded/)
+ assert.match(source,/instagram_image_conversion_required/)
+ assert.match(source,/google_business_video_unsupported/)
+ assert.match(source,/image_alt_required/)
+ assert.match(source,/channel:'manual'/)
+ assert.doesNotMatch(source,/autoPostGrowth|publishAllNetworksAutomatically/)
 })

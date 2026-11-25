@@ -1,0 +1,57 @@
+/* Server-streamed shell: no font imports, image downloads or client JS. */
+.splash {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(ellipse at 50% 37%, #fffcf7 0%, #fbf5e9 75%);
+  color: #143d3a;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+.logo {
+  display: block;
+  width: 76px;
+  height: 76px;
+  border-radius: 19px;
+}
+.name {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 23px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: .01em;
+}
+.progress {
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #e9dfd1;
+}
+.progress::before {
+  content: "";
+  display: block;
+  width: 32%;
+  height: 100%;
+  border-radius: inherit;
+  background: #067a67;
+  animation: move 1.25s ease-in-out infinite alternate;
+}
+@keyframes move {
+  from { transform: translateX(0); }
+  to { transform: translateX(210%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress::before { animation: none; width: 100%; }
+}

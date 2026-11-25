@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Check, Download, HeartHandshake, Send } from "lucide-react";
+import { ArrowUpRight, Check, Download, HeartHandshake } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -38,8 +38,8 @@ const copy = {
     },
     tantra: {
       courseName: "Tantra Reiki",
-      title: "Explore Tantra Reiki together",
-      lead: "Choose your guide, a free first experience, or a full personal Level 1 initiation.",
+      title: "Tantra Reiki · your next step",
+      lead: "Free PDF, free express Level 1, or personal initiation.",
       messages: {
         express: "I would like to request the free express Level 1 initiation in Tantra Reiki. Please tell me how to arrange it.",
         personal: "I would like to request the full personal Level 1 initiation in Tantra Reiki. Please confirm the format, availability and how to prepare.",
@@ -48,8 +48,8 @@ const copy = {
     },
     yggdrasil: {
       courseName: "Reiki Yggdrasil",
-      title: "Start your Reiki Yggdrasil journey",
-      lead: "Choose your guide, a free first experience, or a full personal Level 1 initiation.",
+      title: "Reiki Yggdrasil · your next step",
+      lead: "Free PDF, free express Level 1, or personal initiation.",
       messages: {
         express: "I would like to request the free express Level 1 initiation in Reiki Yggdrasil. Please tell me how to begin.",
         personal: "I would like to request the full personal Level 1 initiation in Reiki Yggdrasil. Please confirm the format, availability and how to prepare.",
@@ -81,8 +81,8 @@ const copy = {
     },
     tantra: {
       courseName: "Тантра Рейки (Tantra Reiki)",
-      title: "Откройте Тантра Рейки",
-      lead: "Скачайте описание или выберите бесплатную экспресс-инициацию либо полную личную инициацию.",
+      title: "Тантра Рейки · следующий шаг",
+      lead: "PDF, бесплатная экспресс-инициация или личная 1-я ступень.",
       messages: {
         express: "Хочу запросить бесплатную экспресс-инициацию 1-й ступени Тантра Рейки. Подскажите, как её пройти.",
         personal: "Хочу пройти полную личную инициацию 1-й ступени Тантра Рейки. Подскажите формат, доступные даты и как подготовиться.",
@@ -91,8 +91,8 @@ const copy = {
     },
     yggdrasil: {
       courseName: "Рейки Иггдрасиль (Reiki Yggdrasil)",
-      title: "Начните знакомство с Рейки Иггдрасиль",
-      lead: "Скачайте описание или выберите бесплатную экспресс-инициацию либо полную личную инициацию.",
+      title: "Рейки Иггдрасиль · следующий шаг",
+      lead: "PDF, бесплатная экспресс-инициация или личная 1-я ступень.",
       messages: {
         express: "Хочу запросить бесплатную экспресс-инициацию 1-й ступени Рейки Иггдрасиль. Подскажите, как начать.",
         personal: "Хочу пройти полную личную инициацию 1-й ступени Рейки Иггдрасиль. Подскажите формат, доступные даты и как подготовиться.",
@@ -124,8 +124,8 @@ const copy = {
     },
     tantra: {
       courseName: "Tantra Reiki",
-      title: "Descubre Tantra Reiki",
-      lead: "Descarga la guía o elige una iniciación exprés gratuita o una iniciación personal completa.",
+      title: "Tantra Reiki · tu siguiente paso",
+      lead: "PDF, iniciación exprés gratuita o personal de nivel 1.",
       messages: {
         express: "Quisiera solicitar la iniciación exprés gratuita de nivel 1 en Tantra Reiki. ¿Cómo puedo comenzar?",
         personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Tantra Reiki. ¿Cuál es el formato, la disponibilidad y cómo prepararme?",
@@ -134,8 +134,8 @@ const copy = {
     },
     yggdrasil: {
       courseName: "Reiki Yggdrasil",
-      title: "Empieza Reiki Yggdrasil",
-      lead: "Descarga la guía o elige una iniciación exprés gratuita o una iniciación personal completa.",
+      title: "Reiki Yggdrasil · tu siguiente paso",
+      lead: "PDF, iniciación exprés gratuita o personal de nivel 1.",
       messages: {
         express: "Quisiera solicitar la iniciación exprés gratuita de nivel 1 en Reiki Yggdrasil. ¿Cómo puedo comenzar?",
         personal: "Quisiera solicitar la iniciación personal completa de nivel 1 en Reiki Yggdrasil. ¿Cuál es el formato, la disponibilidad y cómo prepararme?",
@@ -178,15 +178,13 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
         context: selected === "personal" ? personalPrice : undefined,
         pagePath,
       });
-  const consultationUrl = whatsappEnquiryUrl({
-    locale,
-    service: c.courseName,
-    request: c.messages.consultation,
-    option: t.common.consultation,
-    pagePath,
-  });
   const sectionId = isTop ? (course === "tantra" ? "tantra-top-capture" : "yggdrasil-top-capture") : course === "tantra" ? "tantra-next-steps" : "reiki-free-level-one";
   const titleId = course + "-" + placement + "-capture-title";
+  const shortOption = {
+    en: { guide: "PDF guide", express: "Free express Level 1", personal: "Personal Level 1 initiation" },
+    ru: { guide: "PDF-методичка", express: "Бесплатная экспресс 1-я ступень", personal: "Личная инициация 1-й ступени" },
+    es: { guide: "Guía PDF", express: "Nivel 1 exprés gratis", personal: "Iniciación personal de nivel 1" },
+  }[locale];
   const topTitle = course === "tantra"
     ? (locale === "ru" ? "Выберите, как начать Тантра Рейки" : locale === "es" ? "Elige cómo comenzar Tantra Reiki" : "Choose how to begin Tantra Reiki")
     : (locale === "ru" ? "С чего начать Рейки Иггдрасиль" : locale === "es" ? "Cómo comenzar Reiki Yggdrasil" : "Begin Reiki Yggdrasil");
@@ -207,7 +205,7 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
       <div className={styles.eyebrow}><HeartHandshake size={20} aria-hidden="true" /><span>{t.common.eyebrow}</span></div>
       <h2 className={styles.title} id={titleId}>{isTop ? topTitle : c.title}</h2>
       <p className={styles.lead}>{isTop ? topLead : c.lead}</p>
-      <p className={styles.priceLine} data-reiki-initiation-price={course}>{t.common.personalPrice}: <strong>{personalPrice}</strong></p>
+      {selected === "personal" ? <p className={styles.priceLine} data-reiki-initiation-price={course}>{t.common.personalPrice}: <strong>{personalPrice}</strong></p> : null}
       <p className={styles.question}>{t.common.choose}</p>
 
       <div className={styles.choices} role="group" aria-label={t.common.choose}>
@@ -221,9 +219,7 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
             onClick={() => setSelected(choice)}
           >
             {selected === choice ? <Check size={18} strokeWidth={2.7} aria-hidden="true" /> : <span className={styles.unselected} aria-hidden="true" />}
-            <span>{course === "tantra" && choice === "guide"
-              ? (locale === "ru" ? "Скачать методичку PDF для телефона" : locale === "es" ? "Descargar guía PDF móvil" : "Download mobile study PDF")
-              : t.common.options[choice]}</span>
+            <span>{shortOption[choice]}</span>
           </button>
         ))}
       </div>
@@ -245,45 +241,23 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
         </a>
       ) : (
         <ContactChannelChooser
-        stayAfterSave
+          compactPhone
+          stayAfterSave
+          resetKey={course + "-" + placement + "-" + selected}
+          publicTopic={t.common.options[selected]}
           locale={locale}
           whatsappUrl={actionUrl}
-          className={styles.action}
           event="contact_click"
           analyticsEvent={selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click"}
           attributes={{ "data-reiki-choice-action": selected }}
         />
       )}
-      <p className={styles.note}>{download && course === "tantra"
-        ? (locale === "ru" ? "PDF для телефона: крупный шрифт, девять ступеней, практики и актуальная стоимость инициации." : locale === "es" ? "PDF para móvil: letra grande, nueve etapas, prácticas y precio de iniciación." : "Phone-friendly PDF: larger type, nine levels, practice ideas and Level 1 pricing.")
-        : download ? t.common.downloadNote : t.common.messageNote}</p>
-      {course === "tantra" && !download ? (
-        <a
-          className={styles.alwaysDownload}
-          data-reiki-choice-action="guide-secondary"
-          href={guideUrl}
-          download
-          onClick={() => emitPublicAnalyticsEvent("academy_study_material_request_click")}
-        >
-          <Download size={19} aria-hidden="true" />
-          <span>{locale === "ru" ? "Или скачайте бесплатную методичку PDF" : locale === "es" ? "O descarga la guía PDF gratuita" : "Or download the free mobile PDF guide"}</span>
-          <ArrowUpRight size={17} aria-hidden="true" />
-        </a>
-      ) : null}
       {course === "yggdrasil" && selected === "express" ? (
         <a className={styles.checklistLink} href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>
           {locale === "ru" ? "Как начать бесплатно: чтение и 7 вопросов →" : locale === "es" ? "Cómo comenzar gratis: lecturas y 7 preguntas →" : "How to begin for free: reading guide and 7 questions →"}
         </a>
       ) : null}
-      <div className={styles.footer}>
-        <div className={styles.trust}><span><Check size={15} aria-hidden="true" /> {t.common.reply}</span><span><Check size={15} aria-hidden="true" /> {t.common.obligation}</span></div>
-        <div className={styles.secondary}>
-          {isTop
-            ? <a href={consultationUrl} target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
-            : <a href={consultationUrl} id="reiki-free-consultation" target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>}
-          <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer"><Send size={14} aria-hidden="true" /> {t.common.telegram}</a>
-        </div>
-      </div>
+
     </section>
   );
 }

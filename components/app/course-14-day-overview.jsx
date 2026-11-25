@@ -131,12 +131,23 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
             <div className={styles.dayExerciseContent}>
               <p><strong>{st.practice}:</strong> {day.exercise}</p>
               <p><strong>{st.result}:</strong> {day.adapted?(locale==='ru'?'Опробовать подходящий способ и выбрать: продолжить, упростить, отдохнуть или пропустить.':locale==='es'?'Probar una opción adecuada y poder continuar, simplificar, descansar u omitir.':'Try an acceptable choice and decide to continue, simplify, rest or skip.'):day.result}</p>
-              {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>}
-              {!day.adapted&&day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
+              {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.join(' · ')}</p>}
+              {!day.adapted&&Array.isArray(day.experiences)&&
+                 <div className={styles.experientialList} data-opora-five-experiences={day.day}>
+                   {day.experiences.map(item=><article key={item.id} data-opora-channel={item.id}>
+                     <strong>{item.title}</strong>
+                     <p>{item.text}</p>
+                     {item.id==='mental'&&<small>{item.plan}</small>}
+                   </article>)}
+                   <small>{locale==='ru'?'Музыка включается только по кнопке. Каждое упражнение добровольное.':
+                     locale==='es'?'La música empieza solo al pulsar el botón. Todos los ejercicios son opcionales.':
+                     'Music plays only after a tap. All exercises are optional.'}</small>
+                 </div>}
+               {!day.adapted&&day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
               {!day.adapted&&<div className={styles.axisList} aria-label={st.scales}>
                 {day.scales.map(axis=><span key={axis.id}>{axis.label}</span>)}
               </div>}
-              {!day.adapted&&!compact&&<details className={styles.screenDetails}>
+              {!day.adapted&&!compact&&!day.experiences&&<details className={styles.screenDetails}>
                 <summary>{st.screens}</summary>
                 <ol>{day.screens.map(screen=><li key={screen.number}>
                   <span>{screen.number}</span><span>{screen.expected}</span>

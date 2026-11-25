@@ -35,3 +35,37 @@ Extend the EXISTING public `/[locale]/coaching` Coaching Lounge, shared versione
 - Separate provider/spend approval required for LLM coaching, live voice services, remote SMS, notifications, payments, ads or rendering. This delivery adds NONE of them.
 
 Sources: [GROW · Canada School of Public Service](https://www.csps-efpc.gc.ca/tools/jobaids/grow-model-eng.aspx), [WOOP official practice](https://woopmylife.org/en/practice), [Somatica ethics](https://www.somaticainstitute.com/code-of-ethics/), [Wheel of Consent · AASECT](https://www.aasect.org/pro-wheel-consent-professionals).
+
+
+## Compact second filter · session format (owner decision, 24 Oct 2026)
+
+The public lounge now asks **topic → session mode**, without forcing visitors to
+know a coaching outcome before starting. Four large choices occupy **two mobile rows**:
+
+- **Express · 5–10 min:** only existing reviewed/published guest schemes with
+  `minutes >= 5 && minutes <= 10` (currently four 10-minute schemes). No invented
+  five-minute programme; each card discloses its real duration.
+- **Extended · 10–20 min:** reviewed guest schemes whose duration is
+  `>10 && <=20` (currently nine 12–20-minute schemes). The shared 10-minute
+  endpoint belongs to Express to avoid an apparently duplicated quick session.
+- **Imagery & meditation:** optional **text-only one-minute visualization** on the
+  lounge followed by the existing separate Egyptian/Greek authored symbolic
+  goal-planning routes. These are *not* clinical or historical validation, and
+  the two protected author programmes **do not yet offer a recorded meditation
+  track**. Do not call them published DB schemes or promise audio/video.
+- **All sessions (default):** existing published guest schemes, eligible symbolic
+  paths and separately priced personal coaching choices. No duplicate player.
+
+The earlier five-way desired-outcome ranking and personal/self/free comparison
+remain OPTIONAL inside the existing accessible “More options” disclosure. The
+user-written question and privacy notice are also optional/inside details to
+keep the first mobile view focused. Topic buttons retain their real topic tags;
+counts now follow the selected duration mode and are hidden for authored imagery,
+which lives outside the published conventional model table. If an Express or
+Extended topic has zero entries, state this plainly with a one-tap return to All.
+
+**Acceptance:** exact reference catalogue ranges, EN/RU/ES labels, 320/390/430px
+touch targets and wrap, unchanged 18+ consent gate, self-guided guest in-tab
+privacy, no paid provider/DB writes/new enrollment. Focused tests/Next build,
+production READY+alias+SHA. Physical iPhone and authenticated across-account
+E2E remain separate pending evidence.

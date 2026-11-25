@@ -103,19 +103,20 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
   const iframe = { kind: 'iframe', async elementHandle() { return { async evaluate() { return !discarded; } }; } };
   const next = { kind: 'next', locator(selector) {
     if (selector === 'iframe') return iframe;
-    assert.equal(selector, '.site-video-play');
+    assert.equal(selector, 'button.site-video-play');
     return { async click() { assert.equal(state.committed, true); state.played = true; } };
   } };
   const main = { kind: 'main' };
   const page = { locator(selector) {
     if (selector === 'main.house-home') return main;
-    assert.equal(selector, `[data-video-slot="home-intro"][data-video-locale="${to}"]`);
+    assert.equal(selector, `[data-personal-testimonials="home"] [data-testimonial-video-id="${to === "en" ? "Dk0LBmOivQo" : "MIVLm1GUTtM"}"]`);
     return next;
   } };
   const expect = target => ({
     async toHaveAttribute(name, expected) {
       if (target === main) { assert.equal(name, 'lang'); assert.equal(optimistic ? to : from, expected); assert.equal(state.committed, false); }
-      else { assert.equal(target, iframe); assert.equal(name, 'src'); assert.equal(state.played, true); assert.equal(wrongVideo ? 'wrong-video' : `https://app.heygen.com/embeds/${to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847'}`, expected); }
+      else { assert.equal(target, iframe); assert.equal(name, 'src'); assert.equal(state.played, true); assert.ok(expected instanceof RegExp);
+        assert.equal(expected.test(wrongVideo ? 'wrong-video' : `https://www.youtube-nocookie.com/embed/${to === 'en' ? 'Dk0LBmOivQo' : 'MIVLm1GUTtM'}?autoplay=1`), true); }
     },
     async toHaveCount(expected) { await Promise.resolve(); assert.equal(target === next ? Number(state.committed || optimistic) : Number(state.played), expected); },
     async toHaveURL(expected) { assert.equal(target, page); assert.equal(state.url, expected); },
@@ -186,13 +187,13 @@ for (const name of ['wrongBack', 'wrongDestination', 'privateRequest']) test(`fr
 test('real-browser matrices, privacy, no-discard, visuals and errors stay mandatory', () => {
   for (const text of [
     "[['en', 'ru'], ['ru', 'en']]", "await page.goto(origin + homePath(from)",
-    "[['chromium', chromium], ['webkit', webkit]]", '[390, 1365]',
-    'results.filter(result => result.firstClickRetained).length, 8',
-    'results.filter(result => result.freeJourney).length, 24',
+    "[['chromium', chromium], ['webkit', webkit]]", '[320, 375, 390, 430, 1365]',
+    'results.filter(result => result.firstClickRetained).length, widths.length * 4',
+    'results.filter(result => result.freeJourney).length, widths.length * 12',
     'assert.deepEqual(unexpectedApiRequests, []', 'assert.deepEqual(errors, [])',
     "frame.evaluate(element => element.isConnected)", "await expect(next).toHaveCount(0)",
-    'measurements.overflow <= 2', 'measurements.cardCount, 4', 'measurements.contactChoices, 3',
-    "await expect(videoPosters).toHaveCount(2)", "firstReview.locator('iframe')",
+    'measurements.overflow <= 2', 'measurements.cardCount, 14', 'measurements.contactChoices, 3',
+    "await expect(videoPosters).toHaveCount(expectedIds.length)", "firstReview.locator('iframe')",
     'const firstReview = await verifyHomeTestimonialPosters(page)',
     'await exerciseFreeJourneys(page, engine, width)',
   ]) assert.ok(source.includes(text), text);

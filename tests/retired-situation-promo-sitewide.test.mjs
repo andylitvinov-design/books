@@ -37,10 +37,11 @@ test('retired beige compass banner never reappears on public site routes or comp
 })
 
 test('top free-review bar exactly matches approved screenshot while beige strip remains absent', async () => {
-  const [layout, service, offers] = await Promise.all([
+  const [layout, service, offers, landing] = await Promise.all([
     readFile(join(root, 'app/layout.tsx'), 'utf8'),
     readFile(join(root, 'app/[locale]/services/free-situation-review/page.tsx'), 'utf8'),
     readFile(join(root, 'components/sitewide-antistress-banner.tsx'), 'utf8'),
+    readFile(join(root, 'components/free-entry-landing.tsx'), 'utf8'),
   ])
   assert.match(layout, /<SitewideAntistressBanner initialLocale=\{lang\} \/>/)
   assert.doesNotMatch(layout, /MindBodyMonitorStrip/)
@@ -49,10 +50,15 @@ test('top free-review bar exactly matches approved screenshot while beige strip 
   assert.match(offers, /FREE PERSONAL SITUATION REVIEW/)
   assert.ok(offers.includes('className={styles.cta} href={`/${locale}/services/free-situation-review`}'), 'burgundy CTA must open the free written review')
   assert.match(offers, /\/services\/free-situation-review/)
+  // Do not spend a whole mobile row advertising the page the visitor is already reading.
+  const routeGuards = offers.slice(offers.indexOf('const isDistractionSensitivePage'), offers.indexOf('export function SitewideAntistressBanner'))
+  assert.match(routeGuards, /free-situation-review/, 'the top ribbon must not link to itself on the destination page')
+  assert.match(routeGuards, /pathname/, 'route guard must be pathname-aware')
   for (const label of ['Получить разбор', 'Get free review', 'Solicitar gratis']) {
     assert.ok(offers.includes(label), label)
   }
-  assert.match(service, /FreeSituationReviewForm/)
+  assert.match(service, /<FreeEntryLanding locale=\{locale\} kind="situation"/)
+  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/)
   assert.match(offers, /export function TestSelectionCourseBanner/)
   assert.match(offers, /data-tests-review-banner/)
 })

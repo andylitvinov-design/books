@@ -19,6 +19,34 @@ const maya = {
   mediaSeries: 'maya',
 }
 
+const egypt = {
+  sourceSeries: "Египетские традиции / авторский архив",
+  category: "Египетская традиция",
+  culture: "Egypt",
+  mediaSeries: "egypt",
+}
+
+const greek = {
+  sourceSeries: "Античная лаборатория / авторский архив",
+  category: "Греческая традиция",
+  culture: "Greece",
+  mediaSeries: "greek",
+}
+
+const roman = {
+  sourceSeries: "Античная лаборатория / римские материалы",
+  category: "Римская традиция",
+  culture: "Rome",
+  mediaSeries: "roman",
+}
+
+const zoroastrian = {
+  sourceSeries: "Архив древних традиций / Зороастризм и Митра",
+  category: "Зороастризм и Митра",
+  culture: "Zoroastrian",
+  mediaSeries: "zoroastrian",
+}
+
 const chapter = (id, title) => ({ id, title })
 
 export const books = [
@@ -383,6 +411,102 @@ export const books = [
       chapter('chapter-v', 'V. Места, храмы и материальная культура'),
       chapter('chapter-vi', 'VI. Мистерии, двойники и авторские модели'),
     ],
+  },
+  {
+    ...egypt,
+    id: "egypt-osiris-temple-magic",
+    title: "Египет. Осирис и основы храмовой магии",
+    description: "Оригинальная методичка об Осирисе, Маат, символических телах, храмовых ритуалах и программе исследования традиции.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-4-egyptian-tradition/egypt_osiris_temple_magic.html",
+    status: 'published',
+    tags: ["Египет","Осирис","Маат","Гор","Храмовая магия"],
+    chapters: [chapter("foundations", "Картина мира и каналы богов"), chapter("modules", "Модули египетской традиции"), chapter("bodies", "Символические тела, храм и ритуалы"), chapter("maat", "Настройки Маат и программа курса")],
+  },
+  {
+    ...egypt,
+    id: "egypt-maat-isis-attunements",
+    title: "Египет. Маат, Исида и авторские настройки",
+    description: "Авторский архив наблюдений и стихотворных настроек к египетским каналам с дополнительными материалами о Сераписе.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-4-egyptian-tradition/egypt_maat_isis_attunements.html",
+    status: 'published',
+    tags: ["Египет","Маат","Исида","Осирис","Серапис"],
+    chapters: [chapter("maat-isis", "Маат и Исида"), chapter("osiris", "Осирис и основы жреческой традиции"), chapter("poetry", "Стихотворные настройки и полёт Ба"), chapter("practice", "Дополнительные авторские материалы"), chapter("serapis", "Серапис: египетский культ в античной Анатолии")],
+  },
+  {
+    ...greek,
+    id: "greek-temple-attunements",
+    title: "Греческие мистерии: каналы богов и храмовые настройки",
+    description: "Полевые авторские тексты из античных храмов, святилищ и музеев: разные настройки одного канала с указаниями мест.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-5-greek-mysteries/greek_temple_attunements.html",
+    status: 'published',
+    tags: ["Греция","Афина","Дионис","Аполлон","Зевс","Храмы","Настройки"],
+    chapters: [chapter("early", "Дионис, Гера и Асклепий"), chapter("love", "Афродита, Фортуна, Пан, Геракл и Афина"), chapter("goddesses", "Артемида, Лето, Кора и Кибела"), chapter("apollo", "Аполлон, Курос и Дионис"), chapter("zeus", "Зевс — античная модель власти"), chapter("places", "Святилища Малой Азии и фракийские мотивы"), chapter("eleusis", "Гермес, Аполлон, Кибела и Элевсинские мистерии")],
+  },
+  {
+    ...greek,
+    id: "greek-metaphysics-planning",
+    title: "Греческая традиция: античная метафизика и планирование",
+    description: "Две разные авторские методики: структура души в античной модели и пошаговое планирование через её уровни.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-5-greek-mysteries/greek_metaphysics_planning.html",
+    status: 'published',
+    tags: ["Греция","Метафизика","Психея","Логос","Планирование"],
+    chapters: [chapter("metaphysics", "Античная метафизика — исходная методичка"), chapter("planning", "Греческое планирование — рабочий бланк")],
+  },
+  {
+    ...greek,
+    id: "greek-dionysus-asclepius-course",
+    title: "Греческая традиция: учебные модули Асклепия и Диониса",
+    description: "Архивная учебная редакция первых модулей античного курса — не заменяет каталог храмовых настроек.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-5-greek-mysteries/greek_dionysus_asclepius_course.html",
+    status: 'published',
+    tags: ["Греция","Асклепий","Гигея","Дионис","Учебный курс"],
+    chapters: [chapter("asclepius", "Модуль 1. Асклепий и Гигея"), chapter("dionysus", "Модуль 2. Дионис")],
+  },
+  {
+    ...roman,
+    id: "roman-imperial-temples",
+    title: "Римская традиция: императорский канал и святилища",
+    description: "Римские храмовые наблюдения из авторского античного архива, отделённые от греческих культов.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-6-roman-tradition/roman_imperial_temples.html",
+    status: 'published',
+    tags: ["Рим","Император","Адриан","Троя","Олимпос"],
+    chapters: [chapter("olympos", "Олимпос: римские и византийские слои"), chapter("emperor", "Римские императоры и храм Адриана"), chapter("pergamum", "Адриан, Пергам и Троя"), chapter("thermae", "Римские термы и статус гражданина")],
+  },
+  {
+    ...zoroastrian,
+    id: "zoroastrian-tradition-notes",
+    title: "Зороастризм: Аша, Воху Мана и Спента Армаити",
+    description: "Авторские заметки о ступенях зороастрийской традиции и поэтических настройках из сводного архива.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-7-zoroastrian-mithra/zoroastrian_notes.html",
+    status: 'published',
+    tags: ["Зороастризм","Аша","Воху Мана","Спента Армаити"],
+    chapters: [chapter("stages", "Зороастризм: ступени и архетипы"), chapter("related", "Зороастризм и истоки митраизма")],
+  },
+  {
+    ...zoroastrian,
+    id: "mithra-mysteries",
+    title: "Мистерии Митры: персидская и римская линии",
+    description: "Оригинальные авторские записи по культу Митры, его символике и ступеням посвящения.",
+    cover: "cover.svg",
+    summary: "Архивная авторская методичка; точные первоисточники приведены в тексте.",
+    originalSourceFile: "source-books/book-7-zoroastrian-mithra/mithra_mysteries.html",
+    status: 'published',
+    tags: ["Митра","Митраизм","Персия","Рим","Мистерии"],
+    chapters: [chapter("roman", "Канал Митры и сравнение традиций"), chapter("stages", "Римский митраизм и ступени мистерий")],
   },
 ]
 
