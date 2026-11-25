@@ -1,0 +1,33 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+test("Reiki join is an intentional guest-only dialog and reuses canonical OAuth",()=>{
+ const entry=read("components/reiki-practitioner-entry.tsx");
+ const dialog=read("components/reiki-join-dialog.tsx");
+ const css=read("components/reiki-join-dialog.module.css");
+ const begin=entry.slice(entry.indexOf("async function begin()"),entry.indexOf("async function signIn()"));
+ const signin=entry.slice(entry.indexOf("async function signIn()"),entry.indexOf("return <div"));
+ assert.ok(begin.includes('await appFetch("bootstrap?view=portrait")'));
+ assert.ok(begin.indexOf("window.location.assign(destination)")<begin.indexOf("setJoinOpen(true)"));
+ assert.ok(begin.includes("?.status !== 401"));
+ assert.ok(!begin.includes('appFetch("auth/start"'));
+ assert.ok(signin.includes('continueTo: "energywork-daybook"'));
+ assert.ok(signin.includes('appFetch("auth/start"'));
+ assert.ok(signin.includes('if (pending.current || !joinOpen) return'));
+ assert.ok(entry.includes("{joinOpen && <ReikiJoinDialog"));
+ assert.ok(dialog.includes("showModal()")&&dialog.includes("onCancel=")&&dialog.includes("aria-labelledby={titleId}"));
+ assert.ok(dialog.includes("data-reiki-join-google")&&dialog.includes("onClick={onGoogle}"));
+ assert.ok(!dialog.includes("Continue with Email"));
+ for(const locale of ["en","ru","es"])assert.ok(dialog.includes(locale+": { badge:"));
+ assert.ok(css.includes("100dvh")&&css.includes("overflow:auto")&&css.includes("minmax(0,1fr)"));
+});
+test("Existing backend still creates the account after verified OAuth; teacher sharing remains consented",()=>{
+ const api=read("app/api/app/[...path]/route.js");
+ const repo=read("lib/app/repository.js");
+ const course=read("lib/academy/energywork-course-repository.js");
+ assert.ok(api.includes("createAppRepository(config).ensureAccount(actor)"));
+ assert.ok(repo.includes("insert into app.accounts(id,display_name)"));
+ assert.ok(course.includes("body.teacherConsent === true"));
+ assert.ok(course.includes("TEACHER_SHARING_CONSENT_REQUIRED"));
+});
