@@ -49,7 +49,7 @@ test('route requires authenticated owner and origin; personal uses live policy+D
   assert.match(route, /ACCOUNT_CHANGED/)
   assert.match(service, /consent\.sessionAccepted !== true/)
   assert.match(service, /consent\.providerSharing !== true/)
-  assert.match(service, /listMyCoachProtocols\(config, actor\)/)
+  assert.match(service, /listMyCoachProtocols\(config, actor, \{includeFoundation:true\}\)/)
   assert.match(service, /buildCoachContextSnapshot\(config, actor/)
   assert.match(service, /coachContextPolicy\(provider, env\)/)
   assert.doesNotMatch(route, /fetch\(/)
