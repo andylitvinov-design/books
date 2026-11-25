@@ -5,48 +5,62 @@ import {readFileSync} from 'node:fs';
 const studio=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('../components/mandala-montage-approved.module.css',import.meta.url),'utf8');
 
-test('owner-approved Montage Style is the existing editor, not a second page',()=>{
-  assert.match(studio,/data-video-montage-effects/);
-  assert.match(studio,/data-video-montage-progress/);
-  assert.match(studio,/data-video-montage-progress-step=\{item.step\}/);
-  assert.match(studio,/data-video-montage-photo-choice="animate"/);
-  assert.match(studio,/data-video-montage-photo-choice="library"/);
-  assert.match(studio,/data-video-montage-photo-options/);
-  assert.match(studio,/data-video-montage-avatar-library/);
+test('photo-first Montage uses the original editor, native iPhone input and real private gallery',()=>{
+  assert.match(studio,/data-video-montage-photo-fold=/);
   assert.match(studio,/data-video-montage-photo-upload/);
-  assert.match(studio,/data-video-montage-current-photo/);
-  assert.match(studio,/data-video-montage-library-scene=\{index\}/);
-  assert.match(studio,/500 XP/);
-  assert.match(studio,/250 XP/);
-  assert.match(studio,/onPhotoFileSelected\(photo\)/);
-  const uploadStart=studio.indexOf('data-video-montage-photo-upload');
-  const upload=studio.slice(uploadStart,studio.indexOf('data-video-montage-current-photo',uploadStart));
-  assert.match(upload,/<NativePhotoInput label=/,
-    'Safari upload tile uses a directly tappable native file input');
-  assert.match(upload,/onPhotoFileSelected=\{file=>\{setMontagePhotoChoice\("library"\);setNotice\(""\);selectNativePhoto\(file\);\}\}/);
-  assert.doesNotMatch(upload,/onPickPhoto\(\)/,'no hidden scripted file picker in this tile');
-  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,5,
-    'fifth native iOS picker covers the Montage photo library tile');
-  const library=studio.slice(studio.indexOf('data-video-montage-avatar-library'),
-    studio.indexOf('data-video-montage-photo-rights'));
-  assert.match(library,/data-video-montage-saved-photos/);
-  assert.match(library,/<VideoPhotoLibrary locale=\{locale\} compact/);
-  assert.match(library,/onSelectPhoto=\{file=>\{setMontagePhotoChoice\("library"\);setNotice\(""\);selectNativePhoto\(file\);\}\}/);
-  assert.match(library,/href=\{"\/"\+locale\+"\/app\/videos\?tab=photos"\}/);
-  assert.match(studio,/data-video-montage-photo-rights/);
-  assert.match(studio,/data-video-montage-next="audio"/);
-  assert.match(studio,/data-video-montage-more-styles/);
-  assert.match(studio,/data-video-montage-style=\{index\}/);
-  assert.match(studio,/data-video-montage-aspect-switch/);
+  assert.match(studio,/data-video-montage-photo-options/);
+  assert.match(studio,/data-video-montage-photo-choice=\{item\.id\}/);
+  assert.match(studio,/id:"animate",tab:"animated",price:250/);
+  assert.match(studio,/id:"library",tab:"personal",price:100/);
+  assert.match(studio,/id:"coach",tab:"coaches",price:0/);
+  assert.match(studio,/data-video-montage-library-tab=\{item\.id\}/);
+  assert.match(studio,/data-video-montage-library-panel=\{montageLibraryTab\}/);
+  assert.match(studio,/data-video-montage-coach=\{item\.id\}/);
+  assert.match(studio,/data-video-montage-saved-photos/);
+  assert.match(studio,/<VideoPhotoLibrary locale=\{locale\} compact/);
+  assert.match(studio,/href=\{"\/"\+locale\+"\/app\/videos\?tab=photos"\}/);
+  const start=studio.indexOf('data-video-montage-effects>');
+  const end=studio.indexOf('data-video-montage-audio>',start);
+  const step=studio.slice(start,end);
+  assert.match(step,/<NativePhotoInput label=/,'real native input at main upload label');
+  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,4,
+    "one main Montage input plus three original native iPhone pickers");
+  assert.doesNotMatch(step,/onPickPhoto\(\)/,'no scripted iOS picker inside Montage photo step');
+  assert.match(step,/data-video-montage-photo-rights/);
+  assert.match(step,/data-video-montage-next="audio"/);
+  assert.match(step,/data-video-montage-more-styles/);
+  assert.match(step,/data-video-montage-aspect-switch/);
+  assert.match(step,/data-video-montage-style=\{index\}/);
+  assert.match(step,/data-video-montage-library-scene=\{index\}/);
+  assert.match(css,/\.photoChoices\{display:grid;grid-template-columns:1fr/);
+  assert.match(css,/\.photoOption\{/);
+  assert.match(css,/\.photoUploadHero\{/);
+  assert.match(css,/\.coachRail\{/);
+  assert.match(css,/\.photoStage\[data-video-montage-photo-fold="true"\]/);
 });
-test('AI-photo selection never triggers an unapproved HeyGen spend or silent still export',()=>{
-  const style=studio.slice(studio.indexOf('data-video-montage-effects>'),
-    studio.indexOf('{montagePanel==="audio" ? <div'));
-  assert.match(style,/montagePhotoChoice==="animate"/);
-  assert.match(style,/disabled=\{recording\|\|preparing\|\|montagePhotoChoice==="animate"/);
-  assert.match(style,/External AI face animation is not payment-enabled/);
-  assert.match(style,/No XP is charged here/);
-  assert.doesNotMatch(style,/heygen\.ai\/v\d|postVideoCreditAction\(/i);
+test('photo options disclose unavailable AI, enforce rights and do not silently charge XP',()=>{
+  const start=studio.indexOf('data-video-montage-effects>');
+  const end=studio.indexOf('data-video-montage-audio>',start);
+  const step=studio.slice(start,end);
+  assert.match(step,/montagePhotoChoice==="animate"/);
+  assert.match(step,/Face animation is not payment-enabled/);
+  assert.match(step,/!personalPhotoConsent/);
+  assert.match(step,/montagePhotoChoice==="coach"&&!coachPhotoUrl/);
+  assert.match(step,/montagePhotoChoice==="library"&&\(!personalPhotoUrl\|\|!personalPhotoConsent\)/);
+  assert.match(step,/Photo-mode XP is indicative/);
+  assert.doesNotMatch(step,/postVideoCreditAction\(|heygen\.ai\/v\d/i);
+  assert.match(studio,/const coachPhotoUrl=montagePhotoChoice==="coach"&&montageCoachPhoto\s*\?"\/images\/holistic-house\/my-coach-motion\/"\+montageCoachPhoto\+"-still\.webp":null/);
+  assert.match(studio,/const photoUrl=montagePhotoChoice==="coach"\?coachPhotoUrl:personalPhotoUrl/);
+  assert.match(studio,/const photoConsent=Boolean\(coachPhotoUrl\)\|\|\(!photoPending&&personalPhotoConsent\)/);
+  const pick=studio.slice(studio.indexOf("const pickMontageCoachPhoto="),studio.indexOf("const [otherScene, setOtherScene]"));
+  assert.match(pick,/setMontageCoachPhoto\(id\);setMontagePhotoChoice\("coach"\)/);
+  assert.match(pick,/setBackgroundOnly\(false\);setPhotoConsent\(false\)/);
+  assert.doesNotMatch(pick,/onPhotoFileSelected|selectNativePhoto|new File|toBlob|await/);
+  const personal=studio.slice(studio.indexOf("const selectNativePhoto ="),studio.indexOf("const pickMontageCoachPhoto="));
+  assert.match(personal,/setMontageCoachPhoto\(null\)/);
+  assert.match(personal,/setPhotoConsent\(false\)/);
+  assert.match(personal,/onPhotoFileSelected\(photo\)/);
+  assert.doesNotMatch(studio,/\bfetch\s*\(/,'editor retains no direct fetch call');
 });
 test('Montage Audio has one-row music filters and readable rows without album art',()=>{
   const start=studio.indexOf('data-video-montage-audio-columns>');
@@ -89,10 +103,10 @@ test('only the existing multitrack editor is used for visuals/music/voice and re
 test('mobile-safe sizes, scoping and EN/RU/ES parity',()=>{
   assert.match(css,/@media\(max-width:359px\)/);
   assert.match(css,/@media\(min-width:700px\)/);
-  assert.match(css,/\.photoChoices\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/s);
+  assert.match(css,/\.photoChoices\{display:grid;grid-template-columns:1fr/s);
   assert.match(css,/\.audioColumns\{[^}]*grid-template-columns:/s);
   assert.match(css,/\.stepStrip button\{[^}]*min-height:46px/s);
-  for(const phrase of ['"Добавьте фотографию"','"Añade tu foto"','"Add Your Photo"',
+  for(const phrase of ['"Создайте живое фото"','"Crea tu foto viva"','"Create Your Living Photo"',
     '"Выбрать музыку"','"Elegir música"','"Choose Music Track"',
     '"Записать аудиопожелание"','"Grabar un mensaje"','"Record a Voice Wish"']){
     assert.ok(studio.includes(phrase),phrase);

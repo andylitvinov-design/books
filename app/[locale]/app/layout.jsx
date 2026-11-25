@@ -1,3 +1,5 @@
+import './cabinet-theme.css'
+
 // The signed-in Cabinet installs as its own Holistic House PWA on iOS/Android.
 // This does not replace the public PsiAlchemy remedy-library manifest.
 export const metadata = {
