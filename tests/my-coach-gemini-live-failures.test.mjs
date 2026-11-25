@@ -58,7 +58,7 @@ test('provider token errors return precise safe categories, never upstream body 
         const payload=JSON.parse(options.body)
         assert.ok(payload.bidiGenerateContentSetup)
         assert.equal(Object.hasOwn(payload,'liveConnectConstraints'),false)
-        assert.equal(Object.hasOwn(payload,'fieldMask'),false)
+        assert.ok(payload.fieldMask.split(',').includes('systemInstruction'))
         return {ok:false,status,async json(){throw Error(secretSentinel)}}
       },
     }),error=>error.message===code&&
@@ -78,7 +78,7 @@ test('G-L6 retries one server-owned Free token after transient 5xx without new m
       assert.equal(body.uses,1)
       assert.equal(body.bidiGenerateContentSetup.model,'models/gemini-3.1-flash-live-preview')
       assert.match(body.bidiGenerateContentSetup.systemInstruction.parts[0].text,/coaching method/)
-      assert.equal(Object.hasOwn(body,'fieldMask'),false)
+      assert.equal(body.fieldMask.split(',').includes('sessionResumption'),false)
       bodies.push(options.body)
       return bodies.length===1?{ok:false,status:503}:
         {ok:true,status:200,json:async()=>({name:'auth_tokens/recovered-one-use'})}
@@ -271,8 +271,9 @@ test('free first-party video greeting gates Live Play, not charge on preview',()
   assert.match(gate,/data-coach-greeting-start/)
   assert.match(gate,/data-coach-greeting-replay/)
   assert.match(gate,/phase==='complete'/)
-  assert.match(gate,/priorSession\?t\.continue:t\.start/)
-  assert.match(gate,/hasCoachGreetingConnection\(personaId\)/)
+  assert.match(gate,/data-coach-greeting-thematic/)
+  assert.match(gate,/chooseSession\(INTRODUCTORY_COACH_SESSION_ID\)/)
+  assert.match(gate,/data-coach-topic-dialog/)
   assert.match(dialogue,/markCoachGreetingConnected\(personaId\)/)
   const marker=load('lib/coaching/coach-greeting-visit.mjs')
   assert.match(marker,/PUBLIC_COACH_PERSONA_IDS\.includes\(personaId\)/)

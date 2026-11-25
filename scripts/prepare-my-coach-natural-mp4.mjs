@@ -38,10 +38,18 @@ if(!production){
   await mkdir(root,{recursive:true})
   function valid(bytes){
     return bytes?.subarray(4,8).toString('ascii')==='ftyp'&&
-      bytes.length>9000&&bytes.length<900000&&
+      bytes.length>9000&&bytes.length<3500000&&
       bytes.includes(Buffer.from('moov'))&&
       bytes.includes(Buffer.from('avc1'))&&!bytes.includes(Buffer.from('soun'))
   }
+  // Conventional spatial scaling only, not AI restoration. Preserve the original
+  // motion and crop; never touch Samir or regenerate any provider video.
+  function isHD(file){
+    const probe=spawnSync(binary,['-hide_banner','-i',file],{encoding:'utf8',timeout:5000,maxBuffer:131072})
+    return /Video:[^\r\n]*\b768x\d+\b/.test(probe.stderr||'')
+  }
+  const encodeFlags=['-an','-c:v','libx264','-preset','veryfast','-crf','22',
+    '-pix_fmt','yuv420p','-profile:v','main','-movflags','+faststart']
   async function prepare(name,id){
     const [persona,take]=name.split('-')
     const filename=coachNaturalFilename(persona,take)
@@ -49,7 +57,7 @@ if(!production){
     const file=resolve(root,filename)
     const input=file+'.source.mp4',out=file+'.new.mp4'
     try{
-      try{if(valid(await readFile(file)))return {name,bytes:0,ok:true}}catch{}
+      try{if(valid(await readFile(file))&&isHD(file))return {name,bytes:0,ok:true}}catch{}
       const url=new URL(prefix+id+'.mp4')
       if(url.protocol!=='https:'||url.hostname!=='resource2.heygen.ai')
         throw Error('Media host allowlist failed')
@@ -73,15 +81,13 @@ if(!production){
         throw Error('Origin did not return MP4')
       await writeFile(input,bytes)
       const flags=['-hide_banner','-loglevel','error','-y','-i',input,
-        '-t','5','-vf','fps=24,scale=328:456:force_original_aspect_ratio=increase,crop=328:456',
-        '-an','-c:v','libx264','-preset','veryfast','-crf','31',
-        '-pix_fmt','yuv420p','-profile:v','baseline','-level','3.0',
-        '-movflags','+faststart',out]
+        '-t','5','-vf','fps=24,scale=768:1068:force_original_aspect_ratio=increase:flags=lanczos,crop=768:1068',
+        ...encodeFlags,out]
       const job=spawnSync(binary,flags,{encoding:'utf8',timeout:45000,maxBuffer:131072})
       if(job.error||job.status!==0)
         throw Error('FFmpeg failed: '+String(job.stderr||job.error?.message).slice(0,100))
       const result=await readFile(out)
-      if(!valid(result))throw Error('Output failed H264/audio/size validation')
+      if(!valid(result)||!isHD(out))throw Error('Output failed H264/audio/size/resolution validation')
       await rename(out,file)
       return {name,bytes:result.length,ok:true}
     }catch(e){
@@ -92,12 +98,40 @@ if(!production){
       await rm(out,{force:true}).catch(()=>{})
     }
   }
+  // These four exact approved local clips are the currently selected wizard
+  // media. Preserve frame timing, aspect ratio and audio-free playback.
+  async function prepareWizard(filename){
+    const file=resolve(root,filename),out=file+'.hd-new.mp4'
+    try{
+      const original=await readFile(file)
+      if(!valid(original))throw Error('Invalid original')
+      if(isHD(file))return true
+      const job=spawnSync(binary,['-hide_banner','-loglevel','error','-y','-i',file,
+        '-vf','scale=768:-2:flags=lanczos',...encodeFlags,out],
+        {encoding:'utf8',timeout:45000,maxBuffer:131072})
+      if(job.error||job.status!==0||!valid(await readFile(out))||!isHD(out))
+        throw Error('HD encode failed validation')
+      await rename(out,file)
+      return true
+    }catch(error){
+      console.warn('HH_COACH_WIZARD_HD_KEEP_ORIGINAL '+filename+' '+error.message)
+      return false
+    }finally{
+      await rm(out,{force:true}).catch(()=>{})
+    }
+  }
   // Two parallel transfers, no per-visitor video generation, no retry loop.
   const status=[]
   for(let index=0;index<names.length;index+=2)
     status.push(...await Promise.all(names.slice(index,index+2).map(name=>prepare(name,takes[name]))))
   console.log('HH_COACH_NATURAL_MP4 '+status.filter(x=>x.ok).length+'/8 first-party clips, '+
     status.reduce((sum,item)=>sum+item.bytes,0)+' new bytes')
+  const wizardFiles=['merlin-greeting-real-v1.mp4','harry-greeting-real-v1.mp4',
+    'harry-soft-calm.mp4','harry-soft-attentive.mp4']
+  const wizardResults=[]
+  for(let i=0;i<wizardFiles.length;i+=2)
+    wizardResults.push(...await Promise.all(wizardFiles.slice(i,i+2).map(prepareWizard)))
+  console.log('HH_COACH_WIZARD_HD '+wizardResults.filter(Boolean).length+'/4')
 }
 
 // Reuse this existing guarded prebuild invocation; no new Vercel jobs.
