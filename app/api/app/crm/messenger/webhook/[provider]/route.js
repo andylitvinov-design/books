@@ -31,6 +31,7 @@ import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut,secretaryStopped} from '@/lib/crm/telegram-secretary-service'
 import {telegramBusinessWelcomeMenu,telegramBusinessWelcomeClick,telegramBusinessWelcomeTopic} from '@/lib/crm/telegram-business-welcome-menu.mjs'
 import {composeTelegramSecretaryClarification} from '@/lib/crm/telegram-secretary-offers.mjs'
+import {guardBusinessSecretaryReply} from '@/lib/crm/telegram-business-natural-dialogue.mjs'
 
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
@@ -251,12 +252,21 @@ export async function POST(request,{params}){
             if(secretary.kind==='clarify')
               await consumeRate(config,{op:'hh-tg-secretary-clarify-chat',
                 connectionId:secretary.connectionId,chatId:secretary.to},12,86400)
+            // Reserve content/clarification fingerprints using the existing HMAC rate bucket.
+            // The exact same response must not be sent for different inbound events.
+            const guarded=await guardBusinessSecretaryReply(secretary,(scope,key)=>consumeRate(config,{
+              op:'hh-tg-secretary-dialogue-dedup-v1',connectionId:secretary.connectionId,
+              chatId:secretary.to,scope,key},1,86400))
+            if(!guarded||await secretaryStopped({connectionId:secretary.connectionId,chatId:secretary.to},config)){
+              try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'processed')}catch{}
+              return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+            }
             // Telemetry failures do not silence otherwise permitted messages.
             try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
             catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
             await sendHolisticBusinessRequestReply({
               connectionId:secretary.connectionId,to:secretary.to,
-              text:secretary.reply,buttons:secretary.buttons||[],
+              text:guarded.reply,buttons:guarded.buttons||[],
             })
             providerAccepted=true
           }catch(error){
