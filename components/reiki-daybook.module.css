@@ -360,7 +360,7 @@
 }
 .page[data-daybook-cover="true"] [data-daybook-part="art"] img {object-fit:cover;object-position:70% 27%;}
 .page[data-daybook-cover="true"] [data-daybook-part="content"] {padding:0 clamp(15px,4vw,30px) 16px;margin-top:-16px;}
-.page[data-daybook-cover="true"] [data-daybook-part="content"]>h2 {font-size:clamp(30px,8.5vw,46px);}
+.page[data-daybook-cover="true"] [data-daybook-part="content"]>h1 {font-size:clamp(30px,8.5vw,46px);}
 .page[data-reiki-daybook] :is([data-daybook-welcome],[data-daybook-question],[data-reiki-first-lesson-save],
   [data-reiki-audio-welcome],[data-reiki-lesson-intro],[data-meditation-voices],
   [data-reiki-personal-initiation-note],[data-daybook-part="content"] > [role=group]) {
@@ -409,7 +409,7 @@
   .page[data-reiki-daybook]:not([data-daybook-cover]) .hero p {display:none;}
   .page[data-reiki-daybook]:not([data-daybook-cover]) .hero h1 {font-size:19px;}
   .page[data-reiki-daybook] .heroBottom {font-size:11px;}
-  .page[data-reiki-daybook] .heroBottom button {min-height:34px;}
+  .page[data-reiki-daybook] .heroBottom button {min-height:44px;}
   .page[data-reiki-daybook] .weeks button .weekNumber {width:35px;height:35px;}
   .page[data-reiki-daybook] .weeks::before {top:19px;}
   .page[data-reiki-daybook] [data-daybook-part="content"]>p {font-size:15px;}
