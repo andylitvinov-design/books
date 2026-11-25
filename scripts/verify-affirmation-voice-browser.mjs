@@ -492,6 +492,10 @@ async function verifyWorkspaceHydration(browser,locale){
     const textSize=page.locator('[data-video-montage-text] [data-video-ideas-text-size]');
     const filmCanvas=page.locator('[data-mandala-cinematic-canvas]');
     const heroPlaying=page.locator('[data-video-mandala-hero]');
+    const textSizeSettings=page.locator('[data-video-montage-text] [data-video-text-size-settings]');
+    await expect(textSizeSettings.locator("summary")).toBeVisible();
+    await expect(textSize).toBeHidden();
+    await textSizeSettings.locator("summary").tap();
     await expect(textSize).toBeVisible();
     await textSize.press("Home");
     await expect(textSize).toHaveValue("0");
@@ -524,6 +528,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await textSize.press("ArrowLeft");
     await expect(textSize).toHaveValue("1");
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    await textSizeSettings.locator("summary").tap();
+    await expect(textSize).toBeHidden();
     phase(engine,"montage-text-real-canvas-preview");
     await reviewStory.tap();
     await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
