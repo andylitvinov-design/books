@@ -11,6 +11,7 @@ const FILES=Object.freeze([
  'api/ci-funnel-extensions.cjs',
  'api/ci-stage-weekly.js',
  'api/package.json',
+ 'api/pr-open-count.js',
  'index.html','monitor.css','monitor.js','vercel.json'
 ]);
 const sha=data=>crypto.createHash('sha256').update(data).digest('hex');

@@ -20,27 +20,30 @@
   <div><p class="eyebrow">НЕЗАВИСИМЫЙ МОНИТОРИНГ · GITHUB</p><h1>PR, CI и Merge</h1><p class="intro">Все этапы, задержки и ошибки. Отдельно от управления агентами.</p></div>
   <button type="button" id="refresh" class="refresh">↻ Обновить</button>
  </section>
- <div class="freshness"><span class="status-dot" id="state-dot"></span><span id="status" role="status" aria-live="polite">Страница открыта. Получаю подтверждённые данные…</span><span id="updated-at"></span></div>
-
- <div class="period-toolbar"><strong>Период</strong><div class="period-buttons" role="group" aria-label="Период статистики PR"><button type="button" class="period-button" data-period="1" aria-pressed="false">1 ч</button><button type="button" class="period-button" data-period="6" aria-pressed="false">6 ч</button><button type="button" class="period-button" data-period="24" aria-pressed="true">24 ч</button></div></div>
- <section class="metrics overview-metrics" aria-label="Основные показатели PR и CI">
+ <section class="metrics overview-metrics current-metrics" aria-label="Текущие показатели PR и CI">
+  <article><span>Открытых PR</span><strong id="k-open">—</strong><small id="k-open-note">Все ветки · очередь GitHub</small></article>
   <article><span>CI выполняются</span><strong id="k-ci-running">—</strong><small id="k-ci-running-note">GitHub Actions · workflow</small></article>
   <article><span>CI ожидают</span><strong id="k-ci-queued">—</strong><small id="k-ci-queued-note">GitHub Actions · workflow</small></article>
-  <article><span>Открытых PR</span><strong id="k-open">—</strong><small id="k-open-note">Все ветки · очередь GitHub</small></article>
-  <article><span>Создано PR</span><strong id="k-created">—</strong><small id="k-created-note">За 24 часа · все ветки</small></article>
-  <article><span>Смержено PR</span><strong id="k-merged">—</strong><small id="k-merged-note">За 24 часа · не LIVE</small></article>
-  <article><span>Production PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Когорта созданных за 24 ч</small></article>
  </section>
- <p class="overview-provenance" id="overview-provenance">CI — число workflow, не jobs; время источников уточняется.</p>
- <nav class="section-nav" aria-label="Разделы PR Monitor">
- <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#error-funnel">Ошибка → Worker</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
- </nav>
- <section class="chart-grid" id="graphs" aria-label="Динамика PR и CI">
+ <section class="chart-grid primary-chart" id="graphs" aria-label="Динамика PR и CI">
   <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">ДИНАМИКА</p><h2>Создание PR и CI</h2></div><span class="small">6 × 1 час</span></div>
    <div class="legend"><span><b class="square blue"></b>Созданы</span><span><b class="square green"></b>Merge</span><span><b class="square yellow"></b>Запуски CI</span></div>
    <svg id="chart-flow" viewBox="0 0 360 180" role="img" aria-label="Часовая динамика новых PR, объединений и запусков CI"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>
    <p id="flow-info" class="note">Недоступные значения будут показаны как «—», не как ноль.</p>
   </article>
+ </section>
+ <div class="freshness"><span class="status-dot" id="state-dot"></span><span id="status" role="status" aria-live="polite">Страница открыта. Получаю подтверждённые данные…</span><span id="updated-at"></span></div>
+ <p class="overview-provenance" id="overview-provenance">CI — число workflow, не jobs; время источников уточняется.</p>
+ <div class="period-toolbar"><strong>Период</strong><div class="period-buttons" role="group" aria-label="Период статистики PR"><button type="button" class="period-button" data-period="1" aria-pressed="false">1 ч</button><button type="button" class="period-button" data-period="6" aria-pressed="false">6 ч</button><button type="button" class="period-button" data-period="24" aria-pressed="true">24 ч</button></div></div>
+ <section class="metrics overview-metrics period-metrics" aria-label="Показатели за период">
+  <article><span>Создано PR</span><strong id="k-created">—</strong><small id="k-created-note">За 24 часа · все ветки</small></article>
+  <article><span>Смержено PR</span><strong id="k-merged">—</strong><small id="k-merged-note">За 24 часа · не LIVE</small></article>
+  <article><span>Production PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Когорта созданных за 24 ч</small></article>
+ </section>
+ <nav class="section-nav" aria-label="Разделы PR Monitor">
+ <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#error-funnel">Ошибка → Worker</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
+ </nav>
+ <section class="chart-grid secondary-chart" aria-label="Скорость PR">
   <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">СКОРОСТЬ</p><h2>PR → Merge</h2></div><span class="small" id="strict-speed-period">Выбранный период: 24 ч</span></div>
    <div class="legend"><span><b class="square green"></b>Merge / интервал</span><span><b class="square blue"></b>P50 до Merge</span></div>
    <svg id="chart-speed" viewBox="0 0 360 180" role="img" aria-label="Merge по интервалам и медиана времени до объединения"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>

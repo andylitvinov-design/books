@@ -64,3 +64,6 @@ shape. Do not mark Dashboard LIVE on GitHub merge, JS-only refresh, or a
 Vercel READY status alone. The script has no deployment/rollback operations
 or timers. A stale HTML must degrade gracefully and keep the ten original
 signed stages usable; the newer AI panels remain unverified until atomic LIVE.
+
+## Current overview (2026-11-25)
+The three current counters and the existing six-hour activity graph precede historical period statistics. Open PRs (all branches including drafts) use `/api/pr-open-count`, a bounded server-side public GitHub aggregate with 20-second edge cache, no new credentials or polling. On failure, show the last known count with its timestamp and explicit non-LIVE label; never infer zero. Preserve all other routes and publish a single complete nine-file bundle after protected PR review. Verify count response and mobile layout separately.
