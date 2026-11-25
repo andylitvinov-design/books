@@ -35,7 +35,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,privateAutosaveControl}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,privateAutosaveControl,resumeControl}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -162,6 +162,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
      </div>
      <p className={styles.freeNotice}>{t.free}</p>
+     {resumeControl}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
