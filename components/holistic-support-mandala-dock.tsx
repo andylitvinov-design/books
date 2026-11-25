@@ -98,7 +98,7 @@ export function HolisticSupportMandalaDock({ locale, photoMode = false }: { loca
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false}>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.messages}</span>
         </Link>
-        <Link href={"/" + locale + "/holistic-support/mobile#support-progress"} prefetch={false}>
+        <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/progress"} prefetch={false} data-mandala-account-progress>
           <BarChart3 size={24} aria-hidden="true" /><span>{t.progress}</span>
         </Link>
         <button type="button" aria-expanded={settingsOpen} aria-controls="mandala-support-settings"

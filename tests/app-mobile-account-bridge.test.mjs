@@ -31,3 +31,16 @@ test('protected OAuth settings continuation remains explicit and scope-limited',
   assert.match(api, /continueTo === 'settings'/)
   assert.match(api, /\$\{origin\}\/\$\{locale\}\/app\/settings/)
 })
+
+test('Mandala progress opens the canonical private account; goal saves stay explicit', () => {
+  const mandala = read('components/holistic-support-mandala-dock.tsx')
+  const mobile = read('components/holistic-support-mobile.tsx')
+  const app = read('components/app/app-workspace.jsx')
+  assert.match(mandala, /data-mandala-account-progress/)
+  assert.match(mandala, /\(locale === "es" \? "en" : locale\) \+ "\/app\/progress"/)
+  assert.doesNotMatch(mandala, /#support-progress/)
+  assert.match(mobile, /onSaveToCabinet=\{saveGoalProfileToCabinet\}/)
+  assert.match(mobile, /data-support-account-video-mark/)
+  assert.match(mobile, /separate explicit save actions/)
+  assert.match(app, /<SupportGoalCabinet key=\{'support-goals:'\+data\.account\.id\}/)
+})
