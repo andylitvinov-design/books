@@ -95,3 +95,210 @@ test('CI-only policy changes run the existing Core owner, not two independent fu
   assert.doesNotMatch(growth,/continue-on-error:\s*true/);
   assert.doesNotMatch(course,/continue-on-error:\s*true/);
 });
+
+test('ordinary production PRs delegate only duplicate lint/types to protected Core',()=>{
+  const scoped=[
+  [
+    "hh-cabinet-journey.yml",
+    "Install dependencies for independent nonproduction QA"
+  ],
+  [
+    "hh-cabinet-journey.yml",
+    "Scoped ESLint"
+  ],
+  [
+    "hh-my-progress-release.yml",
+    "Install pinned dependencies"
+  ],
+  [
+    "hh-my-progress-release.yml",
+    "Scoped ESLint"
+  ],
+  [
+    "hh-event-referral-contract.yml",
+    "Check TypeScript without publishing"
+  ],
+  [
+    "reiki-enquiry-capture-ci.yml",
+    "Type-check Next app"
+  ],
+  [
+    "reiki-enquiry-capture-ci.yml",
+    "Lint changed components"
+  ],
+  [
+    "hh-personal-coaching-session.yml",
+    "Scoped eslint"
+  ],
+  [
+    "hh-ideas-coaching-public.yml",
+    "Lint modified application components"
+  ],
+  [
+    "hh-course-presets.yml",
+    "Lint course code"
+  ],
+  [
+    "hh-course-presets.yml",
+    "Lint Energywork learner"
+  ],
+  [
+    "hh-growth-journey.yml",
+    "Lint changed JS and TypeScript"
+  ],
+  [
+    "hh-reports-development-program.yml",
+    "Lint newly created feature files"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint SalesBot operator-assist contract and UI"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint localized express review channel entry and strict WhatsApp marker"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint dedicated Instagram source and operator contract"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint canonical Telegram script viewer and its parity tests"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint Telegram V2 pure conversation and CRM private persistence"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint Telegram inline keyboard and callback handler"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint Telegram diagnostic runtime, owner photo proxy and public entry"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint SalesBot editor and strict import policy"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint new SalesBot owner UI and deterministic runtime"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint scoped internal SalesBot execution and owner controls"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint SalesBot draft storage, private API and UI"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint opportunity lifecycle, store, protected API and mobile page"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint deal booking task integration"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint business pipeline flow and accessible board"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint request-bound audio service and streaming endpoints"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint member inbox backend, privacy route and EN/RU/ES UI"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Validate practitioner CRM JSX explicitly"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint changed CRM runtime and UI"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint express report account ownership and notification routes"
+  ],
+  [
+    "hh-crm-source-check.yml",
+    "Lint secured free review Google claim UI and account route"
+  ],
+  [
+    "hh-messenger-notification-build.yml",
+    "Lint new notification service and Settings integration"
+  ],
+  [
+    "hh-support-guided-recommendations.yml",
+    "Scoped lint"
+  ]
+];
+  assert.ok(core.includes('npx --no-install eslint "${files[@]}"'));
+  assert.ok(core.includes('run: npm run build'));
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.match(core,/full_lint=true/);
+  for(const [file,name] of scoped){
+    const src=read(file);
+    const block=src.split('      - name: '+name+'\n');
+    assert.equal(block.length,2,file+' missing or duplicate '+name);
+    assert.ok(block[1].startsWith('        '+gate+'\n        run:'),file+' duplicate work must be scoped to nonproduction/manual');
+    assert.match(src,/node --test|node --conditions=react-server --test/,file+' real source/privacy contracts remain');
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+});
+
+test('Axis keeps both original mandatory jobs but shares one locked dependency install',()=>{
+  const src=read('hh-profile-axis-matching.yml');
+  const parts=src.split(/^  axis-unit-types-build:\n/m);
+  assert.equal(parts.length,2);
+  const writer=parts[0].split(/^  writer-practical-focused:\n/m)[1];
+  const axis=parts[1];
+  assert.ok(writer);
+  for(const f of ['meditation-writer-brief','meditation-writer-literary','meditation-writer-free-gemini',
+    'meditation-writer-preview-source','meditation-writer-device-voice-source','meditation-writer-practical-director',
+    'meditation-writer-small-model-skill','meditation-writer-free-providers','hypno-private-signals',
+    'meditation-writer-course-outline','meditation-writer-intent-codes','meditation-writer-mandala-bridge'])
+    assert.ok(writer.includes('tests/'+f+'.test.mjs'),f+' writer contract must still run');
+  assert.doesNotMatch(writer,/run: npm ci|run: npx .*eslint|run: npx .*tsc|uses: .*ci-ffmpeg-static/);
+  assert.equal((src.match(/run: npm ci --no-audit --no-fund/g)||[]).length,1);
+  assert.equal((src.match(/run: npx --no-install tsc --noEmit --pretty false/g)||[]).length,1);
+  assert.ok(axis.includes('npx --no-install eslint --max-warnings 0'));
+  assert.ok(axis.includes('tests/app-auth-pkce.integration.mjs'),'independent authenticated regression is retained');
+  assert.ok(axis.includes('tests/intelligence-risk.test.mjs'));
+  assert.ok(axis.includes('tests/portrait-sectors.test.mjs'));
+  assert.ok(axis.includes('- name: TypeScript check\n        '+gate+'\n        run:'));
+  assert.ok(axis.includes('- name: Build site\n        '+gate+'\n        run:'));
+  assert.doesNotMatch(src,/continue-on-error:\s*true/);
+});
+
+test('Cabinet and My Progress run their real dependency-free contracts before any shared Core result',()=>{
+  const cabinet=read('hh-cabinet-journey.yml');
+  const progress=read('hh-my-progress-release.yml');
+  for(const file of ['tests/cabinet-learning-journey.test.mjs','tests/cabinet-today.test.mjs',
+    'tests/workflow-next-route-filters.test.mjs','tests/my-progress.test.mjs'])
+    assert.ok(cabinet.includes(file));
+  assert.match(progress,/run: node --test tests\/my-progress\.test\.mjs/);
+  const noPackages=['lib/app/my-progress.mjs','lib/app/learning-journey.mjs','lib/app/cabinet-today.mjs'];
+  for(const path of noPackages){
+    const code=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+    // Exact current pure modules. A future import/dependency requires the
+    // maintainers to review this CI lane rather than silently skip its tests.
+    assert.doesNotMatch(code,/^\s*import\s|^\s*export\s+[^\n]*\sfrom\s|\b(?:require|import)\s*\(/m,path+' pure contract dependency changed');
+  }
+  assert.ok(cabinet.includes("'\.github/workflows/hh-cabinet-journey.yml'".replace('\\.','.')));
+  assert.doesNotMatch(cabinet,/cabinet-today-ci\.yml/);
+  const [pr,push]=progress.split(/^  push:\n/m);
+  assert.ok(pr.includes("      - '.github/workflows/hh-my-progress-release.yml'"));
+  assert.ok(push.includes("      - 'components/app/my-progress.*'"));
+  assert.ok(push.includes("      - 'app/api/app/video-progress/route.js'"));
+  assert.ok(!push.includes("      - '.github/workflows/hh-my-progress-release.yml'"),
+    'CI-only policy is verified in PR, not an extra product build after merge');
+  assert.ok(push.includes('- name: Production build\n        '+gate+'\n        run: npm run build'));
+});

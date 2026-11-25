@@ -56,3 +56,18 @@ test('Approved three-step landing uses one static hero action and numbered photo
  assert.match(css,/CLARITY_LANDING_THREE_20261124/)
  assert.match(css,/\.clarityStagePhoto/)
 })
+
+test('Business profile implements the approved four-session mobile landing and real actions',()=>{
+ const business=source.slice(source.indexOf("{section === 'business' &&"),source.indexOf("{section === 'goals' &&"))
+ for(const attr of ['data-profile-business','data-business-start','data-business-details','data-business-topic','data-business-session'])assert.ok(business.includes(attr),attr)
+ assert.match(business,/openBusinessStage\(0\)/)
+ assert.match(business,/href=\{businessContact\}/)
+ assert.match(business,/b\.sessions\.map/)
+ assert.match(business,/aria-expanded=\{expanded\}/)
+ assert.match(source,/services\/business-consulting#request-session/)
+ for(const title of ['Strategic Choice','Organizational Design','Business Transformation','Strategic Execution','4 сессии для бизнеса','4 sesiones empresariales','Request Details'])assert.ok(source.includes(title),title)
+ assert.match(css,/BUSINESS_PROGRAM_MOBILE_20261124/)
+ assert.match(css,/min-height:52px/)
+ assert.match(css,/min-height:69px/)
+ assert.match(css,/businessTopics\{grid-template-columns:1fr\}/)
+})
