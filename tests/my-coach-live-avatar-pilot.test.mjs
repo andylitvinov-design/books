@@ -1,0 +1,42 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {pilotPublicStatus,simliTokenBody,sequencerStartBody,LIVE_AVATAR_PRODUCT} from '../lib/coaching/live-avatar-pilot.mjs'
+import {startOwnerAvatarPilot,endOwnerSequencerPilot} from '../lib/coaching/live-avatar-pilot-server.mjs'
+import {connectSimliAvatar,connectSequencerAvatar} from '../lib/coaching/live-avatar-renderers.mjs'
+const request=provider=>({provider,action:'start',syntheticOnly:true,freeOnly:true})
+const env={HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',SIMLI_API_KEY:'fake',SIMLI_TEMPLATE_FACE_ID:'template',HH_SEQUENCER_FREE_ACCOUNT_VERIFIED:'true',SEQUENCER_API_KEY:'fake',SEQUENCER_WORKSPACE_ID:'workspace',SEQUENCER_CHARACTER_ID:'character',HH_COACH_AVATAR_RECEIPT_SECRET:'x'.repeat(32)}
+test('disabled by default; no paid product or secrets in status',async()=>{
+  assert.equal(pilotPublicStatus({}).simli.allowed,false);assert.equal(pilotPublicStatus({}).sequencer.allowed,false)
+  assert.equal(LIVE_AVATAR_PRODUCT.enabled,false);assert.equal(LIVE_AVATAR_PRODUCT.priceEurCents,300);assert.equal(LIVE_AVATAR_PRODUCT.weeklySessions,2)
+  assert.equal(JSON.stringify(pilotPublicStatus(env)).includes('fake'),false)
+  for(const provider of ['simli','sequencer'])await assert.rejects(startOwnerAvatarPilot(request(provider),{env:{},fetcher:()=>assert.fail('network forbidden')}),/FREE_PILOT_DISABLED/)
+  await assert.rejects(startOwnerAvatarPilot({...request('sequencer'),syntheticOnly:false},{env,fetcher:()=>assert.fail('network forbidden')}),/INVALID_PILOT_REQUEST/)
+})
+test('provider payloads use hard duration and no history',()=>{
+  assert.equal(simliTokenBody('test').maxSessionLength,60)
+  const body=sequencerStartBody('test');assert.equal(body.maxSessionSeconds,60);assert.equal(body.sessionMode,'audio_stream');assert.equal(body.saveHistory,false);assert.equal(body.channels.text,false)
+})
+test('token response is reduced and signed Sequencer receipt can end only its session',async()=>{
+  const calls=[]
+  const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.example',livekitClientToken:'short-lived',secret:'private'}}}
+  assert.deepEqual(await startOwnerAvatarPilot(request('simli'),{env,fetcher}),{provider:'simli',sessionToken:'token'})
+  const response=await startOwnerAvatarPilot(request('sequencer'),{env,fetcher})
+  assert.equal(response.secret,undefined)
+  await assert.rejects(endOwnerSequencerPilot(response.receipt+'tampered',{env,fetcher}),/INVALID_RECEIPT/)
+  await endOwnerSequencerPilot(response.receipt,{env:{...env,HH_COACH_AVATAR_PILOT:'off'},fetcher})
+  assert.match(calls.at(-1).url,/\/session\/end$/)
+})
+test('Simli adapter clears buffer and ends once',async()=>{
+  const calls=[]
+  class Client{async start(){calls.push('start')} sendAudioData(){calls.push('pcm')} ClearBuffer(){calls.push('interrupt')} async stop(){calls.push('stop')}}
+  const adapter=await connectSimliAvatar({sdk:{SimliClient:Client,LogLevel:{ERROR:1}},sessionToken:'synthetic',video:{},audio:{}})
+  adapter.sendPcm16(new Uint8Array(2));adapter.interrupt();await adapter.stop();await adapter.stop()
+  assert.deepEqual(calls,['start','pcm','interrupt','stop'])
+})
+test('Sequencer publishes only synthetic destination, never microphone',async()=>{
+  const calls=[],track={stop(){calls.push('track-stop')}}
+  class Room{constructor(){this.localParticipant={publishTrack:async(t,opts)=>{assert.equal(t,track);assert.equal(opts.dtx,false);calls.push('publish')}}} on(){} async connect(){calls.push('connect')} async startAudio(){} async disconnect(){calls.push('disconnect')}}
+  const context={createMediaStreamDestination:()=>({stream:{getAudioTracks:()=>[track]}})}
+  const adapter=await connectSequencerAvatar({sdk:{Room,RoomEvent:{},Track:{Kind:{},Source:{Microphone:'mic-label'}}},session:{livekitUrl:'wss://example',livekitClientToken:'synthetic'},context,video:{},audio:{}})
+  await adapter.stop();await adapter.stop();assert.deepEqual(calls,['connect','publish','track-stop','disconnect'])
+})
