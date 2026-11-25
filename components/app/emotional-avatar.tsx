@@ -12,7 +12,7 @@ import styles from './emotional-avatar.module.css';
 type ChatMessage = {role:'user'|'assistant';text:string};
 type Locale = 'ru'|'en'|'es';
 type CompanionVoice = {supported:boolean;playbackConsent:boolean;speaking:boolean;
-  speak:(text:string)=>void;stop:()=>void};
+  speak:(text:string,explicitPlay?:boolean)=>void;stop:()=>void};
 type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;
   compact:boolean;iconOnly?:boolean;companionVoice?:CompanionVoice;personaId?:AliPersonaId};
 const copy = {
@@ -139,7 +139,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
   function toggleVoice(){
     if(companionVoice){
       if(companionVoice.speaking)companionVoice.stop();
-      else if(companionVoice.playbackConsent&&latestReply)companionVoice.speak(latestReply);
+      else if((iconOnly||companionVoice.playbackConsent)&&latestReply)companionVoice.speak(latestReply,iconOnly);
       return;
     }
     if(state.speaking){speech.current?.stop();return;}
@@ -159,7 +159,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
     if(!result?.ok)setVoiceNotice(result?.reason==='busy'?t.otherAudio:t.unavailable);
   }
   function hide(){speech.current?.stop();companionVoice?.stop();setExpanded(false);dispatch({type:'HIDE'});}
-  const canSpeak=companionVoice?companionVoice.supported&&companionVoice.playbackConsent:speechAvailable;
+  const canSpeak=companionVoice?companionVoice.supported&&(iconOnly||companionVoice.playbackConsent):speechAvailable;
   const actuallySpeaking=companionVoice?companionVoice.speaking:state.speaking;
   const phase=state.phase as AvatarState['phase'];
   const statusText=t[phase==='hidden'?'idle':phase];

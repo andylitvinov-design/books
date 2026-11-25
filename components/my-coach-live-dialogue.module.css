@@ -1880,3 +1880,22 @@
 .root[data-coach-greeting-stage="introduction"] > [data-my-coach-greeting-gate]{
   display:block!important;flex:1 1 auto;min-height:0;position:relative;z-index:1;
 }
+
+/* Samir owns the full hero; never expose the four-coach sprite behind him. */
+.sessionPortrait[data-persona=genie]{background-image:none!important;background-color:#173c30}
+
+/* The portrait itself uses the colors of the original video. Keep the
+   legibility treatment underneath the coach details and subtitle controls. */
+.root[data-my-coach-immersive-session] .sessionPortrait[data-coach-motion-video='true']:not([data-persona='genie']){
+  background:#273930!important;
+}
+.root[data-my-coach-immersive-session] .sessionPortrait[data-coach-motion-video='true']:not([data-persona='genie']) + .sessionHeroShade{
+  background:linear-gradient(to top,rgba(0,0,0,.72),transparent min(5rem,24%));
+}
+.root[data-my-coach-immersive-session] .sessionPortrait[data-coach-motion-video='true']:not([data-persona='genie']) ~ .sessionHeroCopy :is(p,h1,small){
+  width:fit-content;
+  max-width:100%;
+  padding:.08em .32em;
+  border-radius:.25em;
+  background:rgba(12,23,19,.82);
+}

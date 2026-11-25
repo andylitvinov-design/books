@@ -4,14 +4,13 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays, Compass, Flame, Flower2, ClipboardList, Shield, Sprout, ChevronsRight, GraduationCap, BarChart3 } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays, Compass, Flame, Flower2, ClipboardList, Shield, Sprout, ChevronsRight, GraduationCap, BarChart3 } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
 
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
-import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
-import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
+import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
 
@@ -19,17 +18,6 @@ import styles from "./home-dialogue-entry.module.css";
 const AliPersonaPicker=dynamic(()=>import("@/components/app/ali-persona-picker"),{ssr:false});
 
 type Mode = "self" | "business";
-type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
-type SpeechRecognitionEngine = {
-  lang: string; interimResults: boolean; continuous: boolean;
-  onresult: ((event: SpeechEvent) => void) | null;
-  onerror: (() => void) | null; onend: (() => void) | null;
-  start: () => void; stop: () => void; abort: () => void;
-};
-type SpeechWindow = Window & {
-  SpeechRecognition?: new () => SpeechRecognitionEngine;
-  webkitSpeechRecognition?: new () => SpeechRecognitionEngine;
-};
 const LOCALES = ["ru", "en", "es"] as const;
 const COPY = {
   ru: {
@@ -42,7 +30,7 @@ const COPY = {
     unsupported:"Используйте микрофон клавиатуры или напишите запрос.",
     speechError:"Не удалось распознать речь. Можно написать запрос.",
     speechRunning:"Слушаю. Скажите, что вас беспокоит.",
-    speechPrivacy:"Нажимая микрофон, вы разрешаете распознавание через браузер или Groq Whisper Free. Аудио не сохраняется.",
+    speechPrivacy:"Микрофон записывает речь. Галочка — распознавание через Groq Whisper Free; текст можно исправить перед отправкой.",
     speechRecognized:"Речь распознана. Проверьте текст и начните чат.",
     speechTranscribing:"Распознаю запись…",
     speechDenied:"Микрофон заблокирован. Разрешите доступ в Safari или введите текст.",
@@ -71,7 +59,7 @@ const COPY = {
     unsupported:"Use your keyboard microphone or type a message.",
     speechError:"Speech recognition did not work. You can type your request.",
     speechRunning:"Listening. Tell me what is on your mind.",
-    speechPrivacy:"Tapping the mic allows speech processing by your browser or Groq Whisper Free. No audio is stored.",
+    speechPrivacy:"Tap the mic to record; confirm to transcribe via Groq Whisper Free. Review and edit before sending.",
     speechRecognized:"Recognized. Review your text and start the chat.",
     speechTranscribing:"Transcribing the recording…",
     speechDenied:"Microphone blocked. Allow access in Safari or type instead.",
@@ -100,7 +88,7 @@ const COPY = {
     unsupported:"Usa el micrófono del teclado o escribe un mensaje.",
     speechError:"No se pudo reconocer tu voz. Puedes escribir tu mensaje.",
     speechRunning:"Te escucho. Cuéntame qué necesitas.",
-    speechPrivacy:"Al tocar el micrófono, aceptas el reconocimiento del navegador o Groq Whisper Free. No guardamos audio.",
+    speechPrivacy:"Toca el micrófono para grabar; confirma para transcribir con Groq Whisper Free. Revisa el texto antes de enviarlo.",
     speechRecognized:"Voz reconocida. Revisa el texto e inicia el chat.",
     speechTranscribing:"Transcribiendo la grabación…",
     speechDenied:"Micrófono bloqueado. Permite el acceso en Safari o escribe.",
@@ -205,22 +193,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const [mode]=useState<Mode>("self");
   const [draft,setDraft]=useState("");
   const [error,setError]=useState("");
-  const [voiceMessage,setVoiceMessage]=useState("");
-  const [listening,setListening]=useState(false);
   const [interactive,setInteractive]=useState(false);
   const inputRef=useRef<HTMLTextAreaElement|null>(null);
-  const speechRef=useRef<SpeechRecognitionEngine|null>(null);
-  const recordedRef=useRef<{cancel:()=>void}|null>(null);
-  const voiceAttempt=useRef(0);
-  const [preferRecorder,setPreferRecorder]=useState(false);
-  useEffect(()=>{
-    setInteractive(true);
-    return ()=>{
-      voiceAttempt.current+=1;
-      speechRef.current?.abort();speechRef.current=null;
-      recordedRef.current?.cancel();recordedRef.current=null;
-    };
-  },[]);
+  useEffect(()=>{setInteractive(true);},[]);
   const chatPath="/"+locale+"/app/messages?section=ai";
   const hints=t.focusHints;
 
@@ -237,90 +212,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   }
   function startConversation(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if(event.currentTarget.querySelector("[data-hh-dictation-active]"))return;
     if(!draft.trim()){startConversationWith(locale==="ru"?"Привет, Самир! Помоги разобраться, с чего начать.":locale==="es"?"Hola Samir, ¿por dónde empiezo?":"Hi Samir! Help me figure out where to begin.");return}
     startConversationWith(draft);
-  }
-  function dictate() {
-    // Aborting invalidates any late iPhone Safari recognition callbacks.
-    if(speechRef.current){
-      voiceAttempt.current+=1;
-      const speech=speechRef.current;speechRef.current=null;
-      speech.abort();setListening(false);setVoiceMessage("");return;
-    }
-    if(recordedRef.current){
-      voiceAttempt.current+=1;
-      recordedRef.current.cancel();recordedRef.current=null;
-      setListening(false);setVoiceMessage("");return;
-    }
-    const attempt=++voiceAttempt.current;
-    const scope=window as SpeechWindow;
-    const Constructor=scope.SpeechRecognition||scope.webkitSpeechRecognition;
-    // iOS 27 Web Speech can silently produce no transcript even while active.
-    // Reuse the existing ephemeral recorder; no audio persistence or new API.
-    const recordedAvailable=coachRecordedSupported(window);
-    if(recordedAvailable&&(ios27NeedsSpeechRecovery(window.navigator)||preferRecorder||!Constructor)){
-      const capture=startCoachRecordedTurn({
-        locale,environment:window,purpose:"public",
-        onState:state=>{
-          if(attempt!==voiceAttempt.current)return;
-          setListening(true);
-          setVoiceMessage(state==="transcribing"?t.speechTranscribing:t.speechRunning);
-        },
-        onResult:text=>{
-          if(attempt!==voiceAttempt.current)return;
-          recordedRef.current=null;setListening(false);
-          setDraft(previous=>(previous?previous+" ":"")+text.slice(0,2000-previous.length));
-          setVoiceMessage(t.speechRecognized);
-        },
-        onFailure:code=>{
-          if(attempt!==voiceAttempt.current)return;
-          recordedRef.current=null;setListening(false);
-          setVoiceMessage(code==="MIC_PERMISSION"?t.speechDenied:
-            code==="STT_RATE_LIMIT"?t.speechQuota:
-            code==="MIC_NO_SIGNAL"?t.speechSilent:t.speechError);
-        },
-      });
-      if(capture){
-        recordedRef.current=capture;
-        setVoiceMessage(t.speechRunning);setListening(true);return;
-      }
-    }
-    if(!Constructor){setVoiceMessage(t.unsupported);inputRef.current?.focus();return}
-    const speech=new Constructor();
-    let hadResult=false;
-    speech.lang=locale==="ru"?"ru-RU":locale==="es"?"es-ES":"en-US";
-    speech.interimResults=false;
-    speech.continuous=false;
-    speech.onresult=event=>{
-      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
-      const spoken=event.results?.[0]?.[0]?.transcript?.trim();
-      if(spoken){
-        hadResult=true;
-        setDraft(previous=>(previous?previous+" ":"")+spoken.slice(0,2000-previous.length));
-        setVoiceMessage(t.speechRecognized);
-      }
-    };
-    speech.onerror=()=>{
-      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
-      speechRef.current=null;setListening(false);
-      if(recordedAvailable)setPreferRecorder(true);
-      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
-    };
-    speech.onend=()=>{
-      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
-      speechRef.current=null;setListening(false);
-      if(!hadResult){
-        if(recordedAvailable)setPreferRecorder(true);
-        setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
-      }
-    };
-    speechRef.current=speech;
-    setVoiceMessage(t.speechRunning);setListening(true);
-    try{speech.start()}catch{
-      speechRef.current=null;setListening(false);
-      if(recordedAvailable)setPreferRecorder(true);
-      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
-    }
   }
   const screen=SCREEN_COPY[locale];
   const categories=mode==="self" ? [
@@ -340,21 +234,28 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
 
   const audienceFor=(message:string):Mode=>/business|company|revenue|clients|startup|бизнес|компан|клиент|продаж|negocio|empresa|ventas/i.test(message)?"business":"self";
-  const stageWords={
-    ru:[["Найти цель","Разберём, что важно."],["Зажечь желание","Уточним смысл."],["Открыть силу","Найдём ресурсы."],["Построить путь","Составим план."],["Преодолеть страхи","Исследуем препятствия."],["Открыть возможности","Найдём новые решения."],["Ускорить движение","Поддержим действия."]],
-    en:[["Find your goal","Clarify what matters."],["Ignite desire","Discover your why."],["Find your strength","Explore your resources."],["Build your path","Create a clear plan."],["Face your fears","Work through obstacles."],["Find opportunities","Explore solutions."],["Build momentum","Support real actions."]],
-    es:[["Encontrar la meta","Aclaremos prioridades."],["Encender el deseo","Exploremos tu porqué."],["Descubrir la fuerza","Encontremos recursos."],["Crear el camino","Hagamos un plan."],["Superar los miedos","Exploremos obstáculos."],["Ver posibilidades","Busquemos soluciones."],["Seguir avanzando","Apoyemos acciones."]]
+  const programCopy={
+    ru:{intro:"Твой ИИ-проводник к ясности, цели и развитию.",welcome:"Давай вместе разберёмся, что для тебя сейчас важно — снять напряжение, достичь цели или развить бизнес.",listen:"Послушать моё приветствие",prompt:"С чем ты хочешь поработать сегодня?",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Программы","Видео","Тесты","Практики"],send:"Отправить сообщение",listenOn:"Воспроизвести приветствие",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения.",group:"Выбери программу",programs:[
+      {title:"Ясность и снятие стресса",detail:"Спокойствие и восстановление ресурсов.",steps:["Снять напряжение","Восстановить энергию","Вернуть ясность"],prompt:"Хочу начать программу «Ясность и снятие стресса». Помоги понять мою ситуацию и выбрать первый шаг."},
+      {title:"Достижение моей цели",detail:"От идеи к результату: найти цель, ресурсы и пройти путь.",steps:["Определить цель","Построить план","Достичь результата"],prompt:"Хочу начать программу «Достижение моей цели». Помоги определить мою цель и следующий шаг."},
+      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Уточнить стратегию","Найти ресурсы","Улучшить результат"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."}]},
+    en:{intro:"Your AI guide to clarity, goals and growth.",welcome:"Let's discover what matters now — relieving stress, achieving a goal or growing your business.",listen:"Listen to my greeting",prompt:"What would you like to work on today?",methods:"What we use to help:",tools:["AI coaches","Programs","Videos","Tests","Practices"],send:"Send a message",listenOn:"Play my greeting",privacy:"Start free without signing in. Long-term memory requires your permission.",group:"Choose a program",programs:[
+      {title:"Clarity & Stress Relief",detail:"Find calm, clarity and restore your resources.",steps:["Relieve stress","Restore energy","Find clarity"],prompt:"I'd like to start the Clarity & Stress Relief program. Help me understand my situation and choose the first step."},
+      {title:"Achieving My Goal",detail:"From idea to result: find your goal, resources and path.",steps:["Define my goal","Build a plan","Achieve results"],prompt:"I'd like to start the Achieving My Goal program. Help me define my goal and next step."},
+      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Clarify strategy","Find resources","Improve results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."}]},
+    es:{intro:"Tu guía de IA hacia la claridad, las metas y el crecimiento.",welcome:"Descubramos qué importa ahora: aliviar el estrés, alcanzar una meta o desarrollar tu negocio.",listen:"Escucha mi bienvenida",prompt:"¿En qué quieres trabajar hoy?",methods:"Trabajamos con:",tools:["Coaches IA","Programas","Vídeos","Pruebas","Prácticas"],send:"Enviar mensaje",listenOn:"Reproducir bienvenida",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso.",group:"Elige un programa",programs:[
+      {title:"Claridad y alivio del estrés",detail:"Calma, claridad y recuperación de recursos.",steps:["Aliviar el estrés","Recuperar energía","Ganar claridad"],prompt:"Quiero empezar el programa Claridad y alivio del estrés. Ayúdame a entender mi situación y elegir el primer paso."},
+      {title:"Alcanzar mi meta",detail:"De la idea al resultado: encuentra tu meta, recursos y camino.",steps:["Definir mi meta","Crear un plan","Lograr resultados"],prompt:"Quiero empezar el programa Alcanzar mi meta. Ayúdame a definir mi objetivo y el siguiente paso."},
+      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Aclarar estrategia","Encontrar recursos","Mejorar resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."}]}
   } as const;
-  const journeyLabels={
-    ru:{intro:"Твой ИИ-проводник к важной цели.",welcome:"Давай вместе разберёмся, чего ты хочешь, где твоя сила и какой шаг приведёт тебя ближе к желаемому.",listen:"Послушать моё приветствие",prompt:"Расскажи, чего ты хочешь или что сейчас мешает…",find:"Помоги разобраться",findDetail:"Разберём твою ситуацию и определим, что важно.",have:"У меня уже есть цель",haveDetail:"Наметим путь и следующий реальный шаг.",talk:"Давай просто поговорим",journey:"7 шагов к твоей цели",sub:"Выбери этап или начни разговор с Самиром",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Специалисты","Видео","Тесты","Практики"],findPrompt:"Помоги мне разобраться в ситуации и понять свои желания.",havePrompt:"У меня уже есть цель. Помоги её прояснить и составить план.",talkPrompt:"Мне хочется просто поговорить. Поддержи меня в спокойном разговоре.",stagePrompt:"Хочу начать этап",send:"Отправить сообщение Самиру",listenOn:"Воспроизвести приветствие",photo:"Открыть чат и добавить фото",more:"Открыть вложения в чате",clear:"Очистить сообщение",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения."},
-    en:{intro:"Your AI guide to a meaningful goal.",welcome:"Let's discover what you want, find your strengths and choose your next step.",listen:"Listen to my greeting",prompt:"Tell me what you want or what is holding you back…",find:"Help me figure it out",findDetail:"Understand yourself and what matters.",have:"I already have a goal",haveDetail:"Make a plan and move forward.",talk:"Let's just talk",journey:"7 steps to your goal",sub:"Pick a step or let Samir guide you",methods:"What we use to help:",tools:["AI coaches","Specialists","Videos","Tests","Practices"],findPrompt:"Help me understand my situation and what I really want.",havePrompt:"I already have a goal. Help me clarify it and make a plan.",talkPrompt:"I would just like to talk. Please support me gently.",stagePrompt:"I want to work on step",send:"Send a message to Samir",listenOn:"Play my greeting",photo:"Open chat to add a photo",more:"Open chat attachments",clear:"Clear message",privacy:"Start free without signing in. Long-term memory requires your permission."},
-    es:{intro:"Tu guía de IA hacia una meta importante.",welcome:"Descubramos lo que quieres, dónde está tu fuerza y qué paso puedes dar ahora.",listen:"Escucha mi bienvenida",prompt:"Cuéntame qué deseas o qué te está frenando…",find:"Ayúdame a entender",findDetail:"Exploremos tu situación y prioridades.",have:"Ya tengo una meta",haveDetail:"Definamos el camino y el siguiente paso.",talk:"Solo quiero hablar",journey:"7 pasos hacia tu meta",sub:"Elige un paso o deja que Samir te guíe",methods:"Trabajamos con:",tools:["Coaches IA","Especialistas","Vídeos","Tests","Prácticas"],findPrompt:"Ayúdame a entender mi situación y lo que deseo.",havePrompt:"Ya tengo una meta. Ayúdame a aclararla y crear un plan.",talkPrompt:"Solo quiero hablar contigo y recibir apoyo.",stagePrompt:"Quiero trabajar en el paso",send:"Enviar mensaje a Samir",listenOn:"Reproducir bienvenida",photo:"Abrir chat para añadir foto",more:"Abrir archivos adjuntos",clear:"Borrar mensaje",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso."}
-  } as const;
-  const stageShortLabels={ru:["Найти цель","Зажечь желание","Открыть силу","План пути","Преодолеть страхи","Новые возможности","Ускорить движение"],en:["Find goal","Ignite desire","Find strength","Build path","Face fears","See options","Move ahead"],es:["Hallar meta","Crear deseo","Más fuerza","Trazar ruta","Superar miedos","Ver opciones","Avanzar"]} as const;
-  const msg=journeyLabels[locale];
-  const stepIcons=[Compass,Flame,Flower2,ClipboardList,Shield,Sprout,ChevronsRight] as const;
+  const msg=programCopy[locale];
+  const programArt=[
+    {id:"clarity",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",icon:Flower2,steps:[Flower2,Leaf,Sparkles]},
+    {id:"goal",image:"/images/holistic-house/course-focus-mountain-boy.webp",icon:Compass,steps:[Compass,Route,TrendingUp]},
+    {id:"business",image:"/images/holistic-house/shamanic-cards-business-hd.avif",icon:BarChart3,steps:[BriefcaseBusiness,Sprout,TrendingUp]},
+  ] as const;
   const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
-  const stepPhotos=["growth.webp","love.webp","energy.webp","stress.webp","stress.webp","love.webp","growth.webp"];
+
   function openGoalIntent(prompt:string) {
     const typed=draft.trim();
     startConversationWith(typed?prompt+"\\n"+typed:prompt,audienceFor(typed||prompt));
@@ -391,7 +292,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={greetingName}/>
         <div className={styles.heroStory}>
           <div className={styles.heroMessage}>
-            <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> AI GUIDE</div>
+            <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> {locale==="ru"?"ИИ-ПРОВОДНИК":locale==="es"?"GUÍA IA":"AI GUIDE"}</div>
             <h2 className={styles.heroTitle}>{guideLine}</h2>
             <p className={styles.guideRole}>{persona.id==="alex"?msg.intro:persona.role[locale]}</p>
             <p className={styles.subtitle}>{msg.welcome}</p>
@@ -419,46 +320,30 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       <div className={styles.composerButtons}>
         
         
-        <button type="button" className={styles.microphone} data-home-intent-mic aria-describedby="home-voice-disclosure" aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
+        <MessengerVoiceNote locale={locale} variant="dictation" micMarker="data-home-intent-mic"
+          micClassName={styles.microphone} micDescribedBy="home-voice-disclosure" onBegin={()=>stopAliPersonaAudio()}
+          onSendTranscript={text=>{setDraft(previous=>((previous?previous+" ":"")+text).slice(0,2000));return true;}}/>
         <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
       </div>
     </form>
     <p id="home-voice-disclosure" className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
-    {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
 
-    <div className={styles.focusGrid} role="group" aria-label={msg.journey} data-home-focus-grid>
-      <button type="button" className={styles.focusCard} data-home-intent-option="understand" data-home-free-review
-        onClick={()=>openGoalIntent(msg.findPrompt)}>
-        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg" width={400} height={160} alt="" loading="lazy"/>
-        <span className={styles.focusCopy}><Route size={24} aria-hidden="true"/><strong>{msg.find}</strong><small>{msg.findDetail}</small></span>
-        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
-      </button>
-      <button type="button" className={styles.focusCard} data-home-intent-option="goal" data-home-request-session
-        onClick={()=>openGoalIntent(msg.havePrompt)}>
-        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg" width={400} height={160} alt="" loading="lazy"/>
-        <span className={styles.focusCopy}><CheckCircle2 size={24} aria-hidden="true"/><strong>{msg.have}</strong><small>{msg.haveDetail}</small></span>
-        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
-      </button>
+    <div className={styles.programGrid} role="group" aria-label={msg.group} data-home-focus-grid>
+      {msg.programs.map((program,index)=>{
+        const art=programArt[index],ProgramIcon=art.icon;
+        return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
+          aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
+          <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
+          <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
+            <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>
+          </span>
+          <span className={styles.programArrow}><ArrowRight size={19} aria-hidden="true"/></span>
+        </button>
+      })}
     </div>
-    <button type="button" className={styles.talkLink} data-home-intent-option="talk" onClick={()=>openGoalIntent(msg.talkPrompt)}>
-      <MessageCircle size={18} aria-hidden="true"/>{msg.talk}<ArrowRight size={17} aria-hidden="true"/>
-    </button>
-    <section className={styles.howWorks} data-home-how-it-works aria-label={msg.journey}>
-      <h3>{msg.journey}</h3>
-      <div className={styles.journeyScroll} data-home-stage-scroll role="group" aria-label={msg.journey}>
-        {stageWords[locale].map((step,index)=>{
-          const StepIcon=stepIcons[index];
-          return <button type="button" className={styles.journeyCard} key={index} data-home-stage-option={index+1}
-            aria-label={String(index+1)+". "+step[0]+". "+step[1]}
-            onClick={()=>openGoalIntent(msg.stagePrompt+" "+(index+1)+": "+step[0]+". "+step[1])}>
-            <span className={styles.journeyPhoto}><StepIcon size={25} aria-hidden="true"/><b>{index+1}</b></span>
-            <strong>{stageShortLabels[locale][index]}</strong>
-          </button>;
-        })}
-      </div>
-    </section>
+
     <section className={styles.methods} data-home-methods aria-label={msg.methods}>
       <h3><Sparkles size={20} aria-hidden="true"/>{msg.methods}</h3>
       <div className={styles.methodGrid}>

@@ -28,6 +28,11 @@ async function revealMirrorAdvanced(page,engine="chromium"){
     if(await mirror.getAttribute("data-hh-mirror-screen")==="landing"){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==="webkit")await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    }
+    if(await mirror.getAttribute("data-hh-mirror-screen")==="format"){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==="webkit")await format.tap();else await format.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     }
     for(let n=0;n<3 && await mirror.getAttribute("data-hh-mirror-step")!=="1";n++){
@@ -225,17 +230,35 @@ async function verifyWorkspaceHydration(browser,locale){
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
     };
     const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+    const chooseSecondFormat=async(formatId)=>{
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      const format=mirror.locator('[data-hh-mirror-video-format]');
+      await expect(format).toHaveCount(3);
+      await expect(format.first()).toHaveAttribute("data-hh-mirror-video-format","pro");
+      for(const width of [320,354,390,430]){
+        await page.setViewportSize({width,height:840});
+        const g=await format.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {y:r.y,w:r.width,h:r.height,bottom:r.bottom};}));
+        assert.ok(g[0].w>1.8*g[1].w&&g[0].h>g[1].h,"featured photo dominates "+width);
+        assert.ok(g[1].y>g[0].y&&Math.abs(g[1].y-g[2].y)<3,"two smaller formats below "+width);
+        assert.ok(g[2].bottom<840-64,"formats above fixed dock "+width);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"format no horizontal overflow "+width);
+      }
+      await page.setViewportSize({width:390,height:840});
+      await mirror.locator('[data-hh-mirror-video-format="'+formatId+'"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      await expect(mirror).toHaveAttribute("data-hh-mirror-selected-format",formatId);
+    };
     const confirmPurposeAndFormat=async(goalId,formatId)=>{
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
       await expect(purpose.locator('[data-video-ideas-goal-choice]')).toHaveCount(3);
       await purpose.locator('[data-video-ideas-goal-choice="'+goalId+'"]').click();
       await purpose.locator('[data-video-ideas-goal-next]').click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-      await mirror.locator('[data-hh-mirror-video-format="'+formatId+'"]').click();
       await expect(studio).toHaveAttribute("data-active-workspace","editor");
+      await expect(studio).toHaveAttribute("data-hh-mirror-planned-format",formatId);
     };
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await chooseSecondFormat("pro");
     await stepIs(1);
     const choices=mirror.locator('[data-hh-mirror-goal-choice]');
     await expect(choices).toHaveCount(4);
@@ -283,6 +306,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="work"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await chooseSecondFormat("vip");
     await stepIs(1);
     const work=mirror.locator('[data-hh-mirror-goal-choice]');
     await expect(work).toHaveCount(4);
@@ -300,9 +324,11 @@ async function verifyWorkspaceHydration(browser,locale){
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="others"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await chooseSecondFormat("basic");
     await stepIs(1);
     await backLanding();
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await chooseSecondFormat("basic");
     await stepIs(1);
     await openDescription();
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
@@ -318,6 +344,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await page.locator('[data-video-quick-control="video"]').click();
     await stepIs(1);
+    await mirror.locator('[data-hh-mirror-back-to-format]').click();
+    await chooseSecondFormat("pro");
     await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
     await stepIs(2);
     await mirror.locator('[data-hh-mirror-subcategory]').first().click();
@@ -1058,7 +1086,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         window.__hhRecordedVideoBlobs=recordedVideos;
         URL.createObjectURL=function(blob){
           const uri=originalCreate.call(URL,blob);
-          if(blob instanceof File && /^holistic-house-voice-\d+\.(?:m4a|webm)$/.test(blob.name))
+          if(blob instanceof File && /^(?:holistic-house-voice-\d+|my-voice)\.(?:m4a|webm)$/.test(blob.name))
             recordedFiles.set(uri,blob);
           if(blob instanceof Blob && blob.type.startsWith("video/"))recordedVideos.set(uri,blob);
           return uri;
@@ -1281,6 +1309,53 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
+      // Deterministic CI microphone input; actual MediaRecorder, File and player.
+      const montageMicAvailable=await page.evaluate(()=>{
+        if(!navigator.mediaDevices||typeof MediaRecorder==="undefined"||
+          !["audio/mp4","audio/webm;codecs=opus","audio/webm"].some(type=>MediaRecorder.isTypeSupported(type)))return false;
+        const ctx=new AudioContext(),tone=ctx.createOscillator(),gain=ctx.createGain(),dest=ctx.createMediaStreamDestination();
+        gain.gain.value=.2;tone.frequency.value=330;
+        tone.connect(gain);gain.connect(dest);tone.start();
+        const old=Object.getOwnPropertyDescriptor(navigator.mediaDevices,"getUserMedia");
+        Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:async()=>dest.stream.clone()});
+        window.__hhMontageMic={ctx,tone,old};return true;
+      });
+      if(engine==="chromium")assert.ok(montageMicAvailable,"Chromium Montage microphone fixture available");
+      if(montageMicAvailable){
+        try{
+          const mic=page.locator('[data-video-montage-voice-record]');
+          await mic.click();
+          await expect(mic).toHaveAttribute("aria-pressed","true");
+          await page.evaluate(()=>window.__hhMontageMic.ctx.resume());
+          await page.waitForTimeout(1500);
+          await mic.click();
+          const card=page.locator('[data-video-montage-voice-card]');
+          await expect(card).toContainText(/my-voice\.(m4a|webm)/,{timeout:15000});
+          await expect(page.locator('[data-video-audio-compact-rights]')).toHaveCount(0);
+          await expect(page.locator('[data-video-audio-rights]')).toHaveCount(0);
+          const play=card.locator('[data-video-recorded-audio-play]');
+          await expect(play).toBeVisible();await play.click();
+          const audio=card.locator('[data-video-audio-player]');
+          await expect.poll(()=>audio.evaluate(el=>el.currentTime),{timeout:10000}).toBeGreaterThan(.15);
+          const output=await audio.evaluate(async el=>{
+            const file=window.__hhOwnVoiceFiles?.get(el.getAttribute("src"));
+            if(!(file instanceof File))return {muted:el.muted,rms:0};
+            const decoded=await window.__hhMontageMic.ctx.decodeAudioData(await file.arrayBuffer());
+            const samples=decoded.getChannelData(0);
+            let energy=0;for(const sample of samples)energy+=sample*sample;
+            return {muted:el.muted,rms:Math.sqrt(energy/samples.length)};
+          });
+          assert.equal(output.muted,false,"native preview not muted");
+          assert.ok(output.rms>.003,"captured track contains audible PCM");
+        }finally{
+          await page.evaluate(async()=>{
+            const fixture=window.__hhMontageMic;
+            if(fixture.old)Object.defineProperty(navigator.mediaDevices,"getUserMedia",fixture.old);
+            else delete navigator.mediaDevices.getUserMedia;
+            fixture.tone.stop();await fixture.ctx.close();delete window.__hhMontageMic;
+          });
+        }
+      }
       await page.locator('[data-video-audio-compact-silent]').click();
       const choices=compactGrid.locator('[data-video-audio-compact-select]');
       await choices.nth(0).click();

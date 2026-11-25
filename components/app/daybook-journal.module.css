@@ -70,3 +70,21 @@
   .page .destinations > :is(a, button) { gap: 4px; padding-inline: 6px; font-size: 15px; }
   .page .destinations > :is(a, button) > svg { width: 18px; height: 18px; }
 }
+
+/* Compact Daybook navigation; existing destinations remain accessible. */
+.page[data-daybook-page] .masthead {gap:5px;padding:0 0 5px}
+.page[data-daybook-page] .brand {flex:1;gap:4px;font-size:clamp(17px,5vw,25px);white-space:nowrap}
+.page[data-daybook-page] .brand>svg {width:19px;height:19px}
+.page[data-daybook-page] .masthead :global(.site-navigation--profile-compact) {gap:4px}
+.page[data-daybook-page] .inlineHelp {display:grid;place-items:center;flex:none;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;margin:0;border:1px solid #ae8c53;border-radius:50%;background:#352617;color:#fff1d4}
+.page[data-daybook-page] .destinations {grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:4px 0 8px}
+.page[data-daybook-page] .destinations>:is(a,button) {min-height:44px;padding:5px 4px;border-radius:11px;gap:5px;background:#fff6e3;font:650 13px/1.2 system-ui,sans-serif;text-align:center;overflow-wrap:normal}
+.page[data-daybook-page] .destinations>:is(a,button)>svg {width:16px;height:16px}
+.page[data-daybook-page] .destinations>button[aria-pressed=true] {background:var(--hh-cabinet-primary);color:#fff6e3;box-shadow:none}
+.page[data-daybook-page] .workspaceNav {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;overflow:visible;padding:3px;margin:0 0 9px;border:1px solid #8c6b3d;border-radius:12px;background:#352617}
+.page[data-daybook-page] .workspaceNav button {min-width:0;min-height:44px;padding:5px 2px;margin:0;border:1px solid transparent;border-radius:8px;background:transparent;color:#f0dbb9;font:600 12px/1.2 system-ui,sans-serif;white-space:normal;overflow-wrap:normal;text-align:center}
+.page[data-daybook-page] .workspaceNav button[aria-current=page] {background:var(--hh-cabinet-primary);border-color:#ae8c53;color:#fff6e3}
+@media(max-width:360px){.page[data-daybook-page] .destinations>:is(a,button){font-size:12px;gap:3px}.page[data-daybook-page] .brand>svg{width:17px;height:17px}}
+
+/* The guide uses the single approved workspace strip; other tabs keep their destinations. */
+.page[data-daybook-page][data-daybook-view="stages"] .destinations {display:none}

@@ -465,8 +465,18 @@ test('public Ali support screens run one focused conversation owner, not three u
   const owned=source('hh-home-conversation.yml');
   assert.ok(owned.includes('node --test')&&owned.includes('tests/messenger-support-quiz.test.mjs'),
     'public Ali consent/need selection unit test must run, not just trigger');
-  assert.ok(owned.includes('npx eslint')&&owned.includes('components/app/messenger-support-quiz.tsx'),
-    'public Ali component JSX must be linted by focused owner');
+  // Production PRs have one changed-source lint owner (required Core).
+  // The specialist still owns actual conversation contracts and standalone lint.
+  const standaloneLint = owned.slice(owned.indexOf('- name: Check affected TypeScript and React UI'),
+    owned.indexOf("- name: Build with the project's production dependencies"));
+  assert.ok(standaloneLint.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then'),
+    'only protected production PRs may delegate this duplicate lint');
+  assert.ok(standaloneLint.includes('npx --no-install eslint')&&standaloneLint.includes('components/app/messenger-support-quiz.tsx'),
+    'standalone public Ali component lint must remain');
+  const core = source('hh-pr-core-release.yml');
+  assert.ok(core.includes('Lint changed JS/TS sources on PR; full lint for manual/merge queue')&&
+    core.includes('npx --no-install eslint "${files[@]}"')&&core.includes('hh-merge-check:'),
+    'production PRs must retain the mandatory changed-source lint owner');
   const quiz='tests/messenger-support-quiz.test.mjs';
   assert.equal(matchesTrigger(trigger('hh-home-conversation.yml'),[quiz],TARGET),true);
   assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),[quiz],TARGET),true);
