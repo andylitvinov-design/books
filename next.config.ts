@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { existsSync, readFileSync } from "node:fs";
 
 // Server-side client PDFs must be able to load the published remedy catalogue
 // and the approved source JPEGs even in Vercel's traced function filesystem.
@@ -52,8 +53,25 @@ const liveAudioHostSources = [
   "/en/app/messages", "/ru/app/messages", "/es/app/messages",
 ];
 
+// Inline only the tiny original photo. Next substitutes this build constant
+// only at its reference in the public Home component. Larger future photos
+// keep the existing cached URL and HTML image preload.
+const samirWebp = readFileSync("public/images/holistic-house/ali-inner-alchemist-hero.webp");
+
+// Bare Next development and specialist builds continue to use request-time SSR.
+// The npm lifecycle prepares this traced file before the standard Next build.
+const buildIdFile = ".home-documents/build-id";
+const publicHomeBuildId = process.env.npm_lifecycle_event === "build" && existsSync(buildIdFile)
+  ? readFileSync(buildIdFile, "utf8").trim() : null;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  generateBuildId: async () => publicHomeBuildId,
+  env: {
+    HH_HOME_SAMIR_INLINE: samirWebp.byteLength <= 4096 ? "data:image/webp;base64," + samirWebp.toString("base64") : "",
+    HH_HAVE_PUBLIC_HOME_DOCUMENTS: publicHomeBuildId ? "1" : "0",
+    HH_COMPILED_PUBLIC_HOME_BUILD_ID: publicHomeBuildId || "",
+  },
   // ffmpeg-static uses __dirname to locate its downloaded native executable.
   // Keep the package external to Next webpack so its binary path remains valid.
   serverExternalPackages: ["ffmpeg-static"],
@@ -88,6 +106,30 @@ const nextConfig: NextConfig = {
     { protocol: "https", hostname: "psitrends.com", pathname: "/images/**" },
     { protocol: "https", hostname: "www.psitrends.com", pathname: "/images/**" },
     ],
+  },
+  async rewrites() {
+    if (!publicHomeBuildId) return [];
+    // Next 15 hides Flight headers and `_rsc` from the public Middleware API.
+    // Route conditions inspect the actual request after its anonymous check.
+    const missing = [
+      ...["rsc", "next-action", "next-url", "next-router-state-tree", "next-router-prefetch",
+        "next-router-segment-prefetch", "x-nextjs-data", "x-middleware-prefetch"]
+        .map(key => ({ type: "header" as const, key })),
+      { type: "query" as const, key: "_rsc" },
+    ];
+    const key = "x-hh-public-home-encoding";
+    const beforeFiles = ["en", "ru", "es"].flatMap(locale => {
+      const source = locale === "en" ? "/" : `/${locale}`;
+      const document = `/hh-public-document/${locale}`;
+      return [
+        { source, has: [{ type: "header" as const, key, value: "gzip" }], missing, destination: `${document}-gzip` },
+        { source, has: [{ type: "header" as const, key, value: "identity" }], missing, destination: document },
+        // A raw protocol request can look like ordinary HTML to middleware.
+        // Its explicit fallback keeps the original SSR/Flight endpoint and CSP.
+        { source, has: [{ type: "header" as const, key }], destination: `${document}-full` },
+      ];
+    });
+    return { beforeFiles, afterFiles: [], fallback: [] };
   },
   async headers() {
     return [
@@ -182,6 +224,7 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    "/hh-public-document/*": ["./.home-documents/en.json", "./.home-documents/ru.json", "./.home-documents/es.json"],
     // Reuse the pinned encoder only when recording a missing public greeting.
     "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.

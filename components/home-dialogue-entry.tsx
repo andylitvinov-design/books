@@ -228,7 +228,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     {id:"strategy",label:screen.strategy,detail:screen.strategy,prompt:screen.strategyPrompt,image:"energy.webp"},
     {id:"team",label:screen.team,detail:screen.team,prompt:screen.teamPrompt,image:"love.webp"},
   ];
-  const picture=persona.id==="alex"?"/images/holistic-house/ali-inner-alchemist-hero.webp":persona.image;
+  const picture = persona.id === "alex"
+    ? process.env.HH_HOME_SAMIR_INLINE || "/images/holistic-house/ali-inner-alchemist-hero.webp"
+    : persona.image;
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
   const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
@@ -266,7 +268,8 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   // Reserve high priority for the portrait the visitor actually sees.
   return <section className={styles.root} data-home-dialogue-entry data-home-mode="self"
     data-home-interactive={interactive?"true":"false"} lang={locale}>
-    <link rel="preload" as="image" href={picture} fetchPriority="high"/>
+    {!picture.startsWith("data:") && <link rel="preload" as="image" href={picture} fetchPriority="high"/>}
+    <link rel="preload" as="image" href="/images/holistic-house/shamanic-genie-lounge.webp" fetchPriority="low"/>
     <header className={styles.header} data-home-dialogue-header>
       <Link href={locale==="en"?"/":"/"+locale} className={styles.brand} prefetch={false} aria-label="Holistic House">
         <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>
@@ -332,7 +335,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         const art=programArt[index],ProgramIcon=art.icon;
         return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
           aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
-          <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
+          <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy" fetchPriority="low"/><ProgramIcon aria-hidden="true" size={28}/></span>
           <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
             <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>
           </span>

@@ -39,3 +39,6 @@ assets/documents/report-coast-cover.jpg
 /android/app/google-services.json
 *.jks
 *.keystore
+
+# Build-bound anonymous React documents packaged with their strict script policy.
+/.home-documents/
