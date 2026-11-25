@@ -624,7 +624,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
     openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
     stagedMemory?.sharePersonal===true&&stagedMemory?.personal?.stage==='personal'
-  const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
+  const memorySharePrior=memoryReady&&allowOpeningPrior&&stagedMemory?.sharePrior===true&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
   // The owner-only preview never automatically reaches an external Live AI.
