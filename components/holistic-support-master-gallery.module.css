@@ -840,3 +840,26 @@
   .reikiStage[data-active-tab="main"] .reikiTabCopy { width: 86%; max-width: 86%; }
   .reikiStage[data-active-tab="main"] .reikiTabCopy h2 { font-size: 24px; }
 }
+
+/* Compact Reiki marketplace: scoped to the current healing directory; keep top filter and source-backed initiation types. */
+.reikiBrowseIntro { margin:0; color:#526a5e; font:500 13px/1.36 Arial,Helvetica,sans-serif; }
+@media(max-width:640px) {
+  .viewer[data-support-directory-kind="healing"] { box-sizing:border-box; width:calc(100% - 12px); max-width:100%; margin-inline:auto; padding:0; border:0; box-shadow:none; background:transparent; }
+  .viewer[data-support-directory-kind="healing"] .reikiBrowse { gap:8px; padding:9px 6px; border:0; border-radius:12px; background:transparent; }
+  .reikiBrowseHeading { align-items:center; gap:8px; }
+  .reikiBrowseHeading h2 { min-width:0; font-size:clamp(18px,5vw,22px); overflow-wrap:anywhere; }
+  .reikiBrowseIntro { font-size:12px; line-height:1.3; }
+  .viewer .reikiFindButton { min-height:44px; max-width:136px; font-size:12px; padding:6px 8px; white-space:normal; }
+  .viewer .reikiBrowse .reikiQuickFormat button { min-height:44px; padding:5px 3px; font-size:clamp(11px,3vw,13px); }
+  .viewer .reikiBrowse .reikiFocusButton { min-height:64px; padding:7px 4px; }
+  .reikiBrowse .reikiFocusButton strong { font-size:12px; }
+  .viewer[data-support-directory-kind="healing"] .reikiStage { box-shadow:none; }
+  .viewer[data-support-directory-kind="healing"] .reikiStage[data-active-tab="main"] { min-height:305px; height:auto; max-height:none; }
+  .reikiStage[data-active-tab="main"] .reikiStageContent { min-height:230px; }
+  .reikiStage[data-active-tab="main"] .reikiStageTab { min-height:44px; }
+  .viewer[data-support-directory-kind="healing"] .reikiStage .reikiApply { min-height:44px; }
+}
+@media(max-width:350px) {
+  .reikiBrowse .reikiFocusBar { grid-template-columns:repeat(4,minmax(86px,1fr)); overflow-x:auto; overscroll-behavior-inline:contain; padding-bottom:5px; }
+  .reikiBrowse .reikiFocusButton strong { font-size:12px; }
+}
