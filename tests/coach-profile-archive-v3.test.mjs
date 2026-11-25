@@ -58,3 +58,21 @@ test('requires actual finalized question in the transcript, not merely a reconst
  const block=buildCoachProfileArchiveV3(ledger)
  assert.throws(()=>validateCoachProfileArchiveV3(block,{...protocol,turns:[{role:'assistant',content:'Unrelated question?'},protocol.turns[1]]}),/COACH_PROFILE_ARCHIVE_INVALID/)
 })
+
+import {coachProfileArchiveEnvelope,coachProfileArchiveExtends} from '../lib/coaching/coach-profile-archive-v3.mjs'
+import {coachSavedProfileV3,coachSavedProfileV3Text} from '../lib/coaching/coach-profile-report-v3.mjs'
+test('structured proof envelope is track-specific, retains zero, and reports missing values honestly',()=>{
+ const b=buildCoachProfileArchiveV3(ledger)
+ const p={...protocol,lifeBalanceCheckin:{block:b,receipt:'a'.repeat(64)}}
+ assert.equal(coachProfileArchiveEnvelope(p).key,'lifeBalanceCheckin')
+ const projection=coachSavedProfileV3(p,'ru')
+ assert.equal(projection.rows[0].current.value,0)
+ assert.equal(projection.rows[0].desired.value,null)
+ assert.match(coachSavedProfileV3Text(p,'ru'),/Тело и здоровье: Сейчас 0 \/ Желаемое Не исследовано/)
+ assert.throws(()=>coachProfileArchiveEnvelope({...p,profileCheckin:{}}),/COACH_PROFILE_ARCHIVE_INVALID/)
+ assert.throws(()=>coachProfileArchiveEnvelope({...protocol,meaningAxesCheckin:p.lifeBalanceCheckin}),/COACH_PROFILE_ARCHIVE_INVALID/)
+ assert.throws(()=>coachProfileArchiveEnvelope({...p,lifeBalanceCheckin:{...p.lifeBalanceCheckin,receipt:'forged'}}),/COACH_PROFILE_ARCHIVE_INVALID/)
+ assert.equal(coachProfileArchiveExtends(p,protocol),false)
+ assert.equal(coachProfileArchiveExtends(p,p),true)
+ assert.equal(coachProfileArchiveExtends(p,{...p,lifeBalanceCheckin:{...p.lifeBalanceCheckin,receipt:'b'.repeat(64)}}),false)
+})
