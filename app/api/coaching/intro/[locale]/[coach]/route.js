@@ -9,18 +9,60 @@ import {myCoachFishConfig,myCoachFishVoice,myCoachFishProsody} from '@/lib/coach
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {readSavedCoachGreeting,saveCoachGreetingOnce,isMp3Bytes} from '@/lib/coaching/coach-greeting-mp3-store.mjs'
+import {geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,synthesizeGeminiCoachTts} from '@/lib/coaching/gemini-coach-tts.mjs'
+import {approvedGeminiVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {encodeCoachGreetingMp3} from '@/lib/coaching/coach-greeting-mp3.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 export const preferredRegion='yul1'
-export const maxDuration=25
+export const maxDuration=60
 
+// Preserve the previous English recording identities even if an old cache key
+// was never populated. New v4 greetings alone use the owner's new EN defaults.
+const LEGACY_EN_GREETING_VOICES=Object.freeze({mira:'Gacrux',max:'Orus',sofia:'Sulafat',alex:'Charon',merlin:'Algenib',harry:'Achird',genie:'Orus'})
+const ARCHIVED_CACHE_CONTROL='public, max-age=31536000, s-maxage=31536000, immutable'
 const CACHE_HEADERS={
   'Content-Type':'audio/mpeg',
   'Cache-Control':'public, max-age=300, s-maxage=86400, stale-while-revalidate=86400',
   'X-Content-Type-Options':'nosniff',
   'X-Robots-Tag':'noindex, nofollow',
+}
+
+// MP3 bytes are stored only on the first successful versioned request; every later
+// Play and Replay serves the SAME immutable Supabase object, without TTS.
+function storedAudioResponse(stored){
+  if(stored.status===416)return new NextResponse(null,{status:416,headers:{
+    'Cache-Control':'private, no-store','Accept-Ranges':'bytes',
+    'Content-Range':stored.headers.get('content-range'),
+    'X-Content-Type-Options':'nosniff',
+  }})
+  const headers={...CACHE_HEADERS,'Cache-Control':ARCHIVED_CACHE_CONTROL,'Accept-Ranges':'bytes'}
+  for(const key of ['content-length','content-range']){
+    const value=stored.headers.get(key)
+    if(value)headers[key]=value
+  }
+  return new NextResponse(stored.body,{status:stored.status,headers})
+}
+async function persistGreeting(config,personaId,locale,audio,version='v2'){
+  if(!isMp3Bytes(audio))throw new AppError('MY_COACH_INTRO_INVALID_MP3',502)
+  let saved
+  try{saved=await saveCoachGreetingOnce(config,personaId,locale,audio,fetch,version)}
+  catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
+  if(!saved.created){
+    // Concurrent first Play: always use the FIRST recording, not the loser's
+    // freshly synthesized version (which may have different prosody).
+    try{
+      const canonical=await readSavedCoachGreeting(config,personaId,locale,fetch,null,version)
+      if(canonical)return storedAudioResponse(canonical)
+    }catch{}
+    throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)
+  }
+  return new NextResponse(audio,{status:200,headers:{...CACHE_HEADERS,
+    'Cache-Control':ARCHIVED_CACHE_CONTROL,'Accept-Ranges':'bytes',
+    'Content-Length':String(audio.length)}})
 }
 
 // Public, editorial-only natural voice. Path parameters survive browsers and
@@ -32,13 +74,53 @@ export async function GET(request){
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|lea|noah|iris|ray)\/?$/.exec(url.pathname)
-    if(!match||!['','?v=2'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!match||!['','?v=2','?v=3','?v=4'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
+    const version=url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
+    if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(version==='v4'&&(locale!=='en'||!/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId)))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
-    const introduction=url.search==='?v=2'?coachOpeningIntro(personaId,locale):intro?.text
+    // Record the same authored greeting shown on the coach's introduction card.
+    const introduction=intro?.text||coachOpeningIntro(personaId,locale)
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
+    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'
+    if(useRecordedGreeting){
+      // Storage failure must not be interpreted as a cache miss: that would
+      // trigger paid TTS again on every transient outage.
+      let saved
+      try{saved=await readSavedCoachGreeting(config,personaId,locale,fetch,
+        request.headers.get('range'),version)}
+      catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
+      if(saved)return storedAudioResponse(saved)
+    }
+
+    // Freeze each selected public RU/EN Gemini voice into a real MP3. Only the
+    // fixed editorial greeting leaves the server, never a visitor's words.
+    // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
+    // no Paid fallback, voice substitution, or repeated synthesis on cache hits.
+    const voiceName=useRecordedGreeting?(locale==='en'&&version!=='v4'&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:approvedGeminiVoice(personaId,locale)):null
+    const gemini=voiceName?geminiCoachTtsConfig(process.env,'gemini_tts_free'):null
+    if(gemini){
+      let input
+      try{
+        input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',locale,personaId,
+          voiceName,text:coachSpokenText(introduction).text,
+          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+      }catch{throw new AppError('MY_COACH_INTRO_INVALID',400)}
+      await consumeRate(config,{op:'my-coach-gemini-public-intro-minute'},3,60)
+      await consumeRate(config,{op:'my-coach-gemini_tts_free-global-day'},24,86400)
+      let audio
+      try{
+        const wav=await synthesizeGeminiCoachTts({config:gemini,input,
+          signal:AbortSignal.any([request.signal,AbortSignal.timeout(30000)])})
+        audio=await encodeCoachGreetingMp3(wav,{signal:request.signal})
+      }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      return await persistGreeting(config,personaId,locale,audio,version)
+    }
+    // New approved versioned greetings must be Gemini, never a substituted voice.
+    if(version==='v3'||version==='v4')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.
@@ -62,6 +144,7 @@ export async function GET(request){
         audio=await synthesizeGoogleChirp({config:chirp,input,
           signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])})
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      if(useRecordedGreeting)return await persistGreeting(config,personaId,locale,audio)
       return new NextResponse(audio,{status:200,headers:{
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
@@ -89,7 +172,15 @@ export async function GET(request){
     if(!upstream.ok||!upstream.body||
       (!type.startsWith('audio/')&&!type.startsWith('application/octet-stream')))
       throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
-    // Stream MP3 immediately: do not buffer an entire generated introduction.
+    if(useRecordedGreeting){
+      // Buffer exactly once to make an immutable MP3 before replying. Every
+      // later visit streams it directly from Storage (no vendor call/XP).
+      let audio
+      try{audio=Buffer.from(await upstream.arrayBuffer())}
+      catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      return await persistGreeting(config,personaId,locale,audio)
+    }
+    // Keep existing legacy v=1 streaming untouched.
     return new NextResponse(upstream.body,{status:200,headers:CACHE_HEADERS})
   }catch(error){
     const safe=safeError(error)

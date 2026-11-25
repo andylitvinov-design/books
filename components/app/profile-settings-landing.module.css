@@ -58,4 +58,61 @@
 @media(min-width:760px){.hero{min-height:315px;padding:25px}.hero h1{font-size:54px!important}
 .heroAction{max-width:790px;width:100%;margin-left:auto;margin-right:auto}
 .tile{min-height:182px}.tileCopy{padding:17px 30px 38px 17px}.tileCopy strong{font-size:21px}.tileCopy small{font-size:15px}}
+
+/* Approved Daybook palette, scoped to the client cabinet. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .landing { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .mode a,
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero,
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction,
+:global(.hh-app[data-cabinet-theme="daybook"]) .tile,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacy,
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick,
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick nav a { border:1px solid var(--hh-cabinet-border); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .mode a { border-radius:999px;min-height:52px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .life {
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));color:#fff6e3;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .work,
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction,
+:global(.hh-app[data-cabinet-theme="daybook"]) .tile,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacy,
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick {
+  background:linear-gradient(135deg,#fffaef,var(--hh-cabinet-surface-soft));color:var(--hh-cabinet-ink);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  background-image:linear-gradient(95deg,#291e12ed 0%,#302514ad 47%,#36261512 100%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .actionIcon,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacyIcon { border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .actionText small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .tileCopy small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacyText small { color:var(--hh-cabinet-muted);font-size:14px;line-height:1.4; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .tileCopy strong { font-size:clamp(16px,4vw,21px);line-height:1.2; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .tileIcon,
+:global(.hh-app[data-cabinet-theme="daybook"]) .tileArrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .roundArrow {
+  background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick h2 { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick nav a {
+  background:var(--hh-cabinet-surface);color:var(--hh-cabinet-ink);font-size:14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .quick nav a svg { color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .safe { color:#e7d4b3!important;font-size:14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .landing a:focus-visible { outline-color:var(--hh-cabinet-primary); }
+@media(max-width:430px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .tiles { grid-template-columns:minmax(0,1fr); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .tile { min-height:112px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .photo { flex-basis:26%; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .tileCopy { padding:12px 35px 12px 12px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .tileCopy strong { font-size:18px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .privacyText strong { font-size:17px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .quick nav a strong { font-size:14px; }
+}
+@media(max-width:355px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .quick nav { grid-template-columns:minmax(0,1fr); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .quick nav a {
+    flex-direction:row;justify-content:flex-start;gap:12px;min-height:52px;padding:12px 14px;text-align:left;
+  }
+}
 @media(prefers-reduced-motion:reduce){.landing a{transition:none}}

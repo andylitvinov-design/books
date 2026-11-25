@@ -39,7 +39,7 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
  useEffect(()=>{
   if(!open){stopAliPersonaAudio();setPlaying(null);return}
   setCandidate(id)
-  void prepareAliNaturalVoice()
+  void prepareAliNaturalVoice(id,locale)
   const previous=document.activeElement
   const onKey=event=>{
    if(event.key==='Escape'){event.preventDefault();onClose()}
@@ -58,7 +58,7 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
    stopAliPersonaAudio()
    if(previous?.isConnected&&typeof previous.focus==='function')previous.focus()
   }
- },[open,id,onClose])
+ },[open,id,locale,onClose])
  const toggleSample=personaId=>{
   if(playing===personaId){stopAliPersonaAudio();setPlaying(null);setAudioPhase('idle');return}
   setAudioFailed(null)

@@ -24,22 +24,16 @@ export async function completeThreeStepGoalsQuiz(page,{
     const overflow=collapsedMirror.locator('[data-hh-mirror-more-goals]');
     if(await overflow.isVisible())await tap(overflow);
     else{
-      // 3 real mobile pages; no retired Plan, hidden Back or test-only React state.
+      // Approved Screen 2 begins with the three-lightbulb topic quiz.
+      // Advanced editor is opened only through the visible Details → + path,
+      // not through the old Scope → Purpose → Format sequence or a hidden click.
       const screen=()=>collapsedMirror.getAttribute('data-hh-mirror-screen');
-      // React/WebKit can commit the next page AFTER the trusted native tap
-      // resolves. Wait for actual visible state; never patch DOM or force-click.
       const awaitScreen=async expected=>page.waitForFunction(expected=>
         document.querySelector('[data-hh-mirror-goals]')
           ?.getAttribute('data-hh-mirror-screen')===expected,
         expected,{timeout:15000});
       if(await screen()==='landing'){
         await tap(collapsedMirror.locator('[data-hh-mirror-enter="me"]'));
-        await awaitScreen('purpose');
-      }
-      if(await screen()==='purpose'){
-        const picker=collapsedMirror.locator('[data-hh-mirror-purpose-step]');
-        await tap(picker.locator('[data-video-ideas-goal-choice="rest"]'));
-        await tap(picker.locator('[data-video-ideas-goal-next]'));
         await awaitScreen('format');
       }
       if(await screen()==='format'){
@@ -47,13 +41,19 @@ export async function completeThreeStepGoalsQuiz(page,{
         await awaitScreen('topic');
       }
       assert.equal(await screen(),'topic','GOAL_QUIZ_EXPECTS_REAL_VISIBLE_TOPIC');
-      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
-      // Topic Back exists only for the nested 2/3 taxonomy substeps.
-      for(let i=0;i<2&&!await composer.isVisible();i++){
-        const step=await collapsedMirror.getAttribute('data-hh-mirror-step');
-        assert.ok(step==='2'||step==='3','GOAL_QUIZ_COMPOSER_HIDDEN_AT_STEP_'+step);
+      // Return from steps 2/3 to the first topic card with actual Back taps.
+      for(let i=0;i<2 && await collapsedMirror.getAttribute('data-hh-mirror-step')!=='1';i++)
         await tap(collapsedMirror.locator('[data-hh-mirror-back]'));
-      }
+      assert.equal(await collapsedMirror.getAttribute('data-hh-mirror-step'),'1',
+        'GOAL_QUIZ_DETAILS_ONLY_ON_REAL_FIRST_SCREEN');
+      const details=collapsedMirror.locator('[data-hh-mirror-own-description]');
+      await details.waitFor({state:'visible',timeout:15000});
+      if(await details.getAttribute('open')===null)
+        await tap(details.locator(':scope > summary'));
+      await page.waitForFunction(()=>
+        document.querySelector('[data-hh-mirror-own-description]')?.hasAttribute('open'),
+        undefined,{timeout:15000});
+      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
       await composer.waitFor({state:'visible',timeout:15000});
       await tap(composer.locator('[data-hh-mirror-open-advanced="true"]'));
     }
