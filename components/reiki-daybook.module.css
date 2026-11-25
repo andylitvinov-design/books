@@ -423,3 +423,125 @@
   .page[data-reiki-daybook],.page[data-reiki-daybook] [data-daybook-part="sheet"] {background:white!important;color:black!important;box-shadow:none;}
   .page[data-reiki-daybook] [data-daybook-part="art"] {display:none!important;}
 }
+
+
+/* Owner-approved golden/emerald welcome, 25 Nov. The rest of Daybook keeps
+   its five immersive themes and normal long-answer scrolling. No extra
+   sections are mounted after the primary action on this screen. */
+:global(body):has(.page[data-daybook-welcome-screen]) {
+  overflow:hidden;
+  background:#24170e!important;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] {
+  --db-accent:#006447;--db-accent-dark:#003e2d;--db-line:#d8b775;
+  --db-ink:#332016;--db-surface:#fff4df;--db-soft:#f4e3c4;
+  position:fixed;inset:0;z-index:2147483000;
+  height:100dvh;min-height:0;overflow:auto;overscroll-behavior:contain;
+  background:radial-gradient(ellipse at 62% 20%,#6e471f80,transparent 43%),linear-gradient(160deg,#2b1a0f,#1d140d 72%);
+  color:#fff3df;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"] {
+  box-sizing:border-box;min-height:100%;height:100%;max-width:540px;
+  display:flex;flex-direction:column;gap:clamp(6px,1.1dvh,12px);
+  padding:max(5px,env(safe-area-inset-top)) clamp(10px,3vw,17px) max(8px,env(safe-area-inset-bottom));
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .hero {
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:5px;padding:0;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .heroNav {flex:none;padding:0 3px;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .backLink {color:#fff2df;font-size:14px;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .helpButton {background:#fff2d9;color:#005b43;border-color:#d9b778;box-shadow:0 2px 10px #160c0640;}
+.welcomeHero {
+  flex:1 1 auto;min-height:120px;position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  padding:clamp(10px,2.7vw,18px);border:1px solid #efc478;border-radius:20px;
+  background:linear-gradient(90deg,#ffefd6 0%,#fff1dbdc 29%,#fff1db55 53%,#fff1db00 73%),
+    url('/images/holistic-house/reiki-approved-sunrise-v3.webp') 72% 42%/cover no-repeat,#ffe6bd;
+  box-shadow:0 4px 24px #e8aa4330,inset 0 0 16px #fff4cd42;
+}
+.heroLotus {display:block;color:#8b591c;width:40px;height:30px;margin:0 0 3px 4px;}
+.heroLotus svg,.ctaLotus svg,.rewardLotus svg {display:block;width:100%;height:100%;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeHero h1 {
+  display:block;color:#382013;max-width:75%;font:700 clamp(30px,8.7vw,49px)/.99 Georgia,serif;
+  letter-spacing:-.038em;margin:0 0 5px;text-shadow:0 1px 5px #fff2d280;overflow-wrap:normal;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeHero p {display:block;color:#39271c;font-size:clamp(12px,3.6vw,17px);font-weight:600;margin:0 0 6px;}
+.welcomeRibbon {display:inline-flex;align-items:center;gap:6px;color:#fff4df;background:linear-gradient(95deg,#07583e,#1c7552);padding:5px 10px;border-radius:7px 2px 7px 2px;font:italic 700 clamp(13px,3.8vw,18px)/1.2 Georgia,serif;box-shadow:0 2px 8px #2c362a35;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks {display:grid;flex:none;gap:clamp(4px,1.4vw,8px);align-items:stretch;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks::before {display:none;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58px;gap:2px;padding:4px 2px;
+  border:1px solid #d2aa66;border-radius:13px;background:linear-gradient(150deg,#fff8e9,#f6e3c3);color:#382416;
+  box-shadow:0 2px 8px #0b080744;opacity:1;overflow-wrap:normal;
+}
+.weekLabel {font-size:11px;font-weight:750;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button .weekNumber {width:auto;height:auto;border:0;border-radius:0;color:inherit;background:none;box-shadow:none;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button b {font-size:21px;line-height:1;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button small {color:inherit;font-size:11px;font-variant-numeric:tabular-nums;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button[aria-pressed=true] {
+  background:linear-gradient(145deg,#087953,#004a35);border:1px solid #f5d68a;color:#fff9e8;box-shadow:0 0 12px #ffcf686b,inset 0 0 0 1px #e9bc64;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button[aria-pressed=true] .weekNumber {border:0;background:none;box-shadow:none;color:inherit;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekHeading {
+  display:grid;flex:none;grid-template-columns:1fr;gap:3px;padding:5px 6px 7px;margin:0;border-radius:12px;
+  background:linear-gradient(90deg,#2b1b10f0,#2b1b10a0 65%,#2b1b1040),url('/images/holistic-house/reiki-practitioner-sunrise.webp') right 48%/cover no-repeat;
+}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekHeading>span {color:#e9bf79;font-size:12px;font-weight:750;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekHeading h2 {color:#fff4df;font:700 clamp(21px,5.8vw,30px)/1.13 Georgia,serif;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekProgress {color:#fff4df;font-size:12px;gap:7px;margin-top:4px;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekProgress progress {height:9px;background:#6f5538;border:1px solid #e1bf7c;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekProgress progress::-webkit-progress-bar {background:#6f5538;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekProgress progress::-webkit-progress-value {background:linear-gradient(90deg,#0d8b53,#64d66e);}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .weekProgress progress::-moz-progress-bar {background:linear-gradient(90deg,#0d8b53,#64d66e);}
+.welcomeAbout {
+  display:flex;flex-direction:column;flex:none;gap:clamp(6px,1.1dvh,11px);
+  border:1px solid #eac98b;border-radius:20px;padding:clamp(9px,2.7vw,17px);
+  color:#342219;background:linear-gradient(155deg,#fff9ed,#f6e2ba);box-shadow:0 5px 22px #100a0750;
+}
+.welcomeAbout h2 {font:700 clamp(22px,6.3vw,33px)/1.1 Georgia,serif;margin:0;display:flex;align-items:center;gap:10px;letter-spacing:-.025em;}
+.welcomeAbout h2::after {content:"";height:1px;background:linear-gradient(90deg,#d2a85d,transparent);flex:1;}
+.welcomeAbout>p {font-size:clamp(12px,3.5vw,15px);line-height:1.35;margin:0;font-weight:500;}
+.welcomeFacts {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #d9b77d;background:#fff8e8a0;border-radius:13px;padding:7px 2px;box-shadow:0 2px 6px #6b461319;}
+.welcomeFacts>div {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:1px 3px;min-width:0;font-size:clamp(10px,2.85vw,13px);line-height:1.12;font-weight:700;overflow-wrap:break-word;}
+.welcomeFacts>div+div {border-left:1px solid #d9b77d;}
+.welcomeFacts svg {color:#006447;width:26px;height:26px;flex:none;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeInitiation {
+  display:flex;align-items:center;gap:9px;position:relative;overflow:hidden;margin:0;
+  padding:9px 10px;border:1px solid #e9ca89;border-radius:13px;
+  background:radial-gradient(ellipse at right bottom,#b1a24d69,transparent 58%),linear-gradient(120deg,#00734c,#00402c);
+  color:#fff6e5;box-shadow:inset 0 0 12px #0a261a40;
+}
+.welcomeInitiation>svg {width:36px;height:36px;flex:none;color:#f9d586;filter:drop-shadow(0 0 4px #eabc5b80);}
+.welcomeInitiation>div {min-width:0;flex:1;border-left:1px solid #f3ce8170;padding-left:9px;z-index:1;}
+.welcomeInitiation small {display:block;color:#f6d384;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:2px;}
+.welcomeInitiation strong {display:block;font:700 clamp(17px,4.7vw,24px)/1.07 Georgia,serif;letter-spacing:-.015em;}
+.rewardLotus {flex:none;width:40px;height:40px;color:#fce0a0;filter:drop-shadow(0 0 6px #ffcf60);}
+.page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer {flex:none;margin:0;padding:0;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer button {
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;padding:8px 12px;
+  border-radius:99px;border:1px solid #f9d68b;background:linear-gradient(115deg,#087e55,#004c38);
+  color:#fff9ea;box-shadow:0 0 17px #efb74a6b,inset 0 0 0 1px #e1b863;font-weight:800;font-size:clamp(15px,4.3vw,20px);
+}
+.ctaLotus {width:29px;height:25px;color:#f6d98d;flex:none;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer button:disabled {opacity:.7;box-shadow:none;}
+.page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer>p {color:#fff2d9;font-size:12px;margin:3px 0 0;}
+@media(max-height:720px) {
+  .page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"] {gap:6px;}
+  .welcomeHero {min-height:116px;padding:8px 12px;}
+  .heroLotus {width:29px;height:21px;margin-bottom:2px;}
+  .page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeHero h1 {font-size:clamp(27px,7.6vw,40px);}
+  .page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeHero p {margin-bottom:4px;}
+  .welcomeRibbon {padding:3px 8px;font-size:13px;}
+  .page[data-reiki-daybook][data-daybook-welcome-screen] .weeks button {min-height:53px;}
+  .welcomeAbout {gap:6px;padding:10px;}
+  .welcomeFacts {padding:5px 2px;}
+  .welcomeFacts svg {width:22px;height:22px;}
+  .page[data-reiki-daybook][data-daybook-welcome-screen] .welcomeInitiation {padding:7px 8px;}
+  .welcomeInitiation>svg,.rewardLotus {width:30px;height:30px;}
+  .page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer button {min-height:48px;}
+}
+/* Tiny landscape/zoomed viewports retain access rather than clipping text. */
+@media(max-height:540px) {
+  .page[data-reiki-daybook][data-daybook-welcome-screen] [data-daybook-part="shell"] {height:auto;}
+  .welcomeHero {min-height:140px;}
+}
