@@ -247,9 +247,12 @@ try {
   // before comparing full encoded frames to the four source masters.
   // Do not lower source-identity thresholds or bypass the real MP4 encoder.
   // Quick Start's checkbox is intentionally hidden under the current
-  // workspace navigation. Select the real visible Montage option instead:
-  // switching from an AI-coach portrait to the personal-photo library with
-  // no personal photo turns off the optional portrait overlay. The original
+  // workspace navigation. The source-first two-action Montage keeps a chosen
+  // coach when "Use Without Animation" is pressed (coach stills are original
+  // photos). Clear that source via the visible Animate Photo selection, which
+  // only changes local selection and is explicitly provider/payment-disabled,
+  // then restore the Express choice with an empty personal photo. No render,
+  // payment or provider request is initiated by either selection. The original
   // four licensed motion sources and consent/export gates remain mandatory.
   const portraitOverlay=page.locator('[data-video-photo-enabled]');
   assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
@@ -261,6 +264,15 @@ try {
   const styleWorkspace=page.locator('[data-video-montage-tab="effects"]');
   await styleWorkspace.waitFor({state:'visible',timeout:15000});
   await press(styleWorkspace);
+  const animatePhotoMode=page.locator('[data-video-montage-photo-choice="animate"]');
+  await animatePhotoMode.waitFor({state:'visible',timeout:15000});
+  await press(animatePhotoMode);
+  await page.waitForFunction(()=>{
+    const choice=document.querySelector('[data-video-montage-photo-choice="animate"]');
+    const checkbox=document.querySelector('[data-video-photo-enabled]');
+    return choice?.getAttribute('aria-pressed')==='true' &&
+      checkbox instanceof HTMLInputElement && !checkbox.checked;
+  },undefined,{timeout:15000});
   const personalPhotoMode=page.locator('[data-video-montage-photo-choice="library"]');
   await personalPhotoMode.waitFor({state:'visible',timeout:15000});
   await press(personalPhotoMode);
