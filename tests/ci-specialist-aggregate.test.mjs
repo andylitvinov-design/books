@@ -756,7 +756,7 @@ test('approved migration destinations contain the exact retired scope and the or
       contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
     },{
       from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
-      patterns:["'components/app/cabinet-today.*'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      patterns:["'components/app/cabinet-today.*'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/hh-cabinet-journey.yml'"],
       contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
     },
   ];
@@ -2364,9 +2364,17 @@ test('Axis Ready PR requires practical writer job despite planner workflow chang
   assert.ok(writer.includes(profileWriterReadyGuard), 'Ready PR may not skip writer tests');
   assert.doesNotMatch(writer,/github\.head_ref|continue-on-error:\s*true/,
     'no PR-branch exemptions or silent success');
-  for (const retained of ['Practical director and prior writer regressions',
-    'Load original checksum-verified FFmpeg', 'Lint writer API, UI and contracts',
-    'TypeScript contract check']) assert.ok(writer.includes(retained), 'retain '+retained);
+  assert.ok(writer.includes('Practical director and prior writer regressions'));
+  assert.doesNotMatch(writer,/run: npm ci|uses: .*ci-ffmpeg-static|run: npx .*tsc/,
+    'dependency-free writer contracts must not repeat the axis install');
+  const axisSource=source.split('  axis-unit-types-build:\n')[1];
+  assert.ok(axisSource, 'axis job must remain present');
+  for (const retained of ['Load original checksum-verified FFmpeg',
+    'Lint writer API, UI and contracts','TypeScript check','--max-warnings 0'])
+    assert.ok(axisSource.includes(retained), 'shared axis install retains '+retained);
+  assert.equal((source.match(/run: npm ci --no-audit --no-fund/g)||[]).length,1);
+  assert.ok(axisSource.includes("name: TypeScript check\n        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
+    'required Core owns production types, standalone axis still checks them');
   const required=trustedRequiredJobs(source).sort();
   assert.deepEqual(required,['axis-unit-types-build','writer-practical-focused']);
   assert.equal(optionalProfileWriterSkip({

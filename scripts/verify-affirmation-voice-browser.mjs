@@ -1227,11 +1227,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Free is verified by a real encoded export later in this same test.
       // Don't start a second chargeable render just to test navigation here.
       await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
-      await montageProOffer.locator('[data-video-montage-pro-choice="character"]').click();
+      const characterFormat=montageProOffer.locator('[data-video-montage-pro-choice="character"]');
+      await expect(characterFormat).toBeVisible();
+      await expect(characterFormat).toBeEnabled();
+      if(engine==="webkit")await characterFormat.tap();else await characterFormat.click();
+      await expect(page.locator('[data-video-studio-hydrated]')).toHaveAttribute('data-active-workspace','effects',{timeout:15000});
       await expect(page.locator('[data-video-quick-control="effects"]')).toHaveAttribute('aria-pressed','true');
       await enterVisibleStudioWorkspace(page,"editor",engine);await montageProTab.click();
       await openVideoFormats();
-      await montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]').click();
+      const cinematicFormat=montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]');
+      await expect(cinematicFormat).toBeVisible();
+      await expect(cinematicFormat).toBeEnabled();
+      if(engine==="webkit")await cinematicFormat.tap();else await cinematicFormat.click();
+      await expect(page.locator('[data-video-studio-hydrated]')).toHaveAttribute('data-active-workspace','pro',{timeout:15000});
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
       await enterVisibleStudioWorkspace(page,"editor",engine);await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
