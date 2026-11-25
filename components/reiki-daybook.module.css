@@ -970,3 +970,22 @@
 @media screen and (max-height:700px) {
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-daybook-part="art"] {display:none;}
 }
+
+/* Restore the previous airy review composition, in the golden Daybook palette. */
+@media screen {
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-daybook-part="art"] {display:none;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-daybook-part="content"] > :is(h1,h2)[id] {font-size:clamp(21px,5.8vw,24px);margin:0;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-meditation-voices] {background:#fffaf0;border-color:#dfbd85;gap:7px;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-heading] {border-bottom:1px solid #dfbd85;padding-bottom:6px;color:#07553d;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-counter] {flex:none;white-space:nowrap;padding:4px 9px;border:1px solid #d7ba83;border-radius:99px;background:#f6ebd4;font:700 12px/1.15 system-ui,sans-serif;letter-spacing:.04em;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-fulltext] {font:italic 400 clamp(15px,4.15vw,17px)/1.36 Georgia,serif;color:#392013;border-left:2px solid #cda157;padding-left:9px;scrollbar-width:thin;scrollbar-color:#cda157 transparent;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] blockquote cite {border-top:1px solid #e7d6b4;padding-top:5px;color:#07553d;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-meditation-review-carousel] > [role="group"] {justify-content:center;align-items:center;gap:10px;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] :is([data-review-prev],[data-review-next]) {position:relative;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#07553d;box-shadow:none;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] :is([data-review-prev],[data-review-next])::before {content:"";position:absolute;inset:5px;border:1px solid #cda157;border-radius:50%;background:#fffdf6;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] :is([data-review-prev],[data-review-next]) svg {position:relative;z-index:1;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-dot] {display:block;width:6px;height:6px;flex:none;border-radius:99px;background:#d8c5a1;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-dot][data-review-active="true"] {width:17px;background:#087149;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-meditation-voices] > div:last-child:has(> a) {align-self:center;}
+  .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="voices"] [data-review-fulltext]:focus-visible {outline:2px solid #087149;outline-offset:-2px;}
+}
