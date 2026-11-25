@@ -39,7 +39,11 @@ test('AI Chat primary mic sends recorded speech; optional live voice keeps its i
   'data-hh-ai-voice-disclosure','data-hh-ai-start-voice',
   'data-hh-ai-stop-voice','data-hh-ai-voice-status'])
    assert.ok(chat.includes(id),id)
- assert.match(chat,/onClick=\{\(\)=>\{\s*if\(voice\.conversing\)/)
+ assert.match(chat,/function toggleMessengerVoice\(\)\{[\s\S]{0,100}if\(voice\.conversing\)/)
+ assert.match(chat,/data-hh-ai-audio-call\s+onClick=\{toggleMessengerVoice\}/)
+ assert.match(chat,/messengerVoiceTurn\.current=text=>\{[\s\S]{0,450}sendSelectedTurn\(text\)/)
+ assert.match(chat,/voice\.startDialogue\(text=>messengerVoiceTurn\.current\(text\)/)
+ assert.match(chat,/micMarker="data-hh-conversation-mic" instantSend/)
  assert.match(chat,/else setVoicePermissionOpen\(true\)/)
  assert.match(chat,/onClick=\{beginMessengerVoice\}/)
  assert.match(chat,/voice\.startDialogue\(text=>/)
