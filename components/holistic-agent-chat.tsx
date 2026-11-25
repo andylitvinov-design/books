@@ -739,6 +739,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
     videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,sessionStep,sessionOffers.length,messengerView,revealFocusedContext]);
+  // Initial test picker: align the latest user/assistant exchange to the top.
+  // Do not mutate or delete conversation history, and do not lock scrolling
+  // while the user subsequently starts or answers the selected questionnaire.
+  useEffect(()=>{
+    if(!compact||!messengerView||!testChatOpen)return;
+    const thread=threadRef.current;
+    if(!thread)return;
+    const frame=window.requestAnimationFrame(()=>{
+      const firstTurn=thread.querySelector('[data-hh-chat-turn="user"]') ||
+        thread.querySelector('[data-hh-messenger-test-chat]');
+      if(!firstTurn)return;
+      const viewport=thread.getBoundingClientRect();
+      const bubble=firstTurn.getBoundingClientRect();
+      const limit=Math.max(0,thread.scrollHeight-thread.clientHeight);
+      const target=Math.max(0,Math.min(limit,thread.scrollTop+bubble.top-viewport.top-8));
+      programmaticScrollTop.current=target;
+      thread.scrollTop=target;
+      followTail.current=false;
+      setNewBelow(false);
+    });
+    return ()=>window.cancelAnimationFrame(frame);
+  },[compact,messengerView,testChatOpen,testFocus]);
   useEffect(()=>{
     if(!compact||!messengerView)return;
     const thread=threadRef.current;
@@ -1059,7 +1081,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(option.kind==="test"&&option.focus){
       setTestFocus(option.focus);setGuideLink("tests");setTestChatOpen(true);
       setFormat("test");
-      setMessages(prev=>[...prev,{role:"user" as const,text:option.label}].slice(-30));
+      const testReply=locale==="ru"
+        ?"Ниже тесты по выбранной теме. Выберите подходящий — я проведу вас по вопросам."
+        :locale==="es"
+          ?"Aquí tienes pruebas sobre este tema. Elige una y seguiremos las preguntas paso a paso."
+          :"Here are tests for this topic. Choose one and I'll guide you through the questions.";
+      // Preserve the full private transcript; only the picker view is condensed.
+      setMessages(prev=>[...prev,{role:"user" as const,text:option.label},
+        {role:"assistant" as const,text:testReply}].slice(-30));
       return;
     }
     const message=option.kind==="ask"&&option.prompt?option.prompt:
@@ -2242,7 +2271,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
                 "Automatic copying failed. You can select the summary text directly in the chat.")}
         </p>}
       </div>}
-      {messages.map((m,index)=>messengerView&&m.role==="assistant"?
+      {messages.map((m,index)=>testChatOpen&&messengerView&&index<Math.max(0,messages.length-2)?null:messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
@@ -2259,7 +2288,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             disabled={!voice.supported}
             onClick={()=>{stopAliPersonaAudio();voice.speak(m.text,true);}}
             style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}</p>)}
-      {lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
+      {!testChatOpen&&lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
         <strong>{locale==="ru"?"Ответ не подошёл?":locale==="es"?"¿No te convence la respuesta?":"Not quite the answer you wanted?"}</strong>
         <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("different")}>
           {locale==="ru"?"Другой вариант":locale==="es"?"Otra respuesta":"Another answer"}</button>
@@ -2294,12 +2323,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             <small>{sessionOfferDescription(locale,option.id)}</small></a>)}
         </div>}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
-      {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
+      {compact&&guideLink==="tests"&&!testChatOpen&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
       {compact&&testChatOpen&&<MessengerTestJourney key={testFocus||"all"} locale={locale} focus={testFocus}
         incomingTurn={testChatTurn} suggestedKey={testSuggestedKey}
-        onAdvance={()=>setTestRevision(value=>value+1)} onClose={()=>{
-          setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestFocus(null);setGuideLink(null);
+        onAdvance={()=>{followTail.current=true;setTestRevision(value=>value+1)}} onClose={()=>{
+          followTail.current=true;setNewBelow(false);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestFocus(null);setGuideLink(null);
         }}/>}
       {compact&&entryOpen&&pageHelp&&<div className={styles.startActions} role="group"
         aria-label={starter.actions} data-hh-ihelp-actions>
