@@ -1924,6 +1924,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if(event.currentTarget.querySelector("[data-hh-dictation-active]"))return;
+    if(voice.conversing)voice.pauseDialogue();
     setNativeDictationRevision(value=>value+1);
     // The initial CTA starts a conversation even without a written question.
     // This is a local welcome, never a blank Free/Gemini provider request.
@@ -1977,6 +1978,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     };
   });
 
+  // Consent belongs to this account and selected recognition route, not a
+  // previous guest/account or a different provider after capability changes.
+  const audioConsentScope=useRef<string|null>(null);
+  const audioScope=(authenticated?'account':'guest')+':'+(voiceRequiresRecorded?'recorded':'browser');
+  const previousAudioScope=useRef(audioScope);
+  useEffect(()=>{
+    if(previousAudioScope.current===audioScope)return;
+    previousAudioScope.current=audioScope;audioConsentScope.current=null;
+    voice.stopDialogue();setVoicePermissionOpen(false);
+  },[audioScope,voice.stopDialogue]);
+
   function toggleMessengerVoice(){
     closeComposerMenu();
     if(voice.conversing){
@@ -1989,7 +2001,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setDictationRevision(value=>value+1);
     setVoiceNoteRevision(value=>value+1);
     stopAliPersonaAudio();
-    if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
+    if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();
     else setVoicePermissionOpen(true);
   }
 
@@ -2012,7 +2024,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const launched=voice.startDialogue(text=>messengerVoiceTurn.current(text),{
       allowRecorded:voiceRequiresRecorded,consentOnStart:true,pauseOnHide:true,
       recordedPurpose:authenticated?'ali_chat':'public'});
-    if(launched){setVoicePermissionOpen(false);setStatus("");}
+    if(launched){audioConsentScope.current=audioScope;setVoicePermissionOpen(false);setStatus("");}
   }
 
   const voiceAttachment=compact?<label className={styles.mode} data-hh-voice-message-upload
@@ -2301,7 +2313,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           {locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"}</button>}
         {voice.conversing&&voice.speaking&&<button type="button" data-hh-ai-interrupt-voice onClick={()=>voice.interruptReply()}>
           {locale==="ru"?"Перебить":locale==="es"?"Interrumpir":"Interrupt"}</button>}
-        {voice.paused&&<button type="button" data-hh-ai-resume-voice disabled={busy||proBusy} onClick={toggleMessengerVoice}>
+        {voice.paused&&<button type="button" data-hh-ai-resume-voice disabled={busy||proBusy||(proSelected&&!proReady)} onClick={toggleMessengerVoice}>
           {locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Resume"}</button>}
         {(voice.conversing||voice.paused||voice.notice)&&<button type="button" data-hh-ai-stop-voice
           onClick={()=>voice.stopDialogue()}>
