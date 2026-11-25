@@ -1,0 +1,121 @@
+/* MY_REIKI_MASTER_LEVEL_SCREENS_20261125
+   Only the new Master continuation; no changes to Free, Pro or the current hero. */
+.levels {
+  display: grid;
+  gap: 18px;
+  margin: 20px 0 16px;
+  min-width: 0;
+  scroll-margin-top: 16px;
+}
+.level {
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: clamp(10px, 3vw, 18px);
+  border: 1px solid #d7b576;
+  border-radius: 21px;
+  background: linear-gradient(150deg, #fffaf0, #f8e6bf);
+  box-shadow: 0 4px 14px #442b111c;
+  color: #103f30;
+  scroll-margin-top: 16px;
+}
+.photo {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  height: clamp(128px, 24svh, 235px);
+  flex: none;
+  border-radius: 15px;
+  background: #0d392a;
+}
+.photo img { object-fit: cover; }
+.level[data-reiki-master-level="5"] .photo { background: #14243b; }
+.level[data-reiki-master-level="5"] .photo img { object-fit: contain; }
+.number {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  top: 10px;
+  border: 1px solid #f5d99f;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: #75512be8;
+  color: #fff7e0;
+  font: 700 14px/1.1 Georgia, serif;
+}
+.copy { display: grid; gap: 6px; min-width: 0; }
+.eyebrow {
+  color: #795526;
+  margin: 0;
+  font: 700 clamp(11px, 3.1vw, 14px)/1.25 system-ui, sans-serif;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.copy h2 {
+  margin: 0;
+  color: #103f30;
+  font: 700 clamp(24px, 6.2vw, 38px)/1.12 Georgia, serif;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.lead {
+  margin: 0;
+  color: #34483d;
+  font: 500 clamp(14px, 3.8vw, 18px)/1.4 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.attunements { min-width: 0; }
+.attunements h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+  color: #103f30;
+  font: 700 clamp(15px, 4vw, 21px)/1.2 Georgia, serif;
+}
+.attunements h3 span {
+  flex: none;
+  min-width: 23px;
+  padding: 3px 5px;
+  border: 1px solid #d7b576;
+  border-radius: 999px;
+  text-align: center;
+  font: 700 12px/1.1 system-ui, sans-serif;
+  color: #795526;
+}
+.attunements ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  list-style: none;
+}
+.attunements li {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid #dfc28c;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #204d3b;
+  font: 600 clamp(13px, 3.4vw, 16px)/1.22 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.level .cta { width: 100%; max-width: none; margin-top: auto; min-height: 46px; }
+@media (max-width: 700px) {
+  .level { min-block-size: min(620px, calc(100svh - 138px)); }
+}
+@media (max-width: 354px), (max-height: 680px) {
+  .level { padding: 10px; gap: 8px; }
+  .photo { height: clamp(100px, 20svh, 155px); }
+  .copy h2 { font-size: 23px; }
+  .lead { font-size: 14px; line-height: 1.35; }
+  .attunements li { padding: 5px 6px; }
+}
+@media (min-width: 701px) {
+  .level { gap: 15px; }
+  .photo { height: clamp(210px, 35vw, 330px); }
+}
