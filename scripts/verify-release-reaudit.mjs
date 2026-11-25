@@ -56,7 +56,15 @@ async function assertCspPublicHome(page) {
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
   await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
-  for (const intention of ['understand','goal','talk']) await expect(home.locator('[data-home-intent-option="'+intention+'"]')).toBeVisible();
+  for (const intention of ['clarity','goal','business']) {
+    const choice = home.locator('[data-home-intent-option="'+intention+'"]');
+    await expect(choice).toHaveCount(1);
+    await expect(choice).toHaveAttribute('type','button');
+    await expect(choice).toBeVisible();
+  }
+  await expect(home.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
+  await expect(home.locator('[data-home-intent-form]')).toBeVisible();
+  await expect(home.locator('[data-home-methods]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {

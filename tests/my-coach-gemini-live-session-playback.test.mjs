@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
+  GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
   GeminiLivePcmResampler,geminiLiveAudioRms,geminiLivePcmMessage,base64ToPcmFloats,
   geminiLiveSetupMessage,geminiLiveSocketUrl,
   readGeminiLiveServerMessage,appendGeminiLiveTranscript,
@@ -556,4 +557,104 @@ test('socket rollover drains a completed reply and resumes the original credenti
   methods.connect(r,token,{resume:true})
   assert.equal(sockets.length,2,'a failed resumption cannot silently open a fresh session')
   assert.equal(stops,1)
+})
+
+
+test('cold microphone startup connects only after the worklet or fallback can consume frames',async()=>{
+  for(const outcome of ['loaded','unavailable','ended-while-loading','ended-then-rejected']){
+    const events=[]
+    let release,reject
+    const loading=new Promise((resolve,fail)=>{release=resolve;reject=fail})
+    const node=id=>({id,connect:target=>events.push(id+' → '+target.id)})
+    class WorkletNode{constructor(){events.push('worklet node');Object.assign(this,node('worklet'),{port:{}})}}
+    const context={
+      sampleRate:48000,destination:{id:'destination'},
+      audioWorklet:{addModule:()=>{events.push('load');return loading}},
+      createMediaStreamSource:()=>{events.push('attach track');return node('mic')},
+      createScriptProcessor:()=>{events.push('fallback node');return node('fallback')},
+      createGain:()=>Object.assign(node('sink'),{gain:{value:1}}),
+    }
+    const r={context,stream:{},ended:false}
+    const install=runInNewContext('('+section('  async function installCapture(','  function connect(')+')',
+      {window:{AudioWorkletNode:WorkletNode},capture(){}})
+    const ready=install(r)
+    assert.deepEqual(events,['load'],'the mic never backs up during the worklet fetch')
+    r.ended=outcome.startsWith('ended')
+    if(outcome==='unavailable'||outcome==='ended-then-rejected')reject(Error('worklet load failed'))
+    else release()
+    await ready
+    if(r.ended){
+      assert.deepEqual(events,['load'],'no capture resources can outlive a stopped session')
+      continue
+    }
+    const kind=outcome==='loaded'?'worklet':'fallback'
+    assert.deepEqual(events,['load',kind+' node','sink → destination',kind+' → sink','attach track','mic → '+kind])
+    assert.equal(r.sink.gain.value,0)
+    assert.equal(r.source.id,'mic')
+    assert.equal(r.processor.id,kind)
+  }
+})
+
+test('the reply watchdog is idle until a response is expected and defers during active speech or playback',()=>{
+  let time=0,id=0,stalls=0,blocked=false
+  const timers=new Map()
+  const watch=new GeminiLiveReplyWatchdog({
+    now:()=>time,schedule:(fn,ms)=>{const key=++id;timers.set(key,{fn,at:time+ms});return key},
+    cancel:key=>timers.delete(key),canFire:()=>!blocked,onStall:()=>stalls++,
+  })
+  function advance(to){
+    while(true){
+      const next=[...timers].filter(([,v])=>v.at<=to).sort((a,b)=>a[1].at-b[1].at)[0]
+      if(!next)break
+      time=next[1].at;timers.delete(next[0]);next[1].fn()
+    }
+    time=to
+  }
+  advance(20000);assert.equal(stalls,0)
+  watch.touch();advance(30000);watch.touch();advance(38000);assert.equal(stalls,0)
+  blocked=true;advance(50000);assert.equal(stalls,0)
+  blocked=false;advance(51000);assert.equal(stalls,1)
+  advance(90000);assert.equal(stalls,1,'no automatic retry loop')
+  watch.touch();watch.clear();advance(120000);assert.equal(stalls,1)
+})
+test('a stalled reply can attempt only one recovery of a valid existing Gemini session',()=>{
+  const now=Date.parse('2026-11-25T01:44:00Z')
+  const r={ready:true,ended:false,socket:{readyState:1},reconnects:0,
+    resumeHandle:'synthetic-checkpoint',liveToken:{expiresAt:'2026-11-25T02:00:00Z'}}
+  assert.equal(geminiLiveCanResumeStalledReply(r,now),true)
+  for(const patch of [{resumeHandle:null},{stallRecoveryUsed:true},{reconnects:3},
+    {ended:true},{socket:{readyState:3}},{liveToken:{expiresAt:'2026-11-25T01:00:00Z'}}]){
+    assert.equal(geminiLiveCanResumeStalledReply({...r,...patch},now),false)
+  }
+  const notices=[],phases=[],closes=[]
+  r.socket.close=(...args)=>closes.push(args)
+  const recover=runInNewContext(section('  function recoverStalledReply(','  // A local playback fault')+'\nrecoverStalledReply',{
+    runtime:{current:r},geminiLiveCanResumeStalledReply:state=>geminiLiveCanResumeStalledReply(state,now),
+    notify:notice=>notices.push(notice),phaseChange:phase=>phases.push(phase),
+    t:{reconnecting:'resume',replyStalled:'delayed'},
+    getToken:()=>assert.fail('no new credential'),connect:()=>assert.fail('no fresh session'),
+  })
+  recover(r)
+  assert.deepEqual(closes,[[1000,'session-resume']])
+  assert.equal(r.checkpointCurrent,false,'recovery must disclose the possible speech gap')
+  assert.equal(r.stallRecoveryUsed,true)
+  recover(r)
+  assert.equal(closes.length,1)
+  assert.equal(notices.at(-1),'delayed')
+  assert.equal(phases.at(-1),'listening')
+  assert.equal(r.liveToken.expiresAt,'2026-11-25T02:00:00Z')
+})
+test('watchdog follows real reply boundaries without minting another credential',()=>{
+  const h=session(),events=[]
+  h.r.replyWatch={touch:()=>events.push('touch'),clear:()=>events.push('clear')}
+  h.receive({input:'Test user input'})
+  assert.equal(events.at(-1),'touch')
+  h.receive({audio:[pcm(.5)],output:'Reply',turnComplete:true})
+  assert.equal(events.at(-1),'touch')
+  h.clock.advanceTo(2)
+  assert.equal(events.at(-1),'clear')
+  h.assertLive()
+  assert.match(component,/r\.replyWatch\?\.clear\(\)\s+try\{r\.abort/)
+  assert.match(component,/r\.ready=false\s+r\.replyWatch\?\.clear\(\)/)
+  assert.match(component,/!r\.bargeDetector\.userActive&&Date\.now\(\)-\(r\.lastHumanAudioAt\|\|0\)>900/)
 })
