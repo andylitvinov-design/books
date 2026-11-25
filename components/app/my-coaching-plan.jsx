@@ -12,6 +12,8 @@ import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from 
 import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
+import {coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
+import MyCoachDraftArchive from './my-coach-draft-archive'
 
 const protocolCopy={
  en:{title:'My Coach · Session protocol',transcript:'Conversation transcript',print:'Print / open PDF',download:'Download PDF',delete:'Delete protocol',confirm:'Delete this private conversation protocol permanently?',error:'Could not load or delete the saved protocols.',pdfError:'Could not prepare the protocol PDF.',coach:'AI coach'},
@@ -421,6 +423,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {tab==='reports'&&<section className={styles.reports}>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
+   {accountId&&<MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} coachHref={coachSessionHref}/>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}

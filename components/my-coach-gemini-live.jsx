@@ -119,7 +119,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
-  liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
+  liveContextAccess='',contextRevision=0,localRecoveryTurns=[],resumingPrivateDraft=false,onUnconfirmedInput,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -131,7 +131,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput}
+    liveContextAccess,contextRevision,localRecoveryTurns,resumingPrivateDraft,onUnconfirmedInput}
 
   const notify=text=>{
     setNotice(text)
@@ -1117,7 +1117,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
-      continuing:recovery.continuing,inputText:'',outputText:'',
+      continuing:recovery.continuing||p.resumingPrivateDraft===true,inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
