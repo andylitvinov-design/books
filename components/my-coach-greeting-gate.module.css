@@ -1,6 +1,6 @@
 /* Shared cinematic coach greeting: media and actions never overlap. */
 .screen{width:100%;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;background:#fbf5e9;color:#133e35}
-.firstView{box-sizing:border-box;width:min(100%,620px);margin:0 auto;display:flex;flex-direction:column;padding:10px 15px 16px;gap:10px}
+.firstView{box-sizing:border-box;min-height:calc(100dvh - 65px);width:min(100%,620px);margin:0 auto;display:flex;flex-direction:column;padding:10px 15px 16px;gap:10px}
 .hero{position:relative;isolation:isolate;flex:none;height:clamp(300px,48dvh,460px);overflow:hidden;border-radius:28px;background:#171a18;color:white;box-shadow:0 8px 24px #0d35251a}
 .hero :global([data-coach-motion-media]){position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;background:#171a18}
 .hero :global([data-coach-motion-media]) :is(img,video){width:100%!important;height:100%!important;object-fit:contain!important;object-position:center}
@@ -48,7 +48,7 @@
 .swipePrevious,.swipeNext{position:absolute;z-index:5;top:49%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #e6f5e4aa;border-radius:50%;background:#153c31a6;color:#fff;cursor:pointer;touch-action:manipulation}
 .swipePrevious{left:10px}.swipeNext{right:10px}
 .largePlay:focus-visible,.primary:focus-visible,.secondary:focus-visible,.replay:focus-visible,.back:focus-visible,.swipePrevious:focus-visible,.swipeNext:focus-visible,.resumeTile :global(button:focus-visible),.topicDialog button:focus-visible{outline:3px solid #9c7836;outline-offset:2px}
-@media(max-width:699px){.firstView{padding:6px 10px 12px;gap:8px}.hero{height:clamp(265px,42dvh,380px);border-radius:24px}.badge{top:13px;left:13px}.heroText{left:17px;right:17px;bottom:13px}.completed{gap:8px}.quoteCard{padding:10px 12px}.primary{min-height:56px}.freeNotice{font-size:11px}}
+@media(max-width:699px){.firstView{min-height:calc(var(--hh-coach-visible-height,100dvh) - 56px);padding:6px 10px 12px;gap:8px}.hero{height:clamp(265px,42dvh,380px);border-radius:24px}.badge{top:13px;left:13px}.heroText{left:17px;right:17px;bottom:13px}.completed{gap:8px}.quoteCard{padding:10px 12px}.primary{min-height:56px}.freeNotice{font-size:11px}}
 @media(max-width:350px){.actionGrid{gap:5px}.secondary,.replay,.resumeTile{border-radius:13px}.primary{padding:10px}.hero{height:265px}}
 @media(prefers-reduced-motion:reduce){.screen{scroll-behavior:auto}}
 .topicDialog{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,530px);max-width:100%;
