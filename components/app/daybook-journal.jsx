@@ -15,7 +15,8 @@ import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.m
 import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-route-intent.mjs'
 import styles from './daybook-journal.module.css'
 import DaybookStages from './daybook-stages'
-import { ClarityDaybook, ClarityStartButton } from './clarity-program'
+import { ClarityDaybook, ClarityStartButton, ProgramStartLink } from './clarity-program'
+import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
 import {GUIDE_WEEKS,guideReadable,parseGuideEntry} from '@/lib/app/daybook-guide.mjs'
@@ -85,12 +86,13 @@ export default function DaybookJournal({locale,...serverRoute}){
    const boot=await appFetch('bootstrap?view=portrait')
    if(token!==epoch.current)return
    if(clarityMode&&boot.account.onboardingState!=='active'){window.location.replace(clarityOnboardingPath(locale));return}
+   if(autoStartVector&&boot.account.onboardingState!=='active'){window.location.replace(programOnboardingPath(locale,'goal'));return}
    const id=boot.account.id
    const result=await appFetch('daybook-journal',undefined,'GET',{accountId:id})
    if(token!==epoch.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(result.entries);setNext(result.nextCursor);setPhase('ready')
   }catch(error){if(token===epoch.current)setPhase(error.status===401?'signed-out':'error')}
- },[wipe,clarityMode,locale])
+ },[wipe,clarityMode,locale,autoStartVector])
  useEffect(()=>{
   void load()
   let channel
@@ -201,7 +203,7 @@ export default function DaybookJournal({locale,...serverRoute}){
    <Link href={'/'+locale+'/holistic-support'}><Heart size={21} aria-hidden="true"/>{({en:'Support',ru:'Поддержка',es:'Apoyo'})[locale]}</Link>
   </nav>
   {tab!=='stages'&&<><h1>{c.title}</h1><p>{c.intro}</p></>}
-  {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
+  {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?(autoStartVector?<ProgramStartLink locale={locale} program="goal">{c.login}</ProgramStartLink>:<Link href={root+'/portrait'}>{c.login}</Link>):phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
    <nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} aria-label={key==='stages'?stageLabel:undefined} onClick={()=>selectTab(key)}>{key==='stages'?({en:'Guide',ru:'Гид',es:'Guía'})[locale]:c[key]}</button>)}</nav>
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}

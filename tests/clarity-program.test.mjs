@@ -39,9 +39,9 @@ test('explicit Google continuation survives onboarding and never changes goal da
 
 test('Hero and guidance CTA share the same authenticated or Google entry',()=>{
  const source=read('components/app/clarity-program.jsx')
- assert.equal((source.match(/continueTo:'clarity-daybook'/g)||[]).length,1)
- assert.equal((source.match(/=useClarityStart\(locale\)/g)||[]).length,2)
- assert.match(source,/boot\.account\.onboardingState==='active'\?clarityDaybookPath\(lang\):clarityOnboardingPath\(lang\)/)
+ assert.equal((source.match(/continueTo:programContinuation\(program\)/g)||[]).length,1)
+ assert.equal((source.match(/=useProgramStart\(locale,'clarity'\)/g)||[]).length,2)
+ assert.match(source,/boot\.account\.onboardingState==='active'\?programDaybookPath\(lang,program\):programOnboardingPath\(lang,program\)/)
  assert.match(source,/data-clarity-start data-clarity-personal/)
  assert.match(source,/href=\{clarityDaybookPath\(lang\)\}/)
  assert.match(source,/event\.preventDefault\(\)[\s\S]*?if\(!busy\)void begin\(\)/)

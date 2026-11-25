@@ -7,13 +7,14 @@ import {isNativeHolisticHouse} from '@/lib/native/client'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {CLARITY_SYLLABUS,CLARITY_FREE_REFLECTION_TAG,clarityLocale,clarityDaybookPath,clarityOnboardingPath,savedClarityReflection} from '@/lib/app/clarity-program.mjs'
+import {programContinuation,programDaybookPath,programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './clarity-program.module.css'
 const COPY={
  en:{title:'Find Clarity & Support',details:'Program details',start:'Start Free Program',week:'Week',free:'Free',paid:'Paid session',intro:'Four sessions to understand yourself, find support and choose a clear direction.',terms:'The first session is free. Later sessions require completion of the previous session and confirmed payment for that week.',progress:'Saved sessions',locked:'Locked · payment required',notYet:'Complete the first session before continuing.',payment:'Payment for this session is not configured yet. No payment is taken and access remains locked.',steps:'Your instructions',tasks:[['Life Balance Wheel','Rate each area now and as you would like it to be. Notice the largest gap.'],['My wishes & meaning','Explore the meaning axes and choose one area you want to understand better. You do not need to choose a goal yet.'],['Personal reflection','Write what you noticed, why it matters and one thing you want to observe this week.']],reflection:'My private reflection',placeholder:'What did I notice? What matters most now? What will I observe this week?',save:'Save and finish session',saved:'Your free-session reflection is saved.',edit:'Update reflection',retry:'Retry saving',error:'Could not confirm the save. Your draft is retained; retry before editing.',authError:'Could not open Google sign-in. Try again.',working:'Opening…',load:'Load saved progress',loadError:'Could not read all saved progress. Retry.',privacy:'Your reflections are private. These practices are not medical diagnosis or treatment.',back:'Back to Profile',goals:'My Goal'},
  ru:{title:'Ясность и поддержка',details:'Программа курса',start:'Начать бесплатно',week:'Неделя',free:'Бесплатно',paid:'Платная сессия',intro:'Четыре сессии, чтобы лучше понять себя, найти опору и выбрать направление.',terms:'Первая сессия бесплатна. Следующие требуют завершения предыдущей сессии и подтверждённой оплаты соответствующей недели.',progress:'Сохранённые сессии',locked:'Закрыто · нужна оплата',notYet:'Завершите первую сессию, чтобы продолжить.',payment:'Оплата этой сессии ещё не настроена. Деньги не списываются, доступ закрыт.',steps:'Что нужно сделать',tasks:[['Колесо баланса','Оцените каждую сферу сейчас и в желаемом состоянии. Заметьте наибольшую разницу.'],['Мои желания и смыслы','Исследуйте смысловые оси и выберите область, которую хотите лучше понять. Не обязательно уже выбирать цель.'],['Личная рефлексия','Запишите, что заметили, почему это важно и за чем хотите понаблюдать на этой неделе.']],reflection:'Моя личная рефлексия',placeholder:'Что я заметил? Что для меня важно сейчас? За чем я буду наблюдать на этой неделе?',save:'Сохранить и завершить сессию',saved:'Рефлексия первой сессии сохранена.',edit:'Обновить рефлексию',retry:'Повторить сохранение',error:'Сохранение не подтверждено. Черновик сохранён на экране; повторите попытку перед редактированием.',authError:'Не удалось открыть вход через Google. Повторите попытку.',working:'Открываем…',load:'Загрузить сохранённый прогресс',loadError:'Не удалось прочитать весь прогресс. Повторите попытку.',privacy:'Ваши записи конфиденциальны. Эти практики не заменяют медицинскую диагностику и лечение.',back:'В профиль',goals:'Моя цель'},
  es:{title:'Claridad y apoyo',details:'Detalles del programa',start:'Empezar gratis',week:'Semana',free:'Gratis',paid:'Sesión de pago',intro:'Cuatro sesiones para conocerte, encontrar apoyo y elegir tu rumbo.',terms:'La primera sesión es gratis. Las siguientes requieren finalizar la sesión anterior y confirmar el pago de esa semana.',progress:'Sesiones guardadas',locked:'Bloqueada · requiere pago',notYet:'Completa la primera sesión antes de continuar.',payment:'El pago de esta sesión aún no está configurado. No se cobra nada y el acceso sigue bloqueado.',steps:'Tus instrucciones',tasks:[['Rueda de equilibrio','Valora cada área ahora y como te gustaría que fuera. Observa la mayor diferencia.'],['Mis deseos y sentido','Explora los ejes de significado y elige un área que quieras comprender mejor. No necesitas elegir una meta todavía.'],['Reflexión personal','Escribe qué observaste, por qué importa y qué quieres observar esta semana.']],reflection:'Mi reflexión privada',placeholder:'¿Qué observé? ¿Qué importa ahora? ¿Qué observaré esta semana?',save:'Guardar y terminar sesión',saved:'Tu reflexión de la sesión gratuita está guardada.',edit:'Actualizar reflexión',retry:'Reintentar guardado',error:'No se confirmó el guardado. Conservamos el borrador en pantalla; reintenta antes de editar.',authError:'No se pudo abrir el acceso de Google. Reintenta.',working:'Abriendo…',load:'Cargar progreso guardado',loadError:'No se pudo leer todo el progreso. Reintenta.',privacy:'Tus reflexiones son privadas. Estas prácticas no sustituyen el diagnóstico ni el tratamiento médico.',back:'Volver al perfil',goals:'Mi meta'}
 }
-function useClarityStart(locale){
+function useProgramStart(locale,program){
  const lang=clarityLocale(locale),t=COPY[lang]
  const [busy,setBusy]=useState(false),[error,setError]=useState(false)
  const live=useRef(true),pending=useRef(false)
@@ -25,12 +26,12 @@ function useClarityStart(locale){
    try{
     const boot=await appFetch('bootstrap?view=portrait')
     if(!live.current)return
-    window.location.assign(boot.account.onboardingState==='active'?clarityDaybookPath(lang):clarityOnboardingPath(lang))
+    window.location.assign(boot.account.onboardingState==='active'?programDaybookPath(lang,program):programOnboardingPath(lang,program))
     return
    }catch(e){if(e.status!==401)throw e}
    if(!live.current)return
    const native=isNativeHolisticHouse()
-   const result=await appFetch('auth/start',{locale:lang,continueTo:'clarity-daybook',...(native?{native:true}:{})})
+   const result=await appFetch('auth/start',{locale:lang,continueTo:programContinuation(program),...(native?{native:true}:{})})
    if(!live.current)return
    if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:result.redirectUrl})}
    else window.location.assign(result.redirectUrl)
@@ -40,15 +41,26 @@ function useClarityStart(locale){
  return {lang,t,busy,error,begin}
 }
 export function ClarityStartButton({locale='en',children}){
- const {t,busy,error,begin}=useClarityStart(locale)
+ const {t,busy,error,begin}=useProgramStart(locale,'clarity')
  return <><button type="button" data-clarity-start className={css.primary} onClick={()=>void begin()} disabled={busy}><Compass size={20} aria-hidden="true"/>{busy?t.working:children||t.start}</button>{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
 }
 // Keep the approved guidance card's link layout while using the same Google
 // continuation as the hero. Modified clicks still open the protected Daybook.
 export function ClarityStartLink({locale='en',className,children}){
- const {lang,t,busy,error,begin}=useClarityStart(locale)
+ const {lang,t,busy,error,begin}=useProgramStart(locale,'clarity')
  return <><Link href={clarityDaybookPath(lang)} className={className} prefetch={false}
   data-clarity-start data-clarity-personal aria-busy={busy}
+  onClick={event=>{
+   if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
+   event.preventDefault()
+   if(!busy)void begin()
+  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
+}
+// All public program starts use fixed first-party destinations, never a supplied URL.
+export function ProgramStartLink({locale='en',program,className,children}){
+ const {lang,t,busy,error,begin}=useProgramStart(locale,program)
+ return <><Link href={programDaybookPath(lang,program)} className={className} prefetch={false}
+  data-program-start={program} aria-busy={busy}
   onClick={event=>{
    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
    event.preventDefault()
