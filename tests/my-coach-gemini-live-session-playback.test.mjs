@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
+  GeminiLivePcmResampler,geminiLiveAudioRms,geminiLivePcmMessage,base64ToPcmFloats,
   geminiLiveSetupMessage,geminiLiveSocketUrl,
   readGeminiLiveServerMessage,appendGeminiLiveTranscript,
 } from '../lib/coaching/gemini-live-transport.mjs'
@@ -16,11 +17,11 @@ const section=(start,end)=>{
 }
 const helpers=[
   section('function audioTranscription(','\n\n'),
-  section('  function interrupt(){','  function sendSocket('),
+  section('  function interrupt(){','  async function checkpoint('),
   section('  function commitInput(','  // Deliver server-rechecked references'),
-  section('  function finishAudibleTurn(','  function capture('),
+  section('  function finishAudibleTurn(','  async function installCapture('),
 ].join('\n')
-const limits=component.match(/^const MAX_PENDING_AUDIO_(?:CHUNKS|CHARS)=.+$/gm).join('\n')
+const limits=component.match(/^const MAX_.*$/gm).join('\n')
 // Execute the real component callback wiring, including asynchronous player
 // errors and completion; do not replace the behavior under test with a stub.
 const playerFactory='function makePlayer(r,context){\n'+
@@ -28,22 +29,37 @@ const playerFactory='function makePlayer(r,context){\n'+
   '\nreturn r.player\n}'
 const pcm=seconds=>bytesToBase64(new Uint8Array(Math.round(seconds*24000)*2))
 
-function audioClock(){
+function audioClock(sampleRate=48000){
   const sources=[]
   let heardSamples=0
-  const context={state:'running',currentTime:0,destination:{},failStart:false,
+  const context={state:'running',currentTime:0,sampleRate,destination:{},failStart:false,
     resume:()=>Promise.resolve(),
-    createGain:()=>({gain:{value:1},connect(){}}),
+    createGain:()=>{
+      const changes=[{at:0,value:1,timeConstant:0}]
+      function valueAt(time){
+        const change=changes.findLast(entry=>entry.at<=time)
+        if(!change)return 1
+        if(!change.timeConstant)return change.value
+        return change.value+(change.previous-change.value)*Math.exp(-(time-change.at)/change.timeConstant)
+      }
+      return {gain:{
+        get value(){return changes.at(-1).value},
+        set value(value){changes.push({at:context.currentTime,value,timeConstant:0})},
+        cancelScheduledValues(){}, // the player schedules gains only at the current time
+        setTargetAtTime(value,at,timeConstant){changes.push({at,value,timeConstant,previous:valueAt(at)})},
+        valueAt,
+      },connect(){}}
+    },
     createBuffer:(_channels,size,rate)=>{
       const samples=new Float32Array(size)
       return {length:size,duration:size/rate,getChannelData:()=>samples}
     },
     createBufferSource(){
       const source={onended:null,started:false,stopped:false,finished:false,
-        connect(){},disconnect(){},stop(){this.stopped=true},
+        connect(){},disconnect(){},stop(){this.stopped=true;this.stoppedAt=context.currentTime},
         start(time){
           if(context.failStart)throw Error('synthetic playback failure')
-          this.started=true;this.end=time+this.buffer.duration
+          this.started=true;this.startTime=time;this.end=time+this.buffer.duration
         },
       }
       sources.push(source)
@@ -67,17 +83,20 @@ function audioClock(){
   return {context,sources,advanceTo,get heardSamples(){return heardSamples}}
 }
 
-function session(){
-  const clock=audioClock(),events={final:[],interim:[],notices:[],phases:[],gestures:[],input:[],interruptions:[]}
+function session(sampleRate=48000){
+  const clock=audioClock(sampleRate),events={final:[],interim:[],notices:[],phases:[],gestures:[],input:[],interruptions:[]}
   let stops=0,socketCloses=0,micStops=0
   const track={readyState:'live',stop(){micStops++;this.readyState='ended'}}
-  const socket={readyState:1,close(){socketCloses++;this.readyState=3}}
+  const sent=[],credential={token:'auth_tokens/synthetic-existing-session'}
+  const socket={readyState:1,bufferedAmount:0,send:raw=>sent.push(JSON.parse(raw)),
+    close(){socketCloses++;this.readyState=3}}
   const r={context:clock.context,socket,stream:{active:true,getTracks:()=>[track]},
     ready:true,ended:false,sessionStarted:true,introSent:true,firstAudio:false,greetingTimer:null,
     history:[],openingHistory:[],inputText:'',outputText:'',speaking:false,interrupted:false,
     modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,lastAssistantTurnFinished:false,
     pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,playbackNoticeShown:false,
-    audioGate:new GeminiLiveBargeGate(),bargeDetector:{userActive:false},reconnectSoon:false}
+    audioGate:new GeminiLiveBargeGate(),bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
+    resampler:new GeminiLivePcmResampler(clock.context.sampleRate),liveToken:credential,reconnectSoon:false}
   const runtime={current:r}
   const propsRef={current:{
     onOutputInterim:text=>events.interim.push(text),
@@ -86,18 +105,22 @@ function session(){
     onInterrupted:text=>events.interruptions.push(text),
   }}
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
-    '\n({handleAudio,flushPendingAudio,discardAudioTurn,interrupt,makePlayer})',{
+    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer})',{
     GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,
+    geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,
+    Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
     propsRef,runtime,
     phaseChange:phase=>events.phases.push(phase),
     notify:notice=>events.notices.push(notice),
     setNotice:notice=>events.notices.push(notice),
     setAudioNeedsGesture:value=>events.gestures.push(value),
-    t:{failure:'unavailable',audioRoute:'paused',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting'},
+    t:{failure:'unavailable',audioRoute:'paused',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting',
+      resumedEarlier:'resumed from previous checkpoint'},
     checkpoint:()=>{},flushSideband:()=>{},
     stop:()=>{stops++;r.ended=true;track.stop();socket.close();r.player?.stop()},
     setTimeout:()=>1,clearTimeout:()=>{},
-    sendSocket:()=>{assert.fail('playback must not send another start or provider request')},
+    getToken:()=>assert.fail('a turn must not mint a credential'),
+    connect:()=>assert.fail('a turn must not open a connection'),
     loadApprovedContext:()=>{assert.fail('playback must not request private context')},
   },{timeout:1000})
   methods.makePlayer(r,clock.context)
@@ -115,11 +138,174 @@ function session(){
     assert.equal(r.ended,false)
     assert.equal(r.ready,true)
     assert.equal(socket.readyState,1)
+    assert.equal(r.socket,socket)
+    assert.equal(r.liveToken,credential)
+    assert.ok(sent.every(packet=>packet.realtimeInput?.audio),'only mic PCM can be sent during these turns')
     assert.equal(track.readyState,'live')
     assert.ok(!events.notices.includes('unavailable'))
   }
-  return {r,clock,events,receive,assertLive,...methods}
+  return {r,clock,events,receive,assertLive,sent,...methods}
 }
+
+// Drive the same ~32 ms blocks that the capture worklet delivers. Echo
+// is sampled from the buffers the real player scheduled, with a room/device
+// delay and attenuation. The two synthetic voices have independent pitches.
+function coachVoicePcm(seconds){
+  const samples=new Int16Array(24000*seconds)
+  for(let i=0;i<samples.length;i++){
+    const t=i/24000,phase=2*Math.PI*(171*t+13*t*t)
+    const envelope=.65+.25*Math.sin(2*Math.PI*4*t)
+    samples[i]=Math.round(32767*envelope*(.22*Math.sin(phase)+.09*Math.sin(3*phase)+.04*Math.sin(5*phase)))
+  }
+  return bytesToBase64(new Uint8Array(samples.buffer))
+}
+function browserGreetingPcm(seconds){
+  const samples=new Int16Array(24000*seconds)
+  for(let i=0;i<samples.length;i++){
+    const t=i/24000,phase=2*Math.PI*(163*t+15*t*t+.3*Math.sin(6*t))
+    const envelope=.65+.25*Math.sin(22*t)
+    samples[i]=Math.round(32767*envelope*(.22*Math.sin(phase)+.09*Math.sin(3*phase)+.04*Math.sin(5*phase)))
+  }
+  return bytesToBase64(new Uint8Array(samples.buffer))
+}
+const directEcho=[[.07,.48]]
+const roomEcho=[...directEcho,[.079,.155],[.093,.085]]
+function captureBlock(h,{echo=false,paths=echo?directEcho:[],person=()=>0}={}){
+  const {context,sources}=h.clock,rate=context.sampleRate,from=context.currentTime
+  const audio=new Float32Array(128*Math.max(1,Math.round(rate*.032/128)))
+  for(let i=0;i<audio.length;i++){
+    for(const [delay,attenuation] of paths){
+      const emittedAt=from+i/rate-delay
+      const source=sources.find(s=>s.started&&s.startTime<=emittedAt&&
+        emittedAt<Math.min(s.end,s.stoppedAt??Infinity))
+      if(!source)continue
+      const samples=source.buffer.getChannelData(0)
+      // A volume change or stop reaches the mic after the acoustic delay.
+      const gain=h.r.player.output.gain.valueAt(emittedAt)
+      audio[i]+=attenuation*gain*samples[Math.min(samples.length-1,Math.floor((emittedAt-source.startTime)*24000))]
+    }
+    audio[i]+=person(i/rate)
+  }
+  h.clock.advanceTo(from+audio.length/rate)
+  h.capture(h.r,audio)
+}
+function transmittedFrames(h){
+  return h.sent.map(packet=>base64ToPcmFloats(packet.realtimeInput.audio.data))
+}
+function toneAmplitude(frame,frequency){
+  let sine=0,cosine=0
+  for(let i=0;i<frame.length;i++){
+    const phase=2*Math.PI*frequency*i/16000
+    sine+=frame[i]*Math.sin(phase)
+    cosine+=frame[i]*Math.cos(phase)
+  }
+  return 2*Math.hypot(sine,cosine)/frame.length
+}
+
+test('speaker loopback and an isolated sound leave the full greeting audible and out of Gemini input',()=>{
+  const h=session()
+  h.receive({audio:[coachVoicePcm(2)],output:'Full greeting',turnComplete:true})
+  for(let i=0;i<42;i++)captureBlock(h,{echo:true})
+  captureBlock(h,{echo:true,person:t=>t<.006 ? .5*Math.sin(2*Math.PI*1243*t) : 0})
+  for(let i=0;i<10;i++)captureBlock(h)
+  assert.deepEqual(h.events.interruptions,[])
+  assert.equal(h.events.phases.at(-1),'speaking')
+  assert.equal(h.r.player.output.gain.value,1,'the full volume returns after incidental noise')
+  // The last samples still reach the microphone after the player drains.
+  for(let i=0;i<20;i++)captureBlock(h,{echo:true})
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005),
+    'false microphone activity, including the audible tail, must not reach the provider VAD')
+  h.clock.advanceTo(3)
+  assert.equal(h.clock.heardSamples,48000)
+  assert.deepEqual(h.events.final,[{text:'Full greeting',interrupted:false}])
+  assert.equal(h.events.phases.at(-1),'listening')
+  h.assertLive()
+})
+
+test('real overlapping speech retains its first mic block and the next answer uses the original Gemini connection',()=>{
+  const h=session()
+  h.receive({audio:[coachVoicePcm(2)],output:'Reply in progress'})
+  for(let i=0;i<18;i++)captureBlock(h,{echo:true})
+  assert.deepEqual(h.events.interruptions,[])
+  const startOfSpeech=h.sent.length
+  // Give the first block a different pitch, so forwarding only confirmed
+  // later blocks cannot pass as having captured the onset of the utterance.
+  for(let i=0;i<8;i++){
+    const frequency=i===0?656.25:375
+    captureBlock(h,{echo:true,person:t=>.27*Math.sin(2*Math.PI*frequency*t)})
+  }
+  assert.deepEqual(h.events.interruptions,['Reply in progress'])
+  assert.equal(h.r.player.playing,false)
+  const transmitted=transmittedFrames(h).slice(startOfSpeech)
+  assert.ok(transmitted.some(frame=>toneAmplitude(frame,656.25)>.15),
+    'the first syllable survives local confirmation')
+  h.receive({interrupted:true,input:'I meant next week.'})
+  h.receive({turnComplete:true})
+  for(let i=0;i<18;i++)captureBlock(h)
+  h.receive({audio:[pcm(.5)],output:'Understood, next week.',turnComplete:true})
+  h.clock.advanceTo(3)
+  assert.deepEqual(h.events.input,['I meant next week.'])
+  assert.deepEqual(h.events.final,[
+    {text:'Reply in progress',interrupted:true},
+    {text:'Understood, next week.',interrupted:false},
+  ])
+  h.assertLive()
+})
+
+test('a quiet caller can interrupt stronger speakerphone echo without losing the first syllable',()=>{
+  const h=session()
+  h.receive({audio:[coachVoicePcm(2)],output:'Reply on speakerphone'})
+  for(let i=0;i<18;i++)captureBlock(h,{echo:true})
+  assert.deepEqual(h.events.interruptions,[])
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005))
+  const beforeSpeech=h.sent.length
+  // The louder loudspeaker plays throughout the onset. Only the caller has
+  // the 1125 Hz component, and only in the first 32 ms block.
+  for(let i=0;i<18;i++){
+    const frequency=i===0?1125:375
+    captureBlock(h,{echo:true,person:t=>.025*Math.sin(2*Math.PI*frequency*t)})
+  }
+  assert.deepEqual(h.events.interruptions,['Reply on speakerphone'])
+  assert.equal(h.r.player.playing,false)
+  const onset=transmittedFrames(h)[beforeSpeech]
+  assert.ok(onset&&toneAmplitude(onset,1125)>.012,'the quiet first syllable reached the original socket')
+  h.assertLive()
+})
+
+test('multiple loudspeaker reflections do not interrupt the coach or hide the quieter caller',()=>{
+  const h=session()
+  h.receive({audio:[coachVoicePcm(2)],output:'Whole greeting',turnComplete:true})
+  for(let i=0;i<75;i++)captureBlock(h,{paths:roomEcho})
+  assert.deepEqual(h.events.interruptions,[],'the direct path and its two reflections are all coach audio')
+  assert.equal(h.clock.heardSamples,48000)
+  assert.deepEqual(h.events.final,[{text:'Whole greeting',interrupted:false}])
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005))
+
+  h.receive({audio:[coachVoicePcm(2)],output:'Second reply'})
+  for(let i=0;i<18;i++)captureBlock(h,{paths:roomEcho})
+  const beforeSpeech=h.sent.length
+  for(let i=0;i<12;i++){
+    const frequency=i===0?1125:625
+    captureBlock(h,{paths:roomEcho,person:t=>.025*Math.sin(2*Math.PI*frequency*t)})
+  }
+  assert.deepEqual(h.events.interruptions,['Second reply'])
+  assert.equal(h.r.player.playing,false)
+  const onset=transmittedFrames(h)[beforeSpeech]
+  assert.ok(onset&&toneAmplitude(onset,1125)>.012,'the quieter caller retained the onset over room reflections')
+  h.assertLive()
+})
+
+for(const sampleRate of [48000,96000])test('full browser greeting survives room reflections at '+sampleRate+' Hz',()=>{
+  const h=session(sampleRate)
+  for(let i=0;i<3;i++)captureBlock(h)
+  h.receive({audio:[browserGreetingPcm(1.5)],output:'Full browser greeting',turnComplete:true})
+  for(let i=0;i<61;i++)captureBlock(h,{paths:roomEcho})
+  assert.deepEqual(h.events.interruptions,[])
+  assert.deepEqual(h.events.final,[{text:'Full browser greeting',interrupted:false}])
+  assert.equal(h.clock.heardSamples,36000)
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005))
+  h.assertLive()
+})
 
 test('a ten-second provider burst completes only after the audible FIFO tail, without closing voice',()=>{
   const h=session()
@@ -286,6 +472,35 @@ test('provider interrupted acknowledges a locally discarded reply and enables fr
 })
 
 
+test('planned rollover waits for a fresh resumable checkpoint after Google marks the turn nonresumable',()=>{
+  const h=session()
+  h.r.lastAssistantTurnFinished=true
+  const update=value=>h.handleAudio(h.r,JSON.stringify({sessionResumptionUpdate:value}))
+  update({resumable:true,newHandle:'first-checkpoint'})
+  h.receive({input:'part of a sentence'})
+  assert.equal(h.r.checkpointCurrent,true,'unrelated frames preserve the checkpoint')
+  h.r.inputText=''
+  update({resumable:false})
+  h.handleAudio(h.r,JSON.stringify({goAway:{timeLeft:'30s'}}))
+  assert.equal(h.r.socket.readyState,1)
+  assert.equal(h.r.resumeHandle,'first-checkpoint','a forced drop can still recover the prior checkpoint')
+  update({resumable:true,newHandle:'x'.repeat(8193)})
+  assert.equal(h.r.checkpointCurrent,false,'a truncated handle would identify the wrong session')
+  assert.equal(h.r.socket.readyState,1)
+  update({resumable:true,newHandle:'current-checkpoint'})
+  assert.equal(h.r.resumeHandle,'current-checkpoint')
+  assert.equal(h.r.socket.readyState,3,'proactive rollover starts only after the fresh checkpoint')
+})
+
+test('after an abrupt drop outside a checkpoint, a resumed connection surfaces the possible speech gap',()=>{
+  const h=session()
+  h.r.checkpointCurrent=false
+  h.handleAudio(h.r,JSON.stringify({setupComplete:{}}))
+  assert.equal(h.events.notices.at(-1),'resumed from previous checkpoint')
+  assert.equal(h.events.phases.at(-1),'listening')
+  h.assertLive()
+})
+
 test('socket rollover drains a completed reply and resumes the original credential and handle',()=>{
   const timers=new Map(),sockets=[],sent=[],final=[],drafts=[]
   let timerId=0,stops=0
@@ -337,4 +552,8 @@ test('socket rollover drains a completed reply and resumes the original credenti
   assert.equal(sent.at(-1).setup.sessionResumption.handle,'prior-handle')
   assert.equal(r.audioGate.blocked,false)
   assert.equal(stops,0)
+  r.resumeHandle=null
+  methods.connect(r,token,{resume:true})
+  assert.equal(sockets.length,2,'a failed resumption cannot silently open a fresh session')
+  assert.equal(stops,1)
 })
