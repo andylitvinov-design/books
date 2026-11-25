@@ -344,7 +344,11 @@ test('hidden private dialogs never hide navigation in another folder',()=>{
 test('AI long messages auto-grow safely and scrollback exposes explicit new-reply navigation',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const css=source('components/holistic-agent-chat.module.css')
- assert.match(agent,/input\.style\.height='44px'/)
+ // The approved compact conversation uses 40px; the untouched landing uses 44px.
+ assert.match(agent,/const ongoing=messengerView&&Boolean\(messages\.length\|\|homeHandoffPreview\)/)
+ assert.match(agent,/const baseHeight=ongoing\?40:44/)
+ assert.match(agent,/input\.style\.height=baseHeight\+"px"/)
+ assert.match(agent,/Math\.max\(baseHeight,Math\.min\(100,input\.scrollHeight\)\)/)
  assert.match(agent,/Math\.min\(100,input\.scrollHeight\)/)
  assert.match(agent,/followTail\.current/)
  assert.match(agent,/setNewBelow\(true\)/)
