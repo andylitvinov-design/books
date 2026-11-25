@@ -670,20 +670,25 @@ try{
  results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
- // The mobile Ali sections live in the real expandable menu, not an always-visible rail.
+ // The approved first-screen layout hides the header. Its actual
+ // expandable shortcuts reach Orders without bypassing the user interface.
  const messengerTabs=page.locator("[data-chat-top-tabs]");
  const messengerMenu=page.locator("[data-hh-ai-chat-menu]");
- await messengerMenu.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
-   "Mobile AI menu starts collapsed to leave room for the conversation");
- assert.equal(await messengerTabs.isVisible(),false,
-   "Mobile AI tabs are hidden until the user opens the menu");
- await messengerMenu.click();
- await messengerTabs.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
-   "Mobile AI menu expands on the real tap");
+ const firstLanding=page.locator("[data-hh-ai-landing]");
+ await expect(firstLanding).toBeVisible({timeout:30000});
+ await expect(messengerMenu).toBeHidden();
+ await expect(messengerTabs).toBeHidden();
+ const firstSections=firstLanding.locator("[data-hh-genie-extra-directions]");
+ assert.equal(await firstSections.evaluate(node=>node.open),false);
+ await firstSections.locator(":scope > summary").click();
+ const ordersShortcut=firstSections.locator('[data-hh-chat-shortcut="orders"]');
+ await expect(ordersShortcut).toBeVisible();
+ await ordersShortcut.click();
+ await expect(page.locator('[data-orders-clients-hub][data-section="orders"]')).toBeVisible({timeout:30000});
+ await expect(page.locator("#hh-orders-panel")).toBeVisible();
+ await expect(messengerTabs).toBeVisible();
  assert.equal(await messengerTabs.locator("button").count(),4,
-   "Messenger menu retains the AI, Orders, Clients and News tabs");
+   "Messenger retains AI, Orders, Clients and News");
  const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
  assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
  await news.click();
@@ -708,11 +713,15 @@ try{
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "first screen presents four large conversational problem starters");
+ const extraDirections=chat.locator('[data-hh-genie-extra-directions]');
+ if(!await extraDirections.evaluate(node=>node.open))await extraDirections.locator(':scope > summary').click();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
+ await expect(moreTopics).toBeVisible();
  await moreTopics.click();
- assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
-   "More topics reveals the remaining four conversational suggestions");
+ await expect(chat.locator('[data-hh-alchemist-topic]')).toHaveCount(8);
  await moreTopics.click();
+ await expect(chat.locator('[data-hh-alchemist-topic]')).toHaveCount(4);
+ await extraDirections.locator(':scope > summary').click();
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
@@ -955,7 +964,9 @@ try{
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");
+ await sessionComposer.blur();
  await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='false');
  results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
  // After the goal-first Sessions exchange, Ali's mobile sections remain
@@ -973,7 +984,7 @@ try{
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
- assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ await expect(page.locator("[data-hh-unified-dock]:visible")).toHaveCount(1,{timeout:15000});
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
 

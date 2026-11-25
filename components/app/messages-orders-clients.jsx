@@ -307,6 +307,10 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
 
   function chooseSection(value){
     if(!['ai','orders','clients','news'].includes(value))return
+    // Dismiss the outgoing editor without clearing its draft.
+    if(value!==section&&hubRef.current?.contains(document.activeElement)&&
+      document.activeElement?.matches?.('textarea,input,[contenteditable="true"]'))
+      document.activeElement.blur()
     setSection(value)
     const url=new URL(window.location.href)
     url.searchParams.set('section',value)

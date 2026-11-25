@@ -687,3 +687,6 @@
  .root .goalButtons>button{min-height:46px;font-size:clamp(14px,4vw,18px)}
  .root .inlineComposer{padding-top:8px!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
 }
+
+/* Keep the approved optional directions truly collapsed, including browsers with author display rules. */
+.extraDirections:not([open])>:not(summary){display:none!important}
