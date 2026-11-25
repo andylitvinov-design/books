@@ -417,7 +417,8 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
   }[locale];
   const benefitIcons = [Leaf, Layers, UserRound, BookOpen];
   const weekPhotos = ["/images/holistic-house/reiki-approved-sunrise-v3.webp", "/images/holistic-house/tantra-reiki-yin-yang-cover.svg", "/academy/kundalini-reiki/kundalini-manual-level-2.jpg", "/academy/reiki-yggdrasil/source/basic-program.jpg", "/images/holistic-house/andy-about.png"];
-  const detailPhotos = [weekPhotos[0], "/images/holistic-house/magic-mirror-lotus.webp", "/images/holistic-house/assist-video-meditation.webp", weekPhotos[3], "/images/holistic-house/shamanic-approved-rituals.webp"];
+  // Native-resolution, artwork-only crops from the approved second-screen reference.
+  const detailPhotos = ["/images/holistic-house/reiki-week-sunrise-approved.webp", "/images/holistic-house/reiki-week-lotus-approved.webp", "/images/holistic-house/reiki-week-kundalini-approved.webp", "/images/holistic-house/reiki-week-world-tree-approved.webp", "/images/holistic-house/reiki-week-initiation-approved.webp"];
   const personalSessionUrl = whatsappEnquiryUrl({
     locale,
     service: "Personal Reiki teaching & initiation",
@@ -456,7 +457,7 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
           <div className={styles.reikiSyllabus}>
           <p className={styles.sectionEyebrow}>DAYBOOK · 05</p><h2 id="reiki-syllabus-title">{daybookCopy.syllabus}</h2>
           <nav className={styles.stepRail} aria-label={t.stepRailLabel} data-energywork-five-steps>
-            {[{ title: v.flightTitle, href: "#energywork-flight-to-sun" }, ...paths.map(system => ({ title: system.title, href: "#energywork-" + system.key })), { title: t.personalTitle, href: "#energywork-how" }].map((item, index) => <a key={item.href} href="#reiki-start" data-reiki-week={index + 1}><span className={styles.reikiWeekPhoto} data-reiki-week-photo={index + 1} aria-hidden="true"><Image src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 32vw, 260px" unoptimized /></span><div className={styles.reikiWeekCopy}><small>{daybookCopy.week} {index + 1}</small><strong>{item.title}</strong><p>{daybookCopy.details[index]}</p></div><ArrowRight size={19} aria-hidden="true" /></a>)}
+            {[{ title: v.flightTitle, href: "#energywork-flight-to-sun" }, ...paths.map(system => ({ title: system.title, href: "#energywork-" + system.key })), { title: t.personalTitle, href: "#energywork-how" }].map((item, index) => <a key={item.href} href="#reiki-start" data-reiki-week={index + 1}><span className={styles.reikiWeekPhoto} data-reiki-week-photo={index + 1} aria-hidden="true"><Image src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 34vw, 260px" unoptimized /></span><div className={styles.reikiWeekCopy}><small>{daybookCopy.week} {index + 1}</small><strong>{item.title}</strong><p>{daybookCopy.details[index]}</p></div><ArrowRight size={19} aria-hidden="true" /></a>)}
           </nav>
           </div>
           <section className={styles.reikiBenefits} aria-labelledby="reiki-benefits-title">

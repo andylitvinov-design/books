@@ -139,3 +139,26 @@ test("Three approved Reiki overview screens immediately follow the second landin
  assert.ok(css.includes("max-height:30svh") && css.includes("background-repeat:no-repeat,repeat-y"));
  assert.ok(landing.includes('className={styles.reikiLegacyMaterials}'));
 });
+
+
+test("Second screen uses the exact five approved artwork crops and compact, uniform mobile rows",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const photoLine=landing.split("\n").find(line=>line.includes("const detailPhotos = ["));
+ const filenames=["sunrise","lotus","kundalini","world-tree","initiation"].map(name=>"/images/holistic-house/reiki-week-"+name+"-approved.webp");
+ assert.deepEqual([...photoLine.matchAll(/"([^"]+\.webp)"/g)].map(match=>match[1]),filenames);
+ for(const filename of filenames){
+   const bytes=readFileSync(new URL("../public"+filename,import.meta.url));
+   assert.equal(bytes.toString("ascii",0,4),"RIFF");
+   assert.equal(bytes.toString("ascii",8,12),"WEBP");
+   assert.ok(bytes.length>20000 && bytes.length<60000);
+ }
+ assert.ok(landing.includes('src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 34vw, 260px" unoptimized'));
+ assert.ok(css.includes("REIKI_SECOND_SCREEN_REFERENCE_PARITY_20261125"));
+ assert.ok(css.includes(".reikiDetailsScreen .stepRail a:hover,"));
+ assert.ok(css.includes(".reikiDetailsScreen .stepRail a:focus-visible"));
+ assert.ok(css.includes("grid-template-columns:33% minmax(0,1fr) 17px"));
+ assert.ok(css.includes("min-height:clamp(58px,7.3svh,68px)"));
+ assert.ok(css.includes("grid-auto-rows:1fr"));
+ assert.ok(css.includes("max-height:740px"));
+});
