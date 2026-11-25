@@ -1014,6 +1014,13 @@
  }
 }
 
+/* The three help intents and seven goal steps use real keyboard/touch controls. */
+.dialogueMenu{display:grid;gap:12px;min-width:0}
+.dialogueChoices{display:grid;gap:8px;min-width:0}
+.dialogueChoice{display:flex;align-items:center;min-height:44px;width:100%;padding:10px 12px;text-align:start;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--hh-light-border,#E9DFD1);border-radius:12px;background:var(--hh-light-surface-soft,#F5ECDC);color:var(--hh-light-text,#143D3A);font:inherit;font-weight:600;cursor:pointer}
+.dialogueChoice:focus-visible{outline:3px solid var(--hh-light-focus,#176E6E);outline-offset:3px}
+.dialogueChoice:disabled{opacity:.6;cursor:default}
+
 /* 23 Nov full-screen Samir first turn: single horizontal message bar.
    Tier selector remains available from the + attachment menu. */
 @media(max-width:760px){
@@ -1103,6 +1110,11 @@
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions{position:static!important;display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}
+
+/* Modern Safari native top layer: preserve inline details and the legacy
+   fallback without letting a rounded/overflowing composer clip the menu. */
+.composerMenu[popover]:not(:popover-open){display:none!important}
+.composerMenu:popover-open{position:fixed!important;margin:0!important;inset:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;display:grid!important;max-width:none!important}
 
 
 /* Established AI conversation — compact WhatsApp/Telegram-style composer.

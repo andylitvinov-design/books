@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {waveNativeTurn} from '../lib/holistic-support/wave-native-router.mjs';
+import {readWaveGoalMenu} from '../lib/holistic-support/wave-goal-dialogue.mjs';
 const session=locale=>{const history=[];return text=>{const reply=waveNativeTurn({message:text,locale,history:history.slice(-6)});history.push({role:'user',text});if(reply)history.push({role:'assistant',text:reply.reply});return reply;};};
 test('repeated uncertainty stops a forced-choice loop in three locales',()=>{
  for(const [locale,start,unknown] of [['ru','Я устал','Не знаю'],['en','I feel tired','Not sure'],['es','Estoy cansado','No se']]){
@@ -26,13 +27,25 @@ test('no advice survives bounded transcript through reviewed listening answers',
  const send=session('en'),responses=["I don't want advice",'I feel tired','Not sure','Not sure','Not sure','I feel tired'].map(send);
  assert.deepEqual(responses.map(x=>x?.phase),['pause','listen','listen','listen','listen','listen']);
 });
-test('money income exploration in RU EN ES is local and nontransactional',()=>{
- for(const [locale,initial,area,goal,yes] of [['ru','Деньги','Доходы','Хочу больше зарабатывать','Да'],['en','Money','Income','I want to earn more','Yes'],['es','Dinero','Ingresos','Ganar más','Sí']]){
-  const send=session(locale),one=send(initial),two=send(area),three=send(goal),four=send(yes);
-  assert.match(one?.reply||'',/доход|income|ingresos/u);
-  assert.equal(two?.phase,'clarify');assert.equal(three?.phase,'propose');assert.equal(four?.phase,'try');
-  assert.equal(three.externalCalled,false);
-  assert.doesNotMatch(three.reply,/guarantee|гарантир|garant|https?:\/\//iu);
+test('money opens seven steps and continues the chosen stage locally in RU EN ES',()=>{
+ for(const [locale,initial,area,detail,yes,closing] of [
+  ['ru','Деньги','Доходы','Мой доход нерегулярный','Да','Можем начать с 1 пункта.'],
+  ['en','Money','Income','My income is irregular','Yes','We can start with step 1.'],
+  ['es','Dinero','Ingresos','Mis ingresos son irregulares','Sí','Podemos empezar por el punto 1.'],
+ ])for(const choice of ['1',yes]){
+  const send=session(locale),results=[initial,choice,area,detail].map(send);
+  const menu=readWaveGoalMenu(results[0]?.reply);
+  assert.equal(menu?.topic,'money');assert.equal(menu.stages.length,7);
+  assert.ok(results[0].reply.endsWith(closing));
+  assert.deepEqual(results.map(r=>r?.journey?.path),['goal','goal','goal','goal']);
+  assert.deepEqual(results.map(r=>r?.journey?.stage),[null,1,1,1]);
+  for(const r of results){
+   assert.equal(r.modelUsed,false);assert.equal(r.externalCalled,false);
+   assert.doesNotMatch(r.reply,/guarantee|гарантир|garant|https?:\/\/|плат[её]ж (?:выполнен|отправлен)|payment (?:sent|completed)|pago (?:enviado|completado)/iu);
+  }
+  for(const r of results.slice(1))assert.equal(readWaveGoalMenu(r.reply),null);
+  assert.match(results[1].reply,/финанс|financ/iu);
+  assert.match(results[3].reply,/доход|income|ingresos/iu);
  }
 });
 test('safety and action boundaries never leak into the native staged chat',()=>{

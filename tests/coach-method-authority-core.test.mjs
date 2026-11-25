@@ -1,14 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {COACH_PERSONAS,COACH_METHOD_CODES,resolveCoachMethodId} from '../lib/coaching/persona-registry.mjs'
+import {COACH_PERSONAS,PUBLIC_COACH_PERSONA_IDS,COACH_METHOD_CODES,resolveCoachMethodId} from '../lib/coaching/persona-registry.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
 import {coachSessionDirective} from '../lib/coaching/coach-session-director.mjs'
 import {newCoachSession,sealCoachSession,openCoachSession,advanceCoachSession} from '../lib/coaching/session-authority.mjs'
 const actor={id:'99999999-0000-4000-8000-000000000001',claims:{session_id:'11111111-0000-4000-8000-000000000001'}}
 const otherActor={id:'99999999-0000-4000-8000-000000000002',claims:{session_id:'11111111-0000-4000-8000-000000000001'}}
 const config={encryptionKey:Buffer.alloc(32,15)}
-test('all ten registered personas allow only two canonical method choices',()=>{
- assert.equal(COACH_PERSONAS.length,10)
+test('all registered personas allow only two canonical method choices',()=>{
+ assert.equal(PUBLIC_COACH_PERSONA_IDS.length,7)
+ assert.ok(COACH_PERSONAS.length>=PUBLIC_COACH_PERSONA_IDS.length)
  assert.equal(new Set(Object.values(COACH_METHOD_CODES)).size,6)
  for(const p of COACH_PERSONAS){
   const methods=p.methods.map(title=>COACH_METHOD_CODES[title])

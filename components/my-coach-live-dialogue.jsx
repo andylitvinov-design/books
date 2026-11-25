@@ -6,7 +6,7 @@ import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
 import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
-import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
@@ -240,6 +240,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
   const [greetingAccepted,setGreetingAccepted]=useState(false)
+  const [selectedMethod,setSelectedMethod]=useState('')
+  const [methodSession,setMethodSession]=useState(null)
+  const methodHandshake=useRef(null)
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
@@ -514,6 +517,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
+  // Explicit logical start shared by text, streaming and Live. Never reselect on resume.
+  async function ensureCoachMethodSession(){
+    if(!methodSession)return true
+    const old=methodHandshake.current
+    if(old?.id===methodSession.methodSessionId&&old.promise)return old.promise
+    const promise=fetch('/api/app/my-coach/session',{
+      method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{'Content-Type':'application/json','X-HH-Account-ID':methodSession.accountId},
+      body:JSON.stringify({personaId,methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}),
+    }).then(async response=>{
+      const data=await response.json().catch(()=>null)
+      return response.ok&&data?.started===true&&data.methodId===methodSession.methodId&&data.methodSessionId===methodSession.methodSessionId
+    }).catch(()=>false)
+    methodHandshake.current={id:methodSession.methodSessionId,promise}
+    const ok=await promise
+    if(!ok&&methodHandshake.current?.promise===promise)methodHandshake.current=null
+    return ok
+  }
   async function rateCoachAnswer(signal){
     if(!latestCoachTurn||coachQualityPending||ratedCoachAnswer===latestCoachText)return
     setCoachQualityPending(true);setCoachQualityError(false)
@@ -554,7 +575,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
   const visibleStageIndex=meaningProgressValid?meaningProgress.index:
     progressValid?lastRecordedProgress.index:provisionalIndex
-  const visibleMethodId=lastRecordedProgress?.methodId||
+  const visibleMethodId=lastRecordedProgress?.methodId||methodSession?.methodId||selectedMethod||
     ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
@@ -624,7 +645,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
     openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
     stagedMemory?.sharePersonal===true&&stagedMemory?.personal?.stage==='personal'
-  const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
+  const memorySharePrior=memoryReady&&allowOpeningPrior&&stagedMemory?.sharePrior===true&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
   // The owner-only preview never automatically reaches an external Live AI.
@@ -1134,11 +1155,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const providerWindow=coachTurnWindow(providerHistory,10)
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
+      if(methodSession&&!await ensureCoachMethodSession())throw Error('COACH_METHOD_SESSION_UNAVAILABLE')
+      if(controller.signal.aborted||turnRequestRef.current!==requestId)return null
       const requestOptions={
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json',...(methodSession?{'X-HH-Account-ID':methodSession.accountId}:{})},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
           ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
           ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
           ...(requestedSavedContext?{
@@ -1362,7 +1386,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Gemini reads the current courseSessionId from its mounted props ref;
     // opening or dismissing the topic menu never calls this function.
     const focus=id===INTRODUCTORY_COACH_SESSION_ID?'':coachCourseFocusLabel(id,conversationLang)
+    const method=selectedMethod&&resolveCoachMethodId(personaId,selectedMethod)
+    const locked=method&&protocolOwnerRef.current?{methodId:method,methodSessionId:crypto.randomUUID(),accountId:protocolOwnerRef.current}:null
     flushSync(()=>{
+      setMethodSession(locked)
       setSelectedCourseId(id)
       setSelectedGoal(focus)
       setGreetingAccepted(true)
@@ -1409,7 +1436,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting}/>}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting}
+      selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
+      methodSelectionEnabled={protocolOwnerReady}/>}
     {/* Keep Live mounted for Safari audio activation, but hide all legacy
         controls until the cinematic greeting is explicitly accepted. */}
     <div className={greetingAccepted?styles.sessionScroll:styles.sessionScrollAwaitingGreeting}
@@ -1478,6 +1507,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
+            methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}

@@ -120,6 +120,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
+  methodSession=null,prepareMethodSession,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -131,7 +132,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
 
   const notify=text=>{
     setNotice(text)
@@ -396,18 +397,25 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
-    try{
-      const response=await fetch('/api/app/my-coach/live-checkpoint',{
-        method:'POST',credentials:'same-origin',cache:'no-store',signal:r.abort.signal,
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
+    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
+          ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
           openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
           ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
-          consent:true,voiceConsent:true,trainingUseConsent:true}),
+          consent:true,voiceConsent:true,trainingUseConsent:true})
+    const deliver=async()=>{
+      if(r.ended)return
+      try{
+      const response=await fetch('/api/app/my-coach/live-checkpoint',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:r.abort.signal,
+        headers:{'Content-Type':'application/json',...(r.methodSession?{'X-HH-Account-ID':r.methodSession.accountId}:{})},
+        body,
       })
       const data=response.ok?await response.json().catch(()=>null):null
+      if(r.methodSession&&!r.ended&&(!response.ok||data?.methodId!==r.methodSession.methodId)){
+        notify(response.status===401?t.login:t.resumeUnavailable);stop();return
+      }
       if(!r.ended&&ticket===r.checkpointSerial&&
          data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
          data.source==='director-client-evidence'&&
@@ -424,7 +432,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           flushSideband(r)
         }
       }
-    }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
+      }catch{
+        if(r.methodSession&&!r.ended){notify(t.resumeUnavailable);stop()}
+      }
+    }
+    if(r.methodSession){
+      r.methodCheckpointQueue=(r.methodCheckpointQueue||Promise.resolve()).then(deliver)
+      await r.methodCheckpointQueue
+    }else await deliver()
   }
   function preserveUnconfirmedInput(r){
     const text=audioTranscription(r.inputText)
@@ -1003,11 +1018,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     },450*r.reconnects)
   }
   async function getToken(r){
+    if(r.methodSession&&(!r.prepareMethodSession||!await r.prepareMethodSession()))
+      throw Error('GEMINI_LIVE_UNAVAILABLE')
+    if(r.ended)throw Error('GEMINI_LIVE_UNAVAILABLE')
     let response
     try{response=await fetch('/api/app/my-coach/live-token',{
       method:'POST',credentials:'same-origin',cache:'no-store',
-      signal:r.abort.signal,headers:{'Content-Type':'application/json'},
+      signal:r.abort.signal,headers:{'Content-Type':'application/json',...(r.methodSession?{'X-HH-Account-ID':r.methodSession.accountId}:{})},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
+        ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
         settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
     })}
@@ -1133,6 +1152,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
+      methodSession:p.methodSession,prepareMethodSession:p.prepareMethodSession,methodCheckpointQueue:Promise.resolve(),
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),

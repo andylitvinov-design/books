@@ -1041,7 +1041,12 @@ async function handle(request, { params }) {
         return new AppError('COACHING_BRAIN_SENSITIVE_CONTENT',400)
       return new AppError('COACHING_BRAIN_INPUT_INVALID',400)
     }
+    const requireMethodOwner=body=>{
+      if(body?.methodSessionId!==undefined&&request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+    }
     const prepareMethodTurn=body=>{
+      requireMethodOwner(body)
       try{return prepareCoachMethodTurn(body,coachMethodContext())}
       catch(error){throw methodError(error)}
     }
@@ -1049,11 +1054,13 @@ async function handle(request, { params }) {
       if(method==='DELETE')return withCoachMethodCookie(json({ended:true}),null)
       if(method!=='POST')throw new AppError('NOT_FOUND',404)
       const body=await readBody(request,512)
+      requireMethodOwner(body)
       let state
       try{state=startCoachMethodSession(body,coachMethodContext())}
       catch(error){throw methodError(error)}
       await consumeRate(config,{op:'my-coach-session-start',actor:actor.id},12,3600)
-      return withCoachMethodCookie(json({started:true,methodId:state.methodId,targetSeconds:1200}),state)
+      return withCoachMethodCookie(json({started:true,methodId:state.methodId,targetSeconds:1200,
+        ...(state.clientSessionId?{methodSessionId:state.clientSessionId}:{})}),state)
     }
     // Signed-in dialogue; no client transcript is stored by the authority.
     if (joined === 'my-coach/stream') {
@@ -1079,6 +1086,7 @@ async function handle(request, { params }) {
       const vendor=geminiFreeLiveConfig(process.env)
       if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       const liveBody=await readBody(request,2048)
+      requireMethodOwner(liveBody)
       let selected
       try{selected=prepareCoachMethodRequest(liveBody,coachMethodContext())}
       catch(error){throw methodError(error)}
@@ -1123,6 +1131,7 @@ async function handle(request, { params }) {
       if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
       const checkpointBody=await readBody(request,8192)
+      requireMethodOwner(checkpointBody)
       let selected
       try{selected=prepareCoachMethodRequest(checkpointBody,coachMethodContext())}
       catch(error){throw methodError(error)}

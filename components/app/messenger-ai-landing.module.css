@@ -687,3 +687,6 @@
  .root .goalButtons>button{min-height:46px;font-size:clamp(14px,4vw,18px)}
  .root .inlineComposer{padding-top:8px!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
 }
+
+/* Closed extra directions must not expose focusable topic controls in Chromium or WebKit. */
+.root .extraDirections:not([open]) > :not(summary){display:none!important}

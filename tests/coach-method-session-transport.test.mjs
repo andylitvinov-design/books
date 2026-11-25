@@ -58,3 +58,34 @@ test('explicit Live method uses the same verified cookie and cannot be omitted o
  const route=readFileSync('app/api/app/[...path]/route.js','utf8')
  assert.ok(route.includes('const {__methodSession,...clientProgress}=progress'))
 })
+
+test('logical IDs reject old tabs after a deliberate new method start',()=>{
+ const first='22222222-2222-4222-8222-222222222222',second='33333333-3333-4333-8333-333333333333'
+ const start={personaId:'mira',methodId:'oskar',methodSessionId:first}
+ const state=startCoachMethodSession(start,ctx)
+ const token=sealCoachSession(state,config,actor)
+ assert.equal(startCoachMethodSession(start,{...ctx,token}).nonce,state.nonce)
+ assert.throws(()=>startCoachMethodSession({...start,methodId:'grow'},{...ctx,token}),/COACH_SESSION_METHOD_CONFLICT/)
+ const next=startCoachMethodSession({...start,methodId:'grow',methodSessionId:second},{...ctx,token})
+ const fresh=sealCoachSession(next,config,actor)
+ assert.notEqual(next.nonce,state.nonce)
+ assert.throws(()=>prepareCoachMethodRequest({...body,methodSessionId:first},{...ctx,token:fresh}),/COACH_SESSION_METHOD_CONFLICT/)
+ assert.equal(prepareCoachMethodRequest({...body,methodId:'grow',methodSessionId:second},{...ctx,token:fresh}).session.clientSessionId,second)
+ const {methodId,...legacy}=body
+ assert.equal(prepareCoachMethodRequest(legacy,{...ctx,token:fresh}).session,null)
+ assert.throws(()=>prepareCoachMethodRequest({...legacy,methodSessionId:second},{...ctx,token:fresh}),/COACH_SESSION_METHOD_CONFLICT/)
+})
+test('opt-in UI retains runtime across Live reconnect and verifies owner',()=>{
+ const greeting=readFileSync('components/my-coach-greeting-gate.jsx','utf8')
+ const dialogue=readFileSync('components/my-coach-live-dialogue.jsx','utf8')
+ const live=readFileSync('components/my-coach-gemini-live.jsx','utf8')
+ const route=readFileSync('app/api/app/[...path]/route.js','utf8')
+ assert.ok(greeting.includes('data-coach-method-choice'))
+ assert.ok(dialogue.includes('methodSelectionEnabled={protocolOwnerReady}'))
+ assert.ok(dialogue.includes('methodSessionId:crypto.randomUUID()'))
+ assert.ok(dialogue.includes('methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}'))
+ assert.ok(live.includes('r.methodCheckpointQueue=(r.methodCheckpointQueue||Promise.resolve()).then(deliver)'))
+ assert.ok(live.includes('connect(r,r.liveToken,{resume:true})'))
+ assert.ok(live.includes('!await r.prepareMethodSession()'))
+ assert.ok(route.includes("request.headers.get('x-hh-account-id')!==actor.id"))
+})
