@@ -517,30 +517,35 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(textSize).toHaveValue("2");
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
     await expect.poll(phrasePixels,{timeout:12000}).not.toBe(smallPixels);
+    // Check all three real sizes while editing, before opening playback.
+    // Do not send keyboard/range events into the editor while the mobile
+    // player is active and has scrolled the page to a different control.
+    await textSize.press("Home");
+    await expect(textSize).toHaveValue("0");
+    await textSize.press("ArrowRight");
+    await expect(textSize).toHaveValue("1");
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    await textSizeSettings.locator("summary").tap();
+    await expect(textSize).toBeHidden();
     // Preview is local, not an export, provider call or payment action.
     await previewText.tap();
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","true");
     await expect(filmCanvas).toBeVisible({timeout:15000});
     const firstFrame=await phrasePixels();
     await expect.poll(phrasePixels,{timeout:9000,intervals:[450,450,450]}).not.toBe(firstFrame);
-    // Restore the neutral size using the real visible control. Preview
-    // scrolls to the player; return through the visible Text rail if the
-    // editor has been closed, not a synthetic DOM click or hidden input.
+    // Pause with the actual accessible player control. Never force a hidden
+    // input or simulate a playback state. Return to the visible Text editor.
+    const pausePreview=heroPlaying.locator('[data-video-preview-toggle]');
+    await expect(pausePreview).toBeVisible();
+    await expect(pausePreview).toHaveAttribute("aria-pressed","true");
+    await pausePreview.tap();
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
     if(!await textSizeSettings.locator("summary").isVisible()){
       await openVisibleMontageText(page,engine,"standard");
     }
     await expect(textSizeSettings.locator("summary")).toBeVisible();
-    if(!await textSizeSettings.evaluate(node=>node.open)){
-      await textSizeSettings.locator("summary").tap();
-    }
-    await expect(textSize).toBeVisible();
-    await expect(textSize).toHaveValue("2");
-    // Fill the native range on its visible user control, rather than send
-    // a keyboard ArrowLeft while the WebKit player has focus after scrolling.
-    await textSize.fill("1");
     await expect(textSize).toHaveValue("1");
-    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
-    await textSizeSettings.locator("summary").tap();
+    if(await textSizeSettings.evaluate(node=>node.open))await textSizeSettings.locator("summary").tap();
     await expect(textSize).toBeHidden();
     phase(engine,"montage-text-real-canvas-preview");
     await reviewStory.tap();
