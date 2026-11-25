@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
-import {Mic, Paperclip, Plus, Send, ImageIcon, X} from "lucide-react";
+import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {MessengerDictationButton} from "@/components/app/messenger-dictation-button";
@@ -319,18 +319,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // Only the existing device speech controller handles the AI chat's spoken replies.
   const voice=useVoiceCompanion(locale,voiceEnabled);
   const lukasRef=useRef<AliLukasVideoHandle|null>(null);
-  const latestVoiceTurn=useRef<(text:string)=>void>(()=>{});
   useEffect(()=>{
     if(!messengerView||!voiceEnabled)return;
-    if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
+    if(voice.speechLocale!==locale&&!voice.conversing&&!voice.paused)voice.setSpeechLocale(locale);
     const available=voice.voices.filter(item=>item.lang.toLowerCase().startsWith(locale));
-    if(available.length&&!voice.conversing){
+    if(available.length&&!voice.conversing&&!voice.paused){
       const ordered=[...available].sort((a,b)=>a.name.localeCompare(b.name));
       const selected=ordered[persona.voice.slot%ordered.length]?.voiceURI;
       if(selected&&selected!==voice.voiceId)voice.setVoiceId(selected);
     }
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
-  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale,voice.conversing]);
+  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale,voice.conversing,voice.paused]);
   const [mode,setMode]=useState<Mode>("rules");
   const [journeyPath,setJourneyPath]=useState<JourneyPath|null>(null);
   const [journeyAction,setJourneyAction]=useState<string|null>(null);
@@ -426,21 +425,20 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const latest=messages[messages.length-1]||null;
     if(latest===lastSpeechTurn.current)return;
     lastSpeechTurn.current=latest;
-    // Lukas receives only the new canonical assistant turn. It never starts a new AI turn.
-    // User input clears the video speech buffer, without closing the video session.
+    // Preserve current Ali pause/consent; the owner video test does not authorize dialogue.
     if(latest?.role==="user"||!latest){lukasRef.current?.interrupt();if(voiceEnabled)voice.stop();return;}
     if(latest?.role==="assistant"){
       const lastUser=messages.slice(0,-1).reverse().find(row=>row.role==="user");
       if(latest.localOnly||latest.provisional||lastUser?.localOnly||lastUser?.provisional||
          (lastUser&&requiresProtectedReply(lastUser.text,locale)))lukasRef.current?.stop();
-      else if(lukasRef.current?.acceptReply(latest.text))return;
+      else if(!voice.paused&&lukasRef.current?.isActive()&&lukasRef.current.acceptReply(latest.text))return;
     }
     if(!voiceEnabled)return;
     if(latest?.role==="assistant"){
       voice.stop();
-      if(voice.autoRead||voice.conversing)voice.speak(latest.text);
+      if(!voice.paused&&(voice.autoRead||voice.conversing))voice.speak(latest.text);
     }
-  },[messages,locale,voiceEnabled,voice.autoRead,voice.conversing,voice.speak,voice.stop]);
+  },[messages,locale,voiceEnabled,voice.autoRead,voice.conversing,voice.paused,voice.speak,voice.stop]);
   const lastAnswerRef=useRef<{message:string;history:Array<{role:"user"|"assistant";text:string}>;decision:AgentDecision;locale:PublicLocale}|null>(null);
   const alternativeAbortRef=useRef<AbortController|null>(null);
   const [alternativeBusy,setAlternativeBusy]=useState(false);
@@ -1940,6 +1938,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if(event.currentTarget.querySelector("[data-hh-dictation-active]"))return;
+    if(voice.conversing)voice.pauseDialogue();
     setNativeDictationRevision(value=>value+1);
     // The initial CTA starts a conversation even without a written question.
     // This is a local welcome, never a blank Free/Gemini provider request.
@@ -1975,14 +1974,54 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     };
   },[locale,authenticated]);
 
-  latestVoiceTurn.current=text=>{
-    if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
-      setDraft(text);voice.stopDialogue();return;
+  // Long-lived voice callbacks must use the latest chat state, not the
+  // render that originally opened the call.
+  const messengerVoiceTurn=useRef<(text:string)=>void>(()=>{});
+  useLayoutEffect(()=>{
+    messengerVoiceTurn.current=text=>{
+      const limit=contentStep==="brief"?160:proSelected?1200:2000;
+      if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
+          (proSelected&&!proReady)||(mode==="owned"&&!agree)||text.length>limit||draft.trim()){
+        setDraft(previous=>[previous.trim(),text.trim()].filter(Boolean).join(" "));
+        voice.pauseDialogue();
+        setStatus(locale==="ru"?"Речь сохранена в черновике. Проверьте её перед отправкой.":locale==="es"?
+          "Tu mensaje quedó en el borrador. Revísalo antes de enviarlo.":"Speech kept in your draft. Review it before sending.");return;
+      }
+      if(requiresProtectedReply(text,locale)){lukasRef.current?.stop();voice.stopDialogue();}
+      sendSelectedTurn(text);
+    };
+  });
+
+  // Consent belongs to this account and selected recognition route, not a
+  // previous guest/account or a different provider after capability changes.
+  const audioConsentScope=useRef<string|null>(null);
+  const audioScope=(authenticated?'account':'guest')+':'+(voiceRequiresRecorded?'recorded':'browser');
+  const previousAudioScope=useRef(audioScope);
+  useEffect(()=>{
+    if(previousAudioScope.current===audioScope)return;
+    lukasRef.current?.stop();previousAudioScope.current=audioScope;audioConsentScope.current=null;
+    voice.stopDialogue();setVoicePermissionOpen(false);
+  },[audioScope,voice.stopDialogue]);
+
+  function toggleMessengerVoice(){
+    closeComposerMenu();
+    if(voice.conversing){
+      if(lukasRef.current?.isActive()&&lukasRef.current.isSpeaking()){lukasRef.current.interrupt();voice.resumeAfterExternalReply();}
+      else if(voice.speaking)voice.interruptReply();
+      else {lukasRef.current?.interrupt();voice.pauseDialogue();}
+      return;
     }
-    if(requiresProtectedReply(text,locale)){lukasRef.current?.stop();voice.stopDialogue();}
-    setDraft(text);sendSelectedTurn(text);
-  };
+    if(voicePermissionOpen){setVoicePermissionOpen(false);return;}
+    setNativeDictationRevision(value=>value+1);
+    setDictationRevision(value=>value+1);
+    setVoiceNoteRevision(value=>value+1);
+    stopAliPersonaAudio();
+    if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();
+    else setVoicePermissionOpen(true);
+  }
+
   function beginMessengerVoice(){
+    if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||document.hidden)return;
     if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
       "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
     if(proSelected&&!proReady){
@@ -1998,9 +2037,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       return;
     }
     lukasRef.current?.interrupt();
-    const launched=voice.startDialogue(text=>latestVoiceTurn.current(text),{allowRecorded:voiceRequiresRecorded,consentOnStart:true,
+    const launched=voice.startDialogue(text=>messengerVoiceTurn.current(text),{
+      allowRecorded:voiceRequiresRecorded,consentOnStart:true,pauseOnHide:true,
       recordedPurpose:authenticated?'ali_chat':'public'});
-    if(launched){setVoicePermissionOpen(false);setStatus("");}
+    if(launched){audioConsentScope.current=audioScope;setVoicePermissionOpen(false);setStatus("");}
   }
 
   const voiceAttachment=compact?<label className={styles.mode} data-hh-voice-message-upload
@@ -2026,7 +2066,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
     onConversationTurn={text=>{
       if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
-      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      if(requiresProtectedReply(text,locale)){lukasRef.current?.stop();voice.stopDialogue();}
       setDraft(text);sendSelectedTurn(text);
     }}/>:null;
 
@@ -2097,7 +2137,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
   const composerPlaceholder=messengerView?(showLandingComposer?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):(locale==="ru"?"Сообщение":locale==="es"?"Mensaje":"Message")):t.placeholder;
   const animateComposer=messengerView&&showLandingComposer&&!pageHelp&&!busy&&!proBusy&&!draft&&
-    !recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.speaking&&
+    !recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.paused&&!voice.speaking&&
     !supportQuizOpen&&homeHandoffPhase==="idle";
   useEffect(()=>{
     const input=composerRef.current;
@@ -2110,7 +2150,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       data-landing-composer={showLandingComposer||undefined}
       data-hh-chat-has-draft={Boolean(draft.trim())||undefined}
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
-      data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
+      data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||voice.paused||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={composerPlaceholder}
         onFocus={()=>{
@@ -2148,22 +2188,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               }}/>}
             {messengerView&&!pageHelp&&<button type="button"
               data-hh-live-conversation-mic
-              onClick={()=>{
-                setNativeDictationRevision(value=>value+1);
-                if(voice.conversing){
-                  if(lukasRef.current?.isSpeaking()){lukasRef.current.interrupt();voice.resumeAfterExternalReply();}
-                  else if(voice.speaking)voice.interruptReply();
-                  else voice.stopDialogue();
-                }else if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
-                else setVoicePermissionOpen(true);
-              }}
-              disabled={!voiceEnabled}
+              onClick={toggleMessengerVoice}
+              disabled={!voiceEnabled||(!voice.conversing&&(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||(proSelected&&!proReady)))}
               aria-pressed={voice.conversing}
               aria-expanded={voicePermissionOpen}
               aria-controls="hh-ai-voice-onboarding"
               aria-label={voice.conversing?(voice.speaking?
                 (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
-                (locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation")):
+                (locale==="ru"?"Пауза":locale==="es"?"Pausar":"Pause")):
+                voice.paused?(locale==="ru"?"Продолжить аудиоразговор":locale==="es"?"Reanudar conversación":"Resume audio conversation"):
                 (locale==="ru"?"Начать голосовой разговор":locale==="es"?"Iniciar voz":"Start voice conversation")}>
               <Mic size={19} aria-hidden="true"/><span>{locale==="ru"?"Живой разговор":locale==="es"?"Conversación en vivo":"Live voice conversation"}</span>
             </button>}
@@ -2182,7 +2215,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             {resetControl}
           </div>
         </details>:voiceAttachment}
-        {messengerView&&<button type="button"
+        {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
+          className={styles.photoShortcut} data-hh-ai-audio-call
+          onClick={toggleMessengerVoice}
+          disabled={!voice.conversing&&(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||(proSelected&&!proReady))}
+          aria-pressed={voice.conversing}
+          aria-expanded={voicePermissionOpen}
+          aria-controls="hh-ai-voice-onboarding"
+          aria-label={voice.conversing?(voice.speaking?
+            (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
+            (locale==="ru"?"Пауза":locale==="es"?"Pausar":"Pause")):
+            voice.paused?(locale==="ru"?"Продолжить аудиоразговор":locale==="es"?"Reanudar conversación":"Resume audio conversation"):
+            (locale==="ru"?"Бесплатный аудиоразговор":locale==="es"?"Conversación de audio gratuita":"Free audio conversation")}
+          title={locale==="ru"?"Аудиоразговор":locale==="es"?"Conversación de audio":"Audio conversation"}>
+          <Phone size={21} aria-hidden="true"/>
+        </button>}
+        {messengerView&&(!voiceEnabled||Boolean(pageHelp))&&<button type="button"
           className={styles.photoShortcut} data-hh-ai-photo-shortcut
           onClick={()=>{
             const more=composerMoreRef.current;
@@ -2233,7 +2281,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           }}/>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
           aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
-        {proBusy&&<button type="button" onClick={()=>{proAbort.current?.abort();setProBusy(false);}}
+        {proBusy&&<button type="button" onClick={()=>{voice.stopDialogue();proAbort.current?.abort();setProBusy(false);}}
           aria-label={messengerView?t.cancel:undefined}><X size={19} aria-hidden="true"/></button>}
       </div>
       {messengerView&&voicePermissionOpen&&!voice.conversing&&<section
@@ -2249,6 +2297,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
              locale==="es"?"Al empezar, permites la voz del dispositivo y el reconocimiento del navegador, que puede enviar audio a su proveedor.":
              "Start talking enables device playback and browser speech recognition, which may send audio to your browser provider.")
         }</p>
+        <small>{locale==="ru"?"Системное озвучивание может использовать облако производителя. Не диктуйте конфиденциальные медицинские или психологические данные. Бесплатные квоты ограничены.":locale==="es"?"La voz del dispositivo puede usar la nube del fabricante. No dictes datos médicos o psicológicos privados. El cupo gratuito es limitado.":"Device speech may use the manufacturer's cloud. Do not dictate private medical or therapy details. Free quotas are limited."}</small>
         {voiceRequiresRecorded&&!voice.recordedSupported&&<small role="status">{
           locale==="ru"?"На этом устройстве недоступна запись. Используйте микрофон клавиатуры или введите текст.":
           locale==="es"?"Grabación no disponible. Usa el micrófono del teclado o escribe.":
@@ -2268,14 +2317,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           </button>
         </div>
       </section>}
-      {messengerView&&(voice.conversing||voice.notice)&&<div className={styles.voiceConversationStatus}
-        data-hh-ai-voice-status role="status" aria-live="polite">
-        <span>{voice.notice||(
+      {messengerView&&(voice.conversing||voice.paused||voice.notice)&&<div className={styles.voiceConversationStatus}
+        data-hh-ai-voice-status>
+        <span role="status" aria-live="polite">{voice.notice||(
+          voice.paused?(locale==="ru"?"Пауза · история сохранена в чате":locale==="es"?"En pausa · historial en el chat":"Paused · history stays in chat"):
           voice.speaking?(locale==="ru"?"Ali отвечает…":locale==="es"?"Ali responde…":"Ali is speaking…"):
+          busy||proBusy?(locale==="ru"?"Ali думает…":locale==="es"?"Ali piensa…":"Ali is thinking…"):
           voice.recording?(locale==="ru"?"Слушаю…":locale==="es"?"Escuchando…":"Listening…"):
           locale==="ru"?"Голосовой разговор включён":locale==="es"?"Conversación activa":"Voice conversation active")}</span>
-        {voice.conversing&&<button type="button" data-hh-ai-stop-voice
-          onClick={()=>voice.stopDialogue()}>
+        {voice.conversing&&<button type="button" data-hh-ai-pause-voice onClick={()=>{lukasRef.current?.interrupt();voice.pauseDialogue();}}>
+          {locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"}</button>}
+        {voice.conversing&&voice.speaking&&<button type="button" data-hh-ai-interrupt-voice onClick={()=>{if(lukasRef.current?.isActive()&&lukasRef.current.isSpeaking()){lukasRef.current.interrupt();voice.resumeAfterExternalReply();}else voice.interruptReply();}}>
+          {locale==="ru"?"Перебить":locale==="es"?"Interrumpir":"Interrupt"}</button>}
+        {voice.paused&&<button type="button" data-hh-ai-resume-voice disabled={busy||proBusy||(proSelected&&!proReady)} onClick={toggleMessengerVoice}>
+          {locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Resume"}</button>}
+        {(voice.conversing||voice.paused||voice.notice)&&<button type="button" data-hh-ai-stop-voice
+          onClick={()=>{lukasRef.current?.stop();voice.stopDialogue();}}>
           {locale==="ru"?"Завершить":locale==="es"?"Terminar":"End"}
         </button>}
       </div>}
@@ -2324,7 +2381,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           onSpeaking={()=>voice.markExternalSpeaking()}
           onSpeechEnd={()=>voice.resumeAfterExternalReply()}
           onStop={()=>voice.stopDialogue()}
-          onSpeakInput={()=>{if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();else setVoicePermissionOpen(true);}}/>
+          onSpeakInput={()=>{if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();else setVoicePermissionOpen(true);}}/>
       </div>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;

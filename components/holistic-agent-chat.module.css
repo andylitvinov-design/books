@@ -1165,3 +1165,9 @@
 .lukasVideoHeader:empty{display:none}
 @media(max-width:760px){:global(.hh-messages-page) .root[data-compact]>.lukasVideoHeader{order:0;flex:none;margin:0;max-width:none}}
 :global(.hh-messages-page) [data-keyboard-open="true"] .lukasVideoHeader [data-lukas-portrait]{--hh-lukas-height:clamp(48px,10dvh,88px)}
+
+/* Free audio call: same attachment slot, no extra composer width. */
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus{flex-wrap:wrap;justify-content:flex-start;gap:6px}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus>span{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus button{min-height:44px;flex:0 1 auto}
+.root[data-compact][data-chat-skin="messenger"] [data-hh-ai-audio-call][aria-pressed="true"]{background:#ddf4e6;color:#075641}
