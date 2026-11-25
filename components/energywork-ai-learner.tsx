@@ -1414,11 +1414,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     }
     if (sync !== "ready") setGuestFrontier(current => Math.max(current, Math.min(index + 1, slides.length - 1)));
     focusSlideAfterNavigation.current = daybook;
-    setSaveError(null);
     // A missing optional recording is skipped through the same adjacent save
     // operation as Continue; never bypass the course cursor or required steps.
     setUnpublishedAudio(null);
     forwardOptionalAudio.current = daybook && !alreadyStored && slides[index + 1]?.kind === "audio-intro" ? nextId : null;
+    setSaveError(null);
     setIndex((current) => Math.min(current + 1, slides.length - 1));
   }
   useEffect(() => {
@@ -1554,7 +1554,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     </svg>
   );
   const lessonArt = displayArtSource ? (
-              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt || slide.kind === "audio-intro" ? "true" : undefined}
+              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
                  data-reiki-diagram={daybook ? (diagramArt ? "true" : undefined) : artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
                  aria-hidden={artBackground ? true : undefined}>
                 <Image src={displayArtSource}
