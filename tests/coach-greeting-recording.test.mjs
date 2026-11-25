@@ -98,13 +98,14 @@ test('real PCM WAV becomes a decodable MP3 with non-silent samples and full dura
 test('all seven public coaches record their selected RU/EN voice and replay identical saved bytes',async()=>{
   const h=harness()
   for(const locale of ['ru','en'])for(const id of COACH_OPENING_PUBLIC_IDS){
-    const first=await h.GET(h.request(id,locale))
+    const canonical=new Request('https://holistichouse.vercel.app'+coachIntroAudioPath(id,locale))
+    const first=await h.GET(canonical)
     assert.equal(first.status,200,id+'/'+locale)
     assert.equal(first.headers.get('content-type'),'audio/mpeg')
     assert.equal(first.headers.get('accept-ranges'),'bytes')
     const bytes=Buffer.from(await first.arrayBuffer())
     const before=h.syntheses.length,rateCount=h.rates.length,writeCount=h.writes
-    const repeat=await h.GET(h.request(id,locale))
+    const repeat=await h.GET(canonical)
     assert.equal(repeat.status,200)
     assert.deepEqual(Buffer.from(await repeat.arrayBuffer()),bytes)
     assert.equal(h.syntheses.length,before,'replay makes no TTS call')
@@ -164,14 +165,14 @@ test('public URL rejects injected text/cross-site requests and does not invent u
 })
 
 
-test('Samir switches to new immutable v3 recordings only, Puck RU and Orus EN',async()=>{
+test('Samir historical v3 recordings remain isolated, Puck RU and Orus EN',async()=>{
   const h=harness()
   const original=await encodedFixture()
   h.objects.set('v2/ru/genie.mp3',original)
   h.objects.set('v2/en/genie.mp3',original)
   for(const [locale,voiceName] of [['ru','Puck'],['en','Orus']]){
-    const path=coachIntroAudioPath('genie',locale)
-    assert.equal(path,`/api/coaching/intro/${locale}/genie?v=3`)
+    const path=`/api/coaching/intro/${locale}/genie?v=3`
+    assert.equal(coachIntroAudioPath('genie',locale),locale==='ru'?path:'/api/coaching/intro/en/genie?v=4')
     const url='https://holistichouse.vercel.app'+path
     const first=await h.GET(new Request(url))
     assert.equal(first.status,200)
@@ -193,4 +194,66 @@ test('Samir switches to new immutable v3 recordings only, Puck RU and Orus EN',a
   const disabled=harness({env:{}})
   assert.equal((await disabled.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/ru/genie?v=3'))).status,503)
   assert.equal(disabled.fishCalls,0)
+})
+
+test('v4 records all seven exact English coach voices, leaves historical bytes intact, and never substitutes a vendor',async()=>{
+  const h=harness(),original=await encodedFixture()
+  const expected={mira:'Sulafat',sofia:'Gacrux',alex:'Orus',max:'Charon',genie:'Achird',harry:'Orus',merlin:'Algenib'}
+  for(const [id,voiceName] of Object.entries(expected)){
+    h.objects.set('v2/en/'+id+'.mp3',original)
+    const path=coachIntroAudioPath(id,'en')
+    assert.equal(path,'/api/coaching/intro/en/'+id+'?v=4')
+    const request=new Request('https://holistichouse.vercel.app'+path)
+    const first=await h.GET(request)
+    assert.equal(first.status,200,id)
+    assert.equal(h.syntheses.at(-1).voiceName,voiceName,id)
+    assert.equal(h.syntheses.at(-1).text,getCoachPresentation(id,'en').text)
+    assert.ok(h.objects.has('v4/en/'+id+'.mp3'))
+    const before=h.syntheses.length
+    assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),Buffer.from(await first.arrayBuffer()))
+    assert.equal(h.syntheses.length,before)
+    assert.deepEqual(h.objects.get('v2/en/'+id+'.mp3'),original)
+    assert.equal(coachIntroAudioPath(id,'ru'),'/api/coaching/intro/ru/'+id+'?v='+(id==='genie'?3:['alex','max'].includes(id)?4:2))
+    assert.equal(coachIntroAudioPath(id,'es'),'/api/coaching/intro/es/'+id+'?v=2')
+  }
+  assert.equal(h.syntheses.length,7)
+  assert.equal(h.writes,7)
+  for(const invalid of ['ru/mira','es/genie','en/lea']){
+    assert.equal((await h.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/'+invalid+'?v=4'))).status,400)
+  }
+  const disabled=harness({env:{}})
+  assert.equal((await disabled.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/en/mira?v=4'))).status,503)
+  assert.equal(disabled.fishCalls,0)
+})
+test('missing old English archives retain the historical voice rather than recording v4 identity into an old URL',async()=>{
+  const h=harness()
+  for(const [id,voice] of Object.entries({mira:'Gacrux',max:'Orus',sofia:'Sulafat',alex:'Charon',harry:'Achird',genie:'Orus'})){
+    assert.equal((await h.GET(h.request(id,'en'))).status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,voice)
+  }
+})
+
+test('Russian Alex and Max record new immutable v4 tracks while old v2 retains historical voices',async()=>{
+  const h=harness()
+  for(const [id,voice,old] of [['alex','Enceladus','Alnilam'],['max','Alnilam','Orus']]){
+    const legacy=await h.GET(h.request(id,'ru'))
+    assert.equal(legacy.status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,old)
+    const original=Buffer.from(await legacy.arrayBuffer())
+    const path=coachIntroAudioPath(id,'ru')
+    assert.equal(path,'/api/coaching/intro/ru/'+id+'?v=4')
+    const request=new Request('https://holistichouse.vercel.app'+path)
+    const first=await h.GET(request)
+    assert.equal(first.status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,voice)
+    assert.equal(h.syntheses.at(-1).text,getCoachPresentation(id,'ru').text)
+    const bytes=Buffer.from(await first.arrayBuffer()), before=h.syntheses.length
+    assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),bytes)
+    assert.equal(h.syntheses.length,before)
+    assert.deepEqual(h.objects.get('v2/ru/'+id+'.mp3'),original)
+    assert.ok(h.objects.has('v4/ru/'+id+'.mp3'))
+    const disabled=harness({env:{}})
+    assert.equal((await disabled.GET(request)).status,503)
+    assert.equal(disabled.fishCalls,0)
+  }
 })
