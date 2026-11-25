@@ -1,11 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import css from "./meditation-course-enquiry.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 const copy={
   ru:{
@@ -102,13 +106,26 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
     }catch{setError(t.error);}
     finally{setBusy(false);}
   }
+  if (websiteMessengerOnlyUi()) return <div className={css.root} data-meditation-course-enquiry><MandatoryMessengerActions locale={locale} collapsed label={t.open} whatsappUrl={whatsappEnquiryUrl({locale,service:t.service,request:t.description+focus,pagePath:courseKind==="video-series"?"/"+locale+"/holistic-support/mandala":"/"+locale+"/services/imagery-therapy"})}/></div>;
   return <div className={css.root} data-meditation-course-enquiry>
     {saved!==null?<p className={css.success} data-meditation-course-enquiry-saved role="status">
       {t.done}{saved?<span>{t.reference}: {saved}</span>:null}
     </p>:<>
       <button type="button" className={css.open} data-meditation-course-order
         aria-expanded={open} aria-controls={formId}
-        onClick={()=>setOpen(v=>!v)}>{t.open}</button>
+        onPointerDown={event=>{
+          // On iPhone the button may scroll under a fixed navigation dock
+          // between pointerdown and pointerup. Keep the original tap target;
+          // pointercancel still prevents accidental activation on scroll.
+          if(event.isPrimary){
+            try{event.currentTarget.setPointerCapture(event.pointerId);}catch{/* Native click remains. */}
+          }
+        }}
+        onClick={()=>{
+          // Commit the real user gesture before the parent re-renders its
+          // course context or Safari shifts the scrolled viewport.
+          flushSync(()=>setOpen(current=>!current));
+        }}>{t.open}</button>
       {open?<form id={formId} className={css.form}
         data-meditation-course-contact onSubmit={event=>void submit(event)} noValidate>
         <label>{t.name}<input value={name} maxLength={120} autoComplete="name"

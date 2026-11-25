@@ -3,36 +3,41 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("home reuses seven offers and no longer repeats reviews, method promos or direction cards below", () => {
-  const filters = read("components/home-more-disclosure.tsx");
-  for (const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]) {
-    const source = read(page);
-    assert.match(source, /<HomeFeaturedWorkspace locale=/);
-    assert.match(source, /<HomeMoreDisclosure locale=/);
-    assert.doesNotMatch(source, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|<HomeCoreMethods|<HomeMasterPath|service-home-hero/);
-    assert.doesNotMatch(source, /<ServicesSolutions|<HomeExploreSections|<TestSelectionCourseBanner/);
-    // "Explore by topic" is intentionally above the seven-stage service list.
-    // Keep the carousel first and testimonials below without duplicating offers.
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"));
-    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<PersonalTestimonials"));
-  }
-  assert.match(filters, /data-home-topic-filters/);
-  assert.match(filters, /data-home-more-deferred="true"/);
-  assert.match(filters, /onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
-  assert.match(filters, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
-  assert.match(filters, /dynamic\(\s*\(\) => import\("\.\/home-conversation-guide"\)/);
-  assert.match(filters, /ssr: false/);
-  // The four canonical directions are rendered from data, not repeated as hardcoded chips.
-  assert.match(filters, /data-home-topic-filter=\{category\.id\}/);
-  for (const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety"]) {
-    assert.ok(filters.includes('"' + id + '": '), id);
-  }
-  for (const topic of ["temple","services","courses"]) {
-    assert.ok(filters.includes('data-home-topic-filter="' + topic + '"'), topic);
-  }
-  assert.doesNotMatch(filters, /<HomepageTopicJourneys|<ServicesSolutions|<HomeFreeDiagnosisBanner|<TestSelectionCourseBanner|<HomeExploreSections/);
-  assert.doesNotMatch(filters, /fetch\(|sendBeacon|localStorage|dangerouslySetInnerHTML|\/api\/client/);
+
+test("Home ships only Ali first; seven-offer catalog remains explicitly deferred and source-backed",()=>{
+ const filters=read("components/home-more-disclosure.tsx");
+ const expanded=read("components/home-expanded-catalog.tsx");
+ const deferred=read("components/home-deferred-sections.tsx");
+ const content=read("components/home-deferred-content.tsx");
+ for(const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]){
+  const source=read(page);
+  assert.match(source,/<HomeDialogueEntry locale=/);
+  assert.match(source,/<HomeDeferredSections locale=/);
+  assert.ok(source.indexOf("<HomeDialogueEntry")<source.indexOf("<HomeDeferredSections"));
+  assert.doesNotMatch(source,/<HomeFeaturedWorkspace|<HomeMoreDisclosure|<HomeSectionCarousel|<PersonalTestimonials/);
+  assert.doesNotMatch(source,/<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|<HomeCoreMethods|<HomeMasterPath|service-home-hero/);
+  assert.doesNotMatch(source,/<ServicesSolutions|<HomeExploreSections|<TestSelectionCourseBanner/);
+ }
+ assert.match(deferred,/IntersectionObserver/);
+ assert.match(deferred,/const HomeDeferredContent = lazy\(/);
+ assert.match(deferred,/visible\?<Suspense fallback=\{null\}>/);
+ assert.match(content,/HomeExpandedCatalog/);
+ assert.match(content,/const HomeExpandedCatalog = lazy\(/);
+ assert.match(content,/expanded\?<Suspense fallback=\{null\}>/);
+ for(const item of ["HomeSectionCarousel","HomeFeaturedWorkspace","PersonalTestimonials"])
+  assert.ok(expanded.includes(item),"optional catalog retains "+item);
+ assert.match(filters,/data-home-topic-filters/);
+ assert.match(filters,/data-home-more-deferred="true"/);
+ assert.match(filters,/onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
+ assert.match(filters,/\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
+ assert.match(filters,/dynamic\(\s*\(\) => import\("\.\/home-conversation-guide"\)/);
+ assert.match(filters,/ssr: false/);
+ for(const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety"])
+  assert.ok(filters.includes('"'+id+'": '),id);
+ for(const topic of ["temple","services","courses"])
+  assert.ok(filters.includes('data-home-topic-filter="'+topic+'"'),topic);
+ assert.doesNotMatch(filters,/<HomepageTopicJourneys|<ServicesSolutions|<HomeFreeDiagnosisBanner|<TestSelectionCourseBanner|<HomeExploreSections/);
+ assert.doesNotMatch(filters,/fetch\(|sendBeacon|localStorage|dangerouslySetInnerHTML|\/api\/client/);
 });
 
 test("filter chips link existing localized routes with compact, accessible styling", () => {
@@ -51,6 +56,7 @@ test("filter chips link existing localized routes with compact, accessible styli
     assert.ok(jsx.includes(label));
   for (const style of ["min-height: 44px","@media (max-width: 640px)",":focus-visible","flex-wrap: wrap","prefers-reduced-motion"])
     assert.ok(css.includes(style));
-  assert.match(read("components/holistic-house-home.tsx"), /<HomepageContactCta locale=\{locale\} \/>/);
+  assert.match(read("components/home-expanded-catalog.tsx"),/<HomepageContactCta locale=\{locale\}\s*\/>/);
+  assert.doesNotMatch(read("components/holistic-house-home.tsx"),/<HomepageContactCta/);
   assert.match(read("app/es/page.tsx"), /<PublicConsultationCta locale="es" \/>/);
 });

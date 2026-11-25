@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './owner-telegram-crm-ffmpeg-trace.test.mjs'
 // Run the new metadata contract suite inside the existing owner-video CI command.
 import './owner-telegram-youtube-metadata.test.mjs'
 import assert from 'node:assert/strict'
@@ -234,8 +235,8 @@ test('FFmpeg command arguments use no shell and encode a single bounded 16:9 str
  assert.ok(args.some(v=>v.includes('setsar=1,scale=1920:1080:force_original_aspect_ratio=decrease')))
  assert.ok(args.includes('-aspect:v')&&args.includes('16:9'))
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- assert.match(service,/form\.set\('width',compact\?'640':hd\?'1280':'1920'\)/)
- assert.match(service,/form\.set\('height',compact\?'360':hd\?'720':'1080'\)/)
+ assert.match(service,/form\.set\('width',portraitCompact\?'360':portrait\?'720':compact\|\|photoCompact\?'640':hd\|\|photoCinematic\?'1280':'1920'\)/)
+ assert.match(service,/form\.set\('height',portraitCompact\?'640':portrait\?'1280':compact\|\|photoCompact\?'360':hd\|\|photoCinematic\?'720':'1080'\)/)
  assert.ok(!args.includes('-c:v copy'))
  assert.throws(()=>videoRenderArguments([part('photo',0)],'/tmp/output.mp4'),/INVALID_COMPOSITION/)
 })
@@ -394,8 +395,9 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(migration,/force row level security/ig)
  assert.match(migration,/revoke all on app_private.telegram_owner_video_jobs from public, anon, authenticated, hh_app_inbox/)
  assert.match(migration,/public,file_size_limit,allowed_mime_types\)\nvalues\('hh-owner-video-drafts','hh-owner-video-drafts',false/)
- assert.match(crmWebhook,/verifyMessengerWebhook[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*normalizeMessengerUpdates/)
- assert.match(crmWebhook,/channel:'crm'/)
+  assert.match(crmWebhook,/verifyMessengerWebhook[\s\S]*receiveOwnerTelegramVideoCrmFallback[\s\S]*normalizeMessengerUpdates/)
+  assert.match(crmWebhook,/receiveOwnerTelegramVideoCrmFallback\(config,body\)/)
+  assert.doesNotMatch(crmWebhook,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
  const dotWebhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
  assert.match(dotWebhook,/verifyClientTelegramSecret[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*receiveOwnerTelegramAudioWebhook/)
  assert.match(dotWebhook,/channel:'practice'/)
@@ -405,14 +407,17 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(nextConfig,/\/api\/app\/crm\/messenger\/webhook\/\*/)
  assert.match(nextConfig,/\/api\/app\/notification-channels\/telegram\/webhook/)
  assert.match(nextConfig,/ffmpeg-static\/ffmpeg/)
- assert.match(crmWebhook,/if\(video.background\)after\(/)
+  assert.doesNotMatch(crmWebhook,/if\(video.background\)after\(/)
  assert.match(service,/event.chatId!==owner.chat\|\|event.userId!==owner.chat/)
  assert.match(service,/if\(env.VERCEL_ENV==='preview'\|\|env.HH_OWNER_VIDEO_ENABLED!=='true'\)/)
- assert.match(service,/!\['crm','practice'\].includes\(channel\)/)
- assert.match(service,/if\(channel==='crm'\)\{/)
- assert.match(service,/if\(event.action==='media'\|\|event.action==='reject'\)return \{handled:false\}/)
- assert.match(service,/https:\/\/t\.me\/Andydotbot\?start=audio/)
- assert.match(service,/channel==='practice'&&telegramClientBotMode\(env\)!=='shared_practice'/)
+  assert.match(service,/if\(channel==='crm'\)return receiveOwnerTelegramVideoCrmFallback\(config,update,\{env,fetcher,now\}\)/)
+  const redirect=readFileSync(new URL('../lib/practitioners/owner-telegram-video-crm-fallback.mjs',import.meta.url),'utf8')
+  assert.match(redirect,/if\(event.action==='media'\|\|event.action==='reject'\)return \{handled:false\}/)
+  assert.match(redirect,/https:\/\/t\.me\/Andydotbot\?start=audio/)
+  assert.match(redirect,/event.chatId!==chat\|\|event.userId!==chat/)
+  assert.match(redirect,/resolvedOwnerTelegramEnv\(config,env\)/)
+  assert.doesNotMatch(redirect,/owner-telegram-video-render|ffmpeg-static/)
+  assert.match(service,/channel!=='practice'\|\|telegramClientBotMode\(env\)!=='shared_practice'/)
  assert.match(service,/if\(event.action==='publish'\)/)
  assert.match(service,/if\(event.action==='done'\)/)
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
@@ -585,8 +590,8 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  assert.match(source,/last_update_id=greatest\(last_update_id,\$3\)/)
  assert.match(source,/const restoring=row.state==='cancelled'/)
  assert.match(source,/state in \('preview','cancelled'\)/)
- assert.match(source,/form\.set\('width',compact\?'640':hd\?'1280':'1920'\)/)
- assert.match(source,/form\.set\('height',compact\?'360':hd\?'720':'1080'\)/)
+ assert.match(source,/form\.set\('width',portraitCompact\?'360':portrait\?'720':compact\|\|photoCompact\?'640':hd\|\|photoCinematic\?'1280':'1920'\)/)
+ assert.match(source,/form\.set\('height',portraitCompact\?'640':portrait\?'1280':compact\|\|photoCompact\?'360':hd\|\|photoCinematic\?'720':'1080'\)/)
  assert.doesNotMatch(source,/onBeginUpload:[\s\S]*trimOwnerTelegramVideo\(/)
  const sql=readFileSync(new URL('../supabase/migrations/20261028003500_hh_owner_video_trim_before_youtube.sql',import.meta.url),'utf8')
  assert.match(sql,/add column if not exists source_seconds/)
@@ -618,7 +623,7 @@ test('YouTube owner OAuth start restores an expired/missing admin browser sessio
     '@/lib/app/config':{getAppConfig(){return {}}},
     '@/lib/app/crypto':{seal(){return 'sealed-with-private-server-key'}},
     '@/data/app-services':{PRACTITIONER_ID:'synthetic-owner-id'},
-    '@/lib/practitioners/owner-telegram-video-service':{ownerVideoOauthConfigured(){return configured}},
+    '@/lib/practitioners/owner-telegram-video-oauth-config.mjs':{ownerVideoOauthConfigured(){return configured}},
   }
   const result=ts.default.transpileModule(source,{
     compilerOptions:{module:ts.default.ModuleKind.CommonJS,target:ts.default.ScriptTarget.ES2022}
@@ -661,7 +666,16 @@ test('YouTube owner auth recovery uses fixed destinations across admin, practiti
   const entry=read('components/practitioner-auto-entry.jsx')
   const access=read('lib/app/practitioner-access.js')
   const auth=read('app/api/app/[...path]/route.js')
-  assert.match(login,/['"]youtubeConnect['"]\]\.includes\(params\?\.destination\)/)
+  // Both public owner entry targets are finite, and no query URL is accepted.
+   assert.match(login,/['"]youtube['"],['"]youtubeConnect['"],['"]youtubeConnectEn['"]\]\.includes\(params\?\.destination\)/)
+   assert.match(entry,/youtube: '\/admin\/youtube-upload'/)
+   assert.equal(auth.split("'practitioner-youtube'").length-1,3,
+     'Owner uploader must have exact start/callback/redirect destinations')
+  assert.match(entry,/youtubeConnectEn: '\/api\/admin\/telegram-video\/youtube\/start\?target=en'/)
+  assert.match(access,/youtubeConnectEn: '\/api\/admin\/telegram-video\/youtube\/start\?target=en'/)
+  assert.equal(auth.split("'practitioner-youtubeConnectEn'").length-1,3,
+    'EN owner entry must be allowlisted in auth/start, callback and destination only')
+  assert.match(auth,/continueTo === 'practitioner-youtubeConnectEn'\s*\? `\$\{origin\}\/admin\/login\?destination=youtubeConnectEn`/)
   assert.match(login,/requireAdminRequest\(\)/)
   assert.match(entry,/youtubeConnect: '\/api\/admin\/telegram-video\/youtube\/start'/)
   assert.match(entry,/response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)
@@ -707,10 +721,11 @@ test('manual YouTube handoff reads current exact private cut, not an unsigned pu
 
 test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite target key',()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- const start=service.indexOf('export async function saveOwnerVideoYoutubeConsent(')
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const start=service.indexOf('async function ownerVideoGrant(')
  const end=service.indexOf('export async function ownerVideoYoutubeConnected(',start)
  assert.ok(start>=0&&end>start)
- const oauth=service.slice(start,end)
+ const oauth=consent+'\n'+service.slice(start,end)
  // Production has PRIMARY KEY (practitioner_id,target). An old single-column
  // ON CONFLICT silently makes owner-approved Google callback return failed.
  assert.ok(oauth.includes('(practitioner_id,target,channel_id,token_ciphertext)'))
@@ -958,4 +973,45 @@ test('GitHub FFmpeg fallback remains official, bounded, checksum-pinned and fail
   assert.equal((source.match(/sha256sum --check --status/g)||[]).length,4);
   assert.match(source,/install -m 755 "\$FFMPEG_BIN" node_modules\/ffmpeg-static\/ffmpeg/);
   assert.doesNotMatch(source,/continue-on-error:\s*true|skip-hash|untrusted-mirror/i);
+});
+
+test('YouTube OAuth callback dependency boundary excludes video rendering and story catalogues',()=>{
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(callback,/from '@\/lib\/practitioners\/owner-telegram-video-consent'/)
+ assert.doesNotMatch(callback,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
+ assert.doesNotMatch(consent,/owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
+ assert.match(service,/export \{ownerYoutubeExpectedChannel,saveOwnerVideoYoutubeConsent\} from '\.\/owner-telegram-video-consent.js'/)
+})
+
+
+test('YouTube OAuth start imports configuration without video rendering dependencies',()=>{
+ const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+ const config=readFileSync(new URL('../lib/practitioners/owner-telegram-video-oauth-config.mjs',import.meta.url),'utf8')
+ assert.ok(start.includes("from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'"))
+ assert.doesNotMatch(start,/owner-telegram-video-service/)
+ assert.doesNotMatch(config,/owner-telegram-video-service|owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
+})
+
+test('owner-only story format switches a real 9:16 / 16:9 render before media assembly',()=>{
+ const uuid='b6e8526e-c251-4dd5-a9ca-2886c430f912';
+ const v=parsed(callback('hh-video:aspect:v:'+uuid));
+ assert.equal(v?.action,'story_aspect');
+ assert.equal(v?.aspect,'portrait');
+ assert.equal(v?.jobId,uuid);
+ assert.equal(parsed(callback('hh-video:aspect:h:'+uuid))?.aspect,'landscape');
+ assert.equal(parsed(callback('hh-video:aspect:v:bad')),null);
+ const msg=value=>parsed({update_id:2012,message:{
+  chat:privateBase,from,date:TIME/1000,message_id:67,text:value}});
+ assert.equal(msg('/video_format vertical')?.aspect,'portrait');
+ assert.equal(msg('/video_format horizontal')?.aspect,'landscape');
+ assert.equal(msg('/video_format@foreignbot vertical'),null);
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8');
+ const renderer=readFileSync(new URL('../lib/practitioners/owner-telegram-story-render.mjs',import.meta.url),'utf8');
+ assert.match(service,/storyAspectButtons\(result.id\)/);
+ assert.match(service,/updateStoryAspect\(config,event\)/);
+ assert.match(service,/targetAspect:batch.targetAspect\|\|'landscape'/);
+ assert.match(service,/photo_portrait_720x1280_12fps/);
+ assert.match(renderer,/targetAspect==='portrait'\|\|!montage.hasFourApprovedSources/);
 });

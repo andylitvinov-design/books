@@ -142,11 +142,23 @@ test("inline answers and free text share the same state machine and renderer",()
  const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
  const styles=readFileSync(new URL("../components/mandala-video-director-chat.module.css",import.meta.url),"utf8");
  const thread=chat.indexOf("className={css.thread}");
- const composer=chat.indexOf("<form className={css.composer}");
- const choices=chat.indexOf("data-chat-inline-choices");
- const commands=chat.indexOf("data-chat-command={value}");
- assert.ok(thread>=0&&choices>thread&&choices<composer,"answer buttons must be inside chat history");
- assert.ok(commands>thread&&commands<composer,"function buttons must be in the active bot turn");
+ const composerDeclaration=chat.indexOf("const composer=<form className={css.composer}");
+ const composerAfterThread=chat.indexOf("{!showWelcome&&composer}",thread);
+ const choices=chat.indexOf("data-chat-inline-choices",thread);
+ const commands=chat.indexOf("data-chat-command={value}",thread);
+ assert.ok(composerDeclaration>=0&&composerDeclaration<thread&&composerAfterThread>thread,
+   "one reused composer may be declared above the thread and rendered below active chat");
+ assert.ok(thread>=0&&choices>thread&&choices<composerAfterThread,
+   "answer buttons must be inside chat history");
+ assert.ok(commands>thread&&commands<composerAfterThread,
+   "function buttons must be in the active bot turn");
+ assert.ok(chat.includes("{composer}")&&chat.includes("data-video-chat-composer"),
+   "the welcome and dialogue must reuse one executable form");
+ assert.ok(chat.includes("{chatNav}")&&!chat.includes("{showWelcome&&chatNav}")&&
+   !chat.includes("{!showWelcome&&chatNav}"),
+   "one bottom tab navigation shared by welcome and all conversation stages");
+ assert.ok(chat.indexOf("{chatNav}",composerAfterThread)>composerAfterThread,
+   "keyboard focus follows the visible reply composer before bottom navigation");
  for(const marker of ["line.id===activeAssistantId","data-chat-assistant-turn",
    "data-chat-choice-stage={step}","data-video-chat-skip-phrase",
    "data-video-chat-tree-choice","onClick={()=>answer(value)}",

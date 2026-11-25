@@ -16,7 +16,10 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /reviewVideos\.map/);
+  assert.match(landing, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos|reviewSwipeHint/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-free-review-intro-video/);
   assert.match(landing, /data-featured-free-review-testimonials/);
@@ -25,8 +28,8 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(oneService, /data-personal-express-enquiry/);
   assert.match(oneService, /express-review-focus/);
   assert.match(oneService, /"situation" \| "energy"/);
-  assert.match(oneService, /"По ситуации"/);
-  assert.match(oneService, /"По энергии и здоровью"/);
+  assert.match(oneService, /"О ситуации в жизни"/);
+  assert.match(oneService, /"О самочувствии"/);
   assert.match(oneService, /compactPhone stayAfterSave resetKey=\{focus\}/);
   assert.match(oneService, /publicTopic=\{"Express review focus: " \+ t\.areas\[focus\]\.tag\}/);
   assert.doesNotMatch(oneService, /option:|topic:|context:|fetch\(|payment_received/);
@@ -46,7 +49,7 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
-  assert.match(enquiry, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(enquiry, /if \(expandedRef\.current\) closeDisclosure\(\); else openDisclosure\(\)/);
   assert.match(enquiry, /window\.history\.replaceState\(window\.history\.state/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /useEffect\(\(\) => \{/);
@@ -58,18 +61,18 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   // Messenger cards now carry the request CTA; the inline form stays available
   // as a smaller, accessible alternative rather than a duplicate primary button.
   for (const localized of [
-    "Use the secure website form instead",
-    "Заполнить защищённую форму на сайте",
-    "Usar el formulario seguro de esta web",
+    "Choose Telegram or WhatsApp",
+    "Выбрать Telegram или WhatsApp",
+    "Elegir Telegram o WhatsApp",
   ]) assert.ok(enquiry.includes(localized), localized);
   const messenger = source("components/telegram-diagnostic-entry.tsx");
   for (const localized of [
-    "Request my free review via Telegram", "Request my free review via WhatsApp",
-    "Запросить бесплатный разбор через Telegram", "Запросить бесплатный разбор через WhatsApp",
-    "Solicitar mi revisión gratis por Telegram", "Solicitar mi revisión gratis por WhatsApp",
+    "Write on Telegram", "Write on WhatsApp",
+    "Написать в Telegram", "Написать в WhatsApp",
+    "Escribir a Andrey por Telegram", "Escribir a Andrey por WhatsApp",
   ]) assert.ok(messenger.includes(localized), localized);
   assert.ok(enquiry.indexOf("<TelegramDiagnosticEntry locale={locale} />") <
-    enquiry.indexOf("<button ref={revealRef}"), "messenger actions appear before the optional website form");
+    enquiry.indexOf("<button ref={revealRef}"), "messenger actions precede the optional handoff information");
   assert.doesNotMatch(enquiry, /reveal: "Request my free review"/);
   assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(enquiryCss, /animation:expressUnfold/);
@@ -78,7 +81,10 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   // target in Safari; native form radio and consent remain unchanged.
   assert.match(enquiryCss, /touch-action:manipulation/);
   assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
-  assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
+  // Looking up an active nested modal for Escape does not render a modal.
+  // This page must still have no modal JSX, body lock, or implicit submission.
+  assert.doesNotMatch(enquiry, /<(?:dialog|section|div)\b[^>]*(?:role="dialog"|aria-modal)/);
+  assert.doesNotMatch(enquiry, /style\.overflow|fetch\(|booking_confirmed|payment_received/);
   assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);
 });
 

@@ -39,8 +39,12 @@ test('all three Home pages offer exactly the same free installer without duplica
   const es=read('app/es/page.tsx')
   const banner=read('components/free-mobile-app-banner.tsx')
   const css=read('components/free-mobile-app-banner.module.css')
-  assert.match(home,/<FreeMobileAppBanner locale=\{locale\} \/>/)
-  assert.match(es,/<FreeMobileAppBanner locale="es" \/>/)
+  const expanded=read('components/home-expanded-catalog.tsx')
+  assert.match(home,/<HomeDeferredSections locale=\{locale\}\s*\/>/)
+  assert.match(es,/<HomeDeferredSections locale="es"\s*\/>/)
+  assert.doesNotMatch(home,/<FreeMobileAppBanner/)
+  assert.doesNotMatch(es,/<FreeMobileAppBanner/)
+  assert.match(expanded,/<FreeMobileAppBanner locale=\{locale\}\s*\/>/)
   assert.match(banner,/data-hh-free-app-banner/)
   assert.match(banner,/data-hh-free-app-link/)
   assert.match(banner,/href=\{`\/\$\{locale\}\/install`\}/)
@@ -79,7 +83,7 @@ test('free install button uses browser PWA event, manual fallbacks and never cla
   assert.match(prompt,/pending = null/)
 })
 
-test('existing Holistic House manifest and private cache policy are unchanged by free PWA installation',()=>{
+test('same Holistic House identity starts on the public home and keeps private cache protected',()=>{
   const manifests=[
     ['public/holistic-house-app.webmanifest','en'],
     ['public/holistic-house-app-ru.webmanifest','ru'],
@@ -90,7 +94,7 @@ test('existing Holistic House manifest and private cache policy are unchanged by
     assert.equal(m.id,'/en/app')
     assert.equal(m.name,'Holistic House')
     assert.equal(m.display,'standalone')
-    assert.equal(m.start_url,`/${locale}/app/messages`)
+    assert.equal(m.start_url,`/${locale}`)
     assert.ok(m.icons.some(i=>i.sizes==='192x192'))
     assert.ok(m.icons.some(i=>i.sizes==='512x512'))
   }
@@ -101,7 +105,7 @@ test('existing Holistic House manifest and private cache policy are unchanged by
   assert.doesNotMatch(serviceWorker,/caches\.open\(.*private/)
 })
 
-test('install CI tests exact real messenger-first manifest, EN/RU/ES server pages and icon assets',()=>{
+test('install CI tests homepage-first manifest, EN/RU/ES server pages and icon assets',()=>{
   const workflow=read('.github/workflows/holistic-house-mobile-install.yml')
   const checker=read('scripts/verify-hh-mobile-head.mjs')
   assert.match(workflow,/holistic-house-free-install\.test\.mjs/)

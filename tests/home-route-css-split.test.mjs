@@ -18,3 +18,10 @@ test("large Academy CSS and admin video styling are code-split from the public r
   assert.match(root, /import "\.\/holistic-house-home\.css"/);
   assert.match(root, /import "\.\/ia-v2\.css"/);
 });
+
+test("large catalog showcase styles are route-scoped, not first-load global",()=>{
+ const root=read("app/layout.tsx");
+ const catalog=read("components/catalog-showcase.tsx");
+ assert.ok(!root.includes('import "./catalog-showcase.css"'));
+ assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
+});

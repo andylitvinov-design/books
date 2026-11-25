@@ -39,3 +39,15 @@ test("revocation deletes memory while consent row is locked",()=>{
  }
  assert.match(sql,/use_in_dialogue boolean not null default false/);
 });
+
+test("browser memory panel is remounted and stale account reads cannot repopulate it",()=>{
+ const conversation=read("components/holistic-language-conversation.tsx");
+ const panel=read("components/holistic-agent-memory-panel.tsx");
+ assert.match(conversation,/setMemoryPanelRevision\(revision=>revision\+1\)/);
+ assert.match(conversation,/<HolisticAgentMemoryPanel key=\{memoryPanelRevision\}/);
+ assert.match(conversation,/currentOwnerMatchesMemory\(latest,memoryOwner\)/);
+ assert.match(conversation,/turnMemoryEpoch!==memoryEpoch.current/);
+ assert.match(panel,/const epoch=\+\+readEpoch.current/);
+ assert.match(panel,/useEffect\(\(\)=>\(\)=>\{readEpoch.current\+=1;\},\[\]\)/);
+ assert.match(panel,/if\(epoch!==readEpoch.current\)return/);
+});

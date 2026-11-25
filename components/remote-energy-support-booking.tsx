@@ -394,6 +394,29 @@ export function RemoteEnergySupportBooking({
       setDuration(budgetOptions[0].duration);
     }
   }, [selectedServiceId, budgetOptions, duration]);
+
+  // Assist Reiki passes only a preferred slot and moderated duration, not a booking.
+  // Always revalidate the current published master and price; no implied payment.
+  useEffect(() => {
+    if (mode !== "standalone" || !preferredPractitioner) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedDuration = Number(params.get("duration"));
+    const published = masters.find(master => master.slug === preferredPractitioner);
+    if (![10, 20, 30].includes(requestedDuration) || !published?.priceOptions.some(option =>
+      option.duration === requestedDuration && Number.isFinite(option.price) && option.price > 0)) return;
+    setDuration(requestedDuration);
+    const requestedDay = params.get("date") || "";
+    const requestedTime = params.get("time") || "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(requestedDay) ||
+        !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestedTime)) return;
+    const stamp = new Date(requestedDay + "T" + requestedTime + ":00").getTime();
+    if (Number.isFinite(stamp) && stamp > Date.now() + 5 * 60 * 1000 &&
+        stamp <= Date.now() + 90 * 24 * 60 * 60 * 1000) {
+      setDay(requestedDay);
+      setTime(requestedTime);
+    }
+  }, [masters, mode, preferredPractitioner]);
+
   useEffect(() => {
     if (methods.length && !methods.includes(method)) setMethod(methods[0]);
   }, [methods, method]);
@@ -763,15 +786,17 @@ export function RemoteEnergySupportBooking({
                         data-remote-public-order-contact data-remote-visual-screen="final-capture" aria-label={t.send}>
                         <h4>{locale === "ru" ? "Оформление заявки" : locale === "es" ? "Enviar solicitud" : "Request contact"}</h4>
                         <p>{locale === "ru"
-                          ? "Укажите телефон или войдите через Google. После отправки с вашим согласием заявка появится в CRM. Время и оплата ещё не подтверждены."
+                          ? "Выберите Telegram или WhatsApp и отправьте сообщение. Пока это не запись и не оплата; привязка к CRM требует подтверждённой переписки."
                           : locale === "es"
-                            ? "Indica tu teléfono o usa Google. La solicitud se guarda solo con tu consentimiento; todavía no hay reserva ni pago."
-                            : "Enter your phone or use Google. Your consented request is saved to CRM; no booking or payment is confirmed."}</p>
+                            ? "Elige Telegram o WhatsApp y pulsa Enviar. La reserva, el pago y la vinculación al CRM aún no están confirmados."
+                            : "Choose Telegram or WhatsApp and press Send in the app. Booking, payment and CRM linking require separate verification."}</p>
                         <ContactChannelChooser
                           locale={locale} quick cartContact stayAfterSave
                           whatsappUrl={whatsappEnquiryUrl({
                             locale, service: remoteSupportPublicServiceTitle(contactDraft),
                             request: "Please confirm the Reiki support enquiry",
+                            option: remoteSupportPublicRequestSummary(contactDraft, locale),
+                            pagePath:"/"+locale+"/holistic-support/mobile",
                           })}
                           publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
                           publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}

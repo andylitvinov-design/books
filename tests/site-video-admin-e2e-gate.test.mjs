@@ -76,5 +76,5 @@ test('site-video publish invalidates public pages but does not remount active ed
   assert.match(ui,/setRecords\(previous =>/);
   assert.match(ui,/setNotice\(\{ key, kind: intent \}\)/);
   assert.match(ui,/<div aria-live="polite" aria-atomic="true">/);
-  assert.match(source,/await expect\(target\.locator\('\[aria-live="polite"\]'\)\)\.toContainText\('Video published to the selected page\.'\)/);
+  assert.match(source,/await expect\(target\.locator\('\[aria-live="polite"\]'\)\)\.toContainText\('Video published to the selected page\.', \{ timeout: 30_000 \}\)/);
 });

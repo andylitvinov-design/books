@@ -47,7 +47,9 @@ test('owner My Clients merges existing real CRM, direct, request and business ro
  const hub=source('components/app/messages-hub.jsx')
  const client=source('components/app/messages-simple-inbox.jsx')
  const css=source('components/app/messages-simple-inbox.module.css')
- assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
+ assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
+ assert.match(hub,/data-embedded-owner-messages/)
+ assert.match(hub,/data-owner-telegram-settings-shortcut/)
  assert.match(hub,/embedded=\{embedded\}/)
  assert.match(hub,/onClientsCount=\{onClientsCount\}/)
  assert.match(client,/data-embedded=\{embedded\|\|undefined\}/)
@@ -116,7 +118,15 @@ test('zero owned orders shows exactly two real free offer links, and truthful EN
 test('practitioner client inbox is unified without revealing owner-only CRM',()=>{
  const hub=source('components/app/messages-hub.jsx')
  const ui=source('components/app/messages-simple-inbox.jsx')
- assert.match(hub,/if\(embedded&&requestData\?\.accountId\)return <MessagesSimpleInbox/)
+ assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
+ assert.match(hub,/if\(!embedded\)return ownerInbox/)
+ assert.match(hub,/if\(embedded&&requestData\?\.accountId\)return <div className=\{styles.embeddedMessages\} data-embedded-member-messages>/)
+ const ownerSection=hub.slice(hub.indexOf('if(ownerAccountId){'),hub.indexOf('if(ownerBootstrapPending&&!data)'))
+ const memberSection=hub.slice(hub.indexOf('if(embedded&&requestData?.accountId)'),hub.indexOf('if(embedded)return'))
+ assert.match(ownerSection,/data-owner-telegram-settings-shortcut/)
+ assert.match(ownerSection,/\/app\/messages\/telegram-settings/)
+ assert.doesNotMatch(memberSection,/data-owner-telegram-settings-shortcut/)
+ assert.equal((hub.match(/data-owner-telegram-settings-shortcut/g)||[]).length,1)
  assert.match(hub,/crmEnabled=\{false\} embedded/)
  assert.match(hub,/accountId=\{requestData\.accountId\}/)
  assert.match(ui,/crmEnabled=true,onClientsCount/)
@@ -130,8 +140,10 @@ test('practitioner client inbox is unified without revealing owner-only CRM',()=
 test('direct messenger remains available when the optional request directory is down',()=>{
  const hub=source('components/app/messages-hub.jsx')
  assert.match(hub,/if\(embedded\)return <div className=\{styles.hub\} data-member-direct-fallback>/)
- assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
- assert.match(hub,/!loading&&!unauthenticated&&!bootstrapSignInRequired/)
+ assert.match(hub,/<MessengerGuestGate locale=\{locale\} section="clients"\/>/)
+ assert.match(hub,/if\(embedded\)return[\s\S]*?<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
+ assert.match(hub,/if\(ownerAccountId&&directDestination\)[\s\S]*?recipientSlug=\{directDestination\}/)
+ assert.match(hub,/\(unauthenticated\|\|bootstrapSignInRequired\)[\s\S]*?<MessengerGuestGate/)
 })
 
 test('CSP class is identical on Spanish app routes in server and client',()=>{
@@ -145,10 +157,15 @@ test('CSP class is identical on Spanish app routes in server and client',()=>{
 test('owner-approved Messenger restores truthful compact empty Orders art and copy',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const css=source('components/app/messages-orders-clients.module.css')
- assert.match(ui,/const listHelper=section!=='ai'&&!detailMode&&!loading&&!error&&Boolean\(ordersData\)/)
+ assert.match(ui,/const listHelper=section!=='ai'&&section!=='news'&&!detailMode&&!loading&&!error&&Boolean\(ordersData\)/)
+ assert.match(ui,/<div id="hh-news-panel"[^>]*hidden=\{section!=='news'\}/)
  assert.match(ui,/data-messenger-list-helper/)
- assert.match(ui,/<div id="hh-orders-panel"[^>]*>\s*\{listHelper\}/)
- assert.match(ui,/<div id="hh-clients-panel"[^>]*>\s*\{listHelper\}/)
+ assert.match(ui,/<div id="hh-orders-panel"[^>]*>/)
+ assert.match(ui,/<div id="hh-clients-panel"[^>]*>/)
+ assert.match(ui,/const guestAccess=aiIdentity.status==='guest'/)
+ assert.match(ui,/<MessengerGuestGate locale=\{locale\} section="orders"\/>/)
+ assert.match(ui,/<MessengerGuestGate locale=\{locale\} section="clients"\/>/)
+ assert.equal((ui.match(/\{listHelper\}/g)||[]).length,2) // Both signed-in list helpers remain
  assert.match(ui,/className=\{styles.emptyHint\} role="status"/)
  assert.match(ui,/t.emptyHelp/)
  assert.match(ui,/freeConsultation:'Получить бесплатный письменный разбор'/)
@@ -193,10 +210,13 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  const css=source('components/app/messages-orders-clients.module.css')
  for(const text of ['AI · Orders · Clients','ИИ · Заказы · Клиенты','IA · Pedidos · Clientes'])
    assert.ok(ui.includes(text),text)
- assert.match(ui,/<p>\{t.subtitle\}<\/p>/)
+ for(const label of ["Inner Alchemist","Внутренний алхимик","Alquimista interior"])assert.ok(ui.includes(label),label);
+ assert.match(ui,/data-hh-ali-persona-open/);
+ assert.match(source('components/app/ali-persona-picker.jsx'),/hh:messenger-open-history/);
+ assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
- const header=ui.indexOf('<header className={styles.head}>')
- const tabs=ui.indexOf('<div className={styles.sections} role="tablist"')
+ const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
+ const tabs=ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')
  const orders=ui.indexOf('<div id="hh-orders-panel"')
  assert.ok(tabs!==-1&&header>tabs&&orders>header,'tab switcher appears before shared heading')
  assert.equal(ui.slice(header,tabs).includes('introCard'),false,'no network-dependent banner before tabs')
@@ -207,21 +227,74 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger keeps a clear welcome and two big chat choices, not five mini-cards',()=>{
+test('owner Messenger preserves one chat, Get Support plus six choices and locale control',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
  const chat=source('components/holistic-agent-chat.tsx')
  const mobile=source('app/[locale]/app/messages/messages-page.css')
- assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
-   ui.indexOf('<header className={styles.head}>'))
+ assert.ok(ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')<
+   ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>'))
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
  assert.match(css,/\.content\{display:flex;flex:1/)
  assert.ok(chat.includes('data-hh-ai-welcome'))
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- assert.doesNotMatch(ai,/data-chat-menu-rail|setQuickPrompt\(/)
+ // One original protected chat. Approved Get Support plus six actions open only
+ // on a user gesture; its old IHelpTopics rail and automatic prompt transfer
+ // were retired. Auth/consent, one composer and local draft remain intact.
+ assert.doesNotMatch(ai,/data-chat-menu-rail/)
+ assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact messengerView/)
+ assert.match(ai,/authenticated=\{authenticated\} authStatus=\{authStatus\}/)
+ assert.match(ai,/onAuthRetry=\{onAuthRetry\}/)
+ assert.match(ai,/onConversationLocaleChange=\{onConversationLocaleChange\}/)
+ assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/)
+ assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>[\s\S]*?<MessengerAiLanding/)
+ assert.match(chat,/homeHandoffPreview&&messages\.length===0&&[\s\S]*?data-home-handoff-user-preview/)
+ assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
+ assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
+ assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
+ assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
+ assert.match(chat,/onSupport=\{openSupportQuiz\}/)
+ assert.match(chat,/function openSupportQuiz\(\)/)
+ assert.match(chat,/setSupportQuizOpen\(true\)/)
+ assert.match(chat,/if\(!quickPrompt\)return;\s*setDraft\(quickPrompt\.text\.slice\(0,2000\)\)/)
+ const landing=source('components/app/messenger-ai-landing.tsx')
+ assert.match(landing,/const ACTIONS=\[/)
+ for(const id of ['support','test','video','practice','session','course','ask'])
+   assert.ok(landing.includes('{id:"'+id+'"'),id)
+ assert.equal((landing.match(/\{id:"(?:support|test|video|practice|session|course|ask)"/g)||[]).length,7)
+ assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
+ assert.match(landing,/onClick=\{item\.id==="support"\?onSupport:item\.id==="video"\?onCreateVideo:/)
+ // The hero is a native MP4 player, starts only after the explicit tap,
+ // and keeps audio language, error recovery and close/pause behavior visible.
+ assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
+ assert.match(landing,/const start=\(\)=>\{/);
+ assert.match(landing,/const media=videoRef\.current;\s*if\(!media\)return;\s*if\(media\.error\)media\.load\(\);\s*const attempt=media\.play\(\)/);
+ assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
+ assert.match(landing,/onError=\{fail\} onPlaying=\{\(\)=>\{setNativeStarted\(true\);setFailed\(false\);\}\}/);
+ assert.match(landing,/const close=\(\)=>\{/);
+ assert.match(landing,/videoRef\.current\?\.pause\(\)/);
+ assert.match(landing,/onClick=\{close\}/);
+ assert.match(landing,/const retry=\(\)=>\{/);
+ assert.match(landing,/onClick=\{retry\}/);
+ // The original video stays user-activated. Safari failure fallback is also
+ // explicitly gated behind Play + a real playback failure, never autoplayed.
+ assert.match(landing,/playing&&failed&&<iframe/);
+ assert.match(landing,/data-hh-ai-intro-fallback="heygen"/);
+ assert.match(landing,/src=\{introduction\.embed\}/);
+ assert.match(landing,/if\(!playing\|\|failed\|\|nativeStarted\)return;/);
+ assert.match(landing,/window\.setTimeout\(/);
+ assert.match(landing,/window\.clearTimeout\(timer\)/);
+ assert.doesNotMatch(landing,/<video[^>]*\bautoPlay\b|<iframe[^>]*\bautoPlay\b|youtube-nocookie/);
+ assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only user-activated start may reveal the native player');
+ assert.match(landing,/const start=\(\)=>\{\s*setNativeStarted\(false\);\s*setFailed\(false\);\s*setPlaying\(true\);/);
+ assert.match(landing,/videoLanguage:"English audio"/);
+ assert.match(landing,/videoLanguage:"Русская озвучка"/);
+ assert.match(landing,/videoLanguage:"Audio en inglés"/);
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)
@@ -271,7 +344,7 @@ test('hidden private dialogs never hide navigation in another folder',()=>{
 test('AI long messages auto-grow safely and scrollback exposes explicit new-reply navigation',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const css=source('components/holistic-agent-chat.module.css')
- assert.match(agent,/input\.style\.height='44px'/)
+ assert.match(agent,/input\.style\.height='44px'|const baseHeight=ongoing\?40:44;\s*input\.style\.height=baseHeight\+"px"/)
  assert.match(agent,/Math\.min\(100,input\.scrollHeight\)/)
  assert.match(agent,/followTail\.current/)
  assert.match(agent,/setNewBelow\(true\)/)
@@ -312,6 +385,9 @@ test('mobile dock follows the actual visual keyboard, not lingering input focus'
  assert.ok(hub.includes('const limit=keyboard?bottom:'))
  assert.ok(hub.includes('sharedKeyboard||window.innerHeight-bottom>92'))
  assert.ok(page.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing])'))
+ assert.ok(page.includes('body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"])'))
+ assert.ok(!page.includes('body:has(.hh-messages-page [data-hh-immersive-dialogue="true"])'))
  assert.ok(!page.includes(':has(input:focus,textarea:focus)'))
  assert.ok(aiCss.includes('.content{display:flex;flex:1'))
  assert.ok(source('components/holistic-agent-chat.module.css').includes('>.form'))

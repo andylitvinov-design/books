@@ -7,8 +7,10 @@ on:
       - 'scripts/prepare-holistic-house-native.mjs'
       - 'scripts/prepare-holistic-house-play-release.mjs'
       - 'scripts/verify-hh-direct-apk-candidate.mjs'
+      - 'scripts/bootstrap-hh-apk-signing.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
+      - 'tests/hh-apk-signing-bootstrap.test.mjs'
       - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
       - 'tests/holistic-house-native-build.test.mjs'
@@ -28,7 +30,6 @@ on:
       # only after this successor is BASE-trusted in production.
       - 'capacitor.config.json'
       - 'components/native-**'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/native-ci.yml'
   push:
@@ -43,8 +44,10 @@ on:
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-play-release.mjs'
       - 'scripts/verify-hh-direct-apk-candidate.mjs'
+      - 'scripts/bootstrap-hh-apk-signing.mjs'
       - '.github/workflows/holistic-house-play-aab.yml'
       - 'tests/holistic-house-play-release.test.mjs'
+      - 'tests/hh-apk-signing-bootstrap.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -70,11 +73,17 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify native source, consent, ownership and account isolation
         run: |
           npm run native:check
-          node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+          node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
           node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Report native contract job completion
         if: always()
@@ -116,7 +125,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
@@ -173,7 +182,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           HH_PLAY_VERSION_CODE: '2'
-          HH_PLAY_VERSION_NAME: '0.0.0-ci'
+          HH_PLAY_VERSION_NAME: '0.0.0'
           HH_ANDROID_KEYSTORE_PASSWORD: 'ci-only-not-a-production-credential'
           HH_ANDROID_KEY_ALIAS: 'ci-hh-test'
           HH_ANDROID_KEY_PASSWORD: 'ci-only-not-a-production-credential'
@@ -220,7 +229,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs tests/hh-apk-signing-bootstrap.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs

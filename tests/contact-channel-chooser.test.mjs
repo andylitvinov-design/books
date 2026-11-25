@@ -6,21 +6,29 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp, TELEGRAM_USERNAME }
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Telegram prefill preserves all verified enquiry details in EN/RU/ES, without source query strings", () => {
+test("Telegram service handoff retains public title, not client text, prices or source queries", () => {
   for (const locale of ["en", "ru", "es"]) {
     const wa = whatsappEnquiryUrl({
       locale, service: "Tantra Reiki Level 1",
-      request: "Please confirm the full initiation and the available start date",
+      request: "Please confirm the full initiation and available date — private",
       option: "Personal initiation · €50 / 30 min",
-      topic: "Energy practice",
+      topic: "Energy practice and sensitive context",
+      context: "Confidential history",
       pagePath: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation?private=do-not-send",
     });
     const tg = new URL(telegramEnquiryUrlFromWhatsApp(wa));
+    const body = tg.searchParams.get("text") || "";
     assert.equal(tg.origin, "https://t.me");
     assert.equal(tg.pathname, "/" + TELEGRAM_USERNAME);
-    assert.equal(tg.searchParams.get("text"), new URL(wa).searchParams.get("text"));
-    assert.match(tg.searchParams.get("text") || "", /Tantra Reiki Level 1/);
-    assert.doesNotMatch(tg.searchParams.get("text") || "", /do-not-send/);
+    assert.match(body, /Tantra Reiki Level 1/);
+    assert.doesNotMatch(body, /private|available date|€50|Energy practice|sensitive context|Confidential history|\/academy\/|do-not-send|HH-REQ|hhreview/);
+    assert.equal(tg.searchParams.has("start"), false);
+    assert.ok(body.length < 260, "Only a bounded public service description belongs in the draft");
+    // The original WhatsApp draft may retain voluntary client details; its
+    // text is NOT a Telegram consent, request submission or medical record.
+    assert.ok(new URL(wa).searchParams.get("text")?.includes("Selected option:") ||
+      new URL(wa).searchParams.get("text")?.includes("Выбранный вариант:") ||
+      new URL(wa).searchParams.get("text")?.includes("Opción elegida:"));
   }
 });
 
@@ -111,16 +119,17 @@ test("primary capture components render channel chooser after service selection 
 
 });
 
-test("cart form is inert until real hydration, with phone and explicit consent still required", () => {
+test("default cart is messenger-only; historical phone/Google form stays gated behind explicit rollback", () => {
   const ui = read("components/contact-channel-chooser.tsx");
   const qa = read("scripts/verify-storefront-shop-browser.mjs");
   assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
   assert.match(ui, /cartContact && !cartFormHydrated/);
   assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
   assert.match(ui, /\!consent/);
-  assert.match(qa, /form\[data-contact-hydrated="true"\]/);
-  assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
-  assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
+  assert.match(qa, /data-messenger-only-contact/);
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /data-messenger-only-channel/);
+  assert.match(qa, /syntheticEnquiries.length,0/);
 });
 
 test("WebKit cart consent fallback uses only a real checked click, never implicit consent", () => {
@@ -136,10 +145,10 @@ test("WebKit cart consent fallback uses only a real checked click, never implici
   assert.doesNotMatch(cart, /onClick=\{cartContact \? event => \{\s*setConsent\(true\)/,
     "never manufacture consent from a generic click");
   const qa = read("scripts/verify-storefront-shop-browser.mjs");
-  assert.match(qa, /await requiredConsent\.click\(\)/,
+  assert.match(qa, /await wa\.waitFor\(/,
     "real WebKit acceptance must still exercise an actual visitor click");
-  assert.match(qa, /checkbox\.checked === true/);
-  assert.match(qa, /submit\.disabled === false/);
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /unverified phone or Google session/);
 });
 
 test("optional name disclosure uses one native user click, reset only on changed offer, and never changes consent", () => {

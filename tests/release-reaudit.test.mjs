@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isTransientYouTubePosterTimeout } from '../scripts/public-poster-readiness.mjs';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
@@ -129,7 +130,7 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 7, 'All seven menu link groups close their disclosure, including Shop, Cart and Free App');
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 9, 'All nine menu link groups close their disclosure, including Services, human specialists, Shop, Cart and Free App');
   assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
@@ -213,6 +214,49 @@ test('changing paid service choices derives a fresh WhatsApp URL; free choices o
   assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
 });
 
+test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const helper = read('scripts/public-poster-readiness.mjs');
+  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(helper,/if \(await image\.isVisible\(\)\)/);
+  assert.match(helper,/el\.loading = 'eager'/);
+  assert.match(helper,/if \(await summary\.isVisible\(\)\)/);
+  assert.match(helper,/await details\.evaluate\(el => \{ el\.open = true; \}\)/);
+  assert.match(helper,/await expect\.poll/);
+  assert.match(helper,/el\.decode\(\)/);
+  assert.match(helper,/el\.currentSrc === selected/);
+  assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
+});
+
+test('Services release audit scopes simulated directory failure without weakening page or image gates', () => {
+  const verifier=read('scripts/verify-release-reaudit.mjs');
+  const reiki=read('components/assist-reiki-session.tsx');
+  assert.match(verifier,/context\.route\(\/\\\/api\\\/public\\\/remote-energy-support-masters/);
+  assert.match(verifier,/status: 503, contentType: 'application\/json'/);
+  assert.match(verifier,/\[data-assist-reiki-session\] \[role="status"\] button/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(verifier,/assert\.deepEqual\(errors, \[\]/);
+  assert.match(reiki,/const deadline = window\.setTimeout/);
+  assert.match(reiki,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(reiki,/\}, 8000\)/);
+  assert.match(reiki,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(reiki,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(reiki,/onClick=\{\(\) => setRetry\(value => value \+ 1\)\}/);
+});
+
+test('Public Services master directory has a real bounded abort and an unavailable state', () => {
+  const gallery = read('components/holistic-support-master-gallery.tsx');
+  assert.match(gallery,/const deadline = window\.setTimeout/);
+  assert.match(gallery,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(gallery,/\}, 8000\)/);
+  assert.match(gallery,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(gallery,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(gallery,/if \(!controller\.signal\.aborted\) setFailed\(true\)/);
+});
+
 test('long Maya readers wait for rendered content instead of global network idleness', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const block = verifier.match(/check\('maya-reader-and-images'[\s\S]*?return \{ sourceVisible: true, \.\.\.language \};/)?.[0] ?? '';
@@ -226,12 +270,14 @@ test('long Maya readers wait for rendered content instead of global network idle
 test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   assert.match(verifier, /check\('consultation-safe-handoff'/);
-  assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-messenger-only-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /option\[value="30-min"\].*€50/);
   assert.match(verifier, /option\[value="60-min"\].*€100/);
-  assert.match(verifier, /No enquiry without explicit reply consent/);
+  assert.match(verifier, /data-messenger-only-intake/);
+  assert.match(verifier, /data-messenger-only-channel/);
+  assert.match(verifier, /contactFieldsAbsent: true/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
@@ -244,23 +290,24 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
-test('release audit verifies current compact paid capture and safe synthetic handoff', () => {
+test('release audit verifies messenger-only paid service capture without collecting typed personal data', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
-  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-safe-handoff'"), verifier.indexOf('if (width === 390)'));
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-messenger-only-handoff'"), verifier.indexOf('if (width === 390)'));
   assert.match(paid, /data-service-visual-screen="final-capture"/);
-  assert.match(paid, /data-compact-hydrated/);
+  assert.match(paid, /data-messenger-only-intake/);
+  assert.match(paid, /form, input, textarea/);
+  assert.match(paid, /data-messenger-offer-format/);
   assert.match(paid, /option\[value="30-min"\].*€50/);
   assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /data-messenger-only-channel/);
+  assert.match(paid, /noopener/);
+  assert.match(paid, /noreferrer/);
+  assert.match(paid, /referrerpolicy/);
+  assert.match(paid, /Only approved WhatsApp or Telegram destinations/);
   assert.match(paid, /services\/free-situation-review/);
-  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
-  assert.match(paid, /attribution\)\.not\.toBeChecked/);
-  assert.match(paid, /assertSyntheticLoopback\(paidPage\.url\(\)\)/);
-  assert.match(paid, /assert\.equal\(submissions, 0/);
-  assert.match(paid, /assert\.equal\(submissions, 1/);
-  assert.match(paid, /submitted\.contactConsent, true/);
-  assert.match(paid, /data-lead-saved/);
-  assert.match(paid, /enquiry-qa%40example\.test/);
-  assert.match(paid, /liveConsentSubmitted:false/);
+  assert.match(paid, /messageSent: false/);
+  assert.match(paid, /contactFieldsAbsent: true/);
+  assert.doesNotMatch(paid, /data-compact-hydrated|contactConsent|enquiry-qa@/);
 });
 
 test('initial navigation effect and identical replay preserve preopened native menus', () => {
@@ -290,35 +337,46 @@ test('release audit preserves all four browser lanes while isolating CI process 
 });
 
 
-test('release re-audit follows the real private Profile and public builder across CSP boundaries', () => {
+test('release re-audit follows current My Space Today guest Profile and explicit CSP transitions', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
   const navigation = read('lib/site-navigation-model.js');
-  const hub = read('components/app/profile-hub-tabs.jsx');
+  const route = read('app/[locale]/app/portrait/page.jsx');
+  const workspace = read('components/app/app-workspace.jsx');
   const guest = read('components/app/cabinet-guest-overview.jsx');
+  const hub = read('components/app/profile-hub-tabs.jsx');
   const builder = read('components/personality-profiles-builder.tsx');
-  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock uses the existing private Cabinet');
-  assert.ok(hub.includes("create: '/' + selected + '/personality-profiles'"), 'Private Profile has a real public Create tab');
-  assert.ok(guest.includes('data-cabinet-guest-overview'), 'Anonymous Profile must remain guest-only');
-  assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves a real protected tests link');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps canonical route');
+  assert.ok(route.includes("return <AppWorkspaceNavigator locale={locale} path={['portrait']} />"), 'My Space Today is the real entry');
+  assert.ok(!route.includes('ProfileTestEntry') && !route.includes('hasPrivateIntent'), 'No obsolete test-first route');
+  assert.ok(workspace.includes("state !== 'ready' && page === 'portrait'"), 'Signed-out visitors need a guest view');
+  assert.ok(workspace.includes('<CabinetGuestOverview'), 'Approved My Space guest view remains');
+  assert.ok(workspace.includes('<ProfileHubTabs locale={locale} active="today" />'), 'Today is the first tab');
+  assert.ok(guest.includes('data-cabinet-guest-overview'));
+  assert.ok(guest.includes("'/client/tests'"), 'Free tests remain reachable without sign-in');
+  assert.ok(!guest.includes('appFetch('), 'Guest overview does not fetch private client data');
+  assert.ok(hub.includes('publicEntry = false') && hub.includes('data-profile-hub-tabs'));
+  assert.ok(builder.includes('data-profile-direct-tests'), 'Public builder still exposes tests');
   const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
   const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
-  assert.ok(start > 0 && finish > start + 1000, 'The real CSP journey is present');
+  assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
   const flow = source.slice(start, finish);
-  for (const assertion of [
+  for (const required of [
     "toHaveURL(origin + '/en/app/portrait')",
     "toHaveAttribute('data-csp-class', 'private')",
-    "window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document'",
-    "locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible()",
-    "locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0)",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"create\"]').click()",
+    "locator('[data-cabinet-guest-overview]')",
+    "locator('a[href=\"/en/client/tests\"]')",
+    // Signed-out visitors must see the guest cabinet, not the authenticated Today tab.
+    "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
+    "locator('.mobile-bottom-navigation')).toHaveCount(0)",
+    "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
     "toHaveURL(origin + '/en/personality-profiles')",
     "toHaveAttribute('data-csp-class', 'public-video')",
-    "window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document'",
     "locator('[data-profile-direct-tests]').click()",
     "toHaveURL(origin + '/en/client/tests')",
-    "window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document'",
-  ]) assert.ok(flow.includes(assertion), 'Missing required CSP/guest regression: ' + assertion);
-  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"));
+  ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
+  assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
+    'Anonymous My Space no longer relies on signed-in Today navigation');
+  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
 
@@ -389,4 +447,58 @@ test('client landing locale pages use independent real browser pages and retain 
     'await decodeReadyPoster(image, expect)', "assert.equal(state.htmlLang, locale",
     "if (path === '/books/maya-tradition')"])
     assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
+});
+
+test('private public-test discovery keeps the current unified seven-destination dock through real CSP back navigation', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const first = verifier.slice(verifier.indexOf('const discoveryBottom ='), verifier.indexOf('const privateContext ='));
+  const back = verifier.slice(verifier.indexOf("historyPhase = 'back-to-private'"), verifier.indexOf("historyPhase = 'forward-to-public-home'"));
+  for (const scope of [first, back]) {
+    assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
+    assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
+    assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
+  }
+  assert.ok(verifier.includes("window.__cspViolations.includes('frame-src')"), 'Private media CSP denial remains a real browser gate');
+  assert.ok(verifier.includes('assert.deepEqual(unexpectedErrors, []'), 'Browser error failures remain enforced');
+});
+
+
+test('a pending allowlisted YouTube thumbnail timeout is diagnostic, not a release defect', () => {
+  const thumbnail = { origin: 'https://i.ytimg.com', pathname: '/vi/m9RfDgK76PU/hqdefault.jpg', search: '', hash: '' };
+  const poster = { src: { ...thumbnail }, current: { ...thumbnail }, connected: true,
+    visibility: 'visible', complete: false, naturalWidth: 0, naturalHeight: 0 };
+  const message = 'Current poster must finish loading before strict decode\nTimeout 7000ms exceeded while waiting on the predicate';
+  const error = (overrides = {}, text = message) => Object.assign(new Error(text), {
+    posterDiagnostic: { ...poster, ...overrides },
+  });
+  assert.equal(isTransientYouTubePosterTimeout(error()), true);
+  assert.equal(isTransientYouTubePosterTimeout(error({ current: { ...thumbnail, origin: 'https://img.youtube.com' } })), true);
+  for (const diagnostic of [
+    { src: { ...thumbnail, origin: 'http://i.ytimg.com' } },
+    { current: { ...thumbnail, origin: 'https://i.ytimg.com.evil.invalid' } },
+    { current: { ...thumbnail, origin: 'http://127.0.0.1:3123' } },
+    { src: { ...thumbnail, pathname: '/private/video.mp4' } },
+    { current: { ...thumbnail, pathname: '/vi/invalid/hqdefault.jpg' } },
+    { current: { ...thumbnail, search: '?token=secret' } },
+    { complete: true },
+    { naturalWidth: 1 },
+    { connected: false },
+    { visibility: 'hidden' },
+  ]) assert.equal(isTransientYouTubePosterTimeout(error(diagnostic)), false, JSON.stringify(diagnostic));
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster decode timed out after 7000ms')), false);
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster source changed before decode')), false);
+  assert.equal(isTransientYouTubePosterTimeout(new Error(message)), false);
+});
+
+test('release WebKit warning does not bypass browser, local poster, CSP or build failure gates', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  assert.match(source, /if \(engine !== 'webkit' \|\| !isTransientYouTubePosterTimeout\(error\)\) throw error/);
+  assert.match(source, /await decodeReadyPoster\(image, expect\)/);
+  assert.match(source, /posterWarnings\.push\(warning\)/);
+  assert.match(source, /return \{ \.\.\.state, posterWarnings \}/);
+  assert.match(source, /warningCount: warnings\.length/);
+  assert.match(source, /assert\.deepEqual\(errors, \[\]/);
+  assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
 });

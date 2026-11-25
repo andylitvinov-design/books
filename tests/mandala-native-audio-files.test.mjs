@@ -3,6 +3,7 @@ import test from "node:test";
 import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = p => readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const audioSource = read("lib/mandala/local-video-music.ts");
@@ -150,10 +151,15 @@ test("unsupported codecs fail explicitly instead of substituting silent video",a
 
 test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES and no network upload",()=>{
   assert.match(client,/data-video-audio-player/);
-  assert.match(client,/controls preload="metadata"/);
+  const native=client.slice(client.indexOf("const audioPreviewPlayer="),client.indexOf("const recordingPlayButton="));
+  assert.match(native,/<audio\b[^>]*ref=\{setAudioPreviewNode\}/);
+  assert.match(native,/controls=\{!inlineRecordingPlayer\}\s+hidden=\{inlineRecordingPlayer\}\s+preload="metadata"/);
+  assert.match(client,/data-video-recorded-audio-play[\s\S]*?onClick=\{playSelectedRecording\}/);
+  assert.match(client,/\{inlineRecordingPlayer\?audioPreviewPlayer:null\}\s*\{recordingPlayButton\}/);
   assert.match(client,/void player\.play\(\)\.catch/);
-  assert.match(client,/onPlay=\{\(\)=>/);
-  assert.match(client,/onPause=\{\(\)=>/);
+  // Native event handlers may take an event to reject stale Safari media nodes.
+  assert.match(client,/onPlay=\{(?:\(\)=>|event=>)/);
+  assert.match(client,/onPause=\{(?:\(\)=>|event=>)/);
   assert.match(client,/type="file"/);
   assert.match(client,/data-video-audio-upload/);
   assert.match(client,/isSupportedLocalAudio\(file\)/);
@@ -171,7 +177,7 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
   assert.equal((audioSource.match(approvedMusicBed)||[]).length,1,"one explicit approved music-bed GET");
-  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+  assert.doesNotMatch((audioSource+stripApprovedIntroVideoSources(client)).replace(firstPartyWav,"").replace(approvedMusicBed,""),
     /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });
 
@@ -209,8 +215,17 @@ test('procedural export requires real AVC/AAC, supported WebCodecs, or explicitl
 
 test('procedural native recorder cannot silently downgrade H264/AAC to generic MP4',()=>{
   assert.match(client,/MediaRecorder\.isTypeSupported\(explicitAvcMime\)/);
-  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>mime===explicitAvcMime\)/);
+  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>\s*mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)\)/);
+  assert.match(client,/if\(isApplePhone&&isMp4\)\{/);
+  assert.match(client,/await withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/,
+    "native MP4 AVC/AAC track validation remains mandatory and is bounded on iPhone");
+  const verifier=read("lib/mandala/webcodecs-mp4-export.ts");
+  assert.match(verifier,/export async function verifyNativeSafariMp4Tracks/);
+  assert.match(verifier,/const audio=await input\.getPrimaryAudioTrack\(\)/);
+  assert.match(verifier,/!audio\|\|await audio\.getCodec\(\)!=="aac"/);
+  assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
   assert.match(client,/proceduralRoute==="unsupported"/);
-  assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);
+  assert.match(client,/allowProceduralBrowser:reelModeActive\|\|\(procedural&&!safariWebKit\)/);
+  assert.match(client,/if\(reelModeActive&&\(!useWebCodecsMp4\|\|!hasWebCodecs\|\|preferWebm\|\|forceMp4ForRetry\)\)/);
 });

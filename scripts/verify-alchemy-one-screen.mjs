@@ -128,24 +128,27 @@ try {
             await booking.getAttribute("data-booking-sku") !== "personal-session-60") {
           issues.push("canonical €100 personal booking flow missing");
         } else {
-          const trigger = booking.locator("button[data-contact-order]");
-          await trigger.waitFor({state:"visible",timeout:12000});
-          if (await booking.locator("[data-booking-payment-options]").count() !== 0)
-            issues.push("payment surfaced before confirmed booking");
-          await trigger.click();
-          const form = booking.locator('[data-booking-step="contact"]');
-          await form.waitFor({state:"visible",timeout:12000});
-          if (await form.locator('input[type="checkbox"][required]').count() !== 1)
-            issues.push("personal-reply consent missing");
-          if (await form.locator('input[type="tel"]').count() < 1)
-            issues.push("booking contact input missing");
-          const submit = form.locator('button[type="submit"]');
-          if (!await submit.isDisabled())
-            issues.push("booking submit enabled before phone and consent");
-          if (await booking.locator("[data-booking-payment-options]").count() !== 0)
-            issues.push("payment surfaced without approved booking");
-          await trigger.click();
-          if (await form.isVisible()) issues.push("booking contact form did not close");
+          // The selected €100 service must remain in the actual messenger
+          // handoff. A click does not create a booking or enable payment.
+          const messenger=booking.locator('[data-messenger-only-contact]');
+          await messenger.waitFor({state:"visible",timeout:12000});
+          const details=messenger.locator('details');
+          if(await details.count()){
+            await details.locator(':scope > summary').click();
+            assert.equal(await details.getAttribute('open'),'',key+": opens from one tap");
+          }
+          const wa=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
+          const tg=messenger.locator('a[data-messenger-only-channel="telegram"]');
+          await wa.waitFor({state:"visible",timeout:12000});
+          assert.equal(await tg.count(),1,key+": Telegram option");
+          const draft=new URL(await wa.getAttribute('href'));
+          assert.equal(draft.origin,'https://wa.me');
+          assert.ok((draft.searchParams.get('text')||'').includes('€100'),
+            key+": selected personal-session-60 tariff preserved");
+          assert.equal(await booking.locator('form,input[type="email"],input[type="tel"]').count(),0,
+            key+": no standalone email or phone booking");
+          assert.equal(await booking.locator('[data-booking-payment-options]').count(),0,
+            key+": no payment before verified reply channel");
         }
       }
       report.push({locale,width,height,...data,issues});

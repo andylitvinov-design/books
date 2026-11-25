@@ -28,6 +28,10 @@ const fixtureModules = {
   'next/navigation': { notFound: forbidden },
   'lucide-react': Object.fromEntries(['ArrowRight', 'ArrowLeft', 'Check', 'ClipboardCopy', 'LockKeyhole', 'Plus', 'ShieldCheck', 'Trash2'].map(name => [name, () => null])),
   '@/lib/app/client-fetch': { appFetch: forbidden },
+  '@/components/mandatory-messenger-actions': {
+    MandatoryMessengerActions: () => React.createElement('aside', {'data-synthetic-messenger':true}, 'Synthetic messenger chooser'),
+  },
+  '@/lib/crm/website-messenger-only.mjs': { websiteMessengerOnlyUi: () => true },
   '@/lib/coaching/intake-model': { COACHING_FIELDS: [{ id: 'request', required: true, group: 'session', max: 600, label: words('Synthetic request') }],
     COACHING_GROUPS: [{ id: 'session', title: words('Synthetic group'), hint: words('Synthetic hint') }],
     COACHING_TOPICS: [{ id: 'personal', label: words('Synthetic topic') }], COACHING_INTAKE_VERSION: 'synthetic',
@@ -36,6 +40,10 @@ const fixtureModules = {
   '@/data/academy/catalog': { isPublicLocale: value => locales.includes(value) },
   '@/data/site-metadata': { metadataBaseFor: () => new URL('https://synthetic-site.invalid') },
   '@/components/public-site-header': { PublicSiteHeader: () => React.createElement('header', null, 'Synthetic header') },
+  // Isolate the consented V3 child form in this legacy server-render test.
+  // This fixture tests surrounding routing and privacy, not form submission.
+  './express-google-parity-form': {__esModule:true, default: () => React.createElement('section',
+    {'data-synthetic-google-express-parity':true}, 'Synthetic consented form')},
   './coaching-intake-form.module.css': styles, '../coaching-page.module.css': styles,
 }
 function compileActual(source, fileName) {

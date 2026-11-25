@@ -163,7 +163,7 @@ test('owner-invoked sitewide iHelp reuses the existing guest-safe agent and neve
  assert.match(trigger,/setOpen\(true\)/)
  assert.match(trigger,/function show\(\)/)
  assert.match(trigger,/pageHelpFromRoute/)
- assert.match(trigger,/<HolisticAgentChat locale=\{locale\} compact pageHelp=\{context\}/)
+ assert.match(trigger,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/)
  assert.match(trigger,/\[data-orders-clients-hub\]/)
  assert.doesNotMatch(trigger,/useEffect\(\(\)=>\{\s*setOpen\(true\)/)
  assert.match(chat,/data-hh-ihelp-actions/)

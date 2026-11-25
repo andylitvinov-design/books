@@ -32,7 +32,7 @@ test("Kundalini joins existing Academy three-card capture style on mobile and de
   assert.match(academy, /data-academy-course-capture/);
 });
 
-test("Kundalini three options contain distinct, public-only, localized messages", async () => {
+test("Kundalini has three distinct localized published options without leaking freeform enquiry into Telegram", async () => {
   const capture = await read("components/kundalini-reiki-order-capture.tsx");
   for (const option of ["free", "personal", "training"]) {
     assert.match(capture, new RegExp(option + ': "/academy/kundalini-reiki/kundalini-manual-level-'));
@@ -55,15 +55,24 @@ test("Kundalini three options contain distinct, public-only, localized messages"
   assert.match(capture, /pagePath,/);
   assert.doesNotMatch(capture, /medical history|diagnosis|health score|password/i);
   for (const locale of ["en", "ru", "es"]) {
-    const request = "Kundalini Reiki training and current fees";
-    const url = whatsappEnquiryUrl({
-      locale, service: "Kundalini Reiki", request, option: "Three levels",
-      pagePath: "/" + locale + "/academy/reiki/kundalini-reiki",
-    });
-    assert.equal(new URL(url).hostname, "wa.me");
-    const telegram = new URL(telegramEnquiryUrlFromWhatsApp(url));
-    assert.equal(telegram.hostname, "t.me");
-    assert.ok(telegram.searchParams.get("text")?.includes(request));
+    const requests = ["Try Level 1", "Please discuss personal initiation", "Explore three levels"];
+    const whatsappDrafts = [];
+    for (const request of requests) {
+      const url = whatsappEnquiryUrl({
+        locale, service: "Kundalini Reiki", request, option: "Three levels",
+        pagePath: "/" + locale + "/academy/reiki/kundalini-reiki",
+      });
+      assert.equal(new URL(url).hostname, "wa.me");
+      whatsappDrafts.push(new URL(url).searchParams.get("text"));
+      const telegram = new URL(telegramEnquiryUrlFromWhatsApp(url));
+      const message = telegram.searchParams.get("text") || "";
+      assert.equal(telegram.hostname, "t.me");
+      assert.equal(telegram.pathname, "/holistichouse");
+      assert.match(message, /Kundalini Reiki/);
+      assert.doesNotMatch(message, /Try Level 1|Please discuss|Explore three levels|Three levels|\/academy\/|hhreview_|HH-REQ/);
+      assert.equal(telegram.searchParams.has("start"), false);
+    }
+    assert.equal(new Set(whatsappDrafts).size, 3, "The actual user-selected Academy options must stay distinct in the source chooser");
   }
 });
 

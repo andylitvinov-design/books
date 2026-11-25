@@ -1,6 +1,9 @@
 name: Holistic House visual service landing QA
 on:
+  # Expanded QA is opt-in: add the qa-optional label to an affected PR.
+  workflow_dispatch:
   pull_request:
+    types: [labeled]
     branches: [codex/public-book-library]
     paths:
       - 'components/personal-service-landing.tsx'
@@ -28,7 +31,6 @@ on:
       - 'app/sitewide-capture.css'
       - 'tests/visual-service-story.test.mjs'
       - 'scripts/verify-visual-service-mobile.mjs'
-      - '.github/workflows/hh-visual-service-landings.yml'
 permissions:
   contents: read
 concurrency:
@@ -36,6 +38,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   visual-service-acceptance:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:

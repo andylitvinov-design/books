@@ -4,9 +4,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
-import { restoreServiceCart, SERVICE_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
+import { restoreServiceCart, restoreVideoCart, videoCartProduct, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
+import { VideoCartPayment } from "@/components/commerce/video-cart-payment";
 import { buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquareCheckoutRedirect } from "@/lib/commerce/square-payment-links";
@@ -42,13 +44,13 @@ const copy = {
     book: "Ask about available times", checkoutNote: "Adding to the cart does not reserve a session. We will confirm your time personally.",
     free: "Free drawing assessment + written report", secure: "One-time payment, no subscription",
     service: "Personal consultation", add: "Add to cart", emptyHint: "Choose the service you need. No payment is taken yet.",
-    orderTitle: "Your order · contact", orderIntro: "Enter your phone number or use Google to place a request. No payment, subscription or appointment is created yet.",
-    orderAction: "Place an order", orderSaved: "Request saved",
+    orderTitle: "Your order · contact", orderIntro: "Select Telegram or WhatsApp and send a message about this cart. A link alone does not submit an order or start payment.",
+    orderAction: "Continue in a messenger", orderSaved: "Request saved",
     orderTopic: "I would like to order the selected personal consultation services. Please confirm the time and payment details.",
     paymentTitle: "Payment", paymentIntro: "Your request is registered. Choose a secure payment option; receipt and appointment are confirmed separately.",
   },
   ru: {
-    back: "Магазин", title: "Корзина", subtitle: "Выберите услуги, оставьте контакт и переходите к оплате.",
+    back: "Магазин", title: "Корзина", subtitle: "Выберите услуги и напишите через Telegram или WhatsApp. Оплата согласуется отдельно.",
     empty: "Корзина пока пуста.", choose: "Выбрать консультацию", remove: "Убрать",
     total: "Итого", minute: "мин", method: "Способ оплаты", square: "Картой · Square", paypal: "PayPal", interac: "Interac · Канада", zen: "ZEN.COM", wise: "Wise",
     stripe: "Карта / Link · Stripe", stripeAction: "Оплатить через Stripe · Link / карта", stripeNote: "Доступные способы показывает Stripe; Link, Apple Pay и Google Pay могут отсутствовать. Проверьте получателя и сумму EUR. Оплату проверяем отдельно до записи.",
@@ -65,13 +67,13 @@ const copy = {
     book: "Уточнить свободное время", checkoutNote: "Корзина не бронирует сеанс. Время согласуем лично.",
     free: "Бесплатный разбор рисунка + письменный отчёт", secure: "Разовая оплата, без подписки",
     service: "Личная консультация", add: "В корзину", emptyHint: "Выберите подходящую услугу. Пока ничего оплачивать не нужно.",
-    orderTitle: "Оформление заказа · контакт", orderIntro: "Укажите номер телефона или войдите через Google. Это заявка, без списания денег и автоматической записи на сеанс.",
-    orderAction: "Заказать", orderSaved: "Заявка сохранена",
+    orderTitle: "Оформление заказа · контакт", orderIntro: "Выберите Telegram или WhatsApp и отправьте сообщение по выбранным услугам. Переход по ссылке не создаёт заявку и не списывает деньги.",
+    orderAction: "Написать в мессенджере", orderSaved: "Заявка сохранена",
     orderTopic: "Хочу заказать выбранные личные консультации. Прошу подтвердить время и условия оплаты.",
     paymentTitle: "Оплата", paymentIntro: "Заявка зарегистрирована. Выберите способ оплаты; поступление и время сеанса подтверждаются отдельно.",
   },
   es: {
-    back: "Tienda", title: "Tu carrito", subtitle: "Elige los servicios, deja tus datos y continúa al pago.",
+    back: "Tienda", title: "Tu carrito", subtitle: "Elige los servicios y escribe por Telegram o WhatsApp. El pago se acuerda por separado.",
     empty: "El carrito está vacío.", choose: "Elegir una consulta", remove: "Quitar",
     total: "Total", minute: "min", method: "Forma de pago", square: "Tarjeta · Square", paypal: "PayPal", interac: "Interac · Canadá", zen: "ZEN.COM", wise: "Wise",
     stripe: "Tarjeta / Link · Stripe", stripeAction: "Pagar con Stripe · Link / tarjeta", stripeNote: "Stripe muestra los métodos disponibles; Link, Apple Pay y Google Pay pueden no aparecer. Comprueba el vendedor y el importe EUR. Verificamos el pago antes de reservar.",
@@ -88,17 +90,18 @@ const copy = {
     book: "Consultar horarios", checkoutNote: "Añadir al carrito no reserva una cita. Confirmaremos el horario personalmente.",
     free: "Evaluación gratuita por dibujo + informe escrito", secure: "Pago único, sin suscripción",
     service: "Consulta personal", add: "Añadir al carrito", emptyHint: "Elige una consulta. No hay ningún cargo todavía.",
-    orderTitle: "Pedido · contacto", orderIntro: "Indica tu teléfono o continúa con Google para solicitar el pedido. No hay cargos ni cita automática.",
-    orderAction: "Realizar pedido", orderSaved: "Solicitud guardada",
+    orderTitle: "Pedido · contacto", orderIntro: "Elige Telegram o WhatsApp y envía tu mensaje sobre el carrito. Abrir el enlace no crea un pedido ni genera un cobro.",
+    orderAction: "Continuar por mensajería", orderSaved: "Solicitud guardada",
     orderTopic: "Quiero pedir las consultas personales seleccionadas. Confirmemos la hora y el pago.",
     paymentTitle: "Pago", paymentIntro: "Solicitud registrada. Elige cómo pagar; recepción y cita se confirman por separado.",
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
+  paidVideoTrackingEnabled?: boolean;
   hostedPayPalLinks: Record<string, string>;
   stripeLinks: Record<string, string>;
   wiseEnabled: boolean;
@@ -112,6 +115,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const products = publicServiceCatalog(locale);
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
+  const [videoCartCount, setVideoCartCount] = useState(0);
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderReceipt, setOrderReceipt] = useState<{ cartKey: string; referenceCode: string } | null>(null);
   const [method, setMethod] = useState<Method>(squareApiEnabled || Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : Object.keys(stripeLinks).length ? "stripe" : "interac");
@@ -163,6 +167,26 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     }
   }, [squareApiEnabled]);
 
+  useEffect(() => {
+    const syncVideo = () => {
+      let selected = null;
+      try { selected = restoreVideoCart(window.sessionStorage.getItem(VIDEO_CART_STORAGE_KEY)); }
+      catch { /* The fixed video tier also survives through the validated URL query. */ }
+      if (!selected) {
+        const fromUrl = new URLSearchParams(window.location.search).get("video");
+        if (videoCartProduct(fromUrl)) selected = { id: fromUrl, brief: "" };
+      }
+      setVideoCartCount(selected ? 1 : 0);
+    };
+    syncVideo();
+    window.addEventListener(SERVICE_CART_UPDATED_EVENT, syncVideo);
+    window.addEventListener("pageshow", syncVideo);
+    return () => {
+      window.removeEventListener(SERVICE_CART_UPDATED_EVENT, syncVideo);
+      window.removeEventListener("pageshow", syncVideo);
+    };
+  }, []);
+
   const chosen = products.filter(product => selected.includes(product.id));
   const cartKey = chosen.map(product => product.id).join(",");
   // The public reference is a display receipt, never proof of identity or provider payment.
@@ -197,7 +221,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     : locale === "es"
       ? `Hola. Quiero confirmar el pago de ${receiptAmount} por ${description} vía ${paymentLabel}. Referencia: [introduce la referencia]. Confirma la recepción y el horario.`
       : `Hello! Please verify my ${receiptAmount} payment for ${description} via ${paymentLabel}. Transaction ID: [insert ID]. Please confirm receipt and session time.`;
-  const bookingUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(bookingMessage);
+  const bookingUrl = whatsappEnquiryUrl({ locale, service: description || t.service, request: bookingMessage, pagePath: "/" + locale + "/cart" });
   const receiptUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(receiptMessage);
 
   async function refreshSquareStatus() {
@@ -297,10 +321,11 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}><ShoppingBasket size={16} aria-hidden="true" /> HOLISTIC HOUSE</p>
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.count} aria-live="polite">{chosen.length}</span>
+      <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount}</span>
     </div>
+    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} trackingEnabled={paidVideoTrackingEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
-      !chosen.length ? <div className={styles.empty} data-cart-empty>
+      !chosen.length && !videoCartCount ? <div className={styles.empty} data-cart-empty>
         <p role="status">{t.empty}</p><span className={styles.emptyHint}>{t.emptyHint}</span>
         <div className={styles.suggestions} aria-label={t.choose}>
           {products.map(product => <article key={product.id} className={styles.suggestion}>
@@ -315,7 +340,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </article>)}
         </div>
         <Link className={styles.shopMore} href={"/" + locale + "/shop"}>{t.choose}<ArrowRight size={17} aria-hidden="true" /></Link>
-      </div> :
+      </div> : chosen.length ?
       <>
         <ul className={styles.lines} aria-label={t.title}>
           {chosen.map(product => <li key={product.id} className={styles.serviceCard}>
@@ -343,18 +368,18 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </div>
           {orderReady ? <p className={styles.orderDone} role="status" data-cart-order-saved>
             <Check size={18} aria-hidden="true" />{t.orderSaved} · {orderReceipt?.referenceCode}
-          </p> : <>
-            {!orderOpen && <button type="button" className={styles.orderButton}
-              data-cart-start-order aria-expanded={orderOpen} onClick={() => setOrderOpen(true)}>
+          </p> : <details className={styles.orderDisclosure} data-cart-order-disclosure
+            open={orderOpen} onToggle={event => setOrderOpen(event.currentTarget.open)}>
+            <summary className={styles.orderButton} data-cart-start-order>
               {t.orderAction}<ArrowRight size={19} aria-hidden="true" />
-            </button>}
-            {orderOpen && <div className={styles.orderForm} data-cart-contact-form>
+            </summary>
+            <div className={styles.orderForm} data-cart-contact-form>
               <ContactChannelChooser locale={locale} whatsappUrl={bookingUrl} quick cartContact
                 stayAfterSave publicServiceTitle={description || t.service}
                 publicTopic={t.orderTopic} resetKey={cartKey}
                 onSaved={referenceCode => setOrderReceipt({ cartKey, referenceCode })} />
-            </div>}
-          </>}
+            </div>
+          </details>}
         </section>
         {showPayment && <div className={styles.stepHeading} data-cart-payment-step>
           <span className={styles.stepNumber}>2</span>
@@ -446,7 +471,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           {(activeMethod === "paypal" || activeMethod === "stripe" || activeMethod === "wise" || activeMethod === "interac" || (activeMethod === "square" && Boolean(squarePayment) && !squareApiEnabled)) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
         </div>}
 
-      </>}
+      </> : null}
     <Link href={`/${locale}/services/free-situation-review`} className={styles.free}>{t.free} <ArrowRight size={16} aria-hidden="true" /></Link>
   </section>;
 }

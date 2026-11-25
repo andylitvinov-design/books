@@ -53,9 +53,12 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
   if ((live.mergeable === false || live.mergeable_state === 'dirty') && !exactFastForward) {
     return fail('conflict', 'Merge conflicts must be repaired before heavy CI');
   }
-  if ((live.mergeable !== true || live.mergeable_state === 'unknown') && !exactFastForward) {
-    return fail('mergeability_pending', 'GitHub has not confirmed mergeability');
-  }
+  // This is a preliminary CI efficiency guard, not merge authorization.
+  // GitHub briefly returns mergeable=null/unknown while recalculating a PR.
+  // Starting genuine exact-HEAD tests is safe: the final protected Specialist
+  // and native merge authority still demand positive mergeability and green CI.
+  const mergeabilityPending = !exactFastForward &&
+    (live.mergeable !== true || live.mergeable_state === 'unknown');
   // Only independently ancestor-proven event BASE -> live BASE is BASE_ADVANCED.
   // Missing/invalid Compare evidence cannot be silently treated as a verified move.
   const baseMoved = pr.base.sha !== live.base.sha;
@@ -67,21 +70,40 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
     baseMoved?'BASE_CHANGED_UNVERIFIED':null;
   // Blocked/unstable may be caused by pending CI or reviews: never deadlock CI.
   // The immutable-base Specialist still independently enforces strict freshness.
-  return { ready: true, code: 'ready', diagnostic_signal,
-    message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
+  return { ready: true, code: mergeabilityPending ? 'mergeability_deferred' : 'ready',
+    diagnostic_signal,
+    message: mergeabilityPending
+      ? 'GitHub mergeability still calculating; run exact-HEAD CI and leave final conflict/merge decision to protected gates'
+      : 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
-async function readLivePr(repository, number, token) {
-  const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${number}`, {
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${token}`,
-      'x-github-api-version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
-  return response.json();
+export async function readLivePr(repository, number, token,
+    transportOrOptions = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  // Preserve the production positional testing/worker API while supporting
+  // the newer caller's scoped options object; no speculative mutating retry.
+  const withOptions = transportOrOptions !== null && typeof transportOrOptions === 'object';
+  const transport = withOptions ? (transportOrOptions.transport ?? fetch) : transportOrOptions;
+  const wait = withOptions ? (transportOrOptions.wait ?? sleep) : sleep;
+  if (typeof transport !== 'function' || typeof wait !== 'function')
+    throw new TypeError('INVALID_GITHUB_READ_TRANSPORT');
+  const url = `https://api.github.com/repos/${repository}/pulls/${number}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await transport(url, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'x-github-api-version': '2022-11-28',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.ok) return response.json();
+    if (![502, 503, 504].includes(response.status) || attempt === 2)
+      throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
+    // Production positional callers retain 750/1500ms, options-based CI
+    // pruning callers retain 250/750ms: both APIs are regression tested.
+    await wait(withOptions ? (attempt === 0 ? 250 : 750) : 750 * (2 ** attempt));
+  }
+  throw new Error('GitHub PR read exhausted without successful readback');
 }
 
 export async function readExactBaseAncestry(repository, live, token, transport = fetch) {

@@ -117,7 +117,6 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     ["Не хочу видео","coherent_reject_video"],
     ["Не хочу медитацию","coherent_reject_meditation"],
     ["Видео или медитация","coherent_ambiguous"],
-    ["Нет, не про любовь, а про работу","coherent_topic"],
     ["Not video but meditation","meditation_start","en"],
     ["No quiero video sino meditacion","meditation_start","es"],
   ]){
@@ -125,6 +124,24 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     assert.equal(r?.id,id,message);
     assert.ok(r.reply.length>=20&&r.reply.length<500);
     assert.equal(r.source,"reviewed-rules");
+  }
+});
+
+test("topic corrections route through explicit conversation intelligence and retain corrected topic",()=>{
+  for(const [message,locale,topic,pattern] of [
+    ["Нет, не про любовь, а про работу","ru","work_money",/работа и деньги/iu],
+    ["Not about love but about work","en","work_money",/work and money/iu],
+    ["No sobre amor sino sobre trabajo","es","work_money",/trabajo y el dinero/iu],
+  ]){
+    const r=ruleConversationReply({message,locale});
+    const coherence=interpretDialogueCoherence({message});
+    assert.equal(coherence.act,"correct_topic",message);
+    assert.equal(r.id,"conversation_correction",message);
+    assert.equal(r.source,"conversation-intelligence",message);
+    assert.equal(r.understanding.act,"correction",message);
+    assert.equal(r.understanding.topic,topic,message);
+    assert.ok(pattern.test(r.reply),message+": reply must reflect the corrected topic");
+    assert.ok(r.reply.length>=20&&r.reply.length<500,message);
   }
 });
 
@@ -146,8 +163,19 @@ test("safe approval semantics: no corrections produce renderer, payment, access,
     assert.doesNotMatch(code,/\bfetch\(|XMLHttpRequest|localStorage|sessionStorage|process\.env|createBooking|createPayment/);
   }
   const api=read("app/api/holistic-agent/turn/route.js");
-  assert.ok(api.indexOf("requireSameOrigin(request,config)")<api.indexOf("await auth.verified()"));
-  assert.ok(api.indexOf("const safety = preflight")<api.indexOf("const fastRule="));
+  // Read-only authenticated readiness GET may precede POST in this module.
+  // Do not weaken the mutation boundary: require each ordered anchor in POST.
+  const post=api.slice(api.indexOf("export async function POST("));
+  const origin=post.indexOf("requireSameOrigin(request,config)");
+  const verified=post.indexOf("await auth.verified()");
+  const safety=post.indexOf("const safety = preflight");
+  const fastRule=post.indexOf("const fastRule=");
+  assert.ok(origin>=0&&verified>origin);
+  assert.ok(safety>=0&&fastRule>safety);
+  const get=api.slice(api.indexOf("export async function GET("),api.indexOf("export async function POST("));
+  assert.match(get,/await auth\.verified\(\)/);
+  assert.match(get,/providerCall:false,modelUsed:false/);
+  assert.doesNotMatch(get,/consumeRate\(|waveGeminiPublicReply\(|readBody\(/);
 });
 
 test("deterministic benchmark reports stage/act counts and p95 without raw client logging",()=>{
@@ -180,7 +208,7 @@ test("Messenger UI uses one-shot undo snapshot with the existing secure handoff"
     "setVideoDraft(previous.draft);",
     "setVideoStep(previous.step);",
     "stageVideoHandoff()",
-    "requiresProtectedReply(text,locale)"
+    "requiresProtectedReply(text,turnLocale)"
   ])assert.ok(ui.includes(literal),literal);
   const reducer=read("lib/mandala/video-chat-messenger-flow.mjs");
   assert.ok(reducer.includes("extractVideoChatCorrection(value)"));

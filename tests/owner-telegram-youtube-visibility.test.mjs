@@ -125,7 +125,7 @@ test('provider timeout yields uncertain status and never retries mutation',async
 test('server OAuth edit upgrade is separate and fails closed without exact Google scope',()=>{
  const start=source('app/api/admin/telegram-video/youtube/start/route.js')
  const callback=source('app/api/admin/telegram-video/youtube/callback/route.js')
- const service=source('lib/practitioners/owner-telegram-video-service.js')
+ const service=source('lib/practitioners/owner-telegram-video-service.js')+'\n'+source('lib/practitioners/owner-telegram-video-consent.js')
  const ui=source('app/admin/youtube-upload/page.js')
  assert.match(start,/searchParams.get\('visibility'\)==='1'/)
  assert.match(start,/youtube.force-ssl/)
@@ -140,7 +140,7 @@ test('server OAuth edit upgrade is separate and fails closed without exact Googl
 })
 
 test('only Dot owner current uploaded job can be changed, never arbitrary video or master uploads',()=>{
- const service=source('lib/practitioners/owner-telegram-video-service.js')
+ const service=source('lib/practitioners/owner-telegram-video-service.js')+'\n'+source('lib/practitioners/owner-telegram-video-consent.js')
  assert.match(service,/async function selectedDotYoutubeVideo/)
  assert.match(service,/row\?\.state==='uploaded'&&row.youtube_video_id/)
  assert.match(service,/\(!jobId\|\|row.job_id===jobId\)/)

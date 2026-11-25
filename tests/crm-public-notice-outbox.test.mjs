@@ -11,9 +11,12 @@ test('a customer enquiry commits an owner notice intent before optional provider
    insert.indexOf('insert into app_private.notification_public_enquiry_intents'))
  assert.match(insert,/notification_public_enquiry_intents \(enquiry_id,owner_id\)/)
  assert.match(insert,/CRM_NOTICE_INTENT_FAILED/)
-  assert.match(insert,/if\s*\(contact\)\s*\{/)
-  // A contactless Telegram handoff has no contact ciphertext and cannot insert
-  // an owner alert intent without its verified production RLS precondition.
+  // A generic contactless Telegram handoff has no CRM notification intent.
+  // The new exception is only a signed, independently confirmed V3 service
+  // request with an encrypted reply-only Telegram contact proof.
+  assert.ok(insert.includes("if(contact||v3ServiceTelegram){"))
+  assert.ok(insert.includes("v3ServiceTelegram=linkedTelegram?.purpose==='v3_service'"))
+  assert.ok(insert.includes("replyConsent:'telegram_v3_service_request_v1'"))
   assert.doesNotMatch(insert,/if\s*\(\s*contact\s*\|\|\s*linkedTelegram\s*\)/)
  for(const handler of [route,coaching]){
    assert.match(handler,/result\.saved === true/)

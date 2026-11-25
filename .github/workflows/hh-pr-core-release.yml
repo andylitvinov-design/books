@@ -1,10 +1,11 @@
 name: HH PR core release gate
 on:
   pull_request:
-    # Metadata-only backfill: a PAT-authored PR body edit runs REAL exact-HEAD
-    # Core and Specialist jobs without a no-op source commit. Ordinary PR
-    # edits also receive the full fail-closed release gate; no skipped required jobs.
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+    # PR title/body edits are not a source change: do not launch duplicate
+    # Core/Specialist waves on the same HEAD. The trusted control worker
+    # recovers genuinely missing PR CI via a signed Draft -> Ready transition.
+    # A retargeted Ready PR must still receive a real Ready/synchronize event.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]
@@ -15,7 +16,7 @@ permissions:
 concurrency:
   group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   # Cancel costly older Ready CI when a PR becomes Draft; the new Draft
-  # attempt remains fail-closed. Do not cancel metadata-only or manual runs.
+  # attempt remains fail-closed. Do not cancel manual runs.
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   scope:
@@ -280,12 +281,73 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
         with:
           stage: materialize
-      # When full Mandala browser QA is advisory, Core retains a mandatory
-      # bounded, exact-tested-merge source gate for narration/privacy and codecs.
-      # The Specialist aggregator checks this trusted marker on BASE before
-      # treating Mandala's expensive independent workflow as diagnostic.
+      # The exact same six media/voice contracts also belong to the BASE-trusted Mandala
+      # focused-unit suite. Run them here only when that Specialist workflow does NOT
+      # own this exact diff. Use the shared BASE+HEAD path-filter implementation; never
+      # mirror its globs or trust only candidate workflow edits.
+      - name: Resolve BASE-trusted Mandala Specialist owner for overlapping fast contracts
+        id: mandala_owner
+        if: github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT'
+        env:
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+
+          const workflowPath = '.github/workflows/holistic-support-mandala.yml';
+          const baseSha = execFileSync('git', ['rev-parse', 'HEAD^1'], { encoding: 'utf8' }).trim();
+          const testedHead = execFileSync('git', ['rev-parse', 'HEAD^2'], { encoding: 'utf8' }).trim();
+          if (!/^[0-9a-f]{40}$/.test(baseSha) ||
+              !/^[0-9a-f]{40}$/.test(testedHead) ||
+              testedHead !== process.env.HH_EVENT_HEAD_SHA) {
+            throw new Error('MANDALA_OWNER_ROUTE_UNVERIFIED_HEAD');
+          }
+
+          const changed = execFileSync(
+            'git',
+            ['diff', '--no-renames', '--name-only', '-z', baseSha, 'HEAD'],
+            { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+          ).split('\0').filter(Boolean);
+          if (!changed.length || changed.length > 3000) {
+            throw new Error('MANDALA_OWNER_ROUTE_INVALID_DIFF');
+          }
+
+          // Read both workflow versions. Specialist uses this same BASE/HEAD union;
+          // a candidate PR cannot narrow its own required owner.
+          const baseWorkflow = execFileSync(
+            'git', ['show', baseSha + ':' + workflowPath],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const headWorkflow = readFileSync(workflowPath, 'utf8');
+          const trustedModule = execFileSync(
+            'git', ['show', baseSha + ':lib/ci/specialist-aggregate.mjs'],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const trustedPath = resolve(process.env.RUNNER_TEMP, 'hh-specialist-aggregate-base.mjs');
+          writeFileSync(trustedPath, trustedModule);
+          const { parsePrTrigger, matchesTrigger } = await import(pathToFileURL(trustedPath).href);
+          const baseTrigger = parsePrTrigger(baseWorkflow, workflowPath + ':base');
+          const headTrigger = parsePrTrigger(headWorkflow, workflowPath + ':head');
+          const specialistOwns = [baseTrigger, headTrigger].some(trigger =>
+            matchesTrigger(trigger, changed, 'codex/public-book-library'));
+          appendFileSync(process.env.GITHUB_OUTPUT, 'specialist_owns_mandala=' + String(specialistOwns) + '\n');
+          appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            'Mandala duplicate-test owner: ' + (specialistOwns ? 'BASE-trusted Specialist' : 'Core fallback') + '\n',
+          );
+          console.log('Mandala overlapping fast contracts delegated to Specialist: ' + specialistOwns);
+          NODE
+
+      # This is a Core fallback only when the BASE/HEAD path router says the
+      # independent Mandala workflow does not own this exact diff. When it does,
+      # that workflow runs the same unit contracts once and Specialist validates it.
       - name: Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)
-        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.mandala_owner.outputs.specialist_owns_mandala != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -300,6 +362,21 @@ jobs:
           else
             echo 'No Mandala media/voice changes; fast release contracts not applicable' >> "$GITHUB_STEP_SUMMARY"
           fi
+      # Restore before Source Preflight so both its standalone TypeScript
+      # check and the mandatory Next production build reuse the same verified
+      # production compiler state. Never publish a PR cache.
+      # Reuse only TypeScript/Next compiler artifacts produced by the protected
+      # production branch. The immutable TypeScript build info tracks changed
+      # files and does NOT skip the mandatory exact-HEAD Next.js typecheck.
+      - name: Restore production-owned Next compiler cache (read-only)
+        id: ci_trusted_next_cache
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Verify Source Preflight unit contracts
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.preflight_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-source-preflight.test.mjs tests/ci-vercel-scenario-music-cache.test.mjs
@@ -348,6 +425,39 @@ jobs:
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
         run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs
+      # Public greeting and motion changes no longer book unrelated private App
+      # or storefront E2E. Retain source/persona/media checks in mandatory Core.
+      - name: Public Ali greeting + coach motion release contracts
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -f /tmp/hh-pr-changed-files.z ]] || { echo 'Missing verified Core changed-file list' >&2; exit 1; }
+          tr '\0' '\n' < /tmp/hh-pr-changed-files.z > "$RUNNER_TEMP/hh-public-greeting-changes.txt"
+          if grep -Eq '^(components/app/(ali-persona-audio\.js|coaching-avatar\.jsx)|components/my-coach-motion-media\.jsx|app/api/ali/voice/|lib/holistic-support/ali-gemini-free-tts\.mjs|public/images/holistic-house/my-coach-motion/|tests/(ali-persona-selector|coach-greeting-video|my-coach-personas)\.test\.mjs)' "$RUNNER_TEMP/hh-public-greeting-changes.txt"; then
+            tests=(tests/ali-persona-selector.test.mjs tests/my-coach-personas.test.mjs)
+            # The coach-video contract is introduced by its own release PR.
+            # Require and execute it wherever it exists on the tested HEAD.
+            if [[ -f tests/coach-greeting-video.test.mjs ]]; then
+              tests+=(tests/coach-greeting-video.test.mjs)
+            fi
+            node --test "${tests[@]}"
+          fi
+      - name: Commander PR served-LIVE provenance contracts
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.diff.outputs.docs_only != 'true' &&
+          steps.fast.outputs.route != 'ASSETS' &&
+          steps.fast.outputs.route != 'TEXT'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reuse Core's immutable, already-verified diff. This is a small
+          # focused unit suite inside the EXISTING runner, not another CI wave.
+          if [[ -f /tmp/hh-pr-changed-files.z ]] &&
+             tr '\0' '\n' < /tmp/hh-pr-changed-files.z | grep -Eq '^(app/commander/pr/|app/api/app/commander/pr-completion/|lib/agent-director/pr-(completion-journey|live-identity)\.mjs|tests/commander-pr-(journey|live-evidence)\.test\.mjs)'; then
+            node --test tests/commander-pr-journey.test.mjs tests/commander-pr-live-evidence.test.mjs
+          fi
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
         id: changed_lint
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
@@ -376,10 +486,20 @@ jobs:
             fi
           fi
           files=()
+          # ESLint config, TypeScript config and dependency changes can
+          # invalidate lint results across unchanged sources. Keep the
+          # original whole-repository lint on these exact changes.
+          full_lint=false
           while IFS= read -r -d '' f; do
+            case "$f" in
+              eslint.config.*|.eslintrc*|package.json|package-lock.json|tsconfig.json)
+                full_lint=true ;;
+            esac
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
-          if (( ${#files[@]} > 0 )); then
+          if [[ "$full_lint" == true ]]; then
+            npm run lint
+          elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
           else
             echo 'No changed JS/TS files to lint'
@@ -395,33 +515,48 @@ jobs:
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
-      - name: Restore production-owned Next compiler cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
-        uses: actions/cache/restore@v4
-        with:
-          path: .next/cache
-          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
-        run: npm run build
-  hh-specialist:
-    name: hh-specialist
-    # Wait for real Core success before polling independent exact-HEAD specialists.
-    # Prevent premature missing-workflow false negatives during GitHub run indexing.
-    # Do not occupy a polling runner or consume API quota if Core already failed.
-    # Specialist still uses immutable tested-BASE policy, never candidate policy.
-    # hh-merge-check still blocks Draft/failed Core/skipped or failed specialists.
+        # Changed-file ESLint is already a hard gate above. Preserve full
+        # lint when config or dependency manifests change, but avoid repeating
+        # repository-wide lint inside Next for ordinary source PRs. npm prebuild
+        # regressions, full Next production build and TypeScript still run.
+        run: npm run build -- --no-lint
+  hh-merge-check:
+    name: hh-merge-check
+    # Required hh-merge-check owns the Core result and independently evaluated
+    # specialist evidence in ONE runner. Never skip this job on failed Core:
+    # GitHub can count a skipped required job as successful. The first step
+    # must fail red on any missing, failed or skipped Core, before polling.
+    # Trusted tested-BASE specialist scripts remain unchanged.
     needs: [scope]
-    if: ${{ !cancelled() && needs.scope.result == 'success' && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    # Only strictly short ASSETS/TEXT checks use 12-minute ubuntu-slim.
+    # CORE can legitimately await >15-minute real Chromium/WebKit specialists;
+    # GitHub caps ubuntu-slim at 15 minutes, independently of job timeout.
+    # Keep CORE/DOCK/FULL on standard Ubuntu with the original 45-minute cap,
+    # preserving exact-HEAD specialist proof and fail-closed errors.
+    runs-on: ${{ (needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT') && 'ubuntu-slim' || 'ubuntu-24.04' }}
+    timeout-minutes: ${{ (needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT') && 12 || 45 }}
     permissions:
       contents: read
       actions: read
       pull-requests: read
     steps:
+      - name: Fail closed if mandatory Core failed or this is not a Ready PR
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          SCOPE_RESULT: ${{ needs.scope.result }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true && "$SCOPE_RESULT" == success ]] || {
+            echo 'Required hh-merge-check RED: missing/failed Core or non-Ready PR; cannot skip this required job.' >&2
+            exit 1
+          }
       - name: Verify ready exact PR HEAD before independently scheduled specialist
         shell: bash
         env:
@@ -499,7 +634,7 @@ jobs:
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK' || steps.specialist_route.outputs.route == 'CORE')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -526,12 +661,34 @@ jobs:
             if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
               git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
             fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/merge-check-light.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/merge-check-light.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/merge-check-light.mjs"
+            fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
+      - name: Confirm one-runner Core and independent specialist release evidence
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true && "$SCOPE_RESULT" == success ]] || {
+            echo 'Unified Core proof is missing: no merge approval' >&2
+            exit 1
+          }
+          # GitHub marks this required job green only if every previous
+          # exact-HEAD, trusted-BASE specialist step passed; no synthetic success
+          # or separate terminal runner can waive a failed command above.
+          echo "Unified Core gate passed for route=$ROUTE; docs_only=$DOCS_ONLY; independent specialist evidence succeeded" >> "$GITHUB_STEP_SUMMARY"
+          echo 'hh-merge-check PASS: Core and every applicable real specialist succeeded in this same required job.' >> "$GITHUB_STEP_SUMMARY"
   # Optional, deterministic source repair. This is deliberately NOT a required
   # status and is deliberately absent from hh-merge-check dependencies. It can
   # write only after the exact Core ESLint step failed, under the existing PR lease.
@@ -594,45 +751,3 @@ jobs:
   # Both GitHub production protection sources were read back on 2 November:
   # exactly hh-merge-check is required. Preserve Core+Specialist fail-closed
   # evidence while removing only redundant legacy wrapper runners.
-  hh-merge-check:
-    name: hh-merge-check
-    needs: [scope, hh-specialist]
-    # Draft cannot be merged by GitHub; do not manufacture a failed Core
-    # status when expensive Core/Specialist jobs are intentionally skipped.
-    # ready_for_review re-runs both real gates; failed Ready gates remain red.
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    # Read-only required aggregator: no Next build, npm or privileged tools.
-    runs-on: ubuntu-slim
-    timeout-minutes: 2
-    permissions:
-      contents: read
-    steps:
-      - name: Require real Core and specialist results from this workflow
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_DRAFT: ${{ github.event.pull_request.draft }}
-          SCOPE_RESULT: ${{ needs.scope.result }}
-          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
-          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
-          ROUTE: ${{ needs.scope.outputs.route }}
-        run: |
-          set -euo pipefail
-          [[ "$EVENT_NAME" == pull_request ]] || {
-            echo 'Only pull_request checks can authorize a merge; manual or merge_group jobs do not verify PR specialists.' >&2
-            exit 1
-          }
-          if [[ "$PR_DRAFT" == true ]]; then
-            echo 'Draft PR cannot pass the unified merge check' >&2
-            exit 1
-          fi
-          [[ "$SCOPE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Scope or applicable specialist validation did not pass' >&2
-            exit 1
-          }
-          # Scope classification and all applicable Core source checks/build
-          # now run in one job, so success here is the unified Core result.
-          echo "Unified Core gate passed for route=$ROUTE; docs_only=$DOCS_ONLY" >> "$GITHUB_STEP_SUMMARY"
-          echo 'hh-merge-check PASS: current workflow Core and specialist results verified.' >> "$GITHUB_STEP_SUMMARY"
-
-

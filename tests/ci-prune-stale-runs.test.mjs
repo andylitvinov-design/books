@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { context, eligible, prune, observeCI, summarizeJobs, client, TARGET } from '../scripts/ci-prune-stale-runs.mjs';
+import { readLivePr } from '../scripts/ci-pr-readiness.mjs';
 
 const repo = 'andylitvinov-design/books';
 const ctx = { repo, target: TARGET, number: 5 };
@@ -239,6 +240,90 @@ test('re-read exact live run and PR before cancellation; cap and dry-run', async
   assert.deepEqual((await prune(api, ctx)).cancelled, []);
 });
 
+
+test('GitHub HTTP 409 with queued and zero jobs is reported as unresolved, not cancelled', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 0, jobs: [] }),
+    forceCancel: async () => { throw Error('Never force a jobless GitHub 409'); } };
+  const result = await prune(api, ctx);
+  assert.equal(result.candidates, 1);
+  assert.deepEqual(result.cancelled, []);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.jobless409, [{
+    id: 100, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
+    url: 'https://github.com/' + repo + '/actions/runs/100' }]);
+});
+
+test('409 with known jobs or other errors remains a real cleanup error', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 1, jobs: [{ name: 'core-lint-types-build' }] }) };
+  const withJobs = await prune(api, ctx);
+  assert.equal(withJobs.errors.length, 1);
+  assert.equal(withJobs.jobless409.length, 0);
+  api.jobs = async () => ({ total_count: 0, jobs: [] });
+  api.cancel = async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 403'); };
+  const denied = await prune(api, ctx);
+  assert.equal(denied.errors.length, 1);
+  assert.equal(denied.jobless409.length, 0);
+});
+
+
+test('live PR readiness retries GitHub transient 503 with a fresh exact readback', async () => {
+  const calls=[], pauses=[], status=[503, 502, 200];
+  const live={number:5,head:{sha:NEW},base:{ref:TARGET}};
+  const result=await readLivePr(repo,5,'test-token',{
+    transport:async(url,options)=>{
+      calls.push({url,auth:options.headers.authorization});
+      const s=status.shift();
+      return {ok:s===200,status:s,json:async()=>live};
+    },
+    wait:async ms=>{pauses.push(ms);}
+  });
+  assert.equal(result,live);
+  assert.equal(calls.length,3);
+  assert.deepEqual(pauses,[250,750]);
+  assert.ok(calls.every(c=>c.url.endsWith('/pulls/5')&&c.auth==='Bearer test-token'));
+});
+
+test('live PR readiness fails closed for denied or persistently unavailable GitHub', async () => {
+  for (const denied of [401,403,404,429]) {
+    let reads=0;
+    await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+      reads++;return {ok:false,status:denied};
+    },wait:async()=>{}}),new RegExp('HTTP '+denied));
+    assert.equal(reads,1);
+  }
+  let reads=0;
+  await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+    reads++;return {ok:false,status:503};
+  },wait:async()=>{}}),/HTTP 503/);
+  assert.equal(reads,3);
+});
+
+test('janitor retries ONLY trusted PR GET 503, never changes POST or other GET behavior', async () => {
+  const seen=[],pauses=[];
+  const transport=async(url,options)=>{
+    seen.push({url,method:options.method});
+    const attempt=seen.filter(x=>x.url===url).length;
+    if(url.endsWith('/pulls/5')&&attempt<3)return {ok:false,status:503};
+    if(url.endsWith('/actions/runs/100/cancel'))return {ok:false,status:503};
+    return {ok:true,status:200,json:async()=>({number:5})};
+  };
+  const api=client(repo,'test-token',transport,async ms=>pauses.push(ms));
+  assert.equal((await api.pr(5)).number,5);
+  assert.deepEqual(pauses,[250,750]);
+  assert.equal(seen.filter(x=>x.url.endsWith('/pulls/5')).length,3);
+  await assert.rejects(api.cancel(100),/HTTP 503/);
+  assert.equal(seen.filter(x=>x.url.endsWith('/actions/runs/100/cancel')).length,1);
+});
+
 test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   const calls = [];
   const http = async (url, options) => { calls.push([url, options.method]); return { ok: true, json: async () => ({ workflow_runs: [] }) }; };
@@ -260,7 +345,8 @@ test('trusted PR-target janitor is separate from strict two-job read-only PR spe
   assert.ok(!original.includes('  pull_request_target:'));
   assert.ok(!original.includes('  prune-head:'));
   assert.ok(target.includes('  pull_request_target:'));
-  assert.ok(target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
+  assert.ok(target.includes('types: [synchronize, closed]'), 'native auto-merge must only wake janitor on synchronize or close');
+  assert.ok(!target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'obsolete premature native callbacks must stay disabled');
   assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
   assert.ok(target.includes('  prune-head:'));
   assert.ok(target.includes("github.event.action == 'closed'"));
@@ -435,7 +521,8 @@ test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs C
   const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
-  assert.ok(source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
+  assert.ok(source.includes('types: [synchronize, closed]'), 'closed/synchronize trusted janitor preserved');
+  assert.ok(!source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'do not restore native open/Ready fan-out');
   assert.ok(source.includes('ref: codex/public-book-library'));
   assert.ok(source.includes("cancel-in-progress: true"));
   assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
@@ -451,4 +538,240 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
     'Core cancellation is limited to first-attempt synchronize or Draft transition');
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
+});
+
+
+test('merged PR orphan: exact commit association and ancestry permit queued old SHA cancellation', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const calls = [], cancelled = [];
+  const api = {list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{throw Error('unbounded closed-list scan forbidden when commit association exists');},
+    commitPulls:async sha=>{calls.push(['associated',sha]);return [terminal];},
+    pr:async()=>terminal,
+    run:async()=>pending,
+    compare:async (a,b)=>{calls.push(['compare',a,b]);return {status:'ahead',ahead_by:8,behind_by:0};},
+    cancel:async id=>cancelled.push(id)};
+  const result = await prune(api,{repo,target:TARGET,number:null});
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.orphanLookups,1);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+  assert.deepEqual(calls,[['associated',OLD],['compare',OLD,NEW]]);
+});
+
+test('orphan cancellation is fail closed for ambiguous, unmerged, fork and diverged PRs', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const cases = [
+    ['zero association',[],terminal,{status:'ahead',ahead_by:8}],
+    ['ambiguous association',[terminal,terminal],terminal,{status:'ahead',ahead_by:8}],
+    ['unmerged', [{...terminal,merged_at:null}],{...terminal,merged_at:null},{status:'ahead',ahead_by:8}],
+    ['reopened',[terminal],{...terminal,state:'open'},{status:'ahead',ahead_by:8}],
+    ['different SHA',[terminal],pr({...terminal,head:{...terminal.head,sha:MERGE}}),{status:'ahead',ahead_by:8}],
+    ['wrong branch',[{...terminal,head:{...terminal.head,ref:'different'}}],terminal,{status:'ahead',ahead_by:8}],
+    ['different repository',[{...terminal,head:{...terminal.head,repo:{full_name:'fork/other'}}}],terminal,{status:'ahead',ahead_by:8}],
+    ['diverged history',[terminal],terminal,{status:'diverged',ahead_by:8,behind_by:1}],
+    ['not ancestor',[terminal],terminal,{status:'behind',ahead_by:0,behind_by:8}],
+    ['unverified compare',[terminal],terminal,null],
+    ['run after merge',[terminal],terminal,{status:'ahead',ahead_by:8},run({...pending,created_at:'2026-11-12T00:00:00Z'})],
+  ];
+  for (const [label,matches,current,relation,special] of cases) {
+    let cancels=0;
+    const api={list:async()=>({workflow_runs:[special||pending]}),
+      commitPulls:async()=>matches,
+      pr:async()=>current,run:async()=>special||pending,
+      compare:async()=>{if(!relation)throw Error('GitHub unavailable');return relation;},
+      cancel:async()=>{cancels++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancels,0,label);
+    assert.deepEqual(result.cancelled,[],label);
+  }
+});
+
+test('orphan cancellation revalidates queued job and final PR head after compare', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const orphan=run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  for (const type of ['job-started','pr-moved','head-sha-mutated','path-mutated']) {
+    let cancel=0,readRun=0,readPR=0;
+    const api={list:async()=>({workflow_runs:[orphan]}),
+      commitPulls:async()=>[terminal],
+      pr:async()=>{readPR++;return type==='pr-moved'&&readPR>=3
+        ? pr({...terminal,head:{...terminal.head,sha:MERGE}}) : terminal;},
+      run:async()=>{readRun++;return type==='job-started'&&readRun>=2 ? {...orphan,status:'in_progress'} :
+        type==='head-sha-mutated'&&readRun>=2 ? {...orphan,head_sha:MERGE} :
+        type==='path-mutated'&&readRun>=2 ? {...orphan,path:'.github/workflows/other.yml'} : orphan;},
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancel++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancel,0,type);
+    assert.deepEqual(result.cancelled,[],type);
+  }
+});
+
+test('orphan association cache only looks up a commit once and caps unknown batch work', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',closed_at:closedAt,merged_at:closedAt});
+  const queued=Array.from({length:5},(_,i)=>run({id:100+i,pull_requests:[],created_at:'2026-11-11T20:43:45Z'}));
+  let lookup=0;
+  const api={list:async()=>({workflow_runs:queued}),commitPulls:async()=>{lookup++;return [terminal];},
+    pr:async()=>terminal,run:async id=>queued.find(v=>v.id===id),
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),cancel:async()=>{}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(lookup,1);
+  assert.equal(result.orphanAncestorCandidates,5);
+  assert.equal(result.cancelled.length,5);
+});
+
+
+test('trusted production sweep cancels a six-hour-old running orphan only with exact merged ancestry', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const abandoned = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  const cancelled = [], listing = [];
+  const api = {
+    list: async (page,branch,status) => {
+      listing.push(status);
+      return {workflow_runs:status==='in_progress'?[abandoned]:[]};
+    },
+    commitPulls:async()=>[terminal],pr:async()=>terminal,run:async()=>abandoned,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:771,status:'in_progress',name:'worker'}]}),
+    cancel:async id=>cancelled.push(id),
+    forceCancel:async()=>{throw Error('Never force a started old job');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.deepEqual(listing,['in_progress','queued']);
+  assert.deepEqual(cancelled,[100]);
+  assert.deepEqual(result.cancelledRunning,[100]);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+});
+
+test('production sweep cannot cancel recently running, open, ambiguous or changed-state orphans', async () => {
+  const clock=Date.now();
+  const recentStart=new Date(clock-15*60_000).toISOString();
+  const recentClosed=new Date(clock-5*60_000).toISOString();
+  const recent=pr({state:'closed',created_at:new Date(clock-25*60_000).toISOString(),
+    closed_at:recentClosed,merged_at:recentClosed});
+  const longClosed='2026-11-11T23:27:00Z';
+  const historical=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:longClosed,merged_at:longClosed});
+  for (const mode of ['recent','open','unmerged','ambiguous','changed-status','changed-head']) {
+    const start=mode==='recent'?recentStart:'2026-11-11T20:43:45Z';
+    const original=run({pull_requests:[],status:'in_progress',created_at:start});
+    let reads=0,cancelled=0;
+    const api={
+      list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[original]:[]}),
+      commitPulls:async()=>mode==='ambiguous'?[historical,historical]:[mode==='recent'?recent:historical],
+      pr:async()=>mode==='recent'?recent:mode==='open'?pr({...historical,state:'open'}):
+        mode==='unmerged'?pr({...historical,merged_at:null}):historical,
+      run:async()=>{
+        reads++;
+        return mode==='changed-status'&&reads>1?{...original,status:'queued'}:
+          mode==='changed-head'&&reads>1?{...original,head_sha:MERGE}:original;
+      },
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancelled++;},
+    };
+    const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+    assert.equal(cancelled,0,mode);
+    assert.deepEqual(result.cancelledRunning,[],mode);
+  }
+});
+
+test('production sweep classifies GitHub in-progress metadata with completed jobs as advisory', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let cancelCalls = 0;
+  const api = {
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:3,jobs:[
+      {id:101,status:'completed',conclusion:'success'},
+      {id:102,status:'completed',conclusion:'failed'},
+      {id:103,status:'completed',conclusion:'skipped'}]}),
+    cancel:async()=>{cancelCalls++;},
+    forceCancel:async()=>{throw Error('No force cancellation for ghost run');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,0);
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelledRunning,[]);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'RUN_IN_PROGRESS_ALL_JOBS_COMPLETED');
+  assert.equal(result.partial,true);
+});
+
+test('production sweep treats 409 after a proven running job finishes as terminal metadata drift', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let jobProbes=0, cancelCalls=0;
+  const api={
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:751,status:++jobProbes===1?'in_progress':'completed'}]}),
+    cancel:async()=>{cancelCalls++;throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,1);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'GITHUB_IN_PROGRESS_TERMINAL_JOBS_CANCEL_409');
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelled,[]);
+  assert.equal(result.partial,true);
+});
+
+test('production sweep never cancels a running merged-run with unproven job pagination', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const old = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  for(const response of [{total_count:2,jobs:[{id:1,status:'in_progress'}]},null]){
+    let cancelled=0;
+    const api={
+      list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[old]:[]}),
+      commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>old,
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      jobs:async()=>response,
+      cancel:async()=>{cancelled++;},
+    };
+    const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+    assert.equal(cancelled,0);
+    assert.deepEqual(result.errors,[]);
+    assert.deepEqual(result.staleRunningMetadata,[]);
+    assert.equal(result.partial,true);
+  }
+});
+
+test('routine production merges cannot launch the expensive batch orphan sweep', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  const push = yaml.match(/^  push:\n([\s\S]*?)(?=^permissions:)/m)?.[1];
+  assert.ok(push, 'batch janitor must stay available for policy changes');
+  assert.ok(push.includes("    branches: ['codex/public-book-library']"));
+  const paths = [...push.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+  assert.deepEqual(paths, [
+    '.github/workflows/hh-ci-stale-run-prune.yml',
+    'scripts/ci-prune-stale-runs.mjs',
+    'tests/ci-prune-stale-runs.test.mjs',
+  ], 'normal application merges must not wake the repository-wide janitor');
+  const native = readFileSync('.github/workflows/hh-native-auto-merge.yml', 'utf8');
+  assert.match(native, /github\.event\.action == 'synchronize'/);
+  assert.match(native, /github\.event\.action == 'closed'/);
+  assert.match(native, /^  prune-head:$/m);
+  assert.match(yaml, /^  pull_request:$/m);
 });

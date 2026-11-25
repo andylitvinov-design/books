@@ -81,7 +81,7 @@ test("four choices become an accessible, focused path instead of a wall of expan
 test("Coaching entry goes straight to the topic-based session chooser, without the extra session-type slide", () => {
   assert.match(ui, /key === "coaching"/);
   assert.match(ui, /data-tests-coaching-direct/);
-  assert.match(ui, /href=\{\`\/\$\{locale\}\/coaching\`\}/);
+  assert.match(ui, /href=\{\`\/\$\{locale\}\/coaching\/sessions\`\}/);
   assert.doesNotMatch(ui, /data-tests-coaching-sessions/);
   assert.match(ui, /aria-controls="tests-coaching-detail"/);
   const lounge = read("components/public-coaching-discovery.jsx");

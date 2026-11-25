@@ -10,8 +10,6 @@ on:
       - 'app/api/academy/reiki-guide/route.js'
       - 'tests/reiki-guide-pdf.test.mjs'
       - 'tests/tantra-pdf-full-original.test.mjs'
-      - 'next.config.ts'
-      - '.github/workflows/tantra-pdf-source-qa.yml'
 permissions:
   contents: read
 jobs:

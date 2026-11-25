@@ -1,0 +1,6 @@
+# Magic Mirror format screen 2 — owner approved 24 Nov 2026
+Existing guest /{en,ru,es}/holistic-support/mandala. Preserve main Magic Mirror and original #5493 three-stage Topic with persistent 16:9 video. New flow landing → format → Topic → Purpose → original editor. Back format → landing; Topic step 1 → format. Selected tier survives Topic and Purpose. No XP debit or renderer on selection.
+
+Reference: centered Choose a Creation Format / Video Therapy for Myself, large full-width Live Photo (500 XP; 230–310 CSS px, green fade) above compact two-column Simple (250 XP) and Cinematographic (2,000 XP), existing dock and planning disclosure. Existing approved sunrise portrait inspected; it is a still, not a moving smile sample. A verified matching real MP4 and accessible preview control remain required for full mock fidelity. No fake Play, new render or paid provider.
+
+QA: geometry, real navigation at 320/354/390/430, EN/RU/ES in existing browser checks. Local in-memory source invariants only; Mac offline. Reconcile existing #5539/#5144/#3811 shared test edits; protected Core/Specialist, hh-merge-check and hourly publisher only. No extra deploy. Do not claim LIVE before READY exact SHA and functional screenshot check.

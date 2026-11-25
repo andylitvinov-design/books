@@ -274,3 +274,49 @@
   text-decoration:none; }
 .masterRating strong { color:#704031; }
 .masterRating:hover,.profileReviewLink:hover { text-decoration:underline; }
+
+/* Service-inspired practitioner card: show a real approved service photo,
+   followed by the actual master's identity, public details and real CTA. */
+.explorer:not(.embeddedExplorer) .masterFeature {
+  height: 190px; margin: -19px -19px 14px; overflow: hidden;
+  border-radius: 20px 20px 0 0; background: #e8e0d3;
+}
+.explorer:not(.embeddedExplorer) .masterFeature img {
+  display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%;
+}
+.explorer:not(.embeddedExplorer) .compactMaster {
+  border: 1px solid #e9dfd1; border-radius: 22px; background: #fffcf7;
+  box-shadow: 0 5px 18px rgb(66 42 31 / 7%);
+}
+.explorer:not(.embeddedExplorer) .compactMaster h3 { color: #143d3a; font-family: system-ui, sans-serif; font-weight: 800; }
+.explorer:not(.embeddedExplorer) .compactMaster .description { color: #5d6a71; font-size: 13px; }
+.explorer:not(.embeddedExplorer) .compactMaster .primary,
+.explorer:not(.embeddedExplorer) .compactMaster .energyButton {
+  background: #067a67; border-radius: 14px; min-height: 48px;
+}
+.explorer:not(.embeddedExplorer) .compactMaster .primary:hover,
+.explorer:not(.embeddedExplorer) .compactMaster .energyButton:hover { background: #006e60; }
+.explorer:not(.embeddedExplorer) .compactMaster .secondary { color: #067a67; }
+.explorer:not(.embeddedExplorer) .filters[data-mentor-filters] .heading h2 {
+  font: 800 clamp(21px, 2.8vw, 27px)/1.2 system-ui, sans-serif; color: #143d3a;
+}
+.explorer:not(.embeddedExplorer) .filters[data-mentor-filters] .masterQuickBar button.selected {
+  background: #e6f6f1; border: 2px solid #067a67; color: #143d3a;
+}
+.explorer:not(.embeddedExplorer) .filters[data-mentor-filters] .search {
+  border-radius: 16px; background-color: #fff; min-height: 46px; font-size: 14px;
+}
+@media (max-width: 640px) {
+  .explorer:not(.embeddedExplorer) .masterFeature { height: 195px; margin: -13px -14px 13px; border-radius: 17px 17px 0 0; }
+  .explorer:not(.embeddedExplorer) .masterQuickBar {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px; overflow: visible; padding: 0;
+  }
+  .explorer:not(.embeddedExplorer) .masterQuickBar button {
+    width: 100%; min-width: 0; min-height: 44px; border-radius: 13px;
+    font-size: 10.5px; line-height: 1.2; white-space: normal; padding: 6px 4px;
+  }
+}
+@media (max-width: 355px) {
+  .explorer:not(.embeddedExplorer) .masterQuickBar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

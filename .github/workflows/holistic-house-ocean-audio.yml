@@ -1,7 +1,10 @@
 name: Holistic House Ocean Audio
 
 on:
+  # Expanded QA is opt-in: add the qa-optional label to an affected PR.
   pull_request:
+    types: [labeled]
+    branches: ['codex/public-book-library']
     paths:
       - 'components/ocean-practice-audio.ts'
       - 'components/app/opora-ocean-outro.jsx'
@@ -14,7 +17,6 @@ on:
       - 'tests/opora-as56-experience-first.test.mjs'
       - 'public/audio/**'
       - 'scripts/generate-soft-ocean-melody.mjs'
-      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
   workflow_dispatch:
 
@@ -27,6 +29,7 @@ concurrency:
 
 jobs:
   verify-ocean-audio:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:

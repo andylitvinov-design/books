@@ -11,7 +11,7 @@ test('Messenger keeps four real initial choices but uses link-like rows after Hi
     assert.ok(chat.includes('data-hh-ai-start="'+action+'"'),action)
   }
   assert.ok(chat.includes('data-has-messages={messages.length>0||undefined}'))
-  assert.ok(chat.includes('{compact&&entryOpen&&!pageHelp&&<div className={styles.startActions}'))
+  assert.ok(chat.includes('{compact&&entryOpen&&!pageHelp&&!messengerView&&<div className={styles.startActions}'))
   assert.ok(chat.includes('isCasualGreeting(text)'))
   assert.ok(chat.includes('setMessages(prev=>[...prev'))
   const initial = css.slice(css.indexOf('/* Four real chat entry actions'),css.indexOf('/* After a user turn'))

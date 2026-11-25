@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
 import {UNIFIED_DOCK_IDS,unifiedMobileDockHref} from '../lib/unified-mobile-dock.mjs'
 test('private Cabinet advertises a dedicated installable Holistic House PWA',()=>{
  const manifest=JSON.parse(readFileSync('public/holistic-house-app.webmanifest','utf8'))
@@ -31,9 +32,9 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
         icon.sizes===size+'x'+size&&icon.src==='/holistic-house-icon/'+size))
     assert.ok(manifest.shortcuts.some(s=>s.url.endsWith('/app/messages')))
   }
-  assert.equal(en.start_url,'/en/app/messages')
-  assert.equal(ru.start_url,'/ru/app/messages')
-  assert.equal(es.start_url,'/es/app/messages')
+  assert.equal(en.start_url,'/en')
+  assert.equal(ru.start_url,'/ru')
+  assert.equal(es.start_url,'/es')
   assert.match(page,/query.program === 'stress'/)
   assert.match(page,/holistic-house-app-ru\.webmanifest/)
   assert.match(page,/holistic-house-app\.webmanifest/)
@@ -105,4 +106,82 @@ test('public Holistic House pages default to the correct Home Screen app without
   assert.match(esLayout,/holistic-house-app-es\.webmanifest/)
   assert.equal(psi.name,'PsiAlchemy')
   assert.equal(psi.start_url,'/ru/homeopathy')
+})
+
+test('real service-worker offline fallback is limited to anonymous Holistic House navigation',async()=>{
+ const source=readFileSync('public/sw.js','utf8')
+ const handlers=new Map(),stores=new Map()
+ const fakeCache=name=>{
+   if(!stores.has(name))stores.set(name,new Map())
+   const store=stores.get(name)
+   return {
+     async addAll(paths){
+       for(const path of paths){
+         const page=readFileSync('public'+path,'utf8')
+         assert.match(page,/Holistic House/)
+         assert.match(page,/noindex,nofollow/)
+         store.set(path,{url:path})
+       }
+     },
+     async add(path){return this.addAll([path])},
+    async match(path){return store.get(typeof path==='string'?path:path.url)},
+     async put(path,response){store.set(typeof path==='string'?path:path.url,response)}
+   }
+ }
+ let online=false
+ const pendingWaits=[]
+ const scope={
+   self:{
+     location:{origin:'https://holistichouse.vercel.app'},
+     addEventListener:(type,fn)=>handlers.set(type,fn),
+     skipWaiting:async()=>{},
+     clients:{claim:async()=>{}}
+   },
+   importScripts:(path)=>assert.equal(path,'/course-notifications-sw.js'),
+   caches:{
+     open:async name=>fakeCache(name),
+     keys:async()=>[...stores.keys()],
+     delete:async name=>stores.delete(name)
+   },
+   URL,Response,fetch:async()=>{if(!online)throw Error('offline');return {ok:true}}
+ }
+ runInNewContext(source,scope)
+ const install={waitUntil(promise){this.promise=promise}}
+ handlers.get('install')(install)
+ await install.promise
+ assert.equal(stores.get('hh-public-offline-v1').size,2)
+ assert.equal(stores.get('hh-public-offline-v1').has('/holistic-house-offline-es.html'),false)
+ const navigation=(path,mode='navigate',method='GET')=>{
+   let result=null
+   handlers.get('fetch')({
+     request:{url:'https://holistichouse.vercel.app'+path,mode,method},
+     respondWith(promise){result=promise},
+     waitUntil(promise){pendingWaits.push(promise)}
+   })
+   return result
+ }
+ for(const [path,locale] of [['/','en'],['/en','en'],['/ru','ru'],['/es/mytube','en']]){
+   const response=navigation(path)
+   assert.ok(response,'expected public offline fallback: '+path)
+   assert.equal((await response).url,'/holistic-house-offline-'+locale+'.html')
+ }
+ // Spanish offline material is fetched only after an explicit successful /es visit.
+ online=true
+ const spanishResponse=navigation('/es')
+ assert.equal((await spanishResponse).ok,true)
+ await Promise.all(pendingWaits)
+ assert.equal(stores.get('hh-public-offline-v1').has('/holistic-house-offline-es.html'),true)
+ online=false
+ assert.equal((await navigation('/es')).url,'/holistic-house-offline-es.html')
+
+ for(const path of ['/en/app/messages','/ru/app/portrait','/es/app/tests',
+   '/api/app/messages','/en/client/abc','/ru/prescriptions/id',
+   '/en/homeopathy/remedies/arsenicum-album']){
+   assert.equal(navigation(path),null,'private or separate app navigation must bypass fallback: '+path)
+ }
+ assert.equal(navigation('/ru','navigate','POST'),null)
+ assert.equal(navigation('/ru','cors'),null)
+ const activate={waitUntil(promise){this.promise=promise}}
+ handlers.get('activate')(activate)
+ await activate.promise
 })

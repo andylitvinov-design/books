@@ -42,7 +42,8 @@
         "feedback_received",
         "paused",
         "safety_handoff",
-        "reframed"
+        "reframed",
+        "emotion_acknowledged"
       ]
     },
     "situationCode": {

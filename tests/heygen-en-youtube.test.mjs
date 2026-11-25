@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs'
 import {cleanHeygenPublication,validHeygenMediaUrl,resolveHeygenCaptionedUrl,
   transferHeygenToEnglishYoutube,verifyHeygenYoutubeUpload,
   validatedYoutubeUploadLocation} from '../lib/youtube/heygen-en-upload.mjs'
-import {verifyYoutubeEnOwner} from '../lib/practitioners/owner-telegram-video-youtube.mjs'
+import {verifyYoutubeEnOwner,verifyYoutubeEnOwnerForPairing} from '../lib/practitioners/owner-telegram-video-youtube.mjs'
+import {createMemoryYoutubeHistoryStore} from '../lib/youtube/upload-history-store.js'
 
 const ID='8d998c778af3b563aa63233aa4fb4a06'
 const CHANNEL='UC'+ 'a'.repeat(22)
@@ -122,7 +123,7 @@ test('wrong YouTube channel never passes readback',async()=>{
 })
 test('server OAuth persists EN target independently and cannot reuse RU seal',()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',
-   import.meta.url),'utf8')
+   import.meta.url),'utf8')+'\n'+readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
  const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',
    import.meta.url),'utf8')
  const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',
@@ -140,4 +141,90 @@ test('server OAuth persists EN target independently and cannot reuse RU seal',()
  assert.match(api,/requireSameOrigin\(request,config\)/)
  assert.match(api,/after\(async\(\)=>/)
  assert.doesNotMatch(api,/METRICOOL|NEXT_PUBLIC_HEYGEN_API_KEY/)
+})
+
+test('first-time English OAuth can pair only the Google-owned @aatapro channel',async()=>{
+ const good=async url=>{
+   assert.match(url,/channels\?part=id&/)
+   assert.match(url,/mine=true|forHandle=%40aatapro/)
+   return okJson({items:[{id:CHANNEL}]})
+ }
+ assert.equal(await verifyYoutubeEnOwnerForPairing(TOKEN,good),CHANNEL)
+ const store=createMemoryYoutubeHistoryStore()
+ assert.equal((await store.channels()).en,null)
+ assert.equal((await store.pairEnglish({id:CHANNEL,name:'AATA Pro',handle:'@aatapro'})).id,CHANNEL)
+ assert.equal((await store.channels()).en.id,CHANNEL)
+ await assert.rejects(store.pairEnglish({
+   id:'UC'+'b'.repeat(22),name:'Other',handle:'@other'}),/channel_conflict/)
+ const mismatch=async uri=>okJson({items:[{
+   id:uri.includes('forHandle')?CHANNEL:'UC'+'b'.repeat(22)}]})
+ await assert.rejects(verifyYoutubeEnOwnerForPairing(TOKEN,mismatch),
+   /VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ const multiple=async uri=>okJson({items:uri.includes('forHandle')
+   ?[{id:CHANNEL}]:[{id:CHANNEL},{id:'UC'+'b'.repeat(22)}]})
+ await assert.rejects(verifyYoutubeEnOwnerForPairing(TOKEN,multiple),
+   /VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(verifyYoutubeEnOwnerForPairing('short',good),
+   /VIDEO_YOUTUBE_RECONNECT_REQUIRED/)
+})
+test('single Google connect never skips owner PKCE or English grant isolation',()=>{
+ const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
+ const api=readFileSync(new URL('../app/api/admin/heygen-youtube/route.js',import.meta.url),'utf8')
+ const state=callback.indexOf('ownerVideoOauthStateMatches(sealed,state)')
+ const verified=callback.indexOf('verifyYoutubeEnOwnerForPairing(token.access_token)')
+ const paired=callback.indexOf("history.pairEnglish({id:channel,name:'AATA Pro',handle:'@aatapro'})")
+ const granted=callback.indexOf("saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})")
+ assert.ok(state>0&&verified>state&&paired>verified&&granted>paired)
+ assert.match(page,/href="\/api\/admin\/telegram-video\/youtube\/start\?target=en"/)
+ assert.doesNotMatch(page,/telegramVideoConfigured&&initialChannels\.en&&<Link/)
+ assert.match(api,/requireSameOrigin\(request,config\)/)
+ assert.match(api,/rightsConfirmed/)
+ assert.match(api,/privacyConfirmed/)
+ assert.match(callback,/const channel=await verifyYoutubeRuOwner\(token.access_token\)/)
+})
+
+test('owner Google sign-in keeps English YouTube channel instead of returning to the default cabinet',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const start=read('app/api/admin/telegram-video/youtube/start/route.js')
+ const login=read('app/admin/login/page.js')
+ const entry=read('components/practitioner-auto-entry.jsx')
+ const destinations=read('lib/app/practitioner-access.js')
+ const auth=read('app/api/app/[...path]/route.js')
+ const callback=read('app/api/admin/telegram-video/youtube/callback/route.js')
+ assert.ok(start.includes("target==='en'?'https://holistichouse.vercel.app/admin/login?destination=youtubeConnectEn'"))
+ assert.ok(start.includes("'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect'"))
+ assert.ok(start.includes('if(!await requireAdminRequest())'))
+ assert.ok(login.includes("'youtube','youtubeConnect','youtubeConnectEn'].includes(params?.destination)"))
+ for(const text of [entry,destinations])
+   assert.ok(text.includes("youtubeConnectEn: '/api/admin/telegram-video/youtube/start?target=en'"))
+ assert.ok(entry.includes('if (response.redirectUrl !== ADMIN_DESTINATIONS[safeDestination])'))
+ assert.ok(entry.includes('safeDestination'))
+ assert.equal((auth.match(/'practitioner-youtubeConnectEn'/g)||[]).length,3)
+ assert.ok(auth.includes("continueTo === 'practitioner-youtubeConnectEn'"))
+ assert.ok(auth.includes('destination=youtubeConnectEn'))
+ assert.ok(auth.includes('if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor))'))
+ assert.ok(callback.includes('verifyYoutubeEnOwnerForPairing(token.access_token)'))
+ assert.ok(callback.includes("saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})"))
+ assert.ok(start.includes('if(!ownerVideoOauthConfigured())'))
+})
+
+// A direct mobile uploader URL must survive the Google owner-only login.
+test('owner phone uploader login returns to uploader, not My Work',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const page=read('app/admin/youtube-upload/page.js')
+ const login=read('app/admin/login/page.js')
+ const entry=read('components/practitioner-auto-entry.jsx')
+ const access=read('lib/app/practitioner-access.js')
+ const auth=read('app/api/app/[...path]/route.js')
+ assert.ok(page.includes("if (!await requireAdminRequest()) redirect('/admin/login?destination=youtube')"))
+ assert.ok(login.includes("'youtube','youtubeConnect','youtubeConnectEn'].includes(params?.destination)"))
+ assert.ok(entry.includes("youtube: '/admin/youtube-upload'"))
+ assert.ok(access.includes("youtube: '/admin/youtube-upload'"))
+ assert.equal((auth.match(/'practitioner-youtube'/g)||[]).length,3)
+ assert.ok(auth.includes("continueTo === 'practitioner-youtube'"))
+ assert.ok(auth.includes("admin/login?destination=youtube"))
+ assert.ok(auth.includes("if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor))"))
+ assert.ok(auth.includes("issueTrustedAdminSession(response"))
+ assert.ok(!login.includes('searchParams?.returnUrl'))
 })

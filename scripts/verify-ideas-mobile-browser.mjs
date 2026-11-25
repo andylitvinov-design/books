@@ -56,6 +56,9 @@ async function verify(browserType, browser, locale, width) {
       waitUntil: "domcontentloaded", timeout: 60000,
     });
     assert.equal(response?.status(), 200, label + ": route");
+    // Wait for real client JS before the FIRST single-touch interaction.
+    // DOMContentLoaded can precede React hydration.
+    await page.waitForLoadState("load", { timeout: 60000 });
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     const switchboard = hub.locator("[data-tests-coaching-hub]");
@@ -79,6 +82,14 @@ async function verify(browserType, browser, locale, width) {
       label + ": all four choices remain available above the first fold");
     const profilePath = switchboard.locator('[data-tests-coaching-path="profile"]');
     await profilePath.tap();
+    // One tap must open the real details panel; wait for the React state
+    // commit, not a synchronous aria snapshot immediately after tap().
+    await page.waitForFunction(() => {
+      const card = document.querySelector('[data-tests-coaching-path="profile"]');
+      const detail = document.querySelector("#tests-coaching-detail");
+      return card?.getAttribute("aria-expanded") === "true" &&
+        detail?.getAttribute("data-selected-path") === "profile";
+    }, null, { timeout: 10000 });
     assert.equal(await profilePath.getAttribute("aria-expanded"), "true");
     assert.equal(await switchboard.locator('[data-personality-profiles-entry] a[href="/' + locale + '/personality-profiles"]').count(), 1,
       label + ": canonical profile builder, no duplicate tests or storage");
@@ -86,10 +97,13 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await switchboard.locator("nav[hidden] [data-tests-coaching-path]:visible").count(), 0,
       label + ": hide the four paths after choosing one");
     await backPath.tap();
+    await page.waitForFunction(() =>
+      document.querySelector("#tests-coaching-detail")?.hasAttribute("hidden") === true,
+      null, { timeout: 10000 });
     assert.equal(await cards.filter({ visible: true }).count(), 4,
       label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
-    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
+    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching/sessions",
       label + ": coaching card is a direct link to the topic-first chooser");
     assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
       label + ": coaching entry must not open a second interstitial slide");
@@ -106,8 +120,17 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await support.getByRole("status").count(), 1,
       label + ": consent, practice and completion work");
     await backPath.tap();
+    await page.waitForFunction(() =>
+      document.querySelector("#tests-coaching-detail")?.hasAttribute("hidden") === true,
+      null, { timeout: 10000 });
     const templePath = switchboard.locator('[data-tests-coaching-path="temple"]');
     await templePath.tap();
+    await page.waitForFunction(() => {
+      const card = document.querySelector('[data-tests-coaching-path="temple"]');
+      const detail = document.querySelector("#tests-coaching-detail");
+      return card?.getAttribute("aria-expanded") === "true" &&
+        detail?.getAttribute("data-selected-path") === "temple";
+    }, null, { timeout: 10000 });
     assert.equal(await templePath.getAttribute("aria-expanded"), "true");
     const hero = hub.locator("[data-ideas-hero]");
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
@@ -270,19 +293,24 @@ async function verify(browserType, browser, locale, width) {
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
     await readingOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
-    // Reply consent and optional source-analytics consent serve distinct purposes.
-    // Reject a missing, duplicate or silently prechecked optional consent.
-    const inlineForm = daoResult.locator('[data-inline-offer-form]:visible');
-    const optionalAttribution = inlineForm.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-    assert.equal(await optionalAttribution.count(), 1, label + ": exactly one optional source attribution consent");
-    assert.equal(await optionalAttribution.isChecked(), false, label + ": analytics stays off by default");
-    assert.equal(await inlineForm.locator('input[type="checkbox"]').count(), 2,
-      label + ": one reply consent plus one separately optional attribution consent");
+    const inlineForm=daoResult.locator('[data-inline-offer-form]:visible');
+    assert.equal(await inlineForm.count(),1,label+": one inline messenger request");
+    assert.equal(await inlineForm.locator('[data-messenger-only-contact]').count(),1,
+      label+": the chosen offer owns one messenger action block");
+    const links=inlineForm.locator('a[data-messenger-only-channel]');
+    assert.equal(await links.count(),2,label+": WhatsApp and Telegram, without email form");
+    const whatsapp=new URL(await links.first().getAttribute('href'));
+    assert.equal(whatsapp.origin,'https://wa.me',label+": customer-initiated WhatsApp");
+    assert.ok((whatsapp.searchParams.get('text')||'').length>25,label+": selected offer text retained");
+    assert.equal(await inlineForm.locator('form,input[type="email"],input[type="checkbox"]').count(),0,
+      label+": no unverified website submission or silent consent");
+    assert.equal(await inlineForm.locator('[data-lead-saved]').count(),0,
+      label+": an opened link is never a CRM receipt");
     await giftOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
     assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": never duplicate requests");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible [data-messenger-only-contact]').count(),1,
+      label+": switching offers never duplicates messenger actions");
     await giftOrder.tap();
     assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 0, label + ": click again collapses");
     const expandedBounds = await page.evaluate(() => ({

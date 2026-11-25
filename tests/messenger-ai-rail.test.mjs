@@ -10,14 +10,14 @@ test('Messenger retains real AI, Orders and Clients and the protected agent API'
  for(const section of ['ai','orders','clients'])
   assert.match(hub,new RegExp('id="hh-'+section+'-panel"'))
  assert.match(hub,/onClick=\{\(\)=>chooseSection\('ai'\)\}/)
- assert.match(workspace,/HolisticAgentChat locale=\{locale\} compact authenticated=\{authenticated\}\/>/)
+ assert.match(workspace,/HolisticAgentChat locale=\{locale\} compact messengerView/)
  assert.match(agent,/fetch\("\/api\/holistic-agent\/turn"/)
  assert.match(agent,/ownedInferenceConsent:mode==="owned"&&agree/)
  assert.doesNotMatch(workspace,/fetch\(/)
  assert.doesNotMatch(workspace,/data-hh-unified-dock/)
 })
 
-test('four genuine large entry actions replace the five-card rail; no fake rendered media',()=>{
+test('older compact help keeps its four actions; Messenger receives six real choices',()=>{
  const agent=read('components/holistic-agent-chat.tsx')
  const css=read('components/holistic-agent-chat.module.css')
  const workspace=read('components/app/messenger-ai-workspace.jsx')
@@ -31,6 +31,11 @@ test('four genuine large entry actions replace the five-card rail; no fake rende
  assert.ok(agent.includes('data-hh-ai-tests-link'))
  assert.match(css,/startActions :is\(button,a\)/)
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+ const landing=read('components/app/messenger-ai-landing.tsx')
+ for(const id of ['test','video','practice','session','course','ask'])
+  assert.ok(landing.includes('id:"'+id+'"'),id)
+ assert.match(landing,/approvedTelegramPresentation\("ru"\)/)
+ assert.match(workspace,/messengerView/)
  assert.doesNotMatch(workspace,/data-chat-menu-rail|eight-practice|video-director-chat/)
  assert.ok(agent.includes('{!compact&&<details className={styles.programPanel}'))
 })

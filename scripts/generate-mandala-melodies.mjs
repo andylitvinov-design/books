@@ -9,6 +9,7 @@ import {writeFileSync,mkdirSync,readFileSync} from "node:fs";
 import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {createHash} from "node:crypto";
+import {createStaticMediaCache,isPcmWav} from "./vercel-static-media-cache.mjs";
 
 // Unique 8-bar melodic forms with four-bar harmonic movement and an answering
 // second phrase. MIDI pitch is scale-quantized to avoid harsh non-chord noise.
@@ -175,9 +176,16 @@ const out=resolve(dirname(fileURLToPath(import.meta.url)),"../public/audio/manda
 const direct=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url);
 export function writeMelodyMasters({verify=false}={}){
   if(!verify)mkdirSync(out,{recursive:true});
+  const cache=createStaticMediaCache({
+    root:resolve(dirname(fileURLToPath(import.meta.url)),".."),
+    group:"mandala-wav",sources:["scripts/generate-mandala-melodies.mjs"],
+    enabled:!verify && process.env.VERCEL_ENV==="production",
+  });
+  const valid=bytes=>isPcmWav(bytes,SAMPLE_RATE,DURATION_SECONDS);
   const report=[];
   for(const song of SONGS){
-    const pcm=renderMelody(song),path=resolve(out,song.id+".wav");
+    const pcm=cache.get(song.id,valid) ?? cache.put(song.id,renderMelody(song),valid);
+    const path=resolve(out,song.id+".wav");
     if(verify){
       const published=readFileSync(path);
       if(!pcm.equals(published))throw Error("original_melody_master_mismatch_"+song.id);
@@ -188,3 +196,4 @@ export function writeMelodyMasters({verify=false}={}){
   return {verified:verify,masters:report.length,songs:report};
 }
 if(direct)console.log(JSON.stringify(writeMelodyMasters({verify:process.argv.includes("--check")}),null,2));
+

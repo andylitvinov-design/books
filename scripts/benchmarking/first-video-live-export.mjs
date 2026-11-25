@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /**
  * On-demand, unauthenticated first-party LIVE video export acceptance.
- * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → download → ffprobe,
+ * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → test-owned Blob → ffprobe,
  * decoded audio and moving pixels. Never uses personal media, an AI API or POST.
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
+import {expect} from '@playwright/test';
 import {spawnSync} from 'node:child_process';
-import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
+import {mkdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {planExpressVideo} from '../../lib/mandala/express-video-director.mjs';
+import {getMyTubeScenarioPhotos} from '../../lib/mandala/story-photo-library.mjs';
 
 const LIVE_ORIGIN = 'https://holistichouse.vercel.app';
 const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
 const ARTIFACT = 'artifacts/benchmarking/first-video-live-export.json';
+const EXPRESS_GOAL='A quiet sunrise over a peaceful mountain meadow';
+const EXPRESS_RECIPE=planExpressVideo({locale:'ru',goal:EXPRESS_GOAL,theme:'energy'});
+if(!EXPRESS_RECIPE.canRender||EXPRESS_RECIPE.clipIds.length!==6||
+   new Set(EXPRESS_RECIPE.clipIds).size!==6)throw new Error('EXPRESS_TEST_RECIPE_NOT_SIX_SCENES');
 const driver = process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
 const requireLicensed = process.env.HH_LIVE_VIDEO_REQUIRE_STOCK === 'true';
 if (!['true','false'].includes(process.env.HH_LIVE_VIDEO_REQUIRE_STOCK))
@@ -60,11 +68,11 @@ function portraitPixels(mediaFile, at) {
     '-f','rawvideo','pipe:1'],200*1024);
 }
 function correlation(a,b) {
-  assert.equal(a.length,54*96*3,'FRAME_UNDECODABLE');
-  assert.equal(b.length,a.length,'SOURCE_FRAME_UNDECODABLE');
+  assert.equal(a.length,54*96*3,'EXPRESS_SOURCE_FRAME_UNDECODABLE');
+  assert.equal(b.length,a.length,'EXPRESS_EXPORT_FRAME_UNDECODABLE');
   let meanA=0,meanB=0;
   for(let i=0;i<a.length;i++){meanA+=a[i];meanB+=b[i];}
-  meanA/=a.length;meanB/=b.length;
+  meanA/=a.length;meanB/=a.length;
   let aa=0,bb=0,ab=0;
   for(let i=0;i<a.length;i++){
     const x=a[i]-meanA,y=b[i]-meanB;aa+=x*x;bb+=y*y;ab+=x*y;
@@ -84,11 +92,42 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
-async function downloadBytes(download) {
-  const chunks = [];
-  for await (const c of await download.createReadStream()) chunks.push(Buffer.from(c));
-  return Buffer.concat(chunks);
+// Extra contains only the three video offers. Original source and advanced
+// storyboard settings remain in Story's visible, accessible settings action.
+async function openMontageSettings(page) {
+  const story=page.locator('[data-video-montage-tab="concept"]');
+  await story.waitFor({state:'visible',timeout:20000});
+  row.phase='story-native-selection';
+  if(engine==='webkit')await story.tap();
+  else await story.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='concept',
+    undefined,{timeout:15000});
+  const openSettings=page.locator('[data-video-story-open-settings]');
+  row.phase='story-settings-native-selection';
+  await openSettings.waitFor({state:'visible',timeout:20000});
+  if(engine==='webkit')await openSettings.tap();
+  else await openSettings.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='settings',
+    undefined,{timeout:15000});
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.waitFor({state:'visible',timeout:20000});
+  if(!await advanced.evaluate(node=>node.open)){
+    row.phase='story-advanced-options';
+    if(engine==='webkit')await advanced.locator(':scope > summary').tap();
+    else await advanced.locator(':scope > summary').click();
+  }
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  row.phase='story-video-settings';
+  if(engine==='webkit')await settings.tap();
+  else await settings.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='settings',
+    undefined,{timeout:15000});
 }
+
 let browser;
 let page;
 let mediaDir;
@@ -104,6 +143,7 @@ try {
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
     storageState: {cookies: [], origins: []}, acceptDownloads: true,
   });
+  await installGuestVideoBlobCapture(context);
   await context.route('**/*', route => {
     const request = route.request();
     let firstParty = false;
@@ -132,91 +172,123 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Text → Add video.
-  // Never force a hidden "All stories" button. Keep all subsequent real
-  // four-shot, duration, WAV, video/audio and FFprobe requirements unchanged.
-  const continueToIdeas=page.locator('[data-video-continue-scenarios]');
-  await continueToIdeas.waitFor({state:'visible',timeout:40000});
-  await continueToIdeas.click();
-  const ideas=page.locator('[data-video-quick-control="phrases"]');
-  assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="text"]').click();
-  const addVideo=page.locator('[data-video-timeline-add-video]');
-  await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
-  await page.waitForFunction(()=>
-    document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-scenario-open')==='true',
-    undefined,{timeout:15000});
-  await page.waitForFunction(() =>
-    document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
-    undefined,{timeout:15000});
-  const advanced=page.locator('[data-video-first-video-advanced]');
-  await advanced.waitFor({state:'visible',timeout:40000});
-  if(await advanced.getAttribute('open')===null)
-    await advanced.locator(':scope > summary').click();
-  assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
-  const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
-  await first.waitFor({state: 'visible', timeout: 40000});
-  await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
-  const prompt = first.locator('[data-first-video-prompt]');
-  await page.waitForFunction(() =>
-    (document.querySelector('[data-first-video-prompt]')?.value?.length || 0) > 60,
-    undefined, {timeout: 25000});
-  assert.ok((await prompt.inputValue()).length > 60, 'PROMPT_NOT_PERSONALIZED');
-  // Separate the quick-format UI from the actual media export. A broken or
-  // occluded quick button must not prevent probing the real rendering path.
-  row.quickPortraitButtonCount = await first.locator('[data-first-video-quick-aspect="portrait"]').count();
-  await first.locator('[data-first-video-filters] > summary').click();
-  await first.locator('[data-first-video-aspect]').selectOption('portrait');
-  assert.equal(await first.locator('[data-first-video-aspect]').inputValue(),
-    'portrait', 'PORTRAIT_NOT_SELECTED');
-  await first.locator('[data-first-video-duration]').selectOption('20');
-  await first.locator('[data-first-video-music]').selectOption('meditation');
-  assert.equal(await first.locator('[data-first-video-ai-consent]').isChecked(), false,
-    'SYNTHETIC_LIVE_SMOKE_SHOULD_NOT_SEND_AI');
-  let licensedSources=[];
-  if(requireLicensed){
-    const catalogue=JSON.parse(readFileSync('data/video-catalog/scene-taxonomy.json','utf8'));
-    const verifiedSources=new Map(catalogue.scenes.filter(s=>s.status==='approved'&&
-      s.media==='licensed_mp4'&&s.rightsReference).map(s=>[s.id,s.video]));
-    await page.waitForFunction(()=>{
-      const videos=[...document.querySelectorAll('[data-free-film-source]')];
-      return videos.length===4&&videos.every(v=>v.readyState>=2&&v.videoWidth>0);
-    },undefined,{timeout:90000});
-    licensedSources=await page.locator('[data-free-film-source]').evaluateAll(videos=>
-      videos.map(video=>({id:video.dataset.freeFilmSource,src:video.getAttribute('src')})));
-    assert.equal(new Set(licensedSources.map(item=>item.id)).size,4,'FOUR_DISTINCT_SOURCES_REQUIRED');
-    for(const item of licensedSources){
-      assert.match(item.src||'',/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,'SOURCE_NOT_FIRST_PARTY');
-      assert.equal(item.src,verifiedSources.get(item.id), 'SOURCE_NOT_APPROVED_IN_CATALOGUE_'+item.id);
+  // Exercise the actual Goal → Just make it → Generate Express journey.
+  // Require real, visible controls and native browser taps; never use the
+  // hidden legacy Continue control or mutate application state from the test.
+  row.phase='goal-visible-express-request';
+  // On the approved mobile Magic Mirror, all detailed tools remain behind
+  // the visible More goals disclosure. Open it with a genuine user gesture
+  // before the existing aspect/instant controls; never force-click hidden
+  // legacy controls, bypass the renderer, or create a second test-only path.
+  const mirrorMore=page.locator('[data-hh-mirror-more-goals]');
+  if(await mirrorMore.count() && await mirrorMore.isVisible()){
+    if(engine==='webkit')await mirrorMore.tap();
+    else await mirrorMore.click();
+  }else{
+    // Real browser entry: Landing -> Topic Screen 2 -> explicitly opened editor.
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    if(await mirror.getAttribute('data-hh-mirror-screen')==='landing'){
+      row.phase='mirror-audience-native-selection';
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      if(engine==='webkit')await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','format');
     }
+    if(await mirror.getAttribute('data-hh-mirror-screen')==='format'){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==='webkit')await format.tap();else await format.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
+    }
+    const description=mirror.locator('[data-hh-mirror-own-description]');
+    if(!await description.evaluate(el=>el.open)){
+      const summary=description.locator('summary');
+      if(engine==='webkit')await summary.tap();else await summary.click();
+    }
+    const composer=page.locator('[data-hh-mirror-composer]');
+    await expect(composer).toBeVisible({timeout:15000});
+    const plus=composer.locator('[data-hh-mirror-open-advanced]');
+    await expect(plus).toBeVisible();
+    if(engine==='webkit')await plus.tap();else await plus.click();
   }
-  const create = first.locator('[data-first-video-generate]');
-  await page.waitForFunction(() => {
-    const button = document.querySelector('[data-first-video-generate]');
-    return Boolean(button && !button.disabled);
-  }, undefined, {timeout: 40000});
-  await create.click({timeout: 15000});
-  const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({state: 'visible', timeout: 80000});
-  assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
-    'rendered', 'CATALOG_CLIP_IS_NOT_PERSONALIZED_OUTPUT');
-  // Primary Save opens the real Files / Telegram / WhatsApp delivery chooser.
-  // Wait for that user-visible state before requesting the genuine file download.
-  await save.click();
-  const delivery = page.locator('[data-video-messenger-delivery]');
-  await delivery.waitFor({state: 'visible', timeout: 10000});
-  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
-  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
-  const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 25000}),
-    delivery.locator('[data-video-save-direct-choice]').click(),
+  const studio=page.locator('[data-mandala-free-video]');
+  await expect(studio).toHaveAttribute('data-hh-mirror-advanced','true');
+  await expect(studio).toHaveAttribute('data-video-scenario-open','true');
+  const aspectMenu=page.locator('[data-video-prompt-aspect]');
+  const aspectSummary=aspectMenu.locator(':scope > summary');
+  await expect(aspectSummary).toBeVisible({timeout:15000});
+  // Selecting an aspect closes the native <details>. A WebKit React update
+  // may leave it open on the next render, so blindly clicking the summary
+  // again sometimes CLOSES the menu and hides the second choice.
+  // Inspect the real native state before each trusted user gesture.
+  const selectAspect=async format=>{
+    if(!await aspectMenu.evaluate(node=>node.open)){
+      if(engine==='webkit')await aspectSummary.tap();
+      else await aspectSummary.click();
+    }
+    await expect.poll(()=>aspectMenu.evaluate(node=>node.open),
+      {timeout:15000}).toBe(true);
+    const choice=aspectMenu.locator(`[data-video-request-aspect="${format}"]`);
+    await expect(choice).toBeVisible({timeout:10000});
+    if(engine==='webkit')await choice.tap();
+    else await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed','true');
+  };
+  await selectAspect('landscape');
+  await selectAspect('portrait');
+  const request=page.locator('[data-auto-video-input]');
+  await request.waitFor({state:'visible',timeout:40000});
+  await request.fill(EXPRESS_GOAL);
+  const flow=page.locator('[data-video-prompt-flow]');
+  await flow.waitFor({state:'visible',timeout:15000});
+  await flow.locator(':scope > summary').click();
+  const instant=flow.getByRole('button',{name:'Just make it'});
+  await instant.waitFor({state:'visible',timeout:10000});
+  if(engine==='webkit')await instant.tap();
+  else await instant.click();
+  const generate=page.locator('[data-video-request-design][data-video-request-flow="instant"]');
+  await generate.waitFor({state:'visible',timeout:15000});
+  await expect(generate).toBeEnabled();
+  row.phase='goal-just-make-it-native-tap';
+  if(engine==='webkit')await generate.tap();
+  else await generate.click();
+  row.expressGenerateClicks=1;
+  row.phase='single-gesture-ready-export';
+  await page.waitForFunction(() =>
+    document.querySelector('[data-mandala-free-video]')
+      ?.getAttribute('data-active-workspace')==='ready',undefined,{timeout:15000});
+  await expect(page.locator('[data-video-ready] [data-aspect]'))
+    .toHaveAttribute('data-aspect','portrait');
+  // Guests watch the original encoded movie in Ready; protected Save is login-gated.
+  // Read the real test-owned Blob without fake sign-in, download or provider calls.
+  const captured=await readRealGuestVideo(page,{timeout:80000});
+  const bytes=captured.bytes;
+  row.anonymousSaveAuthGateVerified=captured.authGateVerified;
+  row.recordedBlobVerified=true;row.downloadedVideo=false;
+  // The previous test inspected the encoded Blob but never clicked Download.
+  // Assert real guest Ready user-gesture download yields identical encoded MP4
+  // bytes. Save-to-My-Videos still separately requires signed-in consent.
+  const directDownload=page.locator('[data-video-ready][data-ready-state="complete"] [data-ready-direct-download]');
+  await expect(directDownload).toBeVisible({timeout:10000});
+  const expectedFilename='holistic-house-personal.'+captured.extension;
+  await expect(directDownload).toHaveAttribute('download',expectedFilename);
+  row.phase='verified-ready-user-download';
+  const [download]=await Promise.all([
+    page.waitForEvent('download',{timeout:20000}),
+    engine==='webkit'?directDownload.tap():directDownload.click(),
   ]);
-  const bytes = await downloadBytes(download);
+  assert.equal(download.suggestedFilename(),expectedFilename,
+    'VERIFIED_READY_DOWNLOAD_WRONG_FILENAME');
+  const parts=[];
+  for await(const chunk of await download.createReadStream())
+    parts.push(Buffer.from(chunk));
+  const savedBytes=Buffer.concat(parts);
+  assert.ok(savedBytes.length>20000,'VERIFIED_READY_DOWNLOAD_EMPTY');
+  assert.deepEqual(savedBytes,bytes,'VERIFIED_READY_DOWNLOAD_BYTES_DIFFER_FROM_MP4');
+  row.downloadedVideo=true;
+  row.downloadedBytes=savedBytes.length;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
-  const filename = download.suggestedFilename();
+  const filename = 'holistic-house-guest.'+captured.extension;
   assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');
+  if(engine==='webkit')assert.match(filename,/\.mp4$/,'SAFARI_EXPRESS_EXPORT_MUST_BE_MP4');
   if (filename.endsWith('.webm')) {
     assert.deepEqual(bytes.subarray(0, 4), Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
       'NOT_REAL_WEBM');
@@ -230,68 +302,93 @@ try {
   const audio = probe.streams.find(s => s.codec_type === 'audio');
   assert.ok(video, 'ENCODED_VIDEO_STREAM_MISSING');
   assert.ok(audio, 'SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT');
+  if(filename.endsWith('.mp4')){
+    assert.equal(video.codec_name,'h264','MP4_EXPRESS_VIDEO_MUST_USE_H264');
+    assert.equal(audio.codec_name,'aac','MP4_EXPRESS_AUDIO_MUST_USE_AAC');
+  }else{
+    assert.equal(video.codec_name,'vp8','WEBM_EXPRESS_VIDEO_MUST_USE_VP8');
+    assert.equal(audio.codec_name,'opus','WEBM_EXPRESS_AUDIO_MUST_USE_OPUS');
+  }
   assert.equal(video.width, 720, 'WRONG_PORTRAIT_WIDTH');
   assert.equal(video.height, 1280, 'WRONG_PORTRAIT_HEIGHT');
   const seconds = Number(probe.format?.duration || video.duration || 0);
-  assert.ok(seconds >= 17 && seconds <= 26, 'WRONG_VIDEO_DURATION');
+  row.probedTiming = {
+    containerDurationSeconds: Number(probe.format?.duration) || null,
+    videoDurationSeconds: Number(video.duration) || null,
+    audioDurationSeconds: Number(audio.duration) || null,
+  };
+  assert.ok(seconds >= 29 && seconds <= 32, 'EXPRESS_VIDEO_MUST_BE_30_SECONDS');
   const energy = rmsPcm(mediaFile);
-  Object.assign(row, {downloadedVideo: true, encodedBytes: bytes.length,
+  Object.assign(row, {recordedBlobVerified: true, encodedBytes: bytes.length,
     container: filename.endsWith('.webm') ? 'webm' : 'mp4',
     width: video.width, height: video.height, durationSeconds: Number(seconds.toFixed(2)),
     audioStreamPresent: true, decodedAudioRms: Number(energy.toFixed(4))});
   assert.ok(energy > 0.003, 'SOUNDTRACK_IS_SILENT');
-  // A single pair can coincide with the same repeated shot in a short loop.
-  // Sample several separate seconds to distinguish a real moving video from
-  // a static or frozen Canvas recording without uploading any frame images.
-  const times = [1, 3, 6, 10, 14, 18];
+  // Check motion inside each of the six five-second scenes, not only between
+  // two distant frames. Pixel bytes are inspected locally and never uploaded.
+  const times = [1, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 29];
   const frames = times.map(t => movingPixels(mediaFile, t));
   for (const [index, frame] of frames.entries()) {
     assert.equal(frame.length, 96 * 54 * 3, 'FRAME_UNDECODABLE_' + times[index]);
   }
-  const differences = frames.slice(1).map(frame => {
+  const differences = Array.from({length:6},(_,index)=>{
     let delta = 0;
-    const first = frames[0];
+    const first = frames[index*2];
+    const frame = frames[index*2+1];
     for (let i = 0; i < frame.length; i++) delta += Math.abs(frame[i] - first[i]);
     return Number((delta / frame.length).toFixed(3));
   });
-  const avgPixelDifference = Math.max(...differences);
+  const avgPixelDifference = Math.min(...differences);
   row.motionSampleSeconds = times;
-  row.motionAverageDeltas = differences;
+  row.motionPerExpressScene = differences;
   row.pixelDifference = avgPixelDifference;
-  assert.ok(avgPixelDifference > 0.35, 'EXPORTED_FRAMES_NOT_MOVING');
+  assert.ok(differences.every(value=>value>0.08), 'EXPRESS_SCENE_NOT_MOVING');
+  const black=spawnSync('ffmpeg',['-hide_banner','-i',mediaFile,'-vf',
+    'blackdetect=d=0.15:pix_th=0.05','-an','-f','null','-'],{timeout:30000,maxBuffer:1024*1024});
+  assert.equal(black.status,0,'BLACK_GAP_INSPECTION_FAILED');
+  assert.doesNotMatch(String(black.stderr),/black_start:/,'BLACK_GAP_IN_EXPORT');
   if(requireLicensed){
-    const root=resolve('public');
-    const references=licensedSources.map(item=>{
-      const path=resolve(root,'.'+item.src);
-      assert.ok(path.startsWith(root+'/'),'SOURCE_PATH_INVALID');
-      return [0.5,1,2,2.5,3,4].map(t=>portraitPixels(path,t));
+    const selected=new Map(getMyTubeScenarioPhotos(EXPRESS_RECIPE.scenarioId)
+      .map(photo=>[photo.id,photo]));
+    const sources=EXPRESS_RECIPE.clipIds.map(id=>{
+      const photo=selected.get(id);
+      assert.ok(photo,'EXPRESS_SCENE_NOT_IN_SELECTED_CANONICAL_STORY');
+      assert.ok(photo.src.startsWith('/api/video/story-photo/'),'EXPRESS_PHOTO_NOT_FIRST_PARTY');
+      return {id,src:photo.src};
     });
-    const matrix=licensedSources.map((_,index)=>{
+    row.expressSceneCount=sources.length;
+    const sourcePixels=await page.evaluate(async items=>{
+      const canvas=document.createElement('canvas');canvas.width=54;canvas.height=96;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx)throw Error('EXPRESS_REFERENCE_CANVAS_UNAVAILABLE');
+      const rows=[];
+      for(const item of items){
+        const image=new Image();image.decoding='async';image.src=item.src;
+        await image.decode();
+        const base=Math.max(54/image.naturalWidth,96/image.naturalHeight);
+        const scale=base*1.0225,sw=54/scale,sh=96/scale;
+        ctx.clearRect(0,0,54,96);
+        ctx.drawImage(image,(image.naturalWidth-sw)/2,
+          (image.naturalHeight-sh)/2,sw,sh,0,0,54,96);
+        rows.push({id:item.id,pixels:Array.from(ctx.getImageData(0,0,54,96).data)
+          .filter((_,index)=>index%4!==3)});
+        image.src='';
+      }
+      canvas.width=0;canvas.height=0;
+      return rows;
+    },sources);
+    const identity=sourcePixels.map((source,index)=>{
       const frame=portraitPixels(mediaFile,index*5+2.5);
-      return references.map(samples=>Math.max(...samples.map(sample=>correlation(frame,sample))));
+      const scores=sourcePixels.map(candidate=>correlation(frame,Buffer.from(candidate.pixels)));
+      const own=scores[index];
+      assert.ok(own>.25,'EXPRESS_CANONICAL_PHOTO_NOT_VISIBLE_'+index);
+      assert.ok(scores.every((score,candidate)=>candidate===index||own>score+.04),
+        'EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH_'+index);
+      return Number(own.toFixed(3));
     });
-    for(let i=0;i<4;i++){
-      assert.ok(matrix[i][i]>.6,'LICENSED_SCENE_NOT_VISIBLE_'+i);
-      assert.ok(matrix[i].every((score,j)=>j===i||matrix[i][i]>score+.08),'LICENSED_SCENE_ORDER_MISMATCH_'+i);
-    }
-    const motion=licensedSources.map((_,index)=>{
-      const a=portraitPixels(mediaFile,index*5+1),b=portraitPixels(mediaFile,index*5+3);
-      let difference=0;
-      for(let i=0;i<a.length;i++)difference+=Math.abs(a[i]-b[i]);
-      return difference/a.length;
-    });
-    assert.ok(motion.every(value=>value>.3),'LICENSED_SHOT_NOT_MOVING');
-    const black=spawnSync('ffmpeg',['-hide_banner','-i',mediaFile,'-vf',
-      'blackdetect=d=0.15:pix_th=0.05','-an','-f','null','-'],{timeout:30000,maxBuffer:1024*1024});
-    assert.equal(black.status,0,'BLACK_GAP_INSPECTION_FAILED');
-    assert.doesNotMatch(String(black.stderr),/black_start:/,'BLACK_GAP_IN_EXPORT');
-    row.licensedSourceIds=licensedSources.map(item=>item.id);
-    row.licensedFrameCorrelations=matrix.map((scores,index)=>Number(scores[index].toFixed(3)));
-    row.motionPerLicensedShot=motion.map(value=>Number(value.toFixed(3)));
-    row.blackGaps=false;
+    row.expressSceneSourceIds=sources.map(item=>item.id);
+    row.expressSceneIdentityCorrelations=identity;
   }
-  assert.equal(requireLicensed ? licensedSources.length : 4, 4,
-    'FOUR_LICENSED_SHOTS_VERIFICATION_NOT_COMPLETED');
   assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
   // The owner-approved Holistic Light mobile redesign needs REAL browser
   // geometry, source-backed story selection and guided-course clicks, in
@@ -338,6 +435,20 @@ try {
             })),
             progress:Number(progress?.getAttribute('aria-valuenow')||0),
             hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+            // Structure-only diagnostic: never capture audio, transcript or text.
+            firstVideoWidgets:[...document.querySelectorAll('[data-first-free-video]')].slice(0,3)
+              .map(root=>({
+                hydrated:root.getAttribute('data-first-video-hydrated')==='true',
+                visible:root.getClientRects().length>0,
+                portraitPressed:root.querySelector('[data-first-video-quick-aspect="portrait"]')
+                  ?.getAttribute('aria-pressed')==='true',
+                filtersOpen:Boolean(root.querySelector('[data-first-video-filters]')?.open),
+                filtersDisabled:root.querySelector('[data-first-video-filters] fieldset')
+                  ?.disabled??null,
+              })),
+            advancedOpen:Boolean(document.querySelector('[data-video-first-video-advanced]')?.open),
+            activeWorkspace:document.querySelector('[data-mandala-free-video]')
+              ?.getAttribute('data-active-workspace')||null,
           };
         }),
         new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
@@ -348,6 +459,7 @@ try {
   }
   if(safeEncoderCodes.length)row.encoderFailureCodes=[...safeEncoderCodes];
   console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  if(row.phase)console.error('WEBKIT_MOVIE_EXPORT_LAST_PHASE',row.phase);
   if(row.exportDiagnostic)console.error('WEBKIT_MOVIE_EXPORT_SAFE_DIAGNOSTIC',JSON.stringify(row.exportDiagnostic));
   if(row.encoderFailureCodes)console.error('WEBKIT_MOVIE_ENCODER_CODES',row.encoderFailureCodes.join(','));
   process.exitCode = 1;

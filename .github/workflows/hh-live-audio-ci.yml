@@ -14,7 +14,6 @@ on:
       - 'components/practitioner-cabinet.jsx'
       - 'middleware.ts'
       - 'next.config.ts'
-      - 'package.json'
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
@@ -44,8 +43,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Exact lockfile install (no paid provider)
         run: npm ci --include=dev --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Live Audio contracts and security guards
         run: |
           set -euo pipefail

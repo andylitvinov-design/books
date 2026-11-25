@@ -313,7 +313,7 @@
 .headerActions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex:none}
 .notificationSettings{display:grid;place-items:center;width:44px;height:44px;
  border:1px solid #e7dfd5;background:#fffefa;color:#1a816c;text-decoration:none;
- border-radius:50%;box-shadow:0 3px 10px #5845330a}
+ border-radius:50%;box-shadow:0 3px 10px #5845330a;cursor:pointer}
 .notificationSettings:focus-visible{outline:3px solid #208468;outline-offset:3px}
 
 /* Approved phone layout: the order chat is a bounded panel above the mobile dock. */
@@ -529,4 +529,209 @@
  }
  .root[data-section="ai"][data-chat-editing="true"] .sections button,
  .root[data-section="ai"][data-chat-editing="true"] .sections .aiTab{height:42px;min-height:42px}
+}
+
+
+/* Insight fourth top destination; preserve the approved compact Messenger rail. */
+.root .sections{grid-template-columns:repeat(4,minmax(0,1fr))}
+.root .sections button{justify-content:center;min-width:0}
+.root .sections button span{min-width:0}
+.root .sections button strong{overflow-wrap:normal}
+@media(max-width:700px){
+ .root .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .root .sections button,.root .sections .aiTab{gap:3px;padding:5px 3px;min-width:0}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:11px;letter-spacing:-.025em}
+ .root .sections button>svg,.root .sections .aiTab svg{width:16px;height:16px;flex:none}
+}
+@media(max-width:355px){
+ .root .sections button strong,.root .sections .aiTab strong{font-size:10px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:15px;height:15px}
+}
+
+/* The language picker belongs to the existing AI Assistant toolbar, not an extra row. */
+.root .head>div:first-child{flex:1;min-width:0}
+.root .headerActions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex:none}
+.root .headerActions>button svg{width:24px;height:24px}
+.root .languagePicker{display:flex;align-items:center;flex:none;min-width:0}
+.root .languageOptions{display:inline-flex;align-items:center;gap:2px;padding:3px;
+  border:1px solid #e8dfd2;border-radius:999px;background:#fffcf7;
+  box-shadow:0 2px 8px #5147340a}
+.root .languageOptions button{display:grid;place-items:center;min-width:36px;min-height:36px;
+  padding:0 7px;border:0;border-radius:999px;background:transparent;color:#786f63;
+  font:760 11px/1 system-ui,-apple-system,sans-serif;cursor:pointer}
+.root .languageOptions button[aria-pressed="true"]{background:linear-gradient(115deg,#198c72,#08745f);
+  color:#fff;box-shadow:0 2px 6px #08745f26}
+.root .languageOptions button:focus-visible{outline:3px solid #087f60;outline-offset:2px}
+.root .languageCompact{display:none}
+@media(max-width:760px){
+  .root .head{height:auto;min-height:68px;gap:8px}
+  .root .head h1{font-size:23px;line-height:1.08}
+  .root .head p{font-size:11px;line-height:1.25}
+  .root .headerActions{gap:5px}
+  .root .headerActions>button{display:grid;place-items:center;flex:none;
+    width:44px;height:44px;border-radius:13px}
+  .root[data-section="ai"] .head{height:auto;min-height:66px;padding:7px 9px}
+  .root[data-section="ai"] .head h1{font-size:22px}
+  .root[data-section="ai"][data-chat-editing="true"] .head{
+    height:48px;min-height:48px;padding:2px 8px;margin-bottom:4px}
+  .root[data-section="ai"][data-chat-editing="true"] .head h1{font-size:19px}
+  .root[data-section="ai"][data-chat-editing="true"] .head p{display:none}
+}
+@media(max-width:540px){
+  .root .languageOptions{display:none}
+  .root .languageCompact{position:relative;display:flex;align-items:center;flex:none;
+    width:52px;height:44px;box-sizing:border-box;border:1px solid #e2ddd4;
+    border-radius:13px;background:#fffdf8;color:#08745f;
+    box-shadow:0 3px 10px #2f47300b}
+  .root .languageCompact select{display:block;width:100%;height:100%;
+    box-sizing:border-box;appearance:none;-webkit-appearance:none;
+    padding:0 18px 0 9px;border:0;border-radius:inherit;
+    color:inherit;background:transparent;cursor:pointer;
+    font:800 12px/1 system-ui,-apple-system,sans-serif}
+  .root .languageCompact svg{position:absolute;right:4px;pointer-events:none}
+  .root .languageCompact:focus-within{outline:3px solid #087f60;outline-offset:2px}
+}
+@media(max-width:355px){
+  .root[data-section="ai"] .head h1{font-size:19px}
+  .root .head p{font-size:10px}
+  .root .headerActions{gap:4px}
+  .root .languageCompact{width:48px}
+}
+@media(prefers-reduced-motion:reduce){.root .languageOptions button{transition:none}}
+
+
+/* Persona identity occupies the SAME approved header row; no extra mobile bar. */
+.root .presenterIdentity{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.root .presenterIdentity img{flex:none;display:block;width:44px;height:44px;border-radius:14px;
+ object-fit:cover;object-position:center 30%;border:1px solid #d0e5d9;background:#ecf3ea}
+.root .presenterIdentity>div{min-width:0;flex:1}
+.root .presenterIdentity h1{margin:0 0 3px;color:#154b3c;
+ font:800 clamp(16px,2.8vw,23px)/1.08 system-ui,sans-serif;letter-spacing:-.025em;
+ overflow-wrap:normal;text-wrap:balance}
+.root .presenterIdentity p{font:550 11px/1.25 system-ui,sans-serif;color:#716f64;margin:0}
+@media(max-width:540px){
+ .root .presenterIdentity{gap:6px}
+ .root .presenterIdentity img{width:36px;height:42px;border-radius:11px}
+ .root .presenterIdentity h1{font-size:clamp(13px,3.8vw,17px);line-height:1.12}
+ .root .presenterIdentity p{font-size:9px;line-height:1.18}
+}
+@media(max-width:355px){
+ .root .presenterIdentity img{width:29px;height:36px}
+ .root .presenterIdentity{gap:5px}
+ .root .presenterIdentity h1{font-size:12px}
+ .root .presenterIdentity p{display:none}
+ .root .headerActions{gap:3px}
+ .root .headerActions>button{width:39px;height:42px}
+}
+.root[data-section="ai"][data-chat-editing="true"] .presenterIdentity img{width:30px;height:32px}
+
+/* Persona replaces ONLY the old history shortcut beside Ali; top folder tabs are unchanged. */
+.root .headerActions>button[data-hh-ali-persona-open]{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;
+ gap:1px;box-sizing:border-box;min-width:57px;width:57px;height:48px;
+ padding:3px 4px;border:1px solid #cfe5d8;border-radius:14px;
+ color:#086f59;background:#eef9f0;box-shadow:0 3px 10px #234a3a12;
+ cursor:pointer}
+.root .headerActions>button[data-hh-ali-persona-open] svg{width:19px;height:19px}
+.root .personaActionText{font:730 10px/1.1 system-ui,sans-serif;white-space:nowrap}
+.root .headerActions>button[data-hh-ali-persona-open]:focus-visible{outline:3px solid #158368;outline-offset:2px}
+@media(max-width:760px){
+ .root .headerActions>button[data-hh-ali-persona-open]{
+  width:54px;min-width:54px;height:44px;gap:0;padding:2px}
+ .root .personaActionText{font-size:9px}
+}
+@media(max-width:355px){
+ .root .headerActions>button[data-hh-ali-persona-open]{
+  width:40px;min-width:40px;height:42px;padding:3px}
+ .root .personaActionText{display:none}
+}
+
+/* Owner-approved Ali branding is scoped to AI; Orders/Chats/News retain their headers. */
+.root[data-section="ai"] .head h1{font-size:clamp(17px,4.6vw,22px);line-height:1.1;letter-spacing:-.025em}
+.root[data-section="ai"] .head p{font-size:10px;line-height:1.25;color:#706960}
+@media(max-width:355px){
+ .root[data-section="ai"] .head h1{font-size:16px}
+ .root[data-section="ai"] .head p{font-size:9px}
+}
+
+/* Homepage-style brand is shown on first AI/Chat open, then the active persona
+   and slim WhatsApp-style header. Four existing tabs remain in a real menu. */
+.root .chatSiteBrand{display:none;text-decoration:none}
+.root .chatTabsToggle{display:none}
+@media(max-width:760px){
+ .root[data-section="ai"] .sections{display:none;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .root[data-section="ai"] .sections[data-chat-tabs-open="true"]{display:grid;margin:0 0 7px}
+ .root[data-section="ai"] .head{flex:none;display:flex;align-items:center;gap:7px;
+   height:65px;min-height:65px;max-height:65px;margin:0 0 5px;
+   padding:5px 6px;border:0;border-radius:0;box-shadow:none;background:transparent}
+ .root[data-section="ai"] .chatSiteBrand{display:flex;align-items:center;gap:6px;
+   flex:1;min-width:0;overflow:hidden;color:#0e4437}
+ .root[data-section="ai"] .chatSiteBrand>svg{flex:none;color:#008e70;width:27px;height:27px}
+ .root[data-section="ai"] .chatSiteBrand>span{min-width:0;display:flex;flex-direction:column;
+   font:700 clamp(17px,5vw,22px)/1 Georgia,serif;letter-spacing:-.025em;white-space:nowrap}
+ .root[data-section="ai"] .chatSiteBrand small{margin-top:4px;color:#265447;
+   font:610 clamp(8px,2.55vw,11px)/1.15 system-ui,sans-serif;letter-spacing:0}
+ .root[data-section="ai"] .presenterIdentity{display:none}
+ .root[data-section="ai"] .headerActions{gap:4px;flex:none}
+ .root[data-section="ai"] .headerActions>button{min-width:40px;width:40px;height:42px;
+   border:1px solid #e3ded4;border-radius:13px;background:#fffdfa;color:#175342}
+ .root[data-section="ai"] .headerActions>button[data-hh-ali-persona-open]{
+   min-width:48px;width:48px;height:43px;border-radius:13px}
+ .root[data-section="ai"] .chatTabsToggle{display:grid;place-items:center}
+ .root[data-section="ai"] .chatTabsToggle[aria-expanded="true"]{
+   background:#e6f4ed;border-color:#89bda6}
+ .root[data-section="ai"] .headerActions>button[data-hh-ai-new-chat]{display:none}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .chatSiteBrand{display:none}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity{display:flex}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .headerActions>button[data-hh-ai-new-chat]{display:grid}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .head{
+   height:53px;min-height:53px;max-height:53px;margin-bottom:2px;padding:3px 4px;
+   border-bottom:1px solid #ebe2d7}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity h1{
+   font:790 clamp(14px,4vw,18px)/1.13 system-ui,sans-serif}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{font-size:10px}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity img{
+   height:38px;width:38px;border-radius:50%}
+ .root[data-section="ai"][data-chat-editing="true"]:has([data-has-messages="true"]) .head{
+   height:48px;min-height:48px;max-height:48px}
+}
+@media(max-width:365px){
+ .root[data-section="ai"] .head{padding:3px 2px;gap:3px}
+ .root[data-section="ai"] .chatSiteBrand{gap:4px}
+ .root[data-section="ai"] .chatSiteBrand>svg{height:24px;width:24px}
+ .root[data-section="ai"] .chatSiteBrand>span{font-size:16px}
+ .root[data-section="ai"] .chatSiteBrand small{font-size:8px}
+ .root[data-section="ai"] .headerActions>button{height:40px;width:36px;min-width:36px}
+ .root[data-section="ai"] .headerActions>button[data-hh-ali-persona-open]{width:40px;min-width:40px}
+ .root[data-section="ai"] .languageCompact{height:40px;width:45px}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{display:none}
+}
+
+/* Mock parity applies ONLY to the untouched first AI/Chat turn. */
+@media(max-width:760px){
+ .root[data-section="ai"]:has([data-hh-ai-landing]){
+   top:0!important;left:0;right:0;height:100dvh!important;
+   max-height:100dvh!important;padding:0!important;background:#102d27!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.head,
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.sections{display:none!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing]) [data-hh-messenger-ai]{
+   flex:1;min-height:0;height:100%;background:#102d27}
+}
+
+.dialogueBack{display:none}.onlineDot{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;background:#22d080}
+@media(max-width:760px){
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]){padding:0!important;gap:0;background:linear-gradient(180deg,#082e3099,transparent 27%,#142c2b66),var(--hh-ai-persona-image, none) center 24%/cover no-repeat #142f2b!important;height:var(--hh-messenger-height,100dvh);max-height:100dvh}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .head{order:-2;min-height:64px;height:auto;max-height:none;margin:0;padding:7px 8px;border:0;background:#082b30bd;color:#fff;gap:4px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .sections{order:-1;background:#fffaef;padding:5px;margin:0}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity{display:flex;flex:1;min-width:0;gap:6px;color:#fff}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .dialogueBack{display:grid;place-items:center;flex:none;width:26px;height:44px;color:#fff;text-decoration:none;font:400 39px/1 system-ui}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity img{width:43px;height:43px;border:1px solid #e9ca87}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity h1{color:#fff;font:750 clamp(14px,4.1vw,18px)/1.2 system-ui;overflow-wrap:anywhere}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity p{display:block;color:#fff;font-size:12px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions{gap:2px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions>button{background:transparent;border:0;box-shadow:none;color:white;width:36px;min-width:36px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions>button[data-hh-ali-persona-open]{width:36px;min-width:36px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .personaActionText{display:none}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .languageCompact{background:#fff9;border:0;width:43px;min-width:43px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) [data-hh-messenger-ai]{background:transparent}
 }

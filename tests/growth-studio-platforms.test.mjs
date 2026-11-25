@@ -16,8 +16,13 @@ test('all 13 Publer-type networks and independent event workflows have a truthfu
  for(const provider of publer){
    assert.equal(GROWTH_CHANNELS.includes(provider),true,provider)
    assert.ok(CHANNEL_CAPABILITIES[provider],provider)
-   assert.equal(CHANNEL_CAPABILITIES[provider].supportsDirectPosting,false)
+   assert.equal(CHANNEL_CAPABILITIES[provider].supportsDirectPosting,provider==='facebook',
+     provider+' code support is not a credential or delivered post')
+   if(provider==='facebook')assert.equal(CHANNEL_CAPABILITIES[provider].mode,'meta_page_opt_in')
  }
+ const facebook=reviewGrowthPublication({...publicCopy,channel:'facebook',mediaUrl:'https://holistichouse.vercel.app/reel.mp4'})
+ assert.ok(facebook.issues.includes('facebook_media_not_supported'))
+ assert.equal(facebook.connected,false,'adapter availability is not OAuth consent')
  assert.equal(new Set(GROWTH_PUBLICATION_NETWORKS).size,GROWTH_PUBLICATION_NETWORKS.length)
  assert.ok(GROWTH_PUBLICATION_NETWORKS.includes('eventbrite'))
  assert.ok(GROWTH_PUBLICATION_NETWORKS.includes('meetup'))

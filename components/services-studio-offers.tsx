@@ -4,12 +4,15 @@ import Image from "next/image";
 import { serviceIsVisible, useServicesExplorer, type StudioServiceId } from "@/components/services-explorer-state";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
+import { Fragment } from "react";
+import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
+import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
+import { ArrowRight, ClipboardCheck, ShieldCheck } from "lucide-react";
 
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { ServicesCardActions } from "@/components/services-card-actions";
 import { coreServiceOffers, type CoreServiceOffer } from "@/data/core-service-offers";
 import type { PublicLocale } from "@/lib/public-locales";
-import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-studio-offers.module.css";
 
 type Offer = {
@@ -158,71 +161,33 @@ const directStaticServiceImages = new Set([
 ]);
 
 function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; locale: PublicLocale; index: number; hidden?: boolean }) {
-  const t = text[locale];
   return (
-    <article className={styles.card} data-services-studio-card={offer.id} hidden={hidden}>
-      <Link href={offer.href} className={styles.photo} tabIndex={-1} aria-hidden="true" prefetch={false}>
+    <article className={styles.card} data-support-uniform-card data-services-studio-card={offer.id} hidden={hidden}>
+      <Link href={offer.href} className={styles.photo} data-support-uniform-photo tabIndex={-1} aria-hidden="true" prefetch={false}>
         {offer.image === "/images/holistic-house/andy-about.png" ? (
           <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
-            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+            sizes="(max-width: 680px) 34vw, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
         ) : (
           <Image src={offer.image} alt="" fill unoptimized={directStaticServiceImages.has(offer.image)}
-            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+            sizes="(max-width: 680px) 34vw, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
         )}
       </Link>
-      <div className={styles.cardContent}>
+      <div className={styles.cardContent} data-support-uniform-copy>
         <div className={styles.cardTop}>
           <span className={styles.category}>{offer.category}</span>
-          {offer.isFree ? <span className={styles.freeBadge}>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span> : null}
+          {offer.isFree ? <span className={styles.freeBadge} data-support-uniform-price>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span> : null}
         </div>
         <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
         <p className={styles.description}>{offer.description}</p>
-        {offer.price ? <p className={styles.price}>{offer.price}</p> : null}
-        <div className={styles.actions}>
-          <details className={styles.details}>
-            <summary aria-label={t.details + ": " + offer.title}>{t.details}<ChevronDown size={16} aria-hidden="true" /></summary>
-            <div className={styles.detailBody}>
-              <p>{offer.details}</p>
-              <Link href={offer.href} prefetch={false}>{t.landing}<ArrowRight size={14} aria-hidden="true" /></Link>
-            </div>
-          </details>
-          {offer.isFree ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.start}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : offer.monthly ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.viewProgram}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : offer.externalFlow ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.remoteAction}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : (
-            <div className={styles.booking}>
-              <ContactChannelChooser
-                locale={locale}
-                label={t.request}
-                className={styles.action}
-                event="service_request_start"
-                whatsappUrl={whatsappEnquiryUrl({
-                  locale,
-                  service: offer.title,
-                  request: t.enquiry,
-                  option: "30 min · €50 / 60 min · €100",
-                  pagePath: offer.href,
-                })}
-                attributes={{ "data-services-studio-action": offer.id }}
-              />
-            </div>
-          )}
-        </div>
+        {offer.price ? <p className={styles.price} data-support-uniform-price>{offer.price}</p> : null}
       </div>
+      <ServicesCardActions locale={locale} title={offer.title} description={offer.details}
+        href={offer.href} option={offer.price} trackingId={offer.id} />
     </article>
   );
 }
 
-export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
+export function ServicesStudioOffers({ locale, splitExtras = false }: { locale: PublicLocale; splitExtras?: boolean }) {
   const { mode, topic } = useServicesExplorer();
   const t = text[locale];
   const core = coreServiceOffers(locale);
@@ -304,13 +269,18 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
           <p>{t.paidLead}</p>
         </header>
         <div className={styles.paidGrid}>
-          {paid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />)}
+          {paid.map((offer, index) => <Fragment key={offer.id}>
+    <ServiceCard offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />
+    {!splitExtras && offer.id === "alchemy" && visible(offer.id) ? <ServicesVideoGenerationCard locale={locale} /> : null}
+  </Fragment>)}
         </div>
         <div className={styles.paidFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.reassurance}</span>
           <p>{t.disclaimer}</p>
         </div>
       </section>
+      {!splitExtras ? <ServicesCoursesShelf locale={locale} /> : null}
+      {!splitExtras ? <ServicesCoachTherapistMobile locale={locale} /> : null}
     </>
   );
 }

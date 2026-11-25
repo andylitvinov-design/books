@@ -46,6 +46,10 @@ function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}
     'next/navigation': { usePathname: () => location.pathname },
     'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
     '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
+    '@/lib/crm/website-messenger-only.mjs': { websiteMessengerOnlyUi: () => false },
+    '@/components/mandatory-messenger-actions': {
+      MandatoryMessengerActions: () => jsx('aside', { 'data-messenger-only-contact': '' }),
+    },
     '@/lib/whatsapp-enquiry': enquiries,
     '@/lib/organic-event-referrals': referrals,
     './contact-channel-chooser.module.css': { default: {} },

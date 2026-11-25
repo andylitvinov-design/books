@@ -5,11 +5,12 @@ import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
 import CrmSalesbotAssist from './crm-salesbot-assist'
+import {TELEGRAM_SERVICE_OPTIONS} from '@/lib/assist/telegram-service-options.mjs'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
     select:'Select a conversation',reply:'Your reply',send:'Send reply',refresh:'Refresh',loading:'Loading conversations…',
-    pending:'Connection requires official provider credentials.',connect:'Connect',pilotStart:'Start owner pilot in Telegram',guestInviteTitle:'Test from a second Telegram account',guestInviteNote:'Copy this private 15-minute invitation and open it in your other Telegram account. One invited tester at a time; no public launch.',guestInviteCopy:'Copy test invitation',guestInviteCopied:'Invitation copied',pilotSteps:'In your own Telegram chat: Start → /agree → /situation → short non-sensitive question → /skip. Refresh Messages here after each step. Use /stop to end contact.',verifyBot:'Verify Telegram bot',botVerified:'Telegram identity verified',botStates:{connected:'Webhook connected',not_set:'Webhook not configured',in_use_elsewhere:'Webhook belongs to another app — do not replace',unknown:'Webhook status unknown'},connected:'Registered in CRM · test delivery',none:'Not configured',
+    pending:'Connection requires official provider credentials.',connect:'Connect',pilotStart:'Start owner pilot in Telegram',guestInviteTitle:'Test from a second Telegram account',guestInviteNote:'Copy this private 15-minute invitation and open it in your other Telegram account. One invited tester at a time; no public launch.',guestInviteCopy:'Copy test invitation',guestInviteCopied:'Invitation copied',pilotSteps:'In your own Telegram chat: Start → /agree → /situation → short non-sensitive question → /skip. Refresh Messages here after each step. Use /stop to end contact.',verifyBot:'Verify Telegram bot',botVerified:'Telegram identity verified',businessReady:'Secretary Mode available',businessMissing:'Secretary Mode NOT enabled',businessSubscribed:'Business events subscribed',businessNotSubscribed:'Business events NOT subscribed',businessSubscriptionUnknown:'Business subscription unverified',businessServerOn:'Server auto-replies enabled',businessServerOff:'Server auto-replies OFF',syncBusiness:'Repair Business webhook subscription',botStates:{connected:'Webhook connected',not_set:'Webhook not configured',in_use_elsewhere:'Webhook belongs to another app — do not replace',unknown:'Webhook status unknown'},connected:'Registered in CRM · test delivery',none:'Not configured',
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
@@ -18,7 +19,7 @@ const copy={
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
-    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',pilotStart:'Начать личный тест в Telegram',guestInviteTitle:'Проверить со второго Telegram-аккаунта',guestInviteNote:'Скопируйте личное приглашение на 15 минут и откройте во втором аккаунте. Только один дополнительный тестовый чат; публичный запуск выключен.',guestInviteCopy:'Копировать приглашение',guestInviteCopied:'Ссылка скопирована',pilotSteps:'В своём чате Telegram: Старт → /agree → /situation → краткий вопрос без чувствительных данных → /skip. Затем обновите «Сообщения» в CRM. /stop прекращает переписку.',verifyBot:'Проверить Telegram-бота',botVerified:'Telegram-бот подтверждён',botStates:{connected:'Webhook подключён',not_set:'Webhook ещё не настроен',in_use_elsewhere:'Webhook принадлежит другому приложению — не заменять',unknown:'Статус webhook не определён'},connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
+    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',pilotStart:'Начать личный тест в Telegram',guestInviteTitle:'Проверить со второго Telegram-аккаунта',guestInviteNote:'Скопируйте личное приглашение на 15 минут и откройте во втором аккаунте. Только один дополнительный тестовый чат; публичный запуск выключен.',guestInviteCopy:'Копировать приглашение',guestInviteCopied:'Ссылка скопирована',pilotSteps:'В своём чате Telegram: Старт → /agree → /situation → краткий вопрос без чувствительных данных → /skip. Затем обновите «Сообщения» в CRM. /stop прекращает переписку.',verifyBot:'Проверить Telegram-бота',botVerified:'Telegram-бот подтверждён',businessReady:'Secretary Mode доступен',businessMissing:'Secretary Mode НЕ включён',businessSubscribed:'События Business подключены',businessNotSubscribed:'События Business НЕ подключены',businessSubscriptionUnknown:'Подписка Business не подтверждена',businessServerOn:'Серверные автоответы включены',businessServerOff:'Автоответы сервера выключены',syncBusiness:'Восстановить подписку Business webhook',botStates:{connected:'Webhook подключён',not_set:'Webhook ещё не настроен',in_use_elsewhere:'Webhook принадлежит другому приложению — не заменять',unknown:'Статус webhook не определён'},connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
@@ -27,26 +28,37 @@ const copy={
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
-    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',pilotStart:'Iniciar prueba personal en Telegram',guestInviteTitle:'Probar desde otra cuenta de Telegram',guestInviteNote:'Copia esta invitación privada de 15 minutos y ábrela desde tu segunda cuenta. Solo una cuenta adicional, sin lanzamiento público.',guestInviteCopy:'Copiar invitación',guestInviteCopied:'Invitación copiada',pilotSteps:'En tu chat personal: Inicio → /agree → /situation → pregunta breve sin datos sensibles → /skip. Actualiza Mensajes después. /stop detiene el contacto.',verifyBot:'Verificar bot de Telegram',botVerified:'Identidad del bot verificada',botStates:{connected:'Webhook conectado',not_set:'Webhook sin configurar',in_use_elsewhere:'Webhook pertenece a otra aplicación — no reemplazar',unknown:'Estado del webhook desconocido'},connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
+    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',pilotStart:'Iniciar prueba personal en Telegram',guestInviteTitle:'Probar desde otra cuenta de Telegram',guestInviteNote:'Copia esta invitación privada de 15 minutos y ábrela desde tu segunda cuenta. Solo una cuenta adicional, sin lanzamiento público.',guestInviteCopy:'Copiar invitación',guestInviteCopied:'Invitación copiada',pilotSteps:'En tu chat personal: Inicio → /agree → /situation → pregunta breve sin datos sensibles → /skip. Actualiza Mensajes después. /stop detiene el contacto.',verifyBot:'Verificar bot de Telegram',botVerified:'Identidad del bot verificada',businessReady:'Secretary Mode disponible',businessMissing:'Secretary Mode NO habilitado',businessSubscribed:'Eventos Business suscritos',businessNotSubscribed:'Eventos Business NO suscritos',businessSubscriptionUnknown:'Suscripción Business sin verificar',businessServerOn:'Respuestas automáticas activadas',businessServerOff:'Respuestas automáticas desactivadas',syncBusiness:'Reparar suscripción webhook Business',botStates:{connected:'Webhook conectado',not_set:'Webhook sin configurar',in_use_elsewhere:'Webhook pertenece a otra aplicación — no reemplazar',unknown:'Estado del webhook desconocido'},connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
+const serviceStageLabels={
+  review_understanding:{en:'Understanding',ru:'Понимание ситуации',es:'Comprender la situación'},
+  review_outcome:{en:'Desired outcome',ru:'Желаемый результат',es:'Resultado deseado'},
+  review_action:{en:'Next step',ru:'Следующий шаг',es:'Siguiente paso'},
+  confirm:{en:'Awaiting confirmation',ru:'Ожидает подтверждения',es:'Pendiente de confirmación'},
+  submitted:{en:'Enquiry submitted',ru:'Запрос отправлен',es:'Solicitud enviada'},
+  cancelled:{en:'Cancelled',ru:'Отменено',es:'Cancelada'},
+  stopped:{en:'Automation stopped',ru:'Автоответы остановлены',es:'Automatización detenida'},
+  not_started:{en:'Reply unavailable',ru:'Ответ недоступен',es:'Respuesta no disponible'},
+}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
     instructions:'Connect an account',missing:'Missing server settings',configured:'Credentials present — verify the provider first',
     disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
     pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
+    waPilotRegistered:'WhatsApp verified for identity-link pilot · sending still disabled',
     testHint:'Do one controlled test conversation before enabling live client replies.',
     channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
     copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
     openPortal:'Open official provider setup',notVerified:'Never paste tokens into ChatGPT or GitHub. Use Vercel encrypted Environment Variables.',
-    telegramCaution:'Use a dedicated BotFather bot, not an existing diagnostics bot.',
+    telegramCaution:'Use the existing @holistichouse_bot. Enable Secretary Mode in BotFather, then allow ONLY new chats under Telegram Chat Automation; the server cannot verify this chat scope.',
     pilotKeys:'For a safe Telegram pilot also set',
     globalKeys:'For real-client sending after testing, explicitly review',
     connectReady:'After setup, select Connect to verify your account.',
@@ -57,11 +69,12 @@ const setupText={
     instructions:'Как подключить',missing:'Не хватает настроек сервера',configured:'Ключи добавлены — проверьте доступ провайдера',
     disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
     pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
+    waPilotRegistered:'WhatsApp подключён для подтверждения личности · отправка выключена',
     testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
     channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
     copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
     openPortal:'Открыть официальный кабинет',notVerified:'Не передавайте токены в чат или GitHub. Добавляйте их только в секретные Environment Variables Vercel.',
-    telegramCaution:'Создайте отдельного бота через BotFather. Не используйте существующего диагностического бота.',
+    telegramCaution:'Используйте существующего @holistichouse_bot. Включите Secretary Mode в BotFather, затем разрешите ТОЛЬКО новые чаты в Telegram Chat Automation; сервер не видит эту настройку.',
     pilotKeys:'Для безопасного Telegram-теста дополнительно задайте',
     globalKeys:'Для отправки клиентам после теста отдельно согласуйте',
     connectReady:'После настройки нажмите «Подключить» для проверки аккаунта.',
@@ -72,11 +85,12 @@ const setupText={
     instructions:'Cómo conectar',missing:'Falta configuración del servidor',configured:'Credenciales cargadas; verifica el proveedor',
     disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
     pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
+    waPilotRegistered:'WhatsApp conectado para verificar identidad · envío desactivado',
     testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
     openPortal:'Abrir configuración oficial',notVerified:'No compartas tokens en el chat ni en GitHub. Usa Environment Variables cifradas en Vercel.',
-    telegramCaution:'Crea un bot dedicado de BotFather; no reutilices un bot de diagnóstico.',
+    telegramCaution:'Usa el @holistichouse_bot existente. Activa Secretary Mode en BotFather y permite SOLO chats nuevos en Telegram Chat Automation; el servidor no puede comprobar este ajuste.',
     pilotKeys:'Para un piloto seguro en Telegram configura también',
     globalKeys:'Para clientes reales, revisa por separado',
     connectReady:'Después de configurar, pulsa Conectar para verificar la cuenta.',
@@ -92,6 +106,10 @@ const officialPortal={
 
 const messageStatuses={
   received:{en:'Received',ru:'Получено',es:'Recibido'},
+  processed:{en:'Processed',ru:'Обработано',es:'Procesado'},
+  send_pending:{en:'Reply sending',ru:'Ответ отправляется',es:'Enviando respuesta'},
+  provider_accepted:{en:'Reply accepted by Telegram',ru:'Telegram принял ответ',es:'Telegram aceptó la respuesta'},
+  delivery_unknown:{en:'Reply delivery unknown — no auto retry',ru:'Доставка ответа неизвестна — без автоповтора',es:'Entrega desconocida — sin reintento automático'},
   draft:{en:'Draft',ru:'Черновик',es:'Borrador'},
   queued:{en:'Processing',ru:'Обрабатывается',es:'Procesando'},
   accepted:{en:'Accepted by provider',ru:'Принято сервисом',es:'Aceptado por el proveedor'},
@@ -288,7 +306,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     return ()=>ctrl.abort()
   },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
-  // One read on returning from Telegram, no background poll or paid service.
+  // No always-on push: refresh an OPEN, VISIBLE owner inbox every 45 seconds.
+  useEffect(()=>{
+    if(!accountId)return
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState!=='visible'||busy||threadLoading)return
+      const now=Date.now()
+      if(now-focusRefreshAt.current<40000)return
+      focusRefreshAt.current=now
+      void refresh(activeRef.current)
+    },45000)
+    return ()=>window.clearInterval(timer)
+  },[accountId,load,busy,threadLoading])
+  // Refresh immediately on focus; never poll while the tab is hidden.
   useEffect(()=>{
     if(!accountId)return
     const onVisible=()=>{
@@ -353,7 +383,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         }))
         // Portraits remain behind the existing authenticated CRM photo proxy.
         const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
-        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&['telegram','telegram_business'].includes(thread.transport||thread.channel)))
           onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
@@ -520,7 +550,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const unread=threads.filter(item=>item.unreadCount>0).length
   const waitingReply=threads.filter(item=>item.needsReply).length
   const visibleThreads=threads.filter(item=>
-    (channelFilter==='all'||item.channel===channelFilter)
+    (channelFilter==='all'||(item.transport||item.channel)===channelFilter)
     &&(!unreadOnly||item.unreadCount>0)
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
@@ -564,7 +594,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           const ok=registered?.connected===true
           const missing=channel.missingKeys||[]
           const isPilot=channel.channel==='telegram'&&channel.pilot
-          const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
+          const waRegistered=channel.channel==='whatsapp'&&channel.pilotConnectReady&&registered?.registered===true
+          const statusLabel=ok?t.connected:waRegistered?guide.waPilotRegistered:missing.length?guide.missing:isPilot?guide.pilot:
             !channel.enabled?guide.disabled:
             !channel.liveApproved?guide.approval:guide.configured
           return <div className={styles.channel} key={channel.channel}>
@@ -605,8 +636,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               {t.botVerified} · @{botCheck.username} ·
               {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}
               {botCheck.webhookDeliveryError?' · '+t.botStates.unknown:''}
+              {' · '}{botCheck.businessCapable?t.businessReady:t.businessMissing}
+              {' · '}{botCheck.businessUpdatesReady===true?t.businessSubscribed:
+                botCheck.businessUpdatesReady===false?t.businessNotSubscribed:t.businessSubscriptionUnknown}
+              {' · '}{botCheck.businessAutoReplyServerEnabled?t.businessServerOn:t.businessServerOff}
             </p>}
-            {!ok&&<button type="button" disabled={busy||!channel.providerConfigured}
+            {channel.channel==='telegram'&&botCheck?.webhookState==='connected'&&
+              botCheck.businessCapable===true&&botCheck.businessUpdatesReady!==true&&
+              <button type="button" className={styles.copyButton} disabled={busy}
+                onClick={async()=>{
+                  const checked=await action('sync_telegram_business_updates',{channel:'telegram'})
+                  if(checked?.verified===true)setBotCheck(checked)
+                }}>{t.syncBusiness}</button>}
+            {!ok&&!waRegistered&&<button type="button" disabled={busy||!channel.providerConfigured}
               onClick={()=>action('connect',{channel:channel.channel})}>{t.connect}</button>}
             <details className={styles.channelGuide}>
               <summary>{guide.instructions}</summary>
@@ -676,7 +718,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            <small>{names[thread.transport||thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            {thread.selectedOfferId&&<small>
+              {TELEGRAM_SERVICE_OPTIONS[thread.selectedOfferId]?.titles?.[lang]||thread.selectedOfferId}
+              {serviceStageLabels[thread.serviceDialogueStage]?.[lang]
+                ?' · '+serviceStageLabels[thread.serviceDialogueStage][lang]:''}
+            </small>}
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -691,14 +738,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
           <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
             item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
-              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
+              name:selected.name,source:names[selected.transport||selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
           {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
             {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
             {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
-              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+              <span>{names[selected.transport||selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>}
             {selected.unreadCount>0&&<button disabled={busy} type="button"
               className={styles.plainButton} aria-label={t.read} title={t.read}
@@ -728,6 +775,22 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
           </div>}
+          {['telegram','whatsapp'].includes(selected.channel)&&<div className={styles.contactActions}
+            aria-label={lang==='ru'?'Управление беседой':lang==='es'?'Control de conversación':'Conversation control'}>
+            <button type="button" className={styles.profileAction}
+              disabled={busy||threadLoading}
+              aria-pressed={selected.humanTakeover===true}
+              onClick={()=>void action('set_human_takeover',{threadId:selected.id,enabled:!selected.humanTakeover})}>
+              {selected.humanTakeover
+                ?(lang==='ru'?'Вернуть боту':lang==='es'?'Devolver al bot':'Return to bot')
+                :(lang==='ru'?'Отвечаю лично':lang==='es'?'Responder personalmente':'I’ll reply personally')}
+            </button>
+            <small role="status">{selected.humanTakeover
+              ?(lang==='ru'?'Бот приостановлен для этого клиента':lang==='es'?'Bot pausado para este cliente':'Bot paused for this client')
+              :(lang==='ru'?'Бот может продолжать диалог':lang==='es'?'El bot puede continuar':'Bot may continue')}
+              {!selected.historyShared&&' · '+(lang==='ru'?'Клиент должен разрешить передачу следующих сообщений: /share_chat':
+                lang==='es'?'Para compartir mensajes: /share_chat':'To share next messages: /share_chat')}</small>
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -736,8 +799,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
+              {m.sender==='bot'&&<small>{lang==='ru'?'Ответ бота':lang==='es'?'Respuesta del bot':'Bot reply'}</small>}
               {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
-              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+              {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}

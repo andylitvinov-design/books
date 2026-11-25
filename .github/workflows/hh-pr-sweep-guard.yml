@@ -36,6 +36,12 @@ on:
       - '.github/workflows/site-video-browser.yml'
       - '.github/workflows/hh-pr-sweep-guard.yml'
       - 'tests/ci-specialist-conditional-job-eligibility.test.mjs'
+      # Narrow, independent Commander PR security/source owner.
+      - 'app/api/app/commander/**'
+      # Focused signed PR handoff, HEAD history, merge and LIVE proofs.
+      - 'lib/agent-director/pr-*.mjs'
+      # Scoped Commander regression contracts.
+      - 'tests/commander-pr-*.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -70,6 +76,9 @@ jobs:
       - name: Install locked parser without lifecycle scripts
         run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
       - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-specialist-conditional-job-eligibility.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs tests/ci-pr-selective-workflows.test.mjs
+
+      - name: Validate signed Commander PR journey and identity contracts
+        run: node --test tests/commander-pr-*.test.mjs
 
       # Repo-wide conflict inventory is an operational diagnostic, not source
       # acceptance. Run it on explicit manual sweep only. The PR path still

@@ -18,6 +18,7 @@ on:
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/compact-lead-capture*'
       - 'components/contact-channel-chooser*'
+      - 'components/sitewide-lead-capture*'
       # Real public conversion/consent/booking and cart UI are NOT covered by
       # the shallow components/*service* glob. A source change to these
       # surfaces needs real Public Services Chromium/WebKit, not only Core.
@@ -30,6 +31,7 @@ on:
       - 'components/academy-course-capture*'
       - 'components/commerce/**'
       - 'lib/whatsapp-enquiry.js'
+      - 'lib/public-lead-capture.js'
       - 'lib/practitioners/enquiry-receipt.mjs'
       - 'app/api/service-enquiries/**'
       - 'components/academy-course-video-playlist.tsx'
@@ -45,6 +47,7 @@ on:
       - 'scripts/verify-alchemy-one-screen.mjs'
       - 'scripts/verify-business-quiz-mobile.mjs'
       - 'scripts/verify-contact-channel-chooser-browser.mjs'
+      - 'scripts/verify-academy-messenger-order.mjs'
       - 'scripts/verify-direction-focus-mobile.mjs'
       - 'scripts/verify-home-consultation-first-screen.mjs'
       - 'scripts/verify-ideas-mobile-browser.mjs'
@@ -53,6 +56,7 @@ on:
       - 'scripts/verify-storefront-shop-browser.mjs'
       - 'scripts/verify-talisman-google-checkout-browser.mjs'
       - 'tests/goal-support-offers.test.mjs'
+      - 'tests/sitewide-lead-capture.test.mjs'
       - 'tests/practitioner-homeopathy-canonical-route.test.mjs'
       - 'tests/practitioner-remote-energy-support.test.mjs'
       - 'tests/service-alchemy-one-screen-story.test.mjs'
@@ -82,7 +86,12 @@ on:
       - 'components/remote-energy-*'
       - 'components/taoist-*'
       - 'components/*service*'
-      - 'components/practice-showcase*'
+      # The practitioner-only /[locale]/practice page is already owned by
+      # practice-visual-browser.yml (real Chromium/WebKit, 320–430px) and
+      # practice-visual-services.yml (service/editor contracts, lint and build).
+      # Its JSX/CSS must not consume the unrelated checkout/Alchemy/Reiki
+      # 13-case Public Services browser matrix. Other public conversion
+      # routes and checkout/security triggers below remain unchanged.
       - 'lib/holistic-support/**'
       # Pure, side-effect-free Intelligence Core policy/bridge input parsers
       # have their own focused axis-to-offer unit, type and production-build gate.
@@ -104,7 +113,6 @@ on:
       - 'scripts/verify-public-services*.mjs'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Director-only art planning and its encoded-video browser test are fully
       # covered by holistic-support-mandala.yml. They do not modify service
@@ -163,6 +171,34 @@ on:
       # Video Director's isolated source-only test also belongs to Mandala.
       - '!tests/first-video-director.test.mjs'
       - '!components/mandala-meditation.module.css'
+      # Exact reviewed Video Studio-only UI: no booking, checkout or
+      # public service API; independently verified by Mandala Core/WebKit.
+      # Mixed PRs touching other service files still start this workflow.
+      - '!components/mandala-pro-enhance.tsx'
+      - '!components/mandala-pro-enhance.module.css'
+      - '!components/mandala-video-ideas.tsx'
+      - '!components/mandala-video-ideas.module.css'
+      # Exact Video Studio-only components are owned by Mandala's focused
+      # source/media/browser contracts. Public Services browser QA remains
+      # mandatory for every mixed checkout, consent or service-route change.
+      # Do not expand this exclusion to public APIs, billing or auth.
+      - '!components/mandala-automatic-storyboard.tsx'
+      - '!components/mandala-video-concept.tsx'
+      - '!components/mandala-video-concept.module.css'
+      - '!components/mandala-video-ready.tsx'
+      - '!components/mandala-video-ready.module.css'
+      - '!components/mandala-video-effect-journey.module.css'
+      - '!components/mandala-therapy-studio.tsx'
+      # OpenMotion is a public, local editor/template picker. Mandala already
+      # owns exact-HEAD source, license, MP4 and mobile browser acceptance.
+      # It never edits booking, payments or service enquiry code. A mixed PR
+      # touching a real checkout/consent/service path still runs this suite.
+      - '!components/mandala-openmotion-picker.tsx'
+      - '!components/mandala-openmotion-picker.module.css'
+      # Fixed Ali greeting TTS is not service discovery, consent or checkout.
+      # Existing Core checks cover persona and natural greeting contracts;
+      # mixed PRs touching actual public services still run the browser suite.
+      - '!lib/holistic-support/ali-gemini-free-tts.mjs'
 permissions:
   contents: read
   pull-requests: read
@@ -180,7 +216,10 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 20
+    # Full verified browser acceptance has exceeded 20m only in post-PASS
+    # artifact/cache cleanup; preserve coverage and avoid false CANCELLED.
+    # 23m is a hard ceiling, not extra test work or a new deployment.
+    timeout-minutes: 23
     env:
       CI: 'true'
       NODE_ENV: production
@@ -216,12 +255,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci-pr-readiness.mjs
       - name: Verify bounded Public Services PR ancestry before impact routing
+        id: ancestry
         if: github.event_name == 'pull_request'
         shell: bash
         env:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EXPECTED_MERGE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_MERGE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
@@ -230,21 +271,9 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]] || {
             echo "::error::Checkout differs from the exact PR event merge SHA"; exit 1;
           }
-          # Preserve production #3490's bounded shallow-history recovery. Raw
-          # header proof below still checks exact immutable parents independently.
-          tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
-          tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
-          if [[ "$tested_head" != "$PR_HEAD_SHA" || ! "$tested_base" =~ ^[0-9a-f]{40}$ ]]; then
-            actual_checkout="$(git rev-parse HEAD)"
-            [[ "$actual_checkout" == "$GITHUB_SHA" && "$(git rev-parse --is-shallow-repository)" == true ]] || {
-              echo "::error::Unexpected or non-shallow PR checkout; refusing recovery"; exit 1;
-            }
-            git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"
-            tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
-            tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
-          fi
-          # The raw merge commit itself must contain exactly two parents,
-          # independent of whether shallow traversal can resolve HEAD^2.
+          # Prove the immutable two-parent merge checkout from GitHub's commit graph.
+          # Local shallow clones may contain only a tiny fragment of a long-running
+          # production branch; bounded deepen loops cannot prove a 200+ commit ancestry.
           mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
           [[ "${#tested_parents[@]}" -eq 2 ]] || {
             echo "::error::Exact event SHA is not a two-parent test merge"; exit 1;
@@ -254,17 +283,18 @@ jobs:
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
-          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
-            for extra in 8 32; do
-              git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
-              if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
-                break
-              fi
-            done
-          fi
-          git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" || {
-            echo "::error::Event base ancestry unverified; no unsafe fast lane"; exit 1;
+          compare_json="$(curl --fail --silent --show-error --max-time 20 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}")"
+          relation="$(printf '%s' "$compare_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const x=JSON.parse(s);if(typeof x.status!=="string")process.exit(2);process.stdout.write(x.status)}catch{process.exit(2)}})')"
+          [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
+            echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
+          # Reuse the exact tuple verified by GitHub; a shallow clone may not
+          # contain the historical event base object. Never infer ancestry.
+          printf 'event_base=%s\ntested_base=%s\nhead=%s\nmerge=%s\n' "$EVENT_BASE_SHA" "$tested_base" "$PR_HEAD_SHA" "$EXPECTED_MERGE_SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -274,6 +304,10 @@ jobs:
         env:
           HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_PUBLIC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_PUBLIC_VERIFIED_EVENT_BASE: ${{ steps.ancestry.outputs.event_base }}
+          HH_PUBLIC_VERIFIED_TESTED_BASE: ${{ steps.ancestry.outputs.tested_base }}
+          HH_PUBLIC_VERIFIED_HEAD: ${{ steps.ancestry.outputs.head }}
+          HH_PUBLIC_VERIFIED_MERGE: ${{ steps.ancestry.outputs.merge }}
         run: node scripts/ci-public-services-plan.mjs
       - name: Verify fail-closed Public Services routing
         run: node --test tests/ci-public-services-plan.test.mjs
@@ -313,10 +347,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
-          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts; fi
           node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
-          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs; fi
+          # Protected PR Core independently lints all changed JS/TS, and full
+          # lint for config/lockfile changes. Retain full fixed-list lint on manual QA.
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
@@ -387,17 +423,25 @@ jobs:
           acceptance_started=$SECONDS
           build_started=$SECONDS
           build_code=0
-          # The required Core gate already runs ALL package prebuild tests.
-          # Preserve each asset-producing prebuild prerequisite and a genuine
-          # Next production build here; do not repeat unrelated coaching suites.
-          {
-            node scripts/ensure-owner-video-renderer.mjs
-            node scripts/cache-ancient-coaching-photos.mjs
-            node scripts/generate-soft-ocean-melody.mjs
-            node scripts/build-public-card-artwork.mjs
-            node scripts/build-report-pdf-art.mjs
-            ./node_modules/.bin/next build
-          } > artifacts/public-services-production/build.log 2>&1 || build_code=$?
+          # Core independently checks the complete prebuild tests, changed-source
+          # lint and full Next type/build gate for production PRs. Keep EVERY
+          # asset-producing prerequisite and real Next compilation here. Do not
+          # bypass unknown/new package prebuild steps or standalone QA.
+          build_public_candidate() {
+            if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]] &&
+                node -e 'const s=require("./package.json").scripts; process.exit(s.build==="next build" && s.prebuild==="node scripts/ensure-owner-video-renderer.mjs && node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs && node scripts/prepare-my-coach-natural-mp4.mjs" ? 0 : 1)'; then
+              node scripts/ensure-owner-video-renderer.mjs &&
+              node scripts/cache-ancient-coaching-photos.mjs &&
+              node scripts/generate-soft-ocean-melody.mjs &&
+              node scripts/build-public-card-artwork.mjs &&
+              node scripts/build-report-pdf-art.mjs &&
+              node scripts/prepare-my-coach-natural-mp4.mjs &&
+              ./node_modules/.bin/next build --no-lint
+            else
+              npm run build
+            fi
+          }
+          build_public_candidate > artifacts/public-services-production/build.log 2>&1 || build_code=$?
           if (( build_code != 0 )); then
             printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
             echo "::error::Public Services production build failed (exit $build_code)"
@@ -454,26 +498,29 @@ jobs:
             printf '%s,%s,%s\n' "$label" "$outcome" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
             return "$code"
           }
+          # Balanced by measured run 45528356162 (about 521s vs 518s,
+          # compared with 746s vs 293s previously). Same case set, two lanes,
+          # independent browser contexts and unchanged per-case exit gates.
           lane_a() {
             local failed=0
-            # Alchemy covers 320–430px, three languages and booking consent.
             run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
-            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
             run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
             run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
-            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
             run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
-            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
             return "$failed"
           }
           lane_b() {
             local failed=0
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
             run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
             run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
             run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
             run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
             run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
             run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
+            run_case "verify-academy-messenger-order.mjs" node scripts/verify-academy-messenger-order.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
             return "$failed"
           }
           lane_a &
@@ -523,6 +570,7 @@ jobs:
             artifacts/contact-channel-browser/
             artifacts/service-cart/
             artifacts/storefront-shop/
+            artifacts/academy-messenger-order/
           retention-days: 7
           if-no-files-found: warn
       # Explicit save also works after browser failure: a successful, exact

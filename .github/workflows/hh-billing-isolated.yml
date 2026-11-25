@@ -55,7 +55,13 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Square checkout syntax and focused lint (Core owns full TypeScript)
         run: |
           node --check lib/commerce/square-payment-links.js
@@ -78,6 +84,8 @@ jobs:
         run: node --test tests/talisman-google-checkout.test.mjs
       - name: Video XP RLS, grants and terminal ledger on fresh PostgreSQL 17
         run: node --test tests/video-credits-postgres.integration.mjs
+      - name: Paid hybrid video orders and private MP4 FORCE RLS on PostgreSQL 17
+        run: node --test tests/video-paid-orders-postgres.integration.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression

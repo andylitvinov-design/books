@@ -2,13 +2,17 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,UserRound,SquarePen,ChevronDown,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper,Menu} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
+import MessagesDailyBriefing from './messages-daily-briefing'
+import MessengerGuestGate from './messenger-guest-gate'
+import AliPersonaPicker from './ali-persona-picker'
+import {useAliPersona} from './use-ali-persona'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
- en:{title:'Messages',subtitle:'AI · Orders · Clients',
+ en:{title:'Messages',subtitle:'AI · Orders · Clients · News',
   introOrders:'Your orders and conversations with practitioners',introOrdersBody:'Status, messages and materials together.',introClients:'Your incoming client messages',introClientsBody:'Answer requests through existing protected conversations.',searchOrders:'Search orders, services or practitioners',filterOrders:'Filter by status',chatIndicator:'Order conversation',
   orders:'My orders',clients:'My clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
   all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',emptyHelp:'Your order status and conversation with a practitioner will appear here.',
@@ -25,7 +29,7 @@ const TEXT={
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
   notifyTitle:'Do not miss your practitioner’s reply',notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',notifyAction:'Notification settings'},
- ru:{title:'Сообщения',subtitle:'ИИ · Заказы · Клиенты',
+ ru:{title:'Сообщения',subtitle:'ИИ · Заказы · Клиенты · Новости',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
   all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',emptyHelp:'После оформления здесь появятся статус заказа и переписка с мастером.',
@@ -42,7 +46,7 @@ const TEXT={
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
   notifyTitle:'Не пропустите ответ мастера',notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',notifyAction:'Настроить уведомления'},
- es:{title:'Mensajes',subtitle:'IA · Pedidos · Clientes',
+ es:{title:'Mensajes',subtitle:'IA · Pedidos · Clientes · Noticias',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
   all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',emptyHelp:'Aquí verás el estado de tus pedidos y el chat con el profesional.',
@@ -89,13 +93,24 @@ function priceOf(order,t){
     ? new Intl.NumberFormat('en-IE',{maximumFractionDigits:2}).format(Number(r.price))+' '+(r.currency||'EUR')
     :t.noPrice
 }
-export default function MessagesOrdersClients({locale='en',children}){
+export default function MessagesOrdersClients({locale:routeLocale='en',children}){
   const searchParams=useSearchParams()
+  const [locale,setLocale]=useState(routeLocale)
+  useEffect(()=>setLocale(routeLocale),[routeLocale])
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
+  const {persona}=useAliPersona()
+  const [personaOpen,setPersonaOpen]=useState(false)
+  const [chatTabsOpen,setChatTabsOpen]=useState(false)
+  const closePersona=useCallback(()=>setPersonaOpen(false),[])
+  useEffect(()=>{
+    const openPersona=()=>setPersonaOpen(true)
+    window.addEventListener('hh:messenger-open-persona',openPersona)
+    return()=>window.removeEventListener('hh:messenger-open-persona',openPersona)
+  },[])
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
     return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
-      requested==='orders'||searchParams.has('order')?'orders':'ai'
+      requested==='orders'||searchParams.has('order')?'orders':requested==='news'?'news':'ai'
   })
   const [ordersData,setOrdersData]=useState(null)
   // Keep AI authentication separate from potentially unavailable orders data.
@@ -112,6 +127,7 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [clientDetailOpen,setClientDetailOpen]=useState(false)
   const [clientsVisited,setClientsVisited]=useState(()=>section==='clients')
   useEffect(()=>{if(section==='clients')setClientsVisited(true)},[section])
+  useEffect(()=>{if(section!=='ai')setChatTabsOpen(false)},[section])
   const [selectedId,setSelectedId]=useState('')
   const orderChatRef=useRef(null)
   const hubRef=useRef(null)
@@ -121,7 +137,7 @@ export default function MessagesOrdersClients({locale='en',children}){
     const q=new URLSearchParams(window.location.search)
     const requested=q.get('section')
     setSection(requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':
-      requested==='orders'||q.has('order')?'orders':'ai')
+      requested==='orders'||q.has('order')?'orders':requested==='news'?'news':'ai')
     const id=q.get('order')
     // Switching folders removes ?order= from the URL, but must not discard
     // the private conversation still mounted behind the current tab.
@@ -132,6 +148,9 @@ export default function MessagesOrdersClients({locale='en',children}){
   const retryAiIdentity=useCallback(()=>setIdentityCheck(v=>v+1),[])
   useEffect(()=>{
     const controller=new AbortController()
+    let active=true
+    // Never leave a public Home choice waiting indefinitely for account data.
+    const timeout=window.setTimeout(()=>controller.abort(),6000)
     setAiIdentity({status:'checking',accountId:null})
     fetch('/api/app/session',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
       .then(async response=>{
@@ -142,9 +161,10 @@ export default function MessagesOrdersClients({locale='en',children}){
           return {status:'unavailable',accountId:null}
         return {status:'authenticated',accountId:data.accountId}
       })
-      .then(identity=>{if(!controller.signal.aborted)setAiIdentity(identity)})
-      .catch(()=>{if(!controller.signal.aborted)setAiIdentity({status:'unavailable',accountId:null})})
-    return()=>controller.abort()
+      .then(identity=>{if(active)setAiIdentity(identity)})
+      .catch(()=>{if(active)setAiIdentity({status:'unavailable',accountId:null})})
+      .finally(()=>window.clearTimeout(timeout))
+    return()=>{active=false;window.clearTimeout(timeout);controller.abort()}
   },[identityCheck])
   useEffect(()=>{
     const controller=new AbortController()
@@ -159,7 +179,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       .catch(e=>{if(!controller.signal.aborted){setError(t.error);setSignedOut(e.message==='SIGN_IN_REQUIRED');setOrdersData(null)}})
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
-  },[generation,locale])
+  },[generation,routeLocale])
   // Orders failures are not logout; only a verified identity change can reset chat.
   useEffect(()=>{
     if(aiIdentity.status==='authenticated'){
@@ -286,7 +306,7 @@ export default function MessagesOrdersClients({locale='en',children}){
   },[section])
 
   function chooseSection(value){
-    if(!['ai','orders','clients'].includes(value))return
+    if(!['ai','orders','clients','news'].includes(value))return
     setSection(value)
     const url=new URL(window.location.href)
     url.searchParams.set('section',value)
@@ -300,6 +320,17 @@ export default function MessagesOrdersClients({locale='en',children}){
     // Preserve selected client/order and their unsent drafts while changing folders.
     window.history.replaceState(window.history.state,'',url)
   }
+  function chooseLocale(nextLocale){
+    if(!['en','ru','es'].includes(nextLocale))return
+    setLocale(nextLocale)
+    const url=new URL(window.location.href)
+    const localePrefix=/^\/(en|ru|es)(?=\/|$)/
+    if(localePrefix.test(url.pathname)){
+      // Use the App Router-compatible native history API: keep the live chat mounted.
+      url.pathname=url.pathname.replace(localePrefix, `/${nextLocale}`)
+      window.history.replaceState(window.history.state,'',url)
+    }
+  }
   function chooseOrder(id){
     setSelectedId(id)
     const url=new URL(window.location.href)
@@ -307,10 +338,20 @@ export default function MessagesOrdersClients({locale='en',children}){
     else url.searchParams.delete('order')
     window.history.replaceState(window.history.state,'',url)
   }
+  const guestAccess=aiIdentity.status==='guest'
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
   const detailMode=(section==='orders'&&Boolean(selected))||(section==='clients'&&clientDetailOpen)
+  // Keep one stable header shell across all folders; only copy is localized and contextual.
+  const assistantTitle=section==='ai'
+    ?(locale==='ru'?'Ali · Внутренний алхимик':locale==='es'?'Ali · Alquimista interior':'Ali · Inner Alchemist')
+    :(locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant')
+  const assistantSubtitle=section==='ai'
+    ?(locale==='ru'?'Понять · Поддержать · Изменить':locale==='es'?'Comprender · Apoyar · Transformar':'Understand · Support · Transform')
+    :(locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
+      locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create')
+
   // Load-dependent helper lives inside the active panel, not above the tabs.
-  const listHelper=section!=='ai'&&!detailMode&&!loading&&!error&&Boolean(ordersData)&&(
+  const listHelper=section!=='ai'&&section!=='news'&&!detailMode&&!loading&&!error&&Boolean(ordersData)&&(
     <div className={styles.introCard} data-messenger-list-helper>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
@@ -319,9 +360,11 @@ export default function MessagesOrdersClients({locale='en',children}){
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>
   )
-  return <section ref={hubRef} className={styles.root} data-orders-clients-hub
-    data-detail-open={detailMode||undefined} data-section={section}>
-    <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
+  return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
+    data-detail-open={detailMode||undefined} data-section={section}
+    style={{'--hh-ai-persona-image':`url("${persona.image}")`}}>
+    <div id="hh-chat-tabs" className={styles.sections} role="tablist" aria-label={t.title}
+      data-chat-top-tabs data-chat-tabs-open={chatTabsOpen||undefined}>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
         <Sparkles size={21} aria-hidden="true"/><span><strong>{
@@ -339,28 +382,79 @@ export default function MessagesOrdersClients({locale='en',children}){
         <span><strong>{clientTab}</strong></span>
         {clientCount>0&&<b className={styles.count} aria-label={clientTab}>{clientCount>99?'99+':clientCount}</b>}
       </button>
+      <button type="button" role="tab" aria-controls="hh-news-panel" aria-selected={section==='news'}
+        onClick={()=>chooseSection('news')}><Newspaper size={21} aria-hidden="true"/>
+        <span><strong>{locale==='ru'?'Новости':locale==='es'?'Noticias':'News'}</strong></span>
+      </button>
     </div>
-    <header className={styles.head}>
-      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.headerActions}>
-        <Link prefetch={false} className={styles.notificationSettings}
-          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
-          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
-          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
-          <Bell size={17} aria-hidden="true"/>
+    <header className={styles.head} data-hh-ai-assistant-header>
+      {section==='ai'?<>
+        <Link href={'/'+locale} className={styles.chatSiteBrand} data-hh-ai-chat-brand
+          aria-label={locale==='ru'?'На главную Holistic House':locale==='es'?'Inicio de Holistic House':'Holistic House home'}>
+          <Leaf size={31} aria-hidden="true"/>
+          <span>Holistic House<small>Therapy · Coaching · Growth</small></span>
         </Link>
-        <button type="button" onClick={reload} className={styles.refresh}
-          aria-label={t.retry} title={t.retry}>
-          <RefreshCw size={19} aria-hidden="true"/>
+        <div className={styles.presenterIdentity} data-hh-ali-active-persona={persona.id}>
+          <Link href={'/'+locale} className={styles.dialogueBack} aria-label={locale==='ru'?'На главную':locale==='es'?'Inicio':'Home'}>‹</Link>
+          <img src={persona.image} alt="" width={44} height={44}/>
+          <div><h1>Holistic House · {persona.name[locale]}</h1>
+            <p><span className={styles.onlineDot} aria-hidden="true"/>{locale==='ru'?'Онлайн':locale==='es'?'En línea':'Online'}</p>
+          </div>
+        </div></>:
+        <div><h1>{assistantTitle}</h1><p>{assistantSubtitle}</p></div>}
+      <div className={styles.headerActions} data-hh-ai-assistant-actions>
+        <div className={styles.languagePicker} data-hh-messenger-language-switcher
+          role="group" aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
+          <div className={styles.languageOptions}>
+            {['en','ru','es'].map(language=><button key={language} type="button"
+              data-hh-messenger-language-option={language}
+              aria-label={language==='en'?'English':language==='ru'?'Русский':'Español'}
+              aria-pressed={locale===language}
+              title={language==='en'?'English':language==='ru'?'Русский':'Español'}
+              onClick={()=>chooseLocale(language)}>{language.toUpperCase()}</button>)}
+          </div>
+          <label className={styles.languageCompact}>
+            <span className={styles.visuallyHidden}>{locale==='ru'?'Язык':locale==='es'?'Idioma':'Language'}</span>
+            <select data-hh-messenger-language-select value={locale}
+              onChange={event=>chooseLocale(event.currentTarget.value)}>
+              <option value="en">EN</option>
+              <option value="ru">RU</option>
+              <option value="es">ES</option>
+            </select>
+            <ChevronDown size={15} aria-hidden="true"/>
+          </label>
+        </div>
+        <button type="button" className={styles.notificationSettings}
+          data-hh-ali-persona-open
+          onClick={()=>{chooseSection('ai');setPersonaOpen(true)}}
+          aria-label={locale==='ru'?'Выбрать ведущего':locale==='es'?'Elegir guía':'Choose persona'}
+          title={locale==='ru'?'Персоналия':locale==='es'?'Personaje':'Persona'}>
+          <UserRound size={24} aria-hidden="true"/>
+          <span className={styles.personaActionText}>{locale==='ru'?'Персона':locale==='es'?'Guía':'Persona'}</span>
         </button>
-      </span>
+        <button type="button" className={styles.refresh}
+          data-hh-ai-new-chat
+          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-new-chat'));}}
+          aria-label={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}
+          title={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}>
+          <SquarePen size={24} aria-hidden="true"/>
+        </button>
+        {section==='ai'&&<button type="button" className={styles.chatTabsToggle}
+          data-hh-ai-chat-menu aria-controls="hh-chat-tabs"
+          aria-expanded={chatTabsOpen} onClick={()=>setChatTabsOpen(open=>!open)}
+          aria-label={locale==='ru'?'Разделы и заказы':locale==='es'?'Secciones y pedidos':'Sections and orders'}>
+          <Menu size={22} aria-hidden="true"/>
+        </button>}
+      </div>
     </header>
+    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}
-          authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
+          onConversationLocaleChange={chooseLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
           onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
+      {guestAccess?(section==='orders'?<MessengerGuestGate locale={locale} section="orders"/>:null):<>
       {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&
         <aside className={styles.notifyInvite}>
@@ -475,11 +569,20 @@ export default function MessagesOrdersClients({locale='en',children}){
           <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.myPractice}<ArrowRight size={18}/></Link>
         </div>
       </div>}
+      </>}
     </div>
     <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
+      {guestAccess?(section==='clients'?<MessengerGuestGate locale={locale} section="clients"/>:null):<>
       {listHelper}
       {clientsVisited&&(isValidElement(children)?cloneElement(children,{
-        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+        locale,onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+      </>}
+    </div>
+    <div id="hh-news-panel" role="tabpanel" hidden={section!=='news'}>
+      {guestAccess?(section==='news'?<MessengerGuestGate locale={locale} section="news"/>:null):<MessagesDailyBriefing locale={locale} accountId={aiIdentity.accountId}
+        authStatus={aiIdentity.status} active={section==='news'}
+        orders={ordersData?.accountId===aiIdentity.accountId?ordersData.orders:null}
+        refreshKey={generation}/>}
     </div>
   </section>
 }

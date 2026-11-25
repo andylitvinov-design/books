@@ -1,0 +1,22 @@
+.daybook{width:min(100%,900px);margin:12px auto;padding:16px;border:1px solid #e5c186;border-radius:23px;background:#fcf0d5;color:#173e2c;box-shadow:0 8px 22px #17100d40}
+.header{padding:17px 18px 20px;border-radius:20px;background:linear-gradient(110deg,#063e2eeb,#145840a8),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:#fff2d3}
+.header span{display:inline-flex;align-items:center;gap:7px;font:750 11px/1.3 system-ui,sans-serif;letter-spacing:.13em}
+.header h1{margin:8px 0 6px;color:#fff2d3;font:700 clamp(27px,5.8vw,40px)/1.1 Georgia,serif}
+.header p{margin:0;font:500 clamp(13px,3.1vw,16px)/1.35 system-ui,sans-serif;max-width:40ch}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0}
+.panel{min-width:0;padding:16px;border:1px solid #eacb92;border-radius:19px;background:linear-gradient(140deg,#fffefa,#f9e5bd);box-shadow:0 3px 10px #33251419}
+.panel:last-child{grid-column:1/-1}
+.panel h2{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#173e2c;font:700 clamp(17px,4vw,23px)/1.2 Georgia,serif}
+.panel h2 svg{flex:none;color:#00683f}
+.panel p{margin:0 0 8px;color:#496353;font:500 14px/1.42 system-ui,sans-serif}
+.record{margin:8px 0;padding:10px;border-left:3px solid #098455;border-radius:7px;background:#ffffffa0;font:560 14px/1.35 system-ui,sans-serif;overflow-wrap:anywhere}
+.record strong{display:block}.record small{display:block;margin-top:3px;color:#496353}
+.panel a,.coach{display:inline-flex;align-items:center;gap:6px;min-height:42px;margin-top:8px;color:#066d48;font:700 14px/1.2 system-ui,sans-serif;text-decoration:underline}
+.axes{padding:16px;border-radius:18px;border:1px solid #e2c18c;background:#fff8e7}
+.axes h2{margin:0 0 6px;font:700 22px/1.1 Georgia,serif;color:#163f2a}.axes p{font:500 13px/1.4 system-ui,sans-serif;color:#4e6556}
+.axes>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.axes>div>span{display:grid;gap:3px;padding:9px 11px;border-radius:12px;background:#e4f2e4;color:#163e2d;font:700 13px/1.2 system-ui,sans-serif}
+.axes small{font-size:11px;font-weight:500}
+.coach{padding:12px 19px;border-radius:999px;border:1px solid #f6d593;background:linear-gradient(130deg,#00855a,#03432c);color:#fff7e2;text-decoration:none}
+.message{padding:12px}
+@media(max-width:480px){.daybook{padding:10px;border-radius:19px}.header{padding:14px}.grid{grid-template-columns:1fr;gap:9px}.panel:last-child{grid-column:auto}.panel{padding:13px}.axes{padding:13px}.axes>div{gap:5px}.axes>div>span{padding:8px;font-size:12px}}

@@ -23,7 +23,7 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(landing, /compactPhone compactTrigger stayAfterSave/);
   assert.doesNotMatch(form, /fetch\(|localStorage|sendBeacon/);
   assert.match(form, /hh-alchemy-selected-format/);
-  assert.match(form, /no automatic charge/);
+  assert.match(form, /Availability and payment are confirmed separately/);
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
   const catalog = read("components/personal-testimonials.tsx");
   assert.match(catalog, /MIVLm1GUTtM/);
@@ -76,7 +76,8 @@ test("Alchemy format controls use signed confirmation before showing any payment
   assert.match(chooser, /paidReady && paymentExpanded/);
   assert.match(css, /\.bookingPrimary,.bookingCheck/);
   assert.match(css, /@media\(max-width:350px\)/);
-  assert.match(qa, /No cart or payment method before a server-confirmed booking/);
+  assert.match(qa, /No checkout or booking confirmation before verified reply channel/);
+  assert.match(qa, /assertMessengerOnlyCapture/);
   assert.match(qa, /All twelve original-language testimonials are visible in a vertical feed/);
   assert.match(qa, /Ten Alchemy chapters including video and public sample report/);
 });

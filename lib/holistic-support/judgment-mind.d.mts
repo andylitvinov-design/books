@@ -2,7 +2,7 @@
 export type JudgmentLocale="ru"|"en"|"es";
 export type JudgmentSituation="overload"|"starting"|"conflict"|"loneliness"|"self_criticism"|"uncertainty"|"fatigue"|"stress";
 export type JudgmentEvidenceTier="E0"|"E1"|"E2"|"E3";
-export type JudgmentState="abstained"|"awaiting_choice"|"step_offered"|"feedback_received"|"paused"|"safety_handoff"|"reframed";
+export type JudgmentState="abstained"|"awaiting_choice"|"step_offered"|"feedback_received"|"paused"|"safety_handoff"|"reframed"|"emotion_acknowledged";
 export type JudgmentChoiceId="a"|"b"|"helpful"|"not_helpful";
 export interface JudgmentChoice {id:JudgmentChoiceId;label:string}
 export interface JudgmentPending {stage:"awaiting_choice"|"feedback";situationCode:JudgmentSituation;choiceId?:"a"|"b"}
@@ -31,6 +31,7 @@ export interface JudgmentTurnInput {
   safety?:{status?:string};
   pending?:JudgmentPending|null;
   choiceId?:JudgmentChoiceId|null;
+  history?:Array<{role:"user"|"assistant";text:string}>;
 }
 export declare const JUDGMENT_MIND_VERSION:"hh-judgment-mind-v1.1";
 export declare const PILOT_SITUATION_CODES:readonly JudgmentSituation[];

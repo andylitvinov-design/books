@@ -19,9 +19,31 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Cache only existing first-screen PUBLIC imagery. No HTML, API, RSC or
+// private client media is added to the CDN. Paths stay unchanged and design
+// remains pixel-identical to the approved Max/Andrey homepage.
+const homepagePublicImageSources = [
+  "/images/holistic-house/my-coach-motion/:path*",
+  "/images/holistic-house/ideas-pine-reference.webp",
+  "/images/video-goal-art/:path*",
+  "/images/holistic-house/andy-about.png",
+] as const;
+
 // Only approved pages with an explicit Record button may ask for microphone.
 // The public Messenger needs the same narrowly scoped permission as Studio;
 // microphone remains denied across the rest of the site.
+// The existing authenticated one-to-one coaching page supports voice dictation
+// and optional AI voice. Grant microphone only to these exact private pages;
+// all other Cabinet, reports and API routes remain denied.
+const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching", "/es/app/coaching"];
+// Same-origin permission only on voice entry and coaching pages; consent and
+// the explicit user gesture remain required. Camera and location stay denied.
+const publicMyCoachVoiceSources = [
+  "/", "/en", "/ru", "/es",
+  "/my-coach", "/en/my-coach", "/ru/my-coach", "/es/my-coach",
+  "/coaching/sessions", "/en/coaching/sessions", "/ru/coaching/sessions", "/es/coaching/sessions",
+];
+
 const liveAudioHostSources = [
   "/en/live/host", "/ru/live/host", "/es/live/host",
   "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
@@ -80,6 +102,12 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Reuse exactly the already-approved public hero photography on repeat
+      // visits. Never apply these headers to session, report, auth, API or HTML.
+      ...homepagePublicImageSources.map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=120" }],
+      })),
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
@@ -102,6 +130,14 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
+      })),
+      ...privateCoachingVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
+      ...publicMyCoachVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),
       ...liveAudioHostSources.map((source) => ({
         source,
@@ -134,6 +170,8 @@ const nextConfig: NextConfig = {
   // Vercel redirects these images to pinned public sources; do not bundle
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
+    // The signed CRM /video handler only hands off to Dot; never trace the native encoder.
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // Public-only artwork is served statically, never read by document PDFs.
     "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
@@ -143,15 +181,15 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // Reuse the pinned encoder only when recording a missing public greeting.
+    "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
     // Sharp 0.35 loads libvips from an optional native package. Next tracing
     // otherwise bundles the .node file without libvips-cpp.so into the Function.
     // Include only for this small private upload route, never all routes.
-    // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
-    // Only this Function traces the pinned FFmpeg binary (no external render API).
-    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // CRM video commands use a lightweight redirect; no FFmpeg here.
     // Owner-private Dot /audio → /video uses its existing signed webhook.
     // The same pinned FFmpeg binary must be available in this function too.
     "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],

@@ -1,18 +1,29 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {lazy,Suspense,useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
+import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import {HolisticAgentChat} from "@/components/holistic-agent-chat";
+
+import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
+import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
 
+// The heavyweight AI conversation is only needed after an explicit iHelp tap.
+// Preserve the one real chat instance, privacy gates and all conversation state.
+// React.lazy keeps the hidden chat CSS, test catalogue and media widgets out
+// of the initial Home route manifest. The chat is mounted only after a tap.
+const HolisticAgentChat = lazy(
+  () => import("@/components/holistic-agent-chat").then(module => ({default:module.HolisticAgentChat})),
+);
+
 const UI={
- ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник по странице · не психотерапевт"},
- en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI guide for this page · not a therapist"},
- es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Guía IA de esta página · no es terapeuta"},
+ ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник, не человек и не психотерапевт",ai:"ИИ",orders:"Заказы",clients:"Клиенты"},
+ en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI assistant, not a person or therapist",ai:"AI",orders:"Orders",clients:"Clients"},
+ es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Asistente IA, no una persona ni terapeuta",ai:"IA",orders:"Pedidos",clients:"Clientes"},
 } as const;
 
 function routeLocale(pathname:string):PublicLocale {
@@ -43,11 +54,13 @@ export function SitewideIHelp(){
  const [open,setOpen]=useState(false);
  const [nativeVideoOpen,setNativeVideoOpen]=useState(false);
  const [mounted,setMounted]=useState(false);
+ const [quickPrompt,setQuickPrompt]=useState<HolisticAgentQuickPrompt|undefined>(undefined);
  const [context,setContext]=useState<IHelpPageContext>(()=>pageHelpFromRoute({locale,pathname}));
  const launcher=useRef<HTMLButtonElement>(null);
  const dialog=useRef<HTMLElement>(null);
  const closeButton=useRef<HTMLButtonElement>(null);
  const priorPath=useRef(pathname);
+ const businessShamanica=/^\/(?:ru|en|es)\/shamanica\/business\/?$/.test(pathname);
  // The video studio reports whether its ONE real Director drawer is open.
  // We do not mount a second copy of the video chatbot here.
  useEffect(()=>{
@@ -76,7 +89,7 @@ export function SitewideIHelp(){
      if(event.key==="Escape"){
        event.preventDefault();
        setOpen(false);
-       window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+       window.requestAnimationFrame(()=>restoreHelpFocus());
        return;
      }
      if(event.key!=="Tab")return;
@@ -99,9 +112,62 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+
+ // On iPhone, the on-screen keyboard changes visualViewport but not always
+ // 100dvh. Constrain the shared dialog to the visible area so its conversation
+ // and genuine composer remain reachable across all site sections.
+ useEffect(()=>{
+   if(!open||!dialog.current)return;
+   const panel=dialog.current;
+   const viewport=window.visualViewport;
+   const initialHeight=viewport?.height??window.innerHeight;
+   let frame=0;
+   const syncViewport=()=>{
+     window.cancelAnimationFrame(frame);
+     frame=window.requestAnimationFrame(()=>{
+       const height=viewport?.height??window.innerHeight;
+       panel.style.setProperty("--hh-ihelp-visual-height",Math.max(160,Math.round(height))+"px");
+       panel.style.setProperty("--hh-ihelp-visual-top",Math.max(0,Math.round(viewport?.offsetTop??0))+"px");
+       panel.toggleAttribute("data-hh-mobile-keyboard-open",
+         window.innerWidth<=760&&(initialHeight-height>140||window.innerHeight-height>140));
+     });
+   };
+   syncViewport();
+   viewport?.addEventListener("resize",syncViewport);
+   viewport?.addEventListener("scroll",syncViewport);
+   window.addEventListener("resize",syncViewport);
+   return ()=>{
+     window.cancelAnimationFrame(frame);
+     viewport?.removeEventListener("resize",syncViewport);
+     viewport?.removeEventListener("scroll",syncViewport);
+     window.removeEventListener("resize",syncViewport);
+     panel.style.removeProperty("--hh-ihelp-visual-height");
+     panel.style.removeProperty("--hh-ihelp-visual-top");
+     panel.removeAttribute("data-hh-mobile-keyboard-open");
+   };
+ },[open]);
+
+ // The business tab opens the one existing help dialog only on a user tap.
+ useEffect(()=>{
+  const onBusinessHelp=()=>show();
+  window.addEventListener("hh:open-ihelp",onBusinessHelp);
+  return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
+ },[pathname,locale]);
+ function restoreHelpFocus(){
+  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger]");
+  (trigger||launcher.current)?.focus({preventScroll:true});
+ }
+ function chooseTopic(prompt:string){
+   // An explicit chip fills the existing unsent composer; no network call or diagnosis.
+   setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
+   window.requestAnimationFrame(()=>dialog.current?.querySelector<HTMLTextAreaElement>(
+     "[data-hh-agent-preview] textarea")?.focus({preventScroll:true}));
+ }
  function close(){
+   // Stop any ongoing browser narration when the user closes iHelp.
+   window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
-   window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+   window.requestAnimationFrame(()=>restoreHelpFocus());
  }
  function show(){
    // Video Studio already has an executable, single-instance AI Video Director.
@@ -137,8 +203,14 @@ export function SitewideIHelp(){
    setMounted(true);
    setOpen(true);
  }
+ // The Services landing now has its own four-step support finder and an explicit
+ // Ali messenger entry. A second floating iHelp launcher obscures the approved
+ // scenic header; suppress it only on the landing, not service detail pages.
+ if(/^\/(?:ru|en|es)\/services\/?$/.test(pathname))return null;
+ // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
+ if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher}
+   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>
@@ -156,9 +228,19 @@ export function SitewideIHelp(){
          <button type="button" ref={closeButton} className={styles.close} onClick={close}
            aria-label={t.close}><X size={21} aria-hidden="true"/></button>
        </header>
+       <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact pageHelp={context}/>
+         <Suspense fallback={null}><HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/></Suspense>
        </div>
+       <IHelpTopics locale={locale} onSelect={chooseTopic}/>
+       <nav className={styles.bottomNav} aria-label={
+         locale==="ru"?"Разделы сообщений":locale==="es"?"Secciones de mensajes":"Message sections"}>
+         <span aria-current="page">{t.ai}</span>
+         <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}
+           onClick={close}>{t.orders}</Link>
+         <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}
+           onClick={close}>{t.clients}</Link>
+       </nav>
      </section>
    </div>}
  </>;

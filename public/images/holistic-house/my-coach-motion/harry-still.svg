@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="640" viewBox="0 0 480 640" role="img" aria-label="Original illustration of a young wizard in round glasses and a dark cloak">
+<defs>
+ <linearGradient id="night" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#142544"/><stop offset=".65" stop-color="#364366"/><stop offset="1" stop-color="#775962"/></linearGradient>
+ <radialGradient id="aura"><stop stop-color="#ffde98" stop-opacity=".54"/><stop offset="1" stop-color="#ffde98" stop-opacity="0"/></radialGradient>
+ <linearGradient id="robe" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#28354f"/><stop offset="1" stop-color="#171b2b"/></linearGradient>
+ <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0c7a5"/><stop offset="1" stop-color="#bb816c"/></linearGradient>
+</defs>
+<rect width="480" height="640" fill="url(#night)"/>
+<circle cx="258" cy="235" r="228" fill="url(#aura)"/>
+<g fill="#f9e6c2" opacity=".85"><circle cx="63" cy="81" r="2"/><circle cx="417" cy="112" r="3"/><circle cx="83" cy="230" r="2"/><circle cx="404" cy="307" r="2"/><circle cx="46" cy="342" r="2"/><circle cx="337" cy="54" r="2"/></g>
+<path d="M20 640Q49 486 141 438L199 411L281 408L349 447Q438 490 466 640Z" fill="url(#robe)"/>
+<path d="M139 448Q236 496 345 443L326 640H158Z" fill="#262d48"/>
+<path d="M200 377V456Q238 478 282 455V377" fill="#d4a084"/>
+<path d="M155 438L250 519L331 440L306 422L245 468L179 420Z" fill="#efe1c7"/>
+<path d="M165 456Q239 515 318 452L334 487Q247 553 148 490Z" fill="#973f4d"/>
+<path d="M153 490Q236 534 337 488L340 513Q234 565 154 509Z" fill="#d4a76a"/>
+<ellipse cx="241" cy="281" rx="108" ry="140" fill="url(#skin)"/>
+<ellipse cx="132" cy="293" rx="15" ry="25" fill="#bc846b"/>
+<ellipse cx="349" cy="294" rx="15" ry="25" fill="#bc846b"/>
+<path d="M127 261Q119 180 175 124L205 139Q253 90 296 123L312 109Q362 153 355 257L333 227L319 198L300 217L282 174L264 217L244 183L215 231L200 203L166 251L145 235Z" fill="#24232d"/>
+<path d="M142 218Q178 153 209 166L222 137Q254 162 284 138L307 164L338 144L347 209L310 195L283 225L255 193L218 231L194 211L159 248Z" fill="#292732"/>
+<path d="M175 270Q196 261 219 278M262 278Q285 261 310 272" fill="none" stroke="#342a30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="192" cy="290" r="33" fill="#f0cbb1" stroke="#1c263b" stroke-width="9"/>
+<circle cx="290" cy="290" r="33" fill="#f0cbb1" stroke="#1c263b" stroke-width="9"/>
+<path d="M225 283Q239 274 258 284M158 286L137 278M325 287L343 277" stroke="#1c263b" stroke-width="9" fill="none"/>
+<g fill="#fcf4e7"><circle cx="193" cy="294" r="16"/><circle cx="289" cy="294" r="16"/></g>
+<g fill="#344052"><circle cx="196" cy="294" r="8"/><circle cx="288" cy="294" r="8"/></g>
+<path d="M241 303Q230 334 248 339" fill="none" stroke="#965f58" stroke-width="4" stroke-linecap="round"/>
+<path d="M211 369Q242 391 277 369" fill="none" stroke="#814b4d" stroke-width="4" stroke-linecap="round"/>
+<path d="M270 207L261 229L275 228L264 245" stroke="#b66d67" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26 610Q228 582 452 619" stroke="#f7dbab" stroke-opacity=".2" fill="none" stroke-width="2"/>
+</svg>

@@ -8,6 +8,10 @@ import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOP
 import { DIAGNOSTIC_START_KEY, parseDiagnosticStart } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
+import ExpressGoogleParityForm from "./express-google-parity-form";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+
 
 type Draft = {
   topic: string;
@@ -27,13 +31,16 @@ const copy = {
     sendTitle: "Request your free written diagnostic",
     sendPaidTitle: "Request a personal coaching session",
     sendLead: "When you send your answers, the questionnaire and reply contact are saved automatically in the secure Holistic House CRM. No second save step is needed.",
-    sendOption: "What would you like to request?",
-    sendFree: "Free written diagnostic · €0",
-    sendShort: "Personal session · 30 min · €50",
-    sendFull: "Personal session · 60 min · €100",
+    sendOption: "Response format",
+    moreQuestions: "Add details · {n} optional questions",
+    lessQuestions: "Hide optional questions",
+    phoneInstead: "Prefer to leave a phone number?",
+    sendFree: "Free · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
     telegramLinked: "Your answers will attach to the existing verified Telegram CRM conversation. Email and phone are optional.",
     telegramMiniLinked: "Telegram verified. Your questionnaire will attach to the existing private conversation.",
-    telegramUnavailable: "Telegram identity is not verified. Open the questionnaire from the bot's Fill questionnaire button or your original signed link.",
+    telegramUnavailable: "Telegram is not verified for this form. Return to the original bot conversation and send /form to receive a new secure link.",
     telegramChecking: "Checking your Telegram connection…",
     sendEmail: "Email for a reply",
     sendPhone: "Phone (optional if email is supplied)",
@@ -86,13 +93,16 @@ const copy = {
     sendTitle: "Запросить бесплатную письменную диагностику",
     sendPaidTitle: "Запросить личную коучинговую сессию",
     sendLead: "После отправки ответы и контакт автоматически сохраняются в защищённой CRM Holistic House для личного ответа Андрея. Повторно сохранять ничего не нужно.",
-    sendOption: "Что вы хотите заказать?",
-    sendFree: "Бесплатная письменная диагностика · €0",
-    sendShort: "Личная сессия · 30 минут · €50",
-    sendFull: "Личная сессия · 60 минут · €100",
+    sendOption: "Формат ответа",
+    moreQuestions: "Добавить подробности · ещё {n} вопросов",
+    lessQuestions: "Скрыть дополнительные вопросы",
+    phoneInstead: "Оставить телефон вместо email",
+    sendFree: "Бесплатно · €0",
+    sendShort: "30 мин · €50",
+    sendFull: "60 мин · €100",
     telegramLinked: "Ответы привяжутся к существующему подтверждённому диалогу Telegram в CRM. Email и телефон необязательны.",
     telegramMiniLinked: "Telegram подтверждён. Анкета будет привязана к существующему приватному диалогу.",
-    telegramUnavailable: "Telegram не подтверждён. Откройте анкету кнопкой бота «Заполнить анкету» или по исходной подписанной ссылке.",
+    telegramUnavailable: "Telegram не подтверждён для этой анкеты. Вернитесь в прежний диалог с ботом и отправьте /form для новой защищённой ссылки.",
     telegramChecking: "Проверяем соединение с Telegram…",
     sendEmail: "Email для ответа",
     sendPhone: "Телефон (необязателен, если указан email)",
@@ -145,13 +155,16 @@ const copy = {
     sendTitle: "Solicitar evaluación escrita gratuita",
     sendPaidTitle: "Solicitar una sesión personal de coaching",
     sendLead: "Al enviar tus respuestas, el formulario y tu contacto se guardan automáticamente en el CRM privado de Holistic House. No necesitas guardarlos otra vez.",
-    sendOption: "¿Qué te gustaría solicitar?",
-    sendFree: "Evaluación escrita gratis · €0",
-    sendShort: "Sesión personal · 30 min · €50",
-    sendFull: "Sesión personal · 60 min · €100",
+    sendOption: "Formato de respuesta",
+    moreQuestions: "Añadir detalles · {n} preguntas opcionales",
+    lessQuestions: "Ocultar preguntas opcionales",
+    phoneInstead: "¿Prefieres dejar tu teléfono?",
+    sendFree: "Gratis · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
     telegramLinked: "Las respuestas se vincularán a tu conversación verificada de Telegram. Correo y teléfono son opcionales.",
     telegramMiniLinked: "Telegram verificado. Las respuestas se añadirán al mismo chat privado.",
-    telegramUnavailable: "No se pudo verificar Telegram. Abre el formulario desde el botón del bot o utiliza tu enlace firmado original.",
+    telegramUnavailable: "Telegram no está verificado para este formulario. Vuelve al chat original con el bot y envía /form para obtener un enlace seguro nuevo.",
     telegramChecking: "Verificando tu cuenta de Telegram…",
     sendEmail: "Email de contacto",
     sendPhone: "Teléfono (opcional con email)",
@@ -245,6 +258,9 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [crmEmailConsent,setCrmEmailConsent]=useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
   const [telegramHandoff, setTelegramHandoff] = useState<string | null>(null);
   const [telegramInitData, setTelegramInitData] = useState<string | null>(null);
@@ -257,9 +273,12 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
-  const filled = COACHING_FIELDS.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
-  const total = COACHING_FIELDS.length;
+  const visibleFields = COACHING_FIELDS.filter(field => showMore || privateCopyMode || field.required);
+  const filled = visibleFields.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
+  const total = visibleFields.length;
+  const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
   const miniLinked=telegramStatus==="linked" && Boolean(telegramInitData);
+  const freeDiagnosticLinked=Boolean(telegramHandoff?.startsWith('h2.'));
 
   useEffect(() => {
     // Read and erase the short-lived opaque bearer token from the URL fragment.
@@ -267,7 +286,10 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     const url = new URL(window.location.href);
     const handoff = new URLSearchParams(url.hash.slice(1)).get("handoff");
     setTelegramEntry(url.searchParams.get("from") === "telegram");
-    if (handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff)) setTelegramHandoff(handoff);
+    if (handoff && /^h(?:1\.[A-Za-z0-9_-]{120,1100}|2\.[A-Za-z0-9_-]{120,1200})$/.test(handoff)) {
+      setTelegramHandoff(handoff);
+      if(handoff.startsWith('h2.'))setOfferChoice('free');
+    }
     if (handoff) {
       url.hash = "";
       window.history.replaceState(window.history.state, "", url.pathname + url.search);
@@ -293,6 +315,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
       const staged = parseDiagnosticStart(sessionStorage.getItem(DIAGNOSTIC_START_KEY), locale);
       if (staged) {
         setReplyContact({ email: staged.email, phone: staged.phone });
+        if (staged.phone) setShowPhone(true);
         if (!restored) {
           restored = normalise({
             ...blank(), name: staged.name, topic: staged.topic,
@@ -423,22 +446,42 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   async function submitDiagnostic() {
     if (privateCopyMode || leadBusy || leadReceipt || busy || collision) return;
     if(telegramStatus==="checking"){setLeadError(t.telegramChecking);return;}
+    if (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) {
+      setLeadError(t.telegramUnavailable);return;
+    }
     if(telegramEntry && !miniLinked && !telegramHandoff){
       setLeadError(t.telegramUnavailable);return;
+    }
+    if(freeDiagnosticLinked&&replyContact.email.trim()&&
+      (!/^[^\s@]{1,64}@[^\s@]{1,185}\.[A-Za-z]{2,24}$/.test(replyContact.email.trim())||!crmEmailConsent)){
+      setLeadError(locale==='ru'
+        ?'Укажите корректный email и подтвердите, что его можно сохранить для ответа в CRM.'
+        :locale==='es'
+          ?'Indica un correo válido y autoriza guardarlo en el CRM para responderte.'
+          :'Enter a valid email and agree to save it in the CRM for your reply.');
+      return;
     }
     if(missing || (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)){
       setLeadError(t.sendError);return;
     }
     setLeadBusy(true); setLeadError("");
+    let expiredFreeLink=false;
     try {
       if (!leadAttempt.current) {
         const id = window.crypto.randomUUID();
         const intake={operationId:id,locale,offer:offerChoice,
           topic:draft.topic,name:draft.name,city:draft.city,
           answers:draft.answers,questions:draft.questions};
-        const endpoint=miniLinked?"/api/coaching-diagnostic/telegram":"/api/coaching-diagnostic";
+        const endpoint=miniLinked?"/api/coaching-diagnostic/telegram"
+          :freeDiagnosticLinked?"/api/coaching-diagnostic/telegram"
+          :"/api/coaching-diagnostic";
         const payload=miniLinked
           ? {action:"submit",initData:telegramInitData,questionnaire:{...intake,confirmed:true}}
+          : freeDiagnosticLinked
+          ? {action:"submit",handoff:telegramHandoff,
+             questionnaire:{...intake,offer:"free",confirmed:true,
+               replyEmail:replyContact.email.trim(),
+               replyEmailConsent:Boolean(replyContact.email.trim())&&crmEmailConsent}}
           : {...intake,contact:{displayName:draft.name,email:replyContact.email.trim(),phone:replyContact.phone.trim()},
              contactConsent:true,website:"",...(telegramHandoff?{handoff:telegramHandoff}:{})};
         // A lost response never changes the destination or creates a new lead.
@@ -450,6 +493,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
         body: leadAttempt.current.body,
       });
       const result = await response.json().catch(() => null);
+      if(response.status===409&&freeDiagnosticLinked)expiredFreeLink=true;
       if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
         // A rejected payload was never saved, so edits must get a fresh idempotency key.
         if (response.status === 400) leadAttempt.current = null;
@@ -460,7 +504,13 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     } catch {
       // Retain the exact idempotency key and frozen payload across retries.
       // A lost response must not create a second coach request.
-      setLeadError(t.sendFailure);
+      setLeadError(expiredFreeLink
+        ?locale==="ru"
+          ?"Ссылка на анкету больше не действует. Вернитесь в чат Ali и отправьте /form — новая ссылка позволит повторить отправку."
+          :locale==="es"
+            ?"El enlace ha caducado. Vuelve al chat de Ali y envía /form para recibir uno nuevo."
+            :"The form link has expired. Return to Ali in Telegram and send /form for a fresh link."
+        :t.sendFailure);
     } finally { setLeadBusy(false); }
   }
 
@@ -487,11 +537,25 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     setCollision(false); setDirty(true); setNotice(""); setError("");
   }
 
+  // A verified V3 Telegram handoff renders the source-faithful Express Google
+  // questionnaire; unrelated public forms, V2 Mini App and private drafts retain
+  // the original questionnaire and authorization path.
+  if(freeDiagnosticLinked&&telegramHandoff&&(locale==="ru"||locale==="en"))
+    return <ExpressGoogleParityForm locale={locale} handoff={telegramHandoff}/>;
+
   return <section className={styles.form} aria-labelledby="coaching-form-title" data-coaching-intake lang={locale}>
     <header className={styles.intro}>
       <div className={styles.introCopy}>
-        <h2 id="coaching-form-title">{t.title}</h2>
-        <p className={styles.lead}>{t.lead}</p>
+        <h2 id="coaching-form-title">{freeDiagnosticLinked
+          ?locale==="ru"?"Экспресс-диагностика — анкета":locale==="es"?"Formulario de diagnóstico exprés":"Express Diagnostic Form"
+          :t.title}</h2>
+        <p className={styles.lead}>{freeDiagnosticLinked
+          ?locale==="ru"
+            ?"Выберите одну ситуацию и ответьте на ключевые вопросы. Ответы останутся в защищённой CRM Holistic House и будут отмечены как полученные только после успешной отправки."
+            :locale==="es"
+              ?"Describe una situación y responde a las preguntas esenciales. Solo se confirmará la recepción tras guardar el formulario en el CRM protegido."
+              :"Please describe one situation and answer the essential questions. Receipt is confirmed only after the answers are saved to your protected Holistic House CRM conversation."
+          :t.lead}</p>
         <p className={styles.education}><ShieldCheck size={15} aria-hidden="true" />{t.note}</p>
       </div>
       <div className={styles.stats} role="status" aria-live="polite">
@@ -520,22 +584,27 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
-      <label>{t.yourName}
+      {(showMore || privateCopyMode) ? <label>{t.yourName}
         <input value={draft.name} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
-      </label>
-      <label>{t.location}
+      </label> : null}
+      {(showMore || privateCopyMode) ? <label>{t.location}
         <input value={draft.city} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
-      </label>
+      </label> : null}
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
-    {COACHING_GROUPS.map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
+    {!privateCopyMode ? <button type="button" className={styles.moreToggle} aria-expanded={showMore}
+      disabled={collision || busy} onClick={() => setShowMore(value => !value)}>
+      {showMore ? t.lessQuestions : t.moreQuestions.replace("{n}", String(optionalCount))}
+      <span aria-hidden="true">{showMore ? "−" : "+"}</span>
+    </button> : null}
+    {COACHING_GROUPS.filter(group => showMore || privateCopyMode || COACHING_FIELDS.some(field => field.group === group.id && field.required)).map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
       <div className={styles.groupHeading}><span className={styles.number}>{String(groupIndex + 1).padStart(2, "0")}</span>
         <div><h3 id={"coaching-" + group.id}>{group.title[locale]}</h3><p>{group.hint[locale]}</p></div>
-        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id).length}</span>
+        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required) && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).length}</span>
       </div>
       <ol className={styles.fields} start={COACHING_FIELDS.findIndex(item => item.group === group.id) + 1}>
-        {COACHING_FIELDS.filter(field => field.group === group.id).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
+        {COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
           <label htmlFor={"coaching-field-" + field.id} className={styles.questionLabel}>
             <span className={styles.ordinal} aria-hidden="true">{String(COACHING_FIELDS.findIndex(item => item.id === field.id) + 1).padStart(2, "0")}</span>
             <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : null}</span>
@@ -550,7 +619,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           />
         </li>)}
       </ol>
-      {group.id === "session" ? <div className={styles.ownQuestions}>
+      {(showMore || privateCopyMode) && group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
           <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
@@ -569,17 +638,17 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
       {!privateCopyMode ? <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
-        <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:t.sendLead}</p>
+        <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:freeDiagnosticLinked?t.telegramLinked:t.sendLead}</p>
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
           <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
-          {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+          {offerChoice === "free" && !freeDiagnosticLinked ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
             {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
           </Link> : null}
         </div> : <>
           <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
             <legend>{t.sendOption}</legend>
             <div className={styles.choiceGrid}>
-              {(["free", "short", "full"] as const).map(option => <label key={option} data-selected={offerChoice === option}>
+              {(["free", "short", "full"] as const).filter(option=>!freeDiagnosticLinked||option==='free').map(option => <label key={option} data-selected={offerChoice === option}>
                 <input type="radio" name="coaching-service-request" checked={offerChoice === option}
                   onChange={() => { setOfferChoice(option); setLeadError(""); }} />
                 <span>{option === "free" ? t.sendFree : option === "short" ? t.sendShort : t.sendFull}</span>
@@ -588,20 +657,49 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           </fieldset>
           {miniLinked ? <p className={styles.requestFootnote} role="status">{t.telegramMiniLinked}</p>
             : telegramHandoff ? <p className={styles.requestFootnote}>{t.telegramLinked}</p> : null}
-          {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
+          {freeDiagnosticLinked ? <div className={styles.replyFields} data-free-diagnostic-reply-email>
+             <label htmlFor="hh-free-reply-email">
+               {locale==="ru"?"Email для ответа специалиста (по желанию)":
+                 locale==="es"?"Email para recibir respuesta (opcional)":
+                 "Email for a reply from the practitioner (optional)"}
+               <input id="hh-free-reply-email" type="email" autoComplete="email" maxLength={254}
+                 value={replyContact.email} disabled={leadBusy||busy||collision||Boolean(leadAttempt.current)}
+                 placeholder="you@example.com"
+                 onChange={event=>{setReplyContact(p=>({...p,email:event.target.value}));setLeadError("");}}/>
+             </label>
+             {replyContact.email.trim() ? <label className={styles.requestDisclosure}>
+               <input type="checkbox" checked={crmEmailConsent}
+                 disabled={leadBusy||busy||collision||Boolean(leadAttempt.current)}
+                 onChange={event=>setCrmEmailConsent(event.target.checked)}/>
+               <span>{locale==="ru"
+                 ?"Согласен сохранить мой email вместе с анкетой в защищённой CRM для личного ответа. Это не согласие на рассылку."
+                 :locale==="es"
+                   ?"Acepto guardar mi email con el formulario en el CRM privado para una respuesta personal. No autorizo marketing."
+                   :"I agree to save my email with this form in the protected CRM for a personal reply. This is not marketing consent."}</span>
+             </label> : null}
+           </div> : null}
+           {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
           {telegramEntry && !miniLinked && !telegramHandoff && telegramStatus!=="checking"
             ? <p className={styles.requestError} role="alert">{t.telegramUnavailable}</p> : null}
-          {!miniLinked && !telegramEntry ? <div className={styles.replyFields}>
+          {websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff
+            ? <MandatoryMessengerActions locale={locale}
+                label={locale==="ru"?"Подтвердите мессенджер":locale==="es"?"Verifica tu mensajería":"Verify your messenger"}
+                telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
+                whatsappUrl={"https://wa.me/14376066502?text="+encodeURIComponent("Holistic House: please contact me about a written situation review.")}/> : null}
+          {!miniLinked && !telegramHandoff && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
-            <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
+            {(showPhone || Boolean(replyContact.phone)) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
               disabled={leadBusy || busy || collision} value={replyContact.phone}
               onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
+              : <button type="button" className={styles.phoneInstead} disabled={leadBusy || busy || collision}
+                  onClick={() => setShowPhone(true)}>{t.phoneInstead}</button>}
           </div> : null}
           <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
+            (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) ||
             (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff) ||
             (telegramEntry && !miniLinked && !telegramHandoff) || telegramStatus==="checking"} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />

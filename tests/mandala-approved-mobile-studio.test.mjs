@@ -57,7 +57,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const stage=source.slice(source.indexOf('data-video-live-stage'),source.indexOf('data-video-quick-tier'));
-  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal'));
+  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal',source.indexOf('data-video-quick-tier')));
   assert.match(stage,/data-video-mandala-hero/);
   assert.match(stage,/data-mandala-cinematic-canvas/);
   assert.match(stage,/data-video-quick-live-preview/);
@@ -84,14 +84,18 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  const finalCreate=source.slice(source.indexOf("data-video-quick-generate"),
+  const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  assert.match(finalCreate,/onClick=\{continueMontageOrGenerate\}/,
-    "Montage advances through Style, Text and Audio before creating");
-  assert.match(finalCreate,/montagePanel!=="effects"&&montagePanel!=="text"/,
-    "Style and Text stay navigable before the final export");
-  assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-    "Final Create still requires approved footage, narration and phrases");
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}')));
+  assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage opens Ready before encoding");
+  assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
+  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("promo"\)/,
+    "Audio Add enters Extra where the user chooses text or Personal");
+  assert.doesNotMatch(addEffects,/createQuickVideo|videoCreditRequest|startFromHero/,
+    "Add cannot generate or charge");
+  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
+    assert.ok(source.includes(guard),"protected export gate: "+guard);
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
     "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
@@ -120,8 +124,11 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{requestDraft\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
-    "typing updates the same local state and real source-backed proposal without remote upload");
+  assert.match(auto,/onChange=\{event=>applyRequestDraft\(event\.currentTarget\.value\)\}/,
+    "typed goals use the same bounded local update as dictation");
+  const sharedPrompt=auto.slice(auto.indexOf("const applyRequestDraft="),auto.indexOf("const togglePromptDictation="));
+  assert.match(sharedPrompt,/setRequestDraft\(text\);[\s\S]*?onGoalChange\(nextGoal\)/,
+    "shared input handler updates local goal and source-backed proposal without remote upload");
   assert.match(s,/data-video-montage-tab=\{item.id\}/);
   assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
@@ -280,7 +287,18 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
     "one gesture begins the original Canvas + same-origin MP4 playback");
   assert.doesNotMatch(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/,
     "WebKit cannot defer playback UI state until a media promise resolves");
-  assert.match(source,/data-video-quick-extras/);
+  assert.doesNotMatch(source,/data-video-quick-extras/,
+    "removed duplicate PRO extras must not overlay the three-tier editor");
+  const proTiers=read("components/mandala-pro-enhance.tsx");
+  assert.match(proTiers,/data-video-pro-tiers/);
+  assert.match(proTiers,/data-video-pro-standard-editor/);
+  const inlineGreeting=read("components/mandala-free-greeting.tsx");
+  assert.match(source,/activeWorkspace==="pro"\?<MandalaFreeGreeting/);
+  assert.match(inlineGreeting,/data-greeting-choices=\{mode\}/);
+  assert.match(inlineGreeting,/data-greeting-mode="greeting"/);
+  assert.match(inlineGreeting,/data-greeting-mode="support"/);
+  assert.match(inlineGreeting,/onClick=\{\(\)=>onSelect\(entry\.id\)\}/);
+  assert.doesNotMatch(proTiers,/data-video-pro-choose-character|data-video-pro-character-catalog/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
   assert.match(css,/\.quickBrandBar\{display:none\}/);

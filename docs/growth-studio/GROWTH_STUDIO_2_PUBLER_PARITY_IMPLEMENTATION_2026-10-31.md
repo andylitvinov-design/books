@@ -196,3 +196,248 @@ Respect existing PUBLIC_ANALYTICS_AVAILABLE=false/consent hold. GA4, HYPD, Metri
 - Vercel Cron Jobs: https://vercel.com/docs/cron-jobs/usage-and-pricing and https://vercel.com/docs/cron-jobs/manage-cron-jobs
 
 **Current PR scope:** GS-003 preflight implementation only + this documented program. GS-004..GS-018 are *requirements*, not features claimed as delivered.
+
+---
+
+## 14. Growth Intelligence 1.0 — Social SEO, Performance и Content Learning
+
+**Версия:** 1.0 · 9 ноября 2026  
+**Связано:** master scope [#1214](https://github.com/andylitvinov-design/books/issues/1214), attribution [#988](https://github.com/andylitvinov-design/books/issues/988), existing SEO monitor [#3061](https://github.com/andylitvinov-design/books/issues/3061), Instagram destinations [#3997](https://github.com/andylitvinov-design/books/pull/3997).  
+**Решение по продукту:** Growth Intelligence — аналитический и рекомендательный слой **внутри существующего Growth Studio**, не второй Publisher, не новый кабинет и не отдельная CRM.
+
+### 14.1. Назначение и границы
+
+Growth Intelligence замыкает цикл:
+
+`public content ightarrow platform draft ightarrow preflight ightarrow owner approval ightarrow verified publication ightarrow measured performance ightarrow evidence	ext{-}based learning ightarrow next draft`
+
+Три слоя продукта:
+1. **Social SEO Intelligence** — предпубликационная проверка обнаруживаемости и качества конкретной версии для конкретной сети.
+2. **Performance Intelligence** — сбор подтверждённых метрик и ранжирование публикаций с учётом охвата, размера аудитории, формата и возраста публикации.
+3. **AI Content Intelligence** — выявление повторяющихся сигналов в собственных публикациях, Content DNA и рекомендации для следующего контента.
+
+**Не смешивать Website SEO и Social SEO.** Существующий `/admin/seo`, Google Search Console, sitemap и Lighthouse продолжают отвечать за поисковую видимость сайта. Social SEO анализирует конкретные публикации и правила социальных платформ. Связь между ними допускается только через безопасные публичные URL/UTM и подтверждённую privacy-safe атрибуцию #988; это не объединение сырых данных и не разрешение включить пиксели.
+
+### 14.2. Фактическая исходная точка на 9 ноября 2026
+
+На основании последнего commissioning readback в комментариях #1214:
+- Существующий owner-only Growth Studio, редактор, EN/RU/ES варианты, календарь, Content Radar, preflight, Redis editorial storage и ручное планирование — базовая платформа для расширения.
+- Redis очередь из #2711 остаётся **dry-run/simulation**. Она не вызывает внешний provider, не доказывает планирование поста и не означает автопубликацию.
+- Владелец утвердил ровно два Instagram destinations: рабочий `@wizards.secrets` и личный профессиональный `@andy.therapist`. У каждого отдельные внутренние ID/brandKey, Meta OAuth credentials, approval, calendar, publisher delivery receipts и Content DNA. До фактической Meta identity/Page/scope-проверки оба профиля остаются `pending_authorization`; Insights и публикация не считаются включёнными.
+- Последний Metricool readback показывает один бренд с YouTube; Instagram/Facebook не подтверждены. Metricool ChatGPT/MCP-соединение не является серверной API-авторизацией Vercel.
+- Поэтому сейчас нельзя показывать настоящие Instagram Top Posts, сравнения аккаунтов, hashtag performance или выводы, будто AI уже обучился на результатах Instagram.
+
+**Жёсткое правило UI:** демонстрационные макеты и synthetic fixtures всегда помечаются «Демо / synthetic». Реальные экраны показывают только полученные и проверяемые данные, включая статус источника и время последнего обновления.
+
+**Instagram publishing baseline after PR #4006:**
+- The existing Meta Graph API OAuth foundation and owner-confirmed JPEG Feed publisher are now in the production baseline. The publisher uses the selected `socialAccountId`, verifies the exact linked professional Instagram account and Page permissions, creates a media container, checks processing state, calls `media_publish`, then reads back the permalink/provider media ID.
+- The direct publish action is owner-confirmed and server-gated by `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED`, which remains OFF until the owner completes Meta authorization and a controlled acceptance test.
+- The durable calendar/dry-run queue is still simulation-only. No unattended Instagram schedule worker or automatic reposting is enabled.
+- The owner-approved account pair is `@wizards.secrets` (work) and `@andy.therapist` (personal). OAuth, approval, provider receipts and Content DNA are separate. Provider identity/Insights are not considered connected until actual Meta readback succeeds.
+
+### 14.3. Единый контракт данных и статусов измерений
+
+Перед миграцией выполнить read-only аудит действующей Supabase/Postgres схемы, Redis editorial store, текущих provider adapters и существующих analytics/attribution таблиц. Переиспользовать совместимую таблицу/модуль, если он уже существует. Не создавать параллельную аналитику, не мигрировать всё в Redis и не добавлять новую БД.
+
+Каждое измерение должно быть привязано к:
+- `workspaceId`, `brandId`, **точному socialAccountId**, provider/platform;
+- точному provider post/media ID и подтверждённому URL, связанному с delivery receipt;
+- нормализованному metric key + оригинальному provider metric name;
+- значению и единице измерения, если поле реально возвращено;
+- `periodStart`, `periodEnd`, `capturedAt`, `source`, `sourceVersion/apiVersion`, `freshness`;
+- интервалу жизни публикации на момент замера (age bucket), формату и языку;
+- статусу/причине отсутствия данных и, если возможно, безопасному коду ошибки.
+
+Минимальный логический контракт (имена физических таблиц — только после schema audit):
+- **PerformanceSnapshot** — неизменяемое наблюдение метрик на конкретный момент/период;
+- **MetricAvailability** — состояние доступности метрики для аккаунта/provider/scope;
+- **ContentFeatures** — извлечённые из собственной публикации признаки (hook type, тема, язык, формат, длина, CTA, тема ролика, длительность и др.);
+- **ContentDNAProfile** — версионированная сводка закономерностей для одного бренда + социального аккаунта + платформы + языка/формата;
+- **Recommendation** — предложение AI с исходной версией, предлагаемой редакцией, доказательствами, уровнем уверенности, статусом и решением владельца;
+- **Experiment** — заранее определённая гипотеза, варианты, окно измерения и критерий завершения.
+
+Статусы данных, которые UI обязан различать:
+- `NOT_CONNECTED` — аккаунт не авторизован;
+- `PENDING_AUTHORIZATION` — требуется действие владельца;
+- `CONNECTED_NO_SCOPE` — подключение есть, необходимого read scope нет;
+- `UNSUPPORTED` — API этой платформы/метрики не предоставляет;
+- `NOT_PUBLISHED` — нет подтверждённого provider post receipt;
+- `NOT_MEASURED` — замер ещё не выполнялся;
+- `NO_DATA` — источник успешно проверен, но за интервал не вернул данных;
+- `STALE` — последнее значение старше ожидаемого freshness SLA;
+- `UNAVAILABLE` — временная ошибка/ограничение провайдера;
+- `FRESH` — актуальное измерение получено и сохранено.
+
+Отсутствующее поле, неподдерживаемая метрика и нулевое значение — разные ситуации. Только явный provider value `0` может отображаться как ноль. Не подменять `null`, ошибку, неполный scope или пустой ответ нулями. Не выводить производные rates, если знаменатель отсутствует или равен нулю.
+
+### 14.4. Сбор статистики: адаптеры и проверка прав
+
+Каждый provider adapter должен объявлять machine-readable capabilities matrix по каждой метрике: `supported / scope_missing / unsupported / temporarily_unavailable`, допустимые интервалы, задержку данных, единицу/определение метрики и endpoint/API version. Не предполагать, что все сети возвращают одинаковые поля.
+
+Порядок интеграций:
+1. **Instagram Professional / Meta** — только официальный Instagram Graph API / официальная Meta authorization либо уже одобренный и доступный Metricool API. Проверять Page ↔ Professional Instagram linkage, account identity и scopes по каждому аккаунту независимо. Не считать consumer/personal профиль подходящим. Read insights scope запрашивать отдельно от write/publish scopes, где Meta это позволяет.
+2. **YouTube** — использовать действующую авторизацию владельца и официальный YouTube Analytics API; существующий uploader и публикационный workflow не дублировать. Учесть, что Analytics данные могут отставать примерно на 48–72 часа; актуальные оперативные счётчики (если нужны и разрешены) помечать отдельным источником YouTube Data API, не смешивая с Analytics reports.
+3. **Metricool** — подключать server-side API только после подтверждения фактической entitlement/тарифа и наличия токена владельца. Текущая справка Metricool указывает API для Advanced/Custom, а MCP — отдельно и доступен на других планах; наличие MCP само по себе не даёт серверного доступа Growth Studio. Не покупать и не менять тариф без отдельного согласования.
+4. Facebook, TikTok, LinkedIn и другие сети — добавлять только отдельные официальные read adapters по мере подтверждения разрешений, app review и нужных полей. Запрещены scraping, неофициальные endpoints и обход ограничений.
+
+Секреты хранятся только в действующем server-side secret store; браузер получает только безопасные display поля. Не записывать токены и полные upstream headers/bodies в логи. Подключение аналитики read-only не должно автоматически включать publishing scopes или публикацию.
+
+**Индивидуальные профили:** каждый аккаунт — отдельная единица измерения и Content DNA. Смешивать метрики двух Instagram аккаунтов или website brands только в явно обозначенном агрегате; сохранять drill-down до точного аккаунта/поста. Не считать бренд сайта социальным аккаунтом.
+
+### 14.5. Snapshot schedule и история динамики
+
+После подтверждённой публикации сохранять доступные snapshots по целевым окнам:
+- около **24 часов** — ранний отклик;
+- около **72 часов** — краткосрочная динамика;
+- около **7 дней** — недельный результат;
+- около **30 дней** — long-tail, если provider сохраняет и выдаёт такие данные.
+
+Это цели измерения, а не обещание доступности/точного timing: worker должен учитывать API rate limits, data lag, недоступность метрики и account scopes. Фактические `capturedAt` и измеряемое `period` показывать пользователю; не переписывать прошлые snapshots «текущим» значением. При повторном чтении того же окна сохранять provenance и версию/правило дедупликации.
+
+Никакой новой платной cron-службы или тарифа. Использовать только уже разрешённый job runtime/worker после проверки его реальных возможностей; до этого ручной owner refresh или уже доступная безопасная периодика. Параметры сбора — ограниченная частота, backoff, jitter, per-account budget, kill switch.
+
+### 14.6. Метрики и честное сравнение постов
+
+Каталог метрик включает то, что конкретный API действительно предоставляет:
+- базовые: likes, comments, shares, saves, views/video views, reach, impressions;
+- действия: profile visits, follows/subscribers gained, link clicks — только если provider возвращает их с понятной атрибуцией;
+- видео: watch time, average watch duration, average percentage viewed, engaged views/completions — только при наличии определения в источнике;
+- first-party funnel: campaign landing sessions, confirmed enquiry, booked appointment/event, confirmed payment — только из разрешённого источника #988 и с доказанным server-side событием.
+
+Сохранять определения: `views` не равно `reach`; `impressions` не равно `unique viewers`; `link clicks` не равно `leads`; lead не равен booking; booking не равен payment. Не суммировать несовместимые метрики в единый engagement count.
+
+Для сравнения использовать несколько видимых показателей, а не один скрытый «магический» балл:
+- абсолютные реакции и охват;
+- **engagement by reach** = (likes + comments + shares + saves) / reach, только если все компоненты и reach реально доступны и сопоставимы;
+- saves/reach, shares/reach, comments/reach — отдельные rates при наличии полей;
+- views/reach и retention/watch metrics — отдельная video-группа, не смешивать с engagement;
+- actions per reach и follows per reach — только при согласованном numerator/denominator.
+
+Рейтинг по умолчанию строится внутри сравнимой когорты: один provider, один social account, один формат или сопоставимая группа, тот же язык и окно возраста поста. Межаккаунтное и межплатформенное сравнение — отдельный режим с явной нормализацией и предупреждением, не raw likes leaderboard.
+
+Учитывать разные audience sizes и reach. Follower count можно сохранять как контекстный snapshot знаменателя с датой; не подменять им reach. Не делать вывод о победителе на одном абсолютном лайковом счётчике.
+
+### 14.7. Performance Dashboard и Top Posts
+
+Раздел внутри Growth Studio, без нового кабинета:
+- **Performance** — фильтры: бренд/соцаккаунт/сеть/язык/формат/кампания/диапазон/возраст публикации; статусы источников и свежесть;
+- **Top Posts** — ранжирование внутри выбранной сравнимой когорты; карта поста содержит миниатюру/превью, первую строку, дату, формат, фактические реакции, reach/views, rates, источник и freshness;
+- **Post detail** — timeline snapshots 24h/72h/7d/30d, подтверждённый URL и ID, составные метрики, изменения/дельты;
+- **Topic Performance** — темы и форматы с количеством постов, медианами/распределением и выборкой, а не только средним;
+- пустые состояния показывают точную причину (нет аккаунта, scope, опубликованного поста или provider data); synthetic preview всегда заметно маркирован.
+
+Запрещено показывать выдуманные примеры как реальные карточки, «0 результатов» при неподключённом API или фиксированный рейтинг при малой выборке.
+
+### 14.8. Social SEO Analyzer перед публикацией
+
+Каждый draft анализируется отдельно для выбранной платформы и выбранного account target. Результат — **editorial readiness/advisory score**, а не прогноз алгоритмического охвата и не гарантия продвижения.
+
+Компоненты оценки (вес/наличие — versioned per platform):
+- ясность и сила первой строки/hook;
+- соответствие теме и намерению аудитории;
+- естественное употребление релевантных ключевых выражений в caption/on-screen title/description;
+- соответствие формата и длины правилам сети;
+- качество CTA и понятность следующего действия;
+- полезность alt text/accessibility;
+- релевантность ограниченного набора hashtags, если сеть и формат их поддерживают;
+- для видео: понятность первого кадра и первых секунд по предоставленному сценарию/asset metadata; не заявлять фактический retention до получения video insights;
+- брендовый голос, язык и безопасные фактические утверждения.
+
+Показывать балл, факторы и конкретные исправления. Отсутствующий alt/ключевое слово не должен искусственно понижать score там, где поле не применимо. Правила платформ и версии весов хранить отдельно, с датой обновления и source URL. Не использовать одну оценку для Instagram, YouTube Shorts, LinkedIn и Facebook.
+
+Hashtag suggestions — гипотезы релевантности и удобства поиска, не «трендовый рейтинг» без подтверждённых данных. Не перегружать пост хештегами и не обещать viral reach. Не выдавать неподтверждённые объёмы поискового спроса или keyword difficulty.
+
+### 14.9. AI Recommendation Engine и Content DNA
+
+AI анализирует только собственные публичные материалы/разрешённые метаданные и агрегированные performance snapshots. Не читать DM, private audience profiles, private client Cabinet, тесты, терапевтические записи, health data или приватные комментарии. Публичный текст комментариев не сохранять для маркетингового профилирования людей; counts достаточно для базовой аналитики.
+
+Content DNA строится отдельно по:
+- social account + brand;
+- платформе;
+- языку;
+- формату (Reel/Short/carousel/image/text);
+- тематическому кластеру и контентной серии.
+
+Извлекаемые признаки: headline/hook structure, вопрос/утверждение/афоризм/список, тематический тег, длина caption, тип CTA, эмоциональная рамка (юмор/удивление/узнавание/любопытство и т.п.), visual/scene descriptors из авторского creative brief, язык, format, timing, hashtag groups. AI не должен анализировать лицо, личность или чувствительные характеристики зрителей.
+
+**Два независимых Content DNA:**
+- **Work — @wizards.secrets:** wizard-визуальность, юмор, загадки, короткие афоризмы, shareability и переходы к бесплатным тестам.
+- **Personal — @andy.therapist:** авторский профессиональный голос, экспертные наблюдения, образовательные материалы и доверие к автору.
+
+Не переносить тон, hooks и успешные темы одного профиля на другой без отдельного эксперимента и согласования владельца. Общие отчёты показывают метрики отдельно по каждому аккаунту; общий Content DNA не строится.
+
+**Статистика и доверие:** каждый вывод содержит число наблюдений, временной интервал, сравнимую когорту и confidence label. Установить минимальные sample thresholds до включения рекомендаций; до достижения порога показывать `insufficient evidence`. Использовать медианы/распределения и shrinkage/сглаживание для малых выборок. Модель не делает причинный вывод «юмор вызвал рост», если не было контролируемого эксперимента; формулировка — «в наблюдаемой выборке юмористические публикации имели более высокий median share rate». Не смешивать разные окна/размеры аудиторий и не обучаться на synthetic examples как на собственных результатах.
+
+Рекомендация хранит:
+- исходный content version/hash и target account/platform/locale;
+- краткое предложение и editable before/after вариант;
+- причину и ссылки на конкретные наблюдения/посты;
+- sample size, confidence, ограничения и expected metric (например, shares/reach);
+- approval state и решение владельца (accept/edit/reject);
+- фактический результат после публикации, когда он появится.
+
+AI предлагает варианты, но не перезаписывает approved copy, не ставит в очередь и не публикует без владельца.
+
+### 14.10. Content Experiment Lab
+
+Эксперимент создаётся с одной гипотезой и одной основной изменяемой переменной: например, два hook варианта к одному и тому же разрешённому creative. Заранее фиксируются аккаунт, язык, формат, окно, primary metric и правила остановки.
+
+Не публиковать идентичные дубли с коротким интервалом, если это может быть spam/нарушением платформы. Использовать поддерживаемый платформой native experiment/A-B feature, разнесённые и сопоставимые публикационные слоты или ручной controlled comparison. Учитывать день/время, paid vs organic, аудиторию и сезонность; при смешении условий помечать результат observational, а не controlled. Никакого автопоста вариантов без отдельного approval каждого аккаунта/слота.
+
+### 14.11. AI Content Director
+
+На основе подтверждённой Content DNA и результатов Performance предлагает недельный editorial plan:
+- темы/рубрики и формат на каждый пост;
+- повторное развитие проверенных тем без копирования один-в-один;
+- новые гипотезы, помеченные как экспериментальные;
+- account/language-specific variants;
+- ссылки на source посты и причины рекомендации;
+- ожидаемая основная метрика и confidence.
+
+При недостатке измерений AI должен честно предложить разнообразный test plan, а не имитировать «обученный» контент-план. Генерация только в существующем Composer/AI flow; бюджетные и публикационные ограничения #1214 сохраняются.
+
+### 14.12. Приоритет реализации и критерии приёмки
+
+| Priority | Work package | Acceptance / evidence |
+|---|---|---|
+| P0.1 | Provider + metric capability inventory | Per-account matrix, actual read scopes, field definitions, latency and source version; no credential values in UI/log |
+| P0.2 | Schema audit + snapshot contract | Reuse existing DB/storage; additive migration only after proof; no second analytics database |
+| P0.3 | Read-only Insights adapters | One real authorized source end-to-end; raw provider metric provenance preserved; no publish permission implied |
+| P0.4 | Performance + Top Posts | Real post receipt → snapshots → cohort ranking; missing fields shown unavailable, not zero |
+| P0.5 | Sampling / freshness jobs | Target 24h/72h/7d/30d, bounded and observable, no paid scheduler; actual captured timestamps visible |
+| P1.1 | Platform-specific Social SEO Analyzer | Platform-specific advisory score and actionable suggestions; deterministic test fixtures |
+| P1.2 | AI Recommendations | Evidence-linked before/after variants, confidence/sample size, owner decision, no auto-edit/publish |
+| P1.3 | Content DNA | Per-account/platform/locale/format cohorts with minimum sample and uncertainty handling |
+| P2.1 | Hashtag + Topic Intelligence | Supported public/source data only; no invented search volume/trend claims |
+| P2.2 | Experiment Lab | One controlled variable, preregistered hypothesis and primary metric, honest confounders |
+| P2.3 | AI Content Director | One-week plan grounded in own measured content; exploratory plan when evidence is insufficient |
+
+**Release requirements:**
+- focused unit/contract tests for missing-vs-zero, scope matrix, provider pagination, freshness/stale, duplicate snapshots, rate limiting, timezone, metric denominators and per-account isolation;
+- integration tests using clearly marked synthetic fixtures, plus at least one owner-authorized real read-only provider sample before calling an adapter operational;
+- browser tests at 320/375/390/430 and desktop, Growth Studio owner/non-owner access, empty/no-data/stale states and account switching;
+- exact-head CI, TypeScript/lint/production build as applicable, protected merge to `codex/public-book-library`, Vercel READY exact descendant SHA and authenticated owner route verification;
+- no public post, OAuth grant, new paid service, plan change, analytics pixel, ads, client-data export or auto-publish without its separate existing approval gate.
+
+### 14.13. Non-goals and cost/privacy guardrails
+
+- No new product or SaaS, no second Publisher, no separate CRM, no parallel analytics cabinet.
+- No Metricool Advanced/Custom purchase or subscription upgrade without explicit permission. Official Metricool docs: [API plan eligibility](https://help.metricool.com/plans-add-ons-and-api-access-explained-xux1u), [API integration guide](https://help.metricool.com/basic-guide-for-api-integration-r97af).
+- No unapproved Meta scopes, no paid API, no new cron/runner spend.
+- No private client material, therapeutic/health data, test results, private messages or audience-level profiling.
+- No switching `PUBLIC_ANALYTICS_AVAILABLE=false`, consent gates, GA4/Meta pixels or public tracking as a shortcut.
+- No claim that missing measurement means poor performance; no claim of causality from observational data; no publish state without exact provider receipt.
+- Existing owner approval, source provenance, immutable approval hash, idempotency, kill switches, audit and rollback contracts in sections 3–5 remain mandatory.
+
+**Implementation rule:** this section extends the existing Growth Studio 2.0 master specification and #1214. It is a specification, not evidence that Social Insights, account OAuth, AI learning or publication analytics are already implemented or LIVE.
+
+### 14.14. Official API reference links checked 9 November 2026
+
+- Meta Instagram API (official Meta Postman documentation; Professional accounts, Page linkage, publishing and insights): https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
+- YouTube Analytics API reference and OAuth scopes: https://developers.google.com/youtube/analytics/reference
+- YouTube Analytics metric catalogue: https://developers.google.com/youtube/reporting/v1/reports/metrics
+- YouTube Analytics data model and processing latency: https://developers.google.com/youtube/analytics/data_model
+- Metricool API eligibility by plan and separate MCP availability: https://help.metricool.com/plans-add-ons-and-api-access-explained-xux1u
+- Metricool official API integration guide: https://help.metricool.com/basic-guide-for-api-integration-r97af
+
+These links are technical references, not evidence that any account is connected, that requested scopes have been granted, or that a paid plan is active.

@@ -20,6 +20,7 @@ const attribution={landingPath:'/en/services',previousPath:null,trafficSource:'d
 test('guest attribution is committed atomically under FORCE RLS', {skip:!isolated},async()=>{
  const db=new pg.Client({connectionString:raw});await db.connect()
  let closeDatabase
+ const priorGate=process.env.HH_WEBSITE_MESSENGER_ONLY
  try{
   await db.query(`do $$ begin
     if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
@@ -73,6 +74,13 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
   const config={databaseUrl:raw,test:true,encryptionKey:Buffer.alloc(32,11),encryptionKeyId:'synthetic'}
   const input={operationId:'20000000-0000-4000-8000-000000000014',serviceTitle:'Synthetic service',
    sourcePath:'/en/services',locale:'en',description:'Synthetic protected test enquiry'}
+  // Verify default website submission fails BEFORE any DB mutation.
+  // For existing RLS/attribution tests, opt into the historical isolated SQL
+  // path only inside this disposable localhost fixture; never in production.
+  process.env.HH_WEBSITE_MESSENGER_ONLY='true'
+  await assert.rejects(repository.createPublicServiceEnquiry(config,input,attribution),
+    err=>err.code==='MESSENGER_VERIFICATION_REQUIRED'&&err.status===428)
+  process.env.HH_WEBSITE_MESSENGER_ONLY='false'
   const saved=await repository.createPublicServiceEnquiry(config,input,attribution)
   assert.equal(saved.saved,true)
   assert.equal(saved.attributionStatus,'saved')
@@ -126,5 +134,9 @@ test('guest attribution is committed atomically under FORCE RLS', {skip:!isolate
   await db.query("select set_config('hh.public_enquiry_operation',$1,true)",[third[8]])
   const olderSchema=buildPublicEnquiryInsert(third,attribution,false)
   assert.equal((await db.query(olderSchema.text,olderSchema.values)).rowCount,1)
- }finally{await closeDatabase?.();await db.query('rollback').catch(()=>{});await db.end()}
+ }finally{
+  if(priorGate===undefined)delete process.env.HH_WEBSITE_MESSENGER_ONLY
+  else process.env.HH_WEBSITE_MESSENGER_ONLY=priorGate
+  await closeDatabase?.();await db.query('rollback').catch(()=>{});await db.end()
+ }
 })

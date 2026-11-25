@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { PersonalServiceLanding } from "@/components/personal-service-landing";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { personalServiceCopy, type ServicePageLocale } from "@/data/personal-service-pages";
+import { personalServiceCopy } from "@/data/personal-service-pages";
 
 type Props = { params: Promise<{ locale: string }> };
 const service = "psychohomeopathy" as const;
@@ -30,5 +29,4 @@ export default async function ServicePage({ params }: Props) {
   if (!isPublicLocale(locale)) notFound();
   // All three public languages use ONE canonical Alchemy landing and booking flow.
   permanentRedirect("/" + locale + "/services/alchemy-of-soul");
-  return <PersonalServiceLanding locale={locale as ServicePageLocale} service={service} />;
 }

@@ -19,7 +19,8 @@ test("Compact Audio keeps its native player outside the library-only modal",()=>
  assert.ok(start>=0&&modal>start&&closed>modal&&dock>closed&&nextTool>dock,
   "Music player must remain mounted when the music library dialog is closed");
  assert.ok(s.slice(dock,nextTool).includes('{deepAudioPane}'));
- assert.ok(s.slice(start,modal).includes('onClick={toggleSoundPreview}'));
+ assert.ok(s.slice(start,modal).includes('data-video-audio-compact-play={id}'));
+ assert.ok(s.slice(start,modal).includes('onClick={()=>playQuickTrack(id)}'), 'compact Play uses the existing licensed track preview');
  assert.equal(s.split('<audio key={previewAudioUrl}').length-1,1,
   "A single shared HTMLAudioElement must serve both compact and modal Play");
 });

@@ -16,6 +16,8 @@ import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organi
 import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./contact-channel-chooser.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
 type SavedEnquiry = { referenceCode: string; saved: true };
@@ -137,6 +139,8 @@ const copy = {
 type Props = {
   locale: PublicLocale;
   whatsappUrl: string;
+  /** Explicit first-party course/service message URL, bypassing the unrelated diagnostic bot. */
+  telegramEnquiryUrl?: string;
   className?: string;
   label?: string;
   event?: AcquisitionEvent;
@@ -155,6 +159,8 @@ type Props = {
   bookingSku?: "express-consultation-30" | "personal-session-60";
   /** Keep the original request button but reveal the compact phone-only form. */
   compactTrigger?: boolean;
+  /** Services-only two-channel inline expansion, without the large sheet. */
+  compactMessenger?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
   stayAfterSave?: boolean;
   resetKey?: string;
@@ -167,8 +173,8 @@ type Props = {
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
-  locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
+  locale, whatsappUrl, telegramEnquiryUrl, className, label, event = "contact_click", analyticsEvent,
+  onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, compactMessenger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
 }: Props) {
   const [settledResetSignature, setSettledResetSignature] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -507,6 +513,13 @@ export function ContactChannelChooser({
     preparedWhatsApp = draftUrl.toString();
   }
 
+  if (websiteMessengerOnlyUi()) return <div data-contact-channel-chooser
+    data-session-booking-flow={bookingSku?"":undefined} data-booking-sku={bookingSku||undefined}
+    data-contact-compact-messenger={compactMessenger?"true":undefined}>
+    <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl} telegramUrl={telegramEnquiryUrl}
+      label={label||c.order} collapsed={compactMessenger||((compactPhone||compactTrigger)&&!allowSecureExpressClaim)}
+      compact={compactMessenger} id={id} className={className}/>
+  </div>;
   if (compactPhone && bookingSku) {
     const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);
     const sessionText = bookingSku === "express-consultation-30"

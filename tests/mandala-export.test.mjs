@@ -60,8 +60,8 @@ test("actual PNG renderer TypeScript parses; browser runner covers WebKit and do
   assert.match(browser, /chromium.*webkit/);
   assert.match(browser, /setInputFiles/);
   assert.match(browser, /png\.subarray\(0, 8\)/);
-  assert.match(browser, /youtube-nocookie\.com\/embed/);
-  assert.match(browser, /await page\.keyboard\.press\("Escape"\)/);
+  assert.match(browser, /photoPage\.locator\("\[data-mentalica-photo-mandala\]"/);
+  assert.match(browser, /photoDownload\.suggestedFilename\(\)/);
   assert.match(browser, /width: 320/);
   assert.match(browser, /width: 430/);
 });

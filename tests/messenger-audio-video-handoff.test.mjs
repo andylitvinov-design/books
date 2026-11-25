@@ -45,24 +45,22 @@ test("AI Studio preserves the audio attachment on scenario confirmation",()=>{
  assert.match(studio,/!audioRights/);
 });
 
-test("voice-to-video mobile intake reveals the lower action and skips repeated goal and rights prompts",()=>{
- const audio=readFileSync(new URL("../components/app/messenger-audio-video.tsx",import.meta.url),"utf8");
+test("Messenger voice-to-video immediately reveals a single CTA and skips the goal questionnaire",()=>{
+ const ui=readFileSync(new URL("../components/app/messenger-audio-video.tsx",import.meta.url),"utf8");
  const css=readFileSync(new URL("../components/app/messenger-audio-video.module.css",import.meta.url),"utf8");
+ assert.match(ui,/panel\.scrollTop=panel\.scrollHeight/);
+ assert.match(ui,/#video-audio/);
+ assert.match(ui,/stageMessengerAudio\(\{\.\.\.prepared,locale,goal,rights:true\}\)/);
+ assert.doesNotMatch(ui,/setRights\(|setGoal\(|type="checkbox"|type="text"/);
+ assert.match(css,/max-height:min\(46dvh,420px\)/);
+ assert.match(css,/overflow-y:auto/);
+ assert.match(css,/max-width:100%/);
+});
+
+test("async Messenger audio handoff does not override voice-first route with Goals",()=>{
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- const messenger=readFileSync(new URL("../components/holistic-agent-chat.tsx",import.meta.url),"utf8");
- assert.doesNotMatch(audio,/type="checkbox"|\{t\.goal\}|\{t\.rights\}/);
- assert.match(audio,/root\.scrollTo\(/);
- assert.match(css,/max-height:min\(44dvh,390px\)/);
- assert.match(css,/font:500 16px\/1\.4/); // iPhone Safari must not focus-zoom a 14px input.
- assert.match(audio,/requestConsentedTimedTranscript\(/);
- assert.match(audio,/stageVoiceStudioHandoff\(/);
- assert.match(audio,/stageMessengerAudio\(/); // explicit manual/offline fallback preserved
- assert.match(audio,/data-hh-audio-video-manual/);
- assert.match(audio,/code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"/);
- assert.match(studio,/setPendingAutoVoice\(voice\.transcript\)/);
- assert.match(studio,/setAudioRights\(true\)/);
- assert.match(studio,/applyTranscriptVideo\(pendingAutoVoice,true\)/);
- assert.match(studio,/theme:automatic\?"":theme/);
- assert.match(studio,/nonLoop:true/);
- assert.match(messenger,/видеоряд автоматически подобран по смыслу/);
+ assert.match(studio,/const voiceFirstEntry=window\.location\.hash==="#video-audio"/);
+ assert.match(studio,/setActiveWorkspace\(voiceFirstEntry\?"editor":"video"\)/);
+ assert.match(studio,/setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/);
+ assert.match(studio,/setDirectorChatOpen\(false\);setVideoScenarioOpen\(false\)/);
 });

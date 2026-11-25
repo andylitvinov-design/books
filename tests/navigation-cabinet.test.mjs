@@ -68,7 +68,12 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /healing · practice · guidance/)
   const explore = await readFile('components/home-explore-sections.tsx', 'utf8')
   const more = await readFile("components/home-more-disclosure.tsx", "utf8")
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/)
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  const deferred = await readFile('components/home-deferred-sections.tsx','utf8')
+  const expanded = await readFile('components/home-expanded-catalog.tsx','utf8')
+  assert.match(deferred, /IntersectionObserver/)
+  assert.match(expanded, /<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/)
+  assert.doesNotMatch(home, /<HomeFeaturedWorkspace|<HomeMoreDisclosure/)
   assert.match(more, /data-home-topic-filters/)
   assert.match(more, /data-home-topic-filter="temple"/)
   assert.match(explore, /Выберите свой следующий шаг/)
@@ -77,7 +82,9 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(explore, /Academy & courses/)
   assert.match(page, /locale="en"/)
   assert.match(page, /requested === "ru" \|\| requested === "es"/)
-  assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
+  // Language-only redirects remain canonical; the opt-in full React experience survives /ru.
+  assert.match(page, /requestedFull === "1"/)
+  assert.match(page, /redirect\(/)
   assert.match(russianPage, /locale="ru"/)
   assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
   assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)
@@ -237,7 +244,7 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
   assert.match(styles, /\.public-consultation-cta__actions/)
   const homeContact = await readFile('components/homepage-contact-cta.tsx', 'utf8')
   const homeChoice = await readFile('components/consultation-choice-capture.tsx', 'utf8')
-  assert.match(home, /<HomepageContactCta locale=\{locale\}/)
+  assert.match(await readFile('components/home-expanded-catalog.tsx','utf8'), /<HomepageContactCta locale=\{locale\}/)
   assert.match(homeContact, /data-home-contact-capture/)
   assert.match(homeContact, /<HomepageFreeCapture locale=\{locale\}/)
   assert.doesNotMatch(homeContact, /variant="service"/)
@@ -272,15 +279,29 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
-test('top site header opens Cabinet while mobile bottom bar promotes Books', async () => {
-  const [nav, home, header, styles] = await Promise.all([
+test('My Space Home has compact real navigation while other site headers retain Cabinet and mobile Books', async () => {
+  const [nav, home, header, styles, hub, spanishHome, workspace] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('components/public-site-header.tsx', 'utf8'),
     readFile('app/holistic-house-home.css', 'utf8'),
+    readFile('components/app/profile-hub-tabs.jsx', 'utf8'),
+    readFile('app/es/page.tsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
   ])
 
-  assert.match(home, /<SiteNavigation locale=\{locale\}/)
+  // The owner removed only the legacy marketing header from Home.
+  // Home starts with the lightweight Ali entry; the real signed-in Profile
+  // retains its full private account navigation.
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.doesNotMatch(home, /<SiteNavigation locale=\{locale\}/)
+  assert.doesNotMatch(home, /className="house-header house-header--services"/)
+  assert.match(spanishHome, /<HomeDialogueEntry locale="es" \/>/)
+  assert.doesNotMatch(spanishHome, /<PublicSiteHeader locale="es" \/>/)
+  assert.match(hub, /<SiteNavigation locale=\{selected\} compact \/>/)
+  assert.match(nav, /<SiteSearch locale=\{activeLocale\} pathname=\{pathname\} \/>/)
+  assert.match(nav, /<details className="site-main-menu"/)
+  assert.match(workspace, /target\.closest\('\[data-profile-chrome-navigation\]'\)/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
   assert.match(nav, /\['energy', 'love', 'business'\]\.includes\(item\.id\)/)
   assert.match(nav, /site-nav-free-entry/)

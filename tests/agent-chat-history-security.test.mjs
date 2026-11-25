@@ -40,3 +40,22 @@ test('client history requires separate opt-in and never uses localStorage for tr
  assert.match(client,/history\.erase\(\)/);
  assert.doesNotMatch(client,/localStorage|sessionStorage/);
 });
+
+test('existing canonical AI chat mounts opt-in text history without a new chat engine',()=>{
+ const chat=source('components/holistic-agent-chat.tsx');
+ const ui=source('components/holistic-agent-history.tsx');
+ const api=source('app/api/app/agent-chat-history/route.js');
+ assert.match(chat,/usePrivateChatHistory\(\{authenticated,onRestore:entries=>/);
+ assert.match(chat,/setMessages\(previous\)/);
+ assert.match(chat,/if\(authenticated\)void privateTranscript\.savePair\(text,reply\)/);
+ assert.match(chat,/<SecureDialogueHistory history=\{privateTranscript\} locale=\{locale\}\/>/);
+ assert.match(ui,/NEXT_PUBLIC_HH_AGENT_CHAT_HISTORY_ENABLED/);
+ assert.match(ui,/consentRef\.current=accepted/);
+ assert.match(ui,/role="log" aria-label=\{t.show\}/);
+ assert.match(ui,/history\.erase\(\)/);
+ assert.match(api,/body\.accepted!==false&&!historyEnabled/);
+ assert.match(api,/if\(!historyEnabled\)throw new AppError\('CHAT_HISTORY_UNAVAILABLE',503\)/);
+ // Kill-switch leaves owner-scope GET + explicit DELETE, but never permits append.
+ assert.doesNotMatch(api,/if\(process\.env\.HH_AGENT_CHAT_HISTORY_ENABLED!=='true'\)\s*throw/);
+ assert.match(api,/await auth\.verified\(\)/);
+});

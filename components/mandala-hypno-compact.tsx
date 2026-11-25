@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
@@ -177,17 +177,25 @@ const profileDirections:Record<string,HypnoTestProposal>={
 };
 export function MandalaHypnoCompact({
   locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
-  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange,
+  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange, autoExpandIdea=false,
   onSelectScene, onSelectTheme, onPreview, onCreate, onApply,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
   scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
   externalPhraseDraft?:string|null; onExternalPhraseClear?:()=>void; onPendingChange?:(pending:boolean)=>void;
+  autoExpandIdea?:boolean;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void; onApply?:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
+  // Safari can lose the native disclosure state when its parent editor rerenders.
+  // Keep the actual user-visible toggle controlled, including external opens.
+  const [ideaDisclosureOpen,setIdeaDisclosureOpen]=useState(false);
+  // One real tap on Text's Advanced settings opens its inner fine-tuning panel.
+  // Recover the expanded state if Safari remounts the nested editor.
+  useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea]);
+  const ideaControlsId=useId();
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
   const [ownIdea,setOwnIdea]=useState("");
@@ -342,6 +350,9 @@ export function MandalaHypnoCompact({
   const ready=()=>{
     pending.current?.abort();runId.current++;
     setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    // Choosing Ready intentionally replaces an unapproved idea/request draft.
+    // Do not leave the old ideaPending flag blocking a later explicit Approve.
+    setIdeaPending(false);
     setReadyDraft({selected:[0,1,2],resetPreset:true});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
@@ -458,7 +469,8 @@ export function MandalaHypnoCompact({
         custom:customPhraseText,visibility:externalPhraseDraft!==null?["large" as const]:settings.visibility};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      // The approved Ready/custom selection supersedes every stale Wave draft.
+      setDraftState(null);setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
       onExternalPhraseClear?.();
     }else setApprovalKey(signature);
   }
@@ -466,10 +478,15 @@ export function MandalaHypnoCompact({
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
-      <details className={css.ideaDisclosure} data-hypno-idea-details>
-        <summary><Target size={21} aria-hidden="true"/>
-          <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/></summary>
-      <section className={css.card} data-hypno-request data-hypno-idea>
+      <div className={css.ideaDisclosure} data-hypno-idea-details>
+        <button type="button" className={css.ideaDisclosureToggle} data-hypno-idea-toggle
+          aria-expanded={ideaDisclosureOpen} aria-controls={ideaControlsId}
+          onClick={()=>setIdeaDisclosureOpen(value=>!value)}>
+          <Target size={21} aria-hidden="true"/>
+          <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/>
+        </button>
+      <section className={css.card} data-hypno-request data-hypno-idea
+        id={ideaControlsId} hidden={!ideaDisclosureOpen}>
         <div className={css.cardHead}>
           <span className={css.emblem}><Target size={22} aria-hidden="true"/></span>
           <div className={css.heading}><h4>{ideaCopy[locale].title}</h4><p>{ideaCopy[locale].hint}</p></div>
@@ -509,7 +526,7 @@ export function MandalaHypnoCompact({
         <button type="button" className={css.ideaApply} data-hypno-apply-request disabled={disabled}
           onClick={propose}><WandSparkles size={19} aria-hidden="true"/>{ideaCopy[locale].apply}<ChevronRight size={18} aria-hidden="true"/></button>
       </section>
-      </details>
+      </div>
 
       <details className={css.strategyDisclosure}>
         <summary>{extra.strategy} · {extra.wave}<ChevronDown size={17} aria-hidden="true"/></summary>
@@ -635,8 +652,9 @@ export function MandalaHypnoCompact({
         <div className={css.phraseCounter}><strong>{locale==="ru"?"Выберите фразы":locale==="es"?"Elige frases":"Choose phrases"}</strong><span>{selectedCount}/5 {ui.selected}</span></div>
         <div className={css.phraseMiniList}>
           {candidates.map((sentence,i)=><div className={css.phraseRow} key={i}>
+            {/* Five selected phrases is the firm limit; do not silently ignore a sixth tap. */}
             <button type="button" data-hypno-phrase={i} aria-pressed={chosen.includes(i)}
-              disabled={disabled} onClick={()=>toggleSelected(i)}>
+              disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)} onClick={()=>toggleSelected(i)}>
               <span className={css.phraseNumber}>{i+1}</span>
               {chosen.includes(i)?<Check size={17} aria-hidden="true"/>:<span className={css.phraseUnchecked} aria-hidden="true">○</span>}
               <span className={css.phraseText}>{sentence}</span>
@@ -649,6 +667,11 @@ export function MandalaHypnoCompact({
               }}><Pencil size={19} aria-hidden="true"/></button>
           </div>)}
         </div>
+        {selectedCount>=5?<p className={css.contextNote} data-hypno-selection-limit role="status">
+          {locale==="ru"?"Выбрано 5 фраз. Снимите выбор с одной, чтобы добавить другую.":
+            locale==="es"?"Has elegido 5 frases. Desmarca una para añadir otra.":
+            "Five phrases selected. Deselect one before adding another."}
+        </p>:null}
         {customPhraseText.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
           <button type="button" disabled={disabled} onClick={()=>{setReplacingIndex(null);setOwnOpen(v=>!v);}}>{extra.add}<ChevronDown size={14}/></button>
@@ -759,7 +782,12 @@ export function MandalaHypnoCompact({
         <button type="button" data-video-affirmation-preview disabled={disabled||hasPendingEdits} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>
+      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending
+        data-hypno-pending-reasons={[
+          draftState?"draft":null,readyDraft?"ready":null,
+          customDraft!==null?"custom":null,externalPhraseDraft!==null?"external":null,
+          ideaPending?"idea":null,safetyBlocked?"safety":null,
+        ].filter(Boolean).join(",")}>
         {safetyBlocked?summary:locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
       </p>}
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}

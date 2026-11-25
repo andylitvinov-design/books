@@ -8,6 +8,9 @@ import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choic
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./services-conversion-hero.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 type MeetingMode = "online" | "toronto";
 
@@ -153,6 +156,7 @@ export function ServicesHeroQuickRequest({
     }
   }
 
+  if (websiteMessengerOnlyUi()) return <div data-services-quick-request><button type="button" className={styles.requestClose} onClick={onClose} aria-label={t.close}><X size={20} aria-hidden="true"/></button><MandatoryMessengerActions locale={locale} label={service} whatsappUrl={whatsappEnquiryUrl({locale,service,request:mode==="toronto"?t.modeToronto:t.modeOnline,pagePath:"/"+locale+"/services"})}/></div>;
   return (
     <div ref={panelRef} tabIndex={-1} className={styles.requestPanel} data-services-quick-request role="group" aria-label={t.eyebrow}>
       <button type="button" className={styles.requestClose} onClick={onClose} aria-label={t.close}>

@@ -16,7 +16,7 @@ test("iHelp is in the brand header and a second floating launcher is suppressed"
  assert.ok(helpCss.includes(":global(body:has([data-video-ihelp-header-trigger])) .launcher"));
 });
 test("Montage Style has the original six style choices and a green next step",()=>{
- for(const selector of ['data-video-montage-next="text"','onClick={()=>setMontagePanel("text")}',
+ for(const selector of ['data-video-montage-next="audio"','onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}',
     "data-video-montage-style={index}",'aria-pressed={brightness==="soft"}'])
    assert.ok(studio.includes(selector),selector);
  assert.ok(css.includes("height:clamp(42px,6.2dvh,55px)"));

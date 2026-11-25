@@ -4,20 +4,25 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU/ES begin with carousel then seven free-first steps, no duplicate bottom offers", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const carousel = read("components/home-section-carousel.tsx");
-  for (const page of [home, es]) {
-    const slider = page.indexOf("<HomeSectionCarousel");
-    const journey = page.indexOf("<HomeFeaturedWorkspace");
-    const filters = page.indexOf("<HomeMoreDisclosure");
-    assert.ok(slider >= 0 && slider < filters && filters < journey);
-    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard/);
-  }
-  assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/);
-  assert.match(carousel, /data-home-hero-nav="true"/);
-  assert.match(carousel, /data-home-slide-dot=\{item.key\}/);
+
+test("all Home locales begin with Ali and defer the six-slide carousel and seven-stage catalog",()=>{
+ const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
+ const carousel=read("components/home-section-carousel.tsx");
+ const expanded=read("components/home-expanded-catalog.tsx");
+ const deferred=read("components/home-deferred-sections.tsx");
+ for(const page of [home,es]){
+  assert.match(page,/<HomeDialogueEntry locale=/);
+  assert.match(page,/<HomeDeferredSections locale=/);
+  assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<HomeDeferredSections"));
+  assert.doesNotMatch(page,/<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure/);
+  assert.doesNotMatch(page,/<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard/);
+ }
+ assert.match(deferred,/IntersectionObserver/);
+ assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
+ assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
+ assert.doesNotMatch(carousel,/data-home-quick-booking|data-home-quick-cta/);
+ assert.match(carousel,/data-home-hero-nav="true"/);
+ assert.match(carousel,/data-home-slide-dot=\{item.key\}/);
 });
 
 test("free diagnosis button reveals one compact messenger handoff inside its warm card", () => {
@@ -27,7 +32,8 @@ test("free diagnosis button reveals one compact messenger handoff inside its war
   assert.match(banner, /data-home-diagnosis-order/);
   assert.match(banner, /aria-expanded=\{open\}/);
   assert.match(banner, /aria-controls=\{formId\}/);
-  assert.match(banner, /hidden=\{!open\}/);
+  assert.match(banner, /hidden=\{!open \|\| websiteMessengerOnlyUi\(\)\}/);
+  assert.match(banner, /MandatoryMessengerActions/);
   assert.match(banner, /data-home-diagnosis-request/);
   assert.match(banner, /data-home-diagnosis-channel="whatsapp"/);
   assert.match(banner, /data-home-diagnosis-channel="telegram"/);
@@ -70,24 +76,24 @@ test("slider and benefit-rich banner fit the first mobile fold without impacting
 });
 
 
-test("priced consultation is the visible first-slide action in EN/RU/ES without moving the carousel below a strip", () => {
-  const carousel = read("components/home-section-carousel.tsx");
-  const css = read("components/services-conversion-hero.module.css");
-  const browser = read("scripts/verify-home-consultation-first-screen.mjs");
-  for (const label of [
-    "Request a consultation · from €50",
-    "Запросить консультацию · от €50",
-    "Solicitar una consulta · desde €50",
-  ]) {
-    assert.ok(carousel.includes('action: "' + label + '"'), "The first visible carousel slide should use the localized consultation CTA");
-  }
-  assert.match(carousel, /slide\.key === "services" \? \x60\/\$\{locale\}\/services#consultation\x60/);
-  assert.match(carousel, /data-home-first-screen-cta=\{slide\.key === "services" \? "paid" : undefined\}/);
-  assert.match(carousel, /key === "cabinet" && locale === "es" \? "\/en\/app"/);
-  assert.match(css, /\.hero\[data-home-section-carousel\] \.viewButton\[data-home-first-screen-cta="paid"\]/);
-  assert.match(browser, /data-home-first-screen-cta="paid"/);
-  assert.match(browser, /await paid\.waitFor\(\{ state: 'visible'/);
-  assert.match(browser, /book\.y \+ book\.height <= 844 - 72/);
-  assert.doesNotMatch(browser, /data-home-quick-booking|data-home-quick-cta/);
-  assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/);
+
+test("paid consultations remain reachable in optional carousel, Ali input owns first Home screen",()=>{
+ const carousel=read("components/home-section-carousel.tsx");
+ const browser=read("scripts/verify-home-consultation-first-screen.mjs");
+ const entry=read("components/home-dialogue-entry.tsx");
+ const home=read("components/holistic-house-home.tsx");
+ for(const label of ["Request a consultation · from €50","Запросить консультацию · от €50","Solicitar una consulta · desde €50"])
+  assert.ok(carousel.includes('action: "'+label+'"'),"Optional paid action missing: "+label);
+ assert.match(carousel,/data-home-first-screen-cta=\{slide\.key === "services" \? "paid" : undefined\}/);
+ assert.match(carousel,/key === "cabinet" && locale === "es" \? "\/en\/app"/);
+ assert.match(home,/<HomeDialogueEntry locale=\{locale\}/);
+ assert.doesNotMatch(home,/<HomeSectionCarousel/);
+ assert.match(entry,/data-home-intent-form/);
+ assert.match(entry,/data-home-send-to-ali/);
+ assert.match(browser,/data-home-intent-composer/);
+ assert.match(browser,/\["clarity","goal","business"\]\.entries\(\)/);
+ assert.match(browser,/data-home-intent-option/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ assert.match(browser,/"mytube","video","coach","ai","services","practice","profile"/);
+ assert.doesNotMatch(browser,/data-home-quick-booking|data-home-quick-cta/);
 });
