@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   course-and-save-gate:
-    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.
+    # Routine PRs remain source-only. Owner-requested one-time viewport acceptance for #5626.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
     runs-on: ubuntu-24.04
@@ -42,11 +42,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
+        browser: ${{ fromJSON((github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626) && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
-        # PR source contracts need no DB; keep PostgreSQL for manual full-browser QA.
-        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
+        # Only manual deep QA and the one explicitly approved Daybook release use PostgreSQL.
+        image: ${{ (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626) && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
@@ -56,6 +56,7 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
+      HH_REIKI_DAYBOOK_ONLY: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 5626 && '1' || '0' }}
       CI: 'true'
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: '1'
@@ -95,18 +96,18 @@ jobs:
           node --check tests/tantra-reiki-photo-levels.browser.mjs
           node --test tests/tantra-reiki-compact-fullwidth.test.mjs tests/tantra-reiki-photographic-landing.test.mjs tests/tantra-reiki-level-one-focus.test.mjs tests/tantra-reiki-mobile-chapters.test.mjs tests/tantra-reiki-teacher-compact.test.mjs
           npx --no-install eslint components/tantra-reiki-journey.tsx
-      - name: Isolated Chromium/WebKit runtime (manual deep QA only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Isolated Chromium/WebKit runtime (manual or one-time Daybook acceptance)
+        if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626
         run: |
           mkdir -p /tmp/hh-reiki-playwright
           npm install --prefix /tmp/hh-reiki-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-reiki-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-reiki-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize synthetic isolated account database
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Verify Chromium full 64 screens and Safari guest save-only checkpoint
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626
         run: |
           mkdir -p artifacts/reiki-all-slides
           node tests/helpers/app-auth-double.mjs > /tmp/hh-reiki-provider.log 2>&1 & PROVIDER_PID=$!
@@ -118,10 +119,12 @@ jobs:
             sleep 2
           done
           node scripts/verify-reiki-all-slides-browser.mjs
-          node --test tests/reiki-referral-landing.test.mjs
-          node scripts/verify-reiki-referral-browser.mjs
+          if [ "$HH_REIKI_DAYBOOK_ONLY" != '1' ]; then
+            node --test tests/reiki-referral-landing.test.mjs
+            node scripts/verify-reiki-referral-browser.mjs
+          fi
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626)
         with:
           name: reiki-64-screens-${{ matrix.browser }}
           path: |
