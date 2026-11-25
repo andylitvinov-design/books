@@ -6,6 +6,7 @@ import {transaction,closeDatabase} from '@/lib/app/database'
 import {recoverDirectMessagePush} from '@/lib/app/direct-message-push'
 import {commandCenterTick} from '@/lib/command-center/dispatcher.mjs'
 import {dispatchDaybookDaily} from '@/lib/app/daybook-daily-dispatch'
+import {dispatchDaybookWeekly} from '@/lib/app/daybook-weekly-dispatch'
 
 export const runtime='nodejs'
 export const preferredRegion='yul1'
@@ -29,6 +30,10 @@ export async function GET(request){
     if(process.env.VERCEL_ENV==='production'&&process.env.HH_DAYBOOK_DAILY_SEND_APPROVED==='true'){
       try{pushed.daybookDaily=await dispatchDaybookDaily(config)}
       catch{console.error('HH_DAYBOOK_DAILY_DISPATCH_FAILED')}
+    }
+    if(process.env.VERCEL_ENV==='production'&&process.env.HH_DAYBOOK_WEEKLY_SEND_APPROVED==='true'){
+      try{pushed.daybookWeekly=await dispatchDaybookWeekly(config)}
+      catch{console.error('HH_DAYBOOK_WEEKLY_DISPATCH_FAILED')}
     }
     if(process.env.VERCEL_ENV==='production'&&process.env.HH_CC_TICK_ENABLED==='true'){
       try{
