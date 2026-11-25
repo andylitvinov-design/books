@@ -11,7 +11,7 @@ async function endReceipt(receipt){
 }
 const words={idle:'Ожидание',connecting:'Подключение…',playing:'Тестовое видео',stopping:'Останавливаем поток…',ended:'Остановлено',unavailable:'Не удалось запустить тест. Автоматического повтора нет.', 'end-unconfirmed':'Закрытие у поставщика не подтверждено; проверьте кабинет.'}
 export default function CoachLiveAvatarLab({status}){
-  const [provider,setProvider]=useState('simli'),[confirmed,setConfirmed]=useState(false)
+  const [provider,setProvider]=useState('simli'),[target,setTarget]=useState('coach'),[confirmed,setConfirmed]=useState(false)
   const [state,setState]=useState('idle'),[locale,setLocale]=useState('ru')
   const run=useRef(null),video=useRef(null),audio=useRef(null),mounted=useRef(false)
   function report(value){if(mounted.current)setState(value)}
@@ -47,9 +47,10 @@ export default function CoachLiveAvatarLab({status}){
       const sdk=provider==='simli'?await import('simli-client'):await import('livekit-client')
       if(current.cancelled)return
       // Await a late start response to obtain and settle its receipt.
-      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start',provider,syntheticOnly:true,freeOnly:true}),cache:'no-store'})
+      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start',provider,...(provider==='simli'?{target}:{}),syntheticOnly:true,freeOnly:true}),cache:'no-store'})
       if(!res.ok)throw Error('AVATAR_UNAVAILABLE')
       const session=await res.json();current.receipt=session.receipt
+      if(provider==='simli'&&session.target!==target)throw Error('AVATAR_ROLE_MISMATCH')
       if(current.cancelled)return
       current.timer=setTimeout(()=>cancel(current),status.seconds*1000)
       const params={sdk,session,sessionToken:session.sessionToken,context:current.context,video:video.current,audio:audio.current,signal:current.controller.signal,onDisconnect:()=>cancel(current)}
@@ -85,9 +86,9 @@ export default function CoachLiveAvatarLab({status}){
       <label><input type="radio" name="provider" checked={provider==='simli'} onChange={()=>{setProvider('simli');setConfirmed(false)}}/> Simli</label>{' '}
       <label><input type="radio" name="provider" checked={provider==='sequencer'} onChange={()=>{setProvider('sequencer');setConfirmed(false)}}/> Sequencer Anima 2</label>
     </fieldset>
-    <section><h2>Simli</h2><p>{status.simli.allowed?'Подтверждён тестовый аккаунт.':'API-запуск отключён до проверки бесплатного аккаунта.'} Бесплатный план: стандартный персонаж, не портрет Мирры.</p><a href="https://www.simli.com/" target="_blank" rel="noreferrer">Бесплатная демонстрация Simli</a></section>
+    <section><h2>Simli</h2><p>{status.simli.allowed?'Подтверждён тестовый аккаунт.':'API-запуск отключён до проверки бесплатного аккаунта.'} Бесплатный план: готовые Trinity-2 персонажи, не собственные портреты.</p><a href="https://www.simli.com/" target="_blank" rel="noreferrer">Бесплатная демонстрация Simli</a></section>
     <section><h2>Sequencer · Anima 2</h2><p>{status.sequencer.allowed?'Подтверждён тестовый аккаунт.':'Бесплатный API-доступ не подтверждён. Вызовы отключены.'}</p><a href="https://sequencer.media/live-avatar" target="_blank" rel="noreferrer">Демонстрация Sequencer</a></section>
-    <section><p><label>Язык приветствия <select value={locale} disabled={busy} onChange={e=>setLocale(e.target.value)}><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option></select></label></p>
+    <section>{provider==='simli'&&<p><label>Роль аватара <select value={target} disabled={busy} onChange={e=>{setTarget(e.target.value);setConfirmed(false)}}><option value="chatbot">Чат-бот Ali — {status.simli.avatars.chatbot}</option><option value="coach">AI-коуч — {status.simli.avatars.coach}</option></select></label></p>}<p><label>Язык приветствия <select value={locale} disabled={busy} onChange={e=>setLocale(e.target.value)}><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option></select></label></p>
       <video ref={video} autoPlay playsInline muted style={{width:'100%',maxHeight:'52vh',objectFit:'contain',background:'#222'}}/>
       <audio ref={audio} autoPlay controls/>
       <p><label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/> Только готовое тестовое приветствие; бесплатный аккаунт проверен.</label></p>
@@ -95,6 +96,6 @@ export default function CoachLiveAvatarLab({status}){
       <button type="button" disabled={!busy||state==='stopping'} onClick={()=>cancel()}>Остановить</button>
       <p role="status">{words[state]}</p>
     </section>
-    <section><h2>Клиентский режим пока выключен</h2><p>€3 / 20 минут; до двух видеосессий в неделю на клиента (предлагаемый лимит). Нынешние видео и Gemini не изменены.</p></section>
+    <section><h2>Клиентский режим пока выключен</h2><p>€3 / 20 минут; до двух видеосессий в неделю на клиента (предлагаемый лимит). Lukas предназначен для Ali, Caesar — для коучинга. Здесь оба используют только фиксированное тестовое аудио Мирры; живые диалоги, нынешние видео и Gemini не изменены.</p></section>
   </main>
 }

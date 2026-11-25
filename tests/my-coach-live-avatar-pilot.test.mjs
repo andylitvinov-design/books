@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {pilotPublicStatus,simliTokenBody,sequencerStartBody,LIVE_AVATAR_PRODUCT} from '../lib/coaching/live-avatar-pilot.mjs'
+import {pilotPublicStatus,simliPresetForRole,simliTokenBody,sequencerStartBody,LIVE_AVATAR_PRODUCT} from '../lib/coaching/live-avatar-pilot.mjs'
 import {startOwnerAvatarPilot,endOwnerSequencerPilot} from '../lib/coaching/live-avatar-pilot-server.mjs'
 import {connectSimliAvatar,connectSequencerAvatar,avatarSamplePcm16} from '../lib/coaching/live-avatar-renderers.mjs'
-const request=provider=>({provider,action:'start',syntheticOnly:true,freeOnly:true})
-const env={HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',SIMLI_API_KEY:'fake',SIMLI_TEMPLATE_FACE_ID:'template',HH_SEQUENCER_FREE_ACCOUNT_VERIFIED:'true',SEQUENCER_API_KEY:'fake',SEQUENCER_WORKSPACE_ID:'workspace',SEQUENCER_CHARACTER_ID:'character',HH_COACH_AVATAR_RECEIPT_SECRET:'x'.repeat(32)}
+const request=(provider,target='coach')=>({provider,action:'start',...(provider==='simli'?{target}:{}),syntheticOnly:true,freeOnly:true})
+const env={HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',SIMLI_API_KEY:'fake',HH_SEQUENCER_FREE_ACCOUNT_VERIFIED:'true',SEQUENCER_API_KEY:'fake',SEQUENCER_WORKSPACE_ID:'workspace',SEQUENCER_CHARACTER_ID:'character',HH_COACH_AVATAR_RECEIPT_SECRET:'x'.repeat(32)}
 test('disabled by default; no paid product or secrets in status',async()=>{
   assert.equal(pilotPublicStatus({}).simli.allowed,false);assert.equal(pilotPublicStatus({}).sequencer.allowed,false)
   assert.equal(LIVE_AVATAR_PRODUCT.enabled,false);assert.equal(LIVE_AVATAR_PRODUCT.priceEurCents,300);assert.equal(LIVE_AVATAR_PRODUCT.weeklySessions,2)
@@ -19,7 +19,7 @@ test('provider payloads use hard duration and no history',()=>{
 test('token response is reduced and signed Sequencer receipt can end only its session',async()=>{
   const calls=[]
   const fetcher=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('simli')?{session_token:'token',secret:'do not return'}:url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://test.livekit.cloud',livekitClientToken:'short-lived',secret:'private'}}}
-  assert.deepEqual(await startOwnerAvatarPilot(request('simli'),{env,fetcher}),{provider:'simli',sessionToken:'token'})
+  assert.deepEqual(await startOwnerAvatarPilot(request('simli'),{env,fetcher}),{provider:'simli',target:'coach',sessionToken:'token'})
   const response=await startOwnerAvatarPilot(request('sequencer'),{env,fetcher})
   assert.equal(response.secret,undefined)
   await assert.rejects(endOwnerSequencerPilot(response.receipt+'tampered',{env,fetcher}),/INVALID_RECEIPT/)
@@ -57,4 +57,20 @@ test('Sequencer rejects an unapproved WebSocket origin and ends its allocated se
   const fetcher=async(url)=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/end')?{}:{sessionId:'session',livekitUrl:'wss://example.org',livekitClientToken:'short-lived'}}}
   await assert.rejects(startOwnerAvatarPilot(request('sequencer'),{env,fetcher}),/AVATAR_PROVIDER_RESPONSE/)
   assert.match(calls.at(-1),/\/session\/end$/)
+})
+
+test('Simli roles are pinned to the exact official Lukas and Caesar IDs; no arbitrary override or implicit role',async()=>{
+  const expected={chatbot:'a36d66df-a23d-4569-996b-d0e990019857',coach:'efcb440b-6a24-4e79-a46a-764c1d4b751d'}
+  assert.deepEqual(pilotPublicStatus(env).simli.avatars,{chatbot:'Lukas',coach:'Caesar'})
+  const calls=[]
+  const fetcher=async(url,options)=>{calls.push(JSON.parse(options.body));return {ok:true,json:async()=>({session_token:'mock-token'})}}
+  for(const [target,faceId] of Object.entries(expected)){
+    assert.equal(simliPresetForRole(target).faceId,faceId)
+    const response=await startOwnerAvatarPilot(request('simli',target),{env:{...env,SIMLI_TEMPLATE_FACE_ID:'untrusted-legacy-id'},fetcher})
+    assert.equal(response.target,target);assert.equal(calls.at(-1).faceId,faceId)
+  }
+  for(const invalid of [{...request('simli'),target:undefined},{...request('simli'),target:'other'},{...request('simli'),target:'__proto__'},{...request('simli'),target:'constructor'},{...request('simli'),faceId:'arbitrary'}]){
+    await assert.rejects(startOwnerAvatarPilot(invalid,{env,fetcher:()=>assert.fail('network forbidden')}),/INVALID_PILOT_REQUEST/)
+  }
+  assert.equal(calls.length,2)
 })
