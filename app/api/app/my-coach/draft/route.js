@@ -33,8 +33,8 @@ async function handle(request,write){
    }else throw new AppError('MY_COACH_DRAFT_INVALID',400)
   }else{
    const params=new URL(request.url).searchParams
-   if([...params.keys()].some(k=>!['before','beforeId'].includes(k)))throw new AppError('MY_COACH_DRAFT_INVALID',400)
-   result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId')})
+   if([...params.keys()].some(k=>!['before','beforeId','view','personaId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
+   result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId')})
   }
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){
