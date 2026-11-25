@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
-  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness, Film,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
@@ -128,6 +128,7 @@ const BUSINESS = {
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
+  const videoHint = {en:'Create videos for yourself, loved ones and work.',ru:'Создавайте видео для себя, близких и работы.',es:'Crea vídeos para ti, tus seres queridos y el trabajo.'}[selected]
   const [section, setSection] = useState('clarity')
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
@@ -306,5 +307,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
       <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
     </Link>}
+    <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
+      <span className={styles.myVideoIcon}><Film size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+      <span className={styles.myVideoCopy}><strong>MyVideo</strong><small>{videoHint}</small></span>
+      <ArrowRight size={20} aria-hidden="true"/>
+    </Link>
   </div>
 }

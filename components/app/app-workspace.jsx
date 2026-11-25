@@ -204,6 +204,11 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Preview and Life/Work mode switch stay public; guest account actions require sign-in.
   function interceptGuestProfileAction(event) {
     const target=event.target?.closest?.('button,a,[role="button"]')
+    // Public tools must remain reachable before registration. Match the actual
+    // localized first-party destination, not arbitrary private cabinet links.
+    const href=target?.getAttribute('href') || ''
+    if (target?.matches('a[data-profile-my-video]') && /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/.test(href)) return
+    if (target?.matches('a[data-clarity-reiki-practitioner]') && /^\/(?:ru|en|es)\/academy\/principles-of-energywork\/?$/.test(href)) return
     if (!target || target.closest('[data-profile-mode-switch]') ||
       target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
       target.closest('[data-profile-language-switch]') ||

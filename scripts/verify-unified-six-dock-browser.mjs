@@ -10,11 +10,11 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","coach","ai","services","practice","profile"];
+const ids=["mytube","reiki","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanic","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманик","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanic","Perfil"],
+  en:["MyTube","My Reiki","My Coach","AI/Chat","Support","Shamanic","Profile"],
+  ru:["MyTube","My Reiki","Мой коуч","ИИ/Чат","Поддержка","Шаманик","Профиль"],
+  es:["MyTube","My Reiki","Mi coach","IA/Chat","Apoyo","Shamanic","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -283,7 +283,8 @@ async function inspect(browserType,locale,width){
     const prefix="/"+locale;
     const routeCases=[
       ["practice",prefix+"/shamanica","practice"],
-      ["video",prefix+"/holistic-support/mandala","video"],
+      ["reiki",prefix+"/academy/principles-of-energywork","reiki"],
+      ["video-profile",prefix+"/holistic-support/mandala","profile"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
@@ -520,14 +521,14 @@ async function inspect(browserType,locale,width){
     // The root dock is server-rendered; wait until React owns the click
     // before testing same-document navigation (no pre-hydration hard link).
     await page.waitForFunction(()=>{
-      const link=document.querySelector('[data-unified-dock-item="video"]');
+      const link=document.querySelector('[data-unified-dock-item="reiki"]');
       return link && Object.keys(link).some(key=>key.startsWith("__reactProps$"));
     },null,{timeout:15000});
     const initialDocument=await page.evaluate(()=>performance.timeOrigin);
     let popups=0;
     page.on("popup",()=>{popups++});
     for(const [tab,path] of [
-      ["video","/ru/holistic-support/mandala"],
+      ["reiki","/ru/academy/principles-of-energywork"],
       ["mytube","/ru/mytube"],
       ["coach","/ru/my-coach"],
       ["services","/ru/services"],
@@ -539,7 +540,7 @@ async function inspect(browserType,locale,width){
         tab+" standalone public navigation must stay in the same document");
     }
     assert.equal(popups,0,"standalone public tabs must not open another page");
-    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → My Coach → Services → Practice",sameDocument:true});
+    results.push({journey:"Simulated iOS standalone Practice → My Reiki → MyTube → My Coach → Services → Practice",sameDocument:true});
   }
  }finally{
   // WebKit may dispose a context as part of a crash/teardown race after the
@@ -565,8 +566,20 @@ try{
  await page.goto(origin+"/ru/mytube",{waitUntil:"domcontentloaded",timeout:75000});
  const dock=page.locator("[data-hh-unified-dock]");
  await dock.waitFor({state:"visible"});
- await dock.locator('[data-unified-dock-item="video"]').click();
+ await dock.locator('[data-unified-dock-item="reiki"]').click();
+ await page.waitForURL(/\/ru\/academy\/principles-of-energywork\/?$/,{timeout:45000});
+ await expect(page.locator('[data-unified-dock-item="reiki"]')).toHaveAttribute("aria-current","page");
+ await expect(page.locator('[data-energywork-screen="intro"]')).toBeVisible({timeout:30000});
+ await page.locator('[data-unified-dock-item="profile"]').click();
+ await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
+ const myVideo=page.locator('[data-profile-my-video]');
+ await expect(myVideo).toBeVisible({timeout:45000});
+ await expect(myVideo).toHaveAttribute("href","/ru/holistic-support/mandala");
+ await myVideo.click();
  await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/,{timeout:45000});
+ await expect(page.locator('[data-unified-dock-item="profile"]')).toHaveAttribute("aria-current","page");
+ assert.equal(await page.locator('dialog[data-profile-auth-dialog]:visible').count(),0);
+ results.push({journey:"MyTube → My Reiki landing → Profile → original MyVideo Studio",passed:true});
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
  const videoHeader=page.locator("[data-video-hypno-scroll-start]");
  await videoHeader.waitFor({state:"visible",timeout:45000});
@@ -1339,8 +1352,9 @@ try{
  assert.equal(await page.locator('[data-profile-hub-tabs][data-profile-active="today"]').count(),1,
    "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
  await page.locator('[data-profile-space-dashboard]').waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator('[data-profile-space-life][aria-current="page"]').count(),1,
-   "My Life is the current guest dashboard mode");
+ assert.equal(await page.locator('[data-goal-profile-tab="clarity"][aria-pressed="true"]').count(),1,
+   "Clarity is the current guest dashboard mode");
+ await expect(page.locator('[data-profile-my-video]')).toBeVisible();
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
@@ -1355,8 +1369,8 @@ try{
    links=>links.map(link=>link.dataset.profileSpaceCard)),
    ["state","courses","reports","sessions"],
    "The four signed-in-capable sections remain visible as honest guest entries");
- assert.equal(await page.locator('[data-profile-space-path]').getAttribute("href"),"/ru/app/portrait?space=path");
- assert.equal(await page.locator('[data-profile-space-work]').getAttribute("href"),"/ru/practice");
+ assert.deepEqual(await page.locator('[data-goal-profile-tab]').evaluateAll(els=>els.map(el=>el.dataset.goalProfileTab)),["clarity","goals","business"]);
+ await expect(page.locator('[data-profile-my-video]')).toHaveAttribute("href","/ru/holistic-support/mandala");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  // In Profile, every account action is gated on an explicit guest click.
@@ -1370,11 +1384,16 @@ try{
    'clicking a Profile action keeps the guest on Life until authenticated');
  await login.getByRole('button',{name:'Продолжить просмотр'}).click();
  await login.waitFor({state:'hidden',timeout:15000});
- // The mode switch itself never prompts or creates a private account.
- await page.locator('[data-profile-space-work]').click();
- await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
- await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
- results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});
+ // All program modes keep the same public MyVideo tool available.
+ for(const mode of ["goals","business","clarity"]){
+   await page.locator('[data-goal-profile-tab="'+mode+'"]').click();
+   await expect(page.locator('[data-goal-profile-tab="'+mode+'"]')).toHaveAttribute("aria-pressed","true");
+   await expect(page.locator('[data-profile-my-video]')).toBeVisible();
+   assert.equal(await page.locator('dialog[data-profile-auth-dialog]:visible').count(),0);
+ }
+ await page.locator('[data-profile-my-video]').click();
+ await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/,{timeout:45000});
+ results.push({journey:"Public Profile → private action opens OAuth choice → dismiss → program modes → public MyVideo",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
