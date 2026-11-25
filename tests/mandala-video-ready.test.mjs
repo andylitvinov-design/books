@@ -167,7 +167,7 @@ test("the three reused local writers return goal-aware texts for EN, RU and ES",
 });
 
 
-test("Ready has one Free Generate immediately below the preview; Extra owns paid formats",()=>{
+test("Ready has two delivery actions immediately below the preview; Extra owns paid formats",()=>{
   const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
   assert.doesNotMatch(ready,/data-ready-video-tiers|data-ready-video-tier=|name="ready-video-tier"/);
   assert.doesNotMatch(ready,/createVideoCartSelection|VIDEO_CART_STORAGE_KEY|useRouter/);
@@ -175,11 +175,16 @@ test("Ready has one Free Generate immediately below the preview; Extra owns paid
   assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
   assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
   assert.match(offer,/data-video-montage-pro-offer/);
-  const preview=ready.indexOf("{header}");
+  const preview=ready.indexOf('{exportMode!=="express"?header:null}');
   const generate=ready.indexOf('data-ready-generate>');
   const ideas=ready.indexOf('className={css.nextTitle}');
-  assert.ok(preview>0&&generate>preview&&ideas>generate,"Ready preview → Free Generate → ideas");
+  assert.ok(preview>0&&generate>preview&&ideas>generate,"Ready preview → save / Telegram → next steps");
   assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/);
+  assert.match(ready,/data-ready-prepare-telegram/);
+  assert.match(ready,/if\(generateSelectedVideo\(\)\)setPendingDeliveryIntent\("telegram"\)/);
+  assert.match(ready,/data-ready-delivery-continuation/);
+  assert.match(ready,/data-ready-review-story/);
+  assert.match(ready,/storyApprovalRequired\)return false/);
   assert.match(ready,/onGenerateBasicVideo\(\)/);
   assert.match(studio,/return createQuickVideo\(\)/);
   assert.match(studio,/readyBasicVideoAccess\(/);
@@ -204,7 +209,7 @@ test("Safari-visible Ready player unlocks new encoded Blob before final credit-c
   assert.match(studio,/activeWorkspace==="video"\?renderCheckIn\("video-assessment-heading"\):null/);
   assert.match(ready,/data-video-file=\{video\?"true":undefined\}/);
   assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
-  assert.match(ready,/\{completed\?<button type="button" data-ready-generate-new onClick=\{onStartNewVideo\}>/);
+  assert.match(ready,/\{showReadyJourney\?<button type="button" data-ready-generate-new onClick=\{onStartNewVideo\}>/);
   assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
 });
 
@@ -244,7 +249,7 @@ test("approved Ready result has a thin status, full player and account-gated Sav
   assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
   assert.match(ready,/data-ready-status/);
   assert.match(ready,/data-ready-status-phase=\{completed\?"complete":rendering\?"rendering":checking\?"verifying":"idle"\}/);
-  assert.match(ready,/<strong>\{completed\?t\.ready:pendingStatus\}<\/strong>/);
+  assert.match(ready,/<strong>\{exportMode==="express"\?"Express":completed\?t\.ready:pendingStatus\}<\/strong>/);
   assert.match(ready,/data-ready-save><Download/);
   assert.match(ready,/data-ready-telegram><Send/);
   assert.match(ready,/data-ready-whatsapp><MessageCircle/);
@@ -620,7 +625,7 @@ test("Ready uses existing Canvas for personal preview, not a fake exported file"
   assert.match(ready,/previewSourceCanvasRef\?\.current/);
   assert.match(studio,/previewSourceCanvasRef=\{canvasRef\}/);
   assert.match(studio,/previewAvailable=\{Boolean\(cinematicPlan/);
-  assert.match(ready,/if\(video\|\|!previewAvailable\)return/);
+  assert.match(ready,/if\(video\|\|!previewAvailable\|\|exportMode==="express"\)return/);
   assert.match(ready,/Preview ≠ MP4/);
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
 });
@@ -651,3 +656,15 @@ test("pending Story approval routes both Generate paths to the existing confirma
   assert.match(flow,/approval\.focus/);
   assert.equal((flow.match(/if\(storySourcePendingRef\.current\)return revealPendingStoryApproval\(\);/g)||[]).length,2);
 });
+
+ test("Ready preview never performs an upload or send until a verified file is present",()=>{
+  const preview=ready.slice(ready.indexOf('data-ready-prepare-delivery'),ready.indexOf('data-ready-course-choices'));
+  assert.match(preview,/data-ready-generate>/);
+  assert.match(preview,/data-ready-prepare-telegram>/);
+  assert.doesNotMatch(preview,/onSaveDirect|onSendTelegramDirect|chooseDelivery\(/);
+  assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
+  assert.match(ready,/storyApprovalRequired\)return false/);
+  assert.match(studio,/onReviewStory=\{\(\)=>\{revealPendingStoryApproval\(\);\}\}/);
+  assert.ok(ready.indexOf('data-ready-save-choices')<ready.indexOf('data-ready-generate-new onClick'));
+  assert.ok(ready.indexOf('data-ready-generate-new onClick')<ready.indexOf('data-ready-secondary-delivery'));
+ });
