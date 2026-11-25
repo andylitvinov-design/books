@@ -231,7 +231,11 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const picture=persona.id==="alex"?"/images/holistic-house/ali-inner-alchemist-hero.webp":persona.image;
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
-  const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
+  const sessionLabel = {
+    en: "Request a session · from €50",
+    ru: "Запросить сессию · от €50",
+    es: "Solicitar sesión · desde 50 €",
+  }[locale];
 
   const audienceFor=(message:string):Mode=>/business|company|revenue|clients|startup|бизнес|компан|клиент|продаж|negocio|empresa|ventas/i.test(message)?"business":"self";
   const programCopy={
@@ -326,6 +330,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <p id="home-voice-disclosure" className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
+    <Link className={styles.sessionLink} href={`/${locale}/services#consultation`} prefetch={false} data-home-request-session>
+      {sessionLabel}<ArrowRight size={16} aria-hidden="true"/>
+    </Link>
 
     <div className={styles.programGrid} role="group" aria-label={msg.group} data-home-focus-grid>
       {msg.programs.map((program,index)=>{

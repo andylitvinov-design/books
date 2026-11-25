@@ -450,3 +450,21 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 .composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
 .composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
 .composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}
+
+.sessionLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 44px;
+  margin: 0 auto;
+  padding: 0 14px;
+  color: #163c33;
+  background: #fff3dc;
+  border: 1px solid #d9ad65;
+  border-radius: 999px;
+  font: 700 14px/1.2 system-ui;
+  text-decoration: none;
+}
+.sessionLink:focus-visible { outline: 2px solid #163c33; outline-offset: 2px; }

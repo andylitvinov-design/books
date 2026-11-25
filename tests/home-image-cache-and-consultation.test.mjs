@@ -27,9 +27,10 @@ test("homepage first-screen photography is CDN/browser cached without HTML or pr
   assert.doesNotMatch(config.slice(config.indexOf("homepagePublicImageSources"), config.indexOf("] as const;", config.indexOf("homepagePublicImageSources"))), /\/api\/|\/app\/|\/client\//);
 });
 
-test("existing visible Get Support button retains visual copy and links to the real locale consultation page", () => {
-  assert.match(dialogue, /const supportRoute="\/"\+locale\+\(mode==="business"\?"\/services#service-group-business":"\/services\/free-consultation"\)/);
-  assert.match(dialogue, /<Link className=\{styles\.supportCta\} href=\{supportRoute\}/);
-  assert.match(dialogue, /data-home-request-session/);
-  assert.match(dialogue, /support:"Get Support",supportDetail:"Session & Service"/);
+test("the first screen has a native localized booking link before the program choices", () => {
+  assert.match(dialogue, /<Link className=\{styles\.sessionLink\} href=\{`\/\$\{locale\}\/services#consultation`\} prefetch=\{false\} data-home-request-session>/);
+  for (const label of ["Request a session · from €50", "Запросить сессию · от €50", "Solicitar sesión · desde 50 €"]) {
+    assert.ok(dialogue.includes(label));
+  }
+  assert.ok(dialogue.indexOf("data-home-request-session") < dialogue.indexOf("data-home-focus-grid"));
 });
