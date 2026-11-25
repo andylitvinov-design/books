@@ -20,7 +20,8 @@ export const PUBLIC_BROWSER_CASES = Object.freeze([
   "verify-business-quiz-mobile.mjs",
   "verify-reiki-mobile-order-browser.mjs",
   "verify-talisman-google-checkout-browser.mjs",
-  "verify-storefront-shop-browser.mjs"
+  "verify-storefront-shop-browser.mjs",
+  "verify-academy-messenger-order.mjs"
 ]);
 export const PUBLIC_SOURCE_TESTS = Object.freeze([
   "tests/alchemy-panel-overflow-diagnostics.test.mjs",
@@ -354,6 +355,12 @@ const HARNESS_CASES = new Map([
 // funnel. The immutable BASE owner selects only relevant cases; missing,
 // added, removed, unknown or mixed critical paths continue to run all 13.
 const VERIFIED_CRITICAL_PUBLIC_CASES = [
+  // Existing, individually reviewed page-local UI. These routes are exercised
+  // by the main Services/Alchemy browser, not unrelated Reiki/Store/Talisman.
+  // Exact modified files only, with the existing BASE trigger proof.
+  [/^components\/services-(?:assist-mobile|assist-quiz|conversion-hero|unified-catalog)(?:\.module)?\.(?:tsx|css)$/, ['verify-public-services-production.mjs','verify-service-cart-browser.mjs']],
+  [/^components\/alchemy-soul-landing\.tsx$/, ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+  [/^components\/holistic-support-topic-filter(?:\.module)?\.(?:tsx|css)$/, ['verify-holistic-topics-browser.mjs','verify-holistic-support-recommendations-mobile.mjs','verify-public-services-production.mjs']],
   [/^app\/api\/payments\/talismans\/checkout\/route\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
   [/^lib\/commerce\/talisman-checkout\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
   [/^components\/commerce\/(?:service-cart|personal-cart|consultation-cart-entry|cart-nav-link)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
@@ -789,7 +796,19 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       const second = read(['rev-parse', 'HEAD^2']);
       if (second !== head || !/^[0-9a-f]{40}$/.test(first))
         return full('UNVERIFIED_SYNTHETIC_MERGE');
-      git('git', ['merge-base', '--is-ancestor', base, first], options);
+      const verified = [env.HH_PUBLIC_VERIFIED_EVENT_BASE, env.HH_PUBLIC_VERIFIED_TESTED_BASE,
+        env.HH_PUBLIC_VERIFIED_HEAD, env.HH_PUBLIC_VERIFIED_MERGE];
+      if (verified.some(Boolean)) {
+        // The workflow proved these immutable parents using authenticated
+        // GitHub Compare before this step. Never widen the waiver to a different
+        // merge, base, head or direct checkout; partial proof is not sufficient.
+        if (verified.some(sha => !/^[0-9a-f]{40}$/.test(sha || '')) ||
+            verified[0] !== base || verified[1] !== first || verified[2] !== head ||
+            verified[3] !== checkout || env.GITHUB_SHA !== checkout)
+          return full('MISMATCHED_VERIFIED_ANCESTRY');
+      } else {
+        git('git', ['merge-base', '--is-ancestor', base, first], options);
+      }
       diffBase = first;
     } else {
       // A direct HEAD checkout still must contain the recorded event base.
