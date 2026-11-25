@@ -32,7 +32,7 @@ test('missing jobs never become a fabricated last CI',()=>{
 test('archive updates same run idempotently',async()=>{
  let body='',n=0;
  const github={rest:{
-   actions:{listJobsForWorkflowRun:async()=>({data:{jobs:[{id:55,name:'hh-core',
+   actions:{listJobsForWorkflowRunAttempt:async()=>({data:{jobs:[{id:55,name:'hh-core',
      created_at:'2026-11-04T14:20:03Z',started_at:'2026-11-04T14:20:06Z',
      completed_at:'2026-11-04T14:24:00Z',conclusion:'success'}],total_count:1}})},
    pulls:{get:async()=>({data:{created_at:'2026-11-04T14:19:00Z',
@@ -52,7 +52,7 @@ test('archive updates same run idempotently',async()=>{
 test('quota reserve prevents writes',async()=>{
  let writes=0;
  const github={rest:{
-   actions:{listJobsForWorkflowRun:async()=>({data:{jobs:[{id:55,created_at:time,
+   actions:{listJobsForWorkflowRunAttempt:async()=>({data:{jobs:[{id:55,created_at:time,
      started_at:time,completed_at:'2026-11-04T14:25:00Z'}],total_count:1}})},
    pulls:{get:async()=>({data:{created_at:'2026-11-04T14:19:00Z',
      base:{ref:'codex/public-book-library'},head:{sha,ref:'fix/timeline',
@@ -86,7 +86,7 @@ test('archive verifies exact source SHA before saving a jobless startup event',a
    state:'open',draft:false,base:{ref:'codex/public-book-library',sha:'b'.repeat(40)},
    head:{sha,ref:'fix/timeline',repo:{full_name:'andylitvinov-design/books'}}};
  const github={rest:{
-   actions:{listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}})},
+   actions:{listJobsForWorkflowRunAttempt:async()=>({data:{total_count:0,jobs:[]}})},
    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{
      ...candidate,merged_at:null}})},
    issues:{listComments:async()=>({data:[],headers:{'x-ratelimit-remaining':'500'}}),
@@ -110,4 +110,47 @@ test('cancelled workflow with real jobs is distinct from jobless startup',()=>{
  assert.equal(fromEvent({...event,conclusion:'cancelled'}).conclusion,'cancelled');
  assert.throws(()=>getJobs({data:{total_count:0,jobs:[]}},
    {queued_at:time,conclusion:'cancelled',updated_at:time}),/NO_CONFIRMED_JOBS/);
+});
+
+test('archive requests the event attempt, never latest jobs from a later rerun',async()=>{
+ const requests=[],rows=[];let body='';
+ const github={rest:{
+  actions:{
+   listJobsForWorkflowRun:async()=>{throw Error('latest attempt must not be read');},
+   listJobsForWorkflowRunAttempt:async args=>{
+    requests.push(args);
+    const offset=args.attempt_number===1?'21':'23';
+    return {data:{total_count:1,jobs:[{id:100+args.attempt_number,
+     run_attempt:args.attempt_number,name:'Core',status:'completed',conclusion:'success',
+     created_at:'2026-11-04T14:'+offset+':00Z',
+     started_at:'2026-11-04T14:'+offset+':01Z',completed_at:'2026-11-04T14:25:00Z'}]}};
+   }},
+  pulls:{get:async()=>({data:{created_at:'2026-11-04T14:19:00Z',
+   base:{ref:'codex/public-book-library'},head:{sha,ref:'fix/timeline',
+   repo:{full_name:'andylitvinov-design/books'}}}})},
+  issues:{listComments:async()=>({data:body?[{id:777,body}]:[],
+   headers:{'x-ratelimit-remaining':'500'}}),
+   createComment:async x=>{body=x.body;},updateComment:async x=>{body=x.body;}}
+ }};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',
+  eventName:'workflow_run',payload:{workflow_run:{...event,run_attempt:2}}};
+ assert.equal((await archive({github,context})).status,'ARCHIVED');
+ context.payload.workflow_run={...event,run_attempt:1};
+ assert.equal((await archive({github,context})).status,'ARCHIVED');
+ assert.deepEqual(requests.map(x=>x.attempt_number),[2,1]);
+ assert.ok(requests.every(x=>x.run_id===123&&!('filter' in x)));
+ const saved=parseShard(body,'2026-11-04T14-success').runs;
+ assert.equal(saved.length,2);
+ assert.deepEqual(saved.map(x=>[x.attempt,x.jobs[0].id]).sort(),[[1,101],[2,102]]);
+});
+test('terminal skipped jobs contribute no duration or false partial history',()=>{
+ const good={id:1,run_attempt:1,status:'completed',name:'Core',conclusion:'success',
+  created_at:time,started_at:time,completed_at:'2026-11-04T14:25:00Z'};
+ const skipped={id:2,status:'completed',conclusion:'skipped'};
+ const run={run_id:123,attempt:1,queued_at:time};
+ const result=getJobs({data:{jobs:[good,skipped],total_count:2}},run);
+ assert.equal(result.jobs.length,1);assert.equal(result.partial_jobs,false);
+ const mixed=getJobs({data:{jobs:[good,{...good,id:3,run_attempt:2}],total_count:2}},run);
+ assert.equal(mixed.jobs.length,1);assert.equal(mixed.partial_jobs,true);
+ assert.throws(()=>getJobs({data:{jobs:[{...good,run_attempt:2}],total_count:1}},run),/NO_CONFIRMED_JOBS/);
 });

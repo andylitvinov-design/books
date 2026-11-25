@@ -42,9 +42,12 @@ function getJobs(response,run){
    data.total_count!==data.jobs.length||data.total_count>100)throw Error('INCOMPLETE_RUN_JOBS');
  const rows=[];let incomplete=false;
  for(const j of data.jobs){
-   if(j.status==='skipped')continue;
+   // A skipped job commonly has status=completed and conclusion=skipped.
+   // It never proves execution, and missing timestamps on it are not gaps.
+   if(j.status==='skipped'||(j.status==='completed'&&j.conclusion==='skipped'))continue;
    const created=iso(j.created_at),started=iso(j.started_at),done=iso(j.completed_at);
-   if(!number(j.id)||!created||!started||!done||Date.parse(created)>Date.parse(started)||
+   if(!number(j.id)||(j.run_attempt!=null&&j.run_attempt!==run.attempt)||
+     !created||!started||!done||Date.parse(created)>Date.parse(started)||
      Date.parse(started)>Date.parse(done)){incomplete=true;continue;}
    rows.push({id:j.id,name:String(j.name||'job').slice(0,70),queued_at:created,started_at:started,
      completed_at:done,conclusion:String(j.conclusion||'unknown').slice(0,24),
@@ -99,8 +102,11 @@ async function archive({github,context,minRemaining=80}){
     return {status:'NON_TERMINAL_CONCLUSION'};
  const {owner,repo}=context.repo;
  // At most 4 GETs and 1 comment write; never touch a PR or its CI status.
- const response=await github.rest.actions.listJobsForWorkflowRun({owner,repo,
-    run_id:row.run_id,per_page:100,filter:'latest'});
+ // A later rerun may start before this completion event is processed.
+ // The latest-attempt endpoint can silently attach that newer attempt's jobs
+ // to the older receipt. Fetch the immutable event attempt, never "latest".
+ const response=await github.rest.actions.listJobsForWorkflowRunAttempt({owner,repo,
+    run_id:row.run_id,attempt_number:row.attempt,per_page:100});
  row={...row,...getJobs(response,{...row,updated_at:context.payload.workflow_run.updated_at})};
  const {data:pull}=await github.rest.pulls.get({owner,repo,pull_number:row.pr});
  const created=iso(pull?.created_at);
