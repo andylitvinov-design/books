@@ -43,7 +43,7 @@ test('one weekly photo per ISO-week uses private ledger; old daily remains isola
  const cron=read('app/api/internal/direct-message-push/route.js')
  const transport=read('lib/app/client-telegram-transport.js')
  const worker=read('lib/app/daybook-weekly-dispatch.js')
- const migration=read('supabase/migrations/20261125191500_hh_daybook_weekly_photo_delivery_20261125.sql')
+ const migration=read('supabase/migrations/20261125191125_hh_daybook_weekly_photo_delivery_20261125.sql')
  const prefs=read('lib/app/daybook-daily-repository.js')
  const ui=read('components/app/daybook-daily-settings.jsx')
  assert.match(cron,/HH_DAYBOOK_WEEKLY_SEND_APPROVED==='true'/)
