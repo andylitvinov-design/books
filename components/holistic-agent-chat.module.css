@@ -1111,6 +1111,11 @@
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}
 
+/* Modern Safari native top layer: preserve inline details and the legacy
+   fallback without letting a rounded/overflowing composer clip the menu. */
+.composerMenu[popover]:not(:popover-open){display:none!important}
+.composerMenu:popover-open{position:fixed!important;margin:0!important;inset:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;display:grid!important;max-width:none!important}
+
 
 /* Established AI conversation — compact WhatsApp/Telegram-style composer.
    Scoped to the actual in-thread form, never the opening card or recording UI.
