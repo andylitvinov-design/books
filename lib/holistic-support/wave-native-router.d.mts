@@ -8,6 +8,7 @@ export type WaveNativeReply = Readonly<{
   source:typeof WAVE_NATIVE_ROUTER_VERSION;
   modelUsed:false;
   externalCalled:false;
+  journey?:Readonly<{path:'therapy'|'consultation'|'goal'|null;stage:number|null}>;
   phase?:'clarify'|'propose'|'try'|'checkin'|'alternate'|'pause'|'listen'|'resume'|'reflect'|'complete'|'reframe'|'exhausted';
   situationCode?:string|null;
 }>;
