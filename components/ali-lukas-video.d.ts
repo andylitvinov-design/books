@@ -10,6 +10,11 @@ declare const AliLukasVideo:ForwardRefExoticComponent<{
   locale?:string
   personaId?:string
   blocked?:boolean
+  checkBlocked?:boolean
+  audioAvailable?:boolean
+  audioActive?:boolean
+  audioPaused?:boolean
+  onAudioMode?:(switchingFromVideo:boolean)=>void
   onActivate?:()=>void
   onSpeaking?:()=>void
   onSpeechEnd?:()=>void

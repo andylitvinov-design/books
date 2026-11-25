@@ -18,12 +18,13 @@ async function post(body,signal){
   if(!r.ok)throw Error('AVATAR_UNAVAILABLE')
   return r
 }
-const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,onActivate,onSpeaking,onSpeechEnd,onStop,onSpeakInput},ref){
+const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,checkBlocked=false,audioAvailable=false,audioActive=false,audioPaused=false,onAudioMode,onActivate,onSpeaking,onSpeechEnd,onStop,onSpeakInput},ref){
   const t=copy[locale]||copy.en
   const [mode,setMode]=useState('off'),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
   const checkOnly=mode==='check',available=mode!=='off'
   const video=useRef(null),audio=useRef(null),run=useRef(null),mounted=useRef(false),blockedRef=useRef(blocked)
-  blockedRef.current=blocked
+  const currentBlocked=checkOnly?checkBlocked:blocked
+  blockedRef.current=currentBlocked
   const callbacks=useRef({onSpeaking,onSpeechEnd,onStop,onSpeakInput})
   callbacks.current={onSpeaking,onSpeechEnd,onStop,onSpeakInput}
   const report=v=>{if(mounted.current)setState(v)}
@@ -128,10 +129,10 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     document.addEventListener('visibilitychange',hide);window.addEventListener('pagehide',leave)
     return()=>{mounted.current=false;ac.abort();stop();document.removeEventListener('visibilitychange',hide);window.removeEventListener('pagehide',leave)}
   },[])
-  useEffect(()=>{if(blocked)stop()},[blocked])
+  useEffect(()=>{if(currentBlocked)stop()},[currentBlocked])
   useEffect(()=>{stop();setAgreed(false)},[locale,personaId])
   async function start(){
-    if(!available||!agreed||blockedRef.current||run.current||document.hidden||!video.current||!audio.current)return
+    if(!available||!agreed||blockedRef.current||checkBlocked||run.current||document.hidden||!video.current||!audio.current)return
     let settle
     const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),checkOnly,stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
     run.current=current;report('connecting')
@@ -176,14 +177,24 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   if(!available)return null
   const live=['connecting','connected','speaking','sound'].includes(state)
   const locked=live||state==='stopping'||state==='unconfirmed'
-  return <section data-hh-lukas-video data-video-mode={mode} data-state={state} aria-label={t.title} style={{padding:'6px 10px',border:'1px solid #dce6de',borderRadius:14,background:'#f7faf7',display:'grid',gap:4}}>
+  const audioLabel=locale==='ru'?(audioActive?'Аудио · пауза':audioPaused?'Продолжить аудио':'Аудиозвонок'):locale==='es'?(audioActive?'Audio · pausa':audioPaused?'Reanudar audio':'Llamada de audio'):(audioActive?'Audio · pause':audioPaused?'Resume audio':'Audio call')
+  function switchToAudio(){
+    const current=run.current
+    const switching=Boolean(current&&!current.stopped)
+    if(switching)stop(current)
+    onAudioMode?.(switching)
+  }
+  return <section data-hh-lukas-video data-video-mode={mode} data-state={state} data-audio-active={audioActive&&!live?'true':undefined} aria-label={t.title} style={{padding:'6px 10px',border:'1px solid #dce6de',borderRadius:14,background:'#f7faf7',display:'grid',gap:4}}>
     <div data-lukas-portrait style={{position:'relative',height:'var(--hh-lukas-height,clamp(100px,24dvh,220px))',overflow:'hidden',borderRadius:10,background:'#18382f',display:'grid',placeItems:'center',color:'#fff'}}>
       <video ref={video} autoPlay playsInline muted style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',visibility:live?'visible':'hidden'}}/>
       {(!live||state==='connecting')&&<div style={{position:'relative',padding:8,textAlign:'center'}}><strong>Lukas</strong><div style={{fontSize:12}}>{state==='connecting'?t.connecting:t.idle}</div></div>}
     </div>
     <audio ref={audio} autoPlay muted style={{display:'none'}}/>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}><strong>{t.title}</strong>
-      {live?<button type="button" onClick={()=>stop()}>{t.stop}</button>:<button type="button" disabled={!agreed||blocked||locked} onClick={start}>{checkOnly?(locale==='ru'?'Проверить видео Lukas':locale==='es'?'Probar vídeo Lukas':'Test Lukas video'):t.ready}</button>}
+    <strong>{t.title}</strong>
+    <div role="group" aria-label={locale==='ru'?'Режим общения':locale==='es'?'Modo de conversación':'Conversation mode'} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+      {audioAvailable&&<button type="button" data-hh-lukas-audio-mode aria-pressed={audioActive&&!live}
+        disabled={checkBlocked&&!audioActive} onClick={switchToAudio} style={{flex:'1 1 130px',minHeight:44,border:'1px solid #c8d9ce',borderRadius:12,padding:'8px 10px',background:audioActive&&!live?'#d4e8dc':'#fff',color:'#173d33'}}>{audioLabel}</button>}
+      {live?<button type="button" data-hh-lukas-video-mode aria-pressed="true" onClick={()=>stop()} style={{flex:'1 1 130px',minHeight:44}}>{t.stop}</button>:<button type="button" data-hh-lukas-video-mode aria-pressed="false" disabled={!agreed||currentBlocked||checkBlocked||locked} onClick={start} style={{flex:'1 1 130px',minHeight:44,border:'1px solid #187f69',borderRadius:12,padding:'8px 10px',background:'#187f69',color:'#fff'}}>{checkOnly?(locale==='ru'?'Проверить видео Lukas':locale==='es'?'Probar vídeo Lukas':'Test Lukas video'):t.ready}</button>}
       {state==='sound'&&<button type="button" onClick={()=>void enableSound()}>{t.sound}</button>}
       {!checkOnly&&state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
     </div>

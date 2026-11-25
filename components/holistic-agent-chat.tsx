@@ -2377,7 +2377,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <div className={styles.lukasVideoHeader}>
         <AliLukasVideo ref={lukasRef} locale={locale} personaId={persona.id}
           blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected}
-          onActivate={()=>{voice.stopDialogue();stopAliPersonaAudio();}}
+          checkBlocked={busy||proBusy||recorderOpen||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
+          audioAvailable={voiceEnabled} audioActive={voice.conversing} audioPaused={voice.paused}
+          onAudioMode={switching=>{
+            if(switching){closeComposerMenu();voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(true);}
+            else toggleMessengerVoice();
+          }}
+          onActivate={()=>{voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);}}
           onSpeaking={()=>voice.markExternalSpeaking()}
           onSpeechEnd={()=>voice.resumeAfterExternalReply()}
           onStop={()=>voice.stopDialogue()}
