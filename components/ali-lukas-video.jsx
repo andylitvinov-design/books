@@ -135,7 +135,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     let settle
     const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),checkOnly,stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
     run.current=current;report('connecting')
-    current.deadline=setTimeout(()=>stop(current),55000)
+    current.deadline=setTimeout(()=>stop(current,current.checkOnly?'failed':'ended'),55000)
     try{
       onActivate?.()
       audio.current.muted=true
@@ -154,7 +154,10 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
         onSilent:()=>{
           if(current.stopped||!current.playback.silent())return
           current.speechAbort=null
-          if(current.checkOnly){stop(current);return}
+          if(current.checkOnly){
+            const ok=current.videoWatch?.isLive()&&current.sound&&audio.current?.srcObject?.getAudioTracks?.().some(track=>track.readyState==='live'&&!track.muted)&&!audio.current.paused&&!audio.current.muted
+            stop(current,ok?'check-passed':'failed');return
+          }
           report('connected')
           callbacks.current.onSpeechEnd?.()
         }})
@@ -185,7 +188,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       {!checkOnly&&state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
     </div>
     {!locked&&<label style={{fontSize:11,lineHeight:1.3}}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/> {checkOnly?(locale==='ru'?'Только фиксированное приветствие, без данных из чата.':locale==='es'?'Solo saludo fijo, sin datos del chat.':'Fixed greeting only; no chat data.'):t.consent}</label>}
-    <small role="status">{state==='idle'?(checkOnly?(locale==='ru'?'Проверка видеоканала владельцем; живой диалог пока не включён.':locale==='es'?'Prueba del propietario; el diálogo aún no está habilitado.':'Owner video check; live dialogue is not yet enabled.'):t.limit):(t[state]||t.failed)}</small>
+    <small role="status">{state==='idle'?(checkOnly?(locale==='ru'?'Проверка видеоканала владельцем; живой диалог пока не включён.':locale==='es'?'Prueba del propietario; el diálogo aún no está habilitado.':'Owner video check; live dialogue is not yet enabled.'):t.limit):(state==='check-passed'?(locale==='ru'?'Видеодорожка, движущиеся кадры и воспроизведение речи подтверждены.':locale==='es'?'Pista de vídeo, fotogramas y reproducción de voz confirmados.':'Video track, advancing frames and speech playback confirmed.'):t[state]||t.failed)}</small>
   </section>
 })
 export default AliLukasVideo

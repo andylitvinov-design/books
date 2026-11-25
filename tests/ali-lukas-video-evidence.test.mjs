@@ -41,7 +41,7 @@ test('browser frame callback path requires advancement and stops on video track 
   }finally{watcher.stop()}
 })
 test('synthetic video check cannot grant dialogue or submit custom text or private history',()=>{
-  const env={SIMLI_API_KEY:'fake',HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT:'true'}
+  const env={SIMLI_API_KEY:'fake',HH_COACH_AVATAR_PILOT:'owner-free-only',HH_SIMLI_FREE_ACCOUNT_VERIFIED:'true',NEXT_PUBLIC_HH_LUKAS_VIDEO_CHECK:'true'}
   assert.equal(ownerLukasVideoCheckReady(env),true)
   assert.equal(ownerSimliDialogueReady(env),false)
   assert.equal(ownerLukasVideoCheckReady({}),false)

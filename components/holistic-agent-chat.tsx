@@ -2316,7 +2316,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
     {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact} companionVoice={voiceEnabled?voice:undefined}/>}
-    {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==="true"&&messengerView&&authenticated&&!pageHelp&&
+    {(process.env.NEXT_PUBLIC_HH_LUKAS_VIDEO_CHECK==="true"||process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==="true")&&messengerView&&authenticated&&!pageHelp&&
       <div className={styles.lukasVideoHeader}>
         <AliLukasVideo ref={lukasRef} locale={locale} personaId={persona.id}
           blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected}

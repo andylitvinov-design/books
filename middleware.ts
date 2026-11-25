@@ -330,7 +330,7 @@ export async function middleware(request: NextRequest) {
     process.env.HH_COACH_AVATAR_PILOT==='owner-free-only' &&
     process.env.HH_SIMLI_FREE_ACCOUNT_VERIFIED==='true'
   const ownerLukasVideoCheckPage = /^\/(en|ru|es)\/app\/messages\/?$/.test(pathname) &&
-    process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true' &&
+    process.env.NEXT_PUBLIC_HH_LUKAS_VIDEO_CHECK==='true' &&
     process.env.HH_COACH_AVATAR_PILOT==='owner-free-only' &&
     process.env.HH_SIMLI_FREE_ACCOUNT_VERIFIED==='true'
   const ownerSimliDialogueOrigin = (ownerSimliDialoguePage||ownerLukasVideoCheckPage) ? ' wss://api.simli.ai https://api.simli.ai wss://*.livekit.cloud https://*.livekit.cloud' : ''
