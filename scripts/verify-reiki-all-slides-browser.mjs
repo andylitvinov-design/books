@@ -856,6 +856,10 @@ const context = await browser.newContext({ viewport:{width:390,height:844},devic
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
 try {
+  if (process.env.HH_REIKI_DAYBOOK_ONLY === "1") {
+    for (const locale of ["en","ru"]) await verifyGoldenDaybook(locale);
+    console.log("REIKI_GOLDEN_ONLY_PASS", JSON.stringify({engine:engineName,slides:68,locales:["en","ru"],viewports:3}));
+  } else {
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
   assert.match(image.headers()["content-type"]||"",/image\/svg\+xml/);
@@ -886,6 +890,7 @@ try {
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
     JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 68,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  }
 } finally {
   await browser.close();
 }
