@@ -320,12 +320,15 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             await expect(button).toHaveCount(1)
             await expect(button).toHaveAttribute('type','button')
             await expect(button).toHaveAttribute('aria-label',programs[locale][index])
+            await expect(button).toHaveAccessibleName(programs[locale][index])
             await expect(button).toBeVisible()
             await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
             const box=await button.boundingBox()
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
           }
           await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
           await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
           const journeyLink=entry.locator('[data-home-continue-path]')
           await expect(journeyLink).toHaveCount(1)
@@ -355,6 +358,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()

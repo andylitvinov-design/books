@@ -758,11 +758,35 @@ async function exercise(engine, browserType, width) {
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
           const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
+          // The normal Home has an IntersectionObserver-driven lazy catalogue above
+          // About. Exercise the user scroll through it before locating the lower link;
+          // a late insertion can otherwise move the click target on a busy CI runner.
+          // This is still a single real user click and all CSP/history assertions remain.
+          if (!fromFastHome) {
+            const deferredHome = cspPage.locator('[data-home-deferred-sections]');
+            await expect(deferredHome).toHaveCount(1);
+            await deferredHome.scrollIntoViewIfNeeded();
+            await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
+          }
           const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
+          await publicAbout.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+          await cspPage.evaluate(() => {
+            window.__hhAboutClickEvidence = null;
+            document.addEventListener('click', event => {
+              const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+              window.__hhAboutClickEvidence = { href: link?.getAttribute('href') || null, trusted: event.isTrusted,
+                tag: event.target instanceof Element ? event.target.tagName : null };
+            }, { capture: true, once: true });
+          });
           await publicAbout.click();
-          await expect(cspPage).toHaveURL(origin + '/en/about');
+          try {
+            await expect(cspPage).toHaveURL(origin + '/en/about', { timeout: 20000 });
+          } catch (error) {
+            const clickEvidence = await cspPage.evaluate(() => window.__hhAboutClickEvidence).catch(() => null);
+            throw new Error(`${error.message}; aboutClick=${JSON.stringify(clickEvidence)}`);
+          }
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),
