@@ -68,14 +68,15 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       if(sample.numberOfChannels!==1||sample.duration>35||sample.sampleRate<16000||sample.sampleRate>192000)throw Error('AVATAR_SAMPLE_INVALID')
       const samples=sample.getChannelData(0),resampler=new GeminiLivePcmResampler(sample.sampleRate)
       const step=Math.min(16384,Math.round(sample.sampleRate/10))
-      let offset=0
+      let offset=0,timer
+      const clearOwnTimer=()=>{clearInterval(timer);if(current.pacer===timer)current.pacer=null}
       const send=()=>{
-        if(current.stopped||!current.gate.isCurrent(ticket)||blockedRef.current){clearInterval(current.pacer);current.pacer=null;return}
-        if(offset>=samples.length){clearInterval(current.pacer);current.pacer=null;report('connected');return}
+        if(current.stopped||!current.gate.isCurrent(ticket)||blockedRef.current){clearOwnTimer();return}
+        if(offset>=samples.length){clearOwnTimer();report('connected');return}
         try{const end=Math.min(offset+step,samples.length),bytes=resampler.push(samples.subarray(offset,end));if(bytes.length)current.renderer.sendPcm16(bytes);offset=end}
         catch{stop(current,'failed')}
       }
-      current.pacer=setInterval(send,100);send()
+      timer=setInterval(send,step/sample.sampleRate*1000);current.pacer=timer;send()
     }catch{
       if(!current.stopped&&current.gate.isCurrent(ticket)&&!ac.signal.aborted)stop(current,'failed')
     }
@@ -145,7 +146,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   const live=['connecting','connected','speaking','sound'].includes(state)
   const locked=live||state==='stopping'||state==='unconfirmed'
   return <section data-hh-lukas-video data-state={state} aria-label={t.title} style={{padding:'6px 10px',border:'1px solid #dce6de',borderRadius:14,background:'#f7faf7',display:'grid',gap:4}}>
-    <div data-lukas-portrait style={{position:'relative',height:'clamp(100px,24dvh,220px)',overflow:'hidden',borderRadius:10,background:'#18382f',display:'grid',placeItems:'center',color:'#fff'}}>
+    <div data-lukas-portrait style={{position:'relative',height:'var(--hh-lukas-height,clamp(100px,24dvh,220px))',overflow:'hidden',borderRadius:10,background:'#18382f',display:'grid',placeItems:'center',color:'#fff'}}>
       <video ref={video} autoPlay playsInline muted style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',visibility:live?'visible':'hidden'}}/>
       {(!live||state==='connecting')&&<div style={{position:'relative',padding:8,textAlign:'center'}}><strong>Lukas</strong><div style={{fontSize:12}}>{state==='connecting'?t.connecting:t.idle}</div></div>}
     </div>

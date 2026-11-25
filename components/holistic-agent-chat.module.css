@@ -1164,4 +1164,4 @@
 .lukasVideoHeader{order:0;flex:none;min-width:0;width:100%;margin:0 auto;max-width:800px}
 .lukasVideoHeader:empty{display:none}
 @media(max-width:760px){:global(.hh-messages-page) .root[data-compact]>.lukasVideoHeader{order:0;flex:none;margin:0;max-width:none}}
-:global(.hh-messages-page) [data-keyboard-open="true"] .lukasVideoHeader [data-lukas-portrait]{height:clamp(48px,10dvh,88px)}
+:global(.hh-messages-page) [data-keyboard-open="true"] .lukasVideoHeader [data-lukas-portrait]{--hh-lukas-height:clamp(48px,10dvh,88px)}
