@@ -2,11 +2,11 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 export const runtime = 'nodejs'
-export const dynamic = 'force-static'
-export const revalidate = 3600
+// Phase one changes CSS delivery only. Keep the current no-store contract;
+// CDN/ISR caching of HTML is a separate release, not part of this fix.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-// The files are produced from the completed Next build. Generating these
-// params during `next build` would cache the pre-generation fallback.
 export function generateStaticParams() { return [] }
 
 const locales = new Set(['en', 'ru', 'es'])
@@ -43,10 +43,9 @@ export async function GET(_request, { params }) {
           'Content-Type': 'text/html; charset=utf-8',
           'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
           'Content-Security-Policy': snapshot.policy,
-          'Cache-Control': 'public, max-age=0, s-maxage=3600, must-revalidate',
-          // Dedicated guest-only rewrite target. Middleware recomputes the
-          // representation marker; it never shares cookie-dependent HTML.
-          // Vercel CDN rejects Vary: Cookie (2026-09-30).
+          ...privateHeaders,
+          // The compiled guest HTML remains build-bound, not CDN/ISR cached.
+          // Middleware still isolates non-canonical and personalized requests.
           'Vary': 'Accept, Accept-Encoding, X-HH-Public-Home-Encoding, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url',
         } })
       }

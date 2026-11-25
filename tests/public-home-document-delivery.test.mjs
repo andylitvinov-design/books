@@ -42,7 +42,7 @@ test('gzip representation has a separate cache key and honors explicit zero qual
 })
 
 test('the delivered document, policy and optional preload come from the same completed build', async () => {
-  assert.equal(revalidate, 3600)
+  assert.equal(revalidate, 0)
   assert.deepEqual(generateStaticParams(), [])
   const cwd = process.cwd(), previous = process.env.HH_COMPILED_PUBLIC_HOME_BUILD_ID
   const dir = await mkdtemp(join(tmpdir(), 'hh-public-document-'))
@@ -59,7 +59,8 @@ test('the delivered document, policy and optional preload come from the same com
     assert.equal(await reply.text(), snapshot.html)
     assert.equal(reply.headers.get('content-security-policy'), policy)
     assert.match(reply.headers.get('link'), /ali-inner-alchemist-hero\.webp>; rel=preload/)
-    assert.match(reply.headers.get('cache-control'), /s-maxage=3600/)
+    assert.match(reply.headers.get('cache-control'), /private, no-store/)
+    assert.doesNotMatch(reply.headers.get('cache-control'), /\bs-maxage=[1-9]/i)
     assert.equal(reply.headers.get('set-cookie'), null)
     assert.equal(reply.headers.get('content-encoding'), null)
     assert.match(reply.headers.get('vary'), /Accept-Encoding/)
@@ -92,7 +93,7 @@ test('the delivered document, policy and optional preload come from the same com
 })
 
 
-test('built canonical cache isolates anonymous, cookie, authorization and router requests', {
+test('built canonical CSS delivery remains no-store and isolates cookie, authorization and router requests', {
   skip: !process.env.HH_PUBLIC_HOME_TEST_ORIGIN,
 }, async () => {
   const origin=new URL(process.env.HH_PUBLIC_HOME_TEST_ORIGIN)
@@ -111,13 +112,18 @@ test('built canonical cache isolates anonymous, cookie, authorization and router
     const first=await request(path)
     assert.equal(first.status,200,path)
     assert.ok(isHashDocument(first),path+' guest hash CSP')
+    assert.match(first.headers.get('cache-control')||'',/private.*no-store|no-store.*private/i,path+' must retain private no-store')
+    assert.doesNotMatch(first.headers.get('cache-control')||'',/\bs-maxage=[1-9]/i)
     assert.equal(first.headers.get('set-cookie'),null)
     assert.doesNotMatch(first.headers.get('vary')||'',/(?:^|,\s*)Cookie(?:,|$)/i)
     const body=await first.text()
     assert.match(body,/data-home-dialogue-entry/)
+    assert.match(body,/<img\b[^>]*src="\/images\/holistic-house\/(?:ali-inner-alchemist-hero\.webp|my-coach-motion\/[a-z0-9_-]+\.webp)"[^>]*>/i,path+' original URL portrait')
+    assert.doesNotMatch(body,/<img\b[^>]*src="data:image\/webp;base64,[^"]+"[^>]*>/i,path+' no inline hero data URL')
     const compressed=await request(path,{'accept-encoding':'gzip'})
     assert.equal(compressed.status,200,path+' gzip')
     assert.equal(compressed.headers.get('content-encoding'),'gzip',path+' gzip wire representation')
+    assert.match(compressed.headers.get('cache-control')||'',/private.*no-store|no-store.*private/i)
     assert.equal(await compressed.text(),body)
     for(const headers of [
       {cookie:'hh_test_session=fixture'},
