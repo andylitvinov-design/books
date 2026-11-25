@@ -113,9 +113,13 @@ jobs:
                (.files | type == "array" and length > 0 and length < 300 and all(
                  (.status == "modified" or .status == "added" or .status == "removed") and
                  .previous_filename == null and
-                 (.filename | type == "string" and test("^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$"))))
+                 (.filename | type == "string") and
+                 ((.filename | test("^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$")) or
+                  (.status == "modified" and (.filename == "tests/ci-workflow-globs.test.mjs" or
+                    .filename == "tests/ci-heavy-impact.test.mjs" or
+                    .filename == "tests/pr-fast-lane.test.mjs")))))
              ' <<< "$compare_json" >/dev/null 2>&1; then
-            echo 'Skip routine Vercel build: only GitHub workflow YAML changed from current LIVE.'
+            echo 'Skip routine Vercel build: only GitHub workflow YAML and explicitly reviewed CI contract tests changed from current LIVE.'
             exit 0
           fi
           # Unavailable, ambiguous or mixed delta: fall through to existing release.
