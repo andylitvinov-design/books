@@ -222,8 +222,10 @@ export function ServicesCompactCatalog({ locale, children }: { locale: PublicLoc
     let firstFrame = 0;
     let secondFrame = 0;
     const revealLinkedService = () => {
-      if (!window.matchMedia("(max-width: 760px)").matches) return;
-      const id = panelFromHash[window.location.hash.slice(1)];
+      // Compact panels now exist at desktop widths too. Follow recognized
+      // deep links at every viewport, opening only the requested group.
+      const hash = window.location.hash.slice(1);
+      const id = Object.hasOwn(panelFromHash, hash) ? panelFromHash[hash] : undefined;
       if (!id) return;
       setExpanded(previous => new Set(previous).add(id));
       window.cancelAnimationFrame(firstFrame);
@@ -234,10 +236,15 @@ export function ServicesCompactCatalog({ locale, children }: { locale: PublicLoc
           const panel = document.querySelector<HTMLElement>(
             '[data-services-unified-panel="' + id + '"]'
           );
-          panel?.scrollIntoView({
+          // The session link lands on its actual paid choices once mounted.
+          // Other legacy hashes retain their existing panel-level scroll.
+          const booking = hash === "consultation" ? document.getElementById(hash) : null;
+          const options: ScrollIntoViewOptions = {
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
             block: "start",
-          });
+          };
+          if (booking && panel?.contains(booking)) booking.scrollIntoView(options);
+          else panel?.scrollIntoView(options);
         });
       });
     };

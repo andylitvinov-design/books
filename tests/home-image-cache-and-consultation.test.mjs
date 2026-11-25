@@ -34,3 +34,21 @@ test("the first screen has a native localized booking link before the program ch
   }
   assert.ok(dialogue.indexOf("data-home-request-session") < dialogue.indexOf("data-home-focus-grid"));
 });
+
+
+test("consultation deep links open the actual booking section on mobile and desktop",()=>{
+  const catalog=readFileSync(new URL("../components/services-unified-catalog.tsx",import.meta.url),"utf8");
+  const effect=catalog.slice(catalog.indexOf("const revealLinkedService ="),catalog.indexOf('window.addEventListener("hashchange"'));
+  assert.doesNotMatch(effect, /max-width|if\s*\(!window\.matchMedia/);
+  assert.match(effect,/Object\.hasOwn\(panelFromHash, hash\)/);
+  assert.match(catalog,/consultation: "consultation"/);
+  assert.match(effect,/setExpanded\(previous => new Set\(previous\)\.add\(id\)\)/);
+  assert.match(effect,/hash === "consultation" \? document\.getElementById\(hash\)/);
+  assert.match(effect,/if \(booking && panel\?\.contains\(booking\)\) booking\.scrollIntoView\(options\)/);
+  assert.match(effect,/else panel\?\.scrollIntoView\(options\)/);
+  assert.match(catalog,/\(id === "consultation" \|\| id === "directory"\) && !expanded \? null : children/);
+  for(const path of ["app/[locale]/services/page.tsx","app/es/services/page.tsx"]){
+    const page=readFileSync(new URL("../"+path,import.meta.url),"utf8");
+    assert.match(page,/<ServicesCompactPanel id="consultation">[\s\S]*?<PublicConsultationCta[^>]*id="consultation" serviceBooking/);
+  }
+});

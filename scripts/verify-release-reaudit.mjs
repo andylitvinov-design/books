@@ -56,7 +56,15 @@ async function assertCspPublicHome(page) {
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
   await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
-  for (const intention of ['understand','goal','talk']) await expect(home.locator('[data-home-intent-option="'+intention+'"]')).toBeVisible();
+  for (const intention of ['clarity','goal','business']) {
+    const choice = home.locator('[data-home-intent-option="'+intention+'"]');
+    await expect(choice).toHaveCount(1);
+    await expect(choice).toHaveAttribute('type','button');
+    await expect(choice).toBeVisible();
+  }
+  await expect(home.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
+  await expect(home.locator('[data-home-intent-form]')).toBeVisible();
+  await expect(home.locator('[data-home-methods]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -455,6 +463,28 @@ async function exercise(engine, browserType, width) {
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
+
+      await check('home-paid-session-link', { engine, width, locale }, async () => {
+        const home = locale === 'en' ? '/' : '/' + locale;
+        await page.goto(origin + home, { waitUntil: 'domcontentloaded', timeout: 35000 });
+        await expect(page.locator('[data-home-dialogue-entry][data-home-interactive="true"]')).toBeVisible({ timeout: 20000 });
+        const link = page.locator('a[data-home-request-session]');
+        await expect(link).toHaveCount(1);
+        await expect(link).toHaveAttribute('href', '/' + locale + '/services#consultation');
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const rect = await link.boundingBox();
+        assert.ok(rect && rect.height >= 44 && rect.y >= 0 && rect.y + rect.height <= 900,
+          'The real booking link is visible in the first viewport without scrolling');
+        await link.click();
+        await expect(page).toHaveURL(origin + '/' + locale + '/services#consultation', { timeout: 35000 });
+        const panel = page.locator('[data-services-unified-panel="consultation"]');
+        await expect(panel).toHaveAttribute('data-expanded', 'true', { timeout: 20000 });
+        const booking = panel.locator('#consultation[data-consultation-capture="service"]');
+        await expect(booking).toBeVisible();
+        await expect(booking.locator('[data-service-product]')).toHaveCount(2);
+        await expect(booking.locator('h2')).toBeInViewport({ timeout: 10000 });
+        return { realPaidOffer: true, paymentsOrBookingsMade: false, firstScreen: true };
+      });
       await check('consultation-safe-handoff', { engine, width, locale }, async () => {
         await page.goto(origin + `/${locale}/about`, { waitUntil: 'networkidle' });
         const capture = page.locator('[data-consultation-capture="personal"]');
