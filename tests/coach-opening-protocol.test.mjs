@@ -204,3 +204,22 @@ test('bare coaching topics never become a client name after a lost opening turn'
   assert.equal(q.checkmarks.name,true,'an explicitly chosen name still works')
  }
 })
+
+test('speech repair requests do not complete the name gate, including capitalized ASR',()=>{
+ for(const [locale,yes,repairs,name] of [
+  ['en','Yes',['Say again','Repeat please','Pardon me','What?'],'Mary Jane'],
+  ['ru','Да',['Ещё раз','Повторите','Не слышно','Что?'],'Анна Мария'],
+  ['es','Sí',['Otra vez','Repite','Perdón','¿Cómo?'],'José Luis'],
+ ]){
+  for(const repair of repairs){
+   const p=coachOpeningProgress({personaId:'genie',locale,turns:[yes,repair]})
+   assert.equal(p.current,'name',locale+': '+repair)
+   assert.equal(p.checkmarks.name,false)
+   assert.equal(p.answers.name,undefined)
+  }
+  const p=coachOpeningProgress({personaId:'genie',locale,turns:[yes,repairs[0],name]})
+  assert.equal(p.answers.name.value,name)
+ }
+ const p=coachOpeningProgress({allowPrior:true,priorSession:{name:'Say again',topic:'Work'},turns:['Yes','Yes']})
+ assert.equal(p.checkmarks.name,false)
+})

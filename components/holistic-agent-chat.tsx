@@ -1523,7 +1523,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       // "source: algorithm" footer only for this small-talk subset.
       const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
       const friendlyTurn=data.source==="friend-mind"||Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
-      setSource(verifiedGemini?"Gemini · Free API":friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      // The server attributes actual model output, not a selected mode or key presence.
+      setSource(used==="gemini-free-public"&&data.modelUsed===true?"Gemini · Free API":
+        friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
       if(nativeDowngrade){
         // A successful native reply is the reply, not a large error alert.
         setMode("rules");setAgree(false);setStatus("");
