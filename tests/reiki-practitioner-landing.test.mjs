@@ -149,3 +149,48 @@ test("Master roadmap stays on the same landing and exposes all five original lev
   assert.ok(css.includes('min-height: 46px'));
   assert.ok(!source.includes('MyReikiHeader') && !source.includes('ReikiProgramNavigation locale='));
 });
+
+test("Three approved Reiki overview screens immediately follow the second landing screen",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const start=landing.indexOf('data-reiki-system-overview');
+ const end=landing.indexOf('className={styles.foundations}',start);
+ const overview=landing.slice(start,end);
+ assert.ok(landing.indexOf('data-reiki-details-screen')<start && start<end);
+ assert.ok(overview.includes('paths.map') && overview.includes('data-reiki-overview-system={system.key}'));
+ assert.ok(overview.includes('src={artwork.src}') && overview.includes('unoptimized loading="lazy"'));
+ assert.ok(overview.includes('href={academyUrl(locale, system.study)}'));
+ assert.ok(!overview.includes('<MyReikiHeader') && !overview.includes('<ReikiProgramNavigation'));
+ for (const key of ["tantra","kundalini","yggdrasil"]) {
+   const asset=readFileSync(new URL("../public/images/holistic-house/reiki-"+key+"-approved-artwork.webp",import.meta.url));
+   assert.equal(asset.toString("ascii",0,4),"RIFF");
+   assert.equal(asset.toString("ascii",8,12),"WEBP");
+   assert.ok(asset.includes(Buffer.from("VP8L")),"Lossless WebP required");
+ }
+ assert.ok(css.includes("MY_REIKI_APPROVED_SYSTEM_SCREENS_20261125"));
+ assert.ok(css.includes("max-height:30svh") && css.includes("background-repeat:no-repeat,repeat-y"));
+ assert.ok(landing.includes('className={styles.reikiLegacyMaterials}'));
+});
+
+
+test("Second screen uses the exact five approved artwork crops and compact, uniform mobile rows",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ const photoLine=landing.split("\n").find(line=>line.includes("const detailPhotos = ["));
+ const filenames=["sunrise","lotus","kundalini","world-tree","initiation"].map(name=>"/images/holistic-house/reiki-week-"+name+"-approved.webp");
+ assert.deepEqual([...photoLine.matchAll(/"([^"]+\.webp)"/g)].map(match=>match[1]),filenames);
+ for(const filename of filenames){
+   const bytes=readFileSync(new URL("../public"+filename,import.meta.url));
+   assert.equal(bytes.toString("ascii",0,4),"RIFF");
+   assert.equal(bytes.toString("ascii",8,12),"WEBP");
+   assert.ok(bytes.length>20000 && bytes.length<60000);
+ }
+ assert.ok(landing.includes('src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 34vw, 260px" unoptimized'));
+ assert.ok(css.includes("REIKI_SECOND_SCREEN_REFERENCE_PARITY_20261125"));
+ assert.ok(css.includes(".reikiDetailsScreen .stepRail a:hover,"));
+ assert.ok(css.includes(".reikiDetailsScreen .stepRail a:focus-visible"));
+ assert.ok(css.includes("grid-template-columns:33% minmax(0,1fr) 17px"));
+ assert.ok(css.includes("min-height:clamp(58px,7.3svh,68px)"));
+ assert.ok(css.includes("grid-auto-rows:1fr"));
+ assert.ok(css.includes("max-height:740px"));
+});
