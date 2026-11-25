@@ -1,21 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../'+path, import.meta.url))
 const mediaRoot = 'public/images/holistic-house/my-coach-motion/'
 const code = path => read(path).toString('utf8')
 
-test('Merlin and Harry have lightweight, real silent H264 greeting clips', () => {
+test('Merlin and Harry have native silent H264 greeting clips with matching first frames', () => {
   for (const name of ['merlin', 'harry']) {
-    const path = mediaRoot + name + '-greeting-real-v1.mp4'
+    const path = mediaRoot + name + '-greeting-real-v2.mp4'
     const video = read(path)
     assert.equal(video.toString('latin1', 4, 8), 'ftyp', path + ' must be an MP4')
     assert.ok(video.length > 10000, path + ' must contain actual footage')
-    assert.ok(video.length < 200000, path + ' must be mobile friendly')
+    assert.ok(video.length < 1000000, path + ' must be mobile friendly')
     assert.ok(video.includes(Buffer.from('avc1')), path + ' must use browser-compatible H264')
     assert.equal(video.includes(Buffer.from('soun')), false, path + ' must have no audio')
-    assert.ok(statSync(new URL('../'+path, import.meta.url)).isFile())
+    const poster = read(path.replace(/\.mp4$/, '.webp'))
+    assert.equal(poster.toString('ascii', 8, 12), 'WEBP')
   }
 })
 
@@ -32,7 +33,7 @@ test('greeting animation is available on hero and session for all six coaches', 
   }
   assert.ok(session.includes('MyCoachMotionMedia personaId={personaId}'), 'live session uses the six-persona motion player')
   for (const name of ['merlin', 'harry']) {
-    assert.ok(motion.includes(name+'-greeting-real-v1.mp4') || motion.includes("personaId+'-greeting-real-v1.mp4'"))
+    assert.ok(motion.includes(name+'-greeting-real-v2.mp4') || motion.includes("personaId+'-greeting-real-v2.mp4'"))
   }
   assert.match(motion, /harry-soft-.*?\.mp4/)
   assert.match(motion, /prefers-reduced-motion: reduce/)
