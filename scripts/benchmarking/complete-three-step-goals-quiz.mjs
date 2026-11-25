@@ -34,6 +34,10 @@ export async function completeThreeStepGoalsQuiz(page,{
         expected,{timeout:15000});
       if(await screen()==='landing'){
         await tap(collapsedMirror.locator('[data-hh-mirror-enter="me"]'));
+        await awaitScreen('format');
+      }
+      if(await screen()==='format'){
+        await tap(collapsedMirror.locator('[data-hh-mirror-video-format="basic"]'));
         await awaitScreen('topic');
       }
       assert.equal(await screen(),'topic','GOAL_QUIZ_EXPECTS_REAL_VISIBLE_TOPIC');

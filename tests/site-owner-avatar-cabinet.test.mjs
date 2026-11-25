@@ -8,8 +8,9 @@ test('the eight already-generated site MP4s reuse My Coach paths without another
   assert.equal(new Set(SITE_OWNER_AVATARS.map(x=>x.id)).size,8);
   for(const item of SITE_OWNER_AVATARS){
     assert.equal(isSiteOwnerAvatarId(item.id),true);
-    assert.match(item.video,/^\/images\/holistic-house\/my-coach-motion\/(mira|sofia|max|alex)-natural-(calm|attentive)-v1\.mp4$/);
-    assert.match(item.poster,/^\/images\/holistic-house\/my-coach-motion\/.*-still\.webp$/);
+    assert.match(item.video,/^\/images\/holistic-house\/my-coach-motion\/(mira|sofia|max|alex)-natural-(calm|attentive)-v2\.mp4$/);
+    assert.equal(item.poster,item.video.replace(/\.mp4$/,'.webp'));
+    assert.equal(readFileSync(new URL('../public'+item.poster,import.meta.url)).toString('ascii',8,12),'WEBP');
   }
   assert.equal(isSiteOwnerAvatarId('../../private'),false);
   assert.equal(visibleSiteOwnerAvatars(['mira-calm']).length,7);
