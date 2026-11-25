@@ -8,7 +8,7 @@ const COPY = {
     label: 'My Space · course choices', discover: 'Find a course', saved: 'My courses',
     heading: 'Choose how to learn', intro: 'Explore courses by interest. Starting and saving a programme require your own choice.',
     opora: 'OPORA · Stress Relief', oporaText: '14 short lessons and an eight-question check-in',
-    reiki: 'Reiki Practitioner', reikiText: 'Free introductory lessons and practices',
+    reiki: 'Reiki Practitioner', reikiText: 'Free introductory lessons and practices', daybook: 'Open in Daybook',
     academy: 'Explore all courses', academyText: 'The full Academy catalogue',
     savedHeading: 'Continue your courses', savedIntro: 'Sign in to see courses you started or completed, saved lessons and your progress. Nothing restarts automatically.',
     google: 'Continue with Google', telegram: 'Continue with Telegram', private: 'Your learning history is private.',
@@ -18,7 +18,7 @@ const COPY = {
     label: 'Моё пространство · выбор курсов', discover: 'Подобрать курс', saved: 'Мои курсы',
     heading: 'Выберите своё направление', intro: 'Изучите программы по интересам. Начало обучения и сохранение прогресса — только по вашему выбору.',
     opora: 'ОПОРА · Антистресс', oporaText: '14 коротких занятий и стартовый самоотчёт из 8 вопросов',
-    reiki: 'Практик Рейки', reikiText: 'Бесплатные вводные занятия и практики',
+    reiki: 'Практик Рейки', reikiText: 'Бесплатные вводные занятия и практики', daybook: 'Открыть в Daybook',
     academy: 'Все курсы Академии', academyText: 'Полный каталог и другие направления',
     savedHeading: 'Продолжить мои курсы', savedIntro: 'Войдите, чтобы увидеть начатые и завершённые курсы, сохранённые уроки и прогресс. Ничего не запустится заново автоматически.',
     google: 'Войти через Google', telegram: 'Войти через Telegram', private: 'История обучения доступна только вам.',
@@ -28,7 +28,7 @@ const COPY = {
     label: 'Mi espacio · cursos', discover: 'Elegir curso', saved: 'Mis cursos',
     heading: 'Elige tu camino', intro: 'Explora programas por interés. Guardar y comenzar requieren tu propia elección.',
     opora: 'OPORA · Antiestrés', oporaText: '14 lecciones breves y ocho preguntas iniciales',
-    reiki: 'Reiki Practitioner', reikiText: 'Lecciones y prácticas introductorias gratuitas',
+    reiki: 'Reiki Practitioner', reikiText: 'Lecciones y prácticas introductorias gratuitas', daybook: 'Abrir Daybook en inglés',
     academy: 'Todos los cursos', academyText: 'El catálogo completo de la Academia',
     savedHeading: 'Continúa tus cursos', savedIntro: 'Inicia sesión para ver los cursos empezados o terminados y tu progreso. Nada se reinicia automáticamente.',
     google: 'Entrar con Google', telegram: 'Entrar con Telegram', private: 'Tu historial es privado.',
@@ -68,8 +68,13 @@ export function ProfileCoursesGuest({locale = 'en', mode = 'saved', busy = false
       <div className={styles.cards}>
         <Link href={'/' + locale + '/courses/antistress'} prefetch={false} className={styles.card}>
           <BookOpen size={23} aria-hidden="true" /><span><strong>{t.opora}</strong><small>{t.oporaText}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
-        <Link href={'/' + accountLocale + '/academy/principles-of-energywork/learn'} prefetch={false} className={styles.card}>
-          <Sparkles size={23} aria-hidden="true" /><span><strong>{t.reiki}</strong><small>{t.reikiText}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
+        <div className={styles.reikiCard}>
+          <Link href={'/' + accountLocale + '/academy/principles-of-energywork/learn'} prefetch={false} className={styles.card}>
+            <Sparkles size={23} aria-hidden="true" /><span><strong>{t.reiki}</strong><small>{t.reikiText}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
+          <Link href={'/' + accountLocale + '/academy/principles-of-energywork/daybook'} prefetch={false}
+            className={styles.daybookLink} data-reiki-daybook-discover>
+            <BookOpen size={17} aria-hidden="true" />{t.daybook}<ArrowRight size={16} aria-hidden="true" /></Link>
+        </div>
         <Link href={'/' + locale + '/academy'} prefetch={false} className={styles.card}>
           <GraduationCap size={23} aria-hidden="true" /><span><strong>{t.academy}</strong><small>{t.academyText}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
       </div>
