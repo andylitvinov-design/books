@@ -19,7 +19,7 @@ test("Course-first landing presents Flight to the Sun before the three Reiki sys
     assert.ok(page.includes(title), "Missing original title " + title);
   }
   assert.match(meditations, /key: "flight-to-sun",[\s\S]*?youtubeId: "HqfixazXqRY"/);
-  assert.match(page, /src=\{weekPhotos\[index\]\}/);
+  assert.match(page, /src=\{detailPhotos\[index\]\}/);
   assert.doesNotMatch(page, /<AcademyVideoPlayer|<EnergyworkVideoArchive/);
   assert.doesNotMatch(page, /qM_nFUkYJ1k|XvMdX5czoOc/);
   assert.match(styles, /\.sourcePending/);
