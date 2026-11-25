@@ -1,6 +1,7 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
+import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
@@ -40,7 +41,7 @@ import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
 import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
-import {DEFAULT_COACH_COURSE_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
+import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
@@ -310,6 +311,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
   const [voiceState,setVoiceState]=useState({phase:'idle',beat:0})
+  const voicePaused=voiceState.phase==='paused'
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const [selectedCourseId,setSelectedCourseId]=useState(DEFAULT_COACH_COURSE_SESSION_ID)
@@ -356,7 +358,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let last=window.performance.now()
     const tick=()=>{
       const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused&&!coachProfileOpenRef.current){
+      if(document.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef.current){
         const delta=Math.min(15,Math.max(0,(now-last)/1000))
         setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
       }
@@ -366,7 +368,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timer=window.setInterval(tick,15000)
     document.addEventListener('visibilitychange',onVisibility)
     return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted,paused])
+  },[sessionClockStarted,paused,voicePaused])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -507,9 +509,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
-    if(busy||paused||replaying||voiceState.phase!=='idle'||(selectedGeminiEngine&&!geminiEngineReady))return
+    if(busy||paused||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
-    if(!selectedGoal)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
+    if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   async function rateCoachAnswer(signal){
@@ -897,9 +899,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!message)return null
       // An unavailable or stopped transport must not lock the text composer.
       // The same first-party coach continues locally; no other provider is called.
-      if(!liveVoiceReady||voiceState.phase==='idle')return await sendMessage(message,{forceLocal:true})
+      if(!liveVoiceReady||voiceState.phase==='idle'||
+         (voicePaused&&speechRef.current?.isResumeUnavailable?.()))return await sendMessage(message,{forceLocal:true})
       const accepted=speechRef.current?.sendText?.(message)===true
       if(accepted){setDraft('');setError('');return {mode:'live'}}
+      if(voicePaused){setError(({ru:'Нажмите Play, чтобы продолжить прежний разговор.',en:'Tap Play to resume the previous conversation.',es:'Pulsa Play para continuar la conversación anterior.'})[lang]);return null}
       setError(({ru:'Сначала начните живую голосовую сессию.',
         en:'Start the live voice session first.',
         es:'Primero inicia la sesión de voz en vivo.'})[lang])
@@ -1353,15 +1357,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
-  function enterCoachingFromGreeting(){
-    // The same user gesture that approves the session starts the existing
-    // Gemini microphone path. A failed/disabled voice connection falls back
-    // to the ordinary explicit Play control; no token is minted on preview.
-    setGreetingAccepted(true)
+  function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID){
+    // Commit the chosen topic before the synchronous iOS activation gesture.
+    // Gemini reads the current courseSessionId from its mounted props ref;
+    // opening or dismissing the topic menu never calls this function.
+    const focus=id===INTRODUCTORY_COACH_SESSION_ID?'':coachCourseFocusLabel(id,conversationLang)
+    flushSync(()=>{
+      setSelectedCourseId(id)
+      setSelectedGoal(focus)
+      setGreetingAccepted(true)
+    })
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
       speechRef.current?.startSession?.()
   }
-  const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
+  const motionPhase=paused||voiceState.phase==='paused'?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
@@ -1434,10 +1443,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           showPicker={false} size="large"
           phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat} scene={visualScene}/>
       </div>
-      {!introComplete&&['idle','loading'].includes(voiceState.phase)&&
+      {((!introComplete&&['idle','loading'].includes(voiceState.phase))||voiceState.phase==='paused')&&
         <button type="button" className={styles.heroPlayControl}
-          data-coach-hero-play aria-label={lang==='ru'?'Начать голосовую сессию с презентацией коуча':lang==='es'?'Iniciar la sesión y escuchar al coach':'Play coach introduction and start session'}
-          title={lang==='ru'?'Начать сессию':lang==='es'?'Iniciar sesión':'Start session'}
+          data-coach-hero-play aria-label={voiceState.phase==='paused'?({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]:lang==='ru'?'Начать голосовую сессию с презентацией коуча':lang==='es'?'Iniciar la sesión y escuchar al coach':'Play coach introduction and start session'}
+          title={voiceState.phase==='paused'?({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]:lang==='ru'?'Начать сессию':lang==='es'?'Iniciar sesión':'Start session'}
           disabled={voiceState.phase==='loading'||busy||paused||replaying||(selectedGeminiEngine&&!geminiEngineReady)}
           onClick={startSessionFromPortrait}>
           {voiceState.phase==='loading'?<LoaderCircle size={40} aria-hidden="true"/>:

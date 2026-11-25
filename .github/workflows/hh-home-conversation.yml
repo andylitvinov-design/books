@@ -51,8 +51,12 @@ jobs:
         run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs tests/messenger-support-quiz.test.mjs
       - name: Check affected TypeScript and React UI
         run: |
-          if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit; fi
-          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx components/app/messenger-ai-landing.tsx components/app/messenger-support-quiz.tsx
+          # Protected Core independently checks every changed JS/TS file.
+          # Preserve full standalone/post-merge lint and type checks.
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+            npx --no-install tsc --noEmit
+            npx --no-install eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx components/app/messenger-ai-landing.tsx components/app/messenger-support-quiz.tsx
+          fi
       - name: Build with the project's production dependencies
         if: github.event_name != 'pull_request'
         run: npm run build

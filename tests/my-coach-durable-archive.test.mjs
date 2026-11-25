@@ -93,3 +93,27 @@ test('archived pages show earlier owner-only protocols without dropping same-mil
  assert.match(ui,/protocolPage\.accountId===accountId/)
  assert.match(ui,/activeAccountRef\.current!==accountId/)
 })
+
+// Regression: the public Samir coach must be accepted by the same archive as the other coaches.
+import {normalizeMyCoachProtocol} from '../lib/personal-coaching/session-protocol.mjs'
+import {projectCoachPriorSessions} from '../lib/coaching/coach-staged-memory.mjs'
+test('Samir can archive a reviewed partial conversation with his primary or optional method',()=>{
+ const input={id:protocolId,personaId:'genie',locale:'en',startedAt:date,completedAt:date,
+  turns:[{role:'user',content:'Yes',unanswered:true}]}
+ for(const methodId of [undefined,'woop','appreciative_inquiry']){
+  const p=normalizeMyCoachProtocol({...input,methodId})
+  assert.equal(p.personaId,'genie')
+  assert.equal(p.methodId,methodId||'woop')
+  assert.equal(p.turns[0].unanswered,true)
+ }
+ assert.throws(()=>normalizeMyCoachProtocol({...input,methodId:'grow'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('returning client never inherits a speech repair as name and older valid names survive',()=>{
+ const rows=['Say again','','','Mary Jane'].map((name,i)=>({
+  provenance:'client_reviewed_dialogue',completedAt:new Date(Date.parse(date)-i*1000).toISOString(),opening:{name}
+ }))
+ const result=projectCoachPriorSessions(rows,'Account Name')
+ assert.equal(result.preferredName,'Mary Jane')
+ assert.equal(result.previous.length,3)
+ assert.equal(projectCoachPriorSessions(rows.slice(0,3),'Account Name').preferredName,'Account Name')
+})
