@@ -16,9 +16,9 @@ export async function GET(request){
   if(!ownerSimliDialogueReady()||!await requireAdminRequest())return json({error:'ACCESS_DENIED'},403)
   return json({coach:true,chatbot:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free'))})
 }
-async function limitSimliStart(){
+async function limitAvatarStart(){
   const config=getAppConfig()
-  // Global owner test limits shared between roles and the original lab.
+  // Global owner test limits shared between both providers, roles and the lab.
   // An independently verified vendor hard billing stop remains mandatory.
   await consumeRate(config,{op:'owner-simli-start-minute'},1,60)
   await consumeRate(config,{op:'owner-simli-start-day'},2,86400)
@@ -54,12 +54,12 @@ export async function POST(request){
     if(body.action==='start-dialogue'){
       if(!ownerSimliDialogueRequestAllowed(body))throw Error('INVALID_PILOT_REQUEST')
       if(!ownerSimliDialogueReady())throw Error('FREE_PILOT_DISABLED')
-      await limitSimliStart()
+      await limitAvatarStart()
       return json(await startOwnerSimliDialogue(body))
     }
     if(!pilotRequestAllowed(body))throw Error('INVALID_PILOT_REQUEST')
     if(!pilotConfig()[body.provider]?.allowed)throw Error('FREE_PILOT_DISABLED')
-    if(body.provider==='simli')await limitSimliStart()
+    await limitAvatarStart()
     return json(await startOwnerAvatarPilot(body))
   }catch(error){
     const code=['FREE_PILOT_DISABLED','INVALID_PILOT_REQUEST','INVALID_RECEIPT','AVATAR_NOT_PREPARED','AVATAR_READINESS_UNAVAILABLE','RATE_LIMITED'].includes(error?.message)?error.message:'AVATAR_UNAVAILABLE'

@@ -152,3 +152,14 @@ test('Simli relay stops on late delivery or inability to clear provider buffer',
     assert.equal(failed,1)
   }
 })
+
+test('synthetic lab rejects arbitrary user payload and provider or face overrides',async()=>{
+  const {pilotRequestAllowed}=await import('../lib/coaching/live-avatar-pilot.mjs')
+  for(const provider of ['simli','sequencer']){
+    const valid={action:'start',provider,syntheticOnly:true,freeOnly:true,...(provider==='simli'?{target:'coach'}:{})}
+    assert.equal(pilotRequestAllowed(valid),true)
+    for(const extra of [{history:[]},{text:'private'},{faceId:'arbitrary'},{sessionMode:'agent'},{maxSessionSeconds:1200}]){
+      assert.equal(pilotRequestAllowed({...valid,...extra}),false)
+    }
+  }
+})
