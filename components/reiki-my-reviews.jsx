@@ -4,10 +4,9 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Check, ChevronDown, LockKeyhole, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
-import { ENERGYWORK_REVIEW_MIN_CHARS } from '@/data/academy/energywork-ai-schema.js'
+import { ENERGYWORK_VERSION, ENERGYWORK_REVIEW_MIN_CHARS } from '@/data/academy/energywork-ai-schema.js'
 import styles from './reiki-my-reviews.module.css'
 
-const VERSION = '2026-10-18.p1'
 const LESSONS = [
   {id:'flight-04',en:'Flight to the Sun',ru:'Полёт к Солнцу'},
   {id:'tan-04',en:'Tantra Reiki',ru:'Тантра Рейки'},
@@ -114,7 +113,8 @@ export function ReikiMyReviews({locale='en',accountId}) {
     setBusy(true);setError('');setNotice('')
     try{
       const data=await appFetch('academy-energywork',
-        {version:VERSION,expectedRevision:ownedProgress.revision,...body},'POST',{accountId})
+        {version:ENERGYWORK_VERSION,expectedRevision:ownedProgress.revision,
+          ...(ownedProgress.enrollmentId ? {expectedEnrollmentId:ownedProgress.enrollmentId} : {}),...body},'POST',{accountId})
       if(!isCurrent())return
       if(data.accountId!==accountId||!data.enrolled)throw new Error('ACCOUNT_CHANGED')
       setProgress(data)
@@ -161,7 +161,7 @@ export function ReikiMyReviews({locale='en',accountId}) {
                 <div className={styles.editFooter}>
                   <span>{Array.from(draft.trim()).length} {t.chars} · {t.min}</span>
                   <button type="button" disabled={busy||!enough(draft)||!changed}
-                    onClick={()=>void command({action:'save',slideId:item.id,nextSlideId:item.id,answer:draft},{id:item.id})}>
+                    onClick={()=>void command({action:'save',slideId:item.id,nextSlideId:item.id,answer:draft,commitAnswer:true},{id:item.id})}>
                     {busy?t.saving:t.save}
                   </button>
                 </div>
