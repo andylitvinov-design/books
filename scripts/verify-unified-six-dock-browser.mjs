@@ -722,6 +722,7 @@ try{
  await expect(directions.locator("[data-hh-chat-shortcut]")).toHaveCount(4);
  await directions.locator('[data-hh-chat-shortcut="orders"]').click();
  await page.locator('[data-orders-clients-hub][data-section="orders"]').waitFor({state:"visible",timeout:30000});
+ const messengerMenu=page.locator('[data-orders-clients-hub] button[data-hh-ai-chat-menu][aria-controls="hh-chat-tabs"]');
  const messengerTabs=page.locator("[data-chat-top-tabs]");
  await messengerTabs.waitFor({state:"visible",timeout:30000});
  assert.equal(await messengerTabs.locator("button").count(),4,
