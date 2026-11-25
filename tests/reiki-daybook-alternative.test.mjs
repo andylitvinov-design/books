@@ -8,7 +8,7 @@ test("Reiki Daybook groups every canonical slide into five variable-length weeks
   const weeks = energyworkLessonRanges().map((range,i)=>sequence.slice(i===0?0:range.start,range.end));
   assert.equal(weeks.length,5);
   assert.deepEqual(weeks.flat(),sequence);
-  assert.deepEqual(weeks.map(week=>week.length),[11,16,18,16,7]);
+  assert.deepEqual(weeks.map(week=>week.length),[12,16,18,16,7]);
   assert.equal(weeks[0][0],"welcome-01");
   assert.ok(weeks[4].includes("init-photo-01"));
   assert.equal(weeks[4].at(-1),"end-02");
@@ -144,4 +144,20 @@ test("Daybook content fit retains every canonical step and moves ordinary chrome
   assert.ok(browser.includes("owner-reported slide must fit without inner scroll"));
   assert.ok(browser.includes("all answers simultaneously visible"));
   assert.ok(browser.includes("width:390,height:660"));
+});
+
+test("Approved Reiki tools remove duplicate controls, keep journey navigation and offer private master contact", () => {
+  const ui = read("components/energywork-ai-learner.tsx");
+  const css = read("components/reiki-daybook.module.css");
+  const menu = ui.split("const courseTools = (")[1].split("const shell = (")[0];
+  assert.ok(menu.indexOf("t.backCourse") < menu.indexOf("iHelp"));
+  assert.ok(menu.indexOf("iHelp") < menu.indexOf("ReikiCourseReferralShare"));
+  assert.ok(!menu.includes("switchFormat"));
+  assert.ok(!menu.includes("db.steps"));
+  assert.ok(menu.includes("Send a message / question to master"));
+  assert.ok(menu.includes("href={masterQuestionUrl}"));
+  assert.ok(ui.includes("{daybookOutline}"));
+  assert.ok(ui.includes("I have a question about the Reiki Practitioner course."));
+  assert.ok(css.includes("grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)"));
+  assert.ok(css.includes(".masterQuestion"));
 });

@@ -71,7 +71,7 @@ test("My Reiki matches Profile chrome, starts with a functional four-choice quiz
  assert.ok(quiz.includes("setSelected") && quiz.includes("aria-pressed={selected === index}") && quiz.includes("<ReikiDaybookStart"));
  assert.equal((quiz.match(/\/images\/holistic-house\//g)||[]).length,4);
  assert.ok(landing.includes("src={detailPhotos[index]}") && landing.includes('href="#reiki-start"'));
- assert.ok(!landing.includes("<AcademyVideoPlayer") && !landing.includes("<EnergyworkVideoArchive"));
+ assert.ok(!landing.includes("<EnergyworkVideoArchive") && !landing.includes("<ReikiPublicReviews"));
  assert.ok(css.includes("support-therapy-cabinet-hd.webp") && css.includes(".reikiQuizGrid"));
  assert.ok(dock.includes("body:has([data-reiki-practitioner-landing]) [data-hh-unified-dock]"));
 });
@@ -80,7 +80,7 @@ test("Approved second screen follows quiz without duplicate header and offers fi
  const landing=read("components/principles-of-energywork.tsx");
  const css=read("components/principles-of-energywork.module.css");
  const start=landing.indexOf('data-reiki-details-screen');
- const end=landing.indexOf('className={styles.foundations}',start);
+ const end=landing.indexOf('data-reiki-system-overview',start);
  const details=landing.slice(start,end);
  assert.ok(landing.indexOf("<MyReikiQuiz")<start && start<end);
  assert.ok(!details.includes("<MyReikiHeader") && !details.includes("<ReikiProgramNavigation"));
@@ -154,7 +154,7 @@ test("Three approved Reiki overview screens immediately follow the second landin
  const landing=read("components/principles-of-energywork.tsx");
  const css=read("components/principles-of-energywork.module.css");
  const start=landing.indexOf('data-reiki-system-overview');
- const end=landing.indexOf('className={styles.foundations}',start);
+ const end=landing.indexOf('id="energywork-how"',start);
  const overview=landing.slice(start,end);
  assert.ok(landing.indexOf('data-reiki-details-screen')<start && start<end);
  assert.ok(overview.includes('paths.map') && overview.includes('data-reiki-overview-system={system.key}'));
@@ -169,7 +169,7 @@ test("Three approved Reiki overview screens immediately follow the second landin
  }
  assert.ok(css.includes("MY_REIKI_APPROVED_SYSTEM_SCREENS_20261125"));
  assert.ok(css.includes("max-height:30svh") && css.includes("background-repeat:no-repeat,repeat-y"));
- assert.ok(landing.includes('className={styles.reikiLegacyMaterials}'));
+ assert.ok(!landing.includes('className={styles.reikiLegacyMaterials}'));
 });
 
 
@@ -193,4 +193,22 @@ test("Second screen uses the exact five approved artwork crops and compact, unif
  assert.ok(css.includes("min-height:clamp(58px,7.3svh,68px)"));
  assert.ok(css.includes("grid-auto-rows:1fr"));
  assert.ok(css.includes("max-height:740px"));
+});
+
+test("Owner's November 25 cleanup removes duplicate screens and keeps exact prices and owner-selected video sources",()=>{
+ const landing=read("components/principles-of-energywork.tsx");
+ const css=read("components/principles-of-energywork.module.css");
+ for(const marker of ['data-energywork-screen="foundations"','data-energywork-screen="meditation"','id="energywork-systems"','<ReikiPublicReviews','data-energywork-final-personal','€50','€60']) assert.ok(!landing.includes(marker),marker);
+ assert.match(landing,/data-reiki-initiation-format="express"><strong>€0<\/strong>/);
+ assert.match(landing,/data-reiki-initiation-format="live"><strong>€100<\/strong>/);
+ assert.ok(landing.includes('rateExpress: "Express chat format"'));
+ assert.ok(landing.includes('rateLive: "Full personal live initiation"'));
+ assert.ok(!landing.includes('data-energywork-final-online'));
+ assert.ok(landing.includes('data-energywork-interactive-course'));
+ assert.ok(landing.includes('youtubeId="lOo93GuzeJ0"'));
+ assert.ok(landing.includes('youtubeId="XvMdX5czoOc"'));
+ assert.ok(landing.indexOf('id="energywork-how"')<landing.indexOf('data-reiki-yggdrasil-intro-videos'));
+ assert.ok(landing.indexOf('data-reiki-yggdrasil-intro-videos')<landing.indexOf('className={styles.finalCta}'));
+ assert.ok(css.includes('width:100%;max-width:100%;min-width:0;aspect-ratio:auto'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,33%) minmax(0,1fr) 17px'));
 });
