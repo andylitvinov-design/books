@@ -1698,6 +1698,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                   </button>
                 </div>
               ) : null}
+              {slide.id === "flight-done" ? (
+                <Link prefetch={false} href={"/" + locale + "/app/my-coaching-plan#reiki-hints"} className={styles.milestoneSaveChoice} data-reiki-hints-entry>
+                  <Sparkles size={19} aria-hidden="true" />
+                  <span><strong>Reiki Hints</strong><small>{locale === "ru" ? "30 дней поддержки в Telegram" : "30 days of support in Telegram"}</small></span>
+                </Link>
+              ) : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
                  <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
                    <span className={styles.personalInitiationNoteTitle}><Heart size={17} aria-hidden="true" />{t.initiationVideoNoteTitle}</span>

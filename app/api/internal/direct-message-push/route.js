@@ -7,6 +7,7 @@ import {recoverDirectMessagePush} from '@/lib/app/direct-message-push'
 import {commandCenterTick} from '@/lib/command-center/dispatcher.mjs'
 import {dispatchDaybookDaily} from '@/lib/app/daybook-daily-dispatch'
 import {dispatchDaybookWeekly} from '@/lib/app/daybook-weekly-dispatch'
+import {dispatchReikiHints} from '@/lib/app/reiki-hints-dispatch'
 
 export const runtime='nodejs'
 export const preferredRegion='yul1'
@@ -22,6 +23,7 @@ export async function GET(request){
     return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
   if(process.env.VERCEL_ENV==='preview')
     return NextResponse.json({error:'NOT_AVAILABLE'},{status:404,headers:PRIVATE_HEADERS})
+  const started=Date.now()
   try{
     const config=getAppConfig()
     const pushed=await recoverDirectMessagePush(config)
@@ -40,6 +42,11 @@ export async function GET(request){
         const cc=await commandCenterTick({config,transaction})
         if(cc.status==='unconfirmed')console.error('HH_CC_TICK_UNCONFIRMED')
       }catch{console.error('HH_CC_TICK_UNAVAILABLE')}
+    }
+    // Preserve the existing cron budget and leave other dispatchers unchanged.
+    if(process.env.VERCEL_ENV==='production'&&process.env.HH_REIKI_HINTS_SEND_APPROVED==='true'&&Date.now()-started<25000){
+      try{pushed.reikiHints=await dispatchReikiHints(config)}
+      catch{console.error('HH_REIKI_HINTS_DISPATCH_FAILED')}
     }
     return NextResponse.json(pushed,{headers:PRIVATE_HEADERS})
   }catch{
