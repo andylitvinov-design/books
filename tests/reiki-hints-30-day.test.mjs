@@ -56,3 +56,10 @@ test('confirmed Telegram link is atomic and does not depend on a browser returni
  assert.match(sql,/grant execute on function[\s\S]*to hh_app_inbox/i)
  assert.match(sql,/p.chat_hash is null and p.stopped_at is null/)
 })
+
+test('guest can save privately and return to the optional subscription step',async()=>{
+ const {energyworkCreateFirstLessonHandoff,energyworkReadFirstLessonHandoff}=await import('../data/academy/energywork-first-lesson.js')
+ const answers={'welcome-02':'beginner','flight-04':'I noticed the warmth and the light as I imagined the Sun.'}
+ const now=Date.now(); const handoff=energyworkReadFirstLessonHandoff(energyworkCreateFirstLessonHandoff(answers,'en',now,'hints'),'en',now)
+ assert.equal(handoff.afterSave,'hints');assert.deepEqual(handoff.answers,answers)
+})

@@ -1009,6 +1009,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       setFirstLessonConsent(false);
       // The confirmed private snapshot already opens Lesson 2 without another slide.
       if (handoff.afterSave === "courses") window.location.assign("/" + locale + "/app/course?view=courses");
+      if (handoff.afterSave === "hints") setIndex(energyworkSlides().findIndex(item => item.id === "flight-hints"));
     } catch (error) {
       // A network error must never masquerade as a successful saved course.
       // Retain the short-lived, same-tab handoff for a deliberate retry.
@@ -1199,9 +1200,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       setSaveError(t.signupError); setBusy(false);
     }
   }
-  async function saveLessonOneToCabinet(afterSave: "continue" | "courses" = "continue") {
+  async function saveLessonOneToCabinet(afterSave: "continue" | "courses" | "hints" = "continue") {
     if (busy || !firstLessonConsent || !["guest", "consent"].includes(sync) ||
-        slide.id !== "flight-done") return;
+        (slide.id !== "flight-done" && !(slide.id === "flight-hints" && afterSave === "hints"))) return;
     try {
       const value = energyworkCreateFirstLessonHandoff(answersRef.current, locale, Date.now(), afterSave);
       // Only an explicit checked save writes a short-lived same-tab OAuth handoff.
@@ -1729,7 +1730,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                    <p>{t.initiationVideoNoteText}</p>
                  </aside>
                ) : null}
-              {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
+              {["flight-done", "flight-hints"].includes(slide.id) && ["guest", "consent"].includes(sync) ? (
                 <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
                   aria-label={t.consentTitle}>
                   <p className={styles.firstLessonAssurance}>
@@ -1745,6 +1746,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                     <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
                     {" · "}{t.firstSaveAssurance}
                   </p>
+                  {slide.id === "flight-hints" ? <button type="button" className={styles.studyButton} disabled={!firstLessonConsent || busy} onClick={() => void saveLessonOneToCabinet("hints")}>{sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}</button> : null}
                 </aside>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} compact={daybook} /> : null}

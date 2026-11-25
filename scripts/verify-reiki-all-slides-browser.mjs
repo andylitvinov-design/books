@@ -17,8 +17,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 68, "One consecutive course must have 68 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64,68]);
+assert.equal(expectedSequence.length, 69, "One consecutive course must have 69 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64,69]);
 // Generated at runtime from a local synthetic drawing: no personal or Stock photos.
 let photoFixture = null;
 const pageErrors = [];
@@ -455,7 +455,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 68 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 69 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   // The optional readiness review is on the final screen, not its own slide.
   await expect(page.locator("[data-initiation-readiness]")).toBeVisible();
@@ -576,7 +576,7 @@ async function verifySaveOnCompletion(page, locale) {
     { waitUntil: "domcontentloaded", timeout: 90000 });
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
   for (const id of ["welcome-video","welcome-01","welcome-02","flight-01","flight-02","flight-voices",
-    "flight-05","flight-04","flight-03"]) {
+    "flight-05","flight-04","flight-03","flight-hints"]) {
     await expect(page.locator("[data-energywork-slide-id]"))
       .toHaveAttribute("data-energywork-slide-id", id);
     if (id === "welcome-02") await page.locator('input[name="welcome-02"][value="beginner"]').check();
@@ -704,6 +704,8 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-03"); // one-minute music-assisted practice before congratulations
   await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-hints");
+  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
   await expect(photo).toHaveAttribute("src",/reiki-approved-sunrise-v3\.webp/);
@@ -721,7 +723,7 @@ async function verifyShortViewport(page,locale) {
   await expectFits("flight-done");
   await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-consent.png",animations:"disabled",timeout:30000});
   await page.locator('button[class*="milestoneBack"]').click();
-  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-03');
+  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-hints');
   await page.locator('button[data-energywork-next]').click();
   await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-done');
   await expect(page.locator('[data-reiki-first-lesson-consent]')).toBeChecked();
@@ -887,10 +889,10 @@ async function verifyGoldenDaybook(locale) {
       }
       await check(id);
     }
-    assert.equal(checked,68*widths.length);
+    assert.equal(checked,69*widths.length);
     assert.deepEqual(writes,[],"reviewing stored screens never writes");
     assert.deepEqual(errors,[],"no browser errors on Daybook");
-    console.log("REIKI_GOLDEN_DAYBOOK_VIEWPORT_PASS",JSON.stringify({engine:engineName,locale,slides:68,checked,viewports:widths,internalScroll}));
+    console.log("REIKI_GOLDEN_DAYBOOK_VIEWPORT_PASS",JSON.stringify({engine:engineName,locale,slides:69,checked,viewports:widths,internalScroll}));
   } finally { await ctx.close(); }
 }
 
@@ -900,7 +902,7 @@ page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)
 try {
   if (process.env.HH_REIKI_DAYBOOK_ONLY === "1") {
     for (const locale of ["en","ru"]) await verifyGoldenDaybook(locale);
-    console.log("REIKI_GOLDEN_ONLY_PASS", JSON.stringify({engine:engineName,slides:68,locales:["en","ru"],viewports:3}));
+    console.log("REIKI_GOLDEN_ONLY_PASS", JSON.stringify({engine:engineName,slides:69,locales:["en","ru"],viewports:3}));
   } else {
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
@@ -930,7 +932,7 @@ try {
   for (const locale of ["en","ru"]) await verifyGoldenDaybook(locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 68,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 69,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
   }
 } finally {
