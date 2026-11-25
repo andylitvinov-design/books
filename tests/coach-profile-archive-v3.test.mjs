@@ -76,3 +76,24 @@ test('structured proof envelope is track-specific, retains zero, and reports mis
  assert.equal(coachProfileArchiveExtends(p,p),true)
  assert.equal(coachProfileArchiveExtends(p,{...p,lifeBalanceCheckin:{...p.lifeBalanceCheckin,receipt:'b'.repeat(64)}}),false)
 })
+
+
+import {readFileSync} from 'node:fs'
+test('private resume retains the same signed track envelope in checkpoints and final protocol only',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('restoredProfileProof.current=coachProfileArchiveEnvelope(p)'))
+ const checkpoint=ui.slice(ui.indexOf('function queuePrivateDraft(rows)'),ui.indexOf('function retainPendingClient()'))
+ const final=ui.slice(ui.indexOf('function currentProtocol()'),ui.indexOf('function exportProtocol('))
+ for(const source of [checkpoint,final]){
+  assert.ok(source.includes('[restoredProfileProof.current.key]:restoredProfileProof.current.value'))
+  assert.ok(source.includes('restoredProfileProof.current?.value.block.locale||conversationLang'))
+ }
+ assert.ok(checkpoint.includes('if(profile&&!restoredProfileProof.current)'))
+ assert.ok(ui.includes('if(restoredDraft)forceLocal=true'))
+ assert.ok(ui.includes('restoredProfileProof.current=null\n        protocolIdRef.current=crypto.randomUUID()'))
+ const b=buildCoachProfileArchiveV3(ledger)
+ const p={...protocol,lifeBalanceCheckin:{block:b,receipt:'a'.repeat(64)}}
+ const resumed={...p,turns:[...p.turns,{role:'assistant',content:'Continue privately'}]}
+ assert.equal(coachProfileArchiveExtends(p,resumed),true)
+ assert.equal(coachProfileArchiveExtends(p,protocol),false)
+})

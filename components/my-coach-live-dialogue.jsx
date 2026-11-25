@@ -47,6 +47,7 @@ import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
+import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
 import {recoverPrivateOpeningScope} from '@/lib/personal-coaching/private-draft-resume.mjs'
 import {createCoachDraftQueue} from '@/lib/personal-coaching/protocol-draft-queue.mjs'
 
@@ -289,6 +290,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [restoredDraft,setRestoredDraft]=useState(false)
   const initialDraftRevision=useRef(0)
   const restoredOpeningScope=useRef(null),restoredProfileCheckin=useRef(null),restoredMethod=useRef(null)
+  // Only the existing server-verified archive may supply a structured result.
+  // Keep the opaque proof in the local private-save path, never model context.
+  const restoredProfileProof=useRef(null)
   const resumeInFlight=useRef(false)
   const [resumeList,setResumeList]=useState(null)
   const [resumeBusy,setResumeBusy]=useState(false)
@@ -988,11 +992,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let value
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,protocol:{
-        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
-        opening,turns:rows.map((row,index)=>({role:row.role,content:row.content,
+        opening,...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:{}),
+        turns:rows.map((row,index)=>({role:row.role,content:row.content,
           ...(row.role==='user'&&index===rows.length-1?{unanswered:true}:{}),
           ...(row.role==='assistant'&&row.interrupted===true?{interrupted:true}:{}),
           ...(row.role==='assistant'&&['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
@@ -1001,7 +1006,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // A malformed derived profile candidate cannot erase the raw conversation.
       const profile=restoredProfileCheckin.current|| (profileReviewProgress?coachProfileReviewProtocolSnapshot(profileReviewProgress):
         profileProgress&&profileReviewStart===null?coachProfileProtocolSnapshot(profileProgress):null)
-      if(profile){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
+      if(profile&&!restoredProfileProof.current){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
     }catch{setAutoSaveStatus('error');return}
     if(!autoSaveQueueRef.current)autoSaveQueueRef.current=createCoachDraftQueue(async(revision,snapshot)=>{
       const body=JSON.stringify({action:'checkpoint',consent:true,revision,value:snapshot})
@@ -1157,7 +1162,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
-    if(restoredDraft&&restoredProfileCheckin.current&&profileSelected&&!localInterruption){
+    if(restoredDraft&&(restoredProfileCheckin.current||restoredProfileProof.current)&&profileSelected&&!localInterruption){
       const answer=({ru:'Сохранённые уточнения осей остаются в протоколе. Для новых оценок требуется отдельная проверка профиля; сейчас можно завершить и сохранить этот разговор.',en:'Your saved axis updates remain in this protocol. New ratings need a separate profile review; you can finish and save this conversation.',es:'Las actualizaciones guardadas siguen en el protocolo. Las nuevas valoraciones necesitan otra revisión; puedes terminar y guardar esta conversación.'})[responseLocale]
       setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
       if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
@@ -1394,7 +1399,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
@@ -1402,7 +1407,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
-      ...(restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
+      ...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:
+        restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
           (profileReviewStart!==null?{}:
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
@@ -1433,7 +1439,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
     try{
-      if(!protocolSaveSnapshotRef.current&&autoSaveStatus==='discarded')protocolIdRef.current=crypto.randomUUID()
+      if(!protocolSaveSnapshotRef.current&&autoSaveStatus==='discarded'){
+        // Explicitly erased record cannot authorize a new logical ID.
+        restoredProfileProof.current=null
+        protocolIdRef.current=crypto.randomUUID()
+      }
       protocol=protocolSaveSnapshotRef.current||currentProtocol()
       protocolSaveSnapshotRef.current=protocol // idempotent retry even after timeout
       setProtocolSaveLocked(true)
@@ -1534,6 +1544,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       restoredMethod.current=p.methodId
       // Sparse historical-review ratings cannot be replayed against a new
       // baseline. Keep the saved updates and require a fresh review later.
+      restoredProfileProof.current=coachProfileArchiveEnvelope(p)
       restoredProfileCheckin.current=p.profileCheckin?.version===COACH_PROFILE_REVIEW_VERSION?p.profileCheckin:null
       autoSaveRef.current=true;engineManuallySelectedRef.current=true;turnsRef.current=p.turns
       flushSync(()=>{
