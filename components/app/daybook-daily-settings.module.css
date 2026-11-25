@@ -37,3 +37,9 @@
 .error{color:#9a2a36;font-size:14px}
 .notice{font-size:14px;font-weight:650;color:#206b4a}
 @media(max-width:440px){.root{padding:16px;border-radius:19px}.controls{gap:11px}.heading{gap:10px}.symbol{flex-basis:40px;height:40px}.preview{padding:9px}.bubble{padding:14px}.quote p{font-size:17px}}
+
+.photoFrame{margin:0 0 12px;overflow:hidden;border-radius:14px;background:#ecf4ee}
+.photo{display:block;width:100%;height:auto;max-height:240px;aspect-ratio:16/9;object-fit:cover}
+.photoFrame figcaption{font-size:11px;padding:4px 10px 7px;color:#597268}
+.photoFrame a{color:inherit;text-decoration:underline}
+@media(max-width:440px){.photo{max-height:190px}.previewHeading{flex-wrap:wrap}.previewHeading span{font-size:12px}}
