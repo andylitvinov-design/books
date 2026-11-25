@@ -755,3 +755,18 @@ test('page lifecycle routes visibility and pagehide to pause, retaining explicit
   assert.match(lifecycle,/removeEventListener\('pagehide',onPageHide\)[\s\S]*stop\(\)/)
   assert.match(component,/if\(runtime\.current\?\.paused\)\{[\s\S]*?void resumePausedSession\(runtime\.current\)/)
 })
+
+test('expired parked credential remains paused and enables explicit text fallback',async()=>{
+  const notices=[]
+  const r={paused:true,ended:false,resumePending:true,resumeHandle:'checkpoint',reconnects:0,
+    liveToken:{expiresAt:'2000-01-01T00:00:00Z'}}
+  const resume=runInNewContext(section('  async function resumePausedSession(','  function interrupt(){')+
+    '\nresumePausedSession',{
+    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},Date,
+    notify:text=>notices.push(text),t:{resumeUnavailable:'unavailable'}
+  })
+  assert.equal(await resume(r),false)
+  assert.equal(r.resumeUnavailable,true)
+  assert.equal(r.paused,true)
+  assert.equal(notices.at(-1),'unavailable')
+})

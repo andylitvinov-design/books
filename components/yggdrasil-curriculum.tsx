@@ -395,7 +395,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
   );
 }
 
-export function YggdrasilCurriculum({ locale, levelId, showSupport = true, visualTheme }: { locale: PublicLocale; levelId?: number; showSupport?: boolean; visualTheme?: "navy" }) {
+export function YggdrasilCurriculum({ locale, levelId, showSupport = true, visualTheme }: { locale: PublicLocale; levelId?: number; showSupport?: boolean; visualTheme?: "navy" | "my-reiki" }) {
   const text = copy[locale];
   const allLevels = curriculum.levels as CurriculumLevel[];
   const levels = levelId ? allLevels.filter((level) => level.id === levelId) : allLevels;
