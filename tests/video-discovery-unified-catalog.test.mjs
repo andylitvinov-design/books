@@ -100,7 +100,7 @@ test("Supabase candidate rows stay invisible until complete independent review",
    content_type:"guided",goals:["energy","meaning"],claims_risk:"low",
    subtopics:["energy_health","personal_growth"],
    duration_basis:"metadata_checked",duration_verified_seconds:300,
-   editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+   owner_review_status:"accepted",editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
    content_checked_at:"2026-11-01",embed_checked_at:"2026-11-01",metadata_checked_at:"2026-11-01"};
  const unchecked={...base,youtube_id:ID2,source_url:"https://www.youtube.com/watch?v="+ID2,
    content_checked_at:null};
@@ -115,7 +115,11 @@ test("Supabase candidate rows stay invisible until complete independent review",
  assert.deepEqual(reviewed[0].topicTags,["energy","meaning"]);
  assert.equal(buildPublishedVideoIndex(reviewed).length,1);
  assert.deepEqual(projectApprovedMeditationRows([{...base,editorial_status:"candidate"}]),[]);
- assert.deepEqual(projectApprovedMeditationRows([{...base,duration_verified_seconds:601}]),[]);
+ // The existing owner-reviewed link-only boundary is 10 minutes, not 15.
+ assert.equal(projectApprovedMeditationRows([{...base,duration_verified_seconds:600}]).length,1,
+   "reviewed recordings exactly 10 minutes are permitted");
+ assert.deepEqual(projectApprovedMeditationRows([{...base,duration_verified_seconds:601}]),[],
+   "strict 10-minute cap rejects 10:01");
 });
 
 test("high-risk original videos cannot be published through the discovery adapter",()=>{

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting } from '../lib/ci/coach-only-impact.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -19,7 +20,8 @@ export const PUBLIC_BROWSER_CASES = Object.freeze([
   "verify-business-quiz-mobile.mjs",
   "verify-reiki-mobile-order-browser.mjs",
   "verify-talisman-google-checkout-browser.mjs",
-  "verify-storefront-shop-browser.mjs"
+  "verify-storefront-shop-browser.mjs",
+  "verify-academy-messenger-order.mjs"
 ]);
 export const PUBLIC_SOURCE_TESTS = Object.freeze([
   "tests/alchemy-panel-overflow-diagnostics.test.mjs",
@@ -353,6 +355,12 @@ const HARNESS_CASES = new Map([
 // funnel. The immutable BASE owner selects only relevant cases; missing,
 // added, removed, unknown or mixed critical paths continue to run all 13.
 const VERIFIED_CRITICAL_PUBLIC_CASES = [
+  // Existing, individually reviewed page-local UI. These routes are exercised
+  // by the main Services/Alchemy browser, not unrelated Reiki/Store/Talisman.
+  // Exact modified files only, with the existing BASE trigger proof.
+  [/^components\/services-(?:assist-mobile|assist-quiz|conversion-hero|unified-catalog)(?:\.module)?\.(?:tsx|css)$/, ['verify-public-services-production.mjs','verify-service-cart-browser.mjs']],
+  [/^components\/alchemy-soul-landing\.tsx$/, ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']],
+  [/^components\/holistic-support-topic-filter(?:\.module)?\.(?:tsx|css)$/, ['verify-holistic-topics-browser.mjs','verify-holistic-support-recommendations-mobile.mjs','verify-public-services-production.mjs']],
   [/^app\/api\/payments\/talismans\/checkout\/route\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
   [/^lib\/commerce\/talisman-checkout\.js$/, ['verify-talisman-google-checkout-browser.mjs','verify-service-cart-browser.mjs']],
   [/^components\/commerce\/(?:service-cart|personal-cart|consultation-cart-entry|cart-nav-link)(?:\.module)?\.(?:tsx|jsx|css)$/, ['verify-service-cart-browser.mjs','verify-storefront-shop-browser.mjs','verify-public-services-production.mjs']],
@@ -386,6 +394,14 @@ export function isTrustedMandalaOwnerPath(path, trigger) {
   return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
     !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
 }
+// These two existing workflow definitions have independent Core/actionlint
+// ownership. A modified CI YAML alone cannot alter the served application.
+// Deliberately outside TRUSTED_CI_CONTRACT_FILES: added/deleted YAML still
+// fails closed in the exact name-status planner.
+const CORE_OWNED_MODIFIED_WORKFLOW = new Set([
+  '.github/workflows/hh-home-conversation.yml',
+  '.github/workflows/practice-visual-services.yml',
+]);
 const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
 // BASE Guard is the independent CI/security policy owner. It, not browser
 // checkout/reiki tests, validates changed policy/workflow files in every PR.
@@ -420,7 +436,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
       protectedPublic = true;
       continue;
     }
-    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
+    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_WORKFLOW.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
@@ -788,7 +804,19 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       const second = read(['rev-parse', 'HEAD^2']);
       if (second !== head || !/^[0-9a-f]{40}$/.test(first))
         return full('UNVERIFIED_SYNTHETIC_MERGE');
-      git('git', ['merge-base', '--is-ancestor', base, first], options);
+      const verified = [env.HH_PUBLIC_VERIFIED_EVENT_BASE, env.HH_PUBLIC_VERIFIED_TESTED_BASE,
+        env.HH_PUBLIC_VERIFIED_HEAD, env.HH_PUBLIC_VERIFIED_MERGE];
+      if (verified.some(Boolean)) {
+        // The workflow proved these immutable parents using authenticated
+        // GitHub Compare before this step. Never widen the waiver to a different
+        // merge, base, head or direct checkout; partial proof is not sufficient.
+        if (verified.some(sha => !/^[0-9a-f]{40}$/.test(sha || '')) ||
+            verified[0] !== base || verified[1] !== first || verified[2] !== head ||
+            verified[3] !== checkout || env.GITHUB_SHA !== checkout)
+          return full('MISMATCHED_VERIFIED_ANCESTRY');
+      } else {
+        git('git', ['merge-base', '--is-ancestor', base, first], options);
+      }
       diffBase = first;
     } else {
       // A direct HEAD checkout still must contain the recorded event base.
@@ -880,6 +908,19 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       return full('UNREVIEWED_IHELP_PHOTO_3843_DELTA');
     }
 
+    // Exact-HEAD and immutable tested-BASE sources must agree outside the
+    // signed-in My Coach branch. Public Services needs no duplicate browser/
+    // storefront Next build for an independently owned Coach-only edit.
+    if (rows.some((value,i) => i % 2 === 1 && value === SHARED_COACH_DISPATCHER)) {
+      const coachRows=[];
+      for(let i=0;i<rows.length;i+=2)
+        coachRows.push({status:rows[i],filename:rows[i+1]});
+      const before=String(git('git',['show',diffBase+':'+SHARED_COACH_DISPATCHER],options));
+      const after=String(git('git',['show','HEAD:'+SHARED_COACH_DISPATCHER],options));
+      if (verifiedCoachOnlySharedRouting(coachRows,before,after))
+        return {mode:'contracts',reason:'EXACT_MY_COACH_ONLY_SHARED_API',
+          build:false,browser:false,metrics:false,cases:'none'};
+    }
     const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
     if(practitionerMediaPlan)return practitionerMediaPlan;
     // A change confined to EXISTING public unit-test files cannot modify the
@@ -923,6 +964,11 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       }
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      // These two exact workflow definitions qualify only as modifications.
+      // A Guard trigger also matches Home YAML, so check status BEFORE generic
+      // owner delegation; otherwise an added file could enter the fast lane.
+      if (CORE_OWNED_MODIFIED_WORKFLOW.has(file) && status !== 'M')
+        return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
       if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
       if (status === 'M') {

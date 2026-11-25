@@ -1,37 +1,50 @@
 "use client";
 
-import {useEffect,useMemo,useRef,useState} from "react";
+import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./published-standard-motion-film";
+import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Pause,Play,RefreshCw,Send,MessageCircle,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
+import {PRIVATE_VIDEO_SAVE_CONSENT,type VideoDeliveryStatus} from "./mandala-video-delivery";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
 import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
 import {appFetch} from "@/lib/app/client-fetch";
-import {createVideoCartSelection,VIDEO_CART_STORAGE_KEY,SERVICE_CART_UPDATED_EVENT} from "@/lib/commerce/cart";
 import css from "./mandala-video-ready.module.css";
+import {ReadyGenerationCheckIn} from "./mandala-video-ready-checkin";
+import {isAppleMobileDevice} from "@/lib/mandala/recording-codecs.mjs";
+import {MandalaTherapyWalletDialog} from "./mandala-therapy-wallet-dialog";
 
-type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
+type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number;blob?:Blob};
 type View="home"|"login";
 type Offer="meditation"|"ritual"|"journey";
-type VideoTier="basic"|"photo"|"character";
 type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
-  locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;
-  video:VideoFile|null;verified:boolean;checking:boolean;signedIn:boolean;
+  locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
+  video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
+  reelDownloadName?:string|null;
+  previewSourceCanvasRef?:{readonly current:HTMLCanvasElement|null};
+  previewAvailable:boolean;previewPlaying:boolean;previewDurationSeconds:number;previewPositionSeconds:number;
+  onPreviewToggle:()=>void;onPreviewSeek:(seconds:number)=>void;
+  progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
+  exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;nativeIphoneMp4Retry?:boolean;
+  onPlaybackError:(player:HTMLVideoElement)=>void;onCancelExport?:()=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
-  onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
-  onGenerateBasicVideo:()=>boolean;basicFreeAvailable:boolean;
-  basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
+  onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
+  storyApprovalRequired?:boolean;onReviewStory?:()=>void;
+  onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
+  onSaveDirect:(consentApproved:boolean)=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
+  saveStatus:VideoDeliveryStatus;exportMode?:"personal"|"openmotion"|"express";basicFreeAvailable:boolean;
+  basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;courseFlow?:boolean;
 };
 const COPY={
   en:{
     saveGateTitle:"Save your video free",saveGateLead:"Your video is ready. Sign in to save it in My Videos, download it or send it to Telegram.",saveGateTag:"YOUR VIDEO · YOUR CHOICE",saveGateBenefitSave:"Keep in My Videos",saveGateBenefitDownload:"Download to device",saveGateBenefitTelegram:"Send to Telegram",saveGateBenefitPractice:"Meditation or course",saveGateLogin:"Sign in to My House",saveGateTelegram:"Open Telegram · tap Start",saveGateTelegramConnect:"Get secure Telegram link",saveGateTelegramChecking:"Checking Telegram link…",saveGateTelegramUnavailable:"Telegram linking is unavailable. You can still use My House.",saveGateTelegramPending:"Tap Start in the Telegram chat, then return here.",saveGateTelegramLinked:"Telegram linked to your account.",saveGateTelegramVerify:"Check Telegram connection",saveGateContinue:"Continue saving",saveGateOr:"or",saveGateClose:"Close",saveGatePrivacy:"Free within available limits · Sent only with consent · Private by choice",saveGateSignInHint:"First sign in to My House. Open it in a new tab so your video stays here. Then check your sign-in.",saveGateTelegramHint:"Start connects the bot to your signed-in account. It does not send or save the video automatically.",saveGateRefresh:"Check sign-in",saveGateUnavailable:"Could not verify your account. The video stays on your device.",
-    ready:"Your video is ready",preview:"Preview, save or continue your journey.",
+    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Expand your video into a guided practice or a full program.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",connectWhatsApp:"Connect WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Open Telegram · Start",telegramVerifySend:"Check link & send",openWhatsAppStart:"Open WhatsApp · verify",whatsappVerify:"Check WhatsApp",waLinkConsent:"I agree to link my own WhatsApp to this account for private practitioner messages. No marketing subscription or automatic video delivery.",whatsappLimit:"WhatsApp uses the device Share menu after linking your own account. Select your own chat; direct automated MP4 sending is not enabled.",meditationNext:"Add a Guided Meditation",meditationNextHint:"Turn your video into a full meditation with voice and music.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"A step-by-step program to work deeply with your goal.",preview:"Preview, save or continue your journey.",
+    generating:"Your video is being generated on this device…",
     notReady:"Your video is not ready yet",createFirst:"Create and verify a video in PRO first.",
     videoChooseTitle:"Choose a video option",videoChooseHint:"Choose a format, then generate your video.",
     videoBasic:"Basic video",videoBasicHint:"Quality video from our library.",videoPhoto:"Animated photo",videoPhotoHint:"Your photo or character with gentle motion.",
@@ -44,7 +57,7 @@ const COPY={
     videoGuestSignIn:"Sign in to use video credits",
     videoIncludedCredit:"included video credits for this export · no payment",
     videoSetup:"Finish the required video settings in PRO, then generate.",videoIdeas:"More ideas for this video",
-    verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",
+    verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",retryCompatible:"Retry in compatibility mode",
     signIn:"Sign in to save and download",save:"Save to My Videos",download:"Download",
     telegram:"Telegram",house:"My House",continue:"Continue with this video",
     meditation:"Personal meditation",meditationHint:"Turn your video into a gentle guided practice.",
@@ -73,7 +86,8 @@ const COPY={
   },
   ru:{
     saveGateTitle:"Сохраните видео бесплатно",saveGateLead:"Видео уже готово. Войдите, чтобы сохранить его в «Моих видео», скачать или отправить себе в Telegram.",saveGateTag:"ВАШЕ ВИДЕО · ВАШ ВЫБОР",saveGateBenefitSave:"В Мои видео",saveGateBenefitDownload:"Скачать на телефон",saveGateBenefitTelegram:"Отправить в Telegram",saveGateBenefitPractice:"Медитация или курс",saveGateLogin:"Войти в Мой дом",saveGateTelegram:"Открыть Telegram · нажать «Старт»",saveGateTelegramConnect:"Получить ссылку в Telegram",saveGateTelegramChecking:"Проверяем Telegram…",saveGateTelegramUnavailable:"Подключение Telegram недоступно. Сохранить видео можно через кабинет.",saveGateTelegramPending:"Нажмите «Старт» в Telegram и вернитесь на эту страницу.",saveGateTelegramLinked:"Telegram подключён к кабинету.",saveGateTelegramVerify:"Проверить Telegram",saveGateContinue:"Продолжить сохранение",saveGateOr:"или",saveGateClose:"Закрыть",saveGatePrivacy:"Бесплатно в рамках лимитов · Только с согласия · Приватно",saveGateSignInHint:"Сначала войдите в «Мой дом». Откроется новая вкладка, ваше видео останется здесь. Затем проверьте вход.",saveGateTelegramHint:"«Старт» привязывает бота к вашему кабинету, но не отправляет и не сохраняет видео автоматически.",saveGateRefresh:"Проверить вход",saveGateUnavailable:"Не удалось проверить вход. Видео осталось на вашем устройстве.",
-    ready:"Ваше видео готово",preview:"Посмотрите, сохраните или продолжите практику.",
+    ready:"Ваше видео готово!",nextSteps:"Следующий шаг: углубите практику",nextLead:"Дополните ролик медитацией или программой занятий.",newVideo:"Создать новое видео",sendTelegram:"Отправить в Telegram",connectWhatsApp:"Привязать WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Открыть Telegram · Start",telegramVerifySend:"Проверить и отправить",openWhatsAppStart:"Открыть WhatsApp · подтвердить",whatsappVerify:"Проверить WhatsApp",waLinkConsent:"Я разрешаю привязать мой WhatsApp к кабинету для личных сообщений со специалистом. Без рассылок и автоматической отправки видео.",whatsappLimit:"После привязки WhatsApp выберите свой чат в меню телефона. Прямая автоматическая отправка MP4 пока недоступна.",meditationNext:"Добавить медитацию с голосом",meditationNextHint:"Озвучка и музыка к вашему ролику.",journeyNext:"Создать 8 видео-сессий",journeyNextHint:"Восемь связанных этапов вашей практики.",preview:"Посмотрите, сохраните или продолжите практику.",
+    generating:"Видео создаётся на вашем устройстве…",
     notReady:"Видео пока не готово",createFirst:"Сначала создайте ролик в PRO и проверьте воспроизведение.",
     videoChooseTitle:"Выберите вариант видео",videoChooseHint:"Выберите формат и нажмите «Создать видео».",
     videoBasic:"Базовое видео",videoBasicHint:"Качественный видеоряд из нашей библиотеки.",videoPhoto:"Анимированное фото",videoPhotoHint:"Ваше фото или персонаж с мягкой анимацией.",
@@ -86,7 +100,7 @@ const COPY={
     videoGuestSignIn:"Войти и использовать видеокредиты",
     videoIncludedCredit:"включённых видеокредитов за экспорт · без оплаты",
     videoSetup:"Завершите настройки во вкладке PRO, затем создайте видео.",videoIdeas:"Другие идеи для этого видео",
-    verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",
+    verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",retryCompatible:"Повторить в совместимом режиме",
     signIn:"Войдите, чтобы сохранить и скачать",save:"В Мои видео",download:"Скачать",
     telegram:"Telegram",house:"Мой дом",continue:"Продолжить с этим видео",
     meditation:"Личная медитация",meditationHint:"Превратите видео в бережную практику с сопровождением.",
@@ -115,7 +129,8 @@ const COPY={
   },
   es:{
     saveGateTitle:"Guarda tu vídeo gratis",saveGateLead:"Tu vídeo está listo. Inicia sesión para guardarlo en Mis vídeos, descargarlo o enviártelo por Telegram.",saveGateTag:"TU VÍDEO · TU ELECCIÓN",saveGateBenefitSave:"Mis vídeos",saveGateBenefitDownload:"Descarga al móvil",saveGateBenefitTelegram:"Enviar a Telegram",saveGateBenefitPractice:"Meditación o curso",saveGateLogin:"Entrar a Mi espacio",saveGateTelegram:"Abrir Telegram · pulsar Start",saveGateTelegramConnect:"Obtener enlace de Telegram",saveGateTelegramChecking:"Comprobando Telegram…",saveGateTelegramUnavailable:"No se puede conectar Telegram. Puedes guardar desde Mi espacio.",saveGateTelegramPending:"Pulsa Start en Telegram y vuelve a esta página.",saveGateTelegramLinked:"Telegram conectado a tu cuenta.",saveGateTelegramVerify:"Comprobar Telegram",saveGateContinue:"Continuar y guardar",saveGateOr:"o",saveGateClose:"Cerrar",saveGatePrivacy:"Gratis dentro de los límites · Solo con consentimiento · Privado",saveGateSignInHint:"Primero entra a Mi espacio. Se abrirá otra pestaña y el vídeo seguirá aquí. Después comprueba el acceso.",saveGateTelegramHint:"Start vincula el bot a tu cuenta, no guarda ni envía automáticamente el vídeo.",saveGateRefresh:"Comprobar acceso",saveGateUnavailable:"No se pudo comprobar la sesión. El vídeo sigue en tu dispositivo.",
-    ready:"Tu vídeo está listo",preview:"Míralo, guárdalo o continúa tu camino.",
+    ready:"¡Tu vídeo está listo!",nextSteps:"Siguiente paso: profundiza en tu práctica",nextLead:"Continúa con una meditación o un programa.",newVideo:"Crear otro vídeo",sendTelegram:"Enviar a Telegram",connectWhatsApp:"Conectar WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Abrir Telegram · Start",telegramVerifySend:"Comprobar y enviar",openWhatsAppStart:"Abrir WhatsApp · verificar",whatsappVerify:"Comprobar WhatsApp",waLinkConsent:"Acepto vincular mi WhatsApp a esta cuenta para mensajes privados con el profesional. Sin anuncios ni envío automático de vídeos.",whatsappLimit:"Tras vincular WhatsApp, elige tu propio chat en el menú Compartir. El envío automático directo de MP4 no está activado.",meditationNext:"Añadir meditación guiada",meditationNextHint:"Voz y música para tu vídeo.",journeyNext:"Crear 8 sesiones de vídeo",journeyNextHint:"Ocho pasos conectados con tu objetivo.",preview:"Míralo, guárdalo o continúa tu camino.",
+    generating:"Se está creando el vídeo en tu dispositivo…",
     notReady:"Tu vídeo todavía no está listo",createFirst:"Primero crea y verifica un vídeo en PRO.",
     videoChooseTitle:"Elige una opción de vídeo",videoChooseHint:"Elige el formato y pulsa «Generar vídeo».",
     videoBasic:"Vídeo básico",videoBasicHint:"Vídeo de calidad de nuestra biblioteca.",videoPhoto:"Foto animada",videoPhotoHint:"Tu foto o personaje con movimiento suave.",
@@ -128,7 +143,7 @@ const COPY={
     videoGuestSignIn:"Iniciar sesión y usar créditos",
     videoIncludedCredit:"créditos de vídeo incluidos para exportar · sin pago",
     videoSetup:"Completa la configuración en PRO y genera el vídeo.",videoIdeas:"Más ideas para este vídeo",
-    verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",
+    verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",retryCompatible:"Reintentar en modo compatible",
     signIn:"Inicia sesión para guardar y descargar",save:"Mis vídeos",download:"Descargar",
     telegram:"Telegram",house:"Mi espacio",continue:"Continúa con este vídeo",
     meditation:"Meditación personal",meditationHint:"Convierte el vídeo en una práctica guiada y suave.",
@@ -157,16 +172,114 @@ const COPY={
   },
 } as const;
 
+const courseActionCopy={
+ en:{free:"Generate 1 video free",paid:"Create my personal video therapy course · 8 videos",
+  note:"Eight videos need a confirmed quote and verified payment. Funding the wallet is a separate step."},
+ ru:{free:"Сгенерировать 1 видео бесплатно",paid:"Создать личный курс видеотерапии · 8 видео",
+  note:"Цена полного курса подтверждается отдельно. Пополнение кошелька не является заказом."},
+ es:{free:"Generar 1 vídeo gratis",paid:"Crear mi curso personal · 8 vídeos",
+  note:"El curso requiere precio y pago verificados. Recargar el monedero no equivale a un pedido."}
+} as const;
+
 export function MandalaVideoReady({
-  locale,theme,wish,focus,video,verified,checking,signedIn,loginUnavailable,disabled,
-  meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,basicFreeAvailable,basicFreeIssue,basicCreditCost
+  locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
+  previewSourceCanvasRef,previewAvailable,previewPlaying,previewDurationSeconds,previewPositionSeconds,
+  onPreviewToggle,onPreviewSeek,
+  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,onCancelExport,nativeIphoneMp4Retry=false,
+  signedIn,loginUnavailable,disabled,
+  meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
+  storyApprovalRequired=false,onReviewStory,onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
+  onSendTelegramDirect,onShareWhatsApp,saveStatus,
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal",reelDownloadName=null
 }:Props){
   const t=COPY[locale];
-  const router=useRouter();
+  const readyDownloadName=video?.extension==="mp4"&&reelDownloadName
+    ?reelDownloadName:"holistic-house-personal."+(video?.extension||"mp4");
+  const courseActions=courseActionCopy[locale];
+  const expressMaster=exportMode==="express"?getPublishedStandardMotionFilm("anti-stress-30s",locale):undefined;
   const [view,setView]=useState<View>("home");
-  const [videoTier,setVideoTier]=useState<VideoTier>("basic");
+  const [cloudConsentUrl,setCloudConsentUrl]=useState<string|null>(null);
+  const cloudConsentRef=useRef<HTMLInputElement>(null);
+  const cloudConsent=Boolean(signedIn&&video&&cloudConsentUrl===video.url);
+  useEffect(()=>{if(!signedIn)setCloudConsentUrl(null);},[signedIn]);
+  const [walletOpen,setWalletOpen]=useState(false);
+  const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  const [pendingDeliveryIntent,setPendingDeliveryIntent]=useState<"save"|"telegram"|null>(null);
+  const [fileShareSupported,setFileShareSupported]=useState(false);
+  useEffect(()=>setFileShareSupported(typeof navigator.share==="function"&&
+    typeof File!=="undefined"),[]);
+  const [checkinEngaged,setCheckinEngaged]=useState(false);
+  const [checkinDismissed,setCheckinDismissed]=useState(false);
+  // Exactly ONE decodable video is mounted in Ready. iPhone Safari supports
+  // direct Blob srcObject, avoiding a second blob: URL decoder and unnecessary
+  // Range/memory pressure. The exported bytes stay on this device.
+  const readyPlayerRef=useRef<HTMLVideoElement|null>(null);
+  const readySourceModeRef=useRef<"safari-blob"|"object-url">("object-url");
+  const readyUrlRecoveryRef=useRef<string|null>(null);
+  const sequencePreviewRef=useRef<HTMLCanvasElement|null>(null);
+  // Mirror the one existing Studio painter. No encode, upload or credit hold.
+  useEffect(()=>{
+    if(video||!previewAvailable||exportMode==="express")return;
+    let animation=0,last=0;
+    const paint=(now:number)=>{
+      if(now-last>=1000/15&&!document.hidden){
+        const source=previewSourceCanvasRef?.current,target=sequencePreviewRef.current;
+        if(source&&target&&source.width>0&&source.height>0){
+          if(target.width!==source.width||target.height!==source.height){
+            target.width=source.width;target.height=source.height;
+          }
+          try{target.getContext("2d",{alpha:false})?.drawImage(source,0,0);}
+          catch{/* Unavailable source cannot count as exported video. */}
+        }
+        last=now;
+      }
+      animation=window.requestAnimationFrame(paint);
+    };
+    animation=window.requestAnimationFrame(paint);
+    return()=>window.cancelAnimationFrame(animation);
+  },[video,previewAvailable,previewSourceCanvasRef,exportMode]);
+  useEffect(()=>{
+    const player=readyPlayerRef.current;
+    if(!video||!player)return;
+    readyUrlRecoveryRef.current=null;
+    let attached=false;
+    if(typeof navigator!=="undefined"&&video.blob?.type==="video/mp4"&&
+      isAppleMobileDevice(navigator.userAgent,navigator.maxTouchPoints)){
+      try{
+        player.srcObject=video.blob;
+        attached=true;
+      }catch{/* Safari can still use the original local Blob URL. */}
+    }
+    readySourceModeRef.current=attached?"safari-blob":"object-url";
+    player.dataset.readyMediaTransport=attached?"blob-srcobject":"blob-url";
+    if(!attached){player.src=video.url;player.load();}
+    return ()=>{
+      player.pause();
+      if(attached&&player.srcObject===video.blob){
+        try{player.srcObject=null;}catch{/* Unmount still releases the player. */}
+      }
+    };
+  },[video?.url,video?.blob]);
+  const handleReadyPlaybackError=(player:HTMLVideoElement)=>{
+    if(!video)return;
+    // The same encoded MP4 gets ONE alternate Safari transport, not a
+    // second movie generation, held credit, upload or WebM export.
+    if(readySourceModeRef.current==="safari-blob"&&
+      readyUrlRecoveryRef.current!==video.url){
+      readyUrlRecoveryRef.current=video.url;
+      readySourceModeRef.current="object-url";
+      try{
+        player.srcObject=null;
+        player.src=video.url;
+        player.dataset.readyMediaTransport="blob-url";
+        player.load();
+        return;
+      }catch{/* The existing native error handler will release held credit. */}
+    }
+    onPlaybackError(player);
+  };
+
   useEffect(()=>{if(basicFreeAvailable)setVideoGenerationNotice("");},[basicFreeAvailable]);
   // Three continuation offers expand within Ready; the login dialog is independent.
   const [activeOffer,setActiveOffer]=useState<Offer|null>(null);
@@ -175,7 +288,8 @@ export function MandalaVideoReady({
   const [courseTexts,setCourseTexts]=useState<CourseText[]>([]);
   const [meditationAdvancedOpen,setMeditationAdvancedOpen]=useState(false);
   const offerRef=useRef<HTMLElement|null>(null);
-  const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"house">("save");
+  const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"whatsapp"|"house">("save");
+  const [whatsappConsent,setWhatsAppConsent]=useState(false);
   const gateRef=useRef<HTMLElement|null>(null);
   const gateCloseRef=useRef<HTMLButtonElement|null>(null);
   const gateLauncherRef=useRef<HTMLElement|null>(null);
@@ -240,14 +354,50 @@ export function MandalaVideoReady({
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
   function closeSaveGate(){setView("home");setTelegramLink("");setTelegramError("");}
-  function openDelivery(){closeSaveGate();onOpenDelivery();}
-  function chooseDelivery(intent:"save"|"download"|"telegram"|"house"="save"){
+  function saveWithConsent(){
+    if(cloudConsent)onSaveDirect(true);
+    else window.requestAnimationFrame(()=>cloudConsentRef.current?.focus());
+  }
+  function openDelivery(){
+    closeSaveGate();
+    if(gateIntent==="save"){saveWithConsent();return;}
+    if(gateIntent==="telegram"){onSendTelegramDirect();return;}
+    if(gateIntent==="whatsapp"){onShareWhatsApp();return;}
+    onOpenDelivery();
+  }
+  function chooseDelivery(intent:"save"|"download"|"telegram"|"whatsapp"|"house"="save"){
     if(!verified||!video||disabled)return;
-    if(!signedIn||intent==="telegram"||intent==="house"){
+    setPendingDeliveryIntent(null);
+    if(!signedIn||intent==="house"){
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
     }
+    if(intent==="save"){saveWithConsent();return;}
+    if(intent==="telegram"){onSendTelegramDirect();return;}
+    if(intent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
+  }
+  function shareVerifiedLocalFile(){
+    // Only a truly verified local Blob may reach the iOS share sheet.
+    if(!verified||!video?.blob||typeof navigator.share!=="function")return;
+    const file=new File([video.blob],
+      readyDownloadName,
+      {type:video.extension==="mp4"?"video/mp4":"video/webm"});
+    try{
+      const payload:ShareData={files:[file],title:"Holistic House"};
+      if(typeof navigator.canShare==="function"&&!navigator.canShare(payload))
+        throw new Error("LOCAL_FILE_SHARE_UNSUPPORTED");
+      void navigator.share(payload).catch(error=>{
+        if(error instanceof Error&&error.name==="AbortError")return;
+        setNotice(locale==="ru"?"Не удалось передать файл. Используйте «Скачать MP4»."
+          :locale==="es"?"No se pudo compartir. Usa Descargar MP4."
+          :"Could not share the file. Use Download MP4.");
+      });
+    }catch{
+      setNotice(locale==="ru"?"Не удалось открыть меню отправки. Используйте «Скачать MP4»."
+        :locale==="es"?"No se pudo abrir el menú Compartir. Usa Descargar MP4."
+        :"Could not open the Share sheet. Use Download MP4.");
+    }
   }
   async function requestTelegramLink(){
     if(!signedIn||telegramStatus==="loading")return;
@@ -310,124 +460,226 @@ export function MandalaVideoReady({
     try{await navigator.clipboard.writeText(text);setNotice(t.copiedText);}
     catch{setNotice(t.copyError);}
   }
-  function generateSelectedVideo(){
-    if(disabled||checking)return;
-    if(videoTier!=="basic"){
-      // Keep exactly the same fixed-SKU manual checkout as PRO; no provider render or paid-state mutation.
-      const id=videoTier==="photo"?"video-extra":"video-pro";
-      const selection=createVideoCartSelection(id);
-      if(!selection){setVideoGenerationNotice(t.videoCartError);return;}
-      try{
-        window.sessionStorage.setItem(VIDEO_CART_STORAGE_KEY,JSON.stringify(selection));
-        window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
-      }catch{
-        // The cart restores the fixed SKU from the URL when session storage is blocked.
-      }
-      router.push("/"+locale+"/cart?video="+id);
-      return;
-    }
+  function generateSelectedVideo():boolean{
+    if(disabled||checking||rendering||storyApprovalRequired)return false;
     if(!basicFreeAvailable){
       setVideoGenerationNotice(basicFreeIssue==="guest_used"?t.videoGuestUsed:
         basicFreeIssue==="insufficient"?t.videoInsufficient:
         basicFreeIssue==="checking"?t.videoChecking:t.videoFreeHold);
-      return;
+      return false;
     }
-    setVideoGenerationNotice(onGenerateBasicVideo()?"":t.videoSetup);
+    if(onGenerateBasicVideo()){
+      setVideoGenerationNotice("");setActiveOffer(null);setGeneratedOffer(null);
+      setCheckinEngaged(false);setCheckinDismissed(false);
+      if(!courseFlow)setPendingDeliveryIntent("save");
+      return true;
+    }
+    // Show the actual parent error, never an unrelated generic PRO detour.
+    setVideoGenerationNotice("");
+    return false;
   }
-  const videoTiers=[
-    {id:"basic" as VideoTier,title:t.videoBasic,description:t.videoBasicHint,price:t.videoFree,
-      image:"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"},
-    {id:"photo" as VideoTier,title:t.videoPhoto,description:t.videoPhotoHint,price:"€3",
-      image:"/images/holistic-house/reiki-approved-sunrise-v3.webp"},
-    {id:"character" as VideoTier,title:t.videoCharacter,description:t.videoCharacterHint,price:"€5",
-      image:"/images/holistic-house/ready-save-sunrise-portrait.jpg"},
-  ];
-  const header=<div className={css.selectedVideo}>
-    {video&&verified?<video key={video.url} src={video.url} playsInline controls preload="metadata"
-      aria-label={t.ready}/>:
+  const completed=Boolean(verified&&video);
+  const personalReadyLayout=exportMode==="personal"&&!courseFlow&&(previewAvailable||completed);
+  const showReadyJourney=completed||personalReadyLayout;
+  const durationSeconds=Math.max(0,Math.round(video?.duration??previewDurationSeconds));
+  const videoTime=`${String(Math.floor(durationSeconds/60)).padStart(2,"0")}:${String(durationSeconds%60).padStart(2,"0")}`;
+  const waiting=rendering||checking;
+  const pendingStatus=rendering?t.generating:checking?t.verifying:
+    previewAvailable
+      ?(locale==="ru"?"Предпросмотр готов · MP4 при сохранении":
+        locale==="es"?"Vista previa lista · MP4 al guardar":"Preview ready · export on save")
+      :t.notReady;
+  const header=<div className={css.selectedVideo} data-aspect={aspect}
+    data-video-file={video?"true":undefined}
+    data-personal-preview={!video&&previewAvailable?"true":undefined}>
+    {video?<video key={video.url} ref={readyPlayerRef} playsInline controls preload="auto"
+      data-mandala-video-preview data-ready-native-player="true"
+      onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
+      onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
+      onError={event=>handleReadyPlaybackError(event.currentTarget)}
+      aria-label={completed?t.ready:t.verifying}/>:
+    previewAvailable?<canvas ref={sequencePreviewRef} data-ready-sequence-canvas
+      aria-label={locale==="ru"?"Персональный предпросмотр, не готовый MP4":
+        locale==="es"?"Vista previa personalizada, no es un MP4":"Personal preview, not an exported MP4"}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
-      <span>{checking?t.verifying:t.notReady}</span>
+
     </div>}
-    {video&&verified?<span className={css.duration}>{video.duration}s · {video.extension.toUpperCase()}</span>:null}
+    {exportMode!=="express"&&!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
+      <button type="button" onClick={onPreviewToggle}
+        disabled={disabled||waiting} data-ready-sequence-play aria-pressed={previewPlaying}
+        aria-label={previewPlaying?(locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"):
+          locale==="ru"?"Смотреть персональную историю":locale==="es"?"Reproducir mi historia":"Play my personal story"}>
+        {previewPlaying?<Pause size={20} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}
+      </button>
+      <small>{Math.floor(previewPositionSeconds)} / {Math.floor(previewDurationSeconds)} s</small>
+      <input type="range" min={0} max={Math.max(1,previewDurationSeconds)}
+        step={0.5} value={Math.min(previewDurationSeconds,previewPositionSeconds)}
+        aria-label={locale==="ru"?"Позиция предпросмотра":locale==="es"?"Posición de vista previa":"Preview position"}
+        disabled={disabled||waiting} onChange={event=>onPreviewSeek(Number(event.currentTarget.value))}
+        data-ready-sequence-seek/>
+    </div>:null}
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
+    data-ready-state={completed?"complete":"choose"}
+    data-ready-has-video={video?"true":"false"} data-ready-layout={personalReadyLayout?"delivery":undefined}
     aria-label={view==="login"?t.authTitle:t.ready}>
     {(view==="home"||view==="login")?<>
-      {header}
-      <div className={css.title}>
-        <h2>{verified&&video?t.ready:t.videoChooseTitle}</h2>
-        <p>{verified&&video?t.preview:checking?t.verifying:t.videoChooseHint}</p>
-      </div>
-      {verified&&video?<>
-        <p className={css.signin}><LockKeyhole size={19} aria-hidden="true"/>
-          {signedIn?t.preview:t.signIn}</p>
-        <div className={css.actions} data-ready-save-choices>
-          <button type="button" onClick={()=>chooseDelivery("save")} disabled={disabled}
-            data-ready-save><FolderOpen size={23} aria-hidden="true"/><span>{t.save}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("download")} disabled={disabled}
-            data-ready-download><Download size={23} aria-hidden="true"/><span>{t.download}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled}
-            data-ready-telegram><Send size={23} aria-hidden="true"/><span>{t.telegram}</span></button>
-          {signedIn?<Link href={myVideos} prefetch={false} target="_blank" rel="noopener noreferrer"
-            data-ready-house><UserRound size={23} aria-hidden="true"/><span>{t.house}</span></Link>:
-          <button type="button" onClick={()=>chooseDelivery("house")} data-ready-house>
-            <UserRound size={23} aria-hidden="true"/><span>{t.house}</span></button>}
-        </div>
-      </>:<>
-        <div className={css.tierList} role="radiogroup" aria-label={t.videoChooseTitle}
-          data-ready-video-tiers>
-          {videoTiers.map(tier=><label key={tier.id}
-            className={css.tierOption} data-ready-video-tier={tier.id}
-            data-selected={videoTier===tier.id?"true":"false"}>
-            <input type="radio" name="ready-video-tier" value={tier.id}
-              checked={videoTier===tier.id}
-              disabled={disabled||checking}
-              onChange={()=>{setVideoTier(tier.id);setVideoGenerationNotice("");}}/>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={tier.image} alt="" loading="lazy"/>
-            <span className={css.tierCopy}><strong>{tier.title}</strong>
-              <small>{tier.description}</small></span>
-            <span className={css.tierPrice}>{tier.price}</span>
-          </label>)}
-        </div>
-        <button type="button" className={css.primary} disabled={disabled||checking}
-          onClick={generateSelectedVideo} data-ready-generate>
-          <Play size={19} aria-hidden="true"/>{videoTier==="basic"?t.videoGenerate:t.videoCartAction}<ArrowRight size={18} aria-hidden="true"/>
-        </button>
-        {videoTier==="basic"&&basicFreeAvailable&&basicCreditCost>0?
-          <p className={css.note} data-ready-video-credit-cost>
-            <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
-          </p>:null}
-        {videoTier!=="basic"?<p className={css.note} data-ready-video-payment-disclosure>
-          <ShieldCheck size={17} aria-hidden="true"/>{t.videoPaidInfo}
+      <p className={css.readyStatus} role="status" data-ready-status
+        data-ready-status-phase={completed?"complete":rendering?"rendering":checking?"verifying":"idle"}>
+        {completed?<CheckCircle2 size={19} aria-hidden="true"/>:<Clock3 size={19} aria-hidden="true"/>}
+        <strong>{exportMode==="express"?"Express":completed?t.ready:pendingStatus}</strong>
+        {completed||(!waiting&&previewAvailable)?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
+          rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
+      </p>
+      {rendering&&onCancelExport?<button type="button" className={css.secondary}
+        data-ready-cancel-export onClick={onCancelExport}>
+        {locale==="ru"?"Отменить экспорт":locale==="es"?"Cancelar exportación":"Cancel export"}
+      </button>:null}
+      {exportFailed&&!waiting&&!completed?<div className={css.exportFailure}
+        role="alert" data-ready-export-failed>
+        <strong>{t.failed}</strong>
+        <p>{generationNotice||t.failed}</p>
+        {canRetryExport?<button type="button" onClick={onRetryExport}
+          data-ready-retry-compatible>{nativeIphoneMp4Retry?
+            (locale==="ru"?"Повторить через Safari MP4":locale==="es"?"Reintentar con MP4 nativo de Safari":"Retry with native Safari MP4"):
+            t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
+      </div>:null}
+      {exportMode!=="express"?header:null}
+      {checking&&video&&!rendering?<button type="button" data-ready-play-verify
+        className={css.secondary} onClick={()=>{
+          const player=readyPlayerRef.current;
+          if(!player||player.error)return;
+          void player.play().then(()=>onVerifyPlayback(player))
+            .catch(()=>{/* Native onError handles unsupported media. */});
+        }}>
+        <Play size={16} aria-hidden="true"/>
+        {locale==="ru"?"Воспроизвести и проверить":locale==="es"?"Reproducir y comprobar":"Play & verify video"}
+      </button>:null}
+      {!completed&&!waiting&&exportMode==="openmotion"?<button type="button" className={css.secondary}
+        data-ready-open-motion-picker onClick={onStartNewVideo}>
+        {locale==="ru"?"Выбрать шаблон OpenMotion":locale==="es"?"Elegir plantilla OpenMotion":"Choose OpenMotion template"}
+        <ArrowRight size={17} aria-hidden="true"/>
+      </button>:null}
+      {!completed&&!waiting&&exportMode==="express"?expressMaster?
+        <div data-ready-express-standard><PublishedStandardMotionFilm locale={locale} master={expressMaster}/></div>:
+        <p className={css.note} role="status" data-ready-express-unavailable>
+          {locale==="ru"?"Готовый Express MP4 на русском пока недоступен.":
+            locale==="es"?"Todavía no hay un MP4 Express terminado en español.":
+            "No finished verified Express MP4 is available."}
         </p>:null}
-        {videoGenerationNotice?<p className={css.tierNotice} role="status"
-          data-ready-video-tier-notice>{videoGenerationNotice}</p>:null}
-        {videoGenerationNotice&&videoTier==="basic"&&basicFreeIssue==="guest_used"?
-          <Link className={css.secondary} href={myVideos} prefetch={false}
-            target="_blank" rel="noopener noreferrer" data-ready-sign-in-credits>
-            {t.videoGuestSignIn}<ArrowRight size={17} aria-hidden="true"/>
-          </Link>:videoGenerationNotice&&videoTier==="basic"?<button type="button"
-          className={css.secondary} onClick={onReturnToPro} data-ready-review-pro>
+      {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<>
+        <div className={css.actions} data-ready-prepare-delivery>
+          <button type="button" disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
+            <Download size={21} aria-hidden="true"/><span>{t.save}</span>
+          </button>
+          <button type="button" disabled={disabled||checking}
+            onClick={()=>{if(generateSelectedVideo())setPendingDeliveryIntent("telegram");}} data-ready-prepare-telegram>
+            <Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span>
+          </button>
+        </div>
+        {storyApprovalRequired?<div className={css.exportFailure} role="status" data-ready-story-approval-required>
+          <p>{locale==="ru"?"Сначала подтвердите кадры выбранного сюжета. Предпросмотр не будет сохранён вместо видео.":
+            locale==="es"?"Confirma primero las imágenes del guion. La vista previa no se guardará como vídeo.":
+            "Approve the selected Story photos first. The preview will not be saved as a video."}</p>
+          {onReviewStory?<button type="button" onClick={onReviewStory} data-ready-review-story>
+            {locale==="ru"?"Проверить сюжет":locale==="es"?"Revisar guion":"Review Story"}
+            <ArrowRight size={17} aria-hidden="true"/>
+          </button>:null}
+        </div>:null}
+      </>:null}
+      {courseFlow&&!waiting&&exportMode==="personal"?<div className={css.courseChoices} data-ready-course-choices>
+        <button type="button" className={css.courseFree} data-ready-course-free
+          disabled={disabled||checking} onClick={generateSelectedVideo}>
+          <Play size={19} aria-hidden="true"/>{courseActions.free}</button>
+        <button type="button" className={css.coursePaid} data-ready-course-paid
+          disabled={disabled} onClick={()=>setWalletOpen(true)}>
+          <BookOpen size={19} aria-hidden="true"/>{courseActions.paid}</button>
+        <p>{courseActions.note}</p>
+      </div>:null}
+      {exportMode==="personal"&&!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
+        <p className={css.note} data-ready-video-credit-cost>
+          <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
+        </p>:null}
+      {waiting&&!completed&&rendering?<div className={css.generateProgress} data-ready-generating>
+        <progress max={100} value={Math.min(100,Math.max(0,renderProgress))}
+          aria-label={t.generating}/>
+      </div>:null}
+      {!checkinDismissed&&((waiting&&!completed)||checkinEngaged)?
+        <div className={css.progressQuestionnaire} data-ready-checkin>
+          <ReadyGenerationCheckIn locale={locale}
+            onFirstAnswer={()=>setCheckinEngaged(true)}
+            onDismiss={()=>setCheckinDismissed(true)}/>
+        </div>:null}
+      {(videoGenerationNotice||generationNotice)&&!rendering&&!exportFailed?
+        <p className={css.tierNotice} role="status" data-ready-video-tier-notice>
+          {videoGenerationNotice||generationNotice}</p>:null}
+      {videoGenerationNotice&&basicFreeIssue==="guest_used"?
+        <Link className={css.secondary} href={myVideos} prefetch={false}
+          target="_blank" rel="noopener noreferrer" data-ready-sign-in-credits>
+          {t.videoGuestSignIn}<ArrowRight size={17} aria-hidden="true"/>
+        </Link>:videoGenerationNotice&&basicFreeIssue!=="guest_used"?
+        <button type="button" className={css.secondary}
+          onClick={onReturnToPro} data-ready-review-pro>
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}
-      </>}
-      <h3 className={css.nextTitle}>{verified&&video?t.continue:t.videoIdeas}</h3>
+      {completed?<>
+        <div className={css.actions} data-ready-save-choices>
+          <button type="button" onClick={()=>chooseDelivery("save")}
+            disabled={disabled||saveStatus.busy||(signedIn&&!cloudConsent&&!saveStatus.savedId)}
+            aria-busy={saveStatus.busy}
+            data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
+          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
+            data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
+        </div>
+        {pendingDeliveryIntent?<p className={css.note} role="status" data-ready-delivery-continuation>
+          {locale==="ru"?"Файл подготовлен. Завершите выбранное действие кнопкой выше.":
+            locale==="es"?"Archivo preparado. Confirma la acción elegida arriba.":
+            "Your file is prepared. Complete the selected action above."}
+        </p>:null}
+        {signedIn&&!saveStatus.savedId?<div className={css.linkConsent}>
+          <label>
+            <input ref={cloudConsentRef} type="checkbox" checked={cloudConsent}
+              disabled={saveStatus.busy}
+              onChange={event=>setCloudConsentUrl(event.currentTarget.checked&&video?video.url:null)}
+              data-ready-cloud-consent/>
+            <span>{PRIVATE_VIDEO_SAVE_CONSENT[locale]}</span>
+          </label>
+        </div>:null}
+        {saveStatus.telegramConnectUrl?<div className={css.linkActions} data-ready-telegram-link-step>
+          <a href={saveStatus.telegramConnectUrl} target="_blank" rel="noopener noreferrer"
+            data-ready-open-telegram>{t.openTelegramStart}</a>
+          <button type="button" onClick={onSendTelegramDirect} disabled={saveStatus.busy}
+            data-ready-verify-telegram>{t.telegramVerifySend}</button>
+        </div>:null}
+        {saveStatus.notice?<div className={css.saveStatus} role="status" aria-live="polite"
+          data-ready-save-status>
+          <span>{saveStatus.busy&&saveStatus.uploadPercent!==null
+            ?saveStatus.notice+" "+saveStatus.uploadPercent+"%":saveStatus.notice}</span>
+          {saveStatus.savedId?<Link href={myVideos} target="_blank" rel="noopener noreferrer"
+            prefetch={false} data-ready-saved-video-link>{t.house}</Link>:null}
+          {saveStatus.cloudAvailable===false&&!saveStatus.savedId&&video?
+            <a href={video.url} download={readyDownloadName}
+              data-ready-download-fallback>{t.download}</a>:null}
+        </div>:null}
+      </>:null}
+      {!waiting||completed?<>
+      <h3 className={css.nextTitle}>{showReadyJourney?t.nextSteps:t.videoIdeas}</h3>
+      {showReadyJourney?<p className={css.nextLead}>{t.nextLead}</p>:null}
       <div className={css.journey}>
-        <button type="button" onClick={()=>selectOffer("meditation")} data-ready-meditation
-          aria-expanded={activeOffer==="meditation"} aria-controls="ready-inline-offer">
+        <button type="button" onClick={()=>onOpenTherapy("single")} data-ready-meditation
+          data-ready-therapy-format="single" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
+            <img src={showReadyJourney?"/images/holistic-house/ready-save-sunrise-portrait.jpg":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
           </div>
           <Headphones size={22} aria-hidden="true"/>
-          <span><strong>{t.meditation}</strong><small>{t.meditationHint}</small></span>
+          <span><strong>{showReadyJourney?t.meditationNext:t.meditation}</strong><small>{showReadyJourney?t.meditationNextHint:t.meditationHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
-        <button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
+        {!showReadyJourney?<button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
           aria-expanded={activeOffer==="ritual"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -436,15 +688,15 @@ export function MandalaVideoReady({
           <Flower2 size={22} aria-hidden="true"/>
           <span><strong>{t.ritual}</strong><small>{t.ritualHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
-        </button>
-        <button type="button" onClick={()=>selectOffer("journey")} data-ready-journey
-          aria-expanded={activeOffer==="journey"} aria-controls="ready-inline-offer">
+        </button>:null}
+        <button type="button" onClick={()=>onOpenTherapy("course")} data-ready-journey
+          data-ready-therapy-format="course" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt=""/>
+            <img src={showReadyJourney?"/images/holistic-house/messenger-zen-stones.svg":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
           </div>
           <BookOpen size={22} aria-hidden="true"/>
-          <span><strong>{t.journey}</strong><small>{t.journeyHint}</small></span>
+          <span><strong>{showReadyJourney?t.journeyNext:t.journey}</strong><small>{showReadyJourney?t.journeyNextHint:t.journeyHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
       </div>
@@ -522,6 +774,49 @@ export function MandalaVideoReady({
           {notice?<p role="status" className={css.note}>{notice}</p>:null}
         </>}
       </section>:null}
+      {showReadyJourney?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <strong>{t.newVideo}</strong>
+        <ArrowRight size={22} aria-hidden="true"/>
+      </button>:null}
+      {completed?<div className={css.secondaryDelivery} data-ready-secondary-delivery>
+        {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
+          <a href={video.url} download={readyDownloadName}
+            data-ready-direct-download>
+            <Download size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
+              locale==="es"?"Descargar "+video.extension.toUpperCase():
+                "Download "+video.extension.toUpperCase()}</span>
+          </a>
+          {fileShareSupported?<button type="button" onClick={shareVerifiedLocalFile}
+            data-ready-share-file>
+            <Send size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
+          </button>:null}
+        </div>:null}
+        <div className={css.actions} data-ready-secondary-channels>
+          <button type="button" onClick={()=>chooseDelivery("whatsapp")} disabled={disabled||saveStatus.busy}
+            data-ready-whatsapp><MessageCircle size={19} aria-hidden="true"/>
+            <span>{saveStatus.whatsappLinked===false?t.connectWhatsApp:t.whatsapp}</span></button>
+        </div>
+        {saveStatus.whatsappConsentRequired&&!saveStatus.whatsappLinked&&!saveStatus.whatsappConnectUrl?
+          <div className={css.linkConsent} data-ready-whatsapp-link-consent>
+            <label><input type="checkbox" checked={whatsappConsent}
+              onChange={event=>setWhatsAppConsent(event.currentTarget.checked)}/>
+              <span>{t.waLinkConsent}</span></label>
+            <button type="button" onClick={()=>{if(whatsappConsent)onShareWhatsApp(true);}}
+              disabled={!whatsappConsent||saveStatus.busy}
+              data-ready-whatsapp-confirm-link>{t.connectWhatsApp}</button>
+          </div>:null}
+        {saveStatus.whatsappConnectUrl?<div className={css.linkActions} data-ready-whatsapp-link-step>
+          <a href={saveStatus.whatsappConnectUrl} target="_blank" rel="noopener noreferrer"
+            data-ready-open-whatsapp>{t.openWhatsAppStart}</a>
+          <button type="button" onClick={()=>onShareWhatsApp()} disabled={saveStatus.busy}
+            data-ready-verify-whatsapp>{t.whatsappVerify}</button>
+        </div>:null}
+        <p className={css.whatsappLimit}>{t.whatsappLimit}</p>
+      </div>:null}
+      </>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay
       onMouseDown={event=>{if(event.target===event.currentTarget)closeSaveGate();}}>
@@ -587,5 +882,7 @@ export function MandalaVideoReady({
         <p className={css.gatePrivacy}><ShieldCheck size={18} aria-hidden="true"/>{t.saveGatePrivacy}</p>
       </section>
     </div>:null}
+    {walletOpen?<MandalaTherapyWalletDialog locale={locale} signedIn={signedIn}
+      onClose={closeWallet} onRefreshLogin={onRefreshLogin}/>:null}
   </section>;
 }

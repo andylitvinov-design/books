@@ -40,7 +40,7 @@ test("compact cards and Browse share strict music filtering while existing selec
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.match(source,/const audioCategory=audioCategoryOverride\|\|inferVideoAudioCategory\(\{theme,concept:approvedVideoConcept,wish\}\)/);
   assert.match(source,/\.filter\(track=>curatedAudioMatchesCategory\(track,audioCategory\)\)/);
-  assert.match(source,/\{filteredAudio\.slice\(0,5\)\.map\(\(track,index\)=>\{/);
+  assert.match(source,/\{filteredAudio\.slice\(0,12\)\.map\(\(track,index\)=>\{/);
   assert.match(source,/\{filteredAudio\.slice\(0,showAllAudio\?filteredAudio.length:5\)\.map\(track=>\{/);
   assert.match(source,/setAudioCategoryOverride\(item.id\)/);
   assert.match(source,/\},\[theme,approvedVideoConcept\?\.signature\]\)/);

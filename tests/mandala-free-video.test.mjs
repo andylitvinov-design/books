@@ -1,3 +1,5 @@
+import "./mandala-storyboard-photo-semantic.test.mjs";
+import "./video-gift-live-sequence.test.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -29,7 +31,8 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(source, /data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
+   assert.match(source, /onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
@@ -107,7 +110,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
-  assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
+  assert.match(studio, /videoBitsPerSecond:isApplePhone\?1_400_000:quality==="fullhd"\?5_000_000:3_000_000/);
   assert.match(parent, /photoUrl=\{imageUrl\}/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);
@@ -225,8 +228,8 @@ test("only loads the first master MP4 after Play/Create, without deadlocking Cre
   assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/);
   assert.match(studio,/const canGenerate = Boolean\(source\) &&/);
   assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
-  assert.match(studio,/onClick=\{createQuickVideo\}/);
-  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(studio,/onClick=\{openReadyForGeneration\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
   const { ensureDecodedVideoOnUserIntent }=await import("../lib/mandala/intent-video-loading.mjs");
   class FakeVideo extends EventTarget {
     readyState=0;videoWidth=0;videoHeight=0;error=null;networkState=1;muted=false;

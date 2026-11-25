@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, restoreVideoCart, videoCartProduct, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
@@ -96,10 +97,11 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
+  paidVideoTrackingEnabled?: boolean;
   hostedPayPalLinks: Record<string, string>;
   stripeLinks: Record<string, string>;
   wiseEnabled: boolean;
@@ -219,7 +221,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     : locale === "es"
       ? `Hola. Quiero confirmar el pago de ${receiptAmount} por ${description} vía ${paymentLabel}. Referencia: [introduce la referencia]. Confirma la recepción y el horario.`
       : `Hello! Please verify my ${receiptAmount} payment for ${description} via ${paymentLabel}. Transaction ID: [insert ID]. Please confirm receipt and session time.`;
-  const bookingUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(bookingMessage);
+  const bookingUrl = whatsappEnquiryUrl({ locale, service: description || t.service, request: bookingMessage, pagePath: "/" + locale + "/cart" });
   const receiptUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(receiptMessage);
 
   async function refreshSquareStatus() {
@@ -321,7 +323,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
       <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount}</span>
     </div>
-    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} />
+    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} trackingEnabled={paidVideoTrackingEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
       !chosen.length && !videoCartCount ? <div className={styles.empty} data-cart-empty>
         <p role="status">{t.empty}</p><span className={styles.emptyHint}>{t.emptyHint}</span>
@@ -366,18 +368,18 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </div>
           {orderReady ? <p className={styles.orderDone} role="status" data-cart-order-saved>
             <Check size={18} aria-hidden="true" />{t.orderSaved} · {orderReceipt?.referenceCode}
-          </p> : <>
-            {!orderOpen && <button type="button" className={styles.orderButton}
-              data-cart-start-order aria-expanded={orderOpen} onClick={() => setOrderOpen(true)}>
+          </p> : <details className={styles.orderDisclosure} data-cart-order-disclosure
+            open={orderOpen} onToggle={event => setOrderOpen(event.currentTarget.open)}>
+            <summary className={styles.orderButton} data-cart-start-order>
               {t.orderAction}<ArrowRight size={19} aria-hidden="true" />
-            </button>}
-            {orderOpen && <div className={styles.orderForm} data-cart-contact-form>
+            </summary>
+            <div className={styles.orderForm} data-cart-contact-form>
               <ContactChannelChooser locale={locale} whatsappUrl={bookingUrl} quick cartContact
                 stayAfterSave publicServiceTitle={description || t.service}
                 publicTopic={t.orderTopic} resetKey={cartKey}
                 onSaved={referenceCode => setOrderReceipt({ cartKey, referenceCode })} />
-            </div>}
-          </>}
+            </div>
+          </details>}
         </section>
         {showPayment && <div className={styles.stepHeading} data-cart-payment-step>
           <span className={styles.stepNumber}>2</span>

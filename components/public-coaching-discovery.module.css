@@ -1243,3 +1243,33 @@
   .personaWelcomeGreeting{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.personaWelcomeFace{animation:none}}
+
+.root:has([data-my-coach-immersive-session]){width:100%;min-height:100dvh;margin:0;padding:0;background:#fbf5e9;overflow-x:clip}
+.root:has([data-my-coach-immersive-session]) .wrap{width:100%;max-width:100%;margin:0}
+.personaWelcome:has([data-my-coach-immersive-session]){display:block;width:100%;max-width:100%;min-height:100dvh;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.personaWelcome:has([data-my-coach-immersive-session])>[data-my-coach-live-dialogue]{grid-column:auto;width:100%;min-width:0}
+/* My Coach live chat uses the already existing fixed VisualViewport shell.
+   The old padded 2-column welcome grid added an extra viewport of height,
+   allowing Safari to scroll the focused textarea out of the keyboard area. */
+.root[data-public-coaching-active="true"] .personaWelcome[data-coach-session-layout="true"]{
+  box-sizing:border-box;display:flex;flex-direction:column;
+  width:100%;max-width:none;height:100%;min-height:0;
+  margin:0;padding:0;gap:0;overflow:hidden;
+  border:0;border-radius:0;box-shadow:none;background:#fbf5e9;
+}
+.root[data-public-coaching-active="true"] .personaWelcome[data-coach-session-layout="true"] > [data-my-coach-live-dialogue]{
+  box-sizing:border-box;display:flex;flex:1 1 0;
+  width:100%;height:100%;max-height:100%;min-height:0;
+  margin:0;
+}
+/* iPhone keyboard regression (16 Nov): this higher-specificity fixed-shell
+   rule overrides the generic .root:has(...) min-height:100dvh above.
+   CSS dvh can remain at the layout viewport while visualViewport.height
+   shrinks on keyboard open; never force a 900px shell into 560px of space.
+   Only the active immersive coach is affected. Leave normal landing alone. */
+.root[data-public-coaching-active="true"]:has([data-my-coach-immersive-session]){
+  box-sizing:border-box;
+  min-height:0;
+  height:var(--coach-visible-height,100dvh);
+  max-height:var(--coach-visible-height,100dvh);
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Play, Plus, Sparkles, Star, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
 import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
@@ -13,9 +13,9 @@ import styles from './my-courses-dashboard.module.css'
 
 const copy={
   en:{
-    eyebrow:'MY COURSES',started:'Continue learning',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
+    eyebrow:'MY COURSES',started:'Continuing now',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
     primary:'MAIN COURSE',primaryAction:'Make main',today:'Continue course',setup:'Finish setting up',day:'Day',of:'of',lessons:'lessons complete',
-    axes:'Your development focus',other:'Other courses',options:'Other possible courses',explore:'Explore',add:'Start another course',addNote:'Explore a new learning direction',
+    axes:'Your development focus',other:'Other courses',options:'Recommended for you',explore:'Explore',add:'Start another course',addNote:'Explore a new learning direction',
     full:'Your active-course limit is reached. Pause or close a course to free a place.',fullSingle:'One course at a time. Close the current course to start a new one.',completed:'Completed courses',
     archived:'Course history',viewArchive:'View completed and closed courses',hideArchive:'Hide history',closed:'Closed early',
     completedTitle:'Completed',paused:'Paused',close:'Close course',back:'Not now',
@@ -31,9 +31,9 @@ const copy={
     viewHistory:'Review course', historySafe:'Pausing or closing frees an active place while preserving history.',historySafeSingle:'Closing frees the course place. Your saved tests and lessons remain.', closeDialog:'Dismiss', setupAxes:'Choose your focus areas during setup.', billingError:'Payment could not be opened. Please try again from subscription settings.',
   },
   ru:{
-    eyebrow:'МОИ КУРСЫ',started:'Продолжить обучение',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
+    eyebrow:'МОИ КУРСЫ',started:'Продолжаю сейчас',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
     primary:'ГЛАВНЫЙ КУРС',primaryAction:'Сделать главным',today:'Продолжить курс',setup:'Завершить настройку',
-    day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',options:'Другие возможные курсы',explore:'Посмотреть',
+    day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',options:'Рекомендовано для вас',explore:'Посмотреть',
     add:'Начать новый курс',addNote:'Выберите ещё одно направление развития',
     full:'Достигнут лимит активных курсов. Поставьте курс на паузу или закройте его.',fullSingle:'Одновременно можно проходить один курс. Закройте текущий, чтобы начать новый.',
     completed:'Завершённые курсы',archived:'История курсов',viewArchive:'Открыть историю курсов',hideArchive:'Скрыть историю',
@@ -102,8 +102,11 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
         <span style={{width:progress+'%'}}/>
       </div>
       <div className={styles.tileActions}>
-        <button className={styles.primaryButton} type="button" disabled={busy} onClick={()=>onOpen(course)}>
-          {course.stage===4?t.today:t.setup}<ArrowRight size={16} aria-hidden="true"/>
+        <button className={hero ? styles.coursePlayButton : styles.primaryButton} type="button"
+          disabled={busy} data-course-open-action onClick={()=>onOpen(course)}
+          aria-label={hero ? (course.stage===4?t.today:t.setup) : undefined}>
+          <span className={hero ? styles.srOnly : undefined}>{course.stage===4?t.today:t.setup}</span>
+          {hero ? <Play size={20} fill="currentColor" aria-hidden="true"/> : <ArrowRight size={16} aria-hidden="true"/>}
         </button>
         {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton}
           disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
@@ -141,29 +144,11 @@ export default function MyCoursesDashboard({
     void startCheckout(tier)
   }
   return <div className={styles.dashboard} data-my-courses-dashboard>
-    <header className={styles.heading}>
-      <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
-      <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
-    </header>
-    <Link href={'/' + (locale==='ru'?'ru':'en') + '/coaching'} prefetch={false}
-      className={styles.businessTrack} data-personal-coaching-course-link>
-      <span className={styles.businessTrackPhoto} aria-hidden="true">
-        <img src="/images/holistic-house/report-lighthouse-coast.avif" alt=""
-          width={240} height={220} loading="lazy" decoding="async" />
-      </span>
-      <span className={styles.businessTrackBody}>
-        <span className={styles.businessTrackEyebrow}>{locale==='ru'?'БЕСПЛАТНЫЙ КУРС':'FREE PERSONAL COURSE'}</span>
-        <strong className={styles.businessTrackTitle}>{locale==='ru'?'Личная коуч-сессия':'Personal Coaching Session'}</strong>
-        <span className={styles.businessTrackDescription}>
-          {locale==='ru'?'Опишите свой вопрос, выберите одну из трёх моделей и пройдите короткую личную сессию.':'Enter your question, choose from three suggested models and complete a short private session.'}
-        </span>
-        <span className={styles.businessTrackAction}>
-          {locale==='ru'?'Начать сессию':'Start my session'}<ArrowRight size={16} aria-hidden="true"/>
-        </span>
-      </span>
-    </Link>
-    {main&&<section className={styles.startedCourses} aria-label={t.started} data-started-courses>
-      <h3>{t.started}</h3>
+
+    {main && <section className={styles.startedCourses} aria-label={t.started} data-started-courses>
+      <div className={styles.startedHeading}>
+        <h3>{t.started}</h3><span className={styles.cap}><Sparkles size={15} aria-hidden="true"/>{occupied} / {limit}</span>
+      </div>
       <CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing}
         onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>
       {others.length>0&&<div className={styles.startedList}>
@@ -172,18 +157,77 @@ export default function MyCoursesDashboard({
           busy={busy} canManageCourses={canManageCourses}/>)}
       </div>}
     </section>}
-    <CabinetFreeCourseBanners locale={locale}/>
-    {suggested.length>0&&<section className={styles.discover} aria-label={t.options} data-course-options>
-      <h3>{t.options}</h3>
-      <div className={styles.discoverList}>{suggested.map(preset=><article key={preset.id}
-        className={styles.discoverCard} data-course-option={preset.id}>
-        <span className={styles.discoverIcon} aria-hidden="true"><Leaf size={19}/></span>
-        <div><h4>{preset.title[locale==='ru'?'ru':'en']}</h4>
-          <p>{preset.subtitle[locale==='ru'?'ru':'en']}</p></div>
-        {canAddCourse&&<button type="button" disabled={busy} onClick={onNew}>
-          {t.explore}<ArrowRight size={15} aria-hidden="true"/></button>}
-      </article>)}</div>
-    </section>}
+    <section className={styles.recommendations} aria-label={t.options} data-course-options>
+      <div className={styles.recommendHeading}>
+        <h3>{t.options}</h3>
+        <Link href={'/' + (locale==='ru'?'ru':'en') + '/app/course?view=discover'} prefetch={false}>
+          {locale==='ru'?'Подобрать курс':'Find a course'}<ArrowRight size={16} aria-hidden="true"/>
+        </Link>
+      </div>
+      <div className={styles.recommendGrid}>
+        <Link href={'/' + (locale==='ru'?'ru':'en') + '/coaching'} prefetch={false}
+          className={styles.recommendCard} data-personal-coaching-course-link>
+          <span className={styles.recommendPhoto} aria-hidden="true"/>
+          <span className={styles.recommendBody}>
+            <small className={styles.recommendTag}>{locale==='ru'?'БЕСПЛАТНО':'FREE'}</small>
+            <strong>{locale==='ru'?'Личная коуч-сессия':'Personal Coaching Session'}</strong>
+            <small>{locale==='ru'?'Выберите вопрос и начните сессию.':'Choose a question and start a session.'}</small>
+            <ArrowRight className={styles.recommendArrow} size={19} aria-hidden="true"/>
+          </span>
+        </Link>
+        {suggested.slice(0,2).map(preset=><article key={preset.id} className={styles.recommendCard}
+          data-course-option={preset.id}>
+          <span className={styles.recommendPhoto} aria-hidden="true"/>
+          <span className={styles.recommendBody}>
+            <small className={styles.recommendTag}>{locale==='ru'?'КУРС':'COURSE'}</small>
+            <strong>{preset.title[locale==='ru'?'ru':'en']}</strong>
+            <small>{preset.subtitle[locale==='ru'?'ru':'en']}</small>
+            {canAddCourse
+              ? <button type="button" className={styles.recommendArrow} disabled={busy} onClick={onNew}
+                  aria-label={t.explore + ': ' + preset.title[locale==='ru'?'ru':'en']}>
+                  <ArrowRight size={19} aria-hidden="true"/>
+                </button>
+              : <Link className={styles.recommendArrow}
+                  href={'/' + (locale==='ru'?'ru':'en') + '/academy'} prefetch={false}
+                  aria-label={t.explore + ': ' + preset.title[locale==='ru'?'ru':'en']}>
+                  <ArrowRight size={19} aria-hidden="true"/>
+                </Link>}
+          </span>
+        </article>)}
+      </div>
+    </section>
+    <section className={styles.bonusSection} aria-label={locale==='ru'?'Бонусный курс Практик Рейки':'Free Reiki Practitioner bonus course'}>
+      <Link className={styles.bonusCard} data-reiki-practitioner-bonus
+        href={'/' + (locale==='ru'?'ru':'en') + '/academy/principles-of-energywork/learn'} prefetch={false}>
+        <span className={styles.bonusPhoto} aria-hidden="true">
+          <img src="/academy/reiki-yggdrasil/source/program-overview.jpg"
+            width={176} height={140} alt="" loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.bonusBody}>
+          <small className={styles.bonusEyebrow}>{locale==='ru'?'БОНУС · БЕСПЛАТНО':'BONUS · FREE'}</small>
+          <strong>{locale==='ru'?'Практик Рейки':'Reiki Practitioner'}</strong>
+          <small>{locale==='ru'?'Бесплатные уроки и практики. Инициация отдельно.':'Free lessons and practices. Initiation is separate.'}</small>
+        </span>
+        <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+      </Link>
+      <Link className={styles.bonusCard} data-reiki-practitioner-daybook-bonus
+        href={'/' + (locale==='ru'?'ru':'en') + '/academy/principles-of-energywork/daybook'} prefetch={false}>
+        <span className={styles.bonusPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+            width={176} height={140} alt="" loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.bonusBody}>
+          <small className={styles.bonusEyebrow}>{locale==='ru'?'ДНЕВНИК ПРАКТИКИ':locale==='es'?'DIARIO DE PRÁCTICA':'PRACTICE JOURNAL'}</small>
+          <strong>{locale==='ru'?'Практик Рейки — Daybook':'Reiki Practitioner — Daybook'}</strong>
+          <small>{locale==='ru'?'5 недель · Уроки, практики и ваши записи. Прогресс общий с классической версией.':locale==='es'?'5 semanas · Curso en inglés. Se conserva tu progreso en ambas versiones.':'5 weeks of lessons, practices and reflections. Both formats share your progress.'}</small>
+        </span>
+        <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+      </Link>
+    </section>
+    <details className={styles.moreFree}>
+      <summary>{locale==='ru'?'Все бесплатные программы':'More free programmes'}</summary>
+      <CabinetFreeCourseBanners locale={locale}/>
+    </details>
     <button type="button" className={styles.addTile} disabled={busy||!canAddCourse} onClick={onNew}>
       <Plus size={26}/><strong>{t.add}</strong><small>{full?fullMessage:t.addNote}</small>
     </button>

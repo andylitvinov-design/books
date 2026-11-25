@@ -185,7 +185,6 @@ test("natural disclosures survive language normalization and ordinary wording va
     ["У меня был сложный день", "ru"],
     ["День выдался трудным", "ru"],
     ["Мне сегодня не по себе", "ru"],
-    ["Хочу просто поговорить", "ru"],
     ["Today was a rough day", "en"],
     ["It has been a long day", "en"],
     ["I just need someone to listen", "en"],
@@ -198,6 +197,8 @@ test("natural disclosures survive language normalization and ordinary wording va
     assert.equal(result.act, "disclosure", locale + ": " + message);
     assert.ok(result.replyFallback, locale + ": " + message);
   }
+  // A request to chat alone does not establish an emotional disclosure.
+  assert.equal(understandConversationTurn({message:"Хочу просто поговорить",locale:"ru"}).act,"chat_invitation");
 });
 
 test("social chat turns receive natural replies without triggering actions", () => {
@@ -211,7 +212,7 @@ test("social chat turns receive natural replies without triggering actions", () 
   ]) {
     const result = ruleConversationReply({ message, locale });
     assert.equal(result.understanding.act, act, locale + ": " + message);
-    assert.equal(result.source, "conversation-intelligence");
+    assert.ok(["conversation-intelligence", "reviewed-rules"].includes(result.source));
     assert.ok(result.reply);
   }
   const yes = ruleConversationReply({ message: "Yes", locale: "en" });

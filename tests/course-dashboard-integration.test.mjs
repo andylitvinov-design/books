@@ -56,7 +56,10 @@ test('other possible course directions stay visible at the free active-course li
   assert.equal(options.flatMap(nodes).filter(node => node.type === 'button').length, 0,
     'a full account can see other directions but cannot bypass the active-course quota')
   h.render({ ...props, canAddCourse: true }); await h.settle()
-  nodes(h.tree).filter(node => node.props?.['data-course-option'])[0].props.children[2].props.onClick()
+  const firstAvailableOption = nodes(h.tree).find(node => node.props?.['data-course-option'] === 'business_focus')
+  const chooseButton = firstAvailableOption && nodes(firstAvailableOption).find(node => node.type === 'button')
+  assert.ok(chooseButton, 'the available recommended course exposes an explicit choice action')
+  chooseButton.props.onClick()
   assert.equal(newCourseRequests, 1, 'an available option opens the existing catalog flow')
   h.unmount()
 })
@@ -376,4 +379,22 @@ test('a delayed previous-owner default cannot open Today after the account chang
   assert.ok(h.navigations.every(url => !url.includes('owner-a-selected')))
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
+})
+
+test('My Courses checks for saved Reiki when the owner has no personal growth course', async () => {
+  const owner = account('reiki-only-owner')
+  const emptyGrowth = { course: null, courses: [], assessments: {}, access: { ...access, activeCourseCount: 0 } }
+  const index = mount('my-course', {
+    search: '?view=courses', props: { data: owner, locale: 'ru' }, fetcher: () => emptyGrowth,
+  })
+  await index.settle()
+  const saved = findPart(index.tree, 'CabinetFreeCourseBanners')
+  assert.equal(saved.props.savedOnly, true)
+  assert.equal(saved.props.accountId, owner.account.id)
+  assert.equal(saved.props.locale, 'ru')
+  const discovery = mount('my-course', {
+    search: '?view=discover', props: { data: owner, locale: 'ru' }, fetcher: () => emptyGrowth,
+  })
+  await discovery.settle()
+  assert.ok(!findPart(discovery.tree, 'CabinetFreeCourseBanners'))
 })

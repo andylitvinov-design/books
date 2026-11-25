@@ -43,7 +43,7 @@ test("one existing input influences live 4-beat planning; all media gates remain
  const emotional=read("lib/mandala/video-emotional-scene-plan.mjs");
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  for(const marker of [
-  "const clientWish=requestDraft.trim()",
+  "const clientWish=videoAudience==='self'&&promptDesignedFor===goal?requestDraft.trim():''",
   "buildPersonalVideoBrief({",
   "stageVisualTags:clientWish?videoBrief.stages.map",
   "goal:clientWish?videoBrief.prompt:goal",
@@ -60,4 +60,10 @@ test("one existing input influences live 4-beat planning; all media gates remain
  assert.match(emotional,/visitorTags=requestedVisualTags\.filter/);
  assert.match(director,/validateMontageClips\(\[\.\.\.rankedIds\],scenes,recommended\.excludedMotifs,aspect\)/);
  assert.doesNotMatch(director,/setPersonalWish|localStorage|sessionStorage/);
+});
+
+test("visual matching does not treat market as sea and target emotion stays localized",()=>{
+ const plan=buildPersonalVideoBrief({locale:"en",clientWish:"I want confidence in the market",categoryId:"goals-money"});
+ assert.ok(!plan.visualTags.includes("water"));
+ assert.ok(plan.prompt.includes("→ "+plan.toEmotion));
 });

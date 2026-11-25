@@ -1,0 +1,324 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {coachProtocolControlUtterance,COACH_PROTOCOL_VERIFICATION_INSTRUCTION} from '../lib/coaching/coach-protocol-relevance.mjs'
+import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
+import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {verifyCoachSemanticHint} from '../lib/coaching/semantic-evidence.mjs'
+import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
+import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
+
+const id='8afbf841-49a0-46e1-b5c1-124a116efa28'
+const sample=()=>({
+  id,personaId:'mira',locale:'ru',
+  startedAt:'2026-11-19T20:00:00.000Z',completedAt:'2026-11-19T20:20:00.000Z',
+  durationSeconds:1200,goal:'Разобраться в целях',clientSummary:'Мне стало яснее, что нужна поддержка.',clientNextStep:'Обсудить нагрузку с коллегой.',
+  turns:[
+    {role:'user',content:'Я хочу понять, чего мне не хватает для следующего шага.',secret:'not-for-report'},
+    {role:'assistant',content:'Что вам сейчас важнее всего?',mode:'ai',stage:'explore',suggestion:'Возможный шаг: поговорить с коллегой.',reasoning:'hidden reasoning'},
+    {role:'user',content:'Я хочу попросить больше поддержки.',audioUrl:'https://example.invalid/secret.wav'},
+    {role:'assistant',content:'Как вы могли бы об этом попросить?',mode:'offline'},
+  ],
+})
+test('protocol captures every completed visible user/coach exchange in order',()=>{
+  const result=normalizeMyCoachProtocol(sample())
+  assert.equal(result.turns.length,4)
+  assert.equal(result.goal,'Разобраться в целях')
+  assert.equal(result.clientSummary,'Мне стало яснее, что нужна поддержка.')
+  assert.equal(result.clientNextStep,'Обсудить нагрузку с коллегой.')
+  assert.deepEqual(result.turns.map(turn=>turn.role),['user','assistant','user','assistant'])
+  assert.deepEqual(result.turns.map(turn=>turn.content),sample().turns.map(turn=>turn.content))
+  const all=JSON.stringify(result)
+  assert.equal(all.includes('hidden reasoning'),false)
+  assert.equal(all.includes('secret.wav'),false)
+  assert.equal(all.includes('not-for-report'),false)
+  assert.equal(all.includes('audioUrl'),false)
+})
+test('Russian/English/Spanish print projections preserve both voices and label suggestions as unconfirmed',()=>{
+  for(const lang of ['ru','en','es']){
+    const options=myCoachProtocolPdfOptions(sample(),{locale:lang})
+    assert.equal(options.locale,lang)
+    assert.equal(options.entryKind,'dialogue')
+    assert.equal(options.entries.length,2)
+    assert.match(options.entries[0].question,/хочу понять/)
+    assert.match(options.entries[0].answer,/Что вам сейчас важнее всего/)
+    assert.match(options.entries[0].reflection,/поговорить с коллегой/)
+    assert.match(options.entries[1].answer,/Как вы могли бы об этом попросить/)
+    assert.equal(options.actionPlan,'')
+    assert.equal(options.clientReflection,'Мне стало яснее, что нужна поддержка.')
+    assert.equal(options.clientNextStep,'Обсудить нагрузку с коллегой.')
+    assert.ok(options.protocolNote)
+  }
+})
+test('interrupted coach replies stay visible but are marked as not necessarily heard',()=>{
+  const sampleSession=sample()
+  sampleSession.turns[1].interrupted=true
+  const normalized=normalizeMyCoachProtocol(sampleSession)
+  assert.equal(normalized.turns[1].interrupted,true)
+  assert.match(myCoachProtocolPdfOptions(normalized,{locale:'ru'}).entries[0].reflection,/перебит/)
+})
+test('no fake confirmed commitment, scores or hidden vendor metadata is copied into the PDF',()=>{
+  const options=myCoachProtocolPdfOptions(sample())
+  const text=JSON.stringify(options)
+  assert.doesNotMatch(text,/hidden reasoning|secret.wav|not-for-report/)
+  assert.equal(options.entries.some(x=>x.reflection?.includes('Возможный шаг')),true)
+  assert.equal(options.actionPlan,'')
+})
+test('strict role ordering, nonempty content, and valid end time required',()=>{
+  assert.throws(()=>normalizeMyCoachProtocol({...sample(),turns:[]}),/MY_COACH_PROTOCOL_INVALID/)
+  assert.throws(()=>normalizeMyCoachProtocol({...sample(),turns:sample().turns.slice(0,3)}),/MY_COACH_PROTOCOL_INVALID/)
+  const outOfOrder=sample();outOfOrder.turns[1].role='user'
+  assert.throws(()=>normalizeMyCoachProtocol(outOfOrder),/MY_COACH_PROTOCOL_INVALID/)
+  const empty=sample();empty.turns[0].content='  '
+  assert.throws(()=>normalizeMyCoachProtocol(empty),/MY_COACH_PROTOCOL_INVALID/)
+  assert.throws(()=>normalizeMyCoachProtocol({...sample(),completedAt:'2026-11-18T11:00:00Z'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('hard caps prevent oversized transcripts and invented fields',()=>{
+  const tooMany=sample()
+  tooMany.turns=Array.from({length:MY_COACH_PROTOCOL_MAX_TURNS+2},(_,i)=>({
+    role:i%2===0?'user':'assistant',content:'Hello'
+  }))
+  assert.throws(()=>normalizeMyCoachProtocol(tooMany),/MY_COACH_PROTOCOL_INVALID/)
+  const control=sample();control.turns[0].content='Bad\u0001data'
+  assert.throws(()=>normalizeMyCoachProtocol(control),/MY_COACH_PROTOCOL_INVALID/)
+  const large=sample();large.turns[0].content='a'.repeat(1201)
+  assert.throws(()=>normalizeMyCoachProtocol(large),/MY_COACH_PROTOCOL_INVALID/)
+  const unknown=sample();unknown.personaId='untrusted-model-provider'
+  assert.throws(()=>normalizeMyCoachProtocol(unknown),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('saving requires explicit consent; GET validates the serving host and owner authorization',()=>{
+  const route=readFileSync(new URL('../app/api/app/my-coach/protocol/route.js',import.meta.url),'utf8')
+  const service=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+  assert.match(route,/requireSameOrigin\(request,config\)/)
+  assert.match(route,/requestOrigin\(request,config\)/)
+  assert.match(route,/await auth\.verified\(\)/)
+  assert.match(service,/input\.consent!==true/)
+  assert.match(service,/seal\(envelope,sealContext\(actor\),config\)/)
+  assert.match(service,/revision=revision\+1/)
+})
+test('the main voice session ends in a review dialog with PDF actions, not navigation',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const archive=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/data-my-coach-protocol/)
+  assert.match(ui,/downloadCoachingSessionPdf/)
+  assert.match(ui,/openCoachingSessionPdf/)
+  assert.match(ui,/protocolConsent/)
+  assert.match(ui,/protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)/)
+  assert.match(ui,/onClick=\{interceptSessionExit\}/)
+  assert.match(archive,/data-my-coach-saved-protocol/)
+  assert.match(archive,/deleteProtocol\(protocol\)/)
+})
+
+test('checklist reports only client-supplied information in six compact states',()=>{
+  const turns=[
+    {role:'assistant',content:'Your motivation is very strong. You have a complete action plan.'},
+    {role:'user',content:'Я хочу наладить отношения с коллегами и чувствовать себя спокойнее на работе.'},
+    {role:'assistant',content:'I suggest you ask a colleague for help.'},
+    {role:'user',content:'Мне мешает постоянная нехватка времени и страх отказа, поэтому я часто отступаю.'},
+    {role:'user',content:'Для меня важно чувствовать спокойствие и больше уверенности в повседневной жизни.'}
+  ]
+  const rows=coachInformationChecklist(turns)
+  assert.deepEqual(rows.map(row=>row.key),COACH_INFORMATION_KEYS)
+  const lookup=Object.fromEntries(rows.map(row=>[row.key,row]))
+  assert.equal(lookup.goal.status,'complete')
+  assert.equal(lookup.obstacles.status,'complete')
+  assert.equal(lookup.motivation.status,'complete')
+  assert.equal(lookup.situation.status,'complete')
+  assert.equal(lookup.resources.status,'missing')
+  assert.equal(lookup.nextSteps.status,'missing')
+  assert.ok(!JSON.stringify(rows).includes('I suggest'))
+  assert.equal(coachInformationChecklist([],{selectedGoal:'Calm'}).find(x=>x.key==='goal').status,'partial')
+})
+test('a client topic correction resets old checkmarks and partial evidence is not marked complete',()=>{
+  const turns=[
+    {role:'user',content:'I want to change jobs because I am exhausted and it is difficult at work right now.'},
+    {role:'user',content:'Давайте сменим тему. Теперь мне важно понять отношения с ребёнком.'},
+    {role:'user',content:'Я хочу.'}
+  ]
+  const rows=Object.fromEntries(coachInformationChecklist(turns).map(row=>[row.key,row]))
+  assert.equal(rows.goal.status,'partial')
+  assert.equal(rows.obstacles.status,'missing')
+  assert.equal(rows.situation.status,'missing')
+  assert.ok(!JSON.stringify(rows).includes('change jobs'))
+})
+test('owner mobile design keeps voice controls, back and end-call summary while overlaying the transcript',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  assert.match(ui,/data-coach-progress-accordion/)
+  assert.match(ui,/sessionProgressSummary/)
+  assert.match(ui,/data-coach-basic-pro-toggle/)
+  assert.match(ui,/data-coach-profile-open/)
+  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/<PhoneOff size=\{19\}/)
+  assert.match(ui,/Summary/)
+  assert.match(ui,/<ArrowLeft size=\{16\}/)
+  assert.match(ui,/data-coach-live-wave/)
+  assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
+  assert.match(css,/\.sessionProgress\[data-coach-progress-accordion\]/)
+  assert.match(css,/\.voicePlayNotice\[data-coach-pro-same-tap-disclosure\]/)
+  assert.match(ui,/data-coach-pro-same-tap-disclosure/)
+  assert.doesNotMatch(ui,/data-coach-experience-consent/)
+})
+test('PDF prints the provisional key-information map using only the client transcript',()=>{
+  const report=myCoachProtocolPdfOptions(sample(),{locale:'ru'})
+  assert.match(report.protocolOverview,/Информация по методике/)
+  assert.match(report.protocolOverview,/GROW/)
+  assert.match(report.protocolOverview,/Цель \/ результат/)
+  assert.match(report.protocolOverview,/Я хочу понять/)
+  assert.doesNotMatch(report.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+})
+
+test('all 80 completed exchanges retain the original client goal and method evidence',()=>{
+  const obj=sample()
+  obj.turns=Array.from({length:160},(_,i)=>({
+    role:i%2===0?'user':'assistant',
+    content:i===0?'Я хочу разобраться с карьерой и найти спокойную работу с поддержкой коллег.':
+      i%2===0?'Сегодня я рассказываю дополнительную историю.':'Что было дальше?'
+  }))
+  assert.equal(normalizeMyCoachProtocol(obj).turns.length,160)
+  assert.match(coachInformationChecklist(obj.turns).find(x=>x.key==='goal').quote,/разобраться с карьерой/)
+  assert.match(myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview,/разобраться с карьерой/)
+})
+test('client-only last turn survives in a truthful PDF without a fabricated AI answer',()=>{
+  const obj=sample()
+  obj.turns.push({role:'user',content:'Я ещё хочу сказать, что мне нужен отдых.',unanswered:true})
+  assert.equal(normalizeMyCoachProtocol(obj).turns.at(-1).unanswered,true)
+  const report=myCoachProtocolPdfOptions(obj,{locale:'ru'})
+  assert.equal(report.entries.length,3)
+  assert.match(report.entries.at(-1).question,/нужен отдых/)
+  assert.match(report.entries.at(-1).answer,/Ответ ИИ отсутствует/)
+  const bad=sample();bad.turns.push({role:'user',content:'An unmarked last turn.'})
+  assert.throws(()=>normalizeMyCoachProtocol(bad),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('method-specific report differs between Merlin, Sofia and Harry',()=>{
+  const cases=[['merlin','appreciative_inquiry','удачный опыт'],['sofia','solution_focused','предпочтительное будущее'],['harry','oskar','оценка сейчас']]
+  for(const [personaId,methodId,field] of cases){
+    const obj=sample();obj.personaId=personaId;obj.methodId=methodId
+    assert.match(myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview.toLowerCase(),new RegExp(field))
+  }
+  const wrong=sample();wrong.personaId='merlin';wrong.methodId='oskar'
+  assert.throws(()=>normalizeMyCoachProtocol(wrong),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('PDF exports all six fields for each approved secondary coaching method',()=>{
+ const cases=[
+  ['mira','oskar'],['max','woop'],['sofia','grow'],
+  ['alex','grow'],['merlin','grow'],['harry','woop'],
+ ]
+ for(const [personaId,methodId] of cases){
+  const obj=sample();obj.personaId=personaId;obj.methodId=methodId
+  const overview=myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview
+  assert.equal(overview.split('\n').length,7,personaId+' '+methodId)
+ }
+})
+test('method overview comes before the dialogue in A4 PDF',()=>{
+  const src=readFileSync(new URL('../lib/personal-coaching/session-pdf.js',import.meta.url),'utf8')
+  assert.ok(src.indexOf('section(t.information, protocolOverview)')<src.indexOf('paragraph(entryKind ==='))
+})
+test('Summary preserves pending last utterance, lets user exit and sends method ID',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/inFlightClientRef/)
+  assert.match(ui,/unanswered:true/)
+  assert.match(ui,/if\(protocolOpen\|\|ratingOpen\)return/)
+  assert.match(ui,/turn\.unanswered===true/)
+  assert.match(ui,/methodId:visibleMethodId/)
+})
+
+test('live coach logo returns to localized Holistic House home; Back keeps coach selector',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const brand=ui.split('<Link className={styles.sessionBrand} ')[1]?.split('>')[0]
+  assert.ok(brand)
+  assert.ok(brand.includes("href={'/'+lang}"))
+  assert.ok(brand.includes('onClick={interceptSessionExit}'))
+  assert.ok(!brand.includes('/coaching/sessions'))
+  const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
+  assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
+  assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
+})
+
+test('chronological live voice report preserves greeting, consecutive utterances and trailing client words',()=>{
+ const obj=sample()
+ obj.turnLayout='chronological'
+ obj.turns=[
+  {role:'assistant',content:'Привет!'},
+  {role:'user',content:'Моя цель — развитие бизнеса.'},
+  {role:'user',content:'Хочу больше времени на отдых.'},
+  {role:'assistant',content:'Уточним',interrupted:true},
+  {role:'user',content:'И ещё один момент.'},
+ ]
+ const normalized=normalizeMyCoachProtocol(obj)
+ assert.equal(normalized.turnLayout,'chronological')
+ assert.deepEqual(normalized.turns.map(x=>x.content),obj.turns.map(x=>x.content))
+ assert.equal(normalized.turns.at(-1).unanswered,true)
+ const options=myCoachProtocolPdfOptions(normalized)
+ assert.equal(options.entries.length,5)
+ assert.match(options.entries[0].answer,/Привет/)
+ assert.match(options.entries[2].question,/отдых/)
+ assert.match(options.entries[3].reflection,/перебит/)
+ assert.match(options.entries[4].answer,/Ответ ИИ отсутствует/)
+ const pdf=readFileSync(new URL('../lib/personal-coaching/session-pdf.js',import.meta.url),'utf8')
+ assert.match(pdf,/!question && !\(dialogue && actualAnswer\)/)
+ assert.match(pdf,/actualAnswer \|\| \(dialogue \? '' : t.skipped\)/)
+})
+test('profile numbers must match a real client utterance and not the coach inference',()=>{
+ const obj=sample()
+ obj.turns=[{role:'user',content:'Сейчас 3, хочу 7'},{role:'assistant',content:'Понял.'}]
+ obj.profileCheckin={version:'hh-coach-profile-intake-v1',completed:false,ratings:[
+  {axis:'anchor',kind:'rated',current:3,desired:7,quote:'Сейчас 3, хочу 7'}
+ ]}
+ assert.equal(normalizeMyCoachProtocol(obj).profileCheckin.ratings[0].desired,7)
+ obj.profileCheckin.ratings[0].desired=9
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+ obj.profileCheckin.ratings[0].desired=7
+ obj.turns[0].content='Пока не знаю.'
+ obj.turns[1].content='Сейчас 3, хочу 7'
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('live protocol does not silently discard old turns or limit profile evidence to opening',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const live=ui.slice(ui.indexOf('function appendLiveTranscript'),ui.indexOf('function markCoachSpeechInterrupted'))
+ assert.ok(live.includes('const next=[...turnsRef.current,entry]'))
+ assert.ok(!live.includes('slice(-96)'))
+ assert.match(ui,/profileHistory=profileEvidence.slice\(openingProgress.consumedTurns\)/)
+ assert.match(ui,/turnLayout:'chronological'/)
+})
+
+test('a single spoken pair cannot be copied into several profile axes',()=>{
+ const obj=sample()
+ obj.turns=[{role:'user',content:'3 и 7'},{role:'assistant',content:'Следующая сфера.'}]
+ obj.profileCheckin={version:'hh-coach-profile-intake-v1',completed:false,ratings:[
+  {axis:'anchor',kind:'rated',current:3,desired:7,quote:'3 и 7'},
+  {axis:'connection',kind:'rated',current:3,desired:7,quote:'3 и 7'}
+ ]}
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+ obj.turns.push({role:'user',content:'3 и 7'},{role:'assistant',content:'Спасибо.'})
+ assert.equal(normalizeMyCoachProtocol(obj).profileCheckin.ratings.length,2)
+})
+test('saved protocol cannot be rebound to a different signed-in account',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const route=readFileSync(new URL('../app/api/app/my-coach/protocol/route.js',import.meta.url),'utf8')
+ assert.match(ui,/if\(!active\|\|turnsRef.current.length\|\|protocolStartedRef.current\)return/)
+ assert.match(ui,/const owner=protocolOwnerRef.current/)
+ assert.match(ui,/'X-HH-Account-ID':owner/)
+ assert.match(route,/provided&&provided!==actor.id/)
+})
+
+
+test('speech repair and process instructions never become working goals, semantic hints or confirmed evidence',()=>{
+  const invalid=["Say again","Please repeat","I want you to never forget the main goal","Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.","Повторите пожалуйста","ещё раз","Quiero que nunca olvides el objetivo","Otra vez","Recuerda mi nombre"]
+  const legitimate=["I want to achieve financial freedom","I want to remember my own values","Я хочу улучшить отношения","Я хочу, чтобы вы помогли мне разобраться в цели","Quiero lograr mi meta","Quiero recordar mis valores","I feel afraid today","Моя цель — найти работу"]
+  for(const message of invalid)assert.equal(coachProtocolControlUtterance(message),true,message)
+  for(const message of legitimate)assert.equal(coachProtocolControlUtterance(message),false,message)
+  const message='Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.'
+  const input={locale:'ru',message,turns:[]}
+  assert.equal(coachSessionCard(input).workingTopicQuote,null)
+  assert.equal(coachConfirmedEvidence(input).goalRestated,false)
+  assert.equal(verifyCoachSemanticHint({kind:'goal_focus',quote:message},message),null)
+  assert.equal(coachSessionCard({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).workingTopicQuote,'Я хочу улучшить отношения')
+  assert.equal(coachConfirmedEvidence({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).goalRestated,true)
+  assert.match(COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/ask one specific natural clarifying question/)
+  for(const path of ['lib/coaching/conversational-persona.mjs','lib/coaching/gemini-live-free.mjs']){
+    const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
+    assert.match(source,/COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/)
+  }
+})

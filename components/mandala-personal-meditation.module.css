@@ -100,3 +100,33 @@
 .courseOffer a:focus-visible{outline:3px solid #daa755;outline-offset:2px}
 .courseOffer>small{display:block;margin-top:8px;font-size:11px;line-height:1.5;color:#6b775f}
 @media(max-width:355px){.courseOutline{padding:9px}.courseDays li{grid-template-columns:46px minmax(0,1fr);padding:8px}}
+/* Explicit opt-in text generation; no overlay, no automatic external call. */
+.writerModes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0 9px}
+.writerModes button{min-height:46px;min-width:0;padding:9px;border:1px solid #c9dfce;border-radius:12px;background:#f7fbf7;color:#267054;font:800 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.writerModes button[aria-pressed=true]{border-color:#198568;background:#e2f4e8;color:#075d45;box-shadow:inset 0 -2px #198568}
+.writerModes button:disabled{opacity:.55;cursor:not-allowed}
+.aiPermissions{display:grid;gap:8px;margin:9px 0 12px;padding:11px;border:1px solid #c9dfce;border-radius:13px;background:#f6faf5}
+.aiPermissions label{display:grid;grid-template-columns:21px minmax(0,1fr);align-items:start;gap:8px;color:#46644f;font:500 12px/1.45 system-ui,sans-serif}
+.aiPermissions input{width:18px;height:18px;accent-color:#087e5e;margin:1px 0 0}
+.writerOrigin{margin:0 0 9px;color:#47735e;font:700 11px/1.4 system-ui,sans-serif}
+.panel .writerModes button:focus-visible,.panel .aiPermissions input:focus-visible{outline:3px solid #3ab991;outline-offset:2px}
+
+/* Course sessions 2–8 are created only on an explicit local user action. */
+.courseSessionAction{grid-column:2;display:block;min-width:0;min-height:44px;margin-top:4px;padding:8px 10px;border:1px solid #b9d9c5;border-radius:10px;background:#edf8ef;color:#1a684d;font:800 12px/1.35 system-ui,sans-serif;cursor:pointer;text-align:left}
+.courseSessionAction[aria-pressed=true]{border-color:#128365;background:#d9f1e3;box-shadow:inset 0 -2px #128365}
+.courseSessionAction:disabled{opacity:.55;cursor:not-allowed}
+.panel .courseSessionAction:focus-visible{outline:3px solid #3ab991;outline-offset:2px}
+
+
+/* Therapy My Course: compact 8-topic preview first, legacy meditation editor under disclosure. */
+.courseLanding{display:grid;gap:9px;min-width:0;margin:0;padding:clamp(10px,3vw,16px);border:1px solid #e7dfd2;border-radius:19px;background:#fffdfa;color:#194d3b;box-shadow:0 4px 13px #584b3514}
+.courseLandingHead{display:flex;align-items:center;gap:8px}.courseLandingHead>span{flex:none;display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:#e4f5e9;color:#0c8261}.courseLandingHead>div{min-width:0;flex:1}.courseLandingHead small{display:block;color:#709078;font:800 9px/1.3 system-ui,sans-serif;letter-spacing:.06em}.courseLandingHead h3{margin:2px 0 0;color:#183b34;font:750 clamp(18px,5vw,23px)/1.18 Georgia,serif}.courseLandingHead>b{flex:none;font:800 11px/1 system-ui,sans-serif;color:#18836b}
+.courseLandingLead{margin:0;color:#5d7164;font:500 12px/1.35 system-ui,sans-serif}
+.courseLandingFocus{display:grid;gap:5px;color:#37634f;font:750 12px/1.3 system-ui,sans-serif}.courseLandingFocus textarea{width:100%;min-height:49px;max-height:106px;box-sizing:border-box;resize:vertical;padding:8px 10px;border:1px solid #b7d5c3;border-radius:11px;background:#fff;color:#1b4b3c;font:500 14px/1.38 system-ui,sans-serif}
+.courseLandingLabel{display:flex;align-items:center;gap:6px;color:#255441;font:800 13px/1.2 system-ui,sans-serif}.courseLandingLabel svg{color:#0a8264}
+.courseLandingTopics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;list-style:none;margin:0;padding:0}.courseLandingTopics li{display:flex;align-items:center;gap:7px;min-width:0;min-height:43px;padding:6px 7px;border:1px solid #e3e9de;border-radius:10px;background:#f9fbf7}.courseLandingTopics li>span{flex:none;color:#148066;font:800 11px/1 system-ui,sans-serif}.courseLandingTopics li strong{min-width:0;color:#1b493a;font:750 clamp(11.5px,3.2vw,13px)/1.25 system-ui,sans-serif;overflow-wrap:break-word}
+.courseLandingPrice{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:9px 10px;border:1px solid #e7dece;border-radius:10px;background:#faf3e9;color:#6c6b51;font:650 12px/1.3 system-ui,sans-serif}.courseLandingPrice strong{color:#7c613b;text-align:right}
+.courseLandingActions{display:grid;gap:6px}.courseLandingActions button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:8px 10px;border:1px solid #b9daca;border-radius:12px;background:#e8f6ed;color:#116f54;font:800 clamp(12.5px,3.5vw,15px)/1.3 system-ui,sans-serif;text-align:center;cursor:pointer}.courseLandingActions button:last-child{border-color:#087c64;background:linear-gradient(115deg,#27ab8b,#0c775e);color:#fff}.courseLandingActions button:disabled{opacity:.55;cursor:not-allowed}
+.courseLandingNote{margin:0;color:#6c7e70;font:500 10.5px/1.4 system-ui,sans-serif}.courseLandingAdvanced{border:1px solid #ddebdc;border-radius:12px;overflow:hidden}.courseLandingAdvanced>summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:9px 11px;list-style:none;cursor:pointer;color:#266b50;font:750 12px/1.3 system-ui,sans-serif}.courseLandingAdvanced>summary::-webkit-details-marker{display:none}.courseLandingAdvanced[open]>summary{border-bottom:1px solid #e0e8db}.courseLandingAdvanced>section{border:0;box-shadow:none}
+.courseLanding :is(button,textarea,summary):focus-visible{outline:3px solid #d9a344;outline-offset:2px}
+@media(max-width:355px){.courseLanding{gap:8px;padding:9px}.courseLandingTopics li{gap:5px;padding:5px;min-height:43px}.courseLandingTopics li strong{font-size:11.5px}.courseLandingPrice{flex-direction:column;align-items:start}.courseLandingPrice strong{text-align:left}}

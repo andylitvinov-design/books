@@ -64,3 +64,45 @@ test('video: single hold, credit completion after playback, released on cancella
     'PRIVATE_HEADERS','readBody','x-hh-account-id'])
     assert.ok(api.includes(token),token)
 })
+
+test('a stalled credit settlement times out and can be retried with the same operation', async t => {
+  const {postVideoCreditAction} = await import('../lib/video-credits/client.mjs')
+  const operationId = 'a11853d9-4dce-438a-abf3-00103115e014'
+  for (const action of ['release', 'complete']) {
+    const body = action === 'complete' ? {operationId, bytes: 4096} : {operationId}
+    const requests = []
+    const fetchMock = t.mock.method(globalThis, 'fetch', async (_, options) => {
+      requests.push(JSON.parse(options.body))
+      if (requests.length === 1) {
+        assert.ok(options.signal, 'settlement request needs an abort signal')
+        return new Promise((_, reject) => {
+          options.signal.addEventListener('abort', () => reject(options.signal.reason), {once: true})
+        })
+      }
+      return Response.json({operationId, status: action === 'release' ? 'released' : 'completed'})
+    })
+    try {
+      await assert.rejects(postVideoCreditAction(action, body, {timeoutMs: 15}),
+        {message: 'VIDEO_CREDITS_UNAVAILABLE'})
+      assert.equal((await postVideoCreditAction(action, body)).operationId, operationId)
+      assert.deepEqual(requests, [body, body])
+    } finally {
+      fetchMock.mock.restore()
+    }
+  }
+})
+
+test('a video hold carries the confirmed account across a tab switch', async t=>{
+  const accountId='11111111-1111-4111-8111-111111111111'
+  const {postVideoCreditAction}=await import('../lib/video-credits/client.mjs')
+  const mock=t.mock.method(globalThis,'fetch',async (_,options)=>{
+    assert.equal(options.headers['x-hh-account-id'],accountId)
+    return Response.json({error:'ACCOUNT_CHANGED'},{status:409})
+  })
+  try{
+    await assert.rejects(postVideoCreditAction('hold',{operationId:accountId},{accountId}),
+      {message:'ACCOUNT_CHANGED'})
+  }finally{
+    mock.mock.restore()
+  }
+})

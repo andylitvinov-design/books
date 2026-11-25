@@ -86,12 +86,12 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}')));
-  assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}')));
+  assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage opens Ready before encoding");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
-  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
-    "Audio Add returns to the existing affirmations editor");
+  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("promo"\)/,
+    "Audio Add enters Extra where the user chooses text or Personal");
   assert.doesNotMatch(addEffects,/createQuickVideo|videoCreditRequest|startFromHero/,
     "Add cannot generate or charge");
   for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
@@ -124,8 +124,11 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{requestDraft\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
-    "typing updates the same local state and real source-backed proposal without remote upload");
+  assert.match(auto,/onChange=\{event=>applyRequestDraft\(event\.currentTarget\.value\)\}/,
+    "typed goals use the same bounded local update as dictation");
+  const sharedPrompt=auto.slice(auto.indexOf("const applyRequestDraft="),auto.indexOf("const togglePromptDictation="));
+  assert.match(sharedPrompt,/setRequestDraft\(text\);[\s\S]*?onGoalChange\(nextGoal\)/,
+    "shared input handler updates local goal and source-backed proposal without remote upload");
   assert.match(s,/data-video-montage-tab=\{item.id\}/);
   assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
@@ -289,7 +292,13 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   const proTiers=read("components/mandala-pro-enhance.tsx");
   assert.match(proTiers,/data-video-pro-tiers/);
   assert.match(proTiers,/data-video-pro-standard-editor/);
-  assert.match(proTiers,/data-video-pro-choose-character/);
+  const inlineGreeting=read("components/mandala-free-greeting.tsx");
+  assert.match(source,/activeWorkspace==="pro"\?<MandalaFreeGreeting/);
+  assert.match(inlineGreeting,/data-greeting-choices=\{mode\}/);
+  assert.match(inlineGreeting,/data-greeting-mode="greeting"/);
+  assert.match(inlineGreeting,/data-greeting-mode="support"/);
+  assert.match(inlineGreeting,/onClick=\{\(\)=>onSelect\(entry\.id\)\}/);
+  assert.doesNotMatch(proTiers,/data-video-pro-choose-character|data-video-pro-character-catalog/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
   assert.match(css,/\.quickBrandBar\{display:none\}/);

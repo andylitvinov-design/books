@@ -49,7 +49,13 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(!showcase.includes("continueTo:'practice-preview', profi:key"))
   assert.ok(showcase.includes("cleanUrl.searchParams.delete('ready')"))
   assert.ok(auth.includes("continueTo === 'practice-preview'"))
-  assert.ok(showcase.includes('CREATE.map('))
+  // The approved Work first screen has four direct creation choices and the
+  // remaining three behind a deliberate, sign-in-gated More Practice action.
+  assert.ok(showcase.includes('FEATURED_CREATIONS.map('))
+  assert.ok(showcase.includes("CREATE.filter(({key}) => !['service','course','material'].includes(key))"))
+  assert.ok(showcase.includes('data-work-create-buttons'))
+  assert.ok(showcase.includes('data-work-create-tools'))
+  assert.ok(showcase.includes("signedIn ? setMoreCreateOpen(value => !value) : openAction('create')"))
   assert.ok(showcase.includes('CATEGORIES.map('))
   assert.ok(showcase.includes('TOOLS.map('))
 })
@@ -69,13 +75,19 @@ test('approved practice keeps functional internal actions and uses the shared se
   assert.ok(!showcase.includes('className={styles.gate}'))
 })
 
-test('iPhone 320–430 mock has inline profile, six horizontal actions and six visible covers', () => {
-  assert.ok(css.includes('.screen .identity { grid-template-columns:54px minmax(0,1fr) 124px'))
-  assert.ok(css.includes('.screen .metrics { grid-column:auto'))
-  assert.ok(css.includes('.screen .quickTile { display:flex; flex-direction:row'))
-  assert.ok(css.includes('.screen .offerRail { display:grid; grid-template-columns:repeat(6,minmax(0,1fr))'))
-  assert.ok(css.includes('.screen .hero { min-height:190px'))
-  assert.ok(css.includes('@media(max-width:354px)'))
+test('approved iPhone Work mock keeps four visible creation choices, four photo cards and two account cards', () => {
+  const intro = read('components/practice-work-profile-intro.jsx')
+  const introCss = read('components/practice-work-profile-intro.module.css')
+  assert.ok(intro.includes('data-work-profile-scenic-hero'))
+  assert.ok(intro.includes('data-work-primary-grid'))
+  assert.ok(intro.includes('data-work-card="reports"'))
+  assert.ok(showcase.includes('data-work-account-actions'))
+  assert.ok(showcase.includes('data-work-create-buttons'))
+  assert.ok(css.includes('.screen .accountNav{display:grid;grid-template-columns:repeat(2'))
+  assert.ok(css.includes('.screen .createActions{display:grid;grid-template-columns:repeat(4'))
+  assert.ok(css.includes('.screen .extraCreateChoices[hidden]{display:none}'))
+  assert.ok(introCss.includes('.workGrid{display:grid;grid-template-columns:repeat(2'))
+  assert.ok(introCss.includes('@media(max-width:360px)'))
   assert.ok(css.includes('safe-area-inset-bottom'))
 })
 

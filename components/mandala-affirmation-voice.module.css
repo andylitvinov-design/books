@@ -14,8 +14,11 @@
 .controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:11px 0}
 .controls label{display:grid;gap:6px;min-width:0;color:#466f56;font-size:11px;font-weight:780}
 .controls select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:8px 5px;border:1px solid #d4e6da;border-radius:10px;background:#fff;color:#205740;font:650 12px/1.4 system-ui,-apple-system,sans-serif}
-.consent{display:flex;gap:8px;align-items:start;margin:11px 0;font-size:11px;line-height:1.55;color:#54725f}
-.consent input{width:19px;height:19px;flex:none;margin:0;accent-color:#08795a}
+.consent{display:flex;gap:8px;align-items:start;width:100%;min-height:36px;margin:11px 0;padding:0;border:0;background:transparent;text-align:left;font:500 11px/1.55 system-ui,-apple-system,sans-serif;color:#54725f;cursor:pointer}
+.consent:disabled{opacity:.55;cursor:not-allowed}
+.consent:focus-visible{outline:3px solid #08795a;outline-offset:3px;border-radius:5px}
+.consentMark{display:grid;place-items:center;width:19px;height:19px;flex:none;margin:0;border:1.5px solid #9abda9;border-radius:5px;background:#fff;color:#fff;font:800 15px/1 system-ui}
+.consent[aria-checked="true"] .consentMark{border-color:#08795a;background:#08795a}
 .action{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;border:1px solid #087e5e;border-radius:11px;background:#087e5e;color:white;padding:9px 12px;font:850 13px/1.4 system-ui,-apple-system,sans-serif;cursor:pointer}
 .action:disabled{opacity:.5;cursor:not-allowed}
 .result{margin-top:12px;padding:11px;border:1px solid #b8dcc5;border-radius:11px;background:#fff}
@@ -157,7 +160,7 @@
 .panel[data-voice-layout="compact"] .deviceSampleGroup{margin:6px 0}
 .panel[data-voice-layout="compact"] .deviceSampleGroup small{display:block;line-height:1.4}
 .panel[data-voice-layout="compact"] .consentRow{display:grid;gap:2px;margin:0}
-.panel[data-voice-layout="compact"] .consent{align-items:center;gap:9px;min-height:36px;margin:0;font:500 clamp(11px,2.9vw,13px)/1.28 system-ui;color:#465F56}
+.panel[data-voice-layout="compact"] .consent{align-items:center;gap:9px;min-height:44px;margin:0;padding:8px 0;scroll-margin-block-end:calc(130px + env(safe-area-inset-bottom));font:500 clamp(11px,2.9vw,13px)/1.28 system-ui;color:#465F56}
 .panel[data-voice-layout="compact"] .consentDetails{margin:0 0 0 28px;color:#376D59;font-size:12px}
 .panel[data-voice-layout="compact"] .consentDetails>summary{display:inline-flex;align-items:center;min-height:25px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .panel[data-voice-layout="compact"] .consentDetails p{margin:4px 0 8px;padding:9px;border-radius:10px;background:#F5ECDC;font-size:12px;line-height:1.4}
@@ -302,3 +305,77 @@
 .panel[data-own-voice-only="true"] .localTop [data-video-ideas-own-notice]{grid-column:1/-1}
 .panel[data-own-voice-only="true"] .localLimit{display:block;color:#54725f;font-size:12px;line-height:1.35}
 .panel[data-own-voice-only="true"] .localHint{font-size:12px;line-height:1.35}
+
+/* Therapy-only one-screen voice card, not the existing Ideas editor. */
+.panel[data-therapy-voice-ui="true"]{display:grid;gap:7px;color:#143d3a}
+.panel[data-therapy-voice-ui="true"]>.heading{order:0;gap:9px;align-items:center}
+.panel[data-therapy-voice-ui="true"]>.heading svg{flex:none;width:34px;height:34px;padding:7px;border-radius:11px;background:#ddf7e8;color:#087e62}
+.panel[data-therapy-voice-ui="true"]>.heading h4{font:850 clamp(18px,5vw,23px)/1.15 system-ui,sans-serif;color:#0d5646}
+.panel[data-therapy-voice-ui="true"]>.heading p{margin-top:2px;font:500 clamp(11px,3.1vw,13px)/1.3 system-ui,sans-serif;color:#5d6a71}
+.panel[data-therapy-voice-ui="true"]>.phrasePick{order:1;margin:1px 0 0;gap:4px}
+.panel[data-therapy-voice-ui="true"]>.phrasePick select{min-height:44px}
+.panel[data-therapy-voice-ui="true"]>.voiceChoices{order:2;gap:6px;margin:0}
+.panel[data-therapy-voice-ui="true"] .voiceToolbar{display:block}
+.panel[data-therapy-voice-ui="true"] .chooseVoice{display:none}
+.panel[data-therapy-voice-ui="true"] .genderTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.panel[data-therapy-voice-ui="true"] .genderTabs button{min-height:44px;padding:4px 2px;font:750 clamp(10px,3vw,14px)/1.15 system-ui,sans-serif}
+.panel[data-therapy-voice-ui="true"] .voiceCards{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+.panel[data-therapy-voice-ui="true"] .voiceCard{display:flex;flex-direction:column;gap:5px;min-height:0}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect{min-height:94px;padding:5px 6px 4px;gap:4px}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect::before{height:27px;width:100%;border-radius:8px}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect strong{font:850 clamp(12px,3.3vw,15px)/1.1 system-ui,sans-serif}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect small{font:500 clamp(10px,2.65vw,12px)/1.15 system-ui,sans-serif}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect>span:last-child{width:19px;height:19px}
+.panel[data-therapy-voice-ui="true"] .sampleButton{position:static;display:flex;flex-direction:row;gap:4px;min-height:44px;width:100%;padding:5px 2px;border-radius:12px}
+.panel[data-therapy-voice-ui="true"] .sampleButton span{display:inline;font:750 11px/1 system-ui,sans-serif}
+.panel[data-therapy-voice-ui="true"]>.therapyVoiceTools{order:3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0}
+.panel[data-therapy-voice-ui="true"] .deviceSampleGroup{margin:0;min-width:0}
+.panel[data-therapy-voice-ui="true"] .deviceSampleGroup small{display:none}
+.panel[data-therapy-voice-ui="true"] .deviceSampleButton,
+.panel[data-therapy-voice-ui="true"] .recordShortcut{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-height:44px;margin:0;padding:5px;border:1px solid #b8dcc9;border-radius:12px;background:#f1faf5;color:#15644e;font:750 clamp(10px,2.7vw,12px)/1.17 system-ui,sans-serif;cursor:pointer}
+.panel[data-therapy-voice-ui="true"] .recordShortcut:disabled{opacity:.55;cursor:not-allowed}
+.panel[data-therapy-voice-ui="true"]>.consentRow{order:4}
+.panel[data-therapy-voice-ui="true"] .consent{min-height:36px;padding:3px 0;font-size:clamp(10px,2.7vw,12px)}
+.panel[data-therapy-voice-ui="true"]>.action{order:5;min-height:51px;margin:0;border-radius:14px;font-size:clamp(13px,3.7vw,16px)}
+.panel[data-therapy-voice-ui="true"]>.hint,
+.panel[data-therapy-voice-ui="true"]>.warning{order:6;margin:0;font-size:10px}
+.panel[data-therapy-voice-ui="true"]>.result{order:7}
+.panel[data-therapy-voice-ui="true"]>.voiceAdvanced{order:8}
+.panel[data-therapy-voice-ui="true"]>.message{order:9}
+.panel[data-therapy-voice-ui="true"] .voiceAdvanced>summary{min-height:33px;padding:4px 2px}
+@media(max-width:355px){
+ .panel[data-therapy-voice-ui="true"]>.heading h4{font-size:18px}
+ .panel[data-therapy-voice-ui="true"] .voiceCardSelect{padding:4px;min-height:93px}
+ .panel[data-therapy-voice-ui="true"] .deviceSampleButton,
+ .panel[data-therapy-voice-ui="true"] .recordShortcut{font-size:10px}
+}
+
+/* The Therapy Voice step now only selects/previews. Its cloud POST remains
+   consent-gated in Ideas, and the two Therapy next buttons are navigation-only. */
+.panel[data-therapy-voice-ui="true"]>.heading p{display:none}
+.panel[data-therapy-voice-ui="true"]>.voiceChoices{gap:5px;margin:0}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect{min-height:88px}
+.panel[data-therapy-voice-ui="true"] .voiceCard{min-height:0}
+.panel[data-therapy-voice-ui="true"] .voiceAdvanced{margin:0}
+.panel[data-therapy-voice-ui="true"] .voiceAdvanced>summary{min-height:28px;padding:3px 2px;font-size:12px}
+
+/* Fish references reuse the original Therapy voice picker; no gender is claimed. */
+.panel .genderTabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.panel .genderTabs button{min-height:44px;padding:7px 2px;font-size:clamp(10px,2.9vw,13px)}
+.panel .fishCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.panel .fishNote{display:block;margin:7px 0;color:#286950;font-size:12px;line-height:1.4}
+.panel[data-voice-layout="compact"] .genderTabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel[data-voice-layout="compact"] .genderTabs button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+.panel[data-voice-layout="compact"] .fishCards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.panel[data-voice-layout="compact"] .voiceCardSelect[data-video-affirmation-voice-card="fish-ru"]::before{background-image:url("/videos/holistic-house/film-collection-v2/meadow-morning.jpg")}
+.panel[data-voice-layout="compact"] .voiceCardSelect[data-video-affirmation-voice-card="fish-en"]::before{background-image:url("/videos/holistic-house/film-collection-v2/sea-breeze.jpg")}
+@media(max-width:360px){.panel .genderTabs button,.panel[data-voice-layout="compact"] .genderTabs button{font-size:10px}}
+
+/* Approved voice-use filter: one compact row, no extra editor or new screen. */
+.panel .fishPurposes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0}
+.panel .fishPurposes button{min-width:0;min-height:44px;padding:7px 12px;border:1px solid #c3dfd2;border-radius:99px;background:#fffcf7;color:#145b46;font:750 clamp(12px,3.2vw,14px)/1.2 system-ui;cursor:pointer}
+.panel .fishPurposes button[aria-pressed="true"]{background:#0b8064;border-color:#0b8064;color:#fff}
+.panel[data-therapy-voice-ui="true"] .fishCards,.panel[data-voice-layout="compact"] .fishCards{display:grid!important;grid-template-columns:none!important;grid-auto-flow:column!important;grid-auto-columns:minmax(128px,calc((100% - 8px)/2.12))!important;overflow-x:auto!important;scroll-snap-type:x proximity;overscroll-behavior-x:contain;gap:8px!important;scrollbar-width:thin}
+.panel .fishCards .voiceCard{scroll-snap-align:start}
+.panel .fishCards .voiceCardSelect:disabled{opacity:.65;cursor:not-allowed}
+@media(max-width:350px){.panel .fishPurposes button{font-size:12px;padding:6px}}

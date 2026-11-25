@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 
 // Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
@@ -31,12 +32,18 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // Select real source footage through the visitor-visible three-stage route.
-  await page.locator('[data-video-continue-scenarios]').click();
-  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
-    'true','GOALS_MUST_OPEN_IDEAS');
+  // Complete all three real Goal selections before the visitor's Ideas CTA.
+  await completeThreeStepGoalsQuiz(page,{engine});
+  const openMontage=page.locator('[data-video-continue-scenarios]');
+  await openMontage.waitFor({state:'visible',timeout:15000});
+  const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
+  await press(openMontage);
   const editor=page.locator('[data-video-quick-control="editor"]');
-  await editor.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await editor.getAttribute('aria-pressed'),
+    'true','GOALS_MUST_OPEN_MONTAGE');
   // Use the same actual Montage entry flow proven by the physical voice test.
   // The compact Settings control appears only after activating the visible
   // Style stage; a hidden Settings click must never be force-clicked.
@@ -46,6 +53,11 @@ try {
   await page.locator('[data-video-montage-tab="effects"]').waitFor({state:'visible',timeout:20000});
   // Style is the first visible Montage tab; source selection is an actual tap.
   await page.locator('[data-video-montage-tab="effects"]').click();
+  const moreStyles=page.locator('[data-video-montage-more-styles]');
+  const styleSummary=moreStyles.locator(':scope > summary');
+  await styleSummary.waitFor({state:'visible',timeout:20000});
+  if(await moreStyles.getAttribute('open')===null)await press(styleSummary);
+  assert.notEqual(await moreStyles.getAttribute('open'),null,'MORE_STYLES_MUST_BE_OPEN');
   const selectedStyle=page.locator('[data-video-montage-style="3"]');
   await selectedStyle.waitFor({state:'visible',timeout:20000});
   if(engine==='webkit')await selectedStyle.tap();
@@ -53,10 +65,7 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-montage-style="3"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  const settings=page.locator('[data-video-story-open-settings]');
-  await settings.waitFor({state:'visible',timeout:20000});
-  await settings.click();
+  await openMontageSettings(page);
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
@@ -71,41 +80,134 @@ try {
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
-  await styleTab.click();
+  await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
-  await styleNext.click();
+  // Photo-first Montage must not silently bypass personal-image rights.
+  // This anonymous export chooses a first-party fictional coach still, rather
+  // than fabricating consent to use somebody else's photograph.
+  assert.equal(await styleNext.isEnabled(),false,'PHOTO_FIRST_REQUIRES_EXPLICIT_PHOTO_CHOICE');
+  const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
+  await coachMode.waitFor({state:'visible',timeout:20000});
+  await press(coachMode);
+  assert.equal(await styleNext.isEnabled(),false,'COACH_MODE_REQUIRES_A_PORTRAIT');
+  for(const id of ['mira','max','sofia','alex','mira']){
+    const coachPhoto=page.locator('[data-video-montage-coach="'+id+'"]');
+    await coachPhoto.waitFor({state:'visible',timeout:20000});
+    await press(coachPhoto);
+    await page.waitForFunction(selected=>{
+      const coach=document.querySelector('[data-video-montage-coach="'+selected+'"]');
+      const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
+      return coach?.getAttribute('aria-pressed')==='true' &&
+        next instanceof HTMLButtonElement && !next.disabled;
+    },id,{timeout:15000});
+    assert.equal(await page.locator('[data-video-montage-coach][aria-pressed="true"]').count(),1,
+      'ONLY_ONE_COACH_STILL_SELECTED');
+  }
+  // Coach selection cannot unlock an empty personal library or approve its rights.
+  await press(page.locator('[data-video-montage-photo-choice="library"]'));
+  assert.equal(await styleNext.isEnabled(),false,'COACH_DOES_NOT_AUTHORIZE_PERSONAL_PHOTO');
+  await press(coachMode);
+  assert.equal(await styleNext.isEnabled(),false,'RESELECT_COACH_AFTER_PERSONAL_MODE');
+  await press(page.locator('[data-video-montage-coach="mira"]'));
+  await page.waitForFunction(()=>!document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]')?.disabled,
+    undefined,{timeout:15000});
+  await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  // Concept unlocks only after a real Ideas goal and its personalization.
+  const ideasGoal=page.locator('[data-video-ideas-goal-panel]');
+  await press(ideasGoal.locator('[data-video-ideas-goal-choice="rest"]'));
+  await press(ideasGoal.locator('[data-video-ideas-goal-next]'));
+  const quiz=page.locator('[data-video-personalization][data-video-personalization-goal="leisure"]');
+  await press(quiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first());
+  await press(quiz.locator('[data-video-personalization-energy="3"]'));
+  await press(quiz.locator('[data-video-personalization-clarify-continue]'));
+  // Personal requires all eight current/desired ratings and an explicit focus.
+  const axes=page.locator('[data-video-meaning-axes-screen]');
+  await axes.waitFor({state:'visible',timeout:15000});
+  const cards=axes.locator('[data-video-meaning-axis]');
+  assert.equal(await cards.count(),8,'PERSONAL_MUST_EXPOSE_EIGHT_AXES');
+  for(let index=0;index<8;index++){
+    const card=cards.nth(index);
+    await card.locator('[data-axis-slider="now"] input').press('ArrowLeft');
+    await card.locator('[data-axis-slider="desired"] input').press('ArrowRight');
+    assert.equal(await card.locator('[data-axis-slider="now"] output').textContent(),'4');
+    assert.equal(await card.locator('[data-axis-slider="desired"] output').textContent(),'6');
+  }
+  const focus=cards.first().locator('[data-video-meaning-focus]');
+  await press(focus);
+  assert.equal(await focus.getAttribute('aria-checked'),'true');
+  const axesNext=axes.locator('[data-video-meaning-axes-continue]');
+  assert.equal(await axesNext.isEnabled(),true,'EIGHT_AXES_AND_FOCUS_REQUIRED');
+  await press(axesNext);
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  const settingsTab=page.locator('[data-video-story-open-settings]');
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','APPROVED_CONCEPT_MUST_PERSIST');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
-  await textTools.locator(':scope > summary').click();
+  const textSummary=textTools.locator(':scope > summary');
+  await textSummary.waitFor({state:'visible',timeout:15000});
+  // Native <details> toggles closed when its summary is pressed while open.
+  // Settings can preserve its state across real workspace navigation.
+  if(await textTools.getAttribute('open')===null)await press(textSummary);
+  await page.waitForFunction(() => {
+    const tools=document.querySelector('[data-video-concept-text-tools]');
+    const timeline=tools?.querySelector('[data-video-concept-timeline]');
+    return tools?.hasAttribute('open')&&Boolean(timeline?.getClientRects().length);
+  },undefined,{timeout:15000});
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
+  // The shared timeline is mounted in Audio, not within the text tools disclosure.
+  const timelineAudioTab=page.locator('[data-video-montage-tab="audio"]');
+  await press(timelineAudioTab);
+  assert.equal(await timelineAudioTab.getAttribute('aria-pressed'),'true','AUDIO_MUST_EXPOSE_SHARED_TIMELINE');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
-  await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
+  // Native touch must commit the real visitor's opt-in. Desktop click can be
+  // lost when Safari unmounts the timeline while switching workspaces.
+  if (engine === 'webkit') await addVideo.tap();
+  else await addVideo.click();
+  try {
+    await page.waitForFunction(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return studio?.getAttribute('data-active-workspace') === 'video'
+        && studio?.getAttribute('data-video-advanced-open') === 'true'
+        && !!catalog && catalog.getClientRects().length>0;
+    },undefined,{timeout:15000});
+    await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible',timeout:15000});
+  } catch(error) {
+    // Safe structural diagnostics, never print a wish, media, customer or token.
+    const state=await page.evaluate(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return {workspace:studio?.getAttribute('data-active-workspace')||null,
+        advanced:studio?.getAttribute('data-video-advanced-open')||null,
+        scenario:studio?.getAttribute('data-video-scenario-open')||null,
+        catalogPresent:Boolean(catalog),
+        catalogVisible:Boolean(catalog?.getClientRects().length)};
+    }).catch(()=>({diagnosticsUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_CATALOG_NOT_OPEN '+JSON.stringify({engine,state}));
+    throw error;
+  }
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
-  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
-  await preset.click();
+  if (await more.getAttribute('aria-expanded') !== 'true') {
+    if (engine === 'webkit') await more.tap();
+    else await more.click();
+  }
+  if (engine === 'webkit') await preset.tap();
+  else await preset.click();
   // React can commit the selected original-motion plan after Playwright's
   // pointer action resolves. Wait for the actual selection, not a fixed delay;
   // fail closed with diagnostic evidence if the real application never commits.
@@ -129,18 +231,47 @@ try {
   }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
-  await page.locator('[data-video-quick-control="editor"]').click();
-  // Match the real post-#3676 Montage. Format/duration are available through Story → Video settings.
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.waitFor({state:'visible'});
-  await settingsTab.click();
+  // This is the ORIGINAL-FOOTAGE export contract. Montage now requires a
+  // photo choice, exercised above with a licensed fictional coach still.
+  // Disable that optional portrait using the actual visible visitor control
+  // before comparing full encoded frames to the four source masters.
+  // Do not lower source-identity thresholds or bypass the real MP4 encoder.
+  // Quick Start's checkbox is intentionally hidden under the current
+  // workspace navigation. Select the real visible Montage option instead:
+  // switching from an AI-coach portrait to the personal-photo library with
+  // no personal photo turns off the optional portrait overlay. The original
+  // four licensed motion sources and consent/export gates remain mandatory.
+  const portraitOverlay=page.locator('[data-video-photo-enabled]');
+  assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
+  const editorWorkspace=page.locator('[data-video-quick-control="editor"]');
+  await press(editorWorkspace);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const styleWorkspace=page.locator('[data-video-montage-tab="effects"]');
+  await styleWorkspace.waitFor({state:'visible',timeout:15000});
+  await press(styleWorkspace);
+  const personalPhotoMode=page.locator('[data-video-montage-photo-choice="library"]');
+  await personalPhotoMode.waitFor({state:'visible',timeout:15000});
+  await press(personalPhotoMode);
+  await page.waitForFunction(()=>{
+    const choice=document.querySelector('[data-video-montage-photo-choice="library"]');
+    const checkbox=document.querySelector('[data-video-photo-enabled]');
+    return choice?.getAttribute('aria-pressed')==='true' &&
+      checkbox instanceof HTMLInputElement && !checkbox.checked;
+  },undefined,{timeout:15000});
+  assert.equal(await portraitOverlay.isChecked(),false,'ORIGINAL_MOTION_EXPORT_HAS_NO_PORTRAIT_OVERLAY');
+  assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes=>
+    nodes.map(node=>node.dataset.freeFilmSource)),ids,
+    'MONTAGE_PHOTO_MODE_PRESERVES_ORIGINAL_FOUR_MASTER_SOURCES');
+  // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
+  await openMontageSettings(page);
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
   const duration=page.locator('[data-video-montage-preference="duration"]');
   await duration.waitFor({state:'visible'});
   await duration.selectOption('20');
   assert.equal(await duration.inputValue(),'20');
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();
   await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
@@ -163,8 +294,31 @@ try {
     'the compact music picker keeps its three-track rights and mix limit');
   await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
-  await generate.click({timeout:30000});
-  // The actual verified film moves to Ready; guests cannot use direct Save.
+  // Montage Generate is navigation only; the physical encoder starts only
+  // after the guest explicitly chooses Generate in the Ready workspace.
+  if (engine === 'webkit') await generate.tap({timeout:30000});
+  else await generate.click({timeout:30000});
+  const readyChoice = page.locator('[data-video-ready][data-ready-state="choose"]');
+  await readyChoice.waitFor({state:'visible',timeout:15000});
+  const readyGenerate = readyChoice.locator('[data-ready-generate]');
+  await readyGenerate.waitFor({state:'visible',timeout:15000});
+  if (engine === 'webkit') await readyGenerate.tap({timeout:30000});
+  else await readyGenerate.click({timeout:30000});
+  // Verify the trusted gesture really started the selected Ready export.
+  // Before this guard a rejected Story handoff waited 150s for a Blob that
+  // could never exist. The actual encoder, file, auth and ffprobe checks below
+  // remain mandatory; no simulated media is accepted.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const afterGenerate=await page.evaluate(()=>({
+    workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
+    readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')??null,
+    selectedSources:document.querySelectorAll('[data-free-film-source]').length,
+  }));
+  if(afterGenerate.workspace!=='ready'){
+    console.error('HH_ORIGINAL_MOTION_READY_HANDOFF_REJECTED '+JSON.stringify({engine,...afterGenerate}));
+    throw Error('ORIGINAL_MOTION_TRUSTED_GENERATE_LEFT_READY');
+  }
+  // Ready creates the actual film; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
   try{
@@ -180,6 +334,8 @@ try {
       const clips=[...document.querySelectorAll('[data-free-film-source]')];
       return {
         resultMode:result?.getAttribute('data-video-result-mode')??null,
+        resultVisible:Boolean(result?.getClientRects().length&&!result?.hidden),
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
         hasReady:Boolean(ready),readyView:ready?.getAttribute('data-ready-view')??null,
         renderedVideo:original instanceof HTMLVideoElement?{
           readyState:original.readyState,width:original.videoWidth,
@@ -229,4 +385,17 @@ try {
 } finally {
   await browser.close();
   await rm(dir, { recursive: true, force: true });
+}
+
+
+async function openMontageSettings(page){
+  // Extra contains only the three video choices; the original detailed settings
+  // remain available via the existing Story > Video settings action.
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.locator(':scope > summary').click();
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
 }

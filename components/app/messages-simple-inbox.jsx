@@ -43,7 +43,7 @@ const COPY={
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
-const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
+const channelNames={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
 const fmtDate=(value,locale)=>{
   const ms=Date.parse(value||'')
@@ -133,7 +133,7 @@ export default function MessagesSimpleInbox({
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
       key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
-      source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
+      source:channelNames[item.transport||item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
       preview:item.needsReply?t.previewNeedsReply:t.previewHistory,
     }))
@@ -164,17 +164,20 @@ export default function MessagesSimpleInbox({
   // One canonical owner-scoped row set: filter by source, never duplicate a CRM lead.
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
-  const tabTotal=embedded?rows.length:tab==='requests'?requestsCount:chatsCount
+  const requestFocus=embedded&&tab==='requests'
+  const tabTotal=embedded&&!requestFocus?rows.length:tab==='requests'?requestsCount:chatsCount
   const {loading:tabLoading,unavailable:sourcesUnavailable}=inboxSourceStatus({websiteLoading,websiteUnavailable,
     crmLoading:crmState.loading,crmError:crmState.error})
   const displayed=embedded
-    ?rows.filter(row=>(!unreadOnly||row.unread>0)&&
+    ?rows.filter(row=>(!requestFocus||inMessagesTab(row,'requests'))&&(!unreadOnly||row.unread>0)&&
       [row.name,row.source,row.preview,row.item?.message,row.item?.question].some(value=>
         String(value||'').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
     :filterInboxRows(rows,tab,search)
   useEffect(()=>{if(embedded)onClientsCount?.(rows.length)},[embedded,rows.length,onClientsCount])
   useEffect(()=>{if(embedded)onDetailChange?.(openDetail)},[embedded,openDetail,onDetailChange])
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
+  const telegramLeadCount=rows.filter(item=>item.kind==='crm'&&item.lifecycle==='lead'&&
+    item.unread>0&&[channelNames.telegram,channelNames.telegram_business].includes(item.source)).length
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
 
@@ -330,6 +333,12 @@ export default function MessagesSimpleInbox({
   return <section className={styles.shell} aria-label={t.title} data-simple-messages
     data-embedded={embedded||undefined} data-detail-open={openDetail?'true':'false'}>
     {offline&&<p className={styles.offline} role="status">{t.offline}</p>}
+    {requestFocus&&<div className={styles.requestFocus} role="group" aria-label={t.requestsTab}>
+      <strong>{t.requestsTab} · {requestsCount}</strong>
+      <button type="button" onClick={()=>switchTab('chats')}>
+        {locale==='ru'?'← Все сообщения':locale==='es'?'← Todos los mensajes':'← All messages'}
+      </button>
+    </div>}
     {!embedded&&<header className={styles.heading}>
       <div><h1>{t.title}</h1><span>{t.hint}{unreadCount>0?' · '+unreadCount:''}</span></div>
       <div className={styles.headingActions}>
@@ -383,9 +392,12 @@ export default function MessagesSimpleInbox({
         {crmEnabled&&(embedded||tab==='requests')&&
           <MessagesLeadMetrics locale={locale} accountId={accountId} requests={requests}
             businessEnquiries={businessEnquiries}/>}
+        {telegramLeadCount>0&&<p className={styles.info} role="status" data-owner-telegram-leads>
+          {locale==='ru'?'Новых лидов Telegram':locale==='es'?'Nuevos clientes de Telegram':'New Telegram leads'}: {telegramLeadCount}
+        </p>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{tab==='requests'?t.emptyRequests:embedded?t.empty:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
           {crmState.error&&<p role="alert" className={styles.info}>{t.crmUnavailable}</p>}
           {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}

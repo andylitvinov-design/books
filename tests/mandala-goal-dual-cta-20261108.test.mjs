@@ -13,21 +13,27 @@ test("Goal reuses one existing Generate and one separate personalization action"
  assert.equal((goal.match(/data-video-continue-scenarios/g)||[]).length,1);
  assert.ok(goal.indexOf("data-video-director-topic-controls")<goal.indexOf('data-video-stage-generate="goal"'));
  assert.ok(goal.indexOf('data-video-stage-generate="goal"')<goal.indexOf("data-video-continue-scenarios"));
- assert.match(goal,/data-video-stage-generate="goal"[\s\S]*?onClick=\{generateFromGoal\}/);
+ assert.match(goal,/data-video-stage-generate="goal"[\s\S]*?onClick=\{generateFromGoal\} data-video-express-create/);
  assert.match(goal,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
  for(const label of ["Generate video","Proceed to personalization","Создать видео","Перейти к персонализации",
    "Generar vídeo","Continuar a personalización"]) assert.ok(goal.includes(label),label);
  assert.doesNotMatch(goal,/data-video-goal-generate|onClick=\{createQuickVideo\}/,"no duplicate renderer CTA");
 });
 
-test("Goal applies real recipient scenes before trusted click export; pricing is transparent",()=>{
- assert.match(studio,/const generateFromGoal=\(\)=>\{[\s\S]*?flushSync\(\(\)=>\{goalValid=goalContinueRef\.current\?\.\(\)!==false;\}\)/);
- assert.match(studio,/if\(!goalValid\)return false;[\s\S]*?freshGoalCreateRef\.current\(\)/);
- assert.match(studio,/freshGoalCreateRef\.current=createQuickVideo/);
+test("one Goal tap applies real six-photo plan plus licensed sound, then begins actual protected export",()=>{
+ assert.match(studio,/const generateFromGoal=\(\)=>generateExpressFromCurrent\(\)/);
+ assert.match(studio,/const generateExpressFromCurrent=\(\)=>\{/);
+ assert.match(studio,/planExpressVideo\(/);
+ assert.match(studio,/compileFreeFilmPreset\(/);
+ assert.match(studio,/flushSync\(\(\)=>\{[\s\S]*?setReadyGenerationPending\(true\)/);
+ assert.match(studio,/expressRenderRef\.current\(\)/);
+ assert.match(studio,/const openReadyForGeneration = \(\) => \{/);
+ assert.match(studio,/return createQuickVideo\(\)/);
  assert.match(studio,/const createQuickVideo = \(\) => \{[\s\S]*?return startFromHero\(\)/);
  assert.match(studio,/void createVideo\(\)/);
  assert.match(studio,/creditCatalog\.priceCredits/);
  assert.equal((studio.match(/const generateFromGoal=/g)||[]).length,1);
+ assert.equal((studio.match(/data-video-express-create/g)||[]).length,1);
 });
 
 test("320–430px has parallel readable controls, no bottom legacy blocks, intact Photo route",()=>{

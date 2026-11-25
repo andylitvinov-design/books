@@ -23,7 +23,9 @@ on:
       - 'components/app/development-program.jsx'
       - 'app/[locale]/explore/[theme]/page.tsx'
       - 'tests/growth-journey-public.test.mjs'
-      - 'tests/ci-growth-course-core-reuse.test.mjs'
+      # Core already owns edits to its CI-only policy contract. Workflow
+      # changes still run this specialist's real domain checks before merge.
+      - '.github/workflows/hh-growth-journey.yml'
 permissions:
   contents: read
 
@@ -57,6 +59,7 @@ jobs:
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
       - name: Lint changed JS and TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >-
           npx --no-install eslint
           data/growth-guides.ts

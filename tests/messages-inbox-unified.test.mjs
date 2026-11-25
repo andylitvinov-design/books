@@ -53,7 +53,7 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact onOpenChange=\{setDirectOpen\}/)
   assert.match(hub,/ownerAccountId&&<section hidden=\{source!=='crm'\}/)
   assert.match(hub,/botCheck|CrmMessengerPanel/)
-  assert.ok(hub.indexOf('if(ownerAccountId)return <MessagesSimpleInbox')>0,
+  assert.ok(hub.indexOf('if(ownerAccountId){')>0&&hub.includes('const ownerInbox=<MessagesSimpleInbox'),
     'ordinary owner view still opens original CRM-backed inbox')
   assert.match(hub,/ownerAccountId&&directDestination/)
   assert.match(hub,/ownerAccountId&&<div className=\{styles\.sources\}/)
@@ -144,14 +144,15 @@ test('Messages uses the current seven-destination My Coach and Services global d
   assert.match(oldNav,/className="hh-mobile-app-nav"/)
   assert.match(workspace,/const mobileNav = \[/)
   assert.match(css,/data-keyboard-open="true"/)
-  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','coach','ai','services','practice','profile'])
+  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','reiki','coach','ai','services','practice','profile'])
   for(const locale of ['en','ru','es']){
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
-    assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/holistic-support/mobile')
+    assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/shamanica')
     assert.equal(unifiedMobileDockHref(locale,'coach'),'/'+locale+'/my-coach')
     assert.equal(unifiedMobileDockHref(locale,'master'),null,'removed master alias must not be exposed')
-    assert.ok(unifiedMobileDockHref(locale,'video'))
+    assert.equal(unifiedMobileDockHref(locale,'reiki'),'/'+locale+'/academy/principles-of-energywork')
+    assert.equal(unifiedMobileDockHref(locale,'video'),null)
     assert.ok(unifiedMobileDockHref(locale,'mytube'))
     assert.ok(unifiedMobileDockHref(locale,'profile'))
     assert.equal(unifiedMobileDockHref(locale,'services'),'/'+locale+'/services')
@@ -232,7 +233,9 @@ test('owner CRM inbox boots independently of slow/failed practitioner requests',
   assert.match(hub,/const safeCrmSummary=ownerAccountId\?crmSummary:null/)
   assert.match(hub,/const requestData=usableData\|\|\(ownerAccountId\?/)
   assert.match(hub,/crmState=\{safeCrmSummary\|\|/)
-  assert.ok(hub.indexOf('if(ownerAccountId)return <MessagesSimpleInbox')>0)
+  assert.ok(hub.indexOf('if(ownerAccountId){')>0)
+   assert.match(hub,/if\(!embedded\)return ownerInbox/)
+   assert.match(hub,/data-embedded-owner-messages[\s\S]*?data-owner-telegram-settings-shortcut/)
   assert.match(requests,/data.websiteUnavailable&&<p role="alert"/)
   assert.match(requests,/!data.websiteLoading&&!data.websiteUnavailable/)
   // CRM leads remain accessible in the single virtual row list, not another form.

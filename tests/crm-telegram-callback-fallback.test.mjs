@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+// New signed Business-chat request/confirmation/RLS cases join existing CRM CI.
+import './assist-telegram-business-request.test.mjs';
+import './telegram-secretary-business.test.mjs';
+import './crm-telegram-first-contact.test.mjs';
+import './crm-whatsapp-human-takeover.test.mjs';
+import './crm-whatsapp-ali-replies.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
+import {captureTelegramLeadBestEffort} from '../lib/crm/telegram-lead-capture-policy.mjs';
 import {readFileSync} from 'node:fs';
 // Closed VM: actual repository route, callback codec and normalizer; mocked external boundaries only.
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
@@ -13,8 +20,14 @@ const sources={
 };
 const candidate=sources.route;
 // Counterfactual baseline preserves the historically demonstrated missing guard.
-const guard="        // Diagnostic buttons must never fall through to ordinary CRM ingestion.\n        if(event.callbackId)continue\n";
+// Guard identity is the executable event-discard statement, not a prose
+// comment that changed when the safe non-text clarification path was added.
+// Preserve exactly one guard before generic CRM ingestion, and test the
+// counterfactual unguarded route without bypassing current signed handlers.
+const guard="        if(event.callbackId)continue\n";
 assert.equal(candidate.split(guard).length,2,'expected exactly one unhandled callback guard');
+assert.ok(candidate.indexOf(guard)<candidate.lastIndexOf('ingestMessengerUpdate(provider,event,config)'),
+  'a signed callback is blocked before generic CRM capture');
 const baseline=candidate.replace(guard,'');
 const forbidden=()=>{throw new Error('REAL_OPERATION_FORBIDDEN')};
 const callback=(data='hhv2:ru:yes',id='fixture_callback_1234')=>({update_id:12,callback_query:{id,data,from:{id:123456789,is_bot:false,first_name:'Fictional',language_code:'ru'},message:{message_id:77,chat:{id:123456789,type:'private'},from:{is_bot:true}}}});
@@ -28,16 +41,31 @@ function normalizer(){
  vm.runInContext(safe+normal,context,{timeout:1000});
  return context;
 }
-async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true}={}){
- const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0};
+async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,syncFailure=false,businessHuman=false,botHuman=false}={}){
+ const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0,botCapture:0,businessCapture:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
- Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
+ Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},console:{error:()=>{}},captureTelegramLeadBestEffort,getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
    processWhatsAppAccountLink:async()=>{calls.waProof++;return {handled:false}},
    processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
+   processWhatsAppSecretary:async()=>({handled:false}),
    sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
-   receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
+   receiveOwnerTelegramVideoCrmFallback:async()=>({handled:false}),
+   // The business account is an independent Telegram update, not this callback route.
+   telegramBusinessRequestFromUpdate:()=>null,
+   processTelegramBusinessConversation:async()=>({handled:false}),
+   processTelegramBusinessSecretary:async()=>({handled:false}),
+   gateTelegramBusinessSecretaryOptOut:async()=>({blocked:false}),
+   // Mock the new, owner-scoped lead persistence boundary without real DB writes.
+   captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBusinessInbox:async()=>({matched:true,recorded:true,humanActive:businessHuman}),
+   telegramBotHumanTakeover:async()=>botHuman,
+   captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
+   whatsappHumanTakeoverActive:async()=>false,
+   recordWhatsAppInboundReceipt:async()=>({recorded:false}),
+   archiveWhatsAppAliAcceptedReply:async()=>false,
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
@@ -48,7 +76,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    finishTelegramAiV3:forbidden,
    shouldBootstrapTelegramNativeMenu:()=>false,
    sendTelegramCompanionMessage:async()=>{calls.companionSend++},
-   ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++}});
+   ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++;if(syncFailure)throw new Error('synthetic provider outage')}});
  if(diagnostic==='off'){
   const begin=sources.hook.indexOf('export async function processTelegramDiagnostic'),end=sources.hook.indexOf('  if(!/^',begin);
   vm.runInContext(sources.hook.slice(begin,end).replace('export ','')+"throw new Error('UNEXPECTED_DIAGNOSTIC_BODY');}",context,{timeout:1000});
@@ -106,4 +134,78 @@ test('signed companion home callback is handled by its own route without CRM lea
  assert.equal(result.calls.ack,1);
  assert.equal(result.calls.ingest,0);
  assert.equal(result.calls.intake,0);
+});
+
+test('first private Telegram text invokes deduped lead capture; callbacks never do',async()=>{
+  const payload={update_id:19,message:{message_id:9,date:1,
+    chat:{id:123456789,type:'private'},
+    from:{first_name:'Fictional',is_bot:false},text:'I want help'}};
+  const inbound=await routeRun({payload});
+  assert.equal(inbound.response.status,200);
+  assert.equal(inbound.calls.botCapture,1);
+  assert.equal(inbound.calls.ingest,1);
+  const clicked=await routeRun({payload:callback('hhv2:ru:yes')});
+  assert.equal(clicked.response.status,200);
+  assert.equal(clicked.calls.botCapture,0);
+});
+
+test('signed /start retries on CRM failure; optional inline sync never blocks a durable reply',async()=>{
+ const payload={update_id:114,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'/start'}};
+ for(const flags of [{leadFailure:true},{syncFailure:true},{leadFailure:true,syncFailure:true}]){
+  const result=await routeRun({payload,diagnostic:'handled',...flags});
+  // A failed first-contact commit must be retried by Telegram, not acknowledged.
+  assert.equal(result.response.status,flags.leadFailure?503:200);
+  assert.equal(result.calls.botCapture,1);
+  // Even a temporarily unavailable CRM first-contact receipt may not
+  // silence the protected dialogue. Telegram 503 retries ONLY the missing
+  // receipt; session-level update idempotency owns duplicate prompt safety.
+  assert.equal(result.calls.aiV3,1);
+  assert.equal(result.calls.intake,1);
+  assert.equal(result.calls.send,1);
+  assert.equal(result.calls.ensure,1);
+  assert.equal(result.calls.ingest,0);
+ }
+});
+test('signed Companion welcome remains replyable when first-contact CRM is unavailable',async()=>{
+ const payload={update_id:116,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'/start'}};
+ const result=await routeRun({payload,companion:'handled',leadFailure:true});
+ assert.equal(result.response.status,503,'Telegram must retry the missing first-contact receipt');
+ assert.equal(result.calls.botCapture,1);
+ assert.equal(result.calls.companionSend,1,'visitor still receives the welcome');
+ assert.equal(result.calls.aiV3,0);
+ assert.equal(result.calls.ingest,0);
+});
+
+test('signed Business message survives optional lead-capture denial without a fake CRM receipt',async()=>{
+ const payload={update_id:115,business_message:{business_connection_id:'test-connection',
+    message_id:12,date:1,chat:{id:123456789,type:'private'},
+    from:{id:123456789,is_bot:false},text:'Hello, service enquiry'}};
+ const result=await routeRun({payload,leadFailure:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.businessCapture,1);
+ assert.equal(result.calls.botCapture,0);
+ assert.equal(result.calls.ingest,0);
+});
+
+test('accepted owner CRM reply pauses all automated Telegram Business followups',async()=>{
+ const payload={update_id:201,business_message:{business_connection_id:'synthetic-connection',
+   message_id:21,date:1,chat:{id:123456789,type:'private'},
+   from:{id:123456789,is_bot:false},text:'A question for a person'}};
+ const result=await routeRun({payload,businessHuman:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.businessCapture,1);
+ assert.equal(result.calls.botCapture,0);
+ assert.equal(result.calls.aiV3+result.calls.companion+result.calls.ingest,0);
+});
+test('accepted owner reply keeps later Telegram bot texts in CRM without invoking AI',async()=>{
+ const payload={update_id:202,message:{message_id:22,date:1,
+   chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'For the human adviser'}};
+ const result=await routeRun({payload,botHuman:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.botCapture,1);
+ assert.equal(result.calls.ingest,1);
+ assert.equal(result.calls.aiV3+result.calls.companion+result.calls.intake,0);
 });

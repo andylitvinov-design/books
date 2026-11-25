@@ -49,3 +49,49 @@
  .switch strong{font-size:12px}
  .switch small{font-size:10px}
 }
+
+/* Compact Live / Work control: replaces Settings in My Space and returns from Work. */
+.profileSwitch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  flex: none;
+  min-width: 148px;
+  padding: 3px;
+  border: 1px solid #e9dfd1;
+  border-radius: 16px;
+  background: #fffcf7;
+}
+.profileSwitch a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  background: transparent;
+  color: #14523f;
+  text-decoration: none;
+  font: 750 13px/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.profileSwitch a[aria-current="page"] {
+  color: #fff;
+  background: #067a67;
+}
+.profileSwitch a:focus-visible {
+  outline: 3px solid #176e6e;
+  outline-offset: 2px;
+}
+.profileSwitch a[aria-current="page"]:focus-visible {
+  outline-color: #f7c16d;
+}
+.profileSwitch svg { flex: none; }
+@media (max-width: 360px) {
+  .profileSwitch { min-width: 134px; gap: 2px; padding: 2px; }
+  .profileSwitch a { padding: 7px 5px; font-size: 12px; }
+  .profileSwitch svg { width: 15px; height: 15px; }
+}

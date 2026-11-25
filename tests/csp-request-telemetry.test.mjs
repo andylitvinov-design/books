@@ -169,3 +169,18 @@ test('Telegram cancellation telemetry records only its exact anonymous public pa
   assert.equal(observation.events()[0].path,'/api/public/telegram-diagnostic');
   assert.doesNotMatch(JSON.stringify(observation.events()),/token|https?:|scope/);
 });
+
+test('English presentation metadata GET has a queryless anonymous first-party telemetry footprint',()=>{
+  const path='/api/public/english-intro-video';
+  assert.deepEqual(sanitizeCspRequest(path,origin),{path,rsc:false});
+  for(const invalid of [path+'?token=private',path+'?_rsc=secret',
+    path+'/other',path+'?source=tracking','https://elsewhere.test'+path,
+    '/api/private/english-intro-video','/api/public/english-intro-video-v2']){
+    assert.equal(sanitizeCspRequest(invalid,origin),null,invalid);
+  }
+  const observed=fixture(()=>Promise.resolve(null));
+  observed.env.fetch(path,{signal:new AbortController().signal});
+  assert.deepEqual(observed.events()[0],{type:'fetch-start',path,rsc:false,
+    id:'fetch-1',documentProbe:'document-1',time:102});
+  assert.doesNotMatch(JSON.stringify(observed.events()),/token|headers|credentials|http/);
+});

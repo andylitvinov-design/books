@@ -10,6 +10,18 @@ import {
 } from '../lib/personal-coaching/coaching-brain.mjs'
 import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
 import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coaching/coaching-turn-understanding.mjs'
+// Run the same Director v2 method/persona regression contracts in both
+// focused coaching verification and the existing production prebuild suite.
+import './coach-session-director.test.mjs'
+import './my-coach-session-progress.test.mjs'
+// Reuse this existing trusted coaching prebuild gate; changing package.json
+// would trigger unrelated expensive CI fan-out.
+import './my-coach-dictation.test.mjs'
+import './my-coach-five-turn-flow.test.mjs'
+import './my-coach-low-latency.test.mjs'
+import './my-coach-webcodecs-stream.test.mjs'
+import './my-coach-barge-in.test.mjs'
+import './my-coach-duplex-barge.test.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -271,6 +283,7 @@ test('model output is rejected when it uses coercive language or stacks question
 test('explicit stop is respected in Russian and Spanish without entering model logic',()=>{
   for(const [locale,message] of [
     ['ru','Давайте закончим разговор'],
+    ['ru','Остановим разговор'],
     ['es','Por favor, terminemos esta conversación'],
   ]){
     const input=normalizeCoachingBrainInput(req({locale,message}))
@@ -544,4 +557,42 @@ test('offline coaching notices explicitly named constraints instead of asking ag
     normalizeCoachingBrainInput(req({message:'I am afraid of being criticized'})),
     'motivational_interviewing','explore')
   assert.equal((fallback.question.match(/[?？]/gu)||[]).length,1)
+})
+
+test('social greetings preserve rapport instead of imposing goal metrics RU/EN/ES',()=>{
+ for(const [locale,message,expected] of [
+  ['ru','Привет как дела','Привет'],
+  ['ru','Здравствуйте, как ваши дела?','Привет'],
+  ['en','Hi, how are you?','Hello'],
+  ['en','Hello there!','Hello'],
+  ['es','Hola, ¿cómo estás?','Hola'],
+  ['es','Buenas tardes','Hola']
+ ]){
+  const input=normalizeCoachingBrainInput(req({locale,message}))
+  assert.equal(understandCoachingTurn(input).act,'greeting')
+  assert.deepEqual(coachingBrainStageDecision(input),{stage:'clarify',reasonCode:'social_opening_no_goal'})
+  const r=offlineCoachingBrainReply(input,'grow','clarify')
+  assert.equal(r.mode,'offline')
+  assert.equal(r.planSuggestion,'')
+  assert.ok(r.question.includes(expected))
+  assert.doesNotMatch(r.question,/measure|outcome|измер|результат|objetivo medible/i)
+  assert.match(coachingBrainMessages(input,'grow','clarify')[1].content,/Greeting only/)
+  assert.throws(()=>parseCoachingBrainReply(JSON.stringify({
+   reflection:'We can talk about your goals.',
+   question:'How would you measure success?'
+  }),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+ }
+ assert.notEqual(understandCoachingTurn({locale:'ru',message:'Привет! Я хочу обсудить работу.',turns:[]}).act,'greeting')
+})
+
+test('My Coach local unavailable-model path uses semantic Coach Mind instead of turn-count questionnaire',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(ui,/coachingBrainStageDecision\(input\)/)
+ assert.match(ui,/offlineCoachingBrainReply\(input,selectCoachingBrainMethod\(input\),semanticStage\)/)
+ assert.match(ui,/mode,reason:mode==='offline'/)
+ assert.match(ui,/stage:offlineReply\.stage\|\|semanticStage/)
+ assert.doesNotMatch(ui,/const userCount=turns\.filter/)
+ assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
+ assert.match(ui,/selectedGeminiEngine\?!geminiEngineReady:readiness\.status!=='verified'/)
+ assert.match(ui,/!selectedGeminiEngine&&await retryCoachModelAfterOutage\(\)/)
 })

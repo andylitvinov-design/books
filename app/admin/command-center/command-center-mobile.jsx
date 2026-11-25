@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-intake.mjs';
 import styles from './command-center-mobile.module.css';
-import CommandCenterVoiceButton from './command-center-voice-button';
+import CommandCenterVoiceAssistant from './command-center-voice-assistant';
 import CommandCenterBatch from './command-center-batch';
 import CommandCenterPrWatch from './command-center-pr-watch';
 import {attachCommanderDraftReceiver} from '@/lib/command-center/task-transfer-receiver.mjs';
@@ -173,7 +173,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  };
  const saveTask=async e=>{e.preventDefault();const title=safe(draft,140);
   if(title.length<6){setNotice(t.taskText);return;}
-  const description=safe(details,800)||title+(title.length<10?' — '+t.details:'');
+  const description=safe(details,2000)||title+(title.length<10?' — '+t.details:'');
   const result=await send('create_task',{title,description,kind,projectId:project||null,sourceRef:safe(source)||null,priority:Number(priority)});
   if(result){setComposer(false);setDraft('');setDetails('');setSource('');setImportedPrompt('');
     setNotice(result.status==='already_exists'?t.alreadyExists:t.saved);
@@ -367,6 +367,10 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
     <div className={styles.sheetHeader}><h2>{composer?t.newTask:t.newProject}</h2><button type="button" aria-label={t.close} onClick={()=>{setComposer(false);setProjectComposer(false);}}>×</button></div>
     {notice&&<p className={styles.sheetNotice} role="status">{notice}</p>}
     {composer?<form onSubmit={saveTask} className={styles.composer}>
+       <CommandCenterVoiceAssistant lang={lang} onPrepared={spec=>{
+         setDraft(spec.title);setDetails(spec.description);setKind(spec.proposedKind);
+         setSource(spec.target.sourceRef||'');setImportedPrompt('');
+       }}/>
       <label htmlFor="cc-idea">{t.taskText}</label><textarea id="cc-idea" autoFocus minLength={6} maxLength={140} required
        placeholder={t.taskPlaceholder} value={draft} onChange={e=>{
         const next=e.target.value;setDraft(next);
@@ -374,7 +378,6 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
         if(suggestion){setSource(suggestion.sourceRef);
           if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
        }} rows={3}/>
-      <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
       <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={2000} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
       {importedPrompt&&<details className={styles.importedPrompt} open>

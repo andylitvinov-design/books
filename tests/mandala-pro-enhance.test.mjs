@@ -39,15 +39,17 @@ test("Extra reuses existing photo picker and catalog, PRO wish stays in same loc
  assert.match(studio,/onPickPhoto=\{onPickPhoto\}/);
  assert.match(view,/data-video-pro-upload-photo onClick=\{onPickPhoto\}/);
  assert.match(view,/photoSelected/);
- assert.match(view,/onChooseCatalog\("character"\)/);
- assert.match(view,/data-video-pro-character-catalog/);
+ assert.match(view,/onChooseCatalog\("story"\)/);
+ assert.match(view,/data-video-pro-other-stories/);
+ assert.doesNotMatch(view,/data-video-pro-character-catalog|data-video-pro-choose-character/);
+ assert.match(studio,/activeWorkspace==="pro"\?<MandalaFreeGreeting/);
  assert.match(studio,/<MandalaStoriesCharacters locale=\{locale\}/);
  assert.match(studio,/onApply=\{next=>/);
  assert.match(studio,/storySelectionItems\(next\)/);
  assert.match(studio,/proWish=\{wish\} onProWishChange=\{setWish\}/);
  assert.match(view,/data-video-pro-brief value=\{proWish\}/);
  assert.match(view,/maxLength=\{800\}/);
- assert.match(studio,/proTools=\{activeWorkspace==="pro"\?deepVideoDirectorPane:null\}/);
+ assert.match(studio,/proTools=\{activeWorkspace==="pro"\?<button/);
 });
 
 test("one context-specific bottom action, no fake paid request, correct mobile dock",()=>{
@@ -68,4 +70,21 @@ test("one context-specific bottom action, no fake paid request, correct mobile d
  assert.match(css,/var\(--hh-studio-surface/);
  assert.match(css,/var\(--hh-studio-border/);
  for(const language of ["ru","en","es"]) assert.ok(view.includes(" "+language+":{"),language);
+});
+
+test("owner-approved first screen defaults to Extra and presents inline characters before photo and prices",()=>{
+ const greet=readFileSync(new URL("../components/mandala-free-greeting.tsx",import.meta.url),"utf8");
+ const greetingCss=readFileSync(new URL("../components/mandala-free-greeting.module.css",import.meta.url),"utf8");
+ assert.match(view,/useState<Tier>\("extra"\)/);
+ assert.match(view,/data-video-pro-extra-options/);
+ assert.ok(view.indexOf('data-video-pro-extra-options')<view.indexOf('<nav className={styles.tiers}'));
+ assert.match(studio,/activeWorkspace==="pro"\?<MandalaFreeGreeting/);
+ assert.ok(studio.indexOf('activeWorkspace==="pro"?<MandalaFreeGreeting')<studio.indexOf('<MandalaProEnhance locale={locale}'));
+ assert.match(greet,/data-greeting-mode="greeting"/);
+ assert.match(greet,/data-greeting-mode="support"/);
+ assert.match(greet,/data-greeting-option=\{entry.id\}/);
+ assert.match(greetingCss,/overflow-x:auto/);
+ assert.match(greetingCss,/scroll-snap-type:x mandatory/);
+ assert.match(greetingCss,/@media\(max-width:390px\)/);
+ assert.match(css,/bottom:calc\(78px \+ env\(safe-area-inset-bottom,0px\)\)/);
 });

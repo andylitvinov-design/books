@@ -13,8 +13,8 @@ test('30-character free panel is visible before existing PRO free-generate actio
   assert.match(editor,/onPreview=\{\(\)=>\{/);
   assert.match(panel,/data-greeting-option="auto"/);
   assert.match(panel,/data-greeting-option="none"/);
-  assert.match(panel,/data-greeting-filter=\{category\}/);
-  assert.match(panel,/FREE_GREETING_CATEGORIES/);
+  assert.match(panel,/data-greeting-mode="greeting"/);
+  assert.match(panel,/data-greeting-mode="support"/);
   assert.match(panel,/0 дополнительных XP/);
   assert.match(panel,/0 extra XP/);
   assert.match(panel,/0 XP adicionales/);
@@ -43,13 +43,14 @@ test('tap-to-preview and selection are distinct opt-in events, no automatic XP c
   for(const locale of ['ru','en','es'])assert.match(panel,new RegExp(`(?:^|\\n)  ${locale}:\\{`));
 });
 
-test('all 30 choices are confined to an accessible native modal, keeping PRO buttons in place',()=>{
-  assert.match(panel,/data-greeting-open/);
-  assert.match(panel,/data-greeting-modal/);
-  assert.match(panel,/<dialog /);
-  assert.match(panel,/showModal\(\)/);
-  assert.match(panel,/data-greeting-close/);
-  assert.match(panel,/focus\(\{preventScroll:true\}\)/);
-  assert.match(panel,/FREE_GREETING_CATALOG\.filter/);
-  assert.match(panel,/data-greeting-choices=\{filter\}/);
+test('all 30 genuinely rendered choices sit directly on the first PRO screen without nested tabs or modal',()=>{
+  assert.match(panel,/data-greeting-choices=\{mode\}/);
+  assert.match(panel,/data-greeting-option=\{entry.id\}/);
+  assert.match(panel,/FREE_GREETING_CATALOG\]\.sort/);
+  assert.match(panel,/data-greeting-purpose=\{mode\}/);
+  assert.match(panel,/role="group"/);
+  assert.match(panel,/aria-pressed=\{selected===entry.id\}/);
+  assert.match(panel,/IntersectionObserver/);
+  assert.doesNotMatch(panel,/<dialog|showModal\(|data-greeting-filter=|data-story-addon-tab/);
+  assert.match(panel,/data-greeting-preview/);
 });

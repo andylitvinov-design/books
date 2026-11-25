@@ -191,7 +191,7 @@ test('Free Review workflow preserves post-merge real browser, functional build a
   assert.match(yaml, /node --test tests\/retired-situation-promo-sitewide\.test\.mjs/);
   assert.match(yaml, /if: github\.event_name == 'pull_request' && steps\.impact\.outputs\.browser == 'true'/);
   assert.match(yaml, /if: github\.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/);
-  assert.match(yaml, /if: github\.event_name == 'push'/);
+  assert.match(yaml, /if: github\.event_name == 'workflow_dispatch'/);
   assert.match(yaml, /npm run build/);
   assert.doesNotMatch(yaml, /npx tsc --noEmit/);
 });
@@ -231,7 +231,8 @@ test('Video Studio and Hypnocorrection release branches run real browser and mac
   const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
   for (const branch of ['fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
     assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
-    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
+    assert.ok(mac.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+      'macOS uses actual tested media changes, never branch naming: '+branch);
   }
   assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
   assert.match(yaml, /ffprobe -version/);
@@ -242,7 +243,9 @@ test('Video browser: avoid all unrelated route edits while retaining actual vide
   const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
   assert.equal(trigger.branches.includes('codex/public-book-library'), true);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/app/page.tsx']), false);
-  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['app/es/services/page.tsx']), false);
+  assert.equal(matchesTrigger(trigger, ['app/api/app/unrelated/route.js']), false);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), false);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/about/page.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['components/site-video-player.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['app/page.tsx']), true);
@@ -503,11 +506,13 @@ test('App R1 trigger covers all critical routes and preserves mandatory sensitiv
     'lib/app/owner.ts', 'lib/profile/secure-profile.ts',
     'lib/assessments/calculate.ts', 'lib/security/authorization.ts',
     'data/assessments/checkin.json', 'supabase/migrations/20261104_security.sql',
-    'middleware.ts', 'next.config.ts', 'package.json', 'package-lock.json'
+    'middleware.ts', 'next.config.ts', 'package-lock.json'
   ]) {
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must schedule App R1');
     assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict, path + ' requires full checks');
   }
+  assert.equal(matchesTrigger(trigger, ['package.json']), false,
+    'a Core-covered package-only script edit must not fan out into App R1');
   for (const path of ['components/profile-compact-design.tsx', 'components/my-course-dashboard.tsx'])
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
   for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])
@@ -563,4 +568,67 @@ test('Mandala policy-only impact tests route to fast Guard, while video, voice a
     'Mandala Ready source gate must still exist');
   assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
   assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
+});
+
+test('App R1 no-op lanes use only slim runners and skip PostgreSQL', () => {
+  const yaml = read('hh-app-r1.yml');
+  const job = (id, next) => {
+    const first = yaml.indexOf('  ' + id + ':\n');
+    assert.ok(first >= 0, id + ' exists');
+    const last = next ? yaml.indexOf('  ' + next + ':\n', first + 1) : yaml.length;
+    assert.ok(last > first, id + ' has stable boundaries');
+    return yaml.slice(first, last);
+  };
+  const unit = job('unit-build', 'course-banner-browser');
+  const browser = job('course-banner-browser', 'database');
+  const db = job('database');
+  const route = (source, expression) =>
+    assert.ok(source.includes('runs-on: ' + '$' + '{{ ' + expression + ' }}'),
+      'runner selection must be exactly guarded by trusted impact');
+  route(unit, "needs.impact.outputs.profile == 'true' && 'ubuntu-latest' || 'ubuntu-slim'");
+  route(browser, "matrix.browser != 'none' && 'ubuntu-24.04' || 'ubuntu-slim'");
+  route(db, "needs.impact.outputs.database == 'true' && 'ubuntu-latest' || 'ubuntu-slim'");
+  assert.ok(db.includes('image: ' + '$' + "{{ needs.impact.outputs.database == 'true' && 'postgres:17-alpine' || '' }}"),
+    'PostgreSQL starts only when the verified impact includes database');
+  for (const [name, body, flag] of [
+    ['unit-build', unit, 'profile'], ['course-banner-browser', browser, 'banner'], ['database', db, 'database'],
+  ]) {
+    assert.ok(body.includes("needs.impact.result == 'success'"), name + ' requires successful classifier');
+    assert.ok(body.includes("if: needs.impact.outputs." + flag + " != 'true'"),
+      name + ' retains the exact negative assertion');
+    assert.ok(body.includes("if: needs.impact.outputs." + flag + " == 'true'"),
+      name + ' retains real positive checks');
+  }
+  assert.match(db, /run: npm run test:app:db/);
+  assert.match(db, /node scripts\/ci-client-memory-rls\.mjs/);
+  assert.match(db, /node scripts\/ci-coaching-rls\.mjs/);
+  assert.ok(browser.includes('chromium') && browser.includes('webkit'));
+  assert.match(unit, /node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
+  assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
+});
+
+test('Messenger focused and isolated RLS contracts avoid unrelated media install lifecycle and fixed-list PR lint', () => {
+  const yaml=read('hh-messages-wellness-v2.yml');
+  const productionPR="github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'";
+  const standalone="github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'";
+  for(const job of ['focused','guest-contact-audit-db']){
+    const block=yaml.split(new RegExp('^  '+job+':\\n','m'))[1].split(/^  [a-z][a-z-]+:\s*$/m)[0];
+    assert.ok(block.includes("github.event.pull_request.draft == false"));
+    const install=block.slice(block.indexOf('Install locked dependencies for protected PR contracts'),block.indexOf('Stage checksum-verified FFmpeg'));
+    assert.ok(install.includes(productionPR));
+    assert.ok(install.includes('npm ci --ignore-scripts --no-audit --no-fund'));
+    for(const name of ['Stage checksum-verified FFmpeg before npm lifecycle','Materialize checksum-verified FFmpeg for package runtime']){
+      assert.ok(block.slice(block.indexOf(name),block.indexOf(name)+260).includes(standalone),name);
+    }
+  }
+  for(const name of ['Lint guest reply composer and recipient policy','Lint edited Messages components and route']){
+    assert.ok(yaml.slice(yaml.indexOf(name),yaml.indexOf(name)+250).includes(standalone),name);
+  }
+  assert.ok(yaml.includes('tests/direct-message-media-transport.test.mjs'));
+  assert.ok(yaml.includes('tests/public-enquiry-reply-handoff.test.mjs'));
+  assert.ok(yaml.includes('tests/public-enquiry-contact-audit-rls.integration.mjs'));
+  assert.ok(yaml.includes('image: postgres:17'));
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.ok(matchesTrigger(parsePrTrigger(yaml,'hh-messages-wellness-v2.yml'),['.github/workflows/hh-messages-wellness-v2.yml'],'codex/public-book-library'));
+  assert.ok(read('hh-pr-core-release.yml').includes('Lint changed JS/TS sources on PR; full lint for manual/merge queue'));
 });

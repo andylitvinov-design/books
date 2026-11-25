@@ -8,7 +8,9 @@ import {
  suggestVideoConcept,reviseVideoConcept,videoConceptIsValid
 } from "../lib/mandala/auto-video-concept.mjs";
 import {planAudioVisualStoryboard} from "../lib/mandala/audio-visual-storyboard.mjs";
+import {planExpressVideo} from "../lib/mandala/express-video-director.mjs";
 import {getMyTubeTopic} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {buildAlignedStorySceneGuides} from "../lib/mandala/storyboard-content-alignment.mjs";
 
 const speaking=(lines)=>({
  text:lines.join(" "),durationSeconds:lines.length*4,
@@ -73,7 +75,7 @@ test("English presentation and Spanish meditation get different purpose and styl
  });
  assert.equal(presentation.semanticPurpose,"presentation");
  assert.equal(presentation.semanticAudience,"client");
- assert.equal(presentation.categoryId,"goals-money");
+ assert.equal(presentation.categoryId,"energy-confidence"); // business growth belongs to Personal & Business Growth
  assert.equal(meditation.semanticPurpose,"practice");
  assert.equal(meditation.styleId,"meditative");
  assert.equal(meditation.parameters.method.value,"meditation");
@@ -172,7 +174,13 @@ test("anxiety without a clear cause uses inner support rather than invented fami
  assert.equal(suggestion.parameters.audience.status,"unknown");
  assert.equal(suggestion.meaningAxisId,"anchor");
  assert.equal(suggestion.motifId,"nest");
- assert.equal(suggestion.parameters.intent.source,"goal");
+ assert.equal(suggestion.parameters.situation.source,"goal",
+  "original anxiety wording is retained as the stated problem");
+ assert.equal(suggestion.parameters.situation.value,goal);
+ assert.equal(suggestion.parameters.intent.source,"editorial",
+  "a positive goal is suggested, never attributed to the user as a quote");
+ assert.notEqual(suggestion.goal,goal,"the problem is not relabeled as a goal");
+ assert.match(suggestion.goal,/steadiness|calm|support/i);
  assert.notEqual(suggestion.mainMessage,goal);
  assert.match(suggestion.mainMessage,/steadiness|support/i);
  assert.match(suggestion.emotionalProgram[0],/uncertainty/i);
@@ -229,4 +237,35 @@ test("author-supplied audio remains actual speech while editorial main idea diff
  assert.equal(p.motifId,"nest");
  assert.equal(p.emotionalProgram.length,4);
  assert.equal(Object.keys(p.parameters).length,38);
+});
+
+test("selected Russian phrases reach their scenes intact and in order",()=>{
+ const phrases=["Я замечаю новую возможность", "Я делаю шаг к цели", "Я развиваю навыки"];
+ const plan=buildAlignedStorySceneGuides({locale:"ru",goal:"Работа и развитие",phrases,count:6});
+ assert.equal(plan.professional,true);
+ assert.deepEqual(plan.scenes.slice(0,phrases.length).map(scene=>scene.sourcePhrase),phrases);
+ assert.equal(plan.scenes.length,6);
+});
+
+test("empty and non-string phrases do not displace valid selections",()=>{
+ const phrases=["",null,"First phrase",42,"Second phrase"];
+ const plan=buildAlignedStorySceneGuides({locale:"en",goal:"A quiet morning",phrases,count:6});
+ assert.deepEqual(plan.scenes.slice(0,2).map(scene=>scene.sourcePhrase),["First phrase","Second phrase"]);
+});
+
+test("a spoken segment spanning two shots contributes to both without inventing word timestamps",()=>{
+ const options={locale:"ru",goal:"Предназначение",selectedTopicId:"life-purpose",
+  hasAudio:true,audioDurationSeconds:20};
+ const plan=planExpressVideo({...options,
+  transcript:{text:"лес",segments:[{startSeconds:0,endSeconds:10,text:"лес"}]}});
+ assert.equal(plan.canRender,true);
+ assert.equal(plan.transcriptUsed,true);
+ assert.ok(plan.photos[0].matchedWords.includes("forest"));
+ assert.ok(plan.photos[1].matchedWords.includes("forest"));
+ assert.ok(plan.photos.slice(2).every(photo=>!photo.matchedWords.includes("forest")));
+ const boundary=planExpressVideo({...options,
+  transcript:{text:"лес",segments:[{startSeconds:5,endSeconds:10,text:"лес"}]}});
+ assert.ok(!boundary.photos[0].matchedWords.includes("forest"));
+ assert.ok(boundary.photos[1].matchedWords.includes("forest"));
+ assert.ok(boundary.photos.slice(2).every(photo=>!photo.matchedWords.includes("forest")));
 });

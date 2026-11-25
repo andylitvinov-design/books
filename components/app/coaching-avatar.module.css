@@ -78,3 +78,24 @@
 @media(prefers-reduced-motion:reduce){
  .frame[data-phase='thinking'] .head,.frame[data-phase='thinking'] .halo{animation:none!important}
 }
+
+/* Photographic avatar replaces the drawing only in explicitly selected AI
+   persona sessions. Other private coaching keeps the original SVG avatar. */
+.frame[data-photo-persona] .face{isolation:isolate}
+.livingPortrait{position:absolute;inset:0;z-index:2;display:block;border-radius:inherit;overflow:hidden;background:#e3e7de}
+.livingPortraitBase{display:block;width:100%;height:100%}
+.livingPortraitImage{display:block;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+/* Original still frame remains unchanged beneath MP4 footage. */
+.livingPortraitMouth{display:none!important}
+/* 4-coach pilot: MP4 is above the static photo, no independent twitch. */
+.frame[data-coach-motion-video='true'] .livingPortrait{animation:none!important;transform:none!important}
+.frame[data-coach-motion-video='true'] .livingPortraitMouth{display:none!important}
+
+/* Owner correction: never fabricate eyes, smiles, mouth shapes or face motion in CSS. */
+.frame .head,.frame .eyes,.frame .mouthTalk,.frame .halo{animation:none!important;transform:none!important}
+.frame .mouthTalk{display:none!important;opacity:0!important}
+.frame .mouthRest{opacity:1!important}
+.frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
+
+/* Photographic coaches: never show synthetic eye/mouth SVG. */
+.frame[data-photo-persona] .illustration{display:none!important}

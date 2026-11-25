@@ -39,13 +39,15 @@ test("alternative retry is abortable, language-aware, and fails closed for prote
   assert.match(chat,/alternativeAbortRef\.current\?\.abort\(\)/);
   assert.match(chat,/This browser does not support a free on-device model/);
   assert.match(chat,/Your original answer is unchanged/);
-  assert.match(chat,/function resetConversation\(\)\{alternativeAbortRef\.current\?\.abort\(\)/);
+  const reset=chat.slice(chat.indexOf("function resetConversation()"),chat.indexOf("const startNewConversation="));
+  assert.match(reset,/alternativeAbortRef\.current\?\.abort\(\)/);
+  assert.match(reset,/controller\.current\?\.abort\(\)/);
 });
 
 test("alternative answer controls have mobile tap targets and no paid provider",()=>{
   const css=read("components/holistic-agent-chat.module.css");
   const chat=read("components/holistic-agent-chat.tsx");
   assert.match(css,/\.answerActions button\{min-height:42px/);
-  assert.match(chat,/The browser's free on-device model when available/);
+  assert.match(chat,/browser's free on-device model when available/);
   assert.doesNotMatch(chat,/requestAlternativeAnswer[\s\S]{0,2000}fetch\(/);
 });

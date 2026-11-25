@@ -6,7 +6,7 @@ import {needsPrivateVideoChunks,uploadSignedPrivateVideoChunks,savePrivateMp4,
 
 const ref="shervdixkaxurnaecioe";
 const api="https://"+ref+".supabase.co/";
-const tus="https://"+ref+".storage.supabase.co/storage/v1/upload/resumable";
+const tus="https://"+ref+".storage.supabase.co/storage/v1/upload/resumable/sign";
 const location=tus+"/mock-upload-id";
 const bucket="hh-client-private-media";
 const key="personal-videos/12345678-1234-4123-8123-123456789012/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/master.mp4";
@@ -20,6 +20,37 @@ function response(status,headers={}){
 }
 const metadata={id:"aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",supabaseUrl:api,
  bucket,objectKey:key,token:"test-signed-token",publishableKey:"test-publishable"};
+
+test("small iPhone MP4s upload with video/mp4 in the actual Supabase multipart file part",async()=>{
+ for(const mime of ["","application/octet-stream","video/mp4"]){
+  const bytes=Buffer.from(await mp4(2048).arrayBuffer());
+  const file=new File([bytes],"phone.mp4",{type:mime});
+  let uploaded=false,complete=false;
+  const sessionRef={current:null};
+  const id=await savePrivateMp4({file,
+   details:{theme:"life",sceneId:"light-path",duration:45,aspect:"portrait"},
+   request:async(path,body,method)=>{
+    assert.equal(method,"POST");
+    if(path==="personal-videos")return metadata;
+    assert.equal(path,"personal-videos/"+metadata.id);
+    assert.equal(uploaded,true);complete=true;return {status:"ready"};
+   },
+   sessionRef,
+   fetchImpl:async(url,options)=>{
+    assert.equal(new URL(url).origin,new URL(api).origin);
+    assert.equal(options.method,"PUT");
+    assert.ok(options.body instanceof FormData);
+    const uploadedFile=options.body.get("");
+    assert.equal(uploadedFile.type,"video/mp4");
+    assert.deepEqual(Buffer.from(await uploadedFile.arrayBuffer()),bytes);
+    uploaded=true;
+    return Response.json({Id:metadata.id,Key:bucket+"/"+key},{status:200});
+   },
+  });
+  assert.equal(id,metadata.id);assert.equal(complete,true);
+  assert.equal(sessionRef.current.file,file,"MIME normalization must not replace retry identity");
+ }
+});
 
 test("files larger than 6 MiB use native signed TUS rather than a single Safari PUT",async()=>{
  assert.equal(needsPrivateVideoChunks(PRIVATE_VIDEO_CHUNK_BYTES+1),true);
@@ -64,9 +95,10 @@ test("offline retry reuses the same reserved video and resumes via HEAD",async()
  const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+24);
  const sessionRef={current:null};
  let reserves=0,complete=0,offset=0,posts=0,heads=0,patches=0;
- const request=async(path,body)=>{
+ const request=async(path,body,method)=>{
   if(path==="personal-videos"){reserves++;return metadata;}
   assert.equal(path,"personal-videos/"+metadata.id);
+  if(method==="PATCH")return {uploadUrl:body.uploadUrl};
   complete++;
   if(offset!==file.size)throw Object.assign(new Error("missing"),{code:"MEDIA_UPLOAD_NOT_FOUND"});
   return {status:"ready"};
@@ -111,6 +143,18 @@ test("untrusted TUS Location never receives a signed token",async()=>{
  assert.ok(calls.every(x=>x.url===tus));
 });
 
+test("unsigned TUS Location never receives a signed token even on the project host",async()=>{
+ const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+1);
+ const calls=[];
+ await assert.rejects(()=>uploadSignedPrivateVideoChunks({
+  ...metadata,file,fetchImpl:async(url,options)=>{
+   calls.push(options.method);
+   return response(201,{Location:tus.replace(/\/sign$/,"/unsigned-upload-id")});
+  }
+ }),/INVALID_STORAGE_UPLOAD_URL/);
+ assert.deepEqual(calls,["POST"]);
+});
+
 test("malformed media and an expired reservation fail before new uploads",async()=>{
  const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+10);
  let called=0;
@@ -148,4 +192,48 @@ test("both UI routes share the signed upload helper without weakening consent",(
  assert.match(uploader,/consent:true/);
  assert.match(uploader,/request\("personal-videos\/"\+session\.created\.id,undefined,"POST"\)/);
  assert.doesNotMatch(uploader,/localStorage|sessionStorage|service_role|upsert:true/);
+});
+
+test("reselecting the exact file after page refresh resumes the same private reservation",async()=>{
+  const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+24);
+  const details={theme:"energy",sceneId:"personal-film",duration:30,aspect:"landscape"};
+  let reservations=0, tusCreates=0, offset=0;
+  let finishInterrupted=false;
+  const tickets=new Map();
+  const request=async(path,body,method)=>{
+    if(path==="personal-videos"){
+      if(body.fingerprint&&tickets.has(body.fingerprint)){
+        return {...tickets.get(body.fingerprint),resumed:true};
+      }
+      reservations++;
+      const ticket={...metadata,issuedAt:Date.now(),uploadUrl:null};
+      if(body.fingerprint)tickets.set(body.fingerprint,ticket);
+      return ticket;
+    }
+    assert.equal(path,"personal-videos/"+metadata.id);
+    if(method==="PATCH"){
+      assert.equal(tickets.size,1);
+      const ticket=[...tickets.values()][0];
+      assert.equal(body.previousUploadUrl,ticket.uploadUrl);
+      ticket.uploadUrl=body.uploadUrl;
+      return {uploadUrl:ticket.uploadUrl};
+    }
+    if(offset!==file.size)throw Object.assign(new Error("missing"),{code:"MEDIA_UPLOAD_NOT_FOUND"});
+    return {video:{id:metadata.id,status:"ready"}};
+  };
+  const fetchImpl=async(url,opts)=>{
+    if(opts.method==="POST"){tusCreates++;if(tusCreates>1)offset=0;return response(201,{Location:location});}
+    if(opts.method==="HEAD")return response(200,{"Upload-Offset":String(offset)});
+    if(offset>0&&!finishInterrupted){finishInterrupted=true;return response(503);}
+    offset+=opts.body.size;
+    return response(204,{"Upload-Offset":String(offset)});
+  };
+  const common={details,request,fetchImpl};
+  await assert.rejects(()=>savePrivateMp4({...common,file,sessionRef:{current:null}}),/PRIVATE_UPLOAD_FAILED/);
+  assert.equal(offset,PRIVATE_VIDEO_CHUNK_BYTES);
+  // Reload recreates the component and the user selects the same bytes again.
+  const reselected=mp4(file.size);
+  assert.equal(await savePrivateMp4({...common,file:reselected,sessionRef:{current:null}}),metadata.id);
+  assert.equal(reservations,1,"a reloaded page must not reserve a second video or consent");
+  assert.equal(tusCreates,1,"a reloaded page must use HEAD on the same TUS upload");
 });

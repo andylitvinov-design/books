@@ -7,6 +7,8 @@ import {
   createIdentityLinkProof, verifyIdentityLinkProof,
 } from '@/lib/app/telegram-oauth.mjs'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
+import { clarityDaybookPath, clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
+import {programFromContinuation,programDaybookPath,programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
@@ -16,13 +18,20 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
-import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
+import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
+import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight } from '@/lib/app/business-context-store'
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
+import { issueCoachContextSession } from '@/lib/app/coach-context-session'
+import { coachContextConsentOptions, manageCoachContextConsent } from '@/lib/app/coach-context-snapshot'
+import { reviewedReportMemoryCandidates } from '@/lib/personal-coaching/context-memory-candidates.mjs'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -52,7 +61,10 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate } from '@/lib/app/database'
+import { consumeRate,consumeRateBatch,transaction } from '@/lib/app/database'
+import {geminiLiveTokenQuota} from '@/lib/coaching/gemini-live-quota.mjs'
+import { operationHash } from '@/lib/app/crypto'
+import { verifiedTelegramSubject } from '@/lib/app/telegram-business-identity.mjs'
 import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
@@ -175,6 +187,46 @@ const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update
     }
   })
 }
+// Verified Telegram OIDC is the only bridge from Business messages to Cabinet.
+// Never derive Supabase Auth from bot messages, usernames, phones or profile text.
+async function syncVerifiedTelegramBusinessEnquiries(config,actor,identities,{reactivate=false}={}){
+ const subject=verifiedTelegramSubject(identities)
+ if(!subject)return {verified:false,linked:0,disabled:false}
+ const peerHash=operationHash({scope:'hh-telegram-business-peer',id:subject},config)
+ return transaction(config,actor,async db=>{
+  await db.query('select pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended($1,0))',
+   ['hh-tg-cabinet-autolink:'+actor.id])
+  if(reactivate)await db.query(
+   'delete from app_private.crm_tg_business_cabinet_optouts where account_id=$1',[actor.id])
+  const stopped=await db.query(
+   'select account_id from app_private.crm_tg_business_cabinet_optouts where account_id=$1',
+   [actor.id])
+  if(stopped.rowCount)return {verified:true,linked:0,disabled:true}
+  await db.query("select set_config('hh.telegram_verified_peer_hash',$1,true)",[peerHash])
+  const updated=await db.query(
+   'update app_private.crm_tg_business_service_sessions '+
+   'set account_id=$1,linked_at=coalesce(linked_at,now()) '+
+   "where telegram_peer_hash=$2 and contact_id is not null and stage='submitted' "+
+   'and account_id is null returning contact_id',
+   [actor.id,peerHash])
+  return {verified:true,linked:updated.rowCount,disabled:false}
+ })
+}
+async function disableVerifiedTelegramBusinessSync(config,actor){
+ return transaction(config,actor,async db=>{
+  await db.query('select pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended($1,0))',
+   ['hh-tg-cabinet-autolink:'+actor.id])
+  await db.query(
+   'insert into app_private.crm_tg_business_cabinet_optouts(account_id) values($1) '+
+   'on conflict(account_id) do nothing',[actor.id])
+  const result=await db.query(
+   'update app_private.crm_tg_business_service_sessions '+
+   'set account_id=null,linked_at=null where account_id=$1 returning contact_id',
+   [actor.id])
+  return result.rowCount
+ })
+}
+
 async function handle(request, { params }) {
   let auth
   try {
@@ -201,7 +253,7 @@ async function handle(request, { params }) {
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
       const selectedProvider = oauthProvider(authChoice)
       if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(body.continueTo) ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -214,8 +266,8 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null,
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira'].includes(continueTo) &&
-        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira', 'clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) &&
+        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (recipientSlug !== null) {
@@ -241,6 +293,36 @@ async function handle(request, { params }) {
         20,
         600,
       )
+      // One verified Telegram OAuth action, with no second confirmation:
+      // when Google is already signed in, link to that account, not a new one.
+      if(authChoice==='telegram'&&!native){
+        let existingActor=null
+        try{existingActor=await auth.verified()}
+        catch(e){if(e?.code!=='SIGN_IN_REQUIRED')throw e}
+        if(existingActor){
+          const {data:existingIdentities,error:identityError}=await auth.client.auth.getUserIdentities()
+          if(identityError||!Array.isArray(existingIdentities?.identities))
+            throw new AppError('IDENTITY_LIST_UNAVAILABLE',503)
+          if(!existingIdentities.identities.some(item=>item.provider===TELEGRAM_OIDC_PROVIDER)){
+            const {data:linked,error:linkError}=await auth.client.auth.linkIdentity({
+              provider:TELEGRAM_OIDC_PROVIDER,
+              options:{
+                scopes:selectedProvider.scopes,
+                redirectTo:origin+'/api/app/auth/callback?locale='+locale+'&continue=cabinet&link=1&quick=1',
+                skipBrowserRedirect:true,
+              },
+            })
+            if(linkError||!linked?.url||new URL(linked.url).origin!==config.supabaseUrl)
+              throw new AppError('IDENTITY_LINK_UNAVAILABLE',503)
+            const response=json({redirectUrl:linked.url})
+            response.cookies.set(IDENTITY_LINK_COOKIE,
+              createIdentityLinkProof(existingActor.id,TELEGRAM_OIDC_PROVIDER,config),{
+                path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
+              })
+            return response
+          }
+        }
+      }
       const { data, error } = await auth.client.auth.signInWithOAuth({
         provider: selectedProvider.provider,
         options: {
@@ -255,7 +337,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -299,7 +381,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -331,6 +413,10 @@ async function handle(request, { params }) {
             ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
           : continueTo === 'video-studio'
             ? `${origin}/${locale}/holistic-support/mandala`
+          : continueTo === 'clarity-daybook'
+            ? origin+clarityDaybookPath(locale)
+          : programFromContinuation(continueTo)
+            ? origin+programDaybookPath(locale,programFromContinuation(continueTo))
           : continueTo === 'my-coach-mira'
             ? `${origin}/${locale}/coaching/sessions?coach=mira`
           : continueTo === 'tests'
@@ -369,10 +455,16 @@ async function handle(request, { params }) {
                         ? `${origin}/admin/login?destination=acquisition`
                       : continueTo === 'practitioner-tools'
                         ? `${origin}/admin/login?destination=tools`
+                      : continueTo === 'practitioner-youtube'
+                        ? `${origin}/admin/login?destination=youtube`
                       : continueTo === 'practitioner-youtubeConnect'
                         ? `${origin}/admin/login?destination=youtubeConnect`
+                      : continueTo === 'practitioner-youtubeConnectEn'
+                        ? `${origin}/admin/login?destination=youtubeConnectEn`
                       : continueTo === 'practitioner'
                         ? `${origin}/admin/login`
+                        : continueTo === 'energywork-daybook'
+                          ? `${origin}/${locale}/academy/principles-of-energywork/daybook`
                         : continueTo === 'energywork'
                           ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
@@ -416,11 +508,25 @@ async function handle(request, { params }) {
           }))
       }
       const account=await createAppRepository(config).ensureAccount(actor)
+      // Auto-attach only proven Business enquiries; never invalidate login
+      // on a transient CRM error. Settings retries an authenticated POST.
+      if(telegramLoginEnabled()){
+        try{
+          const {data:verifiedIdentities,error:telegramIdentityError}=
+            await auth.client.auth.getUserIdentities()
+          if(!telegramIdentityError&&Array.isArray(verifiedIdentities?.identities))
+            await syncVerifiedTelegramBusinessEnquiries(config,actor,verifiedIdentities.identities)
+        }catch{
+          console.error('HH_TELEGRAM_BUSINESS_CABINET_AUTOLINK_RETRY_ON_SETTINGS')
+        }
+      }
       // On first Google sign-in, the client must finish explicit account
       // consent before a private thread is created. Keep the chosen master's
       // public slug through this existing Cabinet onboarding, never in storage.
-      const verifiedDestination=linkedAccount ? `${origin}/${locale}/app/settings?identity=linked` : continueTo==='direct-messages'&&account.onboardingState!=='active'
-        ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
+      const verifiedDestination=linkedAccount ? (url.searchParams.get('quick')==='1' ? destination : origin+'/'+locale+'/app/settings?identity=linked') : continueTo==='direct-messages'&&account.onboardingState!=='active'
+        ? origin+directMessengerSetupPath(locale,recipientSlug) : continueTo==='clarity-daybook'&&account.onboardingState!=='active'
+        ? origin+clarityOnboardingPath(locale) : programFromContinuation(continueTo)&&account.onboardingState!=='active'
+        ? origin+programOnboardingPath(locale,programFromContinuation(continueTo)) : destination
       return finishAuth(
         NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )
@@ -473,6 +579,54 @@ async function handle(request, { params }) {
         path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
       })
       return response
+    }
+
+    // Business messages are not Auth sessions. The client explicitly requests
+    // association AFTER Supabase verifies the official Telegram OIDC identity.
+    if (joined === 'auth/telegram-business-link' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,['reactivate'])
+      if(body.reactivate!==undefined&&body.reactivate!==true)
+        throw new AppError('INVALID_AUTOLINK_REQUEST',400)
+      const {data,error}=await auth.client.auth.getUserIdentities()
+      if(error||!verifiedTelegramSubject(data?.identities))
+        throw new AppError('TELEGRAM_IDENTITY_REQUIRED',428)
+      await consumeRate(config,{op:'telegram-business-cabinet-sync',account:actor.id},12,600)
+      // A plain POST retries the automatic association; only an explicit
+      // Resume action overrides a durable user opt-out.
+      const result=await syncVerifiedTelegramBusinessEnquiries(
+        config,actor,data.identities,{reactivate:body.reactivate===true})
+      return json(result)
+    }
+    if (joined === 'auth/telegram-business-unlink' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,[])
+      const unlinked=await disableVerifiedTelegramBusinessSync(config,actor)
+      return json({unlinked,disabled:true})
+    }
+    if (joined === 'auth/telegram-business-enquiries' && method === 'GET') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const enquiries=await transaction(config,actor,async db=>{
+        const result=await db.query(
+          "select distinct e.id,e.reference_code,e.service_title,e.locale,e.status,e.created_at "+
+          "from app.public_service_enquiries e "+
+          "join app_private.public_enquiry_contact_links l on l.enquiry_id=e.id "+
+          "join app_private.crm_tg_business_service_sessions s on s.contact_id=l.contact_id "+
+          "where s.account_id=$1 and l.evidence='verified_telegram_business_enquiry' "+
+          "order by e.created_at desc,e.id desc limit 100",[actor.id])
+        return result.rows.map(row=>({referenceCode:row.reference_code,
+          serviceTitle:row.service_title,locale:row.locale,status:row.status,
+          createdAt:row.created_at}))
+      })
+      return json({enquiries})
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
@@ -686,6 +840,18 @@ async function handle(request, { params }) {
       joined === 'export' ? 3 : 180,
       joined === 'export' ? 3600 : 60,
     )
+    if (joined === 'intelligence/plan' && method === 'POST') {
+      const body = await readBody(request, 16384)
+      const { planIntelligenceRequest } = await import('@/lib/holistic-support/intelligence-plan.mjs')
+      const { loadMeditationDiscovery } = await import('@/lib/holistic-support/meditation-discovery-server')
+      try {
+        return json(await planIntelligenceRequest(body, { loadCatalog: loadMeditationDiscovery }))
+      } catch (error) {
+        if (error?.message === 'INVALID_INTELLIGENCE_REQUEST')
+          throw new AppError('INVALID_INTELLIGENCE_REQUEST', 400)
+        throw error
+      }
+    }
     if (
       path[0] === 'save-intents' &&
       path.length === 3 &&
@@ -858,11 +1024,99 @@ async function handle(request, { params }) {
       {op:'coaching-openrouter-shared-daily'},40,86400)
     // Signed-in, stateless dialogue for the selected My Coach persona. Client
     // history is not stored; auth, same-origin protection and DB throttles apply.
+    if (joined === 'my-coach/stream') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
+      const stream=await myCoachGenerativeStreamTurn(await readBody(request,16384),
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor})
+      return new Response(stream,{status:200,headers:{
+        ...PRIVATE_HEADERS,
+        'Content-Type':'text/event-stream; charset=utf-8',
+        'Cache-Control':'private, no-store, max-age=0',
+        'X-Accel-Buffering':'no',
+      }})
+    }
+    // An authenticated, one-use credential constrained to a single FREE
+    // Gemini Live model, chosen fictional persona and allowed voice.
+    // The browser never receives the permanent API key. The audio WebSocket
+    // then goes straight to Google, avoiding a billable Vercel audio proxy.
+    if (joined === 'my-coach/live-token') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const vendor=geminiFreeLiveConfig(process.env)
+      if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      let start
+      try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
+      catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
+      // Abuse control remains before Google, but a failed token mint must not
+      // consume the real 2/hour, 4/day and 20/day successful-session quota.
+      const liveQuota=geminiLiveTokenQuota(actor.id,{
+        ownerTrial:practitionerEmailAllowed(actor),
+      })
+      await consumeRateBatch(config,liveQuota.attempts)
+      let token
+      try{token=await issueGeminiFreeLiveToken(vendor,start,{
+        signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
+      catch(error){
+        // Fixed allowlist only: NEVER log API key, token, URL, personal data,
+        // request payload, upstream response body or a raw exception message.
+        const reasons={
+          GEMINI_LIVE_RATE_LIMIT:['MY_COACH_GEMINI_LIVE_RATE_LIMIT',429],
+          GEMINI_LIVE_AUTH_FAILURE:['MY_COACH_GEMINI_LIVE_AUTH_FAILURE',503],
+          GEMINI_LIVE_PROVIDER_BAD_REQUEST:['MY_COACH_GEMINI_LIVE_SETUP_REJECTED',503],
+          GEMINI_LIVE_PROVIDER_MODEL_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_MODEL_UNAVAILABLE',503],
+          GEMINI_LIVE_PROVIDER_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_PROVIDER_UNAVAILABLE',503],
+          GEMINI_LIVE_TOKEN_INVALID:['MY_COACH_GEMINI_LIVE_BAD_TOKEN_REPLY',503],
+        }
+        const [safeCode,status]=reasons[error?.message]||
+          ['MY_COACH_GEMINI_LIVE_UNAVAILABLE',503]
+        console.warn('HH_MY_COACH_LIVE_TOKEN_FAILURE',safeCode)
+        throw new AppError(safeCode,status)
+      }
+      // Three original delivered-token limits are an atomic DB commit. A
+      // rejected rate dimension rolls back all of them; invalid Google
+      // setup/auth/outage (G-L1..G-L7) never reaches this point.
+      await consumeRateBatch(config,liveQuota.successful)
+      return json(token)
+    }
+    // Server-only evidence checkpoint for the transcript of a Free Live call.
+    // Absolutely no second Google model call, persistence or client history log.
+    if (joined === 'my-coach/live-checkpoint') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
+      let progress
+      try{progress=geminiFreeLiveCheckpoint(await readBody(request,8192))}
+      catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
+      return json(progress)
+    }
+    // Metadata-only check: no client transcript, API key or test generation.
+    if (joined === 'my-coach/engines') {
+      if (method !== 'GET') throw new AppError('NOT_FOUND',404)
+      return json({schema:'HH_MY_COACH_ENGINES_V1',
+        gemini_free:Boolean(geminiCoachTextConfig(process.env,'gemini_free')),
+        gemini_paid:Boolean(geminiCoachTextConfig(process.env,'gemini_paid')),
+        gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
+        gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
+        gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
+        gemini_live_reason:geminiFreeLiveUnavailableReason(process.env),
+        live:false})
+    }
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
+      const body=await readBody(request,16384)
+      const geminiMode=['gemini_free','gemini_paid'].includes(body?.engine)?body.engine:null
+      // Per-user + global limits are consumed BEFORE a model request. No
+      // chargeable second provider call or automatic upgrade on error.
+      const reserveGeminiCall=async()=>{
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-global-day'},
+          geminiMode==='gemini_paid'?12:30,86400)
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-actor-day',actor:actor.id},
+          geminiMode==='gemini_paid'?6:16,86400)
+      }
+      return json(await myCoachGenerativeTurn(body,
+        {signal:request.signal,reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
+          config,actor}))
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
@@ -904,8 +1158,29 @@ async function handle(request, { params }) {
       if (path.length===1 && method==='GET') return json(await listCoachingReports(config,actor))
       if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
       if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
+      if (path.length===3 && path[2]==='memory-candidates' && method==='GET') {
+        await consumeRate(config,{op:'coaching-memory-review',actor:actor.id},60,3600)
+        const {report}=await readCoachingReport(config,actor,path[1])
+        return json({candidates:reviewedReportMemoryCandidates(report)})
+      }
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
+    }
+    if (joined === 'coaching-context/session') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      await consumeRate(config,{op:'coaching-context-session',actor:actor.id},30,3600)
+      return json(issueCoachContextSession(config,actor))
+    }
+    if (joined === 'coaching-context/consent') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
+      const body=await readBody(request,2048)
+      if (body?.operation === 'options' && typeof body.contextSessionToken === 'string')
+        return json(await coachContextConsentOptions(config,actor,process.env,body.contextSessionToken))
+      return json(await manageCoachContextConsent(config,actor,body))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
@@ -925,6 +1200,13 @@ async function handle(request, { params }) {
       if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
         return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
       }
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'business-context') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await readBusinessContext(config,actor))
+      if (path.length===2 && path[1]==='plaud-import' && method==='POST') return json(await importPlaudBusinessContext(config,actor,await readBody(request,131072)));
+      if (path.length===2 && path[1]==='review' && method==='POST') return json(await reviewBusinessInsight(config,actor,await readBody(request,1024)));
       throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {

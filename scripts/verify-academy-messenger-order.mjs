@@ -65,7 +65,15 @@ for (const browserType of [chromium, webkit]) {
             assert.equal(target.hostname, hosts[i], label);
             assert.match(target.searchParams.get("text") || "", /Temple Studies/, label + ": service preserved");
             const message = target.searchParams.get("text") || "";
-            assert.match(message, /holistichouse\.vercel\.app\/(?:en\/|ru\/|es\/)?academy\/temple-studies/, label + ": canonical Academy page retained");
+            if (names[i] === "whatsapp") {
+              assert.match(message, /holistichouse\.vercel\.app\/(?:en\/|ru\/|es\/)?academy\/temple-studies/,
+                label + ": canonical public Academy page retained only in WhatsApp draft");
+            } else {
+              assert.equal(target.pathname, "/holistichouse", label + ": Telegram Business owner chat");
+              assert.deepEqual([...target.searchParams.keys()], ["text"], label + ": no bot/start/identity token");
+              assert.doesNotMatch(message, /https?:\/\/|\/academy\/|(?:Reference|Context|Page):|hhreview_|hhtalk_/i,
+                label + ": Telegram receives only the approved programme title, no page or personal context");
+            }
             assert.doesNotMatch(message, /\/academy\/reiki\/kundalini-reiki/i, label + ": no stale course URL");
             assert.doesNotMatch(message, /token=|password|private-selector|\/client\//i, label + ": no private data");
           }

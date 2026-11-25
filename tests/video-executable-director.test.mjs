@@ -164,7 +164,8 @@ test("verified script is submitted through the only existing renderer and soundt
   assert.match(editor,/setAttachedAudio\(soundtrack==="none"\?null/);
   assert.match(editor,/setSoundVolume\(scenario\.audio\.volumePercent\)/);
   assert.match(editor,/setCaptionMode\("none"\)/);
-  assert.match(editor,/onCreate=\{createQuickVideo\}/);
+  assert.match(editor,/onCreate=\{openReadyForGeneration\}/);
+   assert.match(editor,/onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/);
   assert.match(editor,/new MediaRecorder\(/);
   assert.match(route,/requireSameOrigin\(request,config\)/);
   assert.match(route,/consumeRate\(config/);

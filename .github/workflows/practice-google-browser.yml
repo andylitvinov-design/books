@@ -5,6 +5,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'app/api/app/**/route.js'
+      # Signed CRM messenger webhooks are independently owned by CRM, App
+      # security and required Core; they cannot affect Google Practice return.
+      # Keep the shared catch-all dispatcher and every other API route.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'
@@ -12,6 +16,11 @@ on:
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   push:
     branches: ['codex/public-book-library']
     paths:

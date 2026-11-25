@@ -4,7 +4,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {getAppConfig} from '@/lib/app/config'
 import {seal} from '@/lib/app/crypto'
 import {PRACTITIONER_ID} from '@/data/app-services'
-import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-service'
+import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 const COOKIE='hh_tgvideo_oauth_state'
@@ -20,7 +20,7 @@ export async function GET(request){
  // existing verified-owner bridge and return to this exact OAuth start route.
  // A login redirect never grants YouTube access or creates a video.
  if(!await requireAdminRequest())return NextResponse.redirect(
-   target==='en'?'https://holistichouse.vercel.app/admin/login':
+   target==='en'?'https://holistichouse.vercel.app/admin/login?destination=youtubeConnectEn':
      'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect',
    {status:303,headers:HEADERS})
  if(!ownerVideoOauthConfigured())return new Response(
