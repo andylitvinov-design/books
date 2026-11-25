@@ -9,13 +9,13 @@ import {
 } from '../lib/coaching/gemini-voice-catalog.mjs'
 
 const expected = {
-  mira: ['Erinome','Gacrux'],
-  max: ['Orus','Orus'],
-  sofia: ['Vindemiatrix','Sulafat'],
-  alex: ['Alnilam','Charon'],
+  mira: ['Erinome','Sulafat'],
+  max: ['Alnilam','Charon'],
+  sofia: ['Vindemiatrix','Gacrux'],
+  alex: ['Enceladus','Orus'],
   merlin: ['Sadaltager','Algenib'],
-  harry: ['Achird','Achird'],
-  genie: ['Puck','Orus'],
+  harry: ['Achird','Orus'],
+  genie: ['Puck','Achird'],
   meditations: ['Algieba','Algieba'],
 }
 
