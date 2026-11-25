@@ -363,6 +363,20 @@ export function classifyPrState(pr, ctx, requireCurrentBase = false) {
   return null;
 }
 
+// A protected target advance can temporarily make GitHub mergeability null.
+// This helper is read-only, bounded, and never accepts an unproven target.
+export async function awaitPositiveMergeability(api, ctx, target, sleep = delay) {
+  for (const wait of [1000, 2000, 4000]) {
+    await sleep(wait);
+    const fresh = await api.pr(ctx.number);
+    assertSame(fresh, ctx, false);
+    if (await api.target() !== target) return null;
+    if (fresh.mergeable === true && fresh.base.sha === target) return fresh;
+    if (fresh.mergeable !== null && fresh.mergeable !== true) return null;
+  }
+  return null;
+}
+
 function assertSame(pr, ctx, requireCurrentBase = false) {
   const reason = classifyPrState(pr, ctx, requireCurrentBase);
   if (reason) throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:' + reason);
@@ -479,7 +493,7 @@ export async function verify(api,ctx,files,options={}) {
   const approvedBaseChanges = new Set();
   const approvedPresentationBases = new Set();
   const approvedDisjointBases = new Set();
-  async function verifyCurrentBase(live) {
+  async function verifyCurrentBase(live, allowMergeabilityRetry = true) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
     // GitHub's pull_request.base.sha is an event/PR snapshot and can lag the
@@ -598,6 +612,35 @@ export async function verify(api,ctx,files,options={}) {
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
           !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves) {
+        // Retry only an existing positive-only compatibility proof, not actual
+        // overlap or an unproven compare. Null never authorizes reuse.
+        const positiveOnlyProof = allowMergeabilityRetry && live.mergeable === null &&
+          typeof api.target === 'function' && maxWait > 0 &&
+          (safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeDetachedCiSourceAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, true) ||
+           (changedRows.every(row => !row.previous_filename &&
+             ['M','A','modified','added'].includes(row.status)) &&
+            safeUnrelatedPublicLeafAdvance(diff, ctx.base, liveBaseSha, changed)));
+        if (positiveOnlyProof) {
+          const fresh = await awaitPositiveMergeability(api, ctx, liveBaseSha, sleep);
+          if (fresh) {
+            console.log('CI_BASE_ADVANCE_MERGEABILITY_REFRESH: recovered positive GitHub mergeability without a new CI wave');
+            return verifyCurrentBase(fresh, false);
+          }
+        }
+        // Report bounded causal evidence, not an unsupported root classification.
+        const rows = Array.isArray(diff?.files) ? diff.files : [];
+        const candidate = new Set(changed);
+        console.log('CI_BASE_ADVANCE_BLOCKED:' + JSON.stringify({
+          tested_base:ctx.base, observed_base:liveBaseSha, head:ctx.head,
+          mergeable:live.mergeable ?? null, compare_status:diff?.status ?? null,
+          ahead_by:diff?.ahead_by ?? null, behind_by:diff?.behind_by ?? null,
+          reported_file_rows:rows.length, overlap:rows.filter(row=>candidate.has(row?.filename) ||
+            candidate.has(row?.previous_filename)).map(row=>row.filename).slice(0,30),
+          target_paths:rows.slice(0,30).map(row=>({path:row?.filename,status:row?.status})),
+          proof:'NOT_ACCEPTED',
+        }));
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       if (unrelatedPublicLeaves) {

@@ -42,3 +42,17 @@
 
 /* Single edge-to-edge Samir portrait in the normal and expanded live hero. */
 .media[data-coach-motion-media='genie'][data-coach-motion-context='session']{inset:0;height:100%;width:100%;max-width:none;aspect-ratio:auto;border-radius:inherit}
+
+/* Large portraits retain the composition of each master. Compact avatars and
+   directory tiles keep their existing edge-to-edge thumbnail crop. */
+.media:not([data-coach-motion-media='genie']):is([data-coach-motion-context='hero'],[data-coach-motion-context='session']){
+  background:#171a18;
+}
+.media:not([data-coach-motion-media='genie']):is([data-coach-motion-context='hero'],[data-coach-motion-context='session']) :is(.poster,.video){
+  object-fit:contain;
+  object-position:center;
+}
+.media:not([data-coach-motion-media='genie'])[data-coach-motion-context='session']{
+  inset:0 0 0 auto;
+  height:100%;
+}

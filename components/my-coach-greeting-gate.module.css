@@ -54,3 +54,66 @@
   .greetingQuote{font-size:16px;max-height:94px}
   .largePlay{width:96px;height:96px}.freeNotice{font-size:11px;padding:8px 12px}}
 @media(prefers-reduced-motion:reduce){.screen{scroll-behavior:auto}}
+
+/* Three actions fit within the same mobile greeting; the native modal sits above
+   the clipped cinematic portrait and restores focus when dismissed. */
+.completed{gap:8px}
+.greetingQuote{max-height:80px;font-size:clamp(15px,3.4vw,20px)}
+.primary,.secondary,.replay{min-height:48px;padding:10px 12px;font:750 clamp(13px,3.4vw,17px)/1.25 system-ui}
+.replay{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #d2ead59c;
+ border-radius:99px;color:#f5fff7;background:#123e33bb;cursor:pointer;text-align:center}
+.replay:focus-visible,.topicDialog button:focus-visible{outline:2px solid #00896c;outline-offset:3px}
+.topicDialog{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,530px);max-width:100%;
+ max-height:min(78dvh,680px);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;
+ padding:21px 17px max(20px,env(safe-area-inset-bottom));border:0;border-radius:26px 26px 0 0;
+ background:#fbf5e9;color:#133e35;box-shadow:0 -16px 70px #092e2b40}
+.topicDialog::backdrop{background:#091f1bbb;backdrop-filter:blur(3px)}
+.topicHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:0 0 15px}
+.topicHeader h2{margin:0 0 4px;font:700 27px/1.15 Georgia,serif;color:#133e35}
+.topicHeader p{margin:0;font:500 13px/1.4 system-ui;color:#52675a}
+.topicClose{display:grid;place-items:center;width:44px;height:44px;border:1px solid #cad8c9;
+ border-radius:50%;background:#fffaf1;color:#133e35;flex-shrink:0;cursor:pointer}
+.topicGroups{display:grid;gap:9px}
+.topicGroup{border:1px solid #d7dfce;border-radius:15px;overflow:hidden;background:#fffdf5}
+.topicGroupButton,.topicChoice{border:0;width:100%;min-height:50px;display:flex;align-items:center;gap:10px;
+ text-align:left;background:transparent;color:#184e3d;cursor:pointer;font:650 15px/1.3 system-ui;padding:12px}
+.topicGroupButton>span,.topicChoice>span:nth-child(2){flex:1}
+.topicGroupButton small{font:650 12px system-ui;color:#52675a}
+.topicGroupButton[aria-expanded=true]{background:#e1efe4}
+.topicGroupButton[aria-expanded=true] svg{transform:rotate(180deg)}
+.topicChoice{font-weight:550;border-top:1px solid #e5e7dc}
+.topicChoice:active{background:#e1efe4}
+.topicNumber{font:650 12px system-ui;color:#557666;min-width:24px;text-align:center}
+@media(max-width:699px){.greetingQuote{max-height:57px;font-size:15px;margin-bottom:2px}.completed{gap:7px}
+ .primary,.secondary,.replay{min-height:45px}.hero:has(.completed) .heroText{top:67px}
+ .hero:has(.completed){min-height:440px}}
+
+/* Keep the complete master frame visible inside the existing greeting hero. */
+.screen:not([data-my-coach-greeting-gate='genie']) .hero :global([data-coach-motion-media]){
+  background:#171a18;
+}
+.screen:not([data-my-coach-greeting-gate='genie']) .hero :global([data-coach-motion-media]) :is(img,video){
+  object-fit:contain!important;
+  object-position:center;
+}
+.screen:not([data-my-coach-greeting-gate='genie']) .shade{
+  inset:auto 0 0;
+  height:8rem;
+  background:linear-gradient(to top,rgba(0,0,0,.84),transparent);
+}
+.screen:not([data-my-coach-greeting-gate='genie']) .greetingQuote,
+.screen:not([data-my-coach-greeting-gate='genie']) .hero:has(.completed) .heroText{
+  width:fit-content;
+  max-width:calc(100% - 3rem);
+  padding:.3em .55em;
+  border-radius:.65rem;
+  background:rgba(12,23,19,.82);
+}
+
+/* Browse adjacent public coaches without disturbing vertical profile scrolling. */
+.hero[data-coach-greeting-swipe="true"]{touch-action:pan-y pinch-zoom}
+.swipePrevious,.swipeNext{position:absolute;z-index:5;top:49%;transform:translateY(-50%);
+ display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #e6f5e4aa;
+ border-radius:50%;background:#153c31a6;color:#fff;cursor:pointer;touch-action:manipulation}
+.swipePrevious{left:10px}.swipeNext{right:10px}
+.swipePrevious:focus-visible,.swipeNext:focus-visible{outline:3px solid #fbec97;outline-offset:3px}

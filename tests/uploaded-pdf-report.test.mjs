@@ -24,7 +24,8 @@ test('publication defaults closed, saved media route authenticates before inline
   assert.match(source,/HH_PDF_REPORT_GOOGLE_CRM_READY/)
   assert.match(source,/PRIMARY_PDF_REQUIRED/)
   const route=readFileSync(new URL('../app/api/app/saved-sessions/[id]/media/[assetId]/route.js',import.meta.url),'utf8')
-  assert.ok(route.indexOf('await auth.verified()')<route.indexOf('inlinePdf:'))
+  const verified=route.indexOf('await auth.verified()'), stream=route.indexOf('inlinePdf:')
+  assert.ok(verified>=0 && stream>verified,'verified account before inline PDF streaming')
   assert.match(route,/saved\.session\.primaryPdfAssetId===assetId/)
 })
 

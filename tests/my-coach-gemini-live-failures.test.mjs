@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {greetingSwipeDirection,greetingCoachNeighbor} from '../lib/coaching/coach-greeting-swipe.mjs'
+import {PUBLIC_COACH_RAIL_IDS} from '../lib/coaching/persona-registry.mjs'
 import {
   geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,
   normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken
@@ -58,7 +60,7 @@ test('provider token errors return precise safe categories, never upstream body 
         const payload=JSON.parse(options.body)
         assert.ok(payload.bidiGenerateContentSetup)
         assert.equal(Object.hasOwn(payload,'liveConnectConstraints'),false)
-        assert.equal(Object.hasOwn(payload,'fieldMask'),false)
+        assert.ok(payload.fieldMask.split(',').includes('systemInstruction'))
         return {ok:false,status,async json(){throw Error(secretSentinel)}}
       },
     }),error=>error.message===code&&
@@ -78,7 +80,7 @@ test('G-L6 retries one server-owned Free token after transient 5xx without new m
       assert.equal(body.uses,1)
       assert.equal(body.bidiGenerateContentSetup.model,'models/gemini-3.1-flash-live-preview')
       assert.match(body.bidiGenerateContentSetup.systemInstruction.parts[0].text,/coaching method/)
-      assert.equal(Object.hasOwn(body,'fieldMask'),false)
+      assert.equal(body.fieldMask.split(',').includes('sessionResumption'),false)
       bodies.push(options.body)
       return bodies.length===1?{ok:false,status:503}:
         {ok:true,status:200,json:async()=>({name:'auth_tokens/recovered-one-use'})}
@@ -271,8 +273,9 @@ test('free first-party video greeting gates Live Play, not charge on preview',()
   assert.match(gate,/data-coach-greeting-start/)
   assert.match(gate,/data-coach-greeting-replay/)
   assert.match(gate,/phase==='complete'/)
-  assert.match(gate,/priorSession\?t\.continue:t\.start/)
-  assert.match(gate,/hasCoachGreetingConnection\(personaId\)/)
+  assert.match(gate,/data-coach-greeting-thematic/)
+  assert.match(gate,/chooseSession\(INTRODUCTORY_COACH_SESSION_ID\)/)
+  assert.match(gate,/data-coach-topic-dialog/)
   assert.match(dialogue,/markCoachGreetingConnected\(personaId\)/)
   const marker=load('lib/coaching/coach-greeting-visit.mjs')
   assert.match(marker,/PUBLIC_COACH_PERSONA_IDS\.includes\(personaId\)/)
@@ -344,4 +347,31 @@ test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting
  assert.match(live,/restoreCoachIos27LiveDuplex\(navigator\)/)
  assert.match(live,/getUserMedia\(\{/)
  assert.match(live,/new GeminiLivePcmPlayer\(context/)
+})
+
+
+test('greeting swipe follows public rail in both directions, ignores vertical, short and invalid gestures',()=>{
+ const ids=PUBLIC_COACH_RAIL_IDS
+ assert.equal(ids[0],'merlin')
+ assert.equal(greetingSwipeDirection(-90,12),1)
+ assert.equal(greetingSwipeDirection(90,-12),-1)
+ for(const [dx,dy] of [[20,0],[0,100],[60,65],[90,80],[NaN,0]])assert.equal(greetingSwipeDirection(dx,dy),0)
+ for(let i=0;i<ids.length;i++){
+   assert.equal(greetingCoachNeighbor(ids,ids[i],1),ids[(i+1)%ids.length])
+   assert.equal(greetingCoachNeighbor(ids,ids[i],-1),ids[(i+ids.length-1)%ids.length])
+ }
+ assert.equal(greetingCoachNeighbor(ids,'hidden',1),null)
+ assert.equal(greetingCoachNeighbor(ids,'merlin',0),null)
+})
+test('greeting navigation cancels old audio before switching and never starts Live',()=>{
+ const gate=load('components/my-coach-greeting-gate.jsx')
+ const navigation=gate.slice(gate.indexOf('function switchCoach('),gate.indexOf('function beginSwipe('))
+ assert.ok(navigation.includes('greetingCoachNeighbor(PUBLIC_COACH_RAIL_IDS,personaId,direction)'))
+ assert.ok(navigation.includes('coachSessionHref(lang,nextId)'))
+ assert.ok(navigation.indexOf('audioRun.current++')<navigation.indexOf('player.current?.cancel?.()'))
+ assert.ok(navigation.indexOf('player.current?.cancel?.()')<navigation.indexOf('router.push(href)'))
+ assert.doesNotMatch(navigation,/onStart\?\.|startSession\(|playGreeting\(|fetch\(/)
+ assert.ok(gate.includes('onTouchCancel')&&gate.includes('onTouchEnd')&&gate.includes('onClickCapture'))
+ assert.ok(load('components/my-coach-greeting-gate.module.css').includes('touch-action:pan-y pinch-zoom'))
+ assert.ok(load('components/public-coaching-discovery.jsx').includes('MyCoachLiveDialogue key={selectedPersona.id}'))
 })
