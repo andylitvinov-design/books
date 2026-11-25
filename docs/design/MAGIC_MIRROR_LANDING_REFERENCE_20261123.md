@@ -1,6 +1,6 @@
 # Magic Mirror — owner mobile reference alignment · 2026-11-23
 
-Status: **SOURCE CHANGE STAGED FOR PR; LIVE AND PIXEL-LEVEL WEBKIT QA NOT YET VERIFIED**.
+Status: **SOURCE VISUAL FOLLOW-UP STAGED FOR PR; LIVE AND PIXEL-LEVEL WEBKIT QA NOT YET VERIFIED**.
 Owner supplied two screenshots in this chat. The reference is the **second** screenshot (Russian); current is the **first** (English).
 Never commit the original full screenshots: only safe image-area crops from the approved illustration portions are used in the public AVIF strip.
 
@@ -34,3 +34,8 @@ Functional E2E status: **NOT RE-RUN**. Live status: **NOT DEPLOYED** until indep
 
 ## Cascade correction · same PR exact-head repair
 The global Video Studio stylesheet has higher-specificity `!important` rules on `.quickBuilder` and `.quickBrandBar` than the initial module-local landing selector. Landing-only selectors include the parent workspace/advanced/landing attributes to win that explicit cascade, without editing shared CSS. Title content is anchored at its reference top while the extra min-height contributes spacing **below** the headline rather than moving it downward.
+
+## Owner follow-up — iPhone crop and visible third card (23 November)
+New screenshots of the shipped page show the reference's third work card extends behind the fixed dock, and the portrait/first-card seam is around 40 physical pixels lower than in the approved reference. We keep the **existing** 3-card Scope→Goal→Format route and mobile global dock. A tightly scoped CSS follow-up makes the portrait/header land higher, widens the cards, reveals more of the illustrated woman by reducing the dark overlay and adds scroll clearance after the third card for short iPhone viewports, without shrinking legible text or changing the checkout/XP/MP4 flow.
+
+This patch does **not** make the 180×540 / 4,485-byte sprite high resolution: it remains a known image-fidelity limitation pending an authorized larger first-party asset. Code/source assertions can catch CSS regressions, but rendered Chromium/WebKit 320/354/390/430 with real navigation, dock overlap checks and screenshot overlays are still required; no unrun visual QA or LIVE acceptance is claimed.

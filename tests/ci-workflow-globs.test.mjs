@@ -712,3 +712,81 @@ test('client Live Photo APIs do not fan out into unrelated coaching, course, Pra
   assert.equal(matchesTrigger(parsePrTrigger(workflow('hh-billing-isolated.yml')),
     ['supabase/migrations/20261121221900_hh_client_live_photo_first_free_paid_v1.sql'], target), true);
 });
+
+
+test('CI latency: keep all Public Services cases, balance two lanes and fail closed on build prerequisites', () => {
+  const s=workflow('hh-public-services-production.yml');
+  const a=s.split('          lane_a() {')[1].split('          lane_b() {')[0];
+  const b=s.split('          lane_b() {')[1].split('          lane_a &')[0];
+  const cases=z=>[...z.matchAll(/^\s+run_case "([^"]+)" node scripts\/\1 \|\| failed=1$/gm)].map(m=>m[1]);
+  const times={
+    'verify-alchemy-one-screen.mjs':13, 'verify-holistic-support-recommendations-mobile.mjs':175,
+    'verify-public-services-production.mjs':386, 'verify-service-cart-browser.mjs':16,
+    'verify-holistic-master-browser.mjs':38, 'verify-holistic-topics-browser.mjs':106,
+    'verify-direction-focus-mobile.mjs':12, 'verify-ideas-mobile-browser.mjs':127,
+    'verify-home-consultation-first-screen.mjs':32, 'verify-business-quiz-mobile.mjs':66,
+    'verify-reiki-mobile-order-browser.mjs':9, 'verify-talisman-google-checkout-browser.mjs':11,
+    'verify-storefront-shop-browser.mjs':7, 'verify-academy-messenger-order.mjs':41,
+  };
+  const all=[...cases(a),...cases(b)];
+  assert.deepEqual(all.sort(),Object.keys(times).sort(),'exactly the same 14 real cases');
+  const weight=z=>cases(z).reduce((n,k)=>n+times[k],0);
+  assert.ok(Math.max(weight(a),weight(b))<=550,'balance using measured baseline, not extra runners');
+  assert.ok(s.includes('wait "$lane_a_pid"')&&s.includes('wait "$lane_b_pid"'));
+  assert.ok(s.includes('node scripts/prepare-my-coach-natural-mp4.mjs &&'));
+  assert.ok(s.includes('./node_modules/.bin/next build --no-lint'));
+  assert.ok(s.includes('else\n              npm run build\n            fi'));
+  assert.ok(s.includes('build_public_candidate > artifacts/public-services-production/build.log 2>&1 || build_code=$?'));
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+test('duplicate specialist lint is removed only on protected production PRs; real build, browser and read-only caches remain',()=>{
+  for (const file of ['release-reaudit.yml','site-video-browser.yml']) {
+    const s=workflow(file);
+    assert.ok(s.includes('Restore trusted production Next compiler cache'));
+    assert.ok(s.includes('Restore trusted production-owned scenario media cache'));
+    assert.ok(s.includes('hh-core-next-v1-')&&s.includes('hh-core-media-v1-'));
+    assert.ok(s.includes('path: .next/cache')&&s.includes('uses: actions/cache/restore@v4'));
+    assert.doesNotMatch(s,/actions\/cache\/save@v4/);
+    assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then'));
+    assert.ok(s.includes('npm run build -- --no-lint'));
+    assert.ok(s.includes('else\n            npm run build\n          fi'));
+    assert.ok(s.includes('npx eslint'));
+    assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+});
+
+
+test('CI reduction phase 2: duplicate payment and Messenger suites execute once; specialist safety is retained',()=>{
+  const billing=workflow('hh-billing-isolated.yml');
+  assert.equal((billing.match(/(?:^| )tests\/service-square-api-cart\.test\.mjs(?=\s|$)/gm)||[]).length,1);
+  for(const name of ['tests/video-credits-postgres.integration.mjs','tests/video-paid-orders-postgres.integration.mjs','tests/square-ledger-isolated.integration.mjs','npm run test:billing:db','postgres:17-alpine']) assert.ok(billing.includes(name),name);
+  const ia=workflow('ia-v2.yml');
+  assert.ok(ia.includes('operatorOnly=operatorOnly&&messengerOnly'));
+  assert.ok(ia.includes('tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs'));
+  assert.ok(ia.includes('run: node --test tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs'));
+  assert.ok(ia.includes('npm run test:app'));
+});
+
+test('CI reduction phase 2: defer only Draft expensive jobs and duplicate production-PR setup/lint',()=>{
+  const gate= "        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const jobGate= "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for(const [file,job] of [['hh-billing-isolated.yml','billing-database'],['release-reaudit.yml','browser']]) {
+    const y=workflow(file);
+    assert.ok(y.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n"));
+    assert.ok(y.includes('  '+job+':\n'+jobGate));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
+  }
+  const install=workflow('holistic-house-mobile-install.yml');
+  assert.ok(install.includes('run: npm ci --no-audit --no-fund\n'+gate));
+  assert.ok(install.includes('name: Lint signed-in install prompt, global PWA registration and onboarding\n'+gate));
+  assert.ok(install.includes('node --test tests/holistic-house-pwa.test.mjs'));
+  const youtube=workflow('youtube-phone-uploader.yml');
+  for(const name of ['Install locked dependencies','Lint practitioner YouTube implementation','Lint owner Telegram-to-phone handoff']) assert.ok(youtube.includes('name: '+name+'\n'+gate));
+  assert.ok(youtube.includes('node --test tests/youtube-phone-upload.test.mjs'));
+  for(const y of [install,youtube]) {
+    assert.ok(y.includes('npm run build'));
+    assert.ok(y.includes('if: github.event_name != \'pull_request\''));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
+  }
+});

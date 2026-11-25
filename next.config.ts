@@ -35,9 +35,14 @@ const homepagePublicImageSources = [
 // The existing authenticated one-to-one coaching page supports voice dictation
 // and optional AI voice. Grant microphone only to these exact private pages;
 // all other Cabinet, reports and API routes remain denied.
-const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching"];
-// Explicit microphone opt-in for the selected AI persona dialogue only.
-const publicMyCoachVoiceSources = ["/en/coaching/sessions", "/ru/coaching/sessions", "/es/coaching/sessions"];
+const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching", "/es/app/coaching"];
+// Same-origin permission only on voice entry and coaching pages; consent and
+// the explicit user gesture remain required. Camera and location stay denied.
+const publicMyCoachVoiceSources = [
+  "/", "/en", "/ru", "/es",
+  "/my-coach", "/en/my-coach", "/ru/my-coach", "/es/my-coach",
+  "/coaching/sessions", "/en/coaching/sessions", "/ru/coaching/sessions", "/es/coaching/sessions",
+];
 
 const liveAudioHostSources = [
   "/en/live/host", "/ru/live/host", "/es/live/host",
@@ -176,6 +181,8 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // Reuse the pinned encoder only when recording a missing public greeting.
+    "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.

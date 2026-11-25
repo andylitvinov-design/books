@@ -10,6 +10,7 @@ import {createDailyIntentionRepository} from '../lib/app/daybook-daily.js'
 import {createDaybookJournalRepository} from '../lib/app/daybook-journal.js'
 import {readCoachingLifePlan,exportCoachingLifePlan} from '../lib/app/coaching-life-plan.js'
 import {closeDatabase,transaction} from '../lib/app/database.js'
+import {VECTOR_SPHERES,VECTOR_AXES,VECTOR_SELECTION_VERSION,VECTOR_SELECTION_LEGACY_VERSION,emptyVectorSelectionDraft,vectorSelectionGoalDraft} from '../lib/app/daybook-vector-selection.mjs'
 const url=process.env.HH_DAYBOOK_SCHEMA_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw Error('ISOLATED_DATABASE_REQUIRED')
 const parsed=new URL(url)
@@ -42,6 +43,45 @@ test('existing canonical Life Plan reader and export include the new owner-autho
  const exported=await exportCoachingLifePlan(config,a)
  assert.equal(exported.goals.length,1);assert.equal(exported.actions.length,1)
  assert.equal(JSON.stringify(exported).includes(goal.obstacles),true)
+})
+test('guided goal roundtrip uses canonical finance, selected ratings and immutable v1/v2 origins',async()=>{
+ const actor={id:randomUUID(),claims:{sub:null,session_id:randomUUID()}};actor.claims.sub=actor.id
+ await admin.query("insert into app.accounts values($1,'active','active')",[actor.id])
+ await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])
+ try{
+  const draft={...emptyVectorSelectionDraft(randomUUID()),sphereId:'work',focusId:'finance',axisId:'anchor',
+   spheres:{work:{current:'0',desired:'8'}},axes:{anchor:{current:'2',desired:'9'}},statement:'Synthetic financial safety goal',why:'Synthetic reason'}
+  const input={...vectorSelectionGoalDraft(draft,'2026-11-23T23:00:00.000Z'),operationId:randomUUID()}
+  const results=await Promise.all([goals.save(actor,input),goals.save(actor,input)])
+  assert.equal(results.filter(result=>result.replayed).length,1)
+  const reopened=createPersonalGoalRepository(config),saved=(await reopened.read(actor,input.id)).goal
+  assert.equal(saved.areaKey,'finance');assert.equal(saved.vectorSelection.version,VECTOR_SELECTION_VERSION)
+  assert.deepEqual(saved.vectorSelection.spheres,{work:{current:0,desired:8}})
+  assert.deepEqual(saved.vectorSelection.axes,{anchor:{current:2,desired:9}})
+  const plan=await readCoachingLifePlan(config,actor,{locale:'ru'})
+  assert.equal(plan.goals.length,1);assert.equal(plan.goals[0].title,draft.statement)
+  assert.equal(plan.domains.find(domain=>domain.areaKey==='finance').goals[0].id,input.id)
+  assert.equal(Object.hasOwn(plan.goals[0],'vectorSelection'),false,'the real cabinet list returns base fields; editing reads the full goal')
+  await assert.rejects(reopened.read(b,input.id),{code:'NOT_FOUND'})
+  const raw=(await admin.query('select title_ciphertext from app_private.coaching_goals where id=$1',[input.id])).rows[0]
+  assert.equal(raw.title_ciphertext.includes(draft.statement),false)
+  const edit={...input,revision:1,operationId:randomUUID(),title:'Synthetic refined financial goal'};delete edit.vectorSelection
+  await reopened.save(actor,edit)
+  assert.equal((await reopened.save(actor,edit)).replayed,true)
+  const edited=(await createPersonalGoalRepository(config).read(actor,input.id)).goal
+  assert.equal(edited.title,edit.title);assert.deepEqual(edited.vectorSelection,saved.vectorSelection)
+  await assert.rejects(reopened.save(actor,{...edit,revision:2,operationId:randomUUID(),vectorSelection:{...saved.vectorSelection,focusId:'career_business'}}),{code:'GOAL_VECTOR_ORIGIN_IMMUTABLE'})
+  const legacy=emptyVectorSelectionDraft(randomUUID(),VECTOR_SELECTION_LEGACY_VERSION)
+  for(const [track,items] of [['spheres',VECTOR_SPHERES],['axes',VECTOR_AXES]])for(const item of items)legacy[track][item.id]={current:'1',desired:'7'}
+  Object.assign(legacy,{sphereId:'work',axisId:'freedom',statement:'Synthetic original complete profile goal'})
+  const legacyInput={...vectorSelectionGoalDraft(legacy,'2026-11-23T22:00:00.000Z'),operationId:randomUUID()}
+  await goals.save(actor,legacyInput)
+  const legacySaved=(await reopened.read(actor,legacyInput.id)).goal
+  assert.deepEqual(legacySaved.vectorSelection,legacyInput.vectorSelection)
+  assert.equal(legacySaved.vectorSelection.version,VECTOR_SELECTION_LEGACY_VERSION)
+  assert.equal(Object.keys(legacySaved.vectorSelection.spheres).length,4);assert.equal(Object.keys(legacySaved.vectorSelection.axes).length,8)
+  assert.equal((await readCoachingLifePlan(config,actor,{locale:'ru'})).goals.length,2)
+ }finally{await admin.query('delete from app.accounts where id=$1',[actor.id]);await admin.query('delete from auth.sessions where user_id=$1',[actor.id])}
 })
 test('same canonical goal and step participate in encrypted Today and goal-linked journal records',async()=>{
  intention={id:randomUUID(),operationId:randomUUID(),revision:0,localDay:'2026-11-22',timezone:'America/Toronto',weeklyGoalId:goal.id,actionIds:[step.id],carriedActionIds:[],carryFromDay:null,confirmed:true}

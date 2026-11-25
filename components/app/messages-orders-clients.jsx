@@ -102,6 +102,11 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   const [personaOpen,setPersonaOpen]=useState(false)
   const [chatTabsOpen,setChatTabsOpen]=useState(false)
   const closePersona=useCallback(()=>setPersonaOpen(false),[])
+  useEffect(()=>{
+    const openPersona=()=>setPersonaOpen(true)
+    window.addEventListener('hh:messenger-open-persona',openPersona)
+    return()=>window.removeEventListener('hh:messenger-open-persona',openPersona)
+  },[])
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
     return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
@@ -302,6 +307,11 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
 
   function chooseSection(value){
     if(!['ai','orders','clients','news'].includes(value))return
+    // A folder switch dismisses the outgoing editor's keyboard without
+    // clearing its draft. Hidden-but-mounted AI must not keep the dock hidden.
+    if(value!==section&&hubRef.current?.contains(document.activeElement)&&
+      document.activeElement?.matches?.('textarea,input,[contenteditable="true"]'))
+      document.activeElement.blur()
     setSection(value)
     const url=new URL(window.location.href)
     url.searchParams.set('section',value)
@@ -356,7 +366,8 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     </div>
   )
   return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
-    data-detail-open={detailMode||undefined} data-section={section}>
+    data-detail-open={detailMode||undefined} data-section={section}
+    style={{'--hh-ai-persona-image':`url("${persona.image}")`}}>
     <div id="hh-chat-tabs" className={styles.sections} role="tablist" aria-label={t.title}
       data-chat-top-tabs data-chat-tabs-open={chatTabsOpen||undefined}>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
@@ -389,11 +400,10 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
           <span>Holistic House<small>Therapy · Coaching · Growth</small></span>
         </Link>
         <div className={styles.presenterIdentity} data-hh-ali-active-persona={persona.id}>
+          <Link href={'/'+locale} className={styles.dialogueBack} aria-label={locale==='ru'?'На главную':locale==='es'?'Inicio':'Home'}>‹</Link>
           <img src={persona.image} alt="" width={44} height={44}/>
-          <div><h1>{persona.name[locale]} · {locale==='ru'?'Внутренний алхимик':
-            locale==='es'?'Alquimista interior':'Inner Alchemist'}</h1>
-            <p>{locale==='ru'?'Понимание · Поддержка · Изменения':
-              locale==='es'?'Comprender · Acompañar · Transformar':'Understand · Support · Transform'}</p>
+          <div><h1>Holistic House · {persona.name[locale]}</h1>
+            <p><span className={styles.onlineDot} aria-hidden="true"/>{locale==='ru'?'Онлайн':locale==='es'?'En línea':'Online'}</p>
           </div>
         </div></>:
         <div><h1>{assistantTitle}</h1><p>{assistantSubtitle}</p></div>}

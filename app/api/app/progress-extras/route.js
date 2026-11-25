@@ -24,7 +24,7 @@ export async function GET(request) {
     auth=createRequestAuth(request,config)
     const actor=await auth.verified()
     const claimed=request.headers.get('x-hh-account-id')
-    if(claimed&&claimed!==actor.id)
+    if(claimed!==actor.id)
       return auth.apply(NextResponse.json({error:'ACCOUNT_CHANGED'},{status:403,headers:PRIVATE_HEADERS}))
     await consumeRate(config,{op:'my-progress-extras',actor:actor.id},50,60)
     const [labsResult,developmentResult,businessResult]=await Promise.allSettled([

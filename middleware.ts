@@ -155,7 +155,7 @@ export async function middleware(request: NextRequest) {
   const reikiIntroAudioManager = /^\/admin\/materials\/courses\/reiki-practitioner\/?$/.test(pathname)
   const coachingOwnerAudioManager = /^\/admin\/materials\/coaching\/(egyptian|greek)\/?$/.test(pathname)
   const coachingLearnerAudioPlayer = /^\/(en|ru)\/app\/coaching\/(egyptian|greek)\/?$/.test(pathname)
-  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/learn\/?$/.test(pathname)
+  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/(?:learn|daybook)\/?$/.test(pathname)
   // Only the authenticated course editor and published standalone course player
   // can fetch signed media from the dedicated PRIVATE educational Storage bucket.
   const practitionerCourseEditor = /^\/(en|ru|es)\/app\/practice\/?$/.test(pathname)
@@ -204,10 +204,11 @@ export async function middleware(request: NextRequest) {
         ? ' ' + url.origin : ''
     } catch { return '' }
   })()
-  // Signed user-owned portrait URLs are exposed only inside the authenticated My Videos cabinet.
+  // Signed user-owned photos are displayed by the same private photo library
+  // in My Videos and in Video Studio. The API still requires the owner's session.
   const privateSupportPhotoCabinet = /^\/(en|ru|es)\/app\/videos\/?$/.test(pathname)
   const privateSupportPhotoOrigin = (() => {
-    if (!privateSupportPhotoCabinet) return ''
+    if (!privateSupportPhotoCabinet && !publicMandalaLocalImages) return ''
     try {
       const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
       return url.protocol === 'https:' && /^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)

@@ -8,7 +8,7 @@ test('Guest and empty goal state shows all seven practice entry points without b
   assert.match(src, /const records = STEPS\.map/)
   assert.match(src, /data-goal-empty-state/)
   assert.match(src, /<h2 className=\{css\.stepsTitle\}>\{t\.plan\}<\/h2>/)
-  assert.match(src, /STEPS\.map\(\(\{ id, icon: Icon, href \}, index\)/)
+  assert.match(src, /STEPS\.map\(\(\{ id, icon: Icon \}, index\)/)
   assert.match(src, /data-goal-step-status=\{selected && records\[index\]\?\.status \|\| 'explore'\}/)
   assert.match(src, /\{selected && value !== null && <span className=\{css\.progressTrack\}>/)
   assert.match(src, /if \(!accountId\) return undefined/)

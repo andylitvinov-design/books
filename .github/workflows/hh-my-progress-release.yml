@@ -16,6 +16,7 @@ on:
       - 'tests/my-progress-unified-navigation.test.mjs'
       - 'tests/app-mobile-account-bridge.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
+      - '.github/workflows/hh-my-progress-release.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -29,7 +30,6 @@ on:
       - 'tests/my-progress.test.mjs'
       - 'tests/my-progress-unified-navigation.test.mjs'
       - 'tests/app-mobile-account-bridge.test.mjs'
-      - '.github/workflows/hh-my-progress-release.yml'
 permissions:
   contents: read
 concurrency:
@@ -49,12 +49,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && 'npm' || '' }}
+      # The original private progress Node contracts need no installed packages.
+      # Real product pushes still run independent install/lint/type/build.
       - name: Install pinned dependencies
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm ci --no-audit --no-fund
       - name: My Progress source, ownership and status contracts
         run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs tests/app-mobile-account-bridge.test.mjs
       - name: Scoped ESLint
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >
           npx --no-install eslint
           components/app/my-progress.jsx

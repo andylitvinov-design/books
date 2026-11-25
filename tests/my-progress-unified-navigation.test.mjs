@@ -69,7 +69,7 @@ test('old account requests and new order inbox are deduplicated and never mix pr
     videos:{videos:[{id:'mandala1',status:'ready',theme:'relationships',readyAt:at('22')},
       {id:'not-uploaded',status:'pending',createdAt:at('27')}]},
     videoProgress:{records:[{videoId:'abcdefghijk',title:'Verified public lesson',status:'watched',markedAt:at('26')}]},
-    topicsOfTest:()=>['body','relationships','some-unrecognized-topic'],
+    topicsOfTest:()=>['body','relationships','some-unrecognized-topic','__proto__','constructor'],
     videoTopics:{abcdefghijk:['energy']},
     locale:'ru',
   })
@@ -154,6 +154,7 @@ test('optional progress extras only disclose dates/IDs from protected existing s
   assert.match(route,/const actor=await auth\.verified\(\)/)
   assert.match(route,/requestOrigin\(request,config\)/)
   assert.match(route,/ACCOUNT_CHANGED/)
+  assert.match(route,/if\(claimed!==actor\.id\)/)
   assert.match(route,/listLabReports\(config,actor\)/)
   assert.match(route,/readDevelopmentGoals\(config,actor\)/)
   assert.match(route,/readBusinessCoaching\(config,actor\)/)

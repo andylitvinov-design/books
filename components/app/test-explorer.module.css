@@ -1516,3 +1516,83 @@
   border-radius:11px;border:1px solid #c8e2d2;background:#edf9f0;color:#176048;
   font-size:.83rem;font-weight:700;text-decoration:none}
 .chatStart:focus-visible{outline:3px solid #0b896c;outline-offset:2px}
+
+/* Daybook palette for cabinet reports and test discovery; chart colors retain their meaning. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .explorer {
+  --ink: var(--hh-cabinet-ink, #3c291c);
+  --paper: var(--hh-cabinet-surface, #fff6e3);
+  --line: var(--hh-cabinet-border, #d7b576);
+  --teal: var(--hh-cabinet-primary, #006b4e);
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--line);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual,
+:global(.hh-app[data-cabinet-theme="daybook"]) :global(.hh-insights-portrait) .visual:not(.visualCompact) {
+  color: var(--hh-cabinet-ink, #3c291c);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: linear-gradient(135deg, var(--hh-cabinet-surface, #fff6e3), var(--hh-cabinet-surface-soft, #f5e3bf));
+  box-shadow: 0 6px 20px #3325141a;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visualHeader h2 {
+  color: var(--hh-cabinet-ink, #3c291c);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual .eyebrow { color: var(--hh-cabinet-primary, #006b4e); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) :is(.portraitSectorPicker, .portraitControls, .portraitModeBar, .portraitChartChoices) {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) :is(.portraitSectorChip, .portraitModeButton, .portraitChartChoices button) {
+  min-height: 44px;
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface-soft, #f5e3bf);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitModeButton[aria-selected=true],
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true],
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=true] {
+  color: #fff6e3;
+  border-color: var(--hh-cabinet-primary, #006b4e);
+  background: var(--hh-cabinet-primary, #006b4e);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=true] small { color: #fff6e3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=false] {
+  color: var(--hh-cabinet-muted, #695644);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitRayOption {
+  color: var(--hh-cabinet-ink, #3c291c);
+  background: var(--hh-cabinet-surface-soft, #f5e3bf);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitRayOption:has(input:checked) {
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  background: var(--hh-cabinet-selected, #e3f0df);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitAxisHint,
+:global(.hh-app[data-cabinet-theme="daybook"]) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter p {
+  color: var(--hh-cabinet-muted, #695644);
+  font-size: 13px;
+  line-height: 1.4;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .chatStart {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-selected, #e3f0df);
+  color: var(--hh-cabinet-primary-hover, #00513d);
+}
+
+/* Same catalogue in public Client Tests and My Space; no alternate test engine. */
+:global(.client-entry-shell) .explorer{
+ --ink:var(--hh-cabinet-ink);--paper:var(--hh-cabinet-surface);--line:var(--hh-cabinet-border);--teal:var(--hh-cabinet-primary);
+ background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line);box-sizing:border-box;min-width:0
+}
+:global(.client-entry-shell) .explorer :is(.visual,.quickDiscovery,.quickFilters,.filterStatus,.moreFilters,.quickStart){background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.header h1,.visual h2,.catalogHeading){font-family:var(--hh-cabinet-heading-font);color:var(--ink)}
+:global(.client-entry-shell) .explorer :is(.quickPrimary,.primary,.pdfResourcePrimary){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary);min-height:44px}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button{min-height:44px;max-width:100%;white-space:normal;border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button:is([aria-selected=true],[aria-pressed=true]){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary)}
+:global(.client-entry-shell) .explorer .row{background:var(--hh-cabinet-surface);border-color:var(--line);border-radius:13px;margin:5px 0;min-width:0}
+:global(.client-entry-shell) .explorer .rowSelected{background:var(--hh-cabinet-selected)}
+:global(.client-entry-shell) .explorer .battery{background:var(--hh-cabinet-canvas);border:1px solid var(--hh-cabinet-border);color:#fff1d4}
+:global(.client-entry-shell) .explorer .search{min-width:0;max-width:100%;font-size:16px}
+@media(max-width:760px){:global(.client-entry-shell) .embedded{width:calc(100% - 22px);margin:10px auto 18px;padding:14px 11px;border-radius:18px}}

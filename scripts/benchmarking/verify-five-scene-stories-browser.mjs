@@ -147,6 +147,13 @@ try{
  // The action belongs to the settings footer (a sibling of the scene list).
  await page.locator('[data-video-stories-to-extra]').click();
  await montageTab.waitFor({state:'visible',timeout:15000});
+ // Other formats live inside an explicit disclosure. Open its real visible
+ // summary, just as the visitor and the main WebKit voice acceptance do.
+ const formats=page.locator('[data-video-extra-advanced-formats]');
+ await formats.waitFor({state:'visible',timeout:15000});
+ if(await formats.getAttribute('open')===null)
+   await formats.locator(':scope > summary').tap();
+ assert.equal(await formats.getAttribute('open'),'','STORIES_FORMAT_DISCLOSURE_NOT_OPEN');
  await page.locator('[data-video-montage-pro-offer]').waitFor({state:'visible'});
  // Generate FREE from the actual in-card CTA, not a hidden legacy shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
