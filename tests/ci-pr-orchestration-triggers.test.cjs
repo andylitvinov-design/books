@@ -748,6 +748,21 @@ test('hourly Vercel skips only fully proven CI-only delta including existing CI 
   assert.equal(result.stdout.trim(),expected?'true':'false');
  };
  check([y],true); check([y,a,b,c],true); check([a],true);
+ // #5609 modifies only the existing CI CLI validator and its test; neither
+ // is a Next build/prebuild entry. Never generalize to arbitrary scripts.
+ const validator=f('scripts/ci-specialist-aggregate.mjs');
+ const validatorTest=f('tests/ci-specialist-wait.test.mjs');
+ check([validator,validatorTest],true);
+ check([validator],true);check([validatorTest],true);
+ check([y,a,validator,validatorTest],true);
+ check([validator,f('app/page.tsx')],false);
+ check([validator,f('package.json')],false);
+ check([validator,f('middleware.ts')],false);
+ check([f(validator.filename,'added')],false);
+ check([f(validatorTest.filename,'removed')],false);
+ check([f(validator.filename,'modified',{previous_filename:'app/page.tsx'})],false);
+ check([f('scripts/build-public-card-artwork.mjs')],false);
+ check([f('lib/ci/other.mjs')],false);
  check([y,f('tests/coaching.test.mjs')],false);
  check([a,f('app/page.tsx')],false);
  check([y,f(a.filename,'added')],false);
