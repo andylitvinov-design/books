@@ -42,3 +42,9 @@
 
 /* Single edge-to-edge Samir portrait in the normal and expanded live hero. */
 .media[data-coach-motion-media='genie'][data-coach-motion-context='session']{inset:0;height:100%;width:100%;max-width:none;aspect-ratio:auto;border-radius:inherit}
+
+/* Large original-quality portraits preserve the complete source frame; the
+   compact cards and Samir retain their approved crop. Matte is intentional. */
+.media:not([data-coach-motion-media='genie']):is([data-coach-motion-context='greeting'],[data-coach-motion-context='session'],[data-coach-motion-context='avatar']){background:#10251f}
+.media:not([data-coach-motion-media='genie']):is([data-coach-motion-context='greeting'],[data-coach-motion-context='session'],[data-coach-motion-context='avatar']) :is(.poster,.video){object-fit:contain;object-position:center center}
+.media:not([data-coach-motion-media='genie']):is([data-coach-motion-context='greeting'],[data-coach-motion-context='session'],[data-coach-motion-context='avatar']) .sceneGraphics{display:none}

@@ -1,6 +1,6 @@
 // HeyGen completed 8/8. Manifest GUIDs identify MP4 OUTPUT files, not video record IDs.\n// Build-only, no new runtime provider: eight owner-generated natural MP4 takes
 // are mirrored once into the existing Next.js public folder by the hourly
-// Production build, compressed with the already installed pinned ffmpeg-static.
+// Production build, preserving native video streams plus optional 768px fallback.
 import {createRequire} from 'node:module'
 import {spawnSync} from 'node:child_process'
 import {access,mkdir,readFile,writeFile,rename,rm} from 'node:fs/promises'
@@ -36,20 +36,57 @@ if(!production){
   await access(binary,constants.X_OK)
   const root=resolve(fileURLToPath(new URL('../public/images/holistic-house/my-coach-motion/',import.meta.url)))
   await mkdir(root,{recursive:true})
-  function valid(bytes){
+  function valid(bytes,limit=3500000){
     return bytes?.subarray(4,8).toString('ascii')==='ftyp'&&
-      bytes.length>9000&&bytes.length<3500000&&
+      bytes.length>9000&&bytes.length<limit&&
       bytes.includes(Buffer.from('moov'))&&
       bytes.includes(Buffer.from('avc1'))&&!bytes.includes(Buffer.from('soun'))
   }
-  // Conventional spatial scaling only, not AI restoration. Preserve the original
-  // motion and crop; never touch Samir or regenerate any provider video.
+  // Native stream copy is preferred: no lost texture or changed motion.
+  // 768px Lanczos is only a compatibility fallback or a local wizard rendition.
+  // Never touch Samir or regenerate any provider video.
   function isHD(file){
     const probe=spawnSync(binary,['-hide_banner','-i',file],{encoding:'utf8',timeout:5000,maxBuffer:131072})
     return /Video:[^\r\n]*\b768x\d+\b/.test(probe.stderr||'')
   }
-  const encodeFlags=['-an','-c:v','libx264','-preset','veryfast','-crf','22',
-    '-pix_fmt','yuv420p','-profile:v','main','-movflags','+faststart']
+  const scale='scale=768:-2:flags=lanczos'
+  const encodeFlags=['-map','0:v:0','-an','-sn','-dn','-c:v','libx264','-preset','veryfast','-crf','18',
+    '-pix_fmt','yuv420p','-profile:v','main','-movflags','+faststart','-threads','2']
+  const qualityPath=file=>file.replace(/\.mp4$/,'-quality-v2.mp4')
+  const posterPath=file=>file.replace(/\.mp4$/,'-quality-v2.jpg')
+  function run(args){
+    const job=spawnSync(binary,['-hide_banner','-loglevel','error','-y',...args],
+      {encoding:'utf8',timeout:45000,maxBuffer:131072})
+    if(job.error||job.status!==0)throw Error('FFmpeg failed: '+String(job.stderr||job.error?.message).slice(0,160))
+  }
+  async function publishPoster(input,file){
+    const poster=posterPath(file),tmp=poster+'.tmp.jpg'
+    try{
+      run(['-ss','0.1','-i',input,'-map','0:v:0','-frames:v','1','-vf',scale,'-q:v','2','-threads','2',tmp])
+      const jpg=await readFile(tmp)
+      if(jpg.length<2000||jpg.length>1500000||jpg[0]!==255||jpg[1]!==216)
+        throw Error('Invalid source-frame poster')
+      await rename(tmp,poster)
+      return true
+    }catch(error){
+      console.warn('HH_COACH_QUALITY_POSTER_FALLBACK '+file.split('/').at(-1)+' '+error.message)
+      return false
+    }finally{await rm(tmp,{force:true}).catch(()=>{})}
+  }
+  async function publishNative(input,file){
+    const output=qualityPath(file),tmp=output+'.tmp.mp4'
+    try{
+      run(['-i',input,'-map','0:v:0','-an','-sn','-dn','-c:v','copy','-movflags','+faststart',tmp])
+      const probe=spawnSync(binary,['-hide_banner','-i',tmp],{encoding:'utf8',timeout:5000,maxBuffer:131072})
+      if(!valid(await readFile(tmp),12500000)||!/Video: h264[^\r\n]*yuvj?420p/.test(probe.stderr||''))
+        throw Error('Native stream not compatible with silent Safari H264')
+      await rename(tmp,output)
+      return true
+    }catch(error){
+      console.warn('HH_COACH_NATIVE_FALLBACK '+file.split('/').at(-1)+' '+error.message)
+      return false
+    }finally{await rm(tmp,{force:true}).catch(()=>{})}
+  }
   async function prepare(name,id){
     const [persona,take]=name.split('-')
     const filename=coachNaturalFilename(persona,take)
@@ -57,7 +94,12 @@ if(!production){
     const file=resolve(root,filename)
     const input=file+'.source.mp4',out=file+'.new.mp4'
     try{
-      try{if(valid(await readFile(file))&&isHD(file))return {name,bytes:0,ok:true}}catch{}
+      try{
+        if(valid(await readFile(file))&&isHD(file)&&valid(await readFile(qualityPath(file)),12500000)){
+          const poster=await readFile(posterPath(file))
+          if(poster[0]===255&&poster[1]===216)return {name,bytes:0,ok:true,native:true,poster:true}
+        }
+      }catch{}
       const url=new URL(prefix+id+'.mp4')
       if(url.protocol!=='https:'||url.hostname!=='resource2.heygen.ai')
         throw Error('Media host allowlist failed')
@@ -80,16 +122,25 @@ if(!production){
       if(bytes.subarray(4,8).toString('ascii')!=='ftyp')
         throw Error('Origin did not return MP4')
       await writeFile(input,bytes)
-      const flags=['-hide_banner','-loglevel','error','-y','-i',input,
-        '-t','5','-vf','fps=24,scale=768:1068:force_original_aspect_ratio=increase:flags=lanczos,crop=768:1068',
-        ...encodeFlags,out]
-      const job=spawnSync(binary,flags,{encoding:'utf8',timeout:45000,maxBuffer:131072})
-      if(job.error||job.status!==0)
-        throw Error('FFmpeg failed: '+String(job.stderr||job.error?.message).slice(0,100))
-      const result=await readFile(out)
-      if(!valid(result)||!isHD(out))throw Error('Output failed H264/audio/size/resolution validation')
-      await rename(out,file)
-      return {name,bytes:result.length,ok:true}
+      const native=await publishNative(input,file)
+      const poster=await publishPoster(input,file)
+      // Existing filename remains the Safari-compatible 768px fallback.
+      // No time truncation, frame-rate conversion, or destructive crop.
+      try{
+        run(['-i',input,'-vf',scale,...encodeFlags,out])
+        const result=await readFile(out)
+        if(!valid(result)||!isHD(out))throw Error('Output failed H264/audio/size/resolution validation')
+        await rename(out,file)
+        return {name,bytes:result.length,ok:true,native,poster}
+      }catch(error){
+        if(!native)throw error
+        console.warn('HH_COACH_768_FALLBACK '+name+' '+error.message)
+        // A compatible native stream is still available. Publish the existing
+        // fallback path as an independent native remux, never a low-res warp.
+        await writeFile(out,await readFile(qualityPath(file)))
+        await rename(out,file)
+        return {name,bytes:0,ok:true,native,poster}
+      }
     }catch(e){
       console.warn('HH_COACH_NATURAL_MP4_STATIC_FALLBACK '+name+' '+e.message)
       return {name,bytes:0,ok:false}
@@ -101,17 +152,15 @@ if(!production){
   // These four exact approved local clips are the currently selected wizard
   // media. Preserve frame timing, aspect ratio and audio-free playback.
   async function prepareWizard(filename){
-    const file=resolve(root,filename),out=file+'.hd-new.mp4'
+    const file=resolve(root,filename),quality=qualityPath(file),out=quality+'.tmp.mp4'
     try{
       const original=await readFile(file)
       if(!valid(original))throw Error('Invalid original')
-      if(isHD(file))return true
-      const job=spawnSync(binary,['-hide_banner','-loglevel','error','-y','-i',file,
-        '-vf','scale=768:-2:flags=lanczos',...encodeFlags,out],
-        {encoding:'utf8',timeout:45000,maxBuffer:131072})
-      if(job.error||job.status!==0||!valid(await readFile(out))||!isHD(out))
-        throw Error('HD encode failed validation')
-      await rename(out,file)
+      await publishPoster(file,file)
+      // Keep the exact committed original intact for fallback and rollbacks.
+      run(['-i',file,'-vf',scale,...encodeFlags,out])
+      if(!valid(await readFile(out))||!isHD(out))throw Error('HD encode failed validation')
+      await rename(out,quality)
       return true
     }catch(error){
       console.warn('HH_COACH_WIZARD_HD_KEEP_ORIGINAL '+filename+' '+error.message)
@@ -126,6 +175,7 @@ if(!production){
     status.push(...await Promise.all(names.slice(index,index+2).map(name=>prepare(name,takes[name]))))
   console.log('HH_COACH_NATURAL_MP4 '+status.filter(x=>x.ok).length+'/8 first-party clips, '+
     status.reduce((sum,item)=>sum+item.bytes,0)+' new bytes')
+  console.log('HH_COACH_NATIVE_QUALITY '+status.filter(x=>x.native).length+'/8; source posters '+status.filter(x=>x.poster).length+'/8')
   const wizardFiles=['merlin-greeting-real-v1.mp4','harry-greeting-real-v1.mp4',
     'harry-soft-calm.mp4','harry-soft-attentive.mp4']
   const wizardResults=[]

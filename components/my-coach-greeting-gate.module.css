@@ -87,3 +87,9 @@
 @media(max-width:699px){.greetingQuote{max-height:57px;font-size:15px;margin-bottom:2px}.completed{gap:7px}
  .primary,.secondary,.replay{min-height:45px}.hero:has(.completed) .heroText{top:67px}
  .hero:has(.completed){min-height:440px}}
+
+/* Match the full HeyGen frame on the introduction without changing its
+   controls, container dimensions or Samir's approved cinematic design. */
+.hero :global([data-coach-motion-media]:not([data-coach-motion-media='genie'])) :is(img,video){object-fit:contain!important;object-position:center center!important}
+.screen:not([data-my-coach-greeting-gate='genie']) .shade{background:linear-gradient(0deg,rgba(9,25,20,.90) 0%,rgba(9,25,20,.38) 15%,transparent 32%)}
+.screen[data-greeting-phase='complete']:not([data-my-coach-greeting-gate='genie']) .shade{background:linear-gradient(0deg,rgba(9,25,20,.94),rgba(9,25,20,.52) 24%,transparent 46%)}

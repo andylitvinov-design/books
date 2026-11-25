@@ -22,6 +22,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [inViewport,setInViewport]=useState(false)
   const [pageVisible,setPageVisible]=useState(true)
   const [videoReady,setVideoReady]=useState(false)
+  const [failedQuality,setFailedQuality]=useState(null)
+  const [failedPoster,setFailedPoster]=useState(null)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
@@ -38,6 +40,12 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     personaId==='merlin'?MEDIA_ROOT+'merlin-greeting-real-v1.mp4':
     personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4':
     coachNaturalVideoPath(personaId,state,visualScene))):null
+  // Versioned native-quality media for large portraits. Keep existing local
+  // paths as honest fallbacks; catalog cards and Samir are unchanged.
+  const qualitySrc=src&&context!=='card'?src.replace(/\.mp4$/,'-quality-v2.mp4'):null
+  const qualityPoster=qualitySrc?.replace(/\.mp4$/,'.jpg')||null
+  const playbackSrc=qualitySrc&&failedQuality!==qualitySrc?qualitySrc:src
+  const displayPoster=qualityPoster&&failedPoster!==qualityPoster?qualityPoster:poster
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -69,7 +77,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     observer.observe(node)
     return()=>observer.disconnect()
   },[personaId,supported])
-  useEffect(()=>{setVideoReady(false)},[src,personaId])
+  useEffect(()=>{setVideoReady(false)},[playbackSrc,personaId])
   const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible
   useEffect(()=>{
     const video=videoRef.current
@@ -77,7 +85,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     if(!shouldPlay){video.pause();setVideoReady(false);return}
     const attempt=video.play()
     if(attempt?.catch)void attempt.catch(()=>setVideoReady(false))
-  },[shouldPlay,src])
+  },[shouldPlay,playbackSrc])
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
@@ -85,13 +93,16 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     data-coach-natural-performance={isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
-    <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
+    <img src={displayPoster} className={styles.poster} alt="" draggable={false}
+      loading={qualityPoster?'eager':'lazy'} decoding="async"
+      onError={()=>{if(qualityPoster&&displayPoster===qualityPoster)setFailedPoster(qualityPoster)}} />
     {shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={state==='idle'||state==='greeting'} onReady={setVideoReady} />
-      : <video key={src} ref={videoRef} className={styles.video}
-          src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
+      : <video key={playbackSrc} ref={videoRef} className={styles.video}
+          src={playbackSrc} poster={displayPoster} muted loop playsInline autoPlay preload="metadata"
           controls={false} disablePictureInPicture
-          onPlaying={()=>setVideoReady(true)} onError={()=>setVideoReady(false)} />)}
+          onPlaying={()=>setVideoReady(true)}
+          onError={()=>{setVideoReady(false);if(qualitySrc&&playbackSrc===qualitySrc)setFailedQuality(qualitySrc)}} />)}
     {motionAllowed&&hasVideo&&<span className={styles.sceneGraphics}>
       <span className={styles.sceneHalo}/><span className={styles.sceneArc}/>
       <span className={styles.scenePoint}/>

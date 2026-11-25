@@ -1883,3 +1883,8 @@
 
 /* Samir owns the full hero; never expose the four-coach sprite behind him. */
 .sessionPortrait[data-persona=genie]{background-image:none!important;background-color:#173c30}
+
+/* Full-screen conversation: retain the actual source frame and neutral color.
+   Do not show the old oversized sprite behind the video. Samir is excluded. */
+.root[data-coach-view-expanded='true']:not([data-my-coach-live-dialogue='genie']) .sessionHeroShade{background:linear-gradient(0deg,rgba(9,25,20,.78),transparent 24%)}
+.root[data-coach-view-expanded='true']:not([data-my-coach-live-dialogue='genie']) .sessionPortrait :global([data-coach-motion-context='session']) :is(img,video){object-fit:contain!important;object-position:center center!important}
