@@ -94,6 +94,7 @@ export async function POST(request){
       headers:{Authorization:"Bearer "+process.env.HH_FIRST_VIDEO_GROQ_API_KEY},
       body:multipart
     });
+    if(provider.status===429)throw new AppError("AUDIO_STT_RATE_LIMITED",429);
     if(!provider.ok)throw new AppError("AUDIO_STT_PROVIDER_UNAVAILABLE",503);
     const result=await provider.json();
     if(textOnly){
