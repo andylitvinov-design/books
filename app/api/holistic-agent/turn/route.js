@@ -3,7 +3,8 @@ import { AppError, onlyKeys } from "@/lib/assessments/contracts";
 import { getAppConfig, requireSameOrigin } from "@/lib/app/config";
 import { createRequestAuth } from "@/lib/app/session";
 import { createAppRepository } from "@/lib/app/repository";
-import { consumeRate } from "@/lib/app/database";
+import { consumeRate, consumeRateBatch } from "@/lib/app/database";
+import { waveGeminiPublicEligibility, waveGeminiPublicQuota, waveGeminiPublicReply } from "@/lib/holistic-support/wave-gemini-public.mjs";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -420,6 +421,24 @@ export async function POST(request) {
       mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
       decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
+    // Public-knowledge Gemini is optional presentation, not a second Director.
+    // Exact topic allowlist + verified eligibility; no private text leaves us.
+    const publicGemini=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      !judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)&&
+      body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")
+      ?await waveGeminiPublicReply({message:body.message,locale:body.locale,
+        eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+        reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id)),
+        signal:AbortSignal.timeout(8000)}):null;
+    if(publicGemini)return await finish({
+      status:"clarify",reply:publicGemini.reply,modelUsed:true,source:publicGemini.source,
+      memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:publicGemini.reply,question:null,suggestions:[]},
+    });
     // Native Wave precedes catalog lookups and optional remote inference for
     // narrow conversation/FAQ intents. Safety, signed choices, consent and
     // existing stateful journeys above this point remain authoritative.
