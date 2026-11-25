@@ -104,6 +104,27 @@ const CLARITY = {
   }
 }
 
+const BUSINESS = {
+  en:{
+    label:'BUSINESS PROGRAM',title:'My Business',intro:'Find direction, build structure and grow your business with clarity and support.',
+    start:'Start Program',details:'Request Details',question:'What do you need for your business?',program:'4-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
+    topics:[['Strategy & Direction','Clarify your vision and growth path'],['Structure & Team','Build an effective organization'],['Growth & Resources','Activate resources and opportunities'],['Execution & Results','Turn your plan into real progress']],
+    sessions:[['Strategic Choice','Analyze your situation and define your goal','Review your current business, identify growth opportunities, and choose a measurable strategic goal.'],['Organizational Design','Build the right structure and key roles','Map business functions, define the target structure, and assign owners and KPIs.'],['Business Transformation','Design the change plan and growth steps','Gather feedback from leaders, prioritize organizational changes, and define resources and milestones.'],['Strategic Execution','Implement, measure and achieve results','Assign responsibility, establish a review rhythm, and monitor implementation and KPIs.']],
+  },
+  ru:{
+    label:'БИЗНЕС-ПРОГРАММА',title:'Мой бизнес',intro:'Найдите направление, выстройте структуру и развивайте бизнес с поддержкой.',
+    start:'Начать программу',details:'Запросить детали',question:'Что нужно вашему бизнесу?',program:'4 сессии для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
+    topics:[['Стратегия и направление','Видение и путь роста'],['Структура и команда','Эффективная организация'],['Рост и ресурсы','Ресурсы и возможности'],['Реализация и результаты','От плана к результату']],
+    sessions:[['Стратегический выбор','Анализ ситуации и определение цели','Проанализируйте бизнес, выявите возможности роста и выберите измеримую стратегическую цель.'],['Организационная архитектура','Функции, структура и ключевые роли','Опишите функции бизнеса, целевую структуру, ответственных и KPI.'],['Трансформация бизнеса','План изменений и этапы роста','Соберите обратную связь руководителей, определите изменения, ресурсы и этапы.'],['Стратегическое исполнение','Ответственность, контроль и KPI','Назначьте ответственных, задайте ритм контроля и отслеживайте исполнение и KPI.']],
+  },
+  es:{
+    label:'PROGRAMA EMPRESARIAL',title:'Mi negocio',intro:'Define tu rumbo, construye una estructura y haz crecer tu negocio con claridad y apoyo.',
+    start:'Iniciar programa',details:'Solicitar detalles',question:'¿Qué necesita tu negocio?',program:'4 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
+    topics:[['Estrategia y rumbo','Aclara tu visión y crecimiento'],['Estructura y equipo','Crea una organización eficaz'],['Crecimiento y recursos','Activa recursos y oportunidades'],['Ejecución y resultados','Convierte tu plan en avances']],
+    sessions:[['Elección estratégica','Analiza tu situación y define tu meta','Revisa el negocio, identifica oportunidades y elige una meta estratégica medible.'],['Diseño organizativo','Funciones, estructura y roles clave','Define las funciones, la estructura objetivo, los responsables y los KPI.'],['Transformación empresarial','Plan de cambios y etapas de crecimiento','Recoge opiniones de líderes y define prioridades, recursos e hitos.'],['Ejecución estratégica','Responsabilidad, seguimiento y KPI','Asigna responsables, establece revisiones y monitoriza la ejecución y los KPI.']],
+  },
+}
+
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
@@ -111,6 +132,14 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
   const c = CLARITY[selected]
+  const b = BUSINESS[selected]
+  const [businessStage, setBusinessStage] = useState(null)
+  const businessContact = '/' + selected + '/services/business-consulting#request-session'
+  const businessIcons = [Compass, BriefcaseBusiness, BarChart3, Target]
+  function openBusinessStage(index) {
+    setBusinessStage(index)
+    if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
+  }
   const navigation = {
     en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
     ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
@@ -158,17 +187,40 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <Icon size={23} aria-hidden="true"/><strong>{title}</strong>
       </button>)}
     </nav>
-    {section === 'business' && <section className={styles.business} aria-label={navigation.business} data-profile-business>
-      <header className={styles.scenic}>
-        <h1 className={styles.title}>{navigation.business}</h1>
-        <p className={styles.intro}>{navigation.businessIntro}</p>
+    {section === 'business' && <section className={styles.businessProgram} aria-label={b.title} data-profile-business>
+      <header className={styles.businessHero}>
+        <p className={styles.businessEyebrow}><BriefcaseBusiness size={19} aria-hidden="true"/>{b.label}</p>
+        <h1>{b.title}</h1>
+        <p className={styles.businessIntro}>{b.intro}</p>
+        <div className={styles.businessActions}>
+          <button type="button" data-business-start onClick={()=>openBusinessStage(0)}>{b.start}<ArrowRight size={19} aria-hidden="true"/></button>
+          <Link href={businessContact} prefetch={false} data-business-details>{b.details}</Link>
+        </div>
       </header>
-      <Link href={'/' + selected + '/services'} className={styles.profileInsight} prefetch={false}>
-        <BriefcaseBusiness size={23} aria-hidden="true"/>{navigation.businessSupport}<ArrowRight size={19} aria-hidden="true"/>
-      </Link>
-      <p className={styles.clarityNotice}>{navigation.businessHint}</p>
+      <h2 className={styles.businessHeading}>{b.question}</h2>
+      <div className={styles.businessTopics}>{b.topics.map(([title,detail],index)=>
+        <button key={index} type="button" className={styles.businessTopic} data-business-topic={index} aria-pressed={businessStage===index} onClick={()=>openBusinessStage(index)}>
+          <span className={styles.businessPhoto} data-business-photo={index} aria-hidden="true"/>
+          <span className={styles.businessTopicCopy}><strong>{title}</strong><small>{detail}</small></span>
+          <ArrowRight size={16} aria-hidden="true"/>
+        </button>
+      )}</div>
+      <h2 className={styles.businessHeading}>{b.program}</h2>
+      <p className={styles.businessHint}>{b.hint}</p>
+      <div className={styles.businessSessions}>{b.sessions.map(([title,detail,instruction],index)=>{
+        const Icon=businessIcons[index], expanded=businessStage===index
+        return <article key={index} className={styles.businessSession} data-business-session={index} id={'business-session-'+index}>
+          <button type="button" className={styles.businessStep} aria-expanded={expanded} aria-controls={'business-content-'+index} onClick={()=>openBusinessStage(expanded?null:index)}>
+            <span className={styles.businessNumber}>{index+1}</span><Icon size={23} aria-hidden="true"/>
+            <span className={styles.businessStepCopy}><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={19} aria-hidden="true"/>
+          </button>
+          <div className={styles.businessInstruction} id={'business-content-'+index} hidden={!expanded}>
+            <p>{instruction}</p><Link href={businessContact} prefetch={false}>{b.next}<ArrowRight size={18} aria-hidden="true"/></Link>
+          </div>
+        </article>
+      })}</div>
       <Link href={'/' + selected + '/shamanica/business'} className={styles.profileInsight} prefetch={false}>
-        <Compass size={23} aria-hidden="true"/>{navigation.businessTools}<ArrowRight size={19} aria-hidden="true"/>
+        <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
     </section>}
     {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId}>
