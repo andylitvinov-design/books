@@ -655,6 +655,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         setNewBelow(false);
         return;
       }
+      if(composerFocused.current&&compact&&messengerView){
+        // A focused composer explicitly requests the latest context. A new
+        // action card can extend the transcript after the assistant bubble.
+        revealFocusedContext();
+        return;
+      }
       if(followTail.current){
         // Keep the latest complete AI reply visible, not just the preceding user turn.
         // Scroll only the transcript: never move the pinned composer or Safari viewport.
@@ -678,10 +684,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const revealVisibleReply=()=>{
       window.cancelAnimationFrame(frame);
       frame=window.requestAnimationFrame(()=>{
-        // The keyboard resizes before the first text message too. A reader
-        // manually browsing old turns may still scroll without being pulled.
+        // This callback runs on viewport/layout resize, not on transcript
+        // scrolling. A native focus/resize can emit an intermediate scroll
+        // event that marks followTail false even though the user is composing.
+        // Re-anchor the latest reply on that explicit focus/keyboard change.
+        // Ordinary user scrollback remains independent when no resize occurs.
         if(composerFocused.current){
-          if(followTail.current)revealFocusedContext();
+          revealFocusedContext();
           return;
         }
         if(!messages.length||!followTail.current)return;
