@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {coachProtocolControlUtterance,COACH_PROTOCOL_VERIFICATION_INSTRUCTION} from '../lib/coaching/coach-protocol-relevance.mjs'
+import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
+import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {verifyCoachSemanticHint} from '../lib/coaching/semantic-evidence.mjs'
 import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
 import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
 
@@ -297,4 +301,24 @@ test('saved protocol cannot be rebound to a different signed-in account',()=>{
  assert.match(ui,/const owner=protocolOwnerRef.current/)
  assert.match(ui,/'X-HH-Account-ID':owner/)
  assert.match(route,/provided&&provided!==actor.id/)
+})
+
+
+test('speech repair and process instructions never become working goals, semantic hints or confirmed evidence',()=>{
+  const invalid=["Say again","Please repeat","I want you to never forget the main goal","Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.","Повторите пожалуйста","ещё раз","Quiero que nunca olvides el objetivo","Otra vez","Recuerda mi nombre"]
+  const legitimate=["I want to achieve financial freedom","I want to remember my own values","Я хочу улучшить отношения","Я хочу, чтобы вы помогли мне разобраться в цели","Quiero lograr mi meta","Quiero recordar mis valores","I feel afraid today","Моя цель — найти работу"]
+  for(const message of invalid)assert.equal(coachProtocolControlUtterance(message),true,message)
+  for(const message of legitimate)assert.equal(coachProtocolControlUtterance(message),false,message)
+  const message='Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.'
+  const input={locale:'ru',message,turns:[]}
+  assert.equal(coachSessionCard(input).workingTopicQuote,null)
+  assert.equal(coachConfirmedEvidence(input).goalRestated,false)
+  assert.equal(verifyCoachSemanticHint({kind:'goal_focus',quote:message},message),null)
+  assert.equal(coachSessionCard({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).workingTopicQuote,'Я хочу улучшить отношения')
+  assert.equal(coachConfirmedEvidence({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).goalRestated,true)
+  assert.match(COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/ask one specific natural clarifying question/)
+  for(const path of ['lib/coaching/conversational-persona.mjs','lib/coaching/gemini-live-free.mjs']){
+    const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
+    assert.match(source,/COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/)
+  }
 })
