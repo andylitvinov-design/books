@@ -1,6 +1,8 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
+import {useSearchParams} from 'next/navigation'
+import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
 import {ArrowRight,BookOpen,CheckCircle2,Compass,LockKeyhole} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
@@ -109,7 +111,10 @@ function FreeReflection({accountId,locale,entry,onSaved,onSessionLost}){
 export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost}){
  const lang=clarityLocale(locale),t=COPY[lang],weeks=CLARITY_SYLLABUS[lang]
  const entry=savedClarityReflection(entries)
- const [selected,setSelected]=useState(null),week=selected??(entry?2:1)
+ const searchParams=useSearchParams()
+ const requestedWeek=searchParams?.getAll('week')
+ const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
+ const [selected,setSelected]=useState(null),week=selected??routeWeek??(entry?2:1)
  const root='/'+lang
  return <section className={css.shell} data-clarity-daybook>
   <header className={css.hero}><span>CLARITY · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></header>

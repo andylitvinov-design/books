@@ -16,7 +16,7 @@ const COPY={
  en:{title:'Business Growth Daybook',intro:'From strategic choice to a system of execution.',back:'Back to profile',week:'Session',tasks:'3 session practices',completed:'Completed',open:'Open',save:'Save and complete',retry:'Retry save',saving:'Saving…',saved:'Saved and verified',loading:'Loading your private daybook…',failed:'Save not confirmed. Retry; your draft remains here.',loadError:'Could not load your entries. Try again.',login:'Sign in to your cabinet',load:'Retry',answer:'My answer and result',progress:'Self-guided progress',next:'Continue',done:'All 12 practices completed',private:'Entries stay private and are not shared automatically. Self-guided tasks do not mean a paid or delivered consultation.',offer:'Discuss with a business consultant',offerHint:'Format, price and time are agreed separately.',discard:'Unsaved answers remain. Leave and discard drafts?'},
  es:{title:'Diario de crecimiento empresarial',intro:'De la elección estratégica a un sistema de ejecución.',back:'Volver al perfil',week:'Sesión',tasks:'3 prácticas de la sesión',completed:'Completado',open:'Abrir',save:'Guardar y completar',retry:'Reintentar guardado',saving:'Guardando…',saved:'Guardado y verificado',loading:'Cargando tu diario privado…',failed:'Guardado sin confirmar. Reintenta; se conserva el borrador.',loadError:'No se pudieron cargar las entradas. Reintenta.',login:'Iniciar sesión en tu espacio',load:'Reintentar',answer:'Mi respuesta y resultado',progress:'Progreso autónomo',next:'Continuar',done:'Las 12 prácticas están completas',private:'Las entradas son privadas y no se comparten automáticamente. Las prácticas no significan una consulta pagada ni realizada.',offer:'Hablar con un consultor empresarial',offerHint:'El formato, precio y horario se acuerdan por separado.',discard:'Hay respuestas sin guardar. ¿Salir y descartar los borradores?'}
 }
-export default function BusinessDaybook({locale='en'}){
+export default function BusinessDaybook({locale='en',initialWeek=null}){
  const lang=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[lang],syllabus=BUSINESS_SYLLABUS[lang],root='/'+lang
  const [account,setAccount]=useState(null),[phase,setPhase]=useState('loading'),[entries,setEntries]=useState([]),[week,setWeek]=useState(1),[step,setStep]=useState(null)
  const [drafts,setDrafts]=useState({}),[pending,setPending]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false),[saved,setSaved]=useState('')
@@ -32,9 +32,9 @@ export default function BusinessDaybook({locale='en'}){
    const data=await collectJournalExport(appFetch,id,()=>token===generation.current)
    if(token!==generation.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(data.entries)
-   const next=businessProgress(data.entries).next;setWeek(next?.week||4);setStep(null);setPhase('ready')
+   const next=businessProgress(data.entries).next;setWeek(initialWeek??(next?.week||4));setStep(null);setPhase('ready')
   }catch(error){if(token===generation.current)setPhase(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED'?'signed-out':'error')}
- },[wipe,lang])
+ },[wipe,lang,initialWeek])
  useEffect(()=>{
   void load();let channel
   try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out')wipe('signed-out')}}catch{}
