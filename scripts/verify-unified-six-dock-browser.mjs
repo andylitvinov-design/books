@@ -1028,7 +1028,10 @@ try{
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");
+ // Dismiss the simulated keyboard as the user would before changing tabs.
+ await sessionComposer.blur();
  await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='false');
  results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
  // After the goal-first Sessions exchange, Ali's mobile sections remain
@@ -1046,7 +1049,9 @@ try{
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
- assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ // Keyboard dismissal and folder layout settle asynchronously in Safari.
+ // Keep the exact one-visible-dock acceptance, but wait for its restored state.
+ await expect(page.locator("[data-hh-unified-dock]:visible")).toHaveCount(1,{timeout:15000});
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
 

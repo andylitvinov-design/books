@@ -78,7 +78,7 @@ export async function GET(request){
     const [,locale,personaId]=match
     const version=url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
     if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
-    if(version==='v4'&&(locale!=='en'||!/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId)))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(version==='v4'&&!((locale==='en'&&/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId))||(locale==='ru'&&/^(?:alex|max)$/.test(personaId))))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
     // Record the same authored greeting shown on the coach's introduction card.
     const introduction=intro?.text||coachOpeningIntro(personaId,locale)
@@ -100,7 +100,7 @@ export async function GET(request){
     // fixed editorial greeting leaves the server, never a visitor's words.
     // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
     // no Paid fallback, voice substitution, or repeated synthesis on cache hits.
-    const voiceName=useRecordedGreeting?(locale==='en'&&version!=='v4'&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:approvedGeminiVoice(personaId,locale)):null
+    const voiceName=useRecordedGreeting?(locale==='en'&&version!=='v4'&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:locale==='ru'&&version==='v2'&&personaId==='alex'?'Alnilam':locale==='ru'&&version==='v2'&&personaId==='max'?'Orus':approvedGeminiVoice(personaId,locale)):null
     const gemini=voiceName?geminiCoachTtsConfig(process.env,'gemini_tts_free'):null
     if(gemini){
       let input
