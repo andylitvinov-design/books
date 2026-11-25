@@ -9,6 +9,7 @@ import {
 } from '@/lib/personal-coaching/coach-ios-live-duplex.mjs'
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
+  GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
@@ -28,6 +29,7 @@ const ui={
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
     login:'Для голосовой сессии снова войдите в Holistic House.',
     greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
+    replyStalled:'Ответ задерживается. Повторите последние слова или продолжите текстом.',
     contextUnavailable:'Разрешённые сведения пока не загружены. Можно продолжить без них.',
     contextRevoked:'Доступ отозван: голосовая связь завершена. Ранее переданные сведения могут остаться у провайдера.',
     providerAccess:'Google отклонил доступ проекта к Gemini Live (G-L1). Можно продолжить текстом.',
@@ -53,6 +55,7 @@ const ui={
     rateLimit:'Free live voice limit reached. You can continue by text.',
     login:'Sign in to Holistic House again to use live voice.',
     greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
+    replyStalled:'The reply is delayed. Repeat the last few words or continue by text.',
     contextUnavailable:'Approved context was not loaded. You can keep talking without it.',
     contextRevoked:'Access changed: this voice connection was closed. Previously shared data may remain with the provider.',
     providerAccess:'Google denied Gemini Live access for this API project (G-L1). You can use text.',
@@ -78,6 +81,7 @@ const ui={
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
     login:'Inicia sesión de nuevo en Holistic House para usar la voz.',
     greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
+    replyStalled:'La respuesta tarda. Repite las últimas palabras o continúa por texto.',
     contextUnavailable:'No se cargó el contexto autorizado. Puedes continuar sin él.',
     contextRevoked:'Se revocó el acceso: se cerró esta conversación. El proveedor puede conservar datos enviados antes.',
     providerAccess:'Google rechazó el acceso a Gemini Live para este proyecto (G-L1). Puedes escribir.',
@@ -163,6 +167,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function teardown(r){
     if(!r||r.ended)return
     r.ended=true
+    r.replyWatch?.clear()
     try{r.abort?.abort()}catch{}
     try{r.socket?.close(1000,'coach-stop')}catch{}
     try{r.processor?.disconnect()}catch{}
@@ -426,6 +431,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // The provider turn boundary has arrived. A late local playback failure
     // must not keep the next reply behind the interrupted turn's audio gate.
     r.audioGate?.accept({turnComplete:true})
+    if(r.hadAudio||r.outputWithoutAudio)r.replyWatch?.clear()
     if(r.outputText){
       if(!r.hadAudio||r.outputWithoutAudio)r.interrupted=true
       commitOutput(r)
@@ -447,6 +453,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.reconnectSoon=false
     notify(t.reconnecting)
     try{if(r.socket?.readyState===1)r.socket.close(1000,'session-resume')}catch{}
+  }
+  // The provider may keep the socket open but never finish a reply. A single
+  // same-session recovery is allowed; do not mint credentials, replay private
+  // speech, or silently start another conversation. The last checkpoint may
+  // precede the missing utterance, so disclose that possible gap on resume.
+  function recoverStalledReply(r){
+    if(r.ended||runtime.current!==r||!r.ready||r.socket?.readyState!==1)return
+    if(geminiLiveCanResumeStalledReply(r)){
+      r.stallRecoveryUsed=true
+      r.checkpointCurrent=false
+      notify(t.reconnecting)
+      try{r.socket.close(1000,'session-resume');return}catch{}
+    }
+    r.playbackNoticeShown=true
+    notify(t.replyStalled)
+    phaseChange('listening')
   }
   // A local playback fault only retires the current reply. Preserve the live
   // microphone/socket, reject its late packets, and never call unheard text
@@ -567,6 +589,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         r.introSent=true
         if(!sendSocket(r,r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
         phaseChange('thinking')
+        r.replyWatch?.touch()
         r.greetingTimer=setTimeout(()=>{
           if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
         },10000)
@@ -585,6 +608,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.input||frame.interim){
       const value=frame.input||frame.interim
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
+      r.replyWatch?.touch()
       propsRef.current.onInputInterim?.(r.inputText)
     }
     if(frame.interrupted){
@@ -619,6 +643,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.audio?.length){
       if(r.inputText)commitInput(r)
       if(allowAudio){
+        r.replyWatch?.touch()
         let outcome='dropped'
         for(const part of frame.audio){
           const status=queueLivePart(r,part)
@@ -670,6 +695,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       return
     }
     r.backpressureChunks=0
+    if(event==='active'||event==='interrupt')r.replyWatch?.touch()
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
     if(pcm.length){
@@ -767,6 +793,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       clearTimeout(setupTimer)
       if(r.ended||r.socket!==socket)return
       r.ready=false
+      r.replyWatch?.clear()
       r.reconnectSoon=false
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.
@@ -929,13 +956,20 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
+    r.replyWatch=new GeminiLiveReplyWatchdog({
+      canFire:()=>!r.ended&&r.ready&&r.socket?.readyState===1&&
+        r.context.state==='running'&&!r.player?.playing&&!r.pendingAudio?.length&&
+        !r.bargeDetector.userActive&&Date.now()-(r.lastHumanAudioAt||0)>900&&
+        !r.reconnectTimer,
+      onStall:()=>recoverStalledReply(r),
+    })
     r.player=new GeminiLivePcmPlayer(context,{
       onError:()=>discardAudioTurn(r),
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
       onEnd:()=>{if(!r.ended){
         r.speaking=false
         if(r.modelTurnComplete)finishAudibleTurn(r)
-        else phaseChange('thinking')
+        else{phaseChange('thinking');r.replyWatch?.touch()}
       }},
       onLevel:level=>{if(level!==null)propsRef.current.onMicLevel?.(level)},
     })
@@ -954,6 +988,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r||r.ended||!r.ready||!body||body.length>1200)return false
     interrupt()
     if(!sendSocket(r,geminiLiveTextMessage(body)))return false
+    r.replyWatch?.touch()
     r.inputText=''
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
