@@ -62,15 +62,15 @@ test("Verified meditations come only from their owner-supplied source registry",
   assert.match(registry, /youtubeId: "80xZ7jN6o2Y"/);
   assert.match(registry, /key: "kundalini-reiki",[\s\S]*?youtubeId: "_IOX0E8N-To"/);
   assert.match(page, /englishGuidedMeditations\.find\(item => item\.key === "reiki-yggdrasil"\)/);
-  assert.ok(page.includes('youtubeId="DYo-fG-SyKw"'));
-  assert.match(free, /originalLevelOneVideoId = "DYo-fG-SyKw"/);
+  assert.ok(page.includes('youtubeId="lOo93GuzeJ0"'));
+  assert.match(free, /originalLevelOneVideoId = "lOo93GuzeJ0"/);
   assert.match(page, /href=\{academyUrl\(locale, system\.study\)\}/);
 });
 
 test("Reiki landing offers the two owner-approved initiation formats without duplicate booking CTA", async () => {
  const [page,css] = await Promise.all([read("components/principles-of-energywork.tsx"),read("components/principles-of-energywork.module.css")]);
- for (const marker of ["data-energywork-five-steps","data-energywork-personal-rates","data-energywork-final-choices","data-energywork-final-online","€0","€100","data-reiki-yggdrasil-intro-videos"]) assert.ok(page.includes(marker),marker);
- for (const marker of ["€50","€60","data-energywork-final-personal","<ReikiPublicReviews"]) assert.ok(!page.includes(marker),marker);
+ for (const marker of ["data-energywork-five-steps","data-energywork-personal-rates","data-energywork-final-choices","€0","€100","data-reiki-yggdrasil-intro-videos"]) assert.ok(page.includes(marker),marker);
+ for (const marker of ["€50","€60","data-energywork-final-personal","data-energywork-final-online","<ReikiPublicReviews"]) assert.ok(!page.includes(marker),marker);
  assert.ok(page.indexOf("data-reiki-system-overview")<page.indexOf('id="energywork-how"'));
  assert.ok(page.indexOf('id="energywork-how"')<page.indexOf("data-reiki-yggdrasil-intro-videos"));
  assert.ok(page.indexOf("data-reiki-yggdrasil-intro-videos")<page.indexOf("className={styles.finalCta}"));

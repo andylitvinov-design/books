@@ -195,7 +195,7 @@ test("Second screen uses the exact five approved artwork crops and compact, unif
  assert.ok(css.includes("max-height:740px"));
 });
 
-test("Owner's November 25 cleanup removes duplicate screens and keeps exact prices and original Yggdrasil video sources",()=>{
+test("Owner's November 25 cleanup removes duplicate screens and keeps exact prices and owner-selected video sources",()=>{
  const landing=read("components/principles-of-energywork.tsx");
  const css=read("components/principles-of-energywork.module.css");
  for(const marker of ['data-energywork-screen="foundations"','data-energywork-screen="meditation"','id="energywork-systems"','<ReikiPublicReviews','data-energywork-final-personal','€50','€60']) assert.ok(!landing.includes(marker),marker);
@@ -203,8 +203,10 @@ test("Owner's November 25 cleanup removes duplicate screens and keeps exact pric
  assert.match(landing,/data-reiki-initiation-format="live"><strong>€100<\/strong>/);
  assert.ok(landing.includes('rateExpress: "Express chat format"'));
  assert.ok(landing.includes('rateLive: "Full personal live initiation"'));
- assert.ok(landing.includes('youtubeId="DYo-fG-SyKw"'));
- assert.ok(landing.includes('youtubeId={yggdrasilMeditation.youtubeId}'));
+ assert.ok(!landing.includes('data-energywork-final-online'));
+ assert.ok(landing.includes('data-energywork-interactive-course'));
+ assert.ok(landing.includes('youtubeId="lOo93GuzeJ0"'));
+ assert.ok(landing.includes('youtubeId="XvMdX5czoOc"'));
  assert.ok(landing.indexOf('id="energywork-how"')<landing.indexOf('data-reiki-yggdrasil-intro-videos'));
  assert.ok(landing.indexOf('data-reiki-yggdrasil-intro-videos')<landing.indexOf('className={styles.finalCta}'));
  assert.ok(css.includes('width:100%;max-width:100%;min-width:0;aspect-ratio:auto'));
