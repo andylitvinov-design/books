@@ -112,7 +112,9 @@ test('Public catalogue systems and descriptions match the interactive learning o
   const paths = landing.split('const paths = [')[1].split('] as const;')[0]
   const order = [...paths.matchAll(/key: "(tantra|kundalini|yggdrasil)"/g)].map(x => x[1])
   assert.deepEqual(order, ['tantra','kundalini','yggdrasil'])
-  assert.match(landing, /systemsTitle: "Three Reiki paths"/)
-  assert.match(landing, /systemsTitle: "Три пути Рейки"/)
-  assert.match(landing, /systemsTitle: "Tres caminos de Reiki"/)
+  assert.match(landing, /systemsTitle: "Reiki systems"/)
+  assert.match(landing, /systemsTitle: "Системы Рейки"/)
+  assert.match(landing, /systemsTitle: "Sistemas Reiki"/)
+  assert.match(landing, /data-reiki-overview-system=\{system\.key\}/)
+  assert.doesNotMatch(landing, /id="energywork-systems"/)
 })

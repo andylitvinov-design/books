@@ -171,7 +171,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     interactiveStart: "Empezar el curso interactivo (EN)",
     how: "Cómo funciona la iniciación gratis",
     heroFacts: ["Un sistema Reiki de regalo", "Donación voluntaria por cada sistema adicional", "Curso online gratuito"],
-    systemsTitle: "Tres caminos de Reiki",
+    systemsTitle: "Sistemas Reiki",
     learn: "Conocer el sistema",
     request: "Un Nivel 1 de regalo",
     journeyEyebrow: "PASO 5 · INICIACIÓN PERSONAL",
