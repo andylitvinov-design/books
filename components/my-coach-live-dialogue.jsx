@@ -1023,6 +1023,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         body:JSON.stringify({action:'discard',confirmed:true,id})})
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.deleted!==true)throw Error('DRAFT_DISCARD_FAILED')
+      // Explicit discard tombstones the old ID. A later voluntary manual
+      // report is a new save decision, never a retry of the erased record.
+      protocolSaveSnapshotRef.current=null
+      setProtocolSaveLocked(false)
       setAutoSaveStatus('discarded')
     }catch{setAutoSaveStatus('discard_error')}
   }
@@ -1343,6 +1347,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function pauseForNavigation(event){
     if(!keepCoachTab||event.defaultPrevented)return
     speechRef.current?.pauseSession?.()
+    queuePrivateDraft(turnsRef.current)
+    void autoSaveQueueRef.current?.flush()
   }
   function interceptSessionExit(event){
     // The explicit Close/Back choice from the already-open Summary means
@@ -1405,6 +1411,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
     try{
+      if(!protocolSaveSnapshotRef.current&&autoSaveStatus==='discarded')protocolIdRef.current=crypto.randomUUID()
       protocol=protocolSaveSnapshotRef.current||currentProtocol()
       protocolSaveSnapshotRef.current=protocol // idempotent retry even after timeout
       setProtocolSaveLocked(true)
@@ -1430,8 +1437,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     finally{setProtocolSaving(false)}
   }
 
-  function closeProtocolToRating(){
+  async function closeProtocolToRating(){
     if(protocolSaving)return
+    if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
+      queuePrivateDraft(turnsRef.current)
+      setProtocolSaving(true)
+      try{
+        const saved=await autoSaveQueueRef.current?.flush()
+        if(!saved){setProtocolError(protocolCopy[lang].error);return}
+      }finally{setProtocolSaving(false)}
+    }
     setProtocolOpen(false)
     setRatingError(false)
     setRatingOpen(true)
