@@ -187,14 +187,6 @@ const ui = {
     cabinetFailed: "Could not open Google sign-in. Try again; your choices are still here.",
     checkinTitle: "Overall now",
     checkinHint: "Same rating as the top-left check-in",
-    formatTitle: "4. What would you like to receive?",
-    formatHelp: "All formats are included. Uncheck anything you don't want to see.",
-    formatLabels: {
-      meditation: "Videos & meditations", consultation: "Consultations & sessions",
-      tests: "Tests", courses: "Courses & programs", talismans: "Talismans",
-      healing: "Reiki & energy support", masters: "Masters",
-      initiations: "Initiations", mandala: "Video mandalas",
-    },
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Confidence & harmony" },
   },
   ru: {
@@ -215,14 +207,6 @@ const ui = {
     cabinetFailed: "Не удалось начать вход через Google. Повторите попытку — выбор остаётся на странице.",
     checkinTitle: "Общая оценка сейчас",
     checkinHint: "Связана с оценкой вверху слева",
-    formatTitle: "4. Что включить в рекомендации?",
-    formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
-    formatLabels: {
-      meditation: "Видео и медитации", consultation: "Консультации и сессии",
-      tests: "Тесты", courses: "Курсы и программы", talismans: "Талисманы",
-      healing: "Рейки и энергоподдержка", masters: "Мастера",
-      initiations: "Инициации", mandala: "Видеомандалы",
-    },
     labels: { energy: "Тело и энергия", money: "Деньги", love: "Любовь и отношения", meaning: "Уверенность и гармония" },
   },
   es: {
@@ -243,14 +227,6 @@ const ui = {
     cabinetFailed: "No se pudo iniciar sesión con Google. Vuelve a intentarlo; tus datos siguen aquí.",
     checkinTitle: "Valoración general actual",
     checkinHint: "La misma puntuación del bloque superior izquierdo",
-    formatTitle: "4. ¿Qué quieres en las recomendaciones?",
-    formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
-    formatLabels: {
-      meditation: "Vídeos y meditaciones", consultation: "Consultas y sesiones",
-      tests: "Pruebas", courses: "Cursos y programas", talismans: "Talismanes",
-      healing: "Reiki y apoyo energético", masters: "Guías",
-      initiations: "Iniciaciones", mandala: "Mandala en vídeo",
-    },
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Confianza y armonía" },
   },
 } as const;
