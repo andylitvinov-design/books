@@ -20,6 +20,6 @@ export function ReportProgramPicker({initial=null,locale='en'}){
     {Array.from({length:REPORT_PROGRAMS[program].weeks},(_,i)=><option key={i+1} value={i+1}>{ru?'Неделя':'Week'} {i+1}</option>)}
    </select>
   </label>:<input type="hidden" name="reportWeek" value=""/>}
-  <small>{ru?'Отчёт будет связан с выбранной неделей. Это не отметка об оплате или прохождении программы.':'The report is assigned to this week. This does not mark payment or program completion.'}</small>
+  <small>{ru?'Выбранная неделя сохранится в отчёте. Это не отметка об оплате, прохождении программы или автоматическая привязка к конкретной цели.':'The selected week is saved in the report. This does not record payment, completion or automatic linkage to a specific goal.'}</small>
  </fieldset>
 }

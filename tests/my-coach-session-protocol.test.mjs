@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {coachProtocolControlUtterance,COACH_PROTOCOL_VERIFICATION_INSTRUCTION} from '../lib/coaching/coach-protocol-relevance.mjs'
+import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
+import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {verifyCoachSemanticHint} from '../lib/coaching/semantic-evidence.mjs'
 import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
 import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
 
@@ -225,11 +229,11 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   const brand=ui.split('<Link className={styles.sessionBrand} ')[1]?.split('>')[0]
   assert.ok(brand)
   assert.ok(brand.includes("href={'/'+lang}"))
-  assert.ok(brand.includes('onClick={interceptSessionExit}'))
+  assert.ok(brand.includes('{...browseProps}'))
   assert.ok(!brand.includes('/coaching/sessions'))
   const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
   assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
-  assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
+  assert.match(ui,/if\(!protocolSaved&&\(turnsRef\.current\.length>0\|\|speechRef\.current\?\.hasLiveSession\?\.\(\)\)\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
 
 test('chronological live voice report preserves greeting, consecutive utterances and trailing client words',()=>{
@@ -297,4 +301,36 @@ test('saved protocol cannot be rebound to a different signed-in account',()=>{
  assert.match(ui,/const owner=protocolOwnerRef.current/)
  assert.match(ui,/'X-HH-Account-ID':owner/)
  assert.match(route,/provided&&provided!==actor.id/)
+})
+
+
+test('speech repair and process instructions never become working goals, semantic hints or confirmed evidence',()=>{
+  const invalid=["Say again","Please repeat","I want you to never forget the main goal","Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.","Повторите пожалуйста","ещё раз","Quiero que nunca olvides el objetivo","Otra vez","Recuerda mi nombre"]
+  const legitimate=["I want to achieve financial freedom","I want to remember my own values","Я хочу улучшить отношения","Я хочу, чтобы вы помогли мне разобраться в цели","Quiero lograr mi meta","Quiero recordar mis valores","I feel afraid today","Моя цель — найти работу"]
+  for(const message of invalid)assert.equal(coachProtocolControlUtterance(message),true,message)
+  for(const message of legitimate)assert.equal(coachProtocolControlUtterance(message),false,message)
+  const message='Но я хочу, чтобы вы никогда не забывали, цель, основную цель каждого из нас.'
+  const input={locale:'ru',message,turns:[]}
+  assert.equal(coachSessionCard(input).workingTopicQuote,null)
+  assert.equal(coachConfirmedEvidence(input).goalRestated,false)
+  assert.equal(verifyCoachSemanticHint({kind:'goal_focus',quote:message},message),null)
+  assert.equal(coachSessionCard({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).workingTopicQuote,'Я хочу улучшить отношения')
+  assert.equal(coachConfirmedEvidence({locale:'ru',message:'Я хочу улучшить отношения',turns:[]}).goalRestated,true)
+  assert.match(COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/ask one specific natural clarifying question/)
+  for(const path of ['lib/coaching/conversational-persona.mjs','lib/coaching/gemini-live-free.mjs']){
+    const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
+    assert.match(source,/COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/)
+  }
+})
+
+test('active coach browsing preserves original tab; coach profile pauses voice',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/const browseProps=keepCoachTab\?\{target:'_blank',rel:'noopener noreferrer'/)
+  const nav=ui.slice(ui.indexOf('  function pauseForNavigation('),ui.indexOf('  function interceptSessionExit('))
+  assert.match(nav,/speechRef\.current\?\.pauseSession\?\.\(\)/)
+  assert.doesNotMatch(nav,/endWithProtocol|\.stop\?\./)
+  const profile=ui.slice(ui.indexOf('  function openCoachProfile('),ui.indexOf('  function toggleComposer('))
+  assert.match(profile,/const kept=speechRef\.current\?\.pauseSession\?\.\(\)===true/)
+  assert.match(profile,/if\(!kept&&!speechRef\.current\?\.hasLiveSession/)
+  assert.match(ui,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState/)
 })

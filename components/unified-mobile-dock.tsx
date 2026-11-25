@@ -3,20 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Clapperboard, Sun, Leaf, MessageCircle, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, isUnifiedMobileDockAppPath, isUnifiedMobileDockEditorialPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
 import { visualDockBottomOffset, visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
 const icons = {
-  mytube: Clapperboard, video: Film, ai: MessageCircle,
+  mytube: Clapperboard, reiki: Sun, ai: MessageCircle,
   practice: Leaf, coach: UserRound, services: BriefcaseBusiness, profile: UserRound,
 } as const;
 const labels = {
-  ru: { mytube: "MyTube", video: "MyVideo", ai: "ИИ/Чат", practice: "Шаманик", coach: "Мой коуч", services: "Поддержка", profile: "Профиль" },
-  en: { mytube: "MyTube", video: "MyVideo", ai: "AI/Chat", practice: "Shamanic", coach: "My Coach", services: "Support", profile: "Profile" },
-  es: { mytube: "MyTube", video: "MyVideo", ai: "IA/Chat", practice: "Shamanic", coach: "Mi coach", services: "Apoyo", profile: "Perfil" },
+  ru: { mytube: "MyTube", reiki: "My Reiki", ai: "ИИ/Чат", practice: "Шаманик", coach: "Мой коуч", services: "Поддержка", profile: "Профиль" },
+  en: { mytube: "MyTube", reiki: "My Reiki", ai: "AI/Chat", practice: "Shamanic", coach: "My Coach", services: "Support", profile: "Profile" },
+  es: { mytube: "MyTube", reiki: "My Reiki", ai: "IA/Chat", practice: "Shamanic", coach: "Mi coach", services: "Apoyo", profile: "Perfil" },
 } as const;
 
 /** Exactly one screenshot-1 inspired fixed dock on app journeys, for guests and accounts.
@@ -165,10 +165,9 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
         className={styles.item} data-unified-dock-item={id}
         aria-label={ariaLabel} aria-current={active === id ? "page" : undefined}
         onClick={event => {
-          if (id === "video") setHash("");
           // Keep public tabs in an installed iPhone app's current document.
           // AI and Profile retain their separate private CSP reload.
-          if (!["mytube", "video", "practice", "coach", "services"].includes(id) ||
+          if (!["mytube", "reiki", "practice", "coach", "services"].includes(id) ||
               event.defaultPrevented || event.button !== 0 || event.metaKey ||
               event.ctrlKey || event.shiftKey || event.altKey) return;
           const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches ||

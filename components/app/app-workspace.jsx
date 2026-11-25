@@ -64,6 +64,8 @@ import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
 import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
+import { clarityDaybookPath } from '@/lib/app/clarity-program.mjs'
+import {programContinuation,programFromContinuation,programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -94,6 +96,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
@@ -203,13 +206,20 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Preview and Life/Work mode switch stay public; guest account actions require sign-in.
   function interceptGuestProfileAction(event) {
     const target=event.target?.closest?.('button,a,[role="button"]')
+    // Public tools must remain reachable before registration. Match the actual
+    // localized first-party destination, not arbitrary private cabinet links.
+    const href=target?.getAttribute('href') || ''
+    if (target?.matches('a[data-profile-my-video]') && /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/.test(href)) return
+    if (target?.matches('a[data-clarity-reiki-practitioner]') && /^\/(?:ru|en|es)\/academy\/principles-of-energywork\/?$/.test(href)) return
     if (!target || target.closest('[data-profile-mode-switch]') ||
       target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
       target.closest('[data-profile-language-switch]') ||
       target.closest('[data-profile-chrome-navigation]') ||
-      target.closest('[data-profile-auth-dialog]')) return
+      target.closest('[data-profile-auth-dialog]') || target.closest('[data-clarity-start]') || target.closest('[data-clarity-details]') || target.closest('[data-program-start]')) return
     event.preventDefault()
     event.stopPropagation()
+    const program=target.closest('[data-goal-vector-entry]')?'goal':target.closest('[data-business-start],[data-business-daybook-link]')?'business':null
+    if(program){if(!busy)void signin('google',program);return}
     setProfileAuthOpen(true)
   }
   useEffect(()=>{
@@ -347,7 +357,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     savedExitDestination.current=null
     if(destination)router.replace(destination)
   }
-  async function signin(providerChoice = 'google') {
+  async function signin(providerChoice = 'google', daybookProgram = null) {
     signinAttempted.current = true
     setBusy(true)
     setError(null)
@@ -381,13 +391,14 @@ export default function AppWorkspace({ locale, path = [] }) {
             : { continueTo: 'practice-preview' }
           : {}),
         ...(native ? { native: true } : {}),
-        serviceId: searchParams.get('service') || null,
+        serviceId: daybookProgram ? null : searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
+        ...(daybookProgram ? {continueTo:programContinuation(daybookProgram)} : {}),
       })
       if (native) {
         // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
@@ -796,6 +807,15 @@ export default function AppWorkspace({ locale, path = [] }) {
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
             // First-time phone Messenger entry: return to the selected master
             // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='clarity'){
+              router.replace(clarityDaybookPath(searchParams.get('clarityLocale') || locale))
+              return
+            }
+            const daybookProgram=programFromContinuation(searchParams.get('afterSignIn'))
+            if(page==='portrait'&&daybookProgram){
+              router.replace(programDaybookPath(searchParams.get('programLocale')||locale,daybookProgram))
+              return
+            }
             if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
               try{
                 const chatLocale=searchParams.get('chatLocale')
@@ -820,9 +840,11 @@ export default function AppWorkspace({ locale, path = [] }) {
              <>
                {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <DreamPathMap locale={locale} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
+                 <DreamPathMap locale={locale} />
                  <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />

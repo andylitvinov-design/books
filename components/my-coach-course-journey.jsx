@@ -15,6 +15,12 @@ export default function MyCoachCourseJourney({locale='en',value,onSelect}){
  const lang=copy[locale]?locale:'en',t=copy[lang],trackRef=useRef(null)
  const item=coachCourseById(value)
  const selectedIndex=COACH_COURSE_SESSIONS.indexOf(item)
+ // A new program or introductory session selected in the greeting modal is
+ // already explicit; don't render the unrelated legacy eight-session rail.
+ if(selectedIndex<0)return <section className={styles.journey} data-coach-course-journey data-course-session={item.id} aria-label={coachCourseLocal(item.title,lang)}>
+   <div className={styles.heading}><div className={styles.headingTitle}><h2>{coachCourseLocal(item.title,lang)}</h2></div></div>
+   <div className={styles.details}><p className={styles.description}>{coachCourseLocal(item.description,lang)}</p></div>
+ </section>
  function choose(nextId){
    onSelect(nextId)
    const index=COACH_COURSE_SESSIONS.findIndex(entry=>entry.id===nextId)
