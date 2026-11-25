@@ -72,3 +72,24 @@ test('About coach expands inline and Start Session opens the selected persona, n
   assert.match(runner, /coachingSchemeRequiresAdultConsent\(s\)/)
   assert.match(runnerCss, /prefers-reduced-motion:reduce/)
 })
+
+
+test('header Back checkpoints consented draft without opening the Insight review', () => {
+  const source=read('components/my-coach-live-dialogue.jsx')
+  const back=source.slice(source.indexOf('async function navigateBackToCoaches'),source.indexOf('function interceptSessionExit'))
+  assert.match(back,/retainPendingClient\(\)/)
+  assert.match(back,/autoSaveRef\.current/)
+  assert.match(back,/await autoSaveQueueRef\.current\?\.flush\(\)/)
+  assert.match(back,/window\.location\.assign\(href\)/)
+  assert.doesNotMatch(back,/endWithProtocol|setProtocolOpen/)
+  assert.match(source,/className=\{styles\.chooseCoach\}[^\n]+onClick=\{navigateBackToCoaches\}/)
+})
+
+test('Insight foregrounds the normalized overview and collapses the transcript', () => {
+  const source=read('components/my-coach-live-dialogue.jsx')
+  assert.match(source,/myCoachProtocolPdfOptions\(protocolSaveSnapshotRef\.current\|\|currentProtocol\(\),\{locale:conversationLang\}\)\.protocolOverview/)
+  const view=source.slice(source.indexOf('data-my-coach-protocol>'))
+  assert.ok(view.indexOf('data-coach-insight-overview')>=0)
+  assert.ok(view.indexOf('data-coach-insight-overview')<view.indexOf('data-coach-insight-transcript'))
+  assert.match(view,/<details data-coach-insight-transcript>/)
+})
