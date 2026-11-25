@@ -415,7 +415,7 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
  const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
-  socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
+  context:{state:'running'},socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:phase=>phases.push(phase),
   finishAudibleTurn:state=>{
@@ -457,12 +457,14 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
  const body=client.slice(client.indexOf('  function finishAudibleTurn('),
    client.indexOf('  function maybeReconnectOnGoAway('))
  assert.ok(body.includes('r.player?.playing'))
- const committed=[]
+ const committed=[],recoveries=[]
  const finish=runInNewContext(body+'\nfinishAudibleTurn',{
    commitOutput:state=>{committed.push({text:state.outputText,interrupted:state.interrupted});state.outputText=''},
    phaseChange:()=>{},
    flushSideband:()=>{},
    maybeReconnectOnGoAway:()=>{throw Error('unexpected reconnect')},
+   t:{noReplyAudio:'missing audio'},
+   recoverStalledReply:(state,notice)=>recoveries.push({state,notice}),
  },{timeout:1000})
  const state={ended:false,modelTurnComplete:true,pendingAudio:[],hadAudio:true,
    outputWithoutAudio:false,outputText:'Words scheduled but not heard yet',
@@ -479,6 +481,9 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
   hadAudio:false,interrupted:false,player:{playing:false}}
  finish(neverHeard)
  assert.equal(committed.at(-1).interrupted,true)
+ assert.equal(recoveries.length,1)
+ assert.equal(recoveries[0].state,neverHeard)
+ assert.equal(recoveries[0].notice,'missing audio')
 })
 test('the worklet delivers complete ordered microphone blocks around 32 ms at each device rate',()=>{
  const source=load('public/audio/my-coach-gemini-live-worklet.js')

@@ -84,3 +84,32 @@ if(!production){
   for(const take of names)results.push(await prepare(take,takes[take]))
   console.log('HH_SAMIR_MOTION '+results.filter(Boolean).length+'/2 owner-approved HeyGen originals mirrored; encourage=first-party edited master')
 }
+
+// Always produce a versioned opening still from the actual approved video.
+// Production uses the first frame of the same idle MP4 that plays first.
+// The committed approved encouraging master is the offline/non-production
+// fallback; never show the legacy GIF poster while the MP4 buffers.
+const posterRoot=resolve(fileURLToPath(new URL('../public/images/holistic-house/my-coach-motion/',import.meta.url)))
+const posterRequire=createRequire(import.meta.url)
+const posterFfmpeg=join(dirname(posterRequire.resolve('ffmpeg-static')),process.platform==='win32'?'ffmpeg.exe':'ffmpeg')
+const openingPoster=resolve(posterRoot,'genie-natural-opening-v2.webp')
+const temporaryPoster=openingPoster+'.tmp.webp'
+const approvedOpeningSources=[samirMotionFilename('idle'),samirMotionFilename('encourage')]
+let openingReady=false
+try{
+  for(const name of approvedOpeningSources){
+    const input=resolve(posterRoot,name)
+    try{await access(input,constants.R_OK)}catch{continue}
+    const frame=spawnSync(posterFfmpeg,['-hide_banner','-loglevel','error','-y','-i',input,'-frames:v','1','-c:v','libwebp','-q:v','90',temporaryPoster],{encoding:'utf8',timeout:15000,maxBuffer:131072})
+    if(frame.error||frame.status!==0)continue
+    const bytes=await readFile(temporaryPoster)
+    if(bytes.length<1000||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')continue
+    await rename(temporaryPoster,openingPoster)
+    console.log('HH_SAMIR_OPENING_POSTER '+name)
+    openingReady=true
+    break
+  }
+  if(!openingReady)throw Error('No approved Samir MP4 opening frame available')
+}finally{
+  await rm(temporaryPoster,{force:true}).catch(()=>{})
+}

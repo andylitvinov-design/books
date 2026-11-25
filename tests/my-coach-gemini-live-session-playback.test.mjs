@@ -106,8 +106,8 @@ function session(sampleRate=48000){
     onInterrupted:text=>events.interruptions.push(text),
   }}
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
-    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer})',{
-    GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,
+    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState})',{
+    GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,
     geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,
     Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
     propsRef,runtime,
@@ -116,7 +116,7 @@ function session(sampleRate=48000){
     setNotice:notice=>events.notices.push(notice),
     setAudioNeedsGesture:value=>events.gestures.push(value),
     t:{failure:'unavailable',audioRoute:'paused',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting',
-      resumedEarlier:'resumed from previous checkpoint'},
+      resumedEarlier:'resumed from previous checkpoint',noReplyAudio:'missing audio'},
     checkpoint:()=>{},flushSideband:()=>{},
     stop:()=>{stops++;r.ended=true;track.stop();socket.close();r.player?.stop()},
     setTimeout:()=>1,clearTimeout:()=>{},
@@ -769,4 +769,25 @@ test('expired parked credential remains paused and enables explicit text fallbac
   assert.equal(r.resumeUnavailable,true)
   assert.equal(r.paused,true)
   assert.equal(notices.at(-1),'unavailable')
+})
+
+
+test('text-only completed live reply is not silently treated as spoken',()=>{
+  const h=session()
+  h.receive({output:'This reply has no PCM',turnComplete:true})
+  assert.equal(h.events.final.at(-1).interrupted,true)
+  assert.equal(h.events.notices.at(-1),'missing audio')
+  h.assertLive()
+  h.receive({audio:[pcm(.5)],output:'Next reply',turnComplete:true})
+  h.clock.advanceTo(h.clock.context.currentTime+1)
+  assert.equal(h.events.final.at(-1).interrupted,false)
+  h.assertLive()
+})
+test('standard MIME whitespace does not discard 24 kHz PCM',()=>{
+  const data=pcm(.1)
+  const read=mimeType=>readGeminiLiveServerMessage(JSON.stringify({serverContent:{modelTurn:{parts:[{inlineData:{mimeType,data}}]}}})).audio
+  assert.deepEqual(read('audio/pcm; rate=24000'),[data])
+  assert.deepEqual(read('audio/pcm; rate = 24000'),[data])
+  assert.deepEqual(read('audio/pcm; rate=16000'),[])
+  assert.deepEqual(read('audio/mp3'),[])
 })
