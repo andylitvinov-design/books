@@ -10767,10 +10767,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                   <Link prefetch={false} className={montageRef.avatarLibraryLink}
                     href={"/"+locale+"/app/videos?tab=photos"}>{locale==="ru"?"Все фото":locale==="es"?"Ver fotos":"See all"}</Link>
                 </div>:null}
-                {montageLibraryTab==="animated"?<p className={montageRef.emptyPhotoNote}
-                  role="status">{locale==="ru"?"Сохранённых анимированных фото пока нет. AI-рендер не запускается.":
-                  locale==="es"?"Aún no hay fotos animadas guardadas. No se inicia la IA.":
-                    "No saved animated photos yet. AI rendering is not enabled."}</p>:null}
+                {montageLibraryTab==="animated"?<div className={montageRef.emptyPhotoNote}>
+                  <p>{locale==="ru"?"Откройте личные анимации и сохранённые ролики HeyGen.":
+                    locale==="es"?"Abre tus animaciones privadas y clips de HeyGen guardados.":
+                    "Open your private animations and saved HeyGen clips."}</p>
+                  <Link prefetch={false} target="_blank" rel="noopener noreferrer"
+                    data-video-montage-open-animated-library
+                    href={"/"+locale+"/app/videos?tab=avatars"}>{locale==="ru"?"Мои AI-аватары":locale==="es"?"Mis avatares IA":"My AI Avatars"}</Link>
+                </div>:null}
                 {montageLibraryTab==="coaches"?<div className={montageRef.coachRail}>
                   {([
                     {id:"mira",en:"Mira",ru:"Мира",es:"Mira"},
@@ -10838,11 +10842,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                 locale==="es"?"Tengo permiso para usar esta foto.":
                   "I have permission to use this photo in my video."}
             </label>:null}
-            {montagePhotoChoice==="animate"?<p className={montageRef.photoGate} role="status">
-              {locale==="ru"?"Анимация пока недоступна: нужен подтверждённый заказ и разрешённая AI-генерация.":
-                locale==="es"?"Animación no disponible: requiere un pedido verificado y la aprobación de IA.":
-                  "Face animation is not payment-enabled. Choose a still photo or coach to continue."}
-            </p>:null}
+            {montagePhotoChoice==="animate"?<div className={montageRef.photoGate}>
+              <p role="status">{locale==="ru"?"Сначала сохраните фото в Моих фото. В личных AI-аватарах выберите его и проверьте доступность HeyGen и окончательную стоимость. Здесь заказ не запускается.":
+                locale==="es"?"Guarda primero la foto en Mis fotos. Selecciónala en Mis avatares IA y comprueba la disponibilidad de HeyGen y el precio final. Aquí no se inicia ningún pedido.":
+                  "Face animation is not payment-enabled in Montage. Save to My Photos first, then choose the photo in My AI Avatars and check HeyGen availability and the final price."}</p>
+              <Link prefetch={false} target="_blank" rel="noopener noreferrer"
+                data-video-montage-open-heygen
+                href={"/"+locale+"/app/videos?tab=avatars"}>{locale==="ru"?"Открыть HeyGen в моих AI-аватарах":locale==="es"?"Abrir HeyGen en Mis avatares IA":"Open HeyGen in My AI Avatars"}</Link>
+            </div>:null}
             <div className={montageRef.styleFooter}>
             <details className={montageRef.moreStyles} data-video-montage-more-styles>
               <summary>{locale==="ru"?"Другие визуальные стили и формат видео":

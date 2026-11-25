@@ -156,3 +156,17 @@ test('main native upload stages the same file in the private library without aut
   assert.match(library,/if\(latestDraft.current===draftPhoto\)/);
 });
 
+
+test('Montage uses the existing private animation wizard instead of a false empty library',()=>{
+  const start=studio.indexOf('data-video-montage-effects>');
+  const end=studio.indexOf('data-video-montage-audio>',start);
+  const step=studio.slice(start,end);
+  assert.match(step,/data-video-montage-open-animated-library/);
+  assert.match(step,/data-video-montage-open-heygen/);
+  assert.equal((step.match(/app\/videos\?tab=avatars/g)||[]).length,2);
+  assert.doesNotMatch(step,/No saved animated photos yet/);
+  assert.doesNotMatch(step,/fetch\s*\(|postVideoCreditAction\(/);
+  const textCss=readFileSync(new URL('../components/mandala-video-ideas.module.css',import.meta.url),'utf8');
+  assert.match(textCss,/\.sizeCard\{\s*display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(80px,1fr\)/);
+  assert.doesNotMatch(textCss,/\.sizeCard,\s*\n:global\(\[data-active-workspace="editor"\]\[data-montage-panel="text"\]\) \.subtitle/);
+});
