@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import {ProgramStartLink} from '@/components/app/clarity-program'
 import {ArrowLeft,ArrowRight,BarChart3,BriefcaseBusiness,ChevronDown,ChevronRight,Compass,Flag,Flame,Flower2,Layers,Leaf,Route,Settings2,Sparkles,Sunrise,Target,TrendingUp} from 'lucide-react'
 import {SiteNavigation} from '@/components/site-navigation'
 import {PROGRAM_LOCALES} from '@/lib/public-coaching-programs.mjs'
@@ -59,7 +60,7 @@ export default function ProgramOverview({program:p}){
      </li>
     })}
    </ol>
-   <Link href={p.startHref} prefetch={false} className={styles.cta} data-program-start>{p.start}<ArrowRight size={22} aria-hidden="true"/></Link>
+   <ProgramStartLink locale={p.locale} program={p.id} className={styles.cta}>{p.start}<ArrowRight size={22} aria-hidden="true"/></ProgramStartLink>
   </section>
  </main>
 }
