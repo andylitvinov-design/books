@@ -69,8 +69,9 @@ export function ReikiAdvancedProgram({ locale, program }: { locale: PublicLocale
   const base = "/" + locale + "/academy/reiki/yggdrasil";
   const basic = curriculum.levels.find(item => item.id === 1);
   const modules = yggdrasilModuleLandings.filter(item => item.levelId > 1);
+  const masterPhotos = ["/images/holistic-house/messenger-zen-stones.svg", "/images/holistic-house/magic-mirror-lotus.webp", "/images/holistic-house/course-focus-mountain-boy.webp", "/images/holistic-house/ideas-pine-reference.webp", "/academy/reiki-yggdrasil/source/basic-program.jpg"];
   const rows = master
-    ? (basic?.steps ?? []).map(step => ({ id: step.id, number: step.number, title: step.title[locale], href: base + "/basic-course#" + step.id.toLowerCase(), photo: null as string | null }))
+    ? (basic?.steps ?? []).map(step => ({ id: step.id, number: step.number, title: step.title[locale], href: base + "/basic-course#" + step.id.toLowerCase(), photo: masterPhotos[step.number - 1] || masterPhotos[4] }))
     : modules.map((module, index) => ({ id: module.slug, number: index + 1, title: module.title[locale], href: base + "/" + module.slug, photo: module.image }));
   return <>
     <section className={styles.reikiAdvancedHero} data-reiki-advanced-hero={program} aria-labelledby="reiki-program-title">

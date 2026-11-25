@@ -18,6 +18,8 @@ import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-s
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import {isChatModelStatusQuestion,chatModelStatusReply} from "@/lib/holistic-support/chat-model-status.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
+import {waveDialogueEntryTurn} from "@/lib/holistic-support/wave-dialogue-entry.mjs";
+import { threeJourneyTurn } from "@/lib/holistic-support/three-journeys.mjs";
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
@@ -125,7 +127,7 @@ function validNativeSession(value) {
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
     "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
-    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone"]);
+    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone","journeyPath","journeyNoAdvice","journeyNoQuestions"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -138,6 +140,10 @@ function inputOf(body) {
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
     (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.journeyPath !== undefined && body.journeyPath !== null &&
+      !["therapy","consultation","goal"].includes(body.journeyPath)) ||
+    (body.journeyNoAdvice !== undefined && typeof body.journeyNoAdvice !== "boolean") ||
+    (body.journeyNoQuestions !== undefined && typeof body.journeyNoQuestions !== "boolean") ||
     (body.companionMode !== undefined && body.companionMode !== null && body.companionMode !== "friend") ||
     (body.companionTone !== undefined && body.companionTone !== null &&
       (!["friendly","confiding","tender"].includes(body.companionTone) || body.companionMode !== "friend")) ||
@@ -234,7 +240,12 @@ export async function POST(request) {
         psychologistConsent:false,selectedService:false,safety}):null;
     // Verify signed continuations before reading optional state or producing an
     // early answer. Judgment is evaluated once for this exact safe turn.
-    const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
+    // A user-selected dialogue journey owns ordinary safe free-text turns;
+    // otherwise generic Judgment Mind would intercept fear/procrastination and
+    // silently bypass that explicit choice. Signed judgment continuations still
+    // take precedence and MUST be verified normally.
+    const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      (body.journeyPath==null||body.judgmentContext!=null||body.judgmentChoice!=null);
     const judgmentContext=judgmentEligible&&body.judgmentContext
       ?verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history}):null;
     if(judgmentEligible&&body.judgmentContext&&!judgmentContext)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
@@ -417,6 +428,46 @@ export async function POST(request) {
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
         decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
     }
+    // Three owner-selected conversational journeys in the EXISTING Messenger.
+    // They are not clinical diagnosis, booking authority, consent, or a second
+    // state machine. Safety, signed choices, factual tasks and provider gates
+    // stay above; ordinary non-selected chat keeps its previous behavior.
+    const entryNavigation=body.mode==="rules" &&
+      safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      body.companionMode==null && (!nativeFrame || stateEvent?.type==="ordinary")
+      ?waveDialogueEntryTurn({message:body.message,locale:body.locale,history:body.history,path:body.journeyPath,
+        preferenceNoAdvice:body.journeyNoAdvice===true,preferenceNoQuestions:body.journeyNoQuestions===true}):null;
+    if(entryNavigation)return await finish({
+      status:"clarify",reply:entryNavigation.reply,modelUsed:false,source:entryNavigation.source,
+      memorySaved:false,userAuthorized:true,
+      journey:{path:entryNavigation.path,stage:entryNavigation.stage??null,action:entryNavigation.action??null},
+      suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:entryNavigation.reply,question:null,suggestions:[]},
+    });
+    const scopedJourney=body.mode==="rules" && body.journeyPath &&
+      safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      body.companionMode==null &&
+      (!nativeFrame || stateEvent?.type==="ordinary")
+      ?threeJourneyTurn({path:body.journeyPath,message:body.message,
+          history:body.history,locale:body.locale,
+          preferenceNoAdvice:body.journeyNoAdvice===true,
+          preferenceNoQuestions:body.journeyNoQuestions===true}):null;
+    if(scopedJourney)return await finish({
+      status:"clarify",reply:scopedJourney.reply,modelUsed:false,
+      source:scopedJourney.version,memorySaved:false,userAuthorized:true,
+      journey:{path:body.journeyPath,stage:scopedJourney.stage,action:scopedJourney.action},
+      suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:"clarify",message:scopedJourney.reply,question:null,suggestions:[]},
+    });
     // Friend Mind is a selected conversational tone, not an authorization.
     // All origin, account, rate, safety and signed-choice checks precede it.
     // Do not read private memory, enter a service funnel, or bypass a real task.
