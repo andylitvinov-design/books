@@ -1042,3 +1042,44 @@
 .reikiAdvancedNotice{margin:12px 5px 0;color:#395044;font:500 12px/1.5 system-ui,sans-serif;}
 @media(min-width:700px){.reikiProgramTabs a{min-height:55px;}.reikiAdvancedHero{padding:24px;}.reikiAdvancedCta{max-width:560px;}}
 @media(max-width:374px){.reikiProgramTabs{gap:4px;}.reikiProgramTabs a{gap:3px;padding:5px 2px;}.reikiProgramTabs strong{font-size:13px;}.reikiProgramTabs svg{width:15px;height:15px;}}
+
+/* MY_REIKI_PROFILE_PARITY_20261125 — match the approved Profile screen. */
+.page[data-reiki-practitioner-landing]{padding:10px 13px 22px;background:linear-gradient(180deg,#19110a66,#160e09d4),url("/images/holistic-house/support-therapy-cabinet-hd.webp") center top / cover no-repeat; background-attachment:scroll;}
+.reikiShell{width:100%;max-width:820px;margin:0 auto 8px;}
+.page[data-reiki-practitioner-landing] .courseDeck{width:100%;margin:0 auto;padding:8px 8px 18px;}
+.page[data-reiki-practitioner-landing] .hero{padding:14px 12px 12px;}
+.page[data-reiki-practitioner-landing] .hero::before,.page[data-reiki-practitioner-landing] .hero::after{height:100%;mask-image:none;}
+.page[data-reiki-practitioner-landing] .hero::after{mask-image:linear-gradient(90deg,transparent,#000 35%);}
+.page[data-reiki-practitioner-landing] .hero .eyebrow{max-width:100%;font-size:10px;margin:0 0 7px;}
+.page[data-reiki-practitioner-landing] .hero h1{max-width:76%;font-size:clamp(28px,7.7vw,48px);margin:3px 0 6px;}
+.page[data-reiki-practitioner-landing] .heroSubtitle{max-width:90%;font-size:clamp(14px,3.8vw,21px);margin-bottom:6px;}
+.page[data-reiki-practitioner-landing] .heroLead{max-width:70%;font-size:clamp(13px,3.5vw,17px);}
+.page[data-reiki-practitioner-landing] .hero .reikiEntry{max-width:none;margin-top:12px;}
+.page[data-reiki-practitioner-landing] .hero .reikiEntry button{min-height:49px;}
+.page[data-reiki-practitioner-landing] .hero .reikiEntry>small{font-size:10px;}
+.page[data-reiki-practitioner-landing] .reikiSyllabus .stepRail a>span.reikiWeekPhoto{background-color:#76512b;background-image:none;}
+.reikiWeekPhoto img,.reikiQuizPhoto img,.reikiSystemPhoto img,.reikiLessonPreview img{object-fit:cover;}
+.reikiWeekPhoto>b{z-index:1;}
+.reikiQuiz{margin:12px 0 15px;}
+.reikiQuiz h2{display:flex;align-items:center;justify-content:center;gap:7px;text-align:center;color:#103f30;margin:0 0 10px;font:700 clamp(21px,5.4vw,30px)/1.14 Georgia,serif;}
+.reikiQuiz h2::before,.reikiQuiz h2::after{content:"";height:1px;flex:1;min-width:8px;background:#c6a36b;}
+.reikiQuizGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+.reikiQuizCard{display:grid;grid-template-columns:32% minmax(0,1fr);align-items:stretch;position:relative;min-width:0;min-height:94px;text-align:left;padding:0 5px 0 0;gap:6px;overflow:hidden;border:1px solid #d7b576;border-radius:17px;background:linear-gradient(135deg,#fff9e6,#f8dca7);box-shadow:0 3px 10px #442b1115;color:#103f30;cursor:pointer;}
+.reikiQuizPhoto{position:relative;display:block;min-width:0;border-radius:14px;overflow:hidden;}
+.reikiQuizCopy{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:7px 0 17px;}
+.reikiQuizCopy strong{font:700 clamp(14px,3.75vw,19px)/1.13 Georgia,serif;overflow-wrap:anywhere;}
+.reikiQuizCopy strong svg{display:inline-block;vertical-align:middle;margin-right:4px;color:#08714b;}
+.reikiQuizCopy small{font:500 clamp(11px,2.9vw,14px)/1.25 system-ui,sans-serif;overflow-wrap:anywhere;}
+.reikiQuizCard>svg{position:absolute;bottom:4px;right:5px;color:#08714b;}
+.reikiQuizCard[aria-pressed="true"]{border-color:#08714b;box-shadow:inset 0 0 0 1px #08714b;}
+.reikiQuizCard:focus-visible{outline:3px solid #08714b;outline-offset:2px;}
+.reikiQuizResult{background:#fff9e6;border:1px solid #d7b576;border-radius:15px;padding:12px;margin-top:8px;color:#103f30;}
+.reikiQuizResult p{margin:5px 0;font:500 14px/1.4 system-ui,sans-serif;}
+.reikiMoreSummary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;color:#103f30;font:700 15px/1.2 Georgia,serif;border:1px solid #d7b576;border-radius:12px;margin-bottom:7px;background:#fff8e9;}
+.reikiLessonPreview,.reikiSystemPhoto{position:relative;overflow:hidden;border-radius:13px;aspect-ratio:16/9;width:100%;margin-bottom:10px;}
+.page[data-reiki-practitioner-landing] .systemCard{overflow:hidden;border-radius:17px;}
+.page[data-reiki-practitioner-landing] .systemCard>.reikiSystemPhoto{border-radius:13px 13px 0 0;margin-bottom:0;}
+.page[data-reiki-practitioner-landing] .backRow{margin-top:12px;}
+.page[data-reiki-practitioner-landing] .reikiAdvancedHero::before{background-size:cover;background-position:center;}
+@media(max-width:354px){.page[data-reiki-practitioner-landing]{padding:8px 9px 18px;}.page[data-reiki-practitioner-landing] .courseDeck{padding:5px 5px 16px;}.reikiQuizCard{grid-template-columns:26% minmax(0,1fr);gap:4px;}.reikiQuizCopy strong svg{width:14px;height:14px;}}
+@media(min-width:760px){.page[data-reiki-practitioner-landing]{padding:20px 24px 36px;}.page[data-reiki-practitioner-landing] .hero{padding:24px;}.reikiQuizCard{min-height:112px;}}
