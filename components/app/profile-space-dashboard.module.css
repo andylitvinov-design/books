@@ -1099,3 +1099,16 @@
  .dashboard .businessTopicCopy strong{font-size:20px}
  .dashboard .businessTopicCopy small,.dashboard .businessStepCopy small{font-size:16px}
 }
+
+/* Temporary relocation of the existing Video Studio to a persistent Profile tool. */
+.dashboard[data-profile-space-dashboard] .myVideoCard{
+  display:grid;grid-template-columns:46px minmax(0,1fr) 20px;align-items:center;gap:12px;
+  box-sizing:border-box;width:100%;min-height:76px;margin:12px 0 4px;padding:12px;
+  background:linear-gradient(135deg,#fff9ea,#f9e5bd);border:1px solid #d7b576;
+  border-radius:16px;color:#3c291c;text-decoration:none;box-shadow:0 5px 12px #3c291c15;
+}
+.myVideoIcon{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#76512b;color:#fff7e8}
+.myVideoCopy{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+.myVideoCopy strong{font:750 17px/1.2 system-ui,sans-serif;color:#3c291c}
+.myVideoCopy small{font:500 13px/1.4 system-ui,sans-serif;color:#695644}
+.dashboard .myVideoCard:focus-visible{outline:3px solid #006b4e;outline-offset:3px}
