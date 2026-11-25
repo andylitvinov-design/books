@@ -57,6 +57,7 @@ import {useVoiceCompanion,VoiceCompanionControls} from "./voice-companion-contro
 import dynamic from "next/dynamic";
 import EmotionalAvatar from "@/components/app/emotional-avatar";
 
+const SimliDialoguePilot = dynamic(() => import("./simli-dialogue-pilot"), { ssr: false });
 const MessengerTestJourney = dynamic(() => import("@/components/app/messenger-test-journey"), { ssr: false });
 const MessengerAudioVideo = dynamic(() => import("@/components/app/messenger-audio-video")
   .then(module => module.MessengerAudioVideo), { ssr: false });
@@ -2422,6 +2423,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             disabled={!voice.supported}
             onClick={()=>{stopAliPersonaAudio();voice.speak(m.text,true);}}
             style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}</p>)}
+      {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==="true"&&messengerView&&authenticated&&!testChatOpen&&messages[messages.length-1]?.role==="assistant"&&
+        <SimliDialoguePilot target="chatbot" locale={locale} personaId={persona.id} text={messages[messages.length-1].text}
+          revision={String(messages.length)} blocked={busy||proBusy||voice.speaking||voice.conversing}/>}
       {!testChatOpen&&lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
         <strong>{locale==="ru"?"Ответ не подошёл?":locale==="es"?"¿No te convence la respuesta?":"Not quite the answer you wanted?"}</strong>
         <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("different")}>

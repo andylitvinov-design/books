@@ -1,6 +1,7 @@
 'use client'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
+import SimliDialoguePilot from './simli-dialogue-pilot'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
@@ -126,6 +127,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const [notice,setNotice]=useState('')
   const [audioNeedsGesture,setAudioNeedsGesture]=useState(false)
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
+  const simliPilotRef=useRef(null)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
@@ -1146,6 +1148,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       onStall:()=>recoverStalledReply(r),
     })
     r.player=new GeminiLivePcmPlayer(context,{
+      onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx),
+      onPlaybackClear:()=>simliPilotRef.current?.clear(),
       onError:()=>discardAudioTurn(r),
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
       onEnd:()=>{if(!r.ended){
@@ -1262,6 +1266,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       <button type="button" className={styles.button}
         data-coach-live-resume-audio onClick={resumeAudioByTap}>{t.resumeAudio}</button>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
+    {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
+      phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
+      revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>
 })
 export default MyCoachGeminiLive

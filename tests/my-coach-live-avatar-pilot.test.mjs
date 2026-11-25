@@ -89,3 +89,38 @@ test('Sequencer readiness denies failed GET and accepts only active ready matchi
   await assert.rejects(checkSequencerPrepared(config,async()=>({ok:false})),/AVATAR_READINESS_UNAVAILABLE/)
   assert.equal(await checkSequencerPrepared(config,async()=>({ok:true,json:async()=>({liveCharacter:{id:'character',status:'active',runtimeStatus:'ready'}})})),true)
 })
+
+test('dialogue trial requires independent owner, free and privacy gates and a pinned role',async()=>{
+  const {ownerSimliDialogueReady,ownerSimliDialogueRequestAllowed}=await import('../lib/coaching/live-avatar-pilot.mjs')
+  const {startOwnerSimliDialogue}=await import('../lib/coaching/live-avatar-pilot-server.mjs')
+  const full={...env,NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT:'true',HH_SIMLI_OWNER_DIALOGUE_PILOT:'owner-non-sensitive-only',HH_SIMLI_DIALOGUE_PRIVACY_APPROVED:'true'}
+  const body={action:'start-dialogue',provider:'simli',target:'chatbot',freeOnly:true,nonSensitiveTest:true,privacyConsent:true}
+  assert.equal(ownerSimliDialogueReady(full),true)
+  assert.equal(ownerSimliDialogueReady(env),false)
+  for(const key of ['HH_SIMLI_DIALOGUE_PRIVACY_APPROVED','HH_SIMLI_FREE_ACCOUNT_VERIFIED','NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT','HH_SIMLI_OWNER_DIALOGUE_PILOT']){
+    await assert.rejects(startOwnerSimliDialogue(body,{env:{...full,[key]:''},fetcher:()=>assert.fail('network forbidden')}),/FREE_PILOT_DISABLED/)
+  }
+  for(const bad of [{...body,privacyConsent:false},{...body,target:'__proto__'},{...body,faceId:'x'},{...body,history:[]}])assert.equal(ownerSimliDialogueRequestAllowed(bad),false)
+  const response=await startOwnerSimliDialogue(body,{env:full,fetcher:async(_url,opts)=>{
+    assert.equal(JSON.parse(opts.body).faceId,'a36d66df-a23d-4569-996b-d0e990019857')
+    return {ok:true,json:async()=>({session_token:'mock'})}
+  }})
+  assert.deepEqual(response,{provider:'simli',target:'chatbot',sessionToken:'mock'})
+})
+test('video mirror converts scheduled assistant PCM and drops pending packets on interruption',async()=>{
+  const {createSimliSpeechRelay}=await import('../lib/coaching/simli-speech-relay.mjs')
+  const queue=new Map(),packets=[]
+  let seq=0,cleared=0,failed=0
+  const relay=createSimliSpeechRelay({sendPcm16:bytes=>packets.push(bytes),interrupt:()=>cleared++},{
+    scheduleTimer:(fn,delay)=>{const id=++seq;queue.set(id,{fn,delay});return id},
+    cancelTimer:id=>queue.delete(id),onFailure:()=>failed++})
+  const ctx={currentTime:1,state:'running'}
+  relay.schedule(new Float32Array(2400).fill(.25),1.035,ctx)
+  assert.equal(queue.size,1)
+  const [id,task]=[...queue.entries()][0];assert.ok(task.delay>30&&task.delay<40);queue.delete(id);task.fn()
+  assert.equal(packets[0].length,3200)
+  relay.schedule(new Float32Array(12000),1.2,ctx)
+  assert.ok(queue.size>1);relay.clear();assert.equal(queue.size,0);assert.equal(cleared,1)
+  relay.schedule(new Float32Array(2400),5,ctx);assert.equal(failed,1)
+  relay.schedule(new Float32Array(2400),1.1,ctx);assert.equal(queue.size,0)
+})
