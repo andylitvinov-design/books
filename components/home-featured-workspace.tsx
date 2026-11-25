@@ -702,7 +702,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
       aria-labelledby="hh-home-features-title">
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{t.eyebrow} · 01–07</p>
-        <h1 id="hh-home-features-title">{t.heading}</h1>
+        <h2 id="hh-home-features-title">{t.heading}</h2>
         <p>{t.summary}</p>
       </header>
       <nav className={styles.steps} aria-label={t.journeyLabel}>

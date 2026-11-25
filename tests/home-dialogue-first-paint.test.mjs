@@ -156,7 +156,7 @@ test("Approved homepage has three program cards, three substeps per program and 
  assert.match(entry,/data-home-continue-path/);
  assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
  assert.match(styles,/SAMIR_MOCK_FIDELITY_20261123_V2/);
- assert.match(styles,/scroll-snap-type:x mandatory/);
+ assert.match(styles,/\.programGrid\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
  assert.match(styles,/max-height:800px/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
  assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);

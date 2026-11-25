@@ -32,7 +32,7 @@ test("every homepage URL is excluded, but existing public enquiry placements rem
 test("React Home preloads the actual first-screen persona portrait and existing scenic background", () => {
   const home=read("components/home-dialogue-entry.tsx");
   assert.match(home, /href=\{picture\} fetchPriority="high"/);
-  assert.match(home, /ideas-pine-reference\.webp" fetchPriority="high"/);
+  assert.doesNotMatch(home, /ideas-pine-reference\.webp" fetchPriority="high"/);
   assert.match(home, /loading="eager" fetchPriority="high"/);
   assert.match(home, /data-home-dialogue-entry/);
 });

@@ -20,7 +20,7 @@ const expected = ["courses","personality","situation","coaching","alchemy","ener
 test("seven ordered stages with unique media and one visible journey in EN/RU/ES", () => {
   assert.deepEqual(ids, expected);
   assert.match(component, /data-home-journey-count=\{moduleIds\.length\}/);
-  assert.match(component, /<h1 id="hh-home-features-title">/);
+  assert.match(component, /<h2 id="hh-home-features-title">/);
   assert.match(component, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
   const expanded=read("components/home-expanded-catalog.tsx");
   const deferred=read("components/home-deferred-sections.tsx");

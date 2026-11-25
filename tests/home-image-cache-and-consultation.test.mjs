@@ -7,6 +7,7 @@ const dialogue = readFileSync(new URL("../components/home-dialogue-entry.tsx", i
 
 test("approved homepage first-screen artwork exists at its cacheable public paths", () => {
   for (const path of [
+    "public/images/holistic-house/ali-inner-alchemist-hero.webp",
     "public/images/holistic-house/my-coach-motion/max-living.webp",
     "public/images/holistic-house/ideas-pine-reference.webp",
     ...["stress", "love", "growth", "energy"].map(name => `public/images/video-goal-art/${name}.webp`),
@@ -15,6 +16,7 @@ test("approved homepage first-screen artwork exists at its cacheable public path
 
 test("homepage first-screen photography is CDN/browser cached without HTML or private routes", () => {
   for (const source of [
+    "/images/holistic-house/ali-inner-alchemist-hero.webp",
     "/images/holistic-house/my-coach-motion/:path*",
     "/images/holistic-house/ideas-pine-reference.webp",
     "/images/video-goal-art/:path*",

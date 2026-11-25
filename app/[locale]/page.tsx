@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-import { HolisticHouseLoadingScene } from "@/components/holistic-house-loading-scene";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
@@ -17,9 +15,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RussianHomePage({ params }: Props) {
   if ((await params).locale !== "ru") notFound();
-  return (
-    <Suspense fallback={<HolisticHouseLoadingScene />}>
-      <HolisticHouseHome locale="ru" />
-    </Suspense>
-  );
+  return <HolisticHouseHome locale="ru" />;
 }
