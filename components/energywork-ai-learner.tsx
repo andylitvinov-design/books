@@ -1252,7 +1252,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const weekArt = REIKI_DAYBOOK_ART[activeWeek.lesson - 1] ?? REIKI_DAYBOOK_ART[0];
-  const diagramArt = Boolean(slide.image?.includes("kundalini-manual"));
+  const diagramArt = slide.kind !== "audio-intro" && Boolean(slide.image?.includes("kundalini-manual"));
   const hasVideo = slide.kind === "video" || slide.id === "paths-01";
   const displayArtSource = daybook ? (hasVideo || ["welcome-02", "init-photo-01", "end-01", "end-02"].includes(slide.id) ? undefined : slide.kind === "audio-intro" ? REIKI_DAYBOOK_ART[4] : slide.kind === "welcome" ? weekArt : slide.image ?? weekArt) : artSource;
   // Daybook uses a visible thematic image between copy and activity, as approved.
@@ -1358,6 +1358,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id));
   }
   async function jumpToSlide(id: string) {
+    forwardOptionalAudio.current = null;
     if (busy) return;
     const target = slides.findIndex((item) => item.id === (id === "tan-study-03" ? "tan-study-02" : id));
     if (target < 0 || target === index) return;
@@ -1448,6 +1449,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     } finally { setBusy(false); }
   }
   async function previous() {
+    forwardOptionalAudio.current = null;
     if (index === 0 || busy) return;
     if (sync === "ready" && slide.question && currentAnswerIsDirty()) {
       setBusy(true);
@@ -1461,6 +1463,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     setIndex((current) => Math.max(0, current - 1));
   }
   async function restart() {
+    forwardOptionalAudio.current = null;
     if (busy || (sync === "ready" && !window.confirm(t.resetConfirm))) return;
     if (sync === "ready") {
       setBusy(true);
@@ -1551,7 +1554,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     </svg>
   );
   const lessonArt = displayArtSource ? (
-              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
+              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt || slide.kind === "audio-intro" ? "true" : undefined}
                  data-reiki-diagram={daybook ? (diagramArt ? "true" : undefined) : artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
                  aria-hidden={artBackground ? true : undefined}>
                 <Image src={displayArtSource}
