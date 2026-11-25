@@ -8,7 +8,7 @@ test("Samir home shows three horizontal programs and no old stages or audience s
  assert.doesNotMatch(home,/data-home-mode-button=|data-home-stage-option=|data-home-stage-scroll|data-home-how-it-works/);
  for(const id of ["clarity","goal","business"])assert.ok(home.includes('id:"'+id+'"'));
  assert.match(home,/data-home-intent-option=\{art\.id\}/);
- assert.match(home,/art\.id==="business"\?"business":"self"/);
+ assert.ok(home.includes('router.push("/"+locale+"/programs/"+art.id)'));
  assert.match(home,/useAliPersona\("alex"\)/);
  assert.match(css,/\.programGrid\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
  assert.match(css,/\.programCard\{position:relative;display:grid/);

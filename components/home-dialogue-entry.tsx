@@ -334,7 +334,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       {msg.programs.map((program,index)=>{
         const art=programArt[index],ProgramIcon=art.icon;
         return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
-          aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
+          aria-label={program.title} onClick={()=>router.push("/"+locale+"/programs/"+art.id)}>
           <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
           <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
             <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>

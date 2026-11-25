@@ -1,0 +1,65 @@
+import Link from 'next/link'
+import {ArrowLeft,ArrowRight,BarChart3,BriefcaseBusiness,ChevronDown,ChevronRight,Compass,Flag,Flame,Flower2,Layers,Leaf,Route,Settings2,Sparkles,Sunrise,Target,TrendingUp} from 'lucide-react'
+import {SiteNavigation} from '@/components/site-navigation'
+import {PROGRAM_LOCALES} from '@/lib/public-coaching-programs.mjs'
+import styles from './public-program-overview.module.css'
+
+const icons={
+ clarity:[Flower2,Leaf,Target],
+ goal:[Compass,Flame,Route,Flag,Flower2,Sparkles,TrendingUp,Sunrise],
+ business:[BriefcaseBusiness,Layers,Settings2,BarChart3]
+}
+const programIcons={clarity:Flower2,goal:Target,business:TrendingUp}
+
+export default function ProgramOverview({program:p}){
+ const Icon=programIcons[p.id]
+ return <main className={styles.page} lang={p.locale} data-public-program={p.id}>
+  <header className={styles.header}>
+   <Link href={p.home} prefetch={false} className={styles.brand} aria-label="Holistic House">
+    <Leaf size={31} aria-hidden="true"/><span><strong>Holistic House</strong><small>{p.tagline}</small></span>
+   </Link>
+   <div className={styles.headerActions}>
+    <details className={styles.language}><summary aria-label={p.language}>{p.locale.toUpperCase()}<ChevronDown size={14} aria-hidden="true"/></summary>
+     <div className={styles.languages}>{PROGRAM_LOCALES.map(lang=><Link key={lang} href={'/'+lang+'/programs/'+p.id} hrefLang={lang} lang={lang} prefetch={false} aria-current={lang===p.locale?'page':undefined}>{lang.toUpperCase()}</Link>)}</div>
+    </details>
+    <div className={styles.siteTools}><SiteNavigation locale={p.locale} compact/></div>
+   </div>
+  </header>
+  <section className={styles.hero}>
+   <div className={styles.art} aria-hidden="true"/>
+   <div className={styles.shade} aria-hidden="true"/>
+   <Link href={p.home} className={styles.back} prefetch={false}><ArrowLeft size={19} aria-hidden="true"/>{p.back}</Link>
+   <div className={styles.heroCopy}>
+    <h1>{p.title}</h1><span className={styles.goldLine} aria-hidden="true"/>
+    <p>{p.subtitle}</p>
+    <span className={styles.count}><Icon size={21} aria-hidden="true"/>{p.count}</span>
+    {p.intro&&<small className={styles.intro}>{p.intro}</small>}
+   </div>
+  </section>
+  <section className={styles.body} aria-label={p.outline}>
+   <ol className={styles.sessions}>
+    {p.rows.map(([title,description],index)=>{
+     const RowIcon=icons[p.id][index]
+     return <li key={index} data-program-session={index+1}>
+      {p.id==='goal'?<details className={styles.session}>
+       <summary className={styles.row}>
+        <RowIcon className={styles.sessionIcon} size={25} aria-hidden="true"/>
+        <span className={styles.number} aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
+        <span className={styles.sessionTitle}>{title}</span>
+        <ChevronRight size={20} className={styles.chevron} aria-hidden="true"/>
+       </summary>
+       <p className={styles.detail}>{description}</p>
+      </details>:<div className={styles.session}>
+       <div className={styles.row}>
+        <RowIcon className={styles.sessionIcon} size={25} aria-hidden="true"/>
+        <span className={styles.number} aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
+        <span className={styles.sessionTitle}>{title}<small>{description}</small></span>
+       </div>
+      </div>}
+     </li>
+    })}
+   </ol>
+   <Link href={p.startHref} prefetch={false} className={styles.cta} data-program-start>{p.start}<ArrowRight size={22} aria-hidden="true"/></Link>
+  </section>
+ </main>
+}
