@@ -163,8 +163,15 @@ test("safe approval semantics: no corrections produce renderer, payment, access,
     assert.doesNotMatch(code,/\bfetch\(|XMLHttpRequest|localStorage|sessionStorage|process\.env|createBooking|createPayment/);
   }
   const api=read("app/api/holistic-agent/turn/route.js");
-  assert.ok(api.indexOf("requireSameOrigin(request,config)")<api.indexOf("await auth.verified()"));
-  assert.ok(api.indexOf("const safety = preflight")<api.indexOf("const fastRule="));
+  // GET is read-only and also verifies identity. Enforce origin and safety order in POST, not across unrelated handlers.
+  const post=api.split("export async function POST(request) {")[1];
+  assert.ok(post, "POST handler exists");
+  const origin=post.indexOf("requireSameOrigin(request,config)");
+  const verified=post.indexOf("await auth.verified()");
+  assert.ok(origin>=0 && verified>origin, "POST verifies same origin before authentication");
+  const safety=post.indexOf("const safety = preflight");
+  const fastRule=post.indexOf("const fastRule=");
+  assert.ok(safety>=0 && fastRule>safety, "POST runs safety preflight before fast reply");
 });
 
 test("deterministic benchmark reports stage/act counts and p95 without raw client logging",()=>{
