@@ -24,6 +24,7 @@ function render(expanded, locale = "en") {
     "react": { useState: () => [expanded, next => { toggled = next; }] },
     "next/link": { default: props => jsx("a", props) },
     "@/components/site-video-player": { SiteVideoPlayer: props => jsx("video-fixture", props) },
+    "@/components/home-youtube-facade": { HomeYoutubeFacade: props => jsx("video-fixture", props) },
     "./personal-testimonials.module.css": { default: new Proxy({}, { get: (_, name) => String(name) }) },
   };
   const compiled = ts.transpileModule(source, { fileName: "home-testimonial-more.tsx",

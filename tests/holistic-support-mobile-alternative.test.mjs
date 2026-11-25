@@ -20,21 +20,51 @@ test("alternate support screen is separate, linked and localized without replaci
     assert.match(route, new RegExp(locale + ': "/' + locale + '/holistic-support/mobile"'));
   }
   assert.match(route, /robots: \{ index: false, follow: true \}/);
-  assert.match(nav, /holistic-support.*mobile\\|mandala/);
+  assert.match(nav, /holistic-support/);
+  assert.match(nav, /\(\?:mobile\|mandala\)/);
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
-test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
+test("public mobile tool buttons wait for the existing hydration effect before first Safari tap",()=>{
+  assert.match(client,/data-support-tool-hydrated=\{photoHydrated\?"true":"false"\}/);
+  assert.match(client,/data-support-tool=\{id\}[\s\S]*?disabled=\{!photoHydrated\}/);
+  const browser=read("scripts/verify-talisman-google-checkout-browser.mjs");
+  assert.match(browser,/data-support-tool-hydrated="true"/);
+  assert.match(browser,/await talismanTool\.tap\(\)/);
+  assert.match(browser,/getAttribute\('aria-pressed'\)==='true'/);
+  assert.match(browser,/await viewer\.waitFor\(\{state:"visible"\}\)/);
+});
+test("personal scores stay local; iPhone photos are previewed locally and saved only by explicit private action", () => {
+  const photoHelper = read("lib/mandala/prepare-browser-photo.ts");
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /URL\.createObjectURL\(file\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  // SSR file pickers cannot act before React installs the actual decoder.
+  assert.match(client,/const \[photoHydrated,setPhotoHydrated\] = useState\(false\)/);
+  assert.match(client,/useEffect\(\(\)=>setPhotoHydrated\(true\),\[\]\)/);
+  assert.match(client,/data-support-photo-hydrated=\{photoHydrated\?"true":"false"\}/);
+  assert.match(client,/disabled=\{!photoHydrated\|\|photoBusy\}/);
+  assert.doesNotMatch(client,/disabled=\{photoBusy\} aria-label=\{photoUrl/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_ACCEPT = "image\/\*,\.heic,\.heif,\.jpg,\.jpeg,\.png,\.webp"/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
+  assert.match(photoHelper, /canvas\.toBlob\(resolve, "image\/jpeg"/);
+  assert.match(client, /prepareBrowserPhoto\(file\)/);
+  assert.match(client, /URL\.createObjectURL\(blob\)/);
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
-  assert.match(client, /8 \* 1024 \* 1024/);
+  // The selected original remains local. Only an explicitly tapped Save action
+  // sends the stripped, resized JPEG to the authenticated first-party route.
+  assert.match(client, /photoBlob && <button/);
+  assert.match(client, /data-support-photo-save/);
+  assert.match(client, /onClick=\{\(\) => \{ void savePhoto\(\); \}\}/);
+  assert.match(client, /fetch\("\/api\/app\/support-photo", \{/);
+  assert.match(client, /method:"POST", credentials:"same-origin"/);
+  assert.match(client, /response\.status === 401/);
+  assert.match(client, /data-support-photo-signin/);
   assert.match(client, /data-support-recommendations/);
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
@@ -57,7 +87,9 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return eligible.slice(0, 4)'));
+  assert.ok(client.includes('const relevantVideos = choice === "pump" && program !== "all" ? catalogVideos : catalogVideos.slice(0, 4)'),
+    "four featured cards remain, while the same source-backed full catalogue stays available below");
+  assert.ok(client.includes('data-support-meditation-feed'));
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
@@ -89,11 +121,26 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
   for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
     assert.ok(client.includes(pair), pair);
-  // The tab query is critical: without it the existing route initially shows
-  // Orders, not the already-approved person-by-person conversations.
-  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  // Legacy ?tab=chats still opens protected client conversations, while
+  // new direct Messenger visits intentionally open the owner-approved AI tab.
+  assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
+  // The account-scoped Messenger gained a fourth News folder, while Orders,
+  // protected Clients and legacy ?tab=chats must retain their precedence.
+  // Both initial hydration and URL-change handling should preserve the route.
+  for (const expression of [
+    "requested==='orders'||searchParams.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='orders'||q.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':",
+    "onClick={()=>chooseSection('orders')}",
+    "onClick={()=>chooseSection('clients')}",
+    "onClick={()=>chooseSection('news')}",
+    'aria-controls="hh-orders-panel"',
+    'aria-controls="hh-clients-panel"',
+    'aria-controls="hh-news-panel"',
+    "hidden={section!=='news'}",
+  ]) assert.ok(orders.includes(expression), "protected Messenger routing regressed: "+expression);
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
-  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
@@ -135,7 +182,10 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
   assert.match(client, /rankSupportGoalVideos\(\{ selection: goalSelection, videos, locale \}\)/);
   assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
-  assert.match(client, /setRecommendation\(\{ \.\.\.scores \}\)/);
+  assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
+  assert.match(client, /goals: values\.meaning/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.doesNotMatch(client, /energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5/);
   assert.match(client, /setRecommendation\(null\)/);
   assert.match(client, /data-support-meditation-basis role="status"/);
   assert.match(client, /suggested\.priorities\.map\(/);
@@ -153,7 +203,7 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /pump: "Курсы", healing: "Рейки поддержка"/);
   assert.match(client, /pump: "Cursos", healing: "Apoyo Reiki"/);
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
   assert.match(courseProfiles, /data-support-courses-panel/);
   assert.match(client, /data-support-healing-panel/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
@@ -266,6 +316,7 @@ test("all support modes share scenic hero → actual miniature choices without f
 
 test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, not duplicated video manifests", () => {
   const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
+  const greekSource = read("data/academy/greek-video-series.ts");
   const curricula = JSON.parse(read("data/academy/psimaster-sources.generated.json"));
   const count = new Map([
     ["videos/maya-archetypes", 6],
@@ -288,7 +339,7 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
     assert.equal(lessons.length, expected, id);
     assert.equal(new Set(lessons.map(entry => entry.videoId)).size, expected, "unique original lessons");
     assert.ok(lessons.every(entry => entry.status === "verified_legacy_public_embed"), id);
-    assert.ok(route.includes('"' + id + '"'), id + " links to original manifest");
+    assert.ok(route.includes('"' + id + '"') || greekSource.includes('"' + id + '"'), id + " links to original manifest");
   }
   assert.match(route, /findAcademyRecord\(entry\.programId, "ru"\)/);
   assert.match(route, /findAcademyRecord\(logicalId, "ru"\)/);
@@ -300,21 +351,23 @@ test("Maya Egyptian and Greek mysteries use existing Russian Academy courses, no
   assert.doesNotMatch(route, /new YouTube upload|generateHeyGen|createCourse\(/);
 });
 
-test("original Russian mysteries remain Academy links beside the four profile Courses screen", () => {
+test("Russian course media picker returns in Courses while the four profiles live in Tests", () => {
   const courseProfiles = read("components/holistic-support-course-profiles.tsx");
   const courseCss = read("components/holistic-support-course-profiles.module.css");
-  assert.match(client, /choice === "pump" \? \(\s*<HolisticSupportCourseProfiles/);
+  assert.match(client, /const scene = choice === "meditation" \|\| choice === "pump"/);
+  assert.match(client, /choice === "tests" \? \(\s*<section className=\{styles\.testsPanel\}/);
+  assert.match(client, /data-support-mystery-course=\{course\.id\}/);
+  assert.match(client, /data-support-active-course-link/);
   assert.match(client, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
   assert.match(courseProfiles, /courses\.length \? <details[^>]*data-support-mystery-courses/);
-  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.href\} prefetch=\{false\} key=\{course\.id\}/);
+  assert.match(courseProfiles, /courses\.map\(course => <Link href=\{course\.seriesHref \?\? course\.href\} prefetch=\{false\} key=\{course\.id\}/);
   assert.match(courseProfiles, /<strong>\{course\.shortTitle\}<\/strong>/);
   assert.match(courseProfiles, /\{course\.videoCount\} \{t\.videos\}/);
   assert.match(courseProfiles, /src=\{course\.poster\}/);
   assert.match(courseProfiles, /\/academy\`/);
   assert.match(courseProfiles, /\/academy\/reiki\/tantra-reiki\/discover/);
-  // The original route/manifests remain covered separately above. The new
-  // profile screen links to those originals rather than pretending its old,
-  // now-unreachable inline course picker is still a visible UI.
+  // Original manifests remain single-source. The course picker is reachable
+  // again, while the four self-rating profile cards belong to Tests.
   assert.match(client, /const browseVideos = useMemo\(\(\) => choice === "pump"/);
   assert.match(client, /courses\.flatMap\(course => course\.videos\)/);
   assert.match(client, /recommendSupportByLowestScores\(\{ scores: recommendation, videos, locale \}\)/);
@@ -363,11 +416,14 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
     assert.ok(gallery.includes(key + ":"), "real intent " + key);
     assert.ok(gallery.includes(method), "practice label " + method);
   }
-  for (const title of ["Поддержка силы", "Поддержка любви", "Поддержка цели", "Поддержка баланса"]) {
+  for (const title of ["Поддержка энергии", "Поддержка любви", "Поддержка цели", "Поддержка сознания"]) {
     assert.ok(gallery.includes(title), title);
   }
+  assert.match(gallery, /const supportedMethods = kind !== "healing" \? null/);
+  assert.match(gallery, /reikiFormat === "session" \? REIKI_METHODS\[reikiFocus\]/);
+  assert.doesNotMatch(gallery, /<small>\{option\.method\}<\/small>/);
+  assert.match(gallery, /<strong>\{option\.label\}<\/strong>/);
   assert.match(gallery, /reikiFormat === "session" && <div className=\{styles\.reikiFocusBar\}/);
-  assert.match(gallery, /data-support-reiki-marketplace/);
   assert.match(gallery, /REIKI_METHODS\[reikiFocus\]/);
   assert.match(gallery, /master\.methods\.some\(offersMethod\)/);
   assert.match(read("components/holistic-reiki-offer-shelf.tsx"), /data-support-reiki-unavailable/);
@@ -378,9 +434,9 @@ test("4 Reiki intention filters show ONLY published Reiki methods and never inve
   assert.doesNotMatch(gallery, /handlePayment|createPaymentIntent|new ServiceOffering|autoSubmit/);
   assert.match(galleryCss, /grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(galleryCss, /\.reikiFocusButton\[aria-pressed="true"\]/);
-  assert.match(galleryCss, /min-height: 305px; height: auto; max-height: none/);
+  assert.match(galleryCss, /height: 288px; min-height: 288px; max-height: 288px/);
   assert.match(talismanCss, /height: 288px; min-height: 288px; max-height: 288px/);
-  assert.match(galleryCss, /scroll-snap-type: x proximity/);
+  assert.match(galleryCss, /height: 282px; min-height: 282px; max-height: 282px/);
   assert.match(talismanCss, /height: 282px; min-height: 282px; max-height: 282px/);
   assert.match(css, /\.hero \{ min-height: 288px;/);
 });
@@ -422,7 +478,7 @@ test("mobile Reiki center retains the photo with Main/Filter/Description/Video-a
 test("Reiki options show 3 formats and report modes, with session-only provider and non-session certificate", () => {
   const gallery = read("components/holistic-support-master-gallery.tsx");
   const css = read("components/holistic-support-master-gallery.module.css");
-  for (const label of ["Сессия","Инициация","Курс","Краткий",
+  for (const label of ["Сессия","Инициация","Программа","Краткий",
     "Личный разбор текстом","Личный разбор голосом",
     "В течение суток","В течение 3 дней","В выбранный час",
     "От практика","От Рейки-мастера","С выдачей сертификата"]) assert.ok(gallery.includes(label),label);
@@ -441,7 +497,11 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(gallery, /price > 100/);
   assert.match(gallery, /priceOptions: matchingPriceOptions/);
   assert.match(gallery, /REIKI_FREE_COURSE_PATH/);
-  assert.match(gallery, /free-initiation#initiation-choices/);
+  assert.match(gallery, /listPublicReikiAcademyOffers\(locale\)\.filter\(offer => offer\.kind === "initiation"\)/);
+  assert.match(gallery, /const selectedInitiation = reikiInitiations\.find\(offer => offer\.id === reikiInitiationId\) \|\| null/);
+  assert.match(gallery, /selectedInitiation\?\.href \|\| reikiInitiations\[0\]\?\.href/);
+  assert.match(gallery, /data-support-reiki-initiation-types/);
+  assert.doesNotMatch(gallery, /free-initiation#initiation-choices/);
   assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);

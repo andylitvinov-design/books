@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "hh-judgment-situations-v1.1",
+  "releasedCodes": [
+    "overload",
+    "starting",
+    "conflict",
+    "loneliness",
+    "self_criticism",
+    "uncertainty",
+    "fatigue",
+    "stress"
+  ],
+  "experimentalCodes": [
+    "priority_conflict",
+    "interrupted",
+    "waiting",
+    "boundary_request",
+    "misunderstanding",
+    "uncertain_contact",
+    "comparison",
+    "error_regret",
+    "decision_doubt",
+    "choice_overload",
+    "stalled_goal",
+    "motivation_fluctuation",
+    "sleep_difficulty",
+    "sensory_overload",
+    "change_adaptation",
+    "unclear_feeling"
+  ],
+  "policy": {
+    "category": "non_clinical_difficulty",
+    "maxHypotheses": 2,
+    "maxChoices": 2,
+    "memoryDefault": "none",
+    "paidSuggestions": false,
+    "automaticActions": false,
+    "safetyFirst": true,
+    "clinicalInference": false,
+    "additionalInferenceProviders": 0
+  },
+  "actions": [
+    {
+      "id": "micro_step",
+      "enabled": true,
+      "requiresExplicitChoice": true,
+      "reversible": true,
+      "remoteEffect": false,
+      "paid": false,
+      "excludedSafetyStates": [
+        "urgent",
+        "human_review",
+        "unknown"
+      ],
+      "requiresClinicalReview": false
+    },
+    {
+      "id": "listen",
+      "enabled": true,
+      "requiresExplicitChoice": false,
+      "reversible": true,
+      "remoteEffect": false,
+      "paid": false
+    },
+    {
+      "id": "verified_resource",
+      "enabled": false,
+      "reason": "Existing rights/availability ranker only; no invented direct links",
+      "requiresExplicitChoice": true,
+      "remoteEffect": false,
+      "paid": false
+    },
+    {
+      "id": "personal_content",
+      "enabled": false,
+      "reason": "User request must use existing separately verified creator; no autonomous generation",
+      "requiresExplicitChoice": true,
+      "remoteEffect": true,
+      "paid": false
+    },
+    {
+      "id": "specialist_handoff",
+      "enabled": true,
+      "requiresExplicitChoice": false,
+      "reversible": true,
+      "remoteEffect": false,
+      "paid": false
+    }
+  ]
+}

@@ -8,33 +8,33 @@ import styles from './messages-contact-card.module.css'
 import {mediaFromMessages,mergeMediaPages} from '@/lib/app/messenger-private-media.mjs'
 
 const COPY={
- en:{title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
+ en:{reference:'Reference',service:'Service',page:'Source page',landing:'First landing page',traffic:'Traffic source',campaign:'Campaign',previous:'Previous page',unverified:'Visitor-submitted contact is unverified and for replying to this enquiry only.',title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
    status:'Status',source:'Channel',date:'Received',photos:'Conversation attachments',
    hint:'Private photos and recordings are linked to this conversation; nothing is copied into a different client profile.',
    none:'No attachments in the loaded history.',loading:'Opening private client details…',
    error:'Could not open private details. Reopen the card to retry.',older:'Load earlier attachments',
    olderBusy:'Loading earlier history…',olderError:'Could not load earlier history. Retry.',
-   master:'Master profile',openMaster:'Open verified master profile',full:'Open private client request and materials',
+   master:'Master profile',openMaster:'Open verified master profile',full:'Full request',
    empty:'No other verified details yet.',privacy:'CRM contacts, private client records and master profiles are linked only after identity verification.',
    video:'Videos from the private client case are available through its protected case link, not from this messenger archive.',
    photo:'Photo',audio:'Audio',movie:'Video'},
- ru:{title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
+ ru:{reference:'Номер заявки',service:'Услуга',page:'Страница заявки',landing:'Первая страница входа',traffic:'Источник трафика',campaign:'Кампания',previous:'Предыдущая страница',unverified:'Контакт посетителя не подтверждён. Используйте его только для ответа на эту заявку.',title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
    status:'Статус',source:'Канал',date:'Получена',photos:'Материалы переписки',
    hint:'Приватные фотографии и записи привязаны к диалогу. В другой профиль клиента ничего не копируется.',
    none:'В загруженной истории вложений нет.',loading:'Открываю защищённую карточку…',
    error:'Не удалось открыть сведения. Повторите открытие карточки.',older:'Показать более ранние материалы',
    olderBusy:'Загружаю историю…',olderError:'Не удалось загрузить историю. Повторите.',
-   master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Открыть защищённую заявку и материалы',
+   master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Вся заявка',
    empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные клиентские записи и профили мастеров связываются только после проверки личности.',
    video:'Видео из личного дела доступны через защищённую заявку, а не через общий архив мессенджера.',
    photo:'Фото',audio:'Аудио',movie:'Видео'},
- es:{title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
+ es:{reference:'Referencia',service:'Servicio',page:'Página de origen',landing:'Primera página de entrada',traffic:'Origen del tráfico',campaign:'Campaña',previous:'Página anterior',unverified:'Contacto no verificado. Úsalo solo para responder a esta solicitud.',title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
    status:'Estado',source:'Canal',date:'Recibida',photos:'Adjuntos de la conversación',
    hint:'Fotos y grabaciones privadas pertenecen a esta conversación y no se copian a otras fichas.',
    none:'No hay adjuntos en el historial cargado.',loading:'Abriendo ficha privada…',
    error:'No se pueden abrir los datos. Vuelve a intentar.',older:'Ver adjuntos anteriores',
    olderBusy:'Cargando historial…',olderError:'No se pudo cargar el historial. Reintenta.',
-   master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Abrir solicitud y archivos privados',
+   master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Solicitud completa',
    empty:'No hay más datos verificados.',privacy:'Contactos CRM, expedientes privados y perfiles profesionales solo se enlazan tras verificar la identidad.',
    video:'Los videos del expediente privado están disponibles en la solicitud protegida, no en este archivo de mensajes.',
    photo:'Foto',audio:'Audio',movie:'Video'}
@@ -128,8 +128,23 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
    }finally{if(olderRef.current===abort)olderRef.current=null}
  }
  const kind=item?.kind
- const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:kind==='business'?item.item:null
- const email=field(contact,'email'),phone=field(contact,'phone'),status=field(contact,'lifecycle','status')||field(item?.item,'status')
+ // An assigned master sees only the redacted contact alias. Platform owner
+ // CRM access is a separate audited operator workflow, never a shared card field.
+ const publicRequest=kind==='request'&&item.item?.requestKind==='public'
+ // Only pre-consented and bounded attribution supplied by the protected CRM
+ // may be rendered. Never reconstruct referrers, personal URLs or click IDs.
+ const attribution=publicRequest?item.item?.attribution:null
+ const landing=field(attribution,'landingPath')
+ const traffic=field(attribution,'trafficSource')
+ const campaign=field(attribution,'campaign')
+ const previous=field(attribution,'previousPath')
+ const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:
+   kind==='business'?item.item:null
+ // Defense in depth: even if a future upstream public request gains contact
+ // fields, the shared master card must never render email or phone.
+ const email=publicRequest?'':field(contact,'email')
+ const phone=publicRequest?'':field(contact,'phone')
+ const status=field(contact,'lifecycle','status')||field(item?.item,'status')
  const masterSlug=kind==='direct'&&validSlug(item.peerMasterSlug)?item.peerMasterSlug:''
  const date=displayDate(item.at||item.item?.createdAt,lang)
  return <section className={styles.card} aria-label={t.title} data-messages-client-card data-kind={kind}>
@@ -148,7 +163,15 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
        {status&&<div><dt>{t.status}</dt><dd>{status}</dd></div>}
        {item.source&&<div><dt>{t.source}</dt><dd>{item.source}</dd></div>}
        {date&&<div><dt>{t.date}</dt><dd>{date}</dd></div>}
+       {publicRequest&&item.item?.referenceCode&&<div><dt>{t.reference}</dt><dd>{item.item.referenceCode}</dd></div>}
+       {publicRequest&&item.item?.serviceTitle&&<div><dt>{t.service}</dt><dd>{item.item.serviceTitle}</dd></div>}
+       {publicRequest&&item.item?.sourcePath&&<div><dt>{t.page}</dt><dd>{item.item.sourcePath}</dd></div>}
+       {landing&&<div><dt>{t.landing}</dt><dd>{landing}</dd></div>}
+       {traffic&&<div><dt>{t.traffic}</dt><dd>{traffic}</dd></div>}
+       {previous&&<div><dt>{t.previous}</dt><dd>{previous}</dd></div>}
+       {campaign&&<div><dt>{t.campaign}</dt><dd>{campaign}</dd></div>}
      </dl>
+     {publicRequest&&<p className={styles.muted}>{t.unverified}</p>}
      {!email&&!phone&&!status&&!view.loading&&!view.error&&<p className={styles.muted}>{t.empty}</p>}
    </section>
    {masterSlug&&<section className={styles.section}><h3>{t.master}</h3>
@@ -176,9 +199,9 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
      {view.olderError&&<p className={styles.notice} role="alert">{t.olderError}</p>}
    </section>}
    {kind==='request'&&validId(item.id)&&<section className={styles.section}>
-     <h3><Video size={17}/>{t.photos}</h3><Link prefetch={false} className={styles.link}
-       href={'/'+lang+'/app/practice?panel=clients&requestId='+encodeURIComponent(item.id)}>
-       {t.full}<ExternalLink size={16}/></Link></section>}
+     <h3><Video size={17}/>{t.full}</h3>
+     {item.item?.message&&<p className={styles.muted} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.item.message}</p>}
+     <p className={styles.muted}>{t.privacy}</p></section>}
    {(kind==='crm'||kind==='direct')&&<p className={styles.privacy}><Music2 size={13}/>{t.video}</p>}
    <p className={styles.privacy}>{t.privacy}</p>
  </section>

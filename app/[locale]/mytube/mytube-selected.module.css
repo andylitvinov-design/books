@@ -1,0 +1,4 @@
+.selected{margin:8px 0 22px;padding:14px;border:1px solid #e9dfd1;border-radius:22px;background:#fffcf7;color:#17334b}
+.selected h2{margin:0 0 6px;font:700 23px/1.2 Georgia,"Times New Roman",serif;color:#17334b}
+.selected>p{margin:0 0 13px;color:#5d6a71;font-size:14px}
+.selected :global([data-video-layout="mytube"]){margin-top:0}

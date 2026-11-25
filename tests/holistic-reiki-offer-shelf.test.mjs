@@ -79,7 +79,7 @@ test("quick three-way Reiki type switch shares the real session/initiations/prog
   assert.match(parent,/chooseReikiFormat\(value, true\)/);
   assert.match(parent,/onClick=\{\(\) => chooseReikiFormat\(value\)\}/);
   assert.match(parent,/format=\{reikiFormat\} price=\{reikiPrice\}/);
-  for (const word of ["Course", "Курс", "Curso"]) assert.ok(parent.includes(word));
+  for (const word of ["Programme", "Программа", "Programa"]) assert.ok(parent.includes(word));
   assert.match(css,/\.viewer \.reikiQuickFormat button\[aria-pressed="true"\]/);
   assert.match(css,/min-height:44px/);
 });
@@ -110,12 +110,7 @@ test("Reiki support is a service marketplace with one concise picker and genuine
   assert.match(parent,/setOrderOpen\(true\)/);
   assert.match(parent,/<RemoteEnergySupportBooking/);
   assert.match(galleryCss,/\.reikiBrowseHeading/);
-  assert.match(parent,/className=\{styles\.reikiBrowseIntro\}/);
-  assert.match(galleryCss,/width: calc\(100% - 12px\)/);
-  assert.match(galleryCss,/min-height: 305px; height: auto; max-height: none/);
-  assert.match(galleryCss,/min-height: 64px/);
-  assert.match(galleryCss,/scroll-snap-type: x proximity/);
-  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{\s*order: 2/);
+  assert.match(galleryCss,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 0; margin-top: 0;/);
   assert.match(galleryCss,/@media\(max-width:640px\)/);
   assert.match(galleryCss,/@media\(max-width:350px\)/);
   assert.match(shelfCss,/grid-template-columns:116px minmax\(0,1fr\)/);
@@ -125,4 +120,55 @@ test("Reiki support is a service marketplace with one concise picker and genuine
   assert.match(shelf,/option\.amountEur === null \? t\.unknownPrice/);
   assert.doesNotMatch(shelf,/createPayment|autoSubmit|fake(?:Track|Price)|hardcoded(?:Booking|Slot)/);
   assert.doesNotMatch(parent,/Треки поддержки|Поддержка за 21 день/);
+});
+
+test("Reiki initiation switches reveal source-backed types below formats, never new service rows", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  for (const locale of ["ru","en","es"]) {
+    const types=listPublicReikiAcademyOffers(locale).filter(offer=>offer.kind==="initiation");
+    assert.deepEqual(types.map(offer=>offer.id).sort(),
+      ["kundalini-initiation","tantra-initiation","yggdrasil-initiation"]);
+    assert.equal(new Set(types.map(offer=>offer.method)).size,3);
+    assert.ok(types.every(offer=>offer.href.startsWith("/"+locale+"/academy/reiki/")));
+  }
+  assert.match(parent,/reikiFormat === "initiation" && <div className=\{styles\.reikiInitiationPicker\}/);
+  assert.match(parent,/data-support-reiki-initiation-types/);
+  assert.match(parent,/data-support-reiki-initiation-id="all"/);
+  assert.match(parent,/data-support-reiki-initiation-id=\{offer\.id\}/);
+  assert.match(parent,/listPublicReikiAcademyOffers\(locale\)\.filter\(offer => offer\.kind === "initiation"\)/);
+  assert.match(parent,/\.filter\(offer => !selectedInitiation \|\| offer\.id === selectedInitiation\.id\)/);
+  assert.match(parent,/reikiFormat === "initiation" && selectedInitiation \? \[selectedInitiation\.method\] : null/);
+  assert.match(parent,/selectedInitiation\?\.href/);
+  assert.match(parent,/setReikiInitiationId\(null\)/);
+  assert.match(css,/\.reikiInitiationTypes \{[\s\S]*?grid-template-columns: repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.viewer \.reikiInitiationTypes button\[aria-pressed="true"\]/);
+  assert.doesNotMatch(parent,/autoSubmit|createPaymentIntent/);
+});
+
+test("the scenic Reiki tabs are above content and only one low CTA remains", () => {
+  const parent=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTabs \{ order: 0; margin-top: 0; \}/);
+  assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageContent \{ order: 1;/);
+  assert.doesNotMatch(parent,/className=\{styles\.reikiSecondary\}/);
+  assert.match(parent,/data-support-reiki-tab=\{tab\}/);
+  assert.match(parent,/data-support-reiki-hero-filter onClick=\{\(\) => setReikiTab\("filter"\)\}/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?position: absolute; z-index: 3; top: 77px/);
+  assert.match(css,/\.reikiStageTopFilter \{[\s\S]*?top: 61px; left: 10px/);
+  assert.doesNotMatch(parent,/\{r\.choose\}<Filter size=\{17\}/);
+});
+
+
+test("compact Reiki marketplace keeps its own mobile width, readable touch targets and real filters", () => {
+  const gallery=read("components/holistic-support-master-gallery.tsx");
+  const css=read("components/holistic-support-master-gallery.module.css");
+  assert.match(gallery,/className=\{styles\.reikiBrowseIntro\}/);
+  for(const label of ["Find a service","Подобрать услугу","Elegir servicio"]) assert.ok(gallery.includes(label),label);
+  assert.match(gallery,/data-support-reiki-initiation-types/);
+  assert.match(gallery,/data-support-reiki-focus/);
+  assert.match(gallery,/data-support-reiki-hero-filter/);
+  assert.match(css,/width:calc\(100% - 12px\)/);
+  assert.match(css,/\.reikiStage\[data-active-tab="main"\] \.reikiStageTab \{ min-height:44px/);
+  assert.match(css,/grid-template-columns:repeat\(4,minmax\(86px,1fr\)\); overflow-x:auto/);
 });

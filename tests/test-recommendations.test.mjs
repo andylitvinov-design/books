@@ -154,7 +154,7 @@ test('style and length filters combine before recommendation ranking', () => {
 test('shared explorer exposes style, length, depth, area, free, search, and sort controls', async () => {
   const [explorer, recommendationLabels] = await Promise.all([
     readFile('components/app/test-explorer.jsx', 'utf8'),
-    readFile('lib/assessments/test-recommendations.js', 'utf8'),
+    readFile('lib/assessments/test-selection-options.js', 'utf8'),
   ])
   for (const token of ['TEST_STYLE_FILTERS', 'TEST_LENGTH_FILTERS', 'MONITOR_AREAS', 'freeOnly', 'setQuery', 'setSort', 'depthOptions']) assert.match(explorer, new RegExp(token))
   assert.match(recommendationLabels, /Funny \/ light/)
@@ -232,4 +232,18 @@ test('advanced controls are included on the embedded client page and in shared e
   for (const token of ['TEST_EXPLORER_DETAIL_TOPICS', 'TEST_EXPLORER_AXES', 'detailCounts', 'setMaxMinutes', 'setLanguage', 'setTracking', 'coverageForFilters', 'const matchCount =']) {
     assert.ok(source.includes(token), token)
   }
+})
+
+
+test('navigation filter metadata preserves legacy exports without loading scoring', async () => {
+  const options = await import('../lib/assessments/test-selection-options.js')
+  for (const [name, previous] of Object.entries({ TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS })) {
+    assert.equal(options[name], previous, name)
+    assert.ok(Object.isFrozen(options[name]), name)
+  }
+  const source = await readFile('lib/assessments/test-selection-options.js', 'utf8')
+  assert.doesNotMatch(source, /\bimport\s|\brequire\s*\(|\bfrom\s*['"]/ )
+  const topics = await readFile('lib/assessments/topic-journeys.js', 'utf8')
+  assert.match(topics, /from '\.\/test-selection-options\.js'/)
+  assert.doesNotMatch(topics, /from '\.\/test-recommendations\.js'/)
 })

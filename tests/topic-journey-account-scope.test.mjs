@@ -7,6 +7,7 @@ import * as journeys from '../lib/assessments/topic-journeys.js'
 import { buildTopicTestSuggestions } from '../lib/assessments/topic-test-suggestions.js'
 import * as intents from '../lib/app/test-selection-intent.js'
 import * as contracts from '../lib/assessments/contracts.js'
+import * as telegramOAuth from '../lib/app/telegram-oauth.mjs'
 
 // Actual client and unchanged API route, with synthetic identities and in-memory repositories.
 // No network, database, cookie, entitlement or billing operation runs in this harness.
@@ -36,6 +37,7 @@ function mount(locale = 'en', options = {}) {
   const routeModules = {
     'next/server': { NextResponse: { json: (body, { status = 200 } = {}) => json(body, status) } },
     '@/lib/app/config': { getAppConfig: () => ({ supabaseUrl: 'https://auth.example' }), requestOrigin: () => 'https://local.example', requireSameOrigin: () => {} },
+    '@/lib/app/telegram-oauth.mjs': telegramOAuth,
     '@/lib/app/session': { createRequestAuth: () => ({ verified: async () => {
       if (!actorId) throw new contracts.AppError('UNAUTHORIZED', 401)
       return { id: actorId }

@@ -6,8 +6,8 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
 const copy = {
-  en: { title: "Free Personal Express Review with Andrey | Holistic House", description: "One free personal written express review with Andrey: situation or energy and wellbeing, a fresh perspective and a possible next step. Not medical diagnosis or treatment." },
-  ru: { title: "Личная экспресс-диагностика с Андреем | Holistic House", description: "Одна бесплатная личная экспресс-диагностика с Андреем: запрос по ситуации либо энергии и самочувствию, письменные наблюдения и ориентир для следующего шага. Не медицинская диагностика." },
+  en: { title: "Free Personal Written Review with Andrey | Holistic House", description: "Have a question about work, relationships or everyday wellbeing? Tell Andrey about it and ask for a free, personal written response. Not medical diagnosis or treatment." },
+  ru: { title: "Бесплатная личная диагностика с Андреем | Holistic House", description: "Расскажите Андрею об одном вопросе, который вас волнует. Получите личный письменный разбор без оплаты и созвона. Не медицинская диагностика." },
   es: { title: "Revisión personal exprés gratuita con Andrey | Holistic House", description: "Una revisión personal exprés escrita gratuita con Andrey: situación o energía y bienestar, sin diagnóstico ni tratamiento médico." },
 } as const;
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }, { locale: "es" }]; }

@@ -114,14 +114,17 @@ test("resume failure returns no fake playing session and restores iOS routing", 
 });
 
 test("recording negotiates a real AAC/Opus mux and never silently removes a selected track", () => {
-  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\)\)/);
+  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
   assert.match(studioSource, /mp4a\.40\.2/);
   assert.match(studioSource, /vp8,opus/);
   assert.match(studioSource, /stream\.addTrack\(musicSession\.track\)/);
   assert.match(studioSource, /new MediaRecorder\(stream,recorderOptions\)/);
   assert.match(studioSource, /if \(!recorder\)[\s\S]*?setMusicWarning\(ui\.musicFallback\)/);
   assert.doesNotMatch(studioSource, /stream\.getAudioTracks\(\)\.forEach\(track=>\{stream\?\.removeTrack/);
-  assert.match(studioSource, /soundPreviewRef\.current\?\.setVolume\(value\)/);
+  assert.match(studioSource, /data-video-audio-player/);
+  assert.match(studioSource, /presetAudioUrl\(music\)/);
+  assert.match(studioSource,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studioSource, /data-video-audio-upload/);
   assert.match(studioSource, /data-video-music-preview/);
   assert.match(studioSource, /stopHiddenPreview/);
   for (const locale of ["en:", "ru:", "es:"]) assert.match(studioSource, new RegExp(locale));

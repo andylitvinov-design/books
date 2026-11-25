@@ -81,7 +81,19 @@ test('message redesign preserves actual private audio/media send and viewport ke
 })
 
 test('five safe-area practitioner destinations are localized and never create a second CRM',()=>{
- for(const key of ['requests','clients','materials','profile','analytics'])assert.match(nav,new RegExp("panel==='"+key+"'|panel==='"+key+"'"))
+ // The current component intentionally uses one guarded registry, rather than
+ // repeating inline panel comparisons in each view.
+ const supported=nav.match(/const PANELS=new Set\(\[([^\]]+)\]\)/)?.[1]
+ assert.ok(supported,'protected practitioner panel registry must exist')
+ assert.equal((nav.match(/if\(!PANELS\.has\(panel\)\)return null/g)||[]).length,2,
+  'both header and dock must reject unregistered panels')
+ for(const key of ['requests','clients','materials','profile','analytics']){
+  assert.match(supported,new RegExp("'"+key+"'"),key+' must be registered')
+  assert.match(nav,new RegExp('\\b'+key+':t\\.'+key+'Title\\b'),key+' must have a guarded header title')
+  assert.match(nav,new RegExp('\\b'+key+':t\\.'+key+'Intro\\b'),key+' must have a guarded introduction')
+  assert.equal((nav.match(new RegExp(key+'Title:', 'g'))||[]).length,3,key+' must have EN/RU/ES title translations')
+  assert.equal((nav.match(new RegExp(key+'Intro:', 'g'))||[]).length,3,key+' must have EN/RU/ES intro translations')
+ }
  for(const label of ['Главная','Практика','Заявки','Материалы','Профиль','Inicio','Solicitudes','Client records'])
   assert.ok(nav.includes(label),label)
  for(const s of ['data-practice-inner-dock','aria-current={selected?', 'onOpenMaterials(\'courses\')']) {

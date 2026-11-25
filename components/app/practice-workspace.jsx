@@ -2,26 +2,30 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
-import CrmManager from './crm-manager'
-import PractitionerClientProfiles from './practitioner-client-profiles'
-import PracticeExpressReports from './practice-express-reports'
-import PracticeMaterials from './practice-materials'
 import {PracticeInnerHeader,PracticeInnerBottomNavigation} from './practice-inner-navigation'
-import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
-import PublicEnquiryContact from './public-enquiry-contact'
 import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
-import MyServicesDashboard from './my-services-dashboard'
-import SimpleServiceEditor from './simple-service-editor'
-import RemoteGoalPhoto from './remote-goal-photo'
-import PracticePhotoUpload from './practice-photo-upload'
-import PracticeVideoField from './practice-video-field'
 import PracticePublicAlias from './practice-public-alias'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
+
+// Defer private CRM, client, materials, and authoring panels until opened.
+const CrmManager = dynamic(() => import('./crm-manager'))
+const PractitionerClientProfiles = dynamic(() => import('./practitioner-client-profiles'))
+const PracticeExpressReports = dynamic(() => import('./practice-express-reports'))
+const PracticeMaterials = dynamic(() => import('./practice-materials'))
+const PractitionerMeditationStudio = dynamic(() => import('./practitioner-meditation-studio'))
+const PracticeEvents = dynamic(() => import('./practice-events'))
+const PublicEnquiryContact = dynamic(() => import('./public-enquiry-contact'))
+const MyServicesDashboard = dynamic(() => import('./my-services-dashboard'))
+const SimpleServiceEditor = dynamic(() => import('./simple-service-editor'))
+const RemoteGoalPhoto = dynamic(() => import('./remote-goal-photo'))
+const PracticePhotoUpload = dynamic(() => import('./practice-photo-upload'))
+const PracticeVideoField = dynamic(() => import('./practice-video-field'))
 
 async function practiceFetch(path='',body){
   const response=await fetch('/api/app/practice'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined})
@@ -173,13 +177,21 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    if(params.get('panel')==='materials'){
+    if(params.get('panel')==='materials'&&['audio','video'].includes(params.get('meditation'))){
+      // Legacy bookmarks previously opened the course builder; keep that entry working.
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation'))
+    }else if(params.get('panel')==='materials'){
       setActivePanel('materials')
       if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
         setProCourseStart(true)
         const meditation=params.get('meditation')
         if(['audio','video'].includes(meditation))setMeditationType(meditation)
       }
+    }
+    if(params.get('panel')==='meditations'){
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation')==='video'?'video':'audio')
     }
     if(params.get('panel')==='services'){
       setActivePanel('services')
@@ -362,12 +374,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
       return
     }
-    setProCourseStart(true)
     setMeditationType(kind)
-    setMaterialTab('courses')
-    setActivePanel('materials')
-    setMaterialShortcut(current=>({tab:'courses',nonce:current.nonce+1}))
-    setPanelRoute('materials','courses')
+    setActivePanel('meditations')
+    setPanelRoute('meditations')
     setMeditationPickerOpen(false)
     setError('')
   }
@@ -382,6 +391,15 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
+  // Practitioner-scoped links only; no owner-only Growth Studio/CRM role
+  // escalation. The destination resolves the public offering again server-side.
+  const professionalVideoServices=services.filter(item=>
+    item.status==='published' && item.active===true && p?.slug &&
+    (!item.displayLocales || locale!=='es' || item.displayLocales.includes('es')) &&
+    /^[a-z0-9][a-z0-9-]{0,89}$/.test(item.slug||'')
+  ).slice(0,8)
+  const professionalVideoHref=(item)=>'/'+locale+'/holistic-support/mandala?pro=1&master='+
+    encodeURIComponent(p.slug)+'&service='+encodeURIComponent(item.slug)
   const openRequests=requests.filter(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
@@ -506,36 +524,28 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       profileLive={profileLive} onSaved={load} />}
 
     {!needsOnboarding&&<section id="hh-practice-workspace-top" className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
-      <div className="hh-practice-v4-grid">
-        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
-          <UsersRound aria-hidden="true"/><span>{d.clients}</span><small>{ru?'Контакты':locale==='es'?'Contactos':'Contacts'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
-          <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
-        </button>
+      <nav className="hh-practice-v4-grid" data-practice-simple-nav
+        aria-label={ru?'Меню мастера':locale==='es'?'Menú del profesional':'Practitioner menu'}>
         <button type="button" onClick={()=>window.location.assign('/'+(locale==='es'?'en':locale)+'/app/messages?section=clients&tab=chats')}>
           <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
           <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
-        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
+        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={['clients','requests','crm','express-reports'].includes(activePanel)}>
+          <UsersRound aria-hidden="true"/><span>{d.clients}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={['services','events'].includes(activePanel)}>
           <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
         </button>
-        <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={activePanel==='materials'&&materialTab!=='courses'}>
-          <FileText aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span><small>{ru?'Библиотека':locale==='es'?'Biblioteca':'Library'}</small>
+        <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={activePanel==='materials'}>
+          <BookOpen aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span>
         </button>
-        <button type="button" onClick={()=>openMaterialsPanel('courses')} aria-pressed={activePanel==='materials'&&materialTab==='courses'}>
-          <BookOpen aria-hidden="true"/><span>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</span><small>{ru?'Управление':locale==='es'?'Gestionar':'Manage'}</small>
-        </button>
-        <button type="button" onClick={()=>choosePanel('analytics')} aria-pressed={activePanel==='analytics'}>
-          <BarChart3 aria-hidden="true"/><span>{ru?'Аналитика':locale==='es'?'Analíticas':'Insights'}</span><small>{ru?'Практика':locale==='es'?'Práctica':'Practice'}</small>
+        <button type="button" onClick={()=>choosePanel(isOwner?'marketing':'analytics')} aria-pressed={['marketing','analytics'].includes(activePanel)}>
+          <Megaphone aria-hidden="true"/><span>{isOwner?(ru?'Продвижение':locale==='es'?'Promoción':'Promotion'):(ru?'Обзор':locale==='es'?'Resumen':'Overview')}</span>
         </button>
         <button type="button" onClick={()=>choosePanel('profile')} aria-pressed={activePanel==='profile'}>
           <IdCard aria-hidden="true"/><span>{ru?'Профиль':locale==='es'?'Perfil':'Profile'}</span>
         </button>
-        <button type="button" onClick={()=>choosePanel('more')} aria-pressed={['more','marketing','crm','events'].includes(activePanel)}>
-          <Plus aria-hidden="true"/><span>{ru?'Ещё':locale==='es'?'Más':'More'}</span>
-        </button>
-      </div>
+      </nav>
       {!activePanel&&<nav className="hh-practice-community-shortcuts" aria-label={ru?'Сообщество мастеров':locale==='es'?'Comunidad de mentores':'Mentor community'}>
         <Link href={'/'+locale+'/masters'} prefetch={false}>
           <UsersRound aria-hidden="true"/>
@@ -550,6 +560,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <ChevronRight aria-hidden="true"/>
         </button>
       </nav>}
+      {!activePanel&&<details className="hh-practice-v4-extra" data-practice-professional-growth>
+        <summary><Film aria-hidden="true"/><span>{ru?'Продвижение через видео':locale==='es'?'Promoción con vídeo':'Video promotion'}</span><ChevronRight aria-hidden="true"/></summary>
+        <nav className="hh-practice-community-shortcuts"
+          aria-label={ru?'Видео для моей услуги':locale==='es'?'Vídeos para mis servicios':'Videos for my services'}>
+          {professionalVideoServices.length?professionalVideoServices.map(item=>
+            <Link key={item.id} href={professionalVideoHref(item)} prefetch={false}>
+              <Film aria-hidden="true"/>
+              <span><strong>{item.copy?.[locale]?.title||item.copy?.title||item.slug}</strong>
+                <small>{ru?'Подготовить видеоролик и публикацию':locale==='es'?'Crear vídeo y publicación':'Create video and post'}</small></span>
+              <ChevronRight aria-hidden="true"/>
+            </Link>
+          ):<Link href={'/'+locale+'/holistic-support/mandala?pro=1'} prefetch={false}>
+            <Film aria-hidden="true"/>
+            <span><strong>{ru?'Образовательное видео':locale==='es'?'Vídeo educativo':'Educational video'}</strong>
+              <small>{ru?'Без ссылки на неопубликованную услугу':locale==='es'?'Sin enlace a servicios no publicados':'No links to unpublished services'}</small></span>
+            <ChevronRight aria-hidden="true"/>
+          </Link>}
+        </nav>
+      </details>}
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
@@ -587,7 +616,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {!needsOnboarding&&!activePanel&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
         {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{ru?'Полный отчёт · мой':locale==='es'?'Informe completo · propietario':'Full report · owner only'}
+          <FileText aria-hidden="true" />{ru?'Гомеопатический отчёт':locale==='es'?'Informe homeopático':'Homeopathic report'}
+        </button>}
+        {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('reportGeneral')}>
+          <FileText aria-hidden="true" />{ru?'Отчёт без препаратов':locale==='es'?'Informe sin remedios':'Report without remedies'}
         </button>}
         <button type="button" aria-pressed={activePanel==='express-reports'} onClick={()=>choosePanel('express-reports')}>
           <FileText aria-hidden="true"/>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
@@ -623,6 +655,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'}
             description={ru?'Разбор ситуации без препаратов, в личный кабинет клиента.':locale==='es'?'Análisis sin remedios, en la cuenta del cliente.':'Private situation reviews without remedies.'}
             onClick={()=>choosePanel('express-reports')} active={activePanel==='express-reports'}/>
+          {isOwner&&<PracticeTile Icon={FileText} title={ru?'Отчёт без препаратов':locale==='es'?'Informe sin remedios':'Full report without remedies'}
+            description={ru?'Полный персональный отчёт с анализом и рекомендациями, без препаратов.':locale==='es'?'Informe completo sin remedios.':'Full personal report, no remedies.'}
+            onClick={()=>openOwner('reportGeneral')} />}
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
             onClick={()=>openOwner('reports')} />}
           {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
@@ -653,6 +688,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='express-reports'?(ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
         </div>
+        {['clients','requests','crm','express-reports'].includes(activePanel)&&<nav className="hh-practice-quick" data-practice-client-tools aria-label={ru?'Инструменты работы с клиентами':locale==='es'?'Herramientas de clientes':'Client tools'}>
+          <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>{d.clients}</button>
+          <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>{t.requests}</button>
+          <button type="button" onClick={()=>choosePanel('express-reports')} aria-pressed={activePanel==='express-reports'}>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}</button>
+          {isOwner&&<button type="button" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}</button>}
+          {isOwner&&<button type="button" onClick={()=>openOwner('reports')}>{d.reports}</button>}
+        </nav>}
+        {['services','events'].includes(activePanel)&&<nav className="hh-practice-quick" data-practice-service-tools aria-label={ru?'Услуги и мероприятия':locale==='es'?'Servicios y eventos':'Services and events'}>
+          <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>{d.services}</button>
+          <button type="button" onClick={()=>choosePanel('events')} aria-pressed={activePanel==='events'}>{ru?'Мероприятия':locale==='es'?'Eventos':'Events'}</button>
+        </nav>}
+        {activePanel==='materials'&&<nav className="hh-practice-quick" data-practice-material-tools aria-label={ru?'Материалы и курсы':locale==='es'?'Materiales y cursos':'Materials and courses'}>
+          <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={materialTab!=='courses'}>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</button>
+          <button type="button" onClick={()=>openMaterialsPanel('courses')} aria-pressed={materialTab==='courses'}>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</button>
+        </nav>}
+        {['marketing','analytics'].includes(activePanel)&&<nav className="hh-practice-quick" data-practice-growth-tools aria-label={ru?'Продвижение и аналитика':locale==='es'?'Promoción y análisis':'Growth and insights'}>
+          {isOwner&&<button type="button" onClick={()=>choosePanel('marketing')} aria-pressed={activePanel==='marketing'}>{ru?'Продвижение':locale==='es'?'Promoción':'Promotion'}</button>}
+          <button type="button" onClick={()=>choosePanel('analytics')} aria-pressed={activePanel==='analytics'}>{ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'}</button>
+        </nav>}
         {activePanel==='more'&&<div className="hh-practice-inline-more" data-practice-inline-more>
           <div className="hh-practice-tool-grid">
             <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
@@ -683,6 +737,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
+        {activePanel==='meditations'&&<PractitionerMeditationStudio key={p?.id||'meditations'} locale={locale} initialKind={meditationType||'audio'}/>}
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} meditationType={meditationType} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}

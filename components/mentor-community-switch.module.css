@@ -44,3 +44,41 @@
 .partial{margin:9px 0;padding:10px 12px;border:1px solid #e3d4c3;border-radius:12px;background:#fff9f2;color:#675647;font:600 12px/1.4 system-ui,sans-serif}
 @media(max-width:650px){.head{display:grid;gap:9px;padding:13px}.head h1{font-size:27px}.contribute{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.contribute a{min-width:0;padding:7px 8px;white-space:normal;text-align:center;font-size:11px}.tabs{margin-bottom:9px}}
 @media(max-width:360px){.head h1{font-size:25px}.tabs button{font-size:11px;padding:7px 4px;gap:4px}}
+
+/* Directory-first mobile hierarchy: compact title, service entry and tabs. */
+.head { padding: 12px 14px; border-radius: 18px; align-items: center; }
+.head h1 { font: 750 clamp(23px, 3.8vw, 30px)/1.14 system-ui, sans-serif; color: #143d3a; letter-spacing: -.03em; }
+.head p:last-child { max-width: 47ch; font-size: 12px; line-height: 1.35; color: #5d6a71; }
+.eyebrow { color: #93684e; }
+.servicesLink {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  flex: none; min-height: 44px; border-radius: 13px; padding: 8px 11px;
+  color: #067a67; background: #e6f6f1; text-decoration: none;
+  font: 750 12px/1.25 system-ui, sans-serif; white-space: nowrap;
+}
+.servicesLink:focus-visible { outline: 3px solid #176e6e; outline-offset: 2px; }
+.tabs { margin-top: 8px; border: 1px solid #e9dfd1; border-radius: 15px;
+  background: #fffcf7; padding: 4px; gap: 5px; }
+.tabs button { min-height: 44px; color: #143d3a; font-size: 12px; }
+.tabs button[aria-selected="true"] { color: #fff; background: #067a67; border-color: #067a67; box-shadow: none; }
+.tabs button:hover:not([aria-selected="true"]) { background: #e6f6f1; }
+.communityFooter { display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.communityFooter .hint { margin: 0; }
+.communityFooter .contribute { display: flex; flex-direction: row; gap: 7px; flex-wrap: wrap; }
+.communityFooter .contribute a { min-height: 44px; padding: 7px 10px;
+  background: #fffcf7; color: #067a67; border-color: #e9dfd1; font-size: 11px; }
+.communityFooter .contribute a:last-child { color: #067a67; background: #e6f6f1; border-color: #c5e3d8; }
+@media (max-width: 650px) {
+  .head { display: flex; flex-wrap: wrap; padding: 10px 12px; gap: 7px; }
+  .head h1 { font-size: 24px; }
+  .head p:last-child { font-size: 11px; }
+  .servicesLink { min-height: 44px; padding: 7px 9px; font-size: 11px; }
+  .communityFooter { display: grid; justify-items: start; }
+  .communityFooter .contribute { display: flex; }
+  .communityFooter .contribute a { flex: 0 1 auto; }
+}
+@media (max-width: 355px) {
+  .head h1 { font-size: 22px; }
+  .servicesLink { font-size: 10.5px; }
+}

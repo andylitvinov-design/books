@@ -4,11 +4,17 @@ import { notFound } from "next/navigation";
 
 import { HolisticSupportMobile, type SupportMobileCourse, type SupportMobileVideo, type SupportMobileChoice } from "@/components/holistic-support-mobile";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { GREEK_VIDEO_SERIES } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
+import { buildSupportLearningCatalog, type PublishedLearningCourse } from "@/lib/holistic-support/learning-catalog";
+import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
+import { HolisticStudyAcademy } from "@/components/holistic-study-academy";
 
-type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[] }> };
+type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
 
 // These recordings are attributed to Andrey in the existing approved sources:
 // English guided meditations and the historical PsiMaster / Andrey archive.
@@ -24,6 +30,18 @@ function andreyMasterProfile(locale: "en" | "ru" | "es") {
 // These four English originals are already published in the Academy. The
 // current Support page curates only Sun Flight; the alternate screen presents
 // the other three existing, verified recordings without rendering new media.
+const russianMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Авторская визуализация полёта к Солнцу для внимания и воображения.",
+  "tantra-reiki": "Практика Тантра Рейки с Андреем: внимание, присутствие и контакт.",
+  "reiki-yggdrasil": "Знакомство с образом Древа миров в авторской практике Рейки Иггдрасиль.",
+  "kundalini-reiki": "Авторская медитация Кундалини Рейки для знакомства с практикой.",
+};
+const spanishMeditationDescriptions: Record<string, string> = {
+  "flight-to-sun": "Visualización guiada con la imagen del sol para explorar la atención y la imaginación.",
+  "tantra-reiki": "Práctica original de Tantra Reiki guiada por Andrey, con audio en inglés.",
+  "reiki-yggdrasil": "Introducción guiada a Reiki Yggdrasil a través de la grabación original.",
+  "kundalini-reiki": "Meditación guiada original en inglés sobre Kundalini Reiki.",
+};
 const englishThemes: Record<string, MeditationTopic[]> = {
   "flight-to-sun": ["business", "love", "energy", "health"],
   "tantra-reiki": ["love", "energy"],
@@ -48,13 +66,14 @@ const mysteryCollections = [
     shortTitle: "Египет",
     topics: ["energy", "health"],
   },
-  {
-    id: "greek",
+  // Each Greek channel has its own complete ordered source videos.
+  ...GREEK_VIDEO_SERIES.map(series => ({
+    id: series.id,
     programId: "mysteries/greece-rome/beauty-and-power",
-    videoIds: ["videos/greek-mysteries-demeter", "videos/greek-mysteries-dionysus"],
-    shortTitle: "Греция",
-    topics: ["love", "energy"],
-  },
+    videoIds: [series.logicalId],
+    shortTitle: series.shortTitle,
+    topics: ["love", "energy"] as MeditationTopic[],
+  })),
 ] as const;
 
 const pageTitle = {
@@ -90,9 +109,16 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   if (!isPublicLocale(locale)) notFound();
   // Internal journeys from Mandala open the same new-design experience.
   // Ignore unknown query values instead of forwarding an untrusted route.
-  const requestedView = (await searchParams).view;
+  const query = await searchParams;
+  const requestedView = query.view;
+  // A safe editorial video theme, never an assessment result or private health field.
+  const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
+    ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
-  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "pump";
+  // Study is a focused Academy entry. Existing video, services and test views remain intact.
+  if (initialChoice === "pump") return <HolisticStudyAcademy locale={locale}
+    learningItems={buildSupportLearningCatalog(locale, [], [])} />;
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
@@ -116,6 +142,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
           courseVideos.push({
             id,
             title: media.lessonTitle || academyDisplayTitle(record, "ru"),
+            lessonOrder: media.order ?? courseVideos.length + 1,
             topics: [...entry.topics],
             program: entry.id,
             author: "psimaster",
@@ -137,6 +164,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         // A verified first lesson provides a truthful source thumbnail.
         poster: "https://i.ytimg.com/vi/" + encodeURIComponent(courseVideos[0].id) + "/hqdefault.jpg",
         href: "/ru/academy/" + curriculum.routeKey,
+        seriesHref: entry.id.startsWith("greek-") ? videoGroups[0]?.href : undefined,
         videoCount: courseVideos.length,
         videoGroups,
         videos: courseVideos,
@@ -144,7 +172,22 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
     }
   }
 
-  const videos: SupportMobileVideo[] = locale === "ru"
+  // Verified English originals are available in RU/EN/ES, retaining Russian meditations.
+  const englishVideos: SupportMobileVideo[] = englishGuidedMeditations
+    .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
+    .map((video): SupportMobileVideo => ({
+      id: video.youtubeId!,
+      title: video.title,
+      description: locale === "ru" ? russianMeditationDescriptions[video.key]
+        : locale === "es" ? spanishMeditationDescriptions[video.key] : video.description,
+      topics: englishThemes[video.key] ?? ["energy"],
+      program: video.key === "flight-to-sun" ? "sun" : "reiki",
+      author: "andrey",
+      sourceLanguage: "en",
+      courseKey: video.key,
+      masterProfile: andreyMasterProfile(locale),
+    }));
+  const russianVideos: SupportMobileVideo[] = locale === "ru"
     ? freeMeditationVideos("ru").map((video, index): SupportMobileVideo => ({
         ...video,
         program: index < 3 ? "sun" : "energy",
@@ -152,19 +195,26 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
         sourceLanguage: "ru",
         masterProfile: andreyMasterProfile("ru"),
       }))
-    : englishGuidedMeditations
-      .filter(video => Boolean(video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)))
-      .map((video): SupportMobileVideo => ({
-        id: video.youtubeId!,
-        title: video.title,
-        topics: englishThemes[video.key] ?? ["energy"],
-        program: video.key === "flight-to-sun" ? "sun" : "reiki",
-        author: "andrey",
-        sourceLanguage: "en",
-        masterProfile: andreyMasterProfile(locale),
-      }));
+    : [];
+  const englishIds = new Set(englishVideos.map(video => video.id));
+  const videos: SupportMobileVideo[] = [
+    ...russianVideos.filter(video => !englishIds.has(video.id)), ...englishVideos,
+  ];
 
+  // Public, verified catalogue metadata only; no user test results in this prop.
+  const guideTests = buildSupportGuideTestShortlists({ locale });
+  // This existing repository returns approved published practitioner courses only.
+  // Database unavailability never exposes drafts or disables source-backed Academy.
+  let publishedCourses: PublishedLearningCourse[] = [];
+  try {
+    publishedCourses = await createPractitionerCourseRepository(getAppConfig()).catalog();
+  } catch {
+    publishedCourses = [];
+  }
+  const learningItems = buildSupportLearningCatalog(locale, originalMysteryCourses, publishedCourses);
   return (
-    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses} initialChoice={initialChoice} />
+    <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
+      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests}
+      learningItems={learningItems} />
   );
 }

@@ -38,7 +38,7 @@ export type MeditationMatch = {
   playback: "embedded" | "youtube_only" | "preview";
   score: number;
   matchType: "exact" | "partial" | "topic" | "related" | "unspecified";
-  reasons: Array<{facet: "goal" | "situation" | "outcome" | "technique"; value: string}>;
+  reasons: Array<{facet: "goal" | "situation" | "outcome" | "technique" | "axis"; value: string}>;
   durationVerified: boolean;
   durationEstimated: boolean;
 };
@@ -46,6 +46,8 @@ export type MeditationRequest = {
   language: "en" | "ru" | "es";
   goal?: "money" | "energy" | "relationships" | "goals" | "meaning" | null;
   situations?: string[];
+  // Optional manually selected canonical research facet IDs. No private test scores.
+  axisRefs?: string[];
   desiredStates?: string[];
   techniques?: string[];
   exactOnly?: boolean;

@@ -1,0 +1,14 @@
+.section{margin:8px 0 22px;min-width:0;color:#143d3a}
+.top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:12px 14px;border:1px solid #e9dfd1;border-radius:15px;background:#fffcf7}
+.top p{margin:0;flex:1 1 230px;max-width:620px;color:#5d6a71;font-size:14px;line-height:1.45}
+.top a{display:inline-flex;align-items:center;min-height:44px;border-radius:12px;background:#067a67;color:#fff;font-size:14px;font-weight:750;text-decoration:none;padding:8px 14px}
+.top a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.status{font-size:15px;line-height:1.5;color:#5d6a71;margin:14px}
+
+/* Old My Context and Daybook growth preview inherit the current profile palette. */
+:global([data-cabinet-theme="daybook"]) .section{color:var(--hh-cabinet-ink);margin:8px 0 14px}
+:global([data-cabinet-theme="daybook"]) .top{background:var(--hh-cabinet-card);border-color:var(--hh-cabinet-border);border-radius:18px;padding:13px;gap:9px}
+:global([data-cabinet-theme="daybook"]) .top p{color:var(--hh-cabinet-muted);line-height:1.4}
+:global([data-cabinet-theme="daybook"]) .top a{box-sizing:border-box;max-width:100%;background:var(--hh-cabinet-primary);color:#fff9e7;border:1px solid var(--hh-cabinet-border);white-space:normal;overflow-wrap:anywhere}
+:global([data-cabinet-theme="daybook"]) .status{background:var(--hh-cabinet-card);border:1px solid var(--hh-cabinet-border);color:var(--hh-cabinet-muted);border-radius:12px;padding:12px;margin:8px 0}
+:global([data-cabinet-theme="daybook"]) .top a:focus-visible{outline-color:#a27025}

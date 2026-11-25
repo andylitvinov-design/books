@@ -94,7 +94,7 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/session\.batch_id!==event\.batchId/)
   assert.match(service,/result_folder=\$2,last_command_update_id=\$3/)
   assert.match(service,/status!=='collecting'\|\|session\.result_audio_id/)
-  assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,parts:ordered/)
+  assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,\s*parts:ordered,pauseSeconds:event\.pauseSeconds/)
   assert.match(service,/title,batch\.folder/)
   assert.doesNotMatch(service,/title,batch\.parts\[0\]\.folder/)
   assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher,saved\.id\)/)
@@ -258,4 +258,24 @@ test('old 12 batch entries with three re-forwarded duplicates become exactly nin
   assert.match(service,/set status='building',items=\$3::jsonb,last_command_update_id=\$2/)
   assert.match(service,/console\.error\('HH_OWNER_AUDIO_COMBINE_FAILED',reason,stage\)/)
   assert.match(service,/Код: '\+reason/)
+})
+
+test('confirmed Telegram document receipts are durable before private originals are cleaned',()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  const migration=source('../supabase/migrations/20261027011919_hh_owner_audio_delivery_receipt.sql')
+  assert.match(migration,/add column if not exists telegram_delivery_message_id bigint/)
+  assert.match(migration,/add column if not exists delivered_at timestamptz/)
+  assert.match(migration,/hh_owner_audio_delivery_receipt_check/)
+  assert.match(service,/Number.isSafeInteger\(messageId\)/)
+  assert.match(service,/telegram_delivery_message_id=coalesce\(telegram_delivery_message_id,\$3\)/)
+  assert.match(service,/delivered_at=coalesce\(delivered_at,now\(\)\)/)
+  const resend=service.slice(service.indexOf('async function resendSavedCombined'),service.indexOf('async function finishAudioCombine'))
+  const build=service.slice(service.indexOf('async function buildAudioCombine'),service.indexOf('async function updateFolderFromBot'))
+  for(const scope of [resend,build]){
+    const sent=scope.indexOf('const delivered=await sendCombinedDocument(')
+    const persisted=scope.indexOf('await recordCombinedDocumentDelivery(')
+    const cleanup=scope.indexOf('await deleteTemporaryAudioParts(')
+    assert.ok(sent>=0 && persisted>sent && cleanup>persisted,'accept document, persist receipt, then cleanup')
+  }
+  assert.doesNotMatch(service,/fetch\([^\n]*telegram_delivery_message_id/)
 })

@@ -18,6 +18,13 @@ test('quick choice is allowed only during first orientation; all later model ste
   assert.equal(coachingQuickChoicesAllowed({id:'open'},1),false)
 })
 
+test('the overload pilot offers its authored review choices without hiding free text',()=>{
+  const review={id:'review',stepKey:'review',type:'single_choice',choices:[{id:'useful'},{id:'partly'}]}
+  assert.equal(coachingQuickChoicesAllowed(review,6,{allowReview:true}),true)
+  assert.equal(coachingQuickChoicesAllowed(review,6),false)
+  assert.equal(coachingQuickChoicesAllowed({...review,stepKey:'will'},5,{allowReview:true}),false)
+})
+
 test('all representative scheme stages provide gentle, localized, nonclinical guidance',()=>{
   for(const stage of stages){
     const q={id:stage,stepKey:stage,type:'single_choice'}
@@ -38,7 +45,7 @@ test('the existing personal and two symbolic runners share the same written-firs
   const symbolic=source('components/app/tradition-coaching.jsx')
   const backend=source('lib/app/personal-coaching.js')
   const publicUi=source('components/public-coaching-discovery.jsx')
-  assert.match(ui,/coachingQuickChoicesAllowed\(question,index\)/)
+  assert.match(ui,/coachingQuickChoicesAllowed\(question,index,\{allowReview:isOverload\}\)/)
   assert.match(ui,/data-coaching-open-reflection/)
   assert.match(symbolic,/coachingQuickChoicesAllowed\(question,index\)/)
   assert.match(symbolic,/data-tradition-open-reflection/)

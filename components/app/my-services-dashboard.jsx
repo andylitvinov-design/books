@@ -59,7 +59,9 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const lang=COPY[locale]?locale:'en'
   const c=COPY[lang]
   const canAdd=quota?.canAdd!==false
-  const [creating,setCreating]=useState(items.length===0&&canAdd)
+  // Viewing My Services is not consent to start the three-step editor.
+  // Explicit Add / protected ?create=1 is the only entry to composition.
+  const [creating,setCreating]=useState(false)
   const [createDirty,setCreateDirty]=useState(false)
   const [editingId,setEditingId]=useState(null)
   const [editDirty,setEditDirty]=useState(false)

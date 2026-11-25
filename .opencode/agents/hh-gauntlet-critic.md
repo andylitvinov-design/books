@@ -1,24 +1,32 @@
 ---
 description: Independent fresh-context critic for Holistic House synthetic pilot
 mode: primary
-temperature: 0.1
-permission:
-  read:
-    "*": allow
-    "*.env": deny
-    "*.env.*": deny
-    "**/.env": deny
-    "**/.env.*": deny
-  glob: allow
-  grep: allow
-  list: allow
-  edit: deny
-  bash: deny
-  task: deny
-  webfetch: deny
-  websearch: deny
-  external_directory: deny
-  "mcp_*": deny
+steps: 16
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: "read"
+    resource: "*"
+    effect: allow
+  - action: "read"
+    resource: "*.env"
+    effect: deny
+  - action: "read"
+    resource: "*.env.*"
+    effect: deny
+  - action: "read"
+    resource: "**/.env"
+    effect: deny
+  - action: "read"
+    resource: "**/.env.*"
+    effect: deny
+  - action: "glob"
+    resource: "*"
+    effect: allow
+  - action: "grep"
+    resource: "*"
+    effect: allow
 ---
 
 You are the CRITIC, not the Builder. Every invocation starts a fresh session.

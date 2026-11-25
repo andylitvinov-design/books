@@ -27,15 +27,15 @@ export default function PracticeReportMaterials({items=[],loading=false,error=''
  const copy=ru?{
   heading:'Для клиентских отчётов',info:'Приватные материалы. Клиент увидит их только после добавления в его отчёт.',
   empty:'Пока нет материалов.',refresh:'Обновить материалы',manage:'Управлять библиотекой',
-  loading:'Загрузка…',video:'Приватное видео',photo:'Фото',open:'Описание',
+  loading:'Загрузка…',video:'Приватное видео',audio:'Аудио',photo:'Фото',open:'Описание',
  }:es?{
   heading:'Para informes',info:'Materiales privados. Solo aparecen para un cliente cuando los adjuntas a su informe.',
   empty:'Todavía no hay materiales.',refresh:'Actualizar materiales',manage:'Gestionar biblioteca',
-  loading:'Cargando…',video:'Vídeo privado',photo:'Foto',open:'Descripción',
+  loading:'Cargando…',video:'Vídeo privado',audio:'Audio',photo:'Foto',open:'Descripción',
  }:{
   heading:'For client reports',info:'Private resources. Clients only see materials you attach to their reports.',
   empty:'No report materials yet.',refresh:'Refresh materials',manage:'Manage library',
-  loading:'Loading…',video:'Private video',photo:'Photo',open:'Description',
+  loading:'Loading…',video:'Private video',audio:'Audio',photo:'Photo',open:'Description',
  }
  return <section className={styles.body} aria-label={copy.heading}>
   <div className={styles.sectionHead}>
@@ -61,9 +61,11 @@ export default function PracticeReportMaterials({items=[],loading=false,error=''
          onToggle={()=>setOpenVideoId(expanded?null:item.id)}/>
        <div className={styles.resourceCopy}>
         <div className={styles.cardTop}>
-         <span className={styles.tag}>{item.kind==='video'?copy.video:item.kind==='image'?copy.photo:'YouTube'}</span>
+         <span className={styles.tag}>{item.kind==='video'?copy.video:item.kind==='audio'?copy.audio:item.kind==='image'?copy.photo:'YouTube'}</span>
         </div>
         <h4>{item.title}</h4>
+        {item.kind==='audio'&&<audio controls preload="none" src={mediaUrl}
+          aria-label={item.title} style={{width:'100%',maxWidth:380,marginTop:8}}/>}
         {description&&(description.length>94?
          <details className={styles.descriptionDetails}>
           <summary title={description}>{concise}</summary><p>{description}</p>

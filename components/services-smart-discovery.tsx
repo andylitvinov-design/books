@@ -264,6 +264,10 @@ export function ServicesSmartDiscovery({
   const [city,setCity] = useState("toronto");
   const [language,setLanguage] = useState<Locale | "">(locale);
   const [budget,setBudget] = useState("");
+  // SSR markup is visible before React listeners hydrate. Never let an early
+  // tap on the free-services filter be lost to a later hydration reset.
+  const [facetsHydrated,setFacetsHydrated] = useState(false);
+  useEffect(()=>{setFacetsHydrated(true)},[]);
   const [hasSelection,setHasSelection] = useState(false);
   const [useExternalAi,setUseExternalAi] = useState(false);
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
@@ -454,6 +458,7 @@ export function ServicesSmartDiscovery({
           <input
             type="checkbox"
             data-free-services-only
+            disabled={!facetsHydrated}
             checked={budget === "free"}
             onChange={event => {
               requestNumber.current += 1;

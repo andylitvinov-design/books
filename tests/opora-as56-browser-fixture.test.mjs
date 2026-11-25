@@ -44,9 +44,15 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
     'assert.equal(state.finalData, state.initialData', 'await click(t.previous)', 'await click(t.neutral)',
     "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 24)']) assert.ok(browser.includes(fragment), fragment)
   assert.doesNotMatch(browser, /route\.continue|request\.post|\.request\.fetch|createServer|process\.env\.[A-Z_]*(?:TOKEN|SECRET|PASSWORD)/)
-  assert.match(workflow, /browser: \[chromium, webkit\]/)
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.ok(workflow.includes("browser: ${{ fromJSON("), "browser matrix must be routed by event");
+  assert.ok(workflow.includes("'[\"chromium\"]'"), "PR verifies Chromium without duplicate full matrix");
+  assert.ok(workflow.includes("'[\"chromium\",\"webkit\"]'"), "manual acceptance retains both Chromium and WebKit");
   assert.match(workflow, /node scripts\/verify-opora-as56-browser\.mjs/)
-  assert.match(workflow, /path: artifacts\/opora-as56-mobile\//)
+  // Multi-path artifact uploads retain both original AS5.6 evidence and new
+  // viewport proof. Accept a YAML block scalar but require both real paths.
+  assert.match(workflow, /path:\s*\|\s*\n\s*artifacts\/opora-as56-mobile\//)
+  assert.match(workflow, /artifacts\/opora-ready-mobile\//)
 })
 test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable source hashes', async () => {
   const fixture = await buildOporaBrowserFixture()

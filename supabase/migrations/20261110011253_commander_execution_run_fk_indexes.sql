@@ -1,0 +1,2 @@
+create index if not exists commander_execution_runs_chat_id_idx on business_brain.commander_execution_runs(chat_id);
+create index if not exists commander_execution_runs_task_id_idx on business_brain.commander_execution_runs(task_id) where task_id is not null;

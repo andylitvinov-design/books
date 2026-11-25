@@ -8,7 +8,9 @@ import { profileCompletionRecommendations } from '../lib/profile/summary.js'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-function completedState(id = 'test-result', date = '2026-10-16T14:00:00.000Z') {
+const recentTime = daysAgo => new Date(Date.now() - daysAgo * 86400000).toISOString()
+
+function completedState(id = 'test-result', date = recentTime(2)) {
   const definition = getAssessmentDefinition('hh-current-state', 'v2', 'en')
   const answers = Object.fromEntries(definition.questions.map(q => [q.id, 5]))
   return { id, measurementAt: date, ...scoreAssessment(definition, answers) }
@@ -35,10 +37,19 @@ test('portrait suggestions only use verified saved measurements, never missing o
   assert.deepEqual(measured.growth, [])
 })
 
+test('source-verified but older-than-14-day scores never appear as fresh portrait rays', () => {
+  const stale = buildPortraitRecommendations([completedState('stale-but-valid', recentTime(15))], 'en')
+  assert.equal(stale.measuredCount, 0)
+  assert.deepEqual(stale.measurements, [])
+  assert.deepEqual(stale.strengths, [])
+  assert.deepEqual(stale.growth, [])
+  assert.equal(stale.rejectedCount, 0, 'expired valid results are stale, not forged')
+})
+
 test('unverified later results cannot be used as current portrait strengths or weaknesses', () => {
-  const old = completedState('old', '2026-10-14T14:00:00.000Z')
+  const old = completedState('old', recentTime(3))
   const tampered = {
-    ...completedState('invalid-latest', '2026-10-17T14:00:00.000Z'),
+    ...completedState('invalid-latest', recentTime(1)),
     contentHash: 'invalid-identity',
   }
   const model = buildPortraitRecommendations([old, tampered], 'en')

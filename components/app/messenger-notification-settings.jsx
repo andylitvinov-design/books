@@ -2,8 +2,9 @@
 import {useEffect,useRef,useState} from 'react'
 import {BellRing,CheckCircle2,Clock3,MessageCircle,Send,RefreshCw} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
+import WhatsAppAccountLink from './whatsapp-account-link'
 import {
- DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION,
+ DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION,CRM_ACCOUNT_LINK_NOTICE_VERSION,
  MESSENGER_NOTIFICATION_CHANNELS,MESSENGER_NOTIFICATION_TOPICS,
 } from '@/lib/app/messenger-notification-policy'
 import styles from './messenger-notification-settings.module.css'
@@ -17,6 +18,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Tap Connect Telegram, then press Start in the official bot. Return here to see your connection status.',
   telegramConsent:'By connecting, you agree to receive the selected service alerts in Telegram. News and offers remain off without separate consent. Disconnect here anytime.',
+  crmLink:'Link Telegram with CRM',crmUnlink:'Unlink from CRM',crmLinkHelp:'Optional: let your practitioner recognize your Google account when you message the Telegram CRM bot. This does not subscribe you to news. You can unlink here at any time.',crmLinkedNotice:'Telegram linked with your Google account in CRM.',crmUnlinkedNotice:'CRM identity link removed; notification delivery stays connected.',
   customize:'Alert types (optional)',
   whatsappHelp:'Save an international number. WhatsApp Business verification is required before sending.',
   whatsappLabel:'WhatsApp phone number',telegramLabel:'Telegram username (optional until bot is ready)',saveTelegram:'Save Telegram username',type:'Which alerts do you want?',
@@ -40,6 +42,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Нажмите «Подключить Telegram», затем Start в официальном боте. Вернитесь сюда — статус обновится.',
   telegramConsent:'Нажимая «Подключить Telegram», вы соглашаетесь получать выбранные служебные уведомления. Реклама и новости остаются выключенными без отдельного согласия. Отключить можно здесь в любой момент.',
+  crmLink:'Привязать Telegram к CRM',crmUnlink:'Отвязать от CRM',crmLinkHelp:'По желанию: мастер узнает ваш Google-аккаунт в Telegram-переписке CRM. Это не подписка на новости. Связь можно отключить здесь.',crmLinkedNotice:'Telegram привязан к Google-аккаунту в CRM.',crmUnlinkedNotice:'Связь с CRM удалена; Telegram-уведомления остались подключены.',
   customize:'Типы уведомлений (необязательно)',
   whatsappHelp:'Сохраните номер с кодом страны. Для отправки требуется подтверждение через официальный WhatsApp Business.',
   whatsappLabel:'Номер WhatsApp',telegramLabel:'Имя Telegram (пока бот не подключён)',saveTelegram:'Сохранить Telegram',type:'Какие уведомления получать?',
@@ -63,6 +66,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Toca Conectar Telegram y luego Start en el bot oficial. Regresa para ver el estado de conexión.',
   telegramConsent:'Al conectar Telegram, aceptas recibir los avisos de servicio seleccionados. Las noticias y ofertas permanecen desactivadas sin consentimiento separado. Puedes desconectarlo aquí.',
+  crmLink:'Vincular Telegram al CRM',crmUnlink:'Desvincular del CRM',crmLinkHelp:'Opcional: el profesional podrá reconocer tu cuenta Google en una conversación del bot CRM. No te suscribe a noticias; puedes desvincularla aquí.',crmLinkedNotice:'Telegram vinculado a tu cuenta Google en CRM.',crmUnlinkedNotice:'Se eliminó el vínculo; los avisos Telegram siguen conectados.',
   customize:'Tipos de avisos (opcional)',
   whatsappHelp:'Guarda tu número internacional. WhatsApp Business debe verificarlo antes de enviar avisos.',
   whatsappLabel:'Número de WhatsApp',telegramLabel:'Usuario de Telegram (antes de activar el bot)',saveTelegram:'Guardar Telegram',type:'¿Qué avisos quieres recibir?',
@@ -165,7 +169,9 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
   // WhatsApp continues to require a separate, unchecked opt-in box.
   if(action!=='remove'&&action!=='refresh'&&channel!=='telegram'&&!draft.permission)return
   if(action==='save'&&!draft.destination.trim()){setError(t.noValue);return}
-  const payload=action==='remove'?{action,channel}:{
+  const payload=(action==='remove'||action==='unlink_crm')?{action,channel}:
+     action==='link_crm'?{action,channel,noticeVersion:CRM_ACCOUNT_LINK_NOTICE_VERSION,
+       permissionAccepted:true}:{
    action,channel,topics:draft.topics,locale:TEXT[locale]?locale:'en',
    noticeVersion:MESSENGER_CONTACT_NOTICE_VERSION,permissionAccepted:true,
    ...(action==='save'?{destination:draft.destination}:{}),
@@ -183,7 +189,8 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
     window.location.assign(next.linkUrl)
     return
    }
-   setNotice(action==='remove'?t.removed:action==='preferences'?t.changed:
+   setNotice(action==='link_crm'?t.crmLinkedNotice:action==='unlink_crm'?t.crmUnlinkedNotice:
+     action==='remove'?t.removed:action==='preferences'?t.changed:
     action==='refresh'?(next.channels?.telegram?.status==='connected'?t.connected:t.pendingNotice):t.saved)
   }catch{
    if(sessionRef.current===session)setError(t.error)
@@ -272,7 +279,14 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
          onClick={()=>perform(channel,draft.destination.trim()?'save':hasEntry?'preferences':'save')}>
          {hasEntry&&!draft.destination.trim()?t.savePrefs:t.save}
         </button>}
-       {hasEntry&&<button type="button" className={styles.secondary} disabled={Boolean(busy)}
+       {isTelegram&&connected&&view.crmLinkAvailable&&<div>
+         <p className={styles.quickConsent}>{t.crmLinkHelp}</p>
+         <button type="button" className={styles.secondary} disabled={Boolean(busy)}
+          onClick={()=>perform(channel,view.crmLinked?'unlink_crm':'link_crm')}>
+          {view.crmLinked?t.crmUnlink:t.crmLink}
+         </button>
+        </div>}
+        {hasEntry&&<button type="button" className={styles.secondary} disabled={Boolean(busy)}
         onClick={()=>perform(channel,'remove')}>{t.remove}</button>}
       </div>
       <p className={styles.disclaimer}>{isTelegram?
@@ -281,6 +295,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
      </article>
     })}
    </div>}
+  <WhatsAppAccountLink accountId={accountId} locale={locale}/>
   <p className={styles.privacy}>{t.private}</p>
   {notice&&<p role="status" aria-live="polite" className={styles.success}>{notice}</p>}
   {error&&view&&<p role="alert" className={styles.error}>{error}</p>}

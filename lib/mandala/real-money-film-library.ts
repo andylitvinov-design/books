@@ -5,6 +5,7 @@
  * Do not swap these with a JPG, SVG animation or a simulated Canvas loop.
  */
 import type { MoneySceneId } from "./money-flow-effects";
+import { newMoneyFilms } from "./film-collection-v2";
 
 const ROOT = "/videos/holistic-house/money-films-v1/";
 export const realMoneyFilms: Record<MoneySceneId, {src:string; poster:string; seconds:number; mediaType:"video/mp4"}> = {
@@ -20,6 +21,7 @@ export const realMoneyFilms: Record<MoneySceneId, {src:string; poster:string; se
   "abundance-circle": {src:ROOT+"abundance-circle.mp4",poster:ROOT+"abundance-circle.jpg",seconds:5,mediaType:"video/mp4"},
   "life-gifts": {src:ROOT+"life-gifts.mp4",poster:ROOT+"life-gifts.jpg",seconds:5,mediaType:"video/mp4"},
   dreams: {src:ROOT+"dreams.mp4",poster:ROOT+"dreams.jpg",seconds:5,mediaType:"video/mp4"},
+  ...newMoneyFilms,
 };
 export function getRealMoneyFilm(id:MoneySceneId) {
   return realMoneyFilms[id];

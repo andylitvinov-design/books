@@ -54,6 +54,9 @@ const modules = {
   '@/lib/assessments/assessment-evidence-status': evidenceModule,
   '@/lib/assessments/score-change-reading': changeModule,
   './free-course-banner': { FreeCourseBanner: () => null },
+  // This verifier isolates the guest scale flow; the optional closing motivator
+  // is covered by the dedicated Motivator Mind and report-mobile tests.
+  './motivator-mind': { MotivatorMind: () => null },
 }
 function compile(name) {
   const compiled = ts.transpileModule(read('components/app/' + name + '.jsx'), { fileName: name + '.jsx', compilerOptions: {
