@@ -334,3 +334,20 @@ test('active coach browsing preserves original tab; coach profile pauses voice',
   assert.match(profile,/if\(!kept&&!speechRef\.current\?\.hasLiveSession/)
   assert.match(ui,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState/)
 })
+
+
+test('introductory protocol uses seven canonical report blocks without fabricating outer ratings',()=>{
+ const obj={...sample(),courseSessionId:'introductory'}
+ const report=myCoachProtocolPdfOptions(obj,{locale:'en'})
+ for(const label of ['Personal Information','Current Situation','Emotional State','Personal Profile','Goals & Motivation','Obstacles & Resources','Conclusions & Next Steps']){
+  assert.ok(report.protocolOverview.includes(label),label)
+ }
+ assert.match(report.protocolOverview,/no verified outer ratings/)
+ assert.match(report.protocolOverview,/Needs confirmation/)
+ assert.doesNotMatch(report.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+})
+test('saved protocol displays the shared normalized PDF overview',()=>{
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/myCoachProtocolPdfOptions\(protocol,\{locale\}\)\.protocolOverview/)
+ assert.match(ui,/data-coach-saved-protocol-overview/)
+})
