@@ -114,7 +114,7 @@ export function ServiceVideoShowcase({
         <SiteVideoPlayer video={video.video} locale={locale}
           textLanguage={video.video.language} compact fallbackPoster={video.poster} />
         <PublicVideoStarRating locale={locale} video={video.video} />
-        {video.video.heygenId && (
+        {video.video.heygenId && video.video.language !== "en" && (
           <a className={styles.original} href={siteVideoWatchUrl(video.video)}
             target="_blank" rel="noopener noreferrer">
             {locale === "ru" ? "Открыть оригинальное видео в HeyGen" : locale === "es" ? "Ver el vídeo original en HeyGen" : "Watch the original on HeyGen"}

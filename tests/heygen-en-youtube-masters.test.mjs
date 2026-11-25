@@ -86,3 +86,39 @@ test('public profile switches to exact verified EN channel mirror without token 
  assert.match(player, /<SiteVideoPlayer key=/)
  assert.match(profile, /<ProfilePresentationPlayer key=\{selected\}/)
 })
+
+test('all public English HeyGen masters require exact paired English-channel YouTube receipts',()=>{
+ const endpoint=read('app/api/public/english-intro-video/route.js')
+ const player=read('components/site-video-player.tsx')
+ assert.ok(endpoint.includes("params.getAll('videoId')"))
+ assert.ok(endpoint.includes("ENGLISH_YOUTUBE_MASTERS.some(master=>master.videoId===videoId)"))
+ assert.ok(endpoint.includes("verifiedEnglishIntroYoutubeId(receipt,channels.en)"))
+ assert.ok(!endpoint.includes('token_ciphertext'))
+ assert.ok(!endpoint.includes('refreshToken'))
+ assert.ok(player.includes('const englishYoutubeOnly = isHeygen && video.language === "en"'))
+ assert.ok(player.includes('verifiedEnglishYoutubeId'))
+ assert.ok(player.includes('resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal)'))
+ assert.ok(player.includes('englishYoutubeOnly ? null : `https://app.heygen.com'))
+ assert.ok(player.includes('data-english-video-source="youtube"'))
+ assert.ok(!player.includes('className="site-video-ai-badge"'))
+ assert.ok(player.includes('{isHeygen&&<p>{aiDisclosure}</p>}'))
+});
+
+
+test('EN method landings never render archival HeyGen and retain real receipt and i18n checks',()=>{
+ const service=read('components/service-video-showcase.tsx')
+ const player=read('components/site-video-player.tsx')
+ const browser=read('scripts/verify-site-video-browser.mjs')
+ assert.match(service,/video\.video\.heygenId && video\.video\.language !== "en"/)
+ assert.match(player,/englishChecking:/)
+ assert.match(player,/englishUnavailable:/)
+ for (const locale of ['ru','es']) assert.ok(player.includes(locale==='ru'
+   ? 'Проверяем подтверждённое английское видео' : 'Comprobando el vídeo inglés'))
+ assert.match(browser,/LIVE English upload receipt missing/)
+ assert.match(browser,/LOCAL_UI_FIXTURE_ONLY_NO_PROVIDER_PROOF/)
+ assert.match(browser,/data-english-video-source="youtube"/)
+ assert.match(browser,/a\[href\^="https:\/\/app\.heygen\.com"\]/)
+ assert.match(browser,/url\.searchParams\.get\('videoId'\)===englishMasterId/)
+ assert.match(browser,/if\(isolatedRoute\)await page\.unroute\(isolatedRoute\)/)
+ assert.doesNotMatch(browser,/new RegExp\(\`.*app\.heygen\.com\/embeds/)
+})
