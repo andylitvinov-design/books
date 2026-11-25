@@ -280,3 +280,11 @@ To enter reality without losing the banner.
 On your path you shine for others,
 
 And give strength, Kindling the flame.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Thoughts boil over, lofty plans multiply, and everyday life remains in chaos.
+
+After (desired state): A clear direction for your inner fire: inspiration connected to reality and practical steps.

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Holistic House">
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#153a3d"/>
+      <stop offset="1" stop-color="#287a67"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#93d4b6"/>
+      <stop offset="1" stop-color="#d7f1d8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="46" fill="url(#a)"/>
+  <circle cx="96" cy="96" r="68" fill="#ffffff" opacity=".075"/>
+  <path d="M96 42c7 22 21 34 44 39-23 4-37 17-44 41-5-24-19-37-44-41 25-5 39-17 44-39Z" fill="url(#b)"/>
+  <path d="M96 102v43M78 126c7 4 13 10 18 19M115 123c-8 5-14 12-19 22" stroke="#b2e6c9" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <circle cx="140" cy="128" r="6" fill="#c9ead2"/>
+  <circle cx="49" cy="114" r="4" fill="#c9ead2"/>
+</svg>

@@ -1,63 +1,64 @@
+import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
-import {
-  yggdrasilEnglishOverviewVideos,
-  yggdrasilLegacyEnglishVideoSource,
-} from "@/data/academy/yggdrasil-legacy-english-videos";
+import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import type { PublicLocale } from "@/lib/public-locales";
 
+// Ten archived English clips were confirmed as testimonials, NOT course lectures.
+// The original course recordings in this section have Russian audio; keep them
+// accessible in a clearly labeled, initially collapsed archive.
 export function YggdrasilEnglishVideoGuide({
   locale,
-  compact = false,
+  scope,
 }: {
   locale: PublicLocale;
-  compact?: boolean;
+  scope: "all" | "basic" | "instructor";
 }) {
-  const copy = {
-    en: {
-      kicker: "Original English video archive",
-      title: "Reiki Yggdrasil explained in English",
-      lead: "English-language videos preserved from Andrii Litvinov’s earlier Reiki Yggdrasil site. They cover the system, the name Reiki Yggdrasil, personal experience with the method, attunements and course testimonials.",
-      source: "Legacy source: PsiTrends · Master of Reiki Yggdrasil",
-    },
-    ru: {
-      kicker: "Оригинальный английский видеоархив",
-      title: "Reiki Yggdrasil — объяснения на английском",
-      lead: "Англоязычные видео Андрея Литвинова, сохранённые с предыдущей страницы Reiki Yggdrasil: о системе, названии Reiki Yggdrasil, настройках и опыте курса.",
-      source: "Архивный источник: PsiTrends · Master of Reiki Yggdrasil",
-    },
-    es: {
-      kicker: "Archivo original de videos en inglés",
-      title: "Reiki Yggdrasil explicado en inglés",
-      lead: "Videos históricos en inglés de Andrii Litvinov sobre el sistema, las sintonizaciones y la experiencia del curso.",
-      source: "Fuente histórica: PsiTrends · Master of Reiki Yggdrasil",
-    },
-  }[locale];
-
-  const videos = compact
-    ? yggdrasilEnglishOverviewVideos.filter((video) => video.kind !== "testimonial").slice(0, 4)
-    : yggdrasilEnglishOverviewVideos;
+  if (locale !== "en") return null;
+  const instructor = scope === "instructor";
+  const level = curriculum.levels.find((item) => item.id === (instructor ? 2 : 1));
+  if (!level) return null;
+  const slug = instructor ? "instructor-course" : "basic-course";
+  const recordingCount = level.steps.filter((step) => step.video?.videos?.some((item) => Boolean(item.youtubeId))).length;
 
   return (
-    <section className={"yggdrasil-english-guide" + (compact ? " yggdrasil-english-guide--compact" : "")}>
-      <div className="yggdrasil-english-guide__heading">
-        <div>
-          <p className="homeopathy-kicker">{copy.kicker}</p>
-          <h2>{copy.title}</h2>
-          <p>{copy.lead}</p>
+    <section className="yggdrasil-english-guide yggdrasil-course-video-library" id={scope === "all" ? "yggdrasil-english-guide" : "yggdrasil-level-video-guide"}>
+      <details className="yggdrasil-russian-video-archive">
+        <summary className="yggdrasil-russian-video-archive__summary">
+          <span className="yggdrasil-russian-video-archive__copy">
+            <span className="homeopathy-kicker">Video archive · Russian audio</span>
+            <strong>{instructor ? "Instructor Course video lessons" : "Basic Course video lessons"}</strong>
+            <small className="yggdrasil-russian-video-archive__collapsed">Collapsed · {recordingCount} Russian-language videos hidden · Tap to expand</small>
+            <small className="yggdrasil-russian-video-archive__expanded">Expanded · Tap to collapse</small>
+          </span>
+          <span className="yggdrasil-russian-video-archive__toggle">
+            <span className="yggdrasil-russian-video-archive__show">Show videos</span>
+            <span className="yggdrasil-russian-video-archive__hide">Hide videos</span>
+            <ChevronDown size={21} aria-hidden="true" />
+          </span>
+        </summary>
+        <div className="yggdrasil-russian-video-archive__body">
+          <p className="yggdrasil-course-video-intro">Original lesson recordings in Russian, with English level titles and descriptions. They are not English-language lessons.</p>
+          <div className="yggdrasil-course-video-grid">
+            {level.steps.map((step) => {
+              const recording = step.video?.videos?.find((item) => Boolean(item.youtubeId));
+              return (
+                <article className="yggdrasil-course-video-card" key={step.id}>
+                  <div className="yggdrasil-course-video-card__heading">
+                    <span>LEVEL {String(step.number).padStart(2, "0")}</span>
+                    <span>RU audio · Original class</span>
+                  </div>
+                  {recording?.youtubeId ? <AcademyVideoPlayer youtubeId={recording.youtubeId} title={"Level " + step.number + " · " + step.title.en + " · Russian original"} /> : <div className="yggdrasil-course-video-empty">Recording unavailable</div>}
+                  <div className="yggdrasil-course-video-card__copy">
+                    <h3>{step.title.en}</h3>
+                    <Link href={"/en/academy/reiki/yggdrasil/" + slug + "#" + step.id.toLowerCase()}>Read the English level guide <span aria-hidden="true">→</span></Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
-        <a href={yggdrasilLegacyEnglishVideoSource} target="_blank" rel="noreferrer">{copy.source}<span aria-hidden="true">↗</span></a>
-      </div>
-      <div className="yggdrasil-video-language-heading yggdrasil-video-language-heading--guide">
-        <div>
-          <span className="yggdrasil-language-badge yggdrasil-language-badge--en">EN · English</span>
-        </div>
-        <small>{videos.length}</small>
-      </div>
-      <div className="yggdrasil-video-grid yggdrasil-video-grid--guide">
-        {videos.map((video) => (
-          <AcademyVideoPlayer key={video.youtubeId} youtubeId={video.youtubeId} title={"EN · " + video.title} />
-        ))}
-      </div>
+      </details>
     </section>
   );
 }

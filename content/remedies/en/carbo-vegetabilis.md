@@ -114,6 +114,14 @@ Carbo Vegetabilis
 
 helps restore balance, going from extreme exhaustion to recovery of energy and life.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: All feelings seem to have burned themselves out; there is emptiness inside, and it is hard to imagine tomorrow.
+
+After (desired state): Quiet hope, permission to rest and gentle attention to new possibilities.
+
 ## Additional materials and observations
 
 ### message245 (12/20/2024 4:12:36 PM UTC-05:00)

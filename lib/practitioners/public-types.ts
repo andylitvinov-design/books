@@ -1,3 +1,8 @@
+import type { ReikiOffer } from './reiki-offer.mjs'
+
+export type VideoPresentation = {kind:'external';url:string}|{kind:'upload';assetId:string;path:string}
+export type ServiceIntroduction = {language:'en'|'ru'|'es';type:'audio'|'video';media:VideoPresentation}
+
 export type PractitionerCredentialPublic = {
   id: string
   title: string
@@ -27,6 +32,8 @@ export type PractitionerPublicProfile = {
   websiteUrl?: string
   socialUrls?: string[]
   photoPath?: string
+  videoPresentation?: VideoPresentation | null
+  videoMaterials?: {title:string;description:string;locale:'en'|'ru'|'es';url:string}[]
 }
 
 export type PublicService = {
@@ -47,7 +54,20 @@ export type PublicService = {
   confirmedPrice: number | null
   currency: string
   durationMinutes: number | null
+  priceOptions?: {duration: 10 | 20 | 30 | 60; price: number}[]
+  reikiOffer?: ReikiOffer | null
   imagePath: string
+  videoPresentation?: VideoPresentation | null
+  serviceIntroductions?: ServiceIntroduction[]
+  photos?: string[]
+  practitionerPhoto?: string
+  goals?: string[]
+  methods?: string[]
+  benefits?: string[]
+  faq?: string[]
+  displayLocales?: string[]
+  whatsapp?: string
+  telegram?: string
   copy: {
     title: string
     shortDescription: string
@@ -59,12 +79,24 @@ export type PublicPractitioner = {
   id: string
   slug: string
   isPartner: boolean
+  canMessage?: boolean
   profile: PractitionerPublicProfile
   credentials: PractitionerCredentialPublic[]
   services: PublicService[]
+  /** Published service-review aggregate only; no reviewer identities or unpublished text. */
+  reviewSummary?: { count: number; average: number }
 }
 
 export type PublicServiceDetail = {
   service: PublicService
   practitioner: PublicPractitioner
+}
+
+/** Minimal published-course metadata for mentor discovery; never send drafts or slides. */
+export type PublicMentorCourse = {
+  slug: string
+  practitionerSlug: string
+  title: string
+  description: string
+  locale: 'en' | 'ru' | 'es'
 }

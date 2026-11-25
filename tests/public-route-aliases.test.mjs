@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 test('public compatibility aliases keep queries and explicit locales', async () => {
-  const text=readFileSync('next.config.ts','utf8').replace(/import type[^\n]+\n/,'').replace(': NextConfig','')
+  const text=ts.transpileModule(readFileSync('next.config.ts','utf8'), {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
   const {default: config}=await import(`data:text/javascript,${encodeURIComponent(text)}`)
   assert.equal(typeof config.redirects,'function')
   const rules=await config.redirects()

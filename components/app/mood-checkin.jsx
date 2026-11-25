@@ -21,6 +21,7 @@ const MOOD_COPY = {
     ],
     quick: 'Take a free state analysis and get recommendations',
     quickMeta: 'Free · ~1 min',
+    startNotice: 'Starting confirms you are 18+ and agree to temporary private processing of your answers and results.',
     latest: 'Latest',
     notNow: 'Not now',
     close: 'Close',
@@ -43,6 +44,7 @@ const MOOD_COPY = {
     ],
     quick: 'Пройти бесплатный тест-анализ состояния и получить рекомендации',
     quickMeta: 'Бесплатно · ~1 мин',
+    startNotice: 'Начиная тест, вы подтверждаете возраст 18+ и согласие на временную приватную обработку ответов и результатов.',
     latest: 'Последнее',
     notNow: 'Не сейчас',
     close: 'Закрыть',
@@ -225,6 +227,7 @@ export function MoodCheckIn({ locale = 'en', compact = false, disabled = false, 
                 </button>
               ))}
             </div>
+            <p className="hh-mood-category-hint" data-guest-start-notice>{c.startNotice}</p>
             <div className="hh-mood-actions">
               <button type="button" className="hh-mood-primary" onClick={startQuickCheckin}>
                 <span>{c.quick}</span>

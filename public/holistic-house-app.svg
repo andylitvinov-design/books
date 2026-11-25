@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Holistic House">
+  <rect width="192" height="192" rx="44" fill="#245d52"/>
+  <path d="M10 90c20-50 79-85 130-73 20 4 34 14 45 27v56c-19 37-52 69-92 78-36 7-66-14-83-41z" fill="#317b69" opacity=".48"/>
+  <g stroke="#f6fbf8" stroke-linecap="round" stroke-linejoin="round" stroke-width="13" fill="none">
+    <path d="M57 59v76M92 59v76M57 96h35"/>
+    <path d="M109 64v71M143 64v71M109 96h34"/>
+  </g>
+  <path d="M96 34c6 11 5 20-3 26-7-11-6-20 3-26z" fill="#bde4c8"/>
+  <path d="M96 60c8-11 20-14 29-10-4 14-15 19-29 10z" fill="#99d2b7"/>
+</svg>

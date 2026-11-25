@@ -1,0 +1,346 @@
+/* Readable assessment cockpit for private Holistic House results and Insights. */
+.hh-app .hh-result-page{gap:12px;padding:clamp(14px,2.2vw,24px)!important}
+.hh-app .hh-result-hero{padding-bottom:11px!important;margin-bottom:2px!important}
+.hh-app .hh-result-hero h1{font-size:clamp(1.65rem,4vw,2.35rem)!important;line-height:1.12!important;margin:3px 0 8px!important}
+.hh-app .hh-result-hero .hh-result-intro{font-size:.93rem!important;line-height:1.4!important;margin:4px 0!important;color:#716960;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.hh-app .hh-result-repeat{margin:7px 0 5px}
+.hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{width:auto;max-width:100%;min-height:46px!important;display:inline-flex;align-items:center;justify-content:center;padding:9px 16px!important;border-radius:12px!important;text-decoration:none;font-size:.9rem!important;font-weight:750!important;border:1px solid #a9ccc0!important;background:#edf6f1!important;color:#225e4e!important;box-shadow:none!important}
+.hh-app .hh-result-repeat button:hover{background:#d9efe5!important}
+.hh-app .hh-result-repeat button:focus-visible,.hh-app .hh-result-repeat a:focus-visible{outline:3px solid #bf6944;outline-offset:3px}
+.hh-app .hh-result-repeat p[role=alert]{font-size:.94rem;color:#9b3737;margin:9px 0}
+.hh-app .hh-result-raw-details{margin:8px 0!important}
+.hh-app .hh-result-raw-details>summary{font-size:.92rem!important;padding:12px 4px!important}
+.hh-app .hh-result-comparison{margin:12px 0!important;padding:13px 16px!important}
+.hh-app .hh-result-comparison h2{font-size:1.35rem!important}
+.hh-app .hh-result-comparison p{font-size:.92rem!important}
+.hh-app .hh-insights-intro{margin-bottom:12px}
+.hh-app .hh-insights-intro h1{font-size:clamp(1.9rem,4vw,2.35rem)!important}
+.hh-app .hh-insights-intro p:not(.hh-kicker){font-size:.92rem;line-height:1.4}
+.hh-insights-period{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:10px 0 13px}
+.hh-insights-period>span{color:#69594d;font-weight:800;font-size:.92rem;margin-right:3px}
+.hh-app .hh-insights-period button{min-height:38px!important;border-radius:99px!important;border:1px solid #d5cbbf!important;background:#fffdf7!important;color:#665849!important;padding:7px 13px!important;font-size:.84rem!important;font-weight:750!important}
+.hh-app .hh-insights-period button[aria-pressed=true]{background:#276d58!important;color:white!important;border-color:#276d58!important}
+.hh-app .hh-insights-period button:focus-visible,.hh-insights-date-range input:focus-visible{outline:3px solid #438a78;outline-offset:2px}
+.hh-insights-date-range{display:flex;flex-wrap:wrap;gap:10px;margin:-2px 0 14px}
+.hh-insights-date-range label{display:flex;align-items:center;gap:8px;color:#64594f;font-size:.9rem;font-weight:740}
+.hh-insights-date-range input{max-width:170px;min-height:42px;border:1px solid #c9cfc5;border-radius:9px;background:#fffdf8;padding:7px 9px;font-size:1rem;color:#38352f}
+.hh-app .hh-insights-test-list{gap:10px!important}
+.hh-app .hh-insights-test-card{border-radius:17px!important}
+.hh-app .hh-insights-test-link{display:flex!important;align-items:center;gap:clamp(12px,2.5vw,24px);padding:15px 20px!important;min-width:0}
+.hh-insights-test-gauge{flex:none;display:grid;align-items:center;justify-items:center}
+.hh-insights-test-body{min-width:0;flex:1;display:flex;flex-direction:column;align-items:start;gap:6px}
+.hh-app .hh-insights-test-meta{font-size:.78rem;color:#796f64}
+.hh-app .hh-insights-test-card h2{font-size:clamp(1.12rem,2.35vw,1.46rem)!important;font-weight:500!important;line-height:1.2!important;margin:0!important}
+.hh-app .hh-insights-test-summary{font-size:.88rem!important;line-height:1.33!important;background:none!important;padding:0!important;color:#586159!important;margin:0!important}
+.hh-app .hh-insights-test-summary strong{color:#2c6654}
+.hh-app .hh-insights-test-scores{display:block;font-size:.79rem;padding:0}
+.hh-app .hh-insights-open{font-size:.84rem!important;margin:1px 0 0;padding-top:6px!important;text-align:left}
+.hh-app .hh-insights-history summary{font-size:.9rem!important}
+.hh-app .hh-insights-empty{margin:12px 0;padding:16px;border-radius:16px}
+.hh-app .hh-insights-empty h2{font-size:1.2rem;margin:0 0 8px}
+.hh-app .hh-insights-empty p{font-size:.95rem;line-height:1.45}
+@media(max-width:700px){
+ .hh-app .hh-insights-intro{margin:0 0 12px}
+ .hh-app .hh-insights-test-link{padding:12px 11px!important;gap:8px}
+ .hh-app .hh-insights-test-card h2{font-size:1.09rem!important}
+ .hh-app .hh-insights-open{font-size:.78rem!important}
+ .hh-app .hh-insights-test-summary{font-size:.8rem!important}
+ .hh-app .hh-result-hero h1{font-size:1.72rem!important}
+ .hh-app .hh-result-hero .hh-result-intro{font-size:.9rem!important}
+ .hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{min-height:45px!important;font-size:.87rem!important;width:100%}
+ .hh-app .hh-insights-period{gap:6px}
+ .hh-app .hh-insights-period button{font-size:.78rem!important;padding:6px 10px!important}
+}
+@media(max-width:360px){
+ .hh-app .hh-insights-test-link{padding:10px 6px!important;gap:5px}
+ .hh-app .hh-insights-test-card h2{font-size:1.01rem!important}
+ .hh-app .hh-insights-date-range label{width:100%;justify-content:space-between}
+}
+
+
+/* Dashboard cockpit: multiple instrument dials on wide screens, one readable row on phones. */
+.hh-app .hh-insights-test-list{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))!important;
+  gap:12px!important
+}
+.hh-app .hh-insights-test-card{
+  min-width:0;display:flex;flex-direction:column;
+  border:1px solid #d5ddd5!important;background:#fffefa!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-link{flex:1;min-width:0}
+.hh-app .hh-insights-test-card .hh-insights-test-body{min-width:0}
+.hh-app .hh-insights-period-guide{
+  color:#5f6b62;font-size:.84rem!important;line-height:1.43!important;
+  margin:0 0 14px!important;padding-left:3px
+}
+.hh-app .hh-insights-test-card .hh-insights-test-summary{
+  font-size:.9rem!important;line-height:1.4!important
+}
+.hh-app .hh-insights-test-card .hh-insights-test-meta time{
+  font-size:.82rem;color:#716a61;font-weight:650
+}
+.hh-app .hh-insights-test-card .hh-insights-open{color:#286853}
+.hh-app .hh-insights-test-link:hover{background:#f5faf5}
+@media(max-width:600px){
+  .hh-app .hh-insights-test-card .hh-insights-test-summary{font-size:.87rem!important}
+  .hh-app .hh-insights-test-card h2{font-size:1.14rem!important}
+  .hh-app .hh-insights-test-card .hh-insights-open{font-size:.86rem!important}
+  .hh-app .hh-insights-period-guide{font-size:.81rem!important}
+}
+
+
+/* The eight Insights category tiles share the homepage test picker's topic
+   labels and visual language. A category contains real assessment cards, not
+   a new derived clinical score. */
+.hh-app .hh-insights-category-filters{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:13px 0 16px;
+}
+.hh-app .hh-insights-category-filter{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:54px;
+  padding:10px 12px!important;border:1px solid #e1d9cc!important;border-radius:14px!important;
+  background:#fffdf9!important;color:#3f3934!important;text-align:left!important;
+  font-size:.88rem!important;cursor:pointer;
+}
+.hh-app .hh-insights-category-filter svg{flex:none}
+.hh-app .hh-insights-category-filter span{flex:1;min-width:0}
+.hh-app .hh-insights-category-filter small{font-size:.73rem;color:#6f756e}
+.hh-app .hh-insights-category-filter[aria-pressed=true]{
+  border-color:#b7d5ca!important;background:#e4f0ec!important;
+  color:#215f55!important;font-weight:750!important;
+}
+.hh-app .hh-insights-category-filter:focus-visible,
+.hh-app .hh-insights-add-test:focus-visible{
+  outline:3px solid #25776d!important;outline-offset:2px;
+}
+.hh-app .hh-insights-categories{display:grid;gap:22px}
+.hh-app .hh-insights-category{min-width:0}
+.hh-app .hh-insights-category-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin:12px 0 13px;border-bottom:1px solid #e5e1d8;padding-bottom:8px;
+}
+.hh-app .hh-insights-category-heading-title{display:flex;gap:11px;align-items:center;min-width:0}
+.hh-app .hh-insights-category-icon{
+  width:36px;height:36px;border-radius:12px;background:#e7f1ea;
+  color:#2a7466;display:grid;place-items:center;flex:none;
+}
+.hh-app .hh-insights-category-heading h2{
+  font-family:Georgia,serif;font-weight:500;
+  font-size:clamp(1.26rem,2.7vw,1.65rem);margin:0!important;
+}
+.hh-app .hh-insights-category-heading>span{font-size:.8rem;color:#6e766e;white-space:nowrap}
+.hh-app .hh-insights-category-empty{font-size:.9rem;color:#6d685f;line-height:1.45}
+.hh-app .hh-insights-add-test{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:14px 17px;margin:11px 0 5px;border:1px dashed #a4c4b5;
+  border-radius:16px;background:#f5faf5;color:#286e58;text-decoration:none!important;
+}
+.hh-app .hh-insights-add-test:hover{background:#e9f5ed;border-style:solid}
+.hh-app .hh-insights-add-test .hh-insights-add-mark{
+  font-size:1.7rem;line-height:1;width:33px;height:33px;
+  display:grid;place-items:center;border-radius:50%;background:#e1efe3;flex:none;
+}
+.hh-app .hh-insights-add-test>span:nth-child(2){display:grid;gap:3px;flex:1}
+.hh-app .hh-insights-add-test strong{font-size:.95rem}
+.hh-app .hh-insights-add-test small{color:#687d6e;font-size:.79rem}
+@media(max-width:880px){
+  .hh-app .hh-insights-category-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .hh-app .hh-insights-category-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .hh-app .hh-insights-category-filter{min-height:49px;padding:8px 9px!important;font-size:.81rem!important}
+  .hh-app .hh-insights-add-test{padding:11px 12px;gap:9px}
+}
+@media(max-width:360px){
+  .hh-app .hh-insights-category-filter{font-size:.77rem!important}
+  .hh-app .hh-insights-category-filter svg{width:17px}
+}
+
+/* The Values/Dynamics switch belongs to Results, not My Tests. */
+.hh-app .hh-insights-view-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px;margin:6px 0 18px;border:1px solid #c5e4e9;border-radius:17px;background:#eaf7f9;box-sizing:border-box;min-width:0}
+.hh-app .hh-insights-view-tabs button{display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;min-width:0;min-height:49px!important;padding:10px 14px!important;border-radius:12px!important;border:1px solid transparent!important;background:transparent!important;color:#40747c!important;font:750 15px/1.3 system-ui,sans-serif!important;cursor:pointer;transition:background .15s ease,color .15s ease}
+.hh-app .hh-insights-view-tabs button:hover:not([aria-selected=true]){background:#d8f0f3!important}
+.hh-app .hh-insights-view-tabs button[aria-selected=true]{color:#fff!important;background:#137e8b!important;border-color:#0c7481!important;box-shadow:0 5px 13px #11647725}
+.hh-app .hh-insights-view-tabs button:focus-visible{outline:3px solid #00a6b5!important;outline-offset:2px}
+.hh-app .hh-insights-retake-error{color:#a23d39;font-size:.85rem;margin:9px 0}
+@media(max-width:480px){.hh-app .hh-insights-view-tabs{gap:5px;padding:4px;margin:2px 0 13px;border-radius:14px}.hh-app .hh-insights-view-tabs button{font-size:14px!important;min-height:47px!important;padding:9px 7px!important;gap:7px!important}}
+@media(prefers-reduced-motion:reduce){.hh-app .hh-insights-view-tabs button{transition:none}}
+
+/* Compact end-of-report cards: calm progress status followed by a clear personal CTA. */
+.hh-app .hh-result-comparison {
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px 14px;
+  margin:8px 0!important;
+  padding:17px 18px!important;
+  border:1px solid #d9e4df;
+  border-radius:19px;
+  background:linear-gradient(115deg,#f1f8f5 0%,#fcfaf5 100%);
+  box-shadow:0 7px 21px rgba(35,66,61,.045);
+}
+.hh-app .hh-result-comparison-icon {
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  flex:none;
+  border:1px solid #d4e7dd;
+  border-radius:14px;
+  background:#e2f1e9;
+  color:#266957;
+}
+.hh-app .hh-result-comparison-copy {min-width:0}
+.hh-app .hh-result-comparison h2 {
+  margin:0 0 4px!important;
+  color:#264438;
+  font-size:clamp(1.13rem,1.8vw,1.36rem)!important;
+  font-weight:500;
+  line-height:1.2;
+}
+.hh-app .hh-result-comparison p {
+  margin:0 0 4px!important;
+  color:#4e5a53;
+  font-size:.86rem!important;
+  line-height:1.45;
+}
+.hh-app .hh-result-comparison ul {margin:5px 0 7px;padding-left:17px;font-size:.83rem;line-height:1.45}
+.hh-app .hh-result-comparison small {display:block;color:#65736b;font-size:.71rem;line-height:1.4}
+.hh-app .hh-result-comparison-action {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  min-height:41px;
+  max-width:185px;
+  border:1px solid #c8ddd3;
+  border-radius:999px;
+  padding:8px 13px;
+  background:#fffdfa;
+  color:#266954;
+  font-size:.82rem;
+  font-weight:750;
+  line-height:1.25;
+  text-align:center;
+  text-decoration:none;
+  white-space:normal;
+}
+.hh-app .hh-result-comparison-action:hover {border-color:#82b39f;background:#e8f4ed}
+.hh-app .hh-result-comparison-action span:last-child {font-size:1.2rem;line-height:1;flex:none}
+
+.hh-app .hh-result-consultation {
+  display:grid;
+  grid-template-columns:43px minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+  margin:8px 0;
+  padding:20px 21px;
+  border:1px solid #294b60;
+  border-radius:19px;
+  background:radial-gradient(circle at 96% 10%,rgba(191,79,46,.22),transparent 36%),linear-gradient(110deg,#15324b 0%,#23445a 100%);
+  box-shadow:0 10px 25px rgba(19,48,72,.13);
+}
+.hh-app .hh-result-consultation-icon {
+  display:grid;
+  place-items:center;
+  width:43px;
+  height:43px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:14px;
+  background:rgba(255,255,255,.09);
+  color:#f0b39e;
+}
+.hh-app .hh-result-consultation-copy {min-width:0}
+.hh-app .hh-result-consultation .hh-kicker {
+  margin:0 0 5px!important;
+  color:#efad98;
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.13em;
+  line-height:1.2;
+}
+.hh-app .hh-result-consultation h2 {
+  margin:0 0 5px!important;
+  color:#fffdf8;
+  font-size:clamp(1.17rem,2vw,1.44rem);
+  font-weight:500;
+  line-height:1.22;
+}
+.hh-app .hh-result-consultation-description {
+  margin:0 0 7px!important;
+  color:#e1e9ea;
+  font-size:.83rem;
+  line-height:1.42;
+}
+.hh-app .hh-result-consultation-privacy {
+  display:flex;
+  align-items:flex-start;
+  gap:6px;
+  margin:0!important;
+  color:#bfd2db;
+  font-size:.72rem;
+  line-height:1.38;
+}
+.hh-app .hh-result-consultation-privacy svg {flex:none;margin-top:1px}
+.hh-app .hh-result-consultation-action {
+  display:inline-flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:46px;
+  max-width:205px;
+  border:1px solid #cf6a52;
+  border-radius:13px;
+  padding:10px 15px;
+  background:#bb4d34;
+  color:#fff;
+  font-size:.88rem;
+  font-weight:750;
+  line-height:1.3;
+  text-align:left;
+  text-decoration:none;
+  white-space:normal;
+  box-shadow:0 5px 14px rgba(10,30,45,.12);
+  transition:background .18s ease,transform .18s ease;
+}
+.hh-app .hh-result-consultation-action:hover {background:#a83e2a;transform:translateY(-1px)}
+.hh-app .hh-result-consultation-action span:last-child {font-size:1.2rem;line-height:1;flex:none}
+
+@media(max-width:760px) {
+  .hh-app .hh-result-comparison {
+    grid-template-columns:38px minmax(0,1fr);
+    align-items:start;
+    gap:8px 11px;
+    padding:14px 13px!important;
+    border-radius:16px;
+  }
+  .hh-app .hh-result-comparison-icon {width:38px;height:38px;border-radius:12px}
+  .hh-app .hh-result-comparison h2 {font-size:1.16rem!important}
+  .hh-app .hh-result-comparison-action {grid-column:2;justify-self:start;min-height:36px;padding:7px 12px;font-size:.78rem}
+  .hh-app .hh-result-consultation {
+    grid-template-columns:37px minmax(0,1fr);
+    align-items:start;
+    gap:9px 11px;
+    padding:16px;
+    border-radius:17px;
+  }
+  .hh-app .hh-result-consultation-icon {width:37px;height:37px;border-radius:11px}
+  .hh-app .hh-result-consultation h2 {font-size:1.2rem;line-height:1.2}
+  .hh-app .hh-result-consultation-action {grid-column:1 / -1;max-width:none;width:100%;min-height:45px;margin-top:2px}
+}
+@media(max-width:380px) {
+  .hh-app .hh-result-consultation {padding:13px;gap:8px 10px}
+  .hh-app .hh-result-consultation-description {font-size:.79rem}
+  .hh-app .hh-result-comparison p {font-size:.82rem!important}
+}
+@media(prefers-reduced-motion:reduce) {
+  .hh-app .hh-result-consultation-action {transition:none}
+  .hh-app .hh-result-consultation-action:hover {transform:none}
+}
+
+
+/* Prevent intrinsic report-scroller widths from stretching the entire mobile page.
+   Only the deliberately horizontal scale picker may scroll internally. */
+.hh-app .hh-result-page{min-width:0;max-width:100%;grid-template-columns:minmax(0,1fr)}
+.hh-app .hh-result-page > *,.hh-app .hh-result-section{min-width:0;max-width:100%}
+.hh-app .hh-result-page [data-compact-assessment-report]{min-width:0;width:100%;max-width:100%}

@@ -1,0 +1,269 @@
+
+/* Photo-led curriculum: source-backed images, editorial hierarchy, book/library visual language. */
+.curriculum { padding: 20px 0 36px; color: #34271f; }
+.curriculumIntro { max-width: 880px; margin: 0 0 24px; }
+.curriculumIntro :global(.homeopathy-kicker) { margin-bottom: 8px; }
+.curriculumIntro h2 { margin: 0 0 12px; font-family: var(--font-serif), Georgia, serif; font-size: clamp(34px, 5.2vw, 58px); font-weight: 450; line-height: 1.03; letter-spacing: -.035em; }
+.curriculumIntro > p:not(:global(.homeopathy-kicker)) { max-width: 700px; margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.6; color: #645347; }
+.levels { display: grid; gap: 26px; }
+.level { min-width: 0; overflow: visible; }
+.levelHeading { display: flex; align-items: center; gap: 12px; margin: 0 0 15px; }
+.levelNumber { display: grid; flex: none; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #e9dccb; color: #744630; font-family: var(--font-serif),Georgia,serif; font-size: 21px; }
+.levelTitle { display: grid; gap: 3px; min-width: 0; }
+.levelTitle strong { font-family: var(--font-serif),Georgia,serif; font-size: clamp(21px, 3.1vw, 30px); font-weight: 500; line-height: 1.2; }
+.levelTitle small { color: #907969; font-size: 12px; }
+.stageNavigation { display: flex; gap: 9px; overflow-x: auto; padding: 3px 1px 18px; margin-bottom: 4px; scrollbar-width: thin; }
+.stageNavigation a { display: inline-flex; gap: 10px; align-items: center; flex: 0 0 auto; max-width: 225px; padding: 10px 13px; border: 1px solid #dcd0c4; border-radius: 999px; background: #fffaf3; color: #533f34; text-decoration: none; }
+.stageNavigation a:hover, .stageNavigation a:focus-visible { background: #efe2d3; border-color: #bca48c; outline-offset: 2px; }
+.stageNavigation a span { font-size: 11px; font-weight: 800; color: #8a5b3d; }
+.stageNavigation a strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.visualSteps { display: grid; gap: 22px; }
+.stepCard { scroll-margin-top: 22px; display: grid; grid-template-columns: minmax(0, 43%) minmax(0, 57%); overflow: hidden; min-width: 0; padding: 0; border: 1px solid #e0d3c4; border-radius: 17px; background: #fffcf8; box-shadow: 0 12px 28px rgba(69, 46, 29, .09), 0 2px 5px rgba(69,46,29,.03); }
+.stepPhoto { min-height: 340px; height: 100%; background-color: #bca68e; background-position: 50% 42%; background-size: cover; position: relative; }
+.photoRibbon { position: absolute; top: 20px; left: 20px; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; padding: 9px 14px; background: rgba(31,25,20,.53); color: #fffaf2; font-size: 12px; font-weight: 750; letter-spacing: .03em; backdrop-filter: blur(5px); }
+.stepText { min-width: 0; padding: clamp(20px, 3vw, 32px); }
+.stepHeader { display: grid; gap: 11px; }
+.stageKicker { color: #a36d4e; font-size: 11px; font-weight: 800; letter-spacing: .105em; text-transform: uppercase; }
+.stepHeader h3 { margin: 0; font-family: var(--font-serif),Georgia,serif; font-size: clamp(29px, 3.3vw, 43px); line-height: 1.08; letter-spacing: -.025em; font-weight: 500; color: #34251f; overflow-wrap: break-word; }
+.stepBody { margin: 0; padding: 0; }
+.stepIntroduction { margin: 17px 0 20px; color: #645247; font-size: clamp(15px, 1.75vw, 18px); line-height: 1.56; max-width: 580px; }
+.stepBody :global(.yggdrasil-attunement-summary) { border-top: 1px solid #e3d6c9; margin: 0; padding-top: 12px; }
+.stepBody :global(.yggdrasil-section-heading) { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0; margin: 0 0 11px; border: 0; }
+.stepBody :global(.yggdrasil-section-heading h4) { margin: 0; color: #71462f; font-size: 15px; font-weight: 750; }
+.stepBody :global(.yggdrasil-section-heading span) { color: #927966; }
+.attunementChips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 19px; }
+.attunementChips span { display: inline-flex; align-items: center; padding: 8px 11px; background: #f3e9dd; border: 1px solid #e5d6c6; border-radius: 999px; color: #684935; font-size: 12px; font-weight: 650; line-height: 1.25; }
+.attunementChips .moreChips { background: #dfccb9; border-color: #d1b49c; font-weight: 800; }
+.stepBody :global(.yggdrasil-step-video-library) { margin-top: 20px; }
+.stepBody :global(.yggdrasil-step-more) { border-top: 1px solid #e3d6c9; border-bottom: 0; margin-top: 3px; }
+.stepBody :global(.yggdrasil-step-more > summary) { padding: 13px 2px 5px; }
+.stepBody :global(.yggdrasil-step-more > summary span) { font-size: 13px; }
+.stepBody :global(.yggdrasil-settings-grid) { grid-template-columns: 1fr; }
+.stepBody :global(.yggdrasil-setting-card) { border-radius: 10px; padding: 13px; }
+.videoDetails { border-top: 1px solid #e3d6c9; margin: 12px 0 10px; }
+.videoDetails > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 3px; color: #71462f; font-size: 13px; font-weight: 800; cursor: pointer; }
+.videoDetails > summary::after { content: "+"; font-size: 20px; line-height: 1; }
+.videoDetails[open] > summary::after { content: "−"; }
+.videoDetails :global(.yggdrasil-video-grid) { grid-template-columns: 1fr; }
+.sourceDetails { border-top: 1px solid #ddd0c3; margin: 32px 0 0; padding: 14px 0; color: #7d6c60; font-size: 12px; }
+.sourceDetails summary { cursor: pointer; font-size: 12px; font-weight: 750; }
+.sourceDetails > div { margin: 14px 0 10px; }
+.sourceDetails p { max-width: 740px; line-height: 1.55; }
+.sourceDetails small { color: #917d6d; }
+
+@media (max-width: 920px) {
+  .stepCard { grid-template-columns: minmax(0, 39%) minmax(0, 61%); }
+  .stepText { padding: 20px; }
+  .stepHeader h3 { font-size: clamp(26px, 3.9vw, 36px); }
+}
+@media (max-width: 700px) {
+  .curriculum { padding-top: 12px; }
+  .curriculumIntro h2 { font-size: clamp(34px, 10vw, 46px); }
+  .levelHeading { padding: 0 2px; }
+  .levelNumber { width: 42px; height: 42px; font-size: 18px; }
+  .stageNavigation { margin-right: -12px; padding-bottom: 16px; }
+  .stageNavigation a { max-width: 190px; padding: 9px 11px; }
+  .visualSteps { gap: 16px; }
+  .stepCard { grid-template-columns: minmax(0,1fr); border-radius: 15px; }
+  .stepPhoto { height: 230px; min-height: 230px; background-position: center 43%; }
+  .photoRibbon { top: 14px; left: 14px; font-size: 11px; }
+  .stepText { padding: 20px 18px 22px; }
+  .stepHeader { gap: 7px; }
+  .stepHeader h3 { font-size: clamp(30px, 8vw, 38px); }
+  .stepIntroduction { margin: 12px 0 17px; font-size: 16px; }
+  .attunementChips span { font-size: 11px; padding: 7px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .stageNavigation { scroll-behavior: auto; } }
+
+
+/* One lightweight learning kit within each actual course stage. */
+.studyKit { margin-top: 18px; overflow: hidden; border: 1px solid #d8e5df; border-radius: 13px; background: #f3f9f5; }
+.studyKit > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 12px 15px; cursor: pointer; list-style: none; color: #285f63; }
+.studyKit > summary::-webkit-details-marker, .studentExamples > summary::-webkit-details-marker { display: none; }
+.studyKit > summary span { color: #318184; font-size: 22px; line-height: 1; }
+.studyKit > summary strong { flex: 1; min-width: 0; font-size: 14px; line-height: 1.35; font-weight: 750; }
+.studyKit > summary svg, .studentExamples > summary svg { flex-shrink: 0; transition: transform .2s ease; }
+.studyKit[open] > summary svg, .studentExamples[open] > summary svg { transform: rotate(180deg); }
+.studyKit > summary:focus-visible, .studentExamples > summary:focus-visible { outline: 3px solid #27828a; outline-offset: -3px; }
+.studyKitBody { border-top: 1px solid #d8e5df; padding: 15px 17px 17px; color: #485e5f; font-size: 14px; line-height: 1.62; }
+.studyKitBody > p { margin: 0 0 12px; }
+.studyKitBody h4 { margin: 12px 0 7px; color: #2b5962; font-size: 14px; font-weight: 750; }
+.studyKitBody ol { margin: 0 0 13px; padding-left: 22px; }
+.studyKitBody li { margin-bottom: 7px; padding-left: 3px; }
+.studyKitBody small { display: block; margin: 5px 0 11px; color: #536b68; }
+.suggestedPractice { display: grid; gap: 3px; border-left: 3px solid #73b7a3; padding: 9px 12px; background: #e8f4eb; }
+.suggestedPractice strong, .suggestedPractice span { display: block; }
+.studyKitLinks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.studyKitLinks a { display: inline-flex; border: 1px solid #b6d9d4; border-radius: 9px; padding: 8px 11px; background: #fff; color: #266770; font-size: 12px; font-weight: 750; line-height: 1.3; text-decoration: none; }
+.studyKitLinks a:hover, .studyKitLinks a:focus-visible { background: #e5f4f2; text-decoration: underline; }
+.studentExamples { margin-top: 22px; border: 1px solid #e3d6c9; border-radius: 13px; background: #fdfaf7; }
+.studentExamples > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 12px 16px; color: #775848; font-size: 14px; font-weight: 700; cursor: pointer; list-style: none; }
+.studentExamples > section { margin: 0; padding: 0 16px 16px; }
+@media (max-width: 700px) {
+  .studyKit { margin-top: 13px; }
+  .studyKit > summary { padding: 12px; min-height: 48px; }
+  .studyKitBody { padding: 13px; font-size: 14px; }
+  .studyKitLinks { display: grid; grid-template-columns: minmax(0,1fr); }
+  .studyKitLinks a { min-height: 40px; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studyKit > summary svg, .studentExamples > summary svg { transition: none; }
+}
+
+
+/* Opt-in Holistic House navy/wine presentation for the Basic Course only. */
+.curriculum[data-visual-theme="navy"] {
+  padding: 28px 0 28px;
+  color: #1d3654;
+}
+.curriculum[data-visual-theme="navy"] .curriculumIntro { margin: 0 0 24px; }
+.curriculum[data-visual-theme="navy"] .curriculumIntro :global(.homeopathy-kicker) { color: #8d3f58; }
+.curriculum[data-visual-theme="navy"] .curriculumIntro h2 {
+  color: #172f4f;
+  font-size: clamp(31px,3.4vw,44px);
+  font-weight: 520;
+  line-height: 1.11;
+}
+.curriculum[data-visual-theme="navy"] .curriculumIntro > p:not(:global(.homeopathy-kicker)) {
+  color: #5f6d80;
+  font-size: 15px;
+  max-width: 745px;
+}
+.curriculum[data-visual-theme="navy"] .levelHeading { display: none; }
+.curriculum[data-visual-theme="navy"] .stageNavigation { display: none; }
+.curriculum[data-visual-theme="navy"] .visualSteps { gap: 22px; }
+.curriculum[data-visual-theme="navy"] .stepCard {
+  grid-template-columns: minmax(0, 37%) minmax(0,63%);
+  scroll-margin-top: 115px;
+  border: 1px solid #dbe2eb;
+  border-radius: 19px;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(21,43,69,.055);
+}
+.curriculum[data-visual-theme="navy"] .stepPhoto { background-color: #e4e9ed; min-height: 310px; }
+.curriculum[data-visual-theme="navy"] .photoRibbon {
+  border-color: rgba(255,255,255,.25);
+  background: rgba(17,40,68,.84);
+  padding: 9px 14px;
+  font-size: 12px;
+  color: #fff;
+}
+.curriculum[data-visual-theme="navy"] .stepText { padding: clamp(21px,2.6vw,32px); }
+.curriculum[data-visual-theme="navy"] .stageKicker { color: #9b425f; }
+.curriculum[data-visual-theme="navy"] .stepHeader h3 {
+  color: #1b3351;
+  font-size: clamp(26px,3.1vw,38px);
+  font-weight: 540;
+  line-height: 1.15;
+}
+.curriculum[data-visual-theme="navy"] .stepIntroduction { color: #5b6b7b; font-size: 15px; line-height: 1.59; margin: 13px 0 17px; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading) {
+  border-bottom: 1px solid #e6e9ee;
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading h4) {
+  color: #883d55;
+  font-size: 13px;
+  font-weight: 800;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading span) { color: #6f7e91; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-list) { border: 0; padding: 0; background: transparent; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row) {
+  border: 0;
+  border-bottom: 1px solid #e9edf3;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  padding: 12px 0;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row:last-child) { border-bottom: 0; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-glyph) {
+  color: #873954;
+  background: #f5e9ed;
+  border-color: #ead7dd;
+  border-radius: 10px;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text h5) { color: #223b59; font-weight: 800; font-size: 14px; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text p) { color: #667488; font-size: 13px; line-height: 1.55; }
+.curriculum[data-visual-theme="navy"] .studyKit {
+  background: #f1f4f8;
+  border: 1px solid #dee6ed;
+  border-radius: 11px;
+  margin-top: 13px;
+}
+.curriculum[data-visual-theme="navy"] .studyKit > summary { color: #234360; min-height: 52px; }
+.curriculum[data-visual-theme="navy"] .studyKit > summary span { color: #873954; }
+.curriculum[data-visual-theme="navy"] .studyKitBody {
+  border-color: #dce4ec;
+  background: #fbfcfd;
+  color: #586b7e;
+}
+.curriculum[data-visual-theme="navy"] .studyKitBody h4 { color: #254665; }
+.curriculum[data-visual-theme="navy"] .suggestedPractice { border-color: #a86b84; background: #f4ebef; }
+.curriculum[data-visual-theme="navy"] .studyKitLinks a { border: 1px solid #dce2eb; color: #254460; background: #fff; }
+.curriculum[data-visual-theme="navy"] .sourceDetails { border-top-color: #dbe1e9; color: #566b7f; }
+.curriculum[data-visual-theme="navy"] .studentExamples { border-color: #dce2eb; background: #fff; border-radius: 11px; }
+.curriculum[data-visual-theme="navy"] .studentExamples > summary { color: #274562; }
+@media (max-width: 800px) {
+  .curriculum[data-visual-theme="navy"] .stepCard { grid-template-columns: minmax(0,1fr); }
+  .curriculum[data-visual-theme="navy"] .stepPhoto { min-height: 222px; height: 222px; }
+  .curriculum[data-visual-theme="navy"] .stepText { padding: 21px 18px; }
+}
+@media (max-width: 600px) {
+  .curriculum[data-visual-theme="navy"] { padding-top: 20px; }
+  .curriculum[data-visual-theme="navy"] .curriculumIntro h2 { font-size: 31px; }
+  .curriculum[data-visual-theme="navy"] .visualSteps { gap: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepCard { border-radius: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepPhoto { min-height: 196px; height: 196px; }
+  .curriculum[data-visual-theme="navy"] .stepHeader h3 { font-size: 30px; }
+  .curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text h5) { font-size: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text p) { font-size: 15px; }
+}
+
+/* My Reiki Pro module detail: large, readable full-width lessons; avoid six enlarged copies of one historical image. */
+.curriculum[data-visual-theme="my-reiki"] { padding: 18px 0 4px; color: #103f30; min-width: 0; }
+.curriculum[data-visual-theme="my-reiki"] .curriculumIntro { margin: 0 0 14px; }
+.curriculum[data-visual-theme="my-reiki"] .curriculumIntro :global(.homeopathy-kicker) { color: #795526; text-align: center; font: 750 11px/1.4 system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.curriculum[data-visual-theme="my-reiki"] .curriculumIntro h2 { margin: 0 0 8px; color: #103f30; text-align: center; font: 700 clamp(25px,6.6vw,36px)/1.12 Georgia,serif; scroll-margin-top: 16px; }
+.curriculum[data-visual-theme="my-reiki"] .curriculumIntro > p:not(:global(.homeopathy-kicker)) { margin: 0; color: #395044; font: 500 15px/1.45 system-ui,sans-serif; }
+.curriculum[data-visual-theme="my-reiki"] .levelHeading { display: none; }
+.curriculum[data-visual-theme="my-reiki"] .stageNavigation { display: grid; grid-template-columns: minmax(0,1fr); gap: 7px; overflow: visible; padding: 0; margin: 0 0 16px; }
+.curriculum[data-visual-theme="my-reiki"] .stageNavigation a { box-sizing: border-box; display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 9px; max-width: none; min-height: 49px; padding: 7px 9px; border: 1px solid #d7b576; border-radius: 13px; background: linear-gradient(135deg,#fff9e6,#f8e5bd); color: #103f30; }
+.curriculum[data-visual-theme="my-reiki"] .stageNavigation a > span { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid #ffe4a4; border-radius: 50%; background: #805a2a; color: #fff6de; font: 700 15px/1 Georgia,serif; }
+.curriculum[data-visual-theme="my-reiki"] .stageNavigation a strong { min-width: 0; white-space: normal; overflow: visible; overflow-wrap: anywhere; font: 700 clamp(17px,4.5vw,22px)/1.2 Georgia,serif; color: #103f30; }
+.curriculum[data-visual-theme="my-reiki"] .stageNavigation a:hover { border-color: #08714b; background: #fff8e6; }
+.curriculum[data-visual-theme="my-reiki"] .visualSteps { gap: 14px; }
+.curriculum[data-visual-theme="my-reiki"] .stepCard { display: block; min-width: 0; overflow: visible; border: 1px solid #d7b576; border-radius: 17px; background: #fff9e9; box-shadow: 0 3px 10px #442b1115; scroll-margin-top: max(12px,env(safe-area-inset-top)); }
+.curriculum[data-visual-theme="my-reiki"] .stepPhoto { display: none; }
+.curriculum[data-visual-theme="my-reiki"] .stepText { padding: clamp(12px,3.5vw,24px); }
+.curriculum[data-visual-theme="my-reiki"] .stepHeader { gap: 6px; padding: 12px; border: 1px solid #dec28a; border-radius: 13px; background: linear-gradient(135deg,#08563d,#063729); }
+.curriculum[data-visual-theme="my-reiki"] .stageKicker { color: #f3dca6; font-size: 11px; }
+.curriculum[data-visual-theme="my-reiki"] .stepHeader h3 { color: #fff6df; font: 700 clamp(23px,6vw,33px)/1.15 Georgia,serif; overflow-wrap: anywhere; }
+.curriculum[data-visual-theme="my-reiki"] .stepIntroduction { margin: 12px 0 15px; color: #395044; font: 500 15px/1.55 system-ui,sans-serif; overflow-wrap: anywhere; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-settings-heading) { margin-bottom: 7px; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-settings-heading h4) { color: #103f30; font: 700 19px/1.3 Georgia,serif; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-settings-heading span) { color: #795526; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-settings-list) { min-width: 0; padding: 0; border: 0; background: transparent; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-row) { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 9px; min-width: 0; margin: 0 0 7px; padding: 10px 8px; border: 1px solid #e0c28b; border-radius: 11px; background: #fffcf2; box-shadow: none; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-glyph) { display: grid; place-items: center; width: 35px; height: 35px; border: 1px solid #dec28a; border-radius: 9px; background: #f4e5c5; color: #08714b; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-glyph svg) { width: 23px; height: 23px; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-row__text) { min-width: 0; overflow-wrap: anywhere; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-row__text h5) { color: #103f30; font: 750 16px/1.35 system-ui,sans-serif; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-setting-row__text p) { color: #395044; font: 400 15px/1.5 system-ui,sans-serif; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-step-video-library) { margin-top: 13px; min-width: 0; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-video-grid) { grid-template-columns: minmax(0,1fr); min-width: 0; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive) { border: 1px solid #d7b576; border-radius: 12px; background: #fff9e6; color: #103f30; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive > summary) { display: flex; min-height: 44px; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; color: #103f30; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__copy) { flex: 1 1 110px; min-width: 0; overflow-wrap: anywhere; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__copy strong) { color: #103f30; font: 700 17px/1.25 Georgia,serif; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__copy small) { color: #395044; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__count) { background: #f4e5c5; color: #795526; flex: none; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__chevron) { color: #08714b; flex: none; }
+.curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-russian-archive__contents) { padding: 0 9px 10px; }
+.curriculum[data-visual-theme="my-reiki"] .sourceDetails { border-top-color: #d7b576; margin: 14px 0 0; color: #395044; }
+.curriculum[data-visual-theme="my-reiki"] .sourceDetails summary { min-height: 44px; color: #103f30; font-size: 14px; }
+@media (min-width: 700px) {
+  .curriculum[data-visual-theme="my-reiki"] .stageNavigation { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .curriculum[data-visual-theme="my-reiki"] .stepBody :global(.yggdrasil-video-grid) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

@@ -1,0 +1,66 @@
+.report{margin:20px 0 24px;padding:clamp(18px,3vw,32px);border:1px solid #d8c9b9;border-radius:24px;background:linear-gradient(155deg,#f5f7f4 0%,#fffaf5 70%);color:#3e413d}
+.heading{max-width:800px;margin-bottom:20px}
+.eyebrow{color:#8d5e45;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.heading h2{font-family:var(--font-serif),Georgia,serif;font-size:clamp(27px,4.5vw,39px);font-weight:500;letter-spacing:-.025em;line-height:1.15;margin:7px 0 10px}
+.heading>p:last-child{font-size:14px;line-height:1.65;color:#5e625d;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px}
+.card{border:1px solid #d8dfd6;border-radius:20px;background:#fffefb;padding:clamp(17px,2.5vw,24px);box-shadow:0 3px 12px #2a3a2410}
+.cardHead{display:flex;gap:12px;align-items:start}
+.number{flex:none;background:#e7efea;border-radius:11px;padding:7px 9px;color:#396d61;font-size:13px;font-weight:800}
+.card h3{font-family:var(--font-serif),Georgia,serif;font-weight:500;line-height:1.2;font-size:22px;margin:0}
+.construct{font-size:11px;line-height:1.4;color:#75756d;margin:5px 0 0}
+.meaning{font-size:13px;line-height:1.6;color:#4c514b;background:#f3f2eb;border-radius:12px;padding:11px 13px;margin:15px 0}
+.card h4{font-size:12px;color:#704c3a;letter-spacing:.02em;margin:0 0 10px}
+.steps{margin:0;padding-left:22px;font-size:13px;line-height:1.6}
+.steps li{padding-left:3px;margin-bottom:9px}
+.steps li::marker{color:#3f796c;font-weight:800}
+.followUp{border-top:1px solid #e4e8df;padding-top:11px;margin:12px 0 0;font-size:12px;line-height:1.55;color:#5b635b}
+.footer{margin-top:17px;max-width:850px;color:#5a5f58;font-size:12px;line-height:1.6}
+.footer p{margin:0 0 6px}.footer small{font-size:11px}
+@media(max-width:560px){.report{padding:18px 13px;border-radius:18px}.card{padding:17px}.grid{grid-template-columns:minmax(0,1fr)}.heading h2{font-size:27px}}
+
+.purpose{margin-top:16px;background:#faf8f4;border-left:3px solid #a88066;border-radius:0 12px 12px 0;padding:12px 15px;font-size:13px;line-height:1.55}.purpose strong{font-weight:750;color:#4f4339}.purpose p{margin:4px 0 0!important;color:#685c51}.score{font-size:13px;font-weight:750;color:#356b5b;margin:5px 0 0!important}
+
+/* Compact and opt-in display for the 38 Bach theme interpretations. */
+.profileLead{margin:0 0 14px;color:#47665e;font-size:13px;line-height:1.55}
+.groupLabel{margin:0 0 5px;color:#87624c;font-size:10px;font-weight:800;letter-spacing:.075em;text-transform:uppercase}
+.more{margin-top:16px;padding:15px;border:1px solid #d8dfd6;border-radius:17px;background:#fafbf8}
+.more summary{display:flex;justify-content:space-between;gap:12px;align-items:center;cursor:pointer;color:#456c60;font-size:13px;font-weight:750;list-style-position:inside}
+.moreDescription{font-size:12px;line-height:1.5;color:#656b64;padding:0 2px;margin:13px 0}
+.more[open] .grid{margin-top:13px}
+
+/* Extra context for score-based tests; Bach retains its compact traditional-theme presentation. */
+.band{margin:-8px 0 11px;color:#79736d;font-size:11px;font-weight:650;letter-spacing:.015em}
+.source{display:inline-block;margin-top:8px;font-size:11px;color:#2f6254;text-decoration:underline;text-underline-offset:3px}
+.source:focus-visible{outline:2px solid #2f6254;outline-offset:3px}
+.ruleVersion{display:block;margin-top:7px;color:#77756c}
+
+/* A named scale is observable; skill building is optional and never a clinical target. */
+.observation{margin:9px 0 14px;padding:9px 12px;border-left:2px solid #9bbca9;background:#f7faf4;border-radius:0 9px 9px 0}
+.observation p{margin:4px 0;color:#536459;font-size:12px;line-height:1.5}
+.observation strong{color:#376450;font-weight:750}
+.myCourseLink{display:inline-flex;align-items:center;min-height:37px;margin:10px 0;color:#2f735e;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
+.myCourseLink:focus-visible{outline:3px solid #377662;outline-offset:3px}
+
+/* Origin and limits of psychological/scientific evidence, separate from score training. */
+.purpose .methodology{margin-top:10px!important;padding-top:9px;border-top:1px solid #e8e2d9;color:#63594f;font-size:12px;line-height:1.55}
+.purpose .methodology strong{font-size:12px}
+
+/* Bach original weighted matches use within-report ranking, never clinical severity. */
+.bachScaleGuide{max-width:100%;min-width:0;margin:12px 0 15px;padding:13px 14px;
+  border:1px solid #d5e1df;border-radius:14px;background:#fafcfa;overflow-wrap:anywhere}
+.bachScaleGuide h3{font:780 1rem/1.35 system-ui,sans-serif;color:#264c5d;margin:0 0 7px}
+.bachScaleGuide p{color:#456267;font-size:.84rem;line-height:1.49;margin:0 0 10px}
+.bachRankLegend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;
+  max-width:100%;min-width:0}
+.bachRankLegend span{display:flex;flex-direction:column;gap:3px;min-width:0;
+  border-radius:10px;border:1px solid #dce4e2;padding:8px;color:#587175;
+  background:white;font:500 .76rem/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
+.bachRankLegend strong{color:#24595b;font-size:.78rem;line-height:1.35}
+.bachScaleGuide small{display:block;margin-top:10px;font:.73rem/1.46 system-ui,sans-serif;color:#6b7877}
+.bachSelectedGroup{font:.8rem/1.45 system-ui,sans-serif!important;color:#51676b;
+  padding:7px 9px;border-left:3px solid #867080;background:#f8f4f7;
+  border-radius:7px;margin:5px 0!important;overflow-wrap:anywhere}
+.bachSelectedGroup strong{color:#63475a;font-weight:780}
+@media(max-width:570px){.bachScaleGuide{padding:11px 10px}.bachRankLegend{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:360px){.bachRankLegend{grid-template-columns:minmax(0,1fr)}}

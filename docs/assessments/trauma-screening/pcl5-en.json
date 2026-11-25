@@ -1,0 +1,194 @@
+{
+  "language": "en",
+  "checked_at": "2026-10-14",
+  "use": "Adult self-report, clinically supported screening or symptom measurement; not standalone diagnosis",
+  "rights": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+  "missingness": {
+    "official_rule_found": false,
+    "recommended_conservative_implementation": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule."
+  },
+  "reverse_scored_items": [],
+  "weighting": "unweighted",
+  "rounding": "none; integer sums",
+  "implementation_ready": false,
+  "instrument": "PCL-5",
+  "form": "Past month, standard",
+  "version": "Cover 29 August 2023; questionnaire footer 18 August 2023",
+  "source": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/PCL5_Standard_form.pdf",
+  "rights_source": "https://www.ptsd.va.gov/professional/assessment/adult-sr/ptsd-checklist.asp",
+  "scoring_source": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/using-PCL5.pdf",
+  "responses": [
+    {
+      "value": 0,
+      "label": "Not at all"
+    },
+    {
+      "value": 1,
+      "label": "A little bit"
+    },
+    {
+      "value": 2,
+      "label": "Moderately"
+    },
+    {
+      "value": 3,
+      "label": "Quite a bit"
+    },
+    {
+      "value": 4,
+      "label": "Extremely"
+    }
+  ],
+  "items": [
+    {
+      "id": "PCL1",
+      "text": "Repeated, disturbing, and unwanted memories of the stressful experience?"
+    },
+    {
+      "id": "PCL2",
+      "text": "Repeated, disturbing dreams of the stressful experience?"
+    },
+    {
+      "id": "PCL3",
+      "text": "Suddenly feeling or acting as if the stressful experience were actually happening again (as if you were actually back there reliving it)?"
+    },
+    {
+      "id": "PCL4",
+      "text": "Feeling very upset when something reminded you of the stressful experience?"
+    },
+    {
+      "id": "PCL5",
+      "text": "Having strong physical reactions when something reminded you of the stressful experience (for example, heart pounding, trouble breathing, sweating)?"
+    },
+    {
+      "id": "PCL6",
+      "text": "Avoiding memories, thoughts, or feelings related to the stressful experience?"
+    },
+    {
+      "id": "PCL7",
+      "text": "Avoiding external reminders of the stressful experience (for example, people, places, conversations, activities, objects, or situations)?"
+    },
+    {
+      "id": "PCL8",
+      "text": "Trouble remembering important parts of the stressful experience?"
+    },
+    {
+      "id": "PCL9",
+      "text": "Having strong negative beliefs about yourself, other people, or the world (for example, having thoughts such as: I am bad, there is something seriously wrong with me, no one can be trusted, the world is completely dangerous)?"
+    },
+    {
+      "id": "PCL10",
+      "text": "Blaming yourself or someone else for the stressful experience or what happened after it?"
+    },
+    {
+      "id": "PCL11",
+      "text": "Having strong negative feelings such as fear, horror, anger, guilt, or shame?"
+    },
+    {
+      "id": "PCL12",
+      "text": "Loss of interest in activities that you used to enjoy?"
+    },
+    {
+      "id": "PCL13",
+      "text": "Feeling distant or cut off from other people?"
+    },
+    {
+      "id": "PCL14",
+      "text": "Trouble experiencing positive feelings (for example, being unable to feel happiness or have loving feelings for people close to you)?"
+    },
+    {
+      "id": "PCL15",
+      "text": "Irritable behavior, angry outbursts, or acting aggressively?"
+    },
+    {
+      "id": "PCL16",
+      "text": "Taking too many risks or doing things that could cause you harm?"
+    },
+    {
+      "id": "PCL17",
+      "text": "Being “superalert” or watchful or on guard?"
+    },
+    {
+      "id": "PCL18",
+      "text": "Feeling jumpy or easily startled?"
+    },
+    {
+      "id": "PCL19",
+      "text": "Having difficulty concentrating?"
+    },
+    {
+      "id": "PCL20",
+      "text": "Trouble falling or staying asleep?"
+    }
+  ],
+  "instructions": "Below is a list of problems that people sometimes have in response to a very stressful experience. Keeping your worst event in mind, please read each problem carefully and then select one of the numbers to the right to indicate how much you have been bothered by that problem in the past month.",
+  "stem": "In the past month, how much were you bothered by:",
+  "trauma_requirement": "Standard form appropriate only when trauma exposure assessed separately; otherwise use exact Criterion A form (included separately), not an invented generic stressful-event gate. No automatic Criterion A diagnosis from these fields.",
+  "total": {
+    "items": [
+      "PCL1",
+      "PCL2",
+      "PCL3",
+      "PCL4",
+      "PCL5",
+      "PCL6",
+      "PCL7",
+      "PCL8",
+      "PCL9",
+      "PCL10",
+      "PCL11",
+      "PCL12",
+      "PCL13",
+      "PCL14",
+      "PCL15",
+      "PCL16",
+      "PCL17",
+      "PCL18",
+      "PCL19",
+      "PCL20"
+    ],
+    "range": [
+      0,
+      80
+    ]
+  },
+  "clusters": {
+    "B": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "C": [
+      6,
+      7
+    ],
+    "D": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "E": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ]
+  },
+  "symptom_pattern": "Each item >=2; >=1 B, >=1 C, >=2 D, >=2 E. Does not establish full PTSD diagnosis.",
+  "thresholds": "31–33 probable-PTSD range discussed by VA, population/purpose dependent; do not select a universal site threshold. VA guide states no empirically derived severity ranges.",
+  "remaining": [
+    "Confirm professional-supported workflow and target-population applicability",
+    "Choose standard only with separate trauma assessment, otherwise exact Criterion A form",
+    "Source-to-UI comparison and synthetic scoring tests",
+    "Choose supported translation separately; no RU items verified",
+    "New-row conflict check and readback if subsequently authorized for deployment"
+  ]
+}

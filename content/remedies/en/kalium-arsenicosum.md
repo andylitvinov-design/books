@@ -142,6 +142,12 @@ TRANSFORMATION / LESSON:
 
 - Acceptance of one's vulnerability as a source of strength. Trust the world. Open your power not outwardly, but within.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Behind impeccable politeness lie anxiety and the fear of being left without support.
+
+After (desired state): The inner support of “I am here for myself,” and the ability to be yourself without controlling everything around you.
+
 Affirmations
 
 "I am safe even when I do not control everything."

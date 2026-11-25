@@ -10,6 +10,9 @@ export interface PublishedSiteVideo {
   transcript?: string;
   language: VideoLocale;
   durationSeconds?: number;
+  /** Public approved practitioner profile, never a private client identity. */
+  practitionerSlug?: string;
+  practitionerName?: string;
 }
 
 export interface SiteVideoDraft extends PublishedSiteVideo {
@@ -42,11 +45,13 @@ export interface SiteVideoChange {
   durationSeconds?: number | string;
   youtubeVisibility?: 'unlisted' | 'public';
   reviewed?: boolean;
+  practitionerSlug?: string;
+  practitionerName?: string;
 }
 
 export interface SiteVideoStore {
-  list(): Promise<SiteVideoRecord[]>;
-  get(key: string): Promise<SiteVideoRecord | null>;
+  list(options?: { timeoutMs?: number }): Promise<SiteVideoRecord[]>;
+  get(key: string, options?: { timeoutMs?: number }): Promise<SiteVideoRecord | null>;
   save(record: SiteVideoRecord, expectedRevision: number): Promise<void>;
 }
 
@@ -65,6 +70,7 @@ export function videoKey(slot: string, locale: VideoLocale, entityId?: string): 
 export function videoPagePath(slot: string, locale: VideoLocale, entityId?: string): string;
 export function parseYouTubeId(source: unknown): string | null;
 export function parseSiteVideoSource(source: unknown): { youtubeId: string; heygenId?: string } | null;
+export function siteVideoTitleId(video: Pick<PublishedSiteVideo, 'youtubeId' | 'heygenId'>, locale: VideoLocale): string;
 export function siteVideoWatchUrl(video: Pick<PublishedSiteVideo, 'youtubeId' | 'heygenId'>): string;
 export function prepareVideoChange(previous: SiteVideoRecord | null | undefined, input: SiteVideoChange, now?: Date | string): SiteVideoRecord;
 export function toPublishedSiteVideo(record: unknown): PublishedSiteVideo | undefined;

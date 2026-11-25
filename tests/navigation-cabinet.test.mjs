@@ -14,61 +14,113 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation shares six destinations and never exposes administration', async () => {
-  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'academy', 'about', 'cabinet'])
+test('public navigation exposes three real directions without administration', async () => {
+  const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'pro', 'temple', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 6)
+    assert.equal(items.length, 10)
+    assert.equal(items.find(item => item.id === 'temple').href, `/${locale}/holistic-support`)
+    assert.equal(items.find(item=>item.id==='love').href, '/'+locale+'/explore/love')
+    assert.equal(items.find(item=>item.id==='energy').href, '/'+locale+'/explore/energy')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
+    assert.equal(items.find(item => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
-    assert.equal(items.find(item => item.id === 'academy').external, false)
+    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/academy`)
+    assert.equal(items.find(item => item.id === 'courses').label, { en: 'Courses', ru: 'Курсы', es: 'Cursos' }[locale])
+    assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+    assert.ok(!getCompactNavigation(locale).some(item => item.id === 'business'))
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')
-    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
 })
 
+test('Courses menu opens the full Academy; enrolled My Courses remains in the personal area', async () => {
+  const [nav, oldRoute, academy, ownedCourses] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('app/[locale]/courses/page.tsx', 'utf8'),
+    readFile('app/[locale]/academy/[[...slug]]/page.tsx', 'utf8'),
+    readFile('components/academy-my-courses.tsx', 'utf8'),
+  ])
+  assert.match(nav, /'library', 'events'/)
+  assert.match(nav, /getCompactNavigation\(activeLocale\)/)
+  assert.doesNotMatch(nav, /\{ id: 'academy', label: text\.academy/)
+  assert.match(oldRoute, /permanentRedirect\(`\/\$\{locale\}\/academy`\)/)
+  assert.match(academy, /if \(!slug\?\.length\) \{[\s\S]*?return <AcademyHub locale=\{locale\} view=\{view\} \/>/)
+  assert.match(ownedCourses, /title: 'My courses'/)
+  assert.match(ownedCourses, /title: 'Мои курсы'/)
+})
+
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
-  const [home, page] = await Promise.all([
+  const [home, page, russianPage, metadata] = await Promise.all([
     readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('app/page.tsx', 'utf8'),
+    readFile('app/[locale]/page.tsx', 'utf8'),
+    readFile('lib/home-seo.ts', 'utf8'),
   ])
 
   assert.match(home, /восстановление · практика · поддержка/)
   assert.match(home, /healing · practice · guidance/)
-  assert.match(home, /Три простых пути/)
-  assert.match(home, /Three simple paths/)
-  assert.match(home, /Открыть Academy и Library/)
-  assert.match(home, /Open the Academy and Library/)
-  assert.match(page, /uiLocale/)
-  assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
-  assert.match(page, /Holistic House — inner development, practice and personal work/)
+  const explore = await readFile('components/home-explore-sections.tsx', 'utf8')
+  const more = await readFile("components/home-more-disclosure.tsx", "utf8")
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  const deferred = await readFile('components/home-deferred-sections.tsx','utf8')
+  const expanded = await readFile('components/home-expanded-catalog.tsx','utf8')
+  assert.match(deferred, /IntersectionObserver/)
+  assert.match(expanded, /<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/)
+  assert.doesNotMatch(home, /<HomeFeaturedWorkspace|<HomeMoreDisclosure/)
+  assert.match(more, /data-home-topic-filters/)
+  assert.match(more, /data-home-topic-filter="temple"/)
+  assert.match(explore, /Выберите свой следующий шаг/)
+  assert.match(explore, /Find your next step/)
+  assert.match(explore, /Академия и курсы/)
+  assert.match(explore, /Academy & courses/)
+  assert.match(page, /locale="en"/)
+  assert.match(page, /requested === "ru" \|\| requested === "es"/)
+  // Language-only redirects remain canonical; the opt-in full React experience survives /ru.
+  assert.match(page, /requestedFull === "1"/)
+  assert.match(page, /redirect\(/)
+  assert.match(russianPage, /locale="ru"/)
+  assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
+  assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)
+  assert.match(metadata, /Личные консультации в Торонто и онлайн \| Holistic House/)
+  assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
-test('mobile navigation keeps six usable shared destinations and reserves space for forms', async () => {
+test('mobile navigation keeps seven usable shared destinations and reserves space for forms', async () => {
   const [mobile, styles] = await Promise.all([
     readFile('components/mobile-bottom-navigation.tsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
   ])
 
-  assert.match(mobile, /getSiteNavigation/)
-  assert.match(mobile, /CircleUserRound/)
+  assert.match(mobile, /getCompactNavigation/)
+  const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
+  assert.match(mobile, /compactNavigationIcons/)
+  assert.match(icons, /profile: UserRound/)
+  assert.match(icons, /pro: GraduationCap/)
+  assert.match(icons, /temple: Landmark/)
+  assert.match(icons, /analysis: Sparkles/)
+  assert.match(icons, /courses: BookOpen/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
-  assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
-  assert.doesNotMatch(styles, /repeat\(3,minmax\(0,1fr\)\)/)
-  assert.match(styles, /white-space: nowrap/)
+  assert.match(styles, /repeat\(7,minmax\(0,1fr\)\)/)
+  const bottomRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => /\.ia222-bottom-navigation(?![\w-])/.test(selector))
+    .map(([, , declarations]) => declarations).join('\n')
+  assert.match(bottomRules, /grid-template-columns:\s*repeat\(7,\s*minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
+  assert.match(styles, /white-space: normal; overflow-wrap: normal/)
   assert.match(styles, /--ia222-bottom-height,76px/)
   assert.match(styles, /safe-area-inset-bottom/)
   assert.match(styles, /scroll-margin-bottom/)
 
   const homeStyles = await readFile('app/holistic-house-home.css', 'utf8')
-  assert.match(homeStyles, /grid-template-columns: repeat\(6, minmax\(0,1fr\)\)/)
+  assert.match(homeStyles, /grid-template-columns: repeat\(7, minmax\(0,1fr\)\)/)
 })
 
 test('no-cookie public and practitioner entry points consistently prefer English', async () => {
@@ -80,7 +132,7 @@ test('no-cookie public and practitioner entry points consistently prefer English
   ])
 
   assert.match(books, /preference === "ru" \? "ru" : "en"/)
-  assert.match(adminHeader, /useState\('en'\)/)
+  assertAdminHeaderInitialLocale(adminHeader)
   assert.match(practitioner, /useState\('en'\)/)
   assert.match(consultation, /useState\('en'\)/)
 })
@@ -95,7 +147,9 @@ test('the admin entry redirects guests and shows daily practitioner actions afte
 
   assert.match(dashboard, /requireAdminRequest/)
   assert.match(dashboard, /redirect\('\/admin\/login'\)/)
-  assert.match(dashboard, /PractitionerCabinet/)
+  // The former /admin entry deliberately routes authenticated users to the
+  // single private practice cockpit; no duplicate old dashboard is rendered.
+  assert.match(dashboard, /redirect\('\/'\+locale\+'\/app\/practice'\)/)
   assert.match(cabinet, /Practitioner Cabinet/)
   assert.match(cabinet, /Кабинет практика/)
   assert.match(cabinet, /\/admin\/consultations\/new/)
@@ -131,12 +185,13 @@ test('direct protected admin pages redirect signed-out visitors to login instead
 
 
 test('About exposes a consultation request form and a Google-first Cabinet with legacy compatibility', async () => {
-  const [about, entryPage, landing, entryForm, consultationForm] = await Promise.all([
+  const [about, entryPage, landing, entryForm, consultationForm, chooser] = await Promise.all([
     readFile('app/[locale]/about/page.tsx', 'utf8'),
     readFile('app/[locale]/client/page.tsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/client-cabinet-entry.tsx', 'utf8'),
     readFile('components/personal-consultation-form.tsx', 'utf8'),
+    readFile('components/consultation-choice-capture.tsx', 'utf8'),
   ])
 
   assert.match(about, /PersonalConsultationForm/)
@@ -144,8 +199,9 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(about, /typedLocale \+ "\/client"/)
   assert.match(entryPage, /CabinetLanding/)
   assert.match(entryPage, /robots: \{ index: false, follow: false \}/)
-  assert.match(landing, /Continue with Google/)
-  assert.match(landing, /Your Mind–Body Monitor/)
+  assert.match(landing, /Enter personal cabinet with Google/)
+  assert.match(landing, /cabinet-signin-hero/)
+  assert.match(landing, /Free wellbeing & resources monitoring/)
   assert.match(landing, /MINI_IPIP_20_EN_V1/)
   assert.match(landing, /CURRENT_STATE_RU_V2/)
   assert.match(landing, /cabinet-legacy-entry/)
@@ -154,9 +210,11 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
   assert.match(entryForm, /privateLink/)
   assert.match(entryForm, /selectorPattern/)
   assert.match(entryForm, /secretPattern/)
-  assert.match(consultationForm, /wa\.me\/14376066502/)
-  assert.match(consultationForm, /Continue in WhatsApp/)
-  assert.match(consultationForm, /t\.me\/AndyTherapist/)
+  assert.match(consultationForm, /ConsultationChoiceCapture/)
+  assert.match(consultationForm, /service \? "service" : "personal"/)
+  assert.match(chooser, /whatsappEnquiryUrl/)
+  assert.match(chooser, /Start free drawing assessment/)
+  assert.match(chooser, /t\.me\/AndyTherapist/)
 })
 
 test('public pages share one localized soft CTA with direct WhatsApp and Telegram handoff', async () => {
@@ -172,19 +230,33 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
     readFile('components/academy-record-page.tsx', 'utf8'),
     readFile('app/[locale]/homeopathy/remedies/page.tsx', 'utf8'),
     readFile('components/remedy-page.tsx', 'utf8'),
-    readFile('app/books/[bookId]/page.tsx', 'utf8'),
+    readFile('app/[locale]/books/[bookId]/page.tsx', 'utf8'),
   ])
 
   assert.match(cta, /data-consultation-cta/)
-  assert.match(cta, /wa\.me\/14376066502/)
-  assert.match(cta, /t\.me\/AndyTherapist/)
-  assert.match(cta, /data-contact-channel="whatsapp"/)
-  assert.match(cta, /data-contact-channel="telegram"/)
-  assert.match(cta, /No long form and no pressure/)
+  assert.match(cta, /trainingEnquiryUrl/)
+  assert.match(cta, /ContactChannelChooser/)
+  assert.match(cta, /whatsappUrl=\{whatsappUrl\}/)
+  assert.match(await readFile('components/contact-channel-chooser.tsx','utf8'), /data-contact-channel": "telegram"/)
+  assert.match(cta, /Start with a free coaching form and handwritten drawing/)
+  assert.match(cta, /Interested in training or the next level/)
+  assert.match(cta, /data-conversion-kind=\{mode\}/)
   assert.match(styles, /\.public-consultation-cta__actions/)
-  for (const source of [home, homeopathy, services, spanishServices, library, academy, academyRecord, remedies, remedyPage, bookReader]) {
+  const homeContact = await readFile('components/homepage-contact-cta.tsx', 'utf8')
+  const homeChoice = await readFile('components/consultation-choice-capture.tsx', 'utf8')
+  assert.match(await readFile('components/home-expanded-catalog.tsx','utf8'), /<HomepageContactCta locale=\{locale\}/)
+  assert.match(homeContact, /data-home-contact-capture/)
+  assert.match(homeContact, /<HomepageFreeCapture locale=\{locale\}/)
+  assert.doesNotMatch(homeContact, /variant="service"/)
+  assert.match(await readFile('components/homepage-free-capture.tsx', 'utf8'), /data-home-free-capture="true"/)
+  assert.match(homeChoice, /whatsappEnquiryUrl/)
+  assert.match(homeChoice, /t\.me\/AndyTherapist/)
+  for (const source of [homeopathy, services, spanishServices, library, academyRecord, remedies, remedyPage, bookReader]) {
     assert.match(source, /PublicConsultationCta/)
   }
+  // The Academy now uses its dedicated course interest form rather than the
+  // generic public consultation footer. Preserve that newer conversion path.
+  assert.match(academy, /AcademyCourseCapture/)
 })
 
 // Preserve PR #76's compact menu and cabinet next-step checks under shared IA data.
@@ -205,4 +277,66 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.doesNotMatch(cabinet, /localStorage/)
   assert.match(esAboutVerifier, /site-language-menu-trigger/)
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
+})
+
+test('My Space Home has compact real navigation while other site headers retain Cabinet and mobile Books', async () => {
+  const [nav, home, header, styles, hub, spanishHome, workspace] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('components/holistic-house-home.tsx', 'utf8'),
+    readFile('components/public-site-header.tsx', 'utf8'),
+    readFile('app/holistic-house-home.css', 'utf8'),
+    readFile('components/app/profile-hub-tabs.jsx', 'utf8'),
+    readFile('app/es/page.tsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
+  ])
+
+  // The owner removed only the legacy marketing header from Home.
+  // Home starts with the lightweight Ali entry; the real signed-in Profile
+  // retains its full private account navigation.
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.doesNotMatch(home, /<SiteNavigation locale=\{locale\}/)
+  assert.doesNotMatch(home, /className="house-header house-header--services"/)
+  assert.match(spanishHome, /<HomeDialogueEntry locale="es" \/>/)
+  assert.doesNotMatch(spanishHome, /<PublicSiteHeader locale="es" \/>/)
+  assert.match(hub, /<SiteNavigation locale=\{selected\} compact \/>/)
+  assert.match(nav, /<SiteSearch locale=\{activeLocale\} pathname=\{pathname\} \/>/)
+  assert.match(nav, /<details className="site-main-menu"/)
+  assert.match(workspace, /target\.closest\('\[data-profile-chrome-navigation\]'\)/)
+  assert.match(header, /<SiteNavigation locale=\{locale\}/)
+  assert.match(nav, /\['energy', 'love', 'business'\]\.includes\(item\.id\)/)
+  assert.match(nav, /site-nav-free-entry/)
+  assert.match(nav, /site-nav-about-entry/)
+  const space = await readFile('components/home-personal-space.tsx', 'utf8')
+  assert.match(nav, /HomePersonalSpaceNavEntry locale=\{activeLocale\}/)
+  assert.match(space, /className="site-cabinet-entry"/)
+  assert.match(space, /data-nav-item="cabinet"/)
+  assert.match(space, /aria-haspopup="dialog"/)
+  for (const localeCopy of ['My Space', 'Моё пространство', 'Mi espacio']) assert.ok(space.includes(localeCopy))
+  assert.match(styles, /\.house-header--services \.site-navigation > \.site-cabinet-entry/)
+  assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
+  assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
+  assert.match(styles, /@media \(max-width: 374px\)/)
+})
+
+function assertAdminHeaderInitialLocale(source) {
+  const defaultLocale = source.match(/export function PrescriptionAdminHeader\(\{[^}]*initialLocale = ('[^']+')/)
+  const initializer = source.match(/const \[locale, setLocale\] = useState\(([^\n]+)\)/)
+  assert.ok(defaultLocale, 'Header must retain its explicit initial-locale default')
+  assert.ok(initializer, 'Header locale must have a single inspected initializer')
+  const initial = new Function('provided', `const { initialLocale = ${defaultLocale[1]} } = provided; return (${initializer[1]});`)
+  assert.equal(initial({}), 'en', 'No supplied preference defaults to English')
+  assert.equal(initial({ initialLocale: 'ru' }), 'ru', 'Explicit Russian is retained')
+  for (const initialLocale of ['en', 'es', '', null]) assert.equal(initial({ initialLocale }), 'en')
+}
+
+test('practitioner locale initializer rejects wrong default and ignored explicit preference', async () => {
+  const source = await readFile('components/prescription-admin-header.jsx', 'utf8')
+  for (const changed of [
+    source.replace("initialLocale = 'en'", "initialLocale = 'ru'"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('en')"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('ru')"),
+  ]) {
+    assert.notEqual(changed, source)
+    assert.throws(() => assertAdminHeaderInitialLocale(changed))
+  }
 })

@@ -1,0 +1,117 @@
+name: Holistic House conversation entry verification
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/home-conversation-guide.*'
+      - 'components/home-free-diagnosis-banner.*'
+      - 'components/holistic-house-home.tsx'
+      - 'app/es/page.tsx'
+      - 'lib/home-conversation.*'
+      - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
+      - 'tests/home-diagnosis-messenger.test.mjs'
+      # Public Ali support intake owner, avoiding unrelated private App/IA tests.
+      - 'components/app/messenger-ai-landing.*'
+      - 'components/app/messenger-support-quiz.*'
+      - 'tests/messenger-support-quiz.test.mjs'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/home-conversation-guide.*'
+      - 'components/home-free-diagnosis-banner.*'
+      - 'components/holistic-house-home.tsx'
+      - 'app/es/page.tsx'
+      - 'lib/home-conversation.*'
+      - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-home-conversation-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+jobs:
+  conversation:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install only locked TypeScript for protected PR source contracts
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d "${RUNNER_TEMP}/hh-contract-deps.XXXXXX")"
+          if node --input-type=commonjs - "$tmp" <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const entry = lock.packages?.['node_modules/typescript'];
+          // Only the standalone compiler, at the exact repository-locked integrity.
+          if (lock.lockfileVersion !== 3 || !entry ||
+              !/^\d+\.\d+\.\d+$/.test(entry.version || '') ||
+              entry.resolved !== `https://registry.npmjs.org/typescript/-/typescript-${entry.version}.tgz` ||
+              !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(entry.integrity || '') ||
+              entry.link || entry.hasInstallScript ||
+              ['dependencies','optionalDependencies','peerDependencies','bundleDependencies','bundledDependencies'].some(k => Object.keys(entry[k] || {}).length)) process.exit(1);
+          const manifest = {name:'hh-ci-contract-deps',version:'1.0.0',devDependencies:{typescript:entry.version}};
+          const dir = process.argv[2];
+          fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({...manifest,private:true}));
+          fs.writeFileSync(path.join(dir,'package-lock.json'),JSON.stringify({...manifest,lockfileVersion:3,requires:true,packages:{'':manifest,'node_modules/typescript':{...entry,dev:true}}}));
+          NODE
+          then
+            npm ci --prefix "$tmp" --include=dev --ignore-scripts --no-audit --no-fund
+            mkdir -p node_modules
+            ln -s "$tmp/node_modules/typescript" node_modules/typescript
+          else
+            # Unknown lockfile/compiler dependency shape: retain the full install.
+            npm ci --include=dev --no-audit --no-fund
+          fi
+      - name: Install complete dependencies for standalone QA
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Localized conversation, topic routing and existing carousel regressions
+        run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs tests/messenger-support-quiz.test.mjs
+      - name: Check affected TypeScript and React UI
+        run: |
+          # Protected Core independently checks every changed JS/TS file.
+          # Preserve full standalone/post-merge lint and type checks.
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+            npx --no-install tsc --noEmit
+            npx --no-install eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx components/app/messenger-ai-landing.tsx components/app/messenger-support-quiz.tsx
+          fi
+      - name: Build with the project's production dependencies
+        if: github.event_name != 'pull_request'
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install isolated Chromium and WebKit for mobile journey
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          npm install --prefix /tmp/hh-home-guide-playwright --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-home-guide-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-home-guide-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real EN/RU/ES Next mobile dialogue in Chromium and WebKit
+        if: github.event_name != 'pull_request'
+        run: |
+          HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs
+          HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name != 'pull_request'
+        with:
+          name: hh-home-conversation-browser
+          path: artifacts/home-conversation/
+          retention-days: 7

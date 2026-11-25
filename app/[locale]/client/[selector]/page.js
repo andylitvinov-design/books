@@ -1,13 +1,20 @@
 import { clientAssessmentSummary } from '@/lib/clients/assessments'
+import { legacyDocumentProjection } from '@/lib/app/legacy-document'
+import { recommendationItemType } from '@/lib/documents/recommendation'
 import { notFound } from 'next/navigation'
 import { PrescriptionAccessGate } from '@/components/prescription-access-gate'
 import { ClientCabinet } from '@/components/client-cabinet'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { getAppConfig } from '@/lib/app/config'
+import { listClientSessions } from '@/lib/clients/session-delivery-service'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Holistic House · Private cabinet', robots: { index: false, follow: false } }
-export default async function CabinetPage({ params }) {
+export default async function CabinetPage({ params, searchParams }) {
   const { locale, selector } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
+  const requestedView = (await searchParams)?.view
+  const view = ['analysis', 'profile'].includes(requestedView) ? requestedView : 'documents'
   const access = await authorizeCabinetRequest(selector)
   if (!access) return <PrescriptionAccessGate locale={locale} selector={selector} cabinet />
   const records = await access.store.listClientDocuments(access.client.id)
@@ -16,5 +23,15 @@ export default async function CabinetPage({ params }) {
   const assessments = (await access.store.listClientAssessments(access.client.id))
     .map(record => clientAssessmentSummary(record, access.client.id)).filter(Boolean)
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn) || a.id.localeCompare(b.id))
-  return <ClientCabinet assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} />
+  const homeopathyUpdates = records.filter(record => record.status === 'active' && record.clientId === access.client.id)
+    .map(record => {
+      const document = legacyDocumentProjection(record, locale)
+      if (!document || !['homeopathy', 'mixed'].includes(document.recommendationType)) return null
+      const remedies = [...new Set((document.items || [])
+        .filter(item => recommendationItemType(item, document.recommendationType) === 'homeopathy')
+        .map(item => String(item.displayName || '').trim()).filter(Boolean))]
+      return { id: record.id, date: record.dateIssued, remedies }
+    }).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+  const sessions = deliveryEnabled() ? await listClientSessions(getAppConfig(),access.store,access.client.id,{publishedOnly:true}).catch(()=>[]) : []
+  return <ClientCabinet sessions={sessions} homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
 }

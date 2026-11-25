@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" role="img" aria-label="Soft lotus flower on a misty blue background">
+<defs><linearGradient id="bg" x2=".85" y2="1"><stop stop-color="#eff9fa"/><stop offset=".52" stop-color="#bedfe3"/><stop offset="1" stop-color="#91bbc6"/></linearGradient><linearGradient id="petal" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff9ef"/><stop offset=".5" stop-color="#e5d4d3"/><stop offset="1" stop-color="#b48f9f"/></linearGradient><radialGradient id="light"><stop stop-color="#fffdf2" stop-opacity=".96"/><stop offset="1" stop-color="#fff4e5" stop-opacity="0"/></radialGradient></defs>
+<rect width="260" height="260" rx="22" fill="url(#bg)"/><circle cx="139" cy="116" r="94" fill="url(#light)"/>
+<path d="M0 208c53-28 102-27 149-16 35 7 74 5 111-10v78H0Z" fill="#7fb0ba" opacity=".37"/><path d="M25 225c50 0 93-8 130-7 38 2 59 11 94 7" stroke="#effcfa" stroke-opacity=".5" fill="none" stroke-width="3"/>
+<path d="M129 204c-28-35-29-83-2-119 31 33 36 83 2 119Z" fill="url(#petal)" stroke="#e8d8d6" stroke-width="2"/>
+<path d="M128 206c-51-16-75-46-75-86 40 9 68 39 75 86Z" fill="url(#petal)" stroke="#e8d8d6" stroke-width="2"/>
+<path d="M130 206c52-13 77-46 76-86-40 10-70 40-76 86Z" fill="url(#petal)" stroke="#e8d8d6" stroke-width="2"/>
+<path d="M127 209C79 212 48 187 39 155c41-3 74 18 88 54Z" fill="#f4e4df" stroke="#d9c5c7" stroke-width="2"/>
+<path d="M131 209c46 3 80-21 91-53-42-4-76 18-91 53Z" fill="#f4e4df" stroke="#d9c5c7" stroke-width="2"/>
+<ellipse cx="131" cy="203" rx="30" ry="11" fill="#e9cfbd"/><path d="M83 214c32 14 69 12 100-1" stroke="#fdfbf4" stroke-opacity=".7" stroke-width="5" fill="none"/><circle cx="213" cy="53" r="3" fill="white" opacity=".85"/><circle cx="50" cy="77" r="2" fill="white" opacity=".9"/>
+</svg>

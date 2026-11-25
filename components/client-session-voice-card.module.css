@@ -1,0 +1,167 @@
+/* Private client-report voice note: compact, real practitioner portrait, no external media. */
+.voiceSection.voiceSection {
+  max-width:790px;
+  margin:16px auto 24px;
+  padding:clamp(13px,2.7vw,21px);
+  border:1px solid #cbdedc;
+  border-radius:22px;
+  background:radial-gradient(ellipse at 105% 0%,rgba(220,241,229,.68),transparent 52%),
+    linear-gradient(140deg,#f4faf8 0%,#fffdfa 100%);
+  box-shadow:0 8px 28px rgba(31,78,76,.055);
+}
+
+.voiceSection .voiceSectionHeader {
+  align-items:center;
+  gap:12px;
+  margin-bottom:13px;
+}
+.voiceSection .voiceTitle {
+  margin:3px 0 0;
+  color:#304b3e;
+  font:600 clamp(22px,3.3vw,29px)/1.22 Georgia,'Times New Roman',serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+}
+.voiceSection .voiceList {
+  width:100%;
+  max-width:none;
+  display:grid;
+  gap:12px;
+  margin:0;
+}
+.voiceSection .voiceCard.voiceCard {
+  min-width:0;
+  margin:0;
+  padding:clamp(14px,2.8vw,21px);
+  border:1px solid #d5e7e4;
+  border-radius:19px;
+  background:linear-gradient(130deg,#fff 10%,#fbfefb 100%);
+  box-shadow:0 8px 22px rgba(22,76,66,.075);
+}
+.voiceLayout {
+  display:grid;
+  grid-template-columns:clamp(84px,17vw,124px) minmax(0,1fr);
+  align-items:center;
+  gap:clamp(13px,2.6vw,25px);
+  min-width:0;
+}
+.portraitFrame {
+  display:block;
+  aspect-ratio:1;
+  width:100%;
+  overflow:hidden;
+  border:3px solid #fff;
+  outline:1px solid #d2e6e1;
+  border-radius:50%;
+  box-shadow:0 5px 15px rgba(25,85,77,.13);
+  background:#e4f1e9;
+}
+.portraitFrame img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 28%;
+}
+.voiceBody {min-width:0}
+.voiceSection .voiceHeading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  margin-bottom:12px;
+}
+.voiceHeading>div {min-width:0}
+.voiceSection .voiceHeading strong {
+  display:block;
+  font-size:clamp(15px,2.2vw,19px);
+  line-height:1.23;
+  color:#1d4556;
+  overflow-wrap:anywhere;
+}
+.voiceSection .voiceHeading small {
+  display:block;
+  margin-top:5px;
+  color:#78939a;
+  font-size:clamp(12px,1.75vw,15px);
+  line-height:1.35;
+}
+.soundWaves {flex:none;color:#b5d9d0}
+.voiceSection .voicePlayButton.voicePlayButton {
+  display:inline-flex;
+  justify-content:flex-start;
+  align-items:center;
+  width:100%;
+  min-height:48px;
+  padding:6px 11px;
+  margin:0;
+  gap:10px;
+  border-radius:999px;
+  border:1px solid #c9e0cb;
+  background:linear-gradient(100deg,#edf5eb,#f4f8f0);
+  box-shadow:none;
+  color:#21694f;
+  font-size:clamp(13px,1.9vw,16px);
+  font-weight:700;
+  line-height:1.25;
+  white-space:normal;
+  text-align:left;
+  cursor:pointer;
+}
+.voicePlayButton:hover {background:#e4f2e7;border-color:#83b7a1}
+.voicePlayButton:focus-visible {outline:3px solid #278576;outline-offset:3px}
+.voicePlayIcon {
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  flex:none;
+  border-radius:50%;
+  background:#286c55;
+  color:#fff;
+}
+.buttonTextWide {min-width:0}
+.buttonTextNarrow {display:none}
+.activePlayer {min-width:0;margin-top:14px}
+.activePlayer audio {
+  display:block;
+  width:100%;
+  max-width:100%;
+  margin:0;
+}
+
+/* Match the approved mobile card without forcing horizontal scrolling. */
+@media (max-width:580px) {
+  .voiceSection.voiceSection {margin:12px auto 20px;padding:13px;border-radius:19px}
+  .voiceSection .voiceSectionHeader {gap:10px;margin-bottom:12px}
+  .voiceSection .voiceTitle {font-size:clamp(21px,5.2vw,26px)}
+  .voiceSection .voiceCard.voiceCard {padding:12px;border-radius:16px}
+  .voiceLayout {grid-template-columns:clamp(70px,20vw,90px) minmax(0,1fr);gap:11px}
+  .voiceSection .voiceHeading {margin-bottom:10px}
+  .voiceSection .voiceHeading strong {font-size:15px}
+  .voiceSection .voiceHeading small {font-size:12px}
+  .soundWaves {width:22px;height:22px}
+  .voiceSection .voicePlayButton.voicePlayButton {padding:5px 9px;min-height:45px;gap:8px;font-size:13px}
+  .voicePlayIcon {width:31px;height:31px}
+}
+@media (max-width:355px) {
+  .voiceLayout {grid-template-columns:67px minmax(0,1fr);gap:10px}
+  .voiceSection .voiceHeading {gap:5px}
+  .soundWaves {display:none}
+  .voiceSection .voicePlayButton.voicePlayButton {padding:5px 8px}
+  .buttonTextWide {display:none}
+  .buttonTextNarrow {display:inline}
+}
+
+/* The existing coastal report theme must not flatten this dedicated voice card. */
+:global([data-hh-report-theme="coastal-v2"]) .voiceSection .voiceCard.voiceCard {
+  background:linear-gradient(130deg,#fff,#fbfefb);
+  border-radius:19px;
+  border-color:#d5e7e4;
+  box-shadow:0 8px 22px rgba(22,76,66,.075);
+}
+:global([data-hh-report-theme="coastal-v2"]) .voiceSection .voiceTitle {
+  color:#304b3e;
+}
+@media print {.voiceSection {display:none!important}}

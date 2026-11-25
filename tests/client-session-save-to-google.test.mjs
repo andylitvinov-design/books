@@ -1,0 +1,61 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {canAutoContinueSave,savedResourcePath} from '../lib/app/client-handoff.js'
+const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+const sid='29e2a748-ea4c-4cb4-9561-5224482f9b44'
+
+test('individual session saving auto-continues ONLY after explicit pre-OAuth consent',()=>{
+  assert.equal(savedResourcePath('ru','client_session',sid),'/ru/app/sessions/'+sid)
+  assert.equal(canAutoContinueSave({automatic:true,authStatus:'',intent:{sourceKind:'client_session',
+    status:'pending',expired:false}}),true)
+  assert.equal(canAutoContinueSave({automatic:false,authStatus:'',intent:{sourceKind:'client_session',
+    status:'pending',expired:false}}),false)
+  assert.equal(canAutoContinueSave({automatic:true,authStatus:'cancelled',intent:{sourceKind:'client_session',
+    status:'pending',expired:false}}),false)
+  const dialog=source('components/session-exit-save-guard.jsx')
+  assert.match(dialog,/role="dialog"/)
+  assert.match(dialog,/onClick=\{confirmAndSave\}/)
+  assert.match(dialog,/sourceKind:'client_session'/)
+  assert.match(dialog,/auto=1/)
+  assert.match(source('components/save-client-session-to-account.jsx'),/requestSave/)
+  assert.match(source('components/app/app-workspace.jsx'),/Save one consultation/)
+  assert.match(source('components/app/app-workspace.jsx'),/No other client records/)
+})
+test('guest save requires viewer cookie, and cabinet save reauthorizes exact Session ID',()=>{
+  const api=source('app/api/app/[...path]/route.js')
+  assert.match(api,/readSessionViewerCookie\(request.cookies,\s*body.selector\)/)
+  assert.match(api,/authorizeSessionGuest\(config,store,body.selector/)
+  assert.match(api,/authorizeCabinetRequest\(body.selector\)/)
+  assert.match(api,/getPublishedClientSession\(config,store,owner.client.id,body.sourceId\)/)
+  assert.match(api,/commitSessionSaveIntent/)
+  assert.doesNotMatch(source('lib/app/client-session-save-flow.js'),/bindLegacyClientToAccount/)
+})
+test('account has its own session list, reader, independent PDF and per-file authorization',()=>{
+  const service=source('lib/app/client-session-save-flow.js')
+  const media=source('app/api/app/saved-sessions/[id]/media/[assetId]/route.js')
+  const pdf=source('app/api/app/saved-sessions/[id]/pdf/route.js')
+  const page=source('app/[locale]/app/sessions/[id]/page.jsx')
+  const client=source('components/client-session-page.jsx')
+  assert.match(service,/sourceHash\(src\)!==intent.source_hash/)
+  assert.match(service,/where account_id=\$1 and source_session_id=\$2 and legacy_client_id=\$3 returning \*/)
+  assert.match(service,/on conflict\(source_session_id\) do nothing returning \*/)
+  assert.doesNotMatch(service,/on conflict\(source_session_id\) do update/)
+  assert.match(service,/published_revision!==ref.source_revision/)
+  assert.match(media,/await readSavedSession\(config,getPrescriptionStore\(\),actor,id/)
+  assert.match(media,/privateMediaStream/)
+  assert.match(pdf,/await readSavedSession\(config,store,actor,id/)
+  assert.match(page,/createRequestAuth/)
+  assert.match(client,/mode==='saved'/)
+  assert.match(source('components/app/personal-analysis-panel.jsx'),/SavedSessionsPanel/)
+  assert.match(source('components/app/app-workspace.jsx'),/savedSessions=\{data.savedSessions \|\| \[\]\}/)
+})
+
+test('foreign account save maps only the insert RLS conflict without weakening ownership',()=>{
+  const service=source('lib/app/client-session-save-flow.js')
+  const insertion=service.slice(service.indexOf('if(!saved){'),service.indexOf('if(!saved)throw new AppError'))
+  assert.match(insertion,/on conflict\(source_session_id\) do nothing returning \*/)
+  assert.match(insertion,/catch\(error\)[\s\S]*?error\?\.code==='42501'[\s\S]*?SAVE_UNAVAILABLE/)
+  assert.doesNotMatch(insertion,/on conflict\(source_session_id\) do update/i)
+  assert.match(service,/where account_id=\$1 and source_session_id=\$2 and legacy_client_id=\$3 returning \*/)
+})

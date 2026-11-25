@@ -6,6 +6,22 @@
 	objectVersion = 48;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		F1A0B0000000000000000012 /* Widget proxy */ = {isa = PBXContainerItemProxy; containerPortal = 504EC2FC1FED79650016851F; proxyType = 1; remoteGlobalIDString = F1A0B0000000000000000011; remoteInfo = HHCourseWidget; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F1A0B0000000000000000010 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (F1A0B000000000000000000C /* HHCourseWidget.appex in Embed App Extensions */, );
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXBuildFile section */
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
@@ -17,6 +33,12 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
+		F1A0B0000000000000000007 /* HHCourseAttributes.swift in App Sources */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000001; };
+		F1A0B0000000000000000008 /* HHCourseAttributes.swift in Widget Sources */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000001; };
+		F1A0B0000000000000000009 /* HHCourseWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000002; };
+		F1A0B000000000000000000A /* HHCourseActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000003; };
+		F1A0B000000000000000000B /* HHBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000004; };
+		F1A0B000000000000000000C /* HHCourseWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F1A0B0000000000000000005; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +56,12 @@
 		AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
+		F1A0B0000000000000000001 /* HHCourseAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/HHCourseAttributes.swift; sourceTree = "<group>"; };
+		F1A0B0000000000000000002 /* HHCourseWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HHCourseWidget/HHCourseWidget.swift; sourceTree = "<group>"; };
+		F1A0B0000000000000000003 /* HHCourseActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HHCourseActivityPlugin.swift; sourceTree = "<group>"; };
+		F1A0B0000000000000000004 /* HHBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HHBridgeViewController.swift; sourceTree = "<group>"; };
+		F1A0B0000000000000000005 /* HHCourseWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HHCourseWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F1A0B0000000000000000006 /* HHCourseWidget Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = HHCourseWidget/Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +73,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F1A0B000000000000000000E /* Widget Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -60,6 +89,9 @@
 			isa = PBXGroup;
 			children = (
 				504EC3061FED79650016851F /* App */,
+				F1A0B0000000000000000001 /* HHCourseAttributes.swift */,
+				F1A0B0000000000000000002 /* HHCourseWidget.swift */,
+				F1A0B0000000000000000006 /* HHCourseWidget Info.plist */,
 				504EC3051FED79650016851F /* Products */,
 				7F8756D8B27F46E3366F6CEA /* Pods */,
 				27E2DDA53C4D2A4D1A88CE4A /* Frameworks */,
@@ -70,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				F1A0B0000000000000000005 /* HHCourseWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -79,6 +112,8 @@
 			children = (
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				F1A0B0000000000000000003 /* HHCourseActivityPlugin.swift */,
+				F1A0B0000000000000000004 /* HHBridgeViewController.swift */,
 				D0A100021FED79650016851F /* NativePrivatePrescriptionGate.swift */,
 				D0A100041FED79650016851F /* PrivatePrescriptionSessionViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -111,6 +146,7 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				F1A0B0000000000000000010 /* Embed App Extensions */,
 				9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
@@ -121,6 +157,17 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F1A0B0000000000000000011 /* HHCourseWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1A0B0000000000000000016 /* Build configuration list for Widget */;
+			buildPhases = (F1A0B000000000000000000D /* Widget Sources */, F1A0B000000000000000000E /* Widget Frameworks */, F1A0B000000000000000000F /* Widget Resources */, );
+			buildRules = ();
+			dependencies = (F1A0B0000000000000000013 /* Widget dependency */, );
+			name = HHCourseWidget;
+			productName = HHCourseWidget;
+			productReference = F1A0B0000000000000000005 /* HHCourseWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -136,6 +183,7 @@
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 					};
+					F1A0B0000000000000000011 = { CreatedOnToolsVersion = 15.0; ProvisioningStyle = Automatic; };
 				};
 			};
 			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
@@ -154,6 +202,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				F1A0B0000000000000000011 /* HHCourseWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -172,6 +221,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F1A0B000000000000000000F /* Widget Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -216,12 +266,25 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				F1A0B000000000000000000A /* HHCourseActivityPlugin.swift in Sources */,
+				F1A0B000000000000000000B /* HHBridgeViewController.swift in Sources */,
+				F1A0B0000000000000000007 /* HHCourseAttributes.swift in App Sources */,
 				D0A100011FED79650016851F /* NativePrivatePrescriptionGate.swift in Sources */,
 				D0A100031FED79650016851F /* PrivatePrescriptionSessionViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F1A0B000000000000000000D /* Widget Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (F1A0B0000000000000000008 /* HHCourseAttributes.swift */, F1A0B0000000000000000009 /* HHCourseWidget.swift */, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F1A0B0000000000000000013 /* Widget dependency */ = {isa = PBXTargetDependency; target = F1A0B0000000000000000011; targetProxy = F1A0B0000000000000000012; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -391,6 +454,24 @@
 			};
 			name = Release;
 		};
+		F1A0B0000000000000000014 /* Widget Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = { APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = HHCourseWidget/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = app.psialchemy.mobile.HHCourseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; };
+			name = Debug;
+		};
+		F1A0B0000000000000000015 /* Widget Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = { APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = HHCourseWidget/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = app.psialchemy.mobile.HHCourseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; };
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -409,6 +490,12 @@
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1A0B0000000000000000016 /* Build configuration list for Widget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (F1A0B0000000000000000014 /* Debug */, F1A0B0000000000000000015 /* Release */, );
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};

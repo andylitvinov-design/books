@@ -18,8 +18,8 @@ test('Remedies landing combines remedy search, free consultation and book covers
   assert.match(page, /Бесплатная консультация/)
   assert.match(page, /Free consultation/)
   assert.match(page, /PublicConsultationCta/)
-  assert.match(cta, /t\.me\/AndyTherapist/)
-  assert.match(cta, /wa\.me\/14376066502/)
+  assert.match(cta, /ContactChannelChooser/)
+  assert.match(cta, /trainingEnquiryUrl/)
   assert.match(search, /Find a homeopathic remedy/)
   assert.match(search, /Full description/)
   assert.match(directory, /Найти гомеопатический препарат/)
@@ -36,7 +36,7 @@ test('Remedies landing combines remedy search, free consultation and book covers
 test('public navigation groups existing remedies inside Library and keeps bilingual Services', async () => {
   const navigation = await readFile('components/site-navigation.tsx', 'utf8')
   const { getSiteNavigation } = await import('../lib/site-navigation-model.js')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.find((item) => item.id === 'library').href, `/${locale}/library`)
@@ -44,22 +44,25 @@ test('public navigation groups existing remedies inside Library and keeps biling
   }
 })
 
-test('Services page is bilingual and grounds Alchemy of the Soul in the published services book', async () => {
-  const page = await readFile('app/[locale]/services/page.tsx', 'utf8')
-  assert.match(page, /Алхимия души/)
-  assert.match(page, /Alchemy of the Soul/)
-  assert.match(page, /id: "alchemy"/)
-  assert.match(page, /PageVideo slot=\{"service-" \+ id\}/)
+test('Services keeps EN/RU offerings distinct, with archive and method references optional', async () => {
+  const [page, offers, ui] = await Promise.all([
+    readFile('app/[locale]/services/page.tsx', 'utf8'),
+    readFile('data/core-service-offers.ts', 'utf8'),
+    readFile('components/services-solutions.tsx', 'utf8'),
+  ])
+  assert.match(page, /<ServicesSolutions locale=/)
+  for(const text of ['Free Situation Review','Free Wu Xing Resource Profile','Alchemy of the Soul','Guided Imagery Hypnotherapy','Алхимия души','Бесплатный профиль ресурсов У-Син']) assert.ok(offers.includes(text))
+  assert.match(ui, /Curious about the methods/)
+  assert.match(ui, /Хотите подробнее о методах/)
+  assert.match(ui, /coreServiceOffers\(locale\)/)
   assert.match(page, /services-marketplace-featured/)
   assert.match(page, /free-wu-xing-diagnostic/)
   assert.match(page, /Пройти бесплатно/)
   assert.match(page, /Start free/)
   assert.match(page, /app\/consultations\?service=/)
   assert.match(page, /\/masters\//)
-  assert.match(page, /Начните с короткого разговора/)
-  assert.match(page, /Start with a short conversation/)
-  assert.match(page, /не заменяют медицинскую диагностику/)
-  assert.match(page, /do not replace medical diagnosis/)
+  assert.match(page, /не заменяют медицинскую диагностику|не заменяют медицинскую диагностику и лечение|не заменяют медицинскую диагностику/)
+  assert.match(page, /do not replace medical assessment/)
 })
 
 test('remedy pages build related links from exact mentions in source articles', async () => {
@@ -81,7 +84,7 @@ test('remedy pages build related links from exact mentions in source articles', 
 
 test('mobile navigation uses the shared Library and Services routes', async () => {
   const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   assert.match(navigation, /data-nav-item/)
   assert.match(navigation, /aria-current/)
 })
@@ -99,13 +102,19 @@ test('English Remedies page localizes book card titles while preserving source-l
 
 
 test('practitioner and service detail pages label zero-price offerings as free', async () => {
-  const [profile, detail] = await Promise.all([
+  const [profile, marketplace, detail] = await Promise.all([
     readFile('app/[locale]/masters/[slug]/page.tsx', 'utf8'),
+    readFile('components/master-network-explorer.tsx', 'utf8'),
     readFile('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx', 'utf8'),
   ])
-  assert.match(profile, /confirmedPrice===0/)
-  assert.match(profile, /Пройти бесплатно/)
-  assert.match(profile, /Start free/)
+  assert.match(profile, /isFreeService/)
+  assert.match(profile, /confirmedPrice\s*===\s*0/)
+  assert.match(profile, /PractitionerServicesGrid/)
+  // Public profiles now reuse the canonical price badge and localized request
+  // buttons instead of maintaining a second, stale copy of service cards.
+  assert.match(marketplace, /freePrice/)
+  assert.match(marketplace, /"Получить бесплатно"/)
+  assert.match(marketplace, /"Get free"/)
   assert.match(detail, /confirmedPrice===0/)
   assert.match(detail, /Бесплатно/)
   assert.match(detail, /Free/)

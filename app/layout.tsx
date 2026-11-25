@@ -3,30 +3,84 @@ import { headers } from "next/headers";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
+import { UnifiedMobileDock } from "@/components/unified-mobile-dock";
+import { SitewideIHelp } from "@/components/sitewide-ihelp";
+import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
+import { SitewideLeadCaptureDeferred } from "@/components/sitewide-lead-capture-deferred";
+import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
+import { AnalyticsConsent } from "@/components/analytics-consent";
+import { PublicPageTraffic } from "@/components/public-page-traffic";
+import { Ga4Analytics } from "@/components/ga4-analytics";
 import { NativeLinkHandler } from "@/components/native-link-handler";
 import { NativeExternalLinks } from "@/components/native-external-links";
+import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
+import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
+import "./holistic-light-tokens.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
-import "./site-video-admin.css";
+import "./unified-mobile-dock.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
-import "./academy.css";
-import "./catalog-showcase.css";
+import "./sitewide-capture.css";
+import "./public-wide-layout.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
   title: "Holistic House",
-  description: "Holistic House — индивидуальные сессии, практики, программы, препараты и авторские материалы для внутреннего развития.",
+  // The main site installs as Holistic House, not the separate PsiAlchemy library.
+  manifest: "/holistic-house-app.webmanifest",
+  applicationName: "Holistic House",
+  appleWebApp: { capable: true, title: "Holistic House", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icons/holistic-house-teal.svg", apple: "/holistic-house-icon/180" },
+  description: "Holistic House offers free self-checks, educational resources and optional personal sessions with Andrey Litvinov in Toronto and online.",
+  verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
+  openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
+  twitter: { card: "summary_large_image", images: ["/images/holistic-house/andy-about.png"] },
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Set by middleware from the URL, not from an untrusted incoming header.
   const pageLocale = (await headers()).get("x-public-page-locale");
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const cspClass = (await headers()).get("x-csp-class") ?? "restricted";
+  const standaloneCommander = (await headers()).get("x-standalone-commander") === "1";
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
+  const publicOrigin = metadataBaseFor().toString().replace(/\/$/, "");
+  // No invented business address, regulated practitioner credentials, or review ratings.
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite", "@id": publicOrigin + "/#website",
+        name: "Holistic House", url: publicOrigin + "/",
+        inLanguage: ["en", "ru", "es"],
+      },
+      {
+        "@type": "Organization", "@id": publicOrigin + "/#organization",
+        name: "Holistic House", url: publicOrigin + "/",
+        logo: publicOrigin + "/holistic-house-app.svg",
+        areaServed: { "@type": "City", name: "Toronto" },
+      },
+      {
+        "@type": "Person", "@id": publicOrigin + "/#andrey-litvinov",
+        name: "Andrey Litvinov", url: publicOrigin + "/en/about",
+        worksFor: { "@id": publicOrigin + "/#organization" },
+        knowsAbout: ["Systemic constellations", "Guided imagery", "Personal development"],
+        areaServed: { "@type": "City", name: "Toronto" },
+      },
+    ],
+  };
   return (
     <html lang={lang}>
-      <body className="font-sans"><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks />{children}<MobileBottomNavigation initialLocale={lang} /></body>
+      <head>
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: CSP_PREHYDRATION_SCRIPT }} />
+        {/* Browsers hide the nonce content attribute before hydration while
+            preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
+        <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      </head>
+      <body className="font-sans" data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCaptureDeferred /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
     </html>
   );
 }
+

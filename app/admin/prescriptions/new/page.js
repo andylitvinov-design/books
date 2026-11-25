@@ -1,17 +1,11 @@
-import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
-
-import { PrescriptionForm } from '@/components/prescription-form'
-import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
+import { redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
-import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
-
-import { createPrescriptionAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { robots: { index: false, follow: false }, title: 'New recommendation' }
+export const metadata = { robots: { index: false, follow: false }, title: 'New client report' }
 
+// All new client recommendations share the consultation report builder.
 export default async function NewPrescriptionPage() {
   if (!await requireAdminRequest()) redirect('/admin/login')
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="New recommendation" description="Client details, remedies, and instructions — all in one place." /><p><Link href="/admin/payments/new">Create a payment document</Link></p><PrescriptionForm action={createPrescriptionAction} remedies={getConsultationRemedyOptions()} /></main>
+  redirect('/admin/consultations/new')
 }

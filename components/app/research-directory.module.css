@@ -1,0 +1,24 @@
+.root{margin:1.25rem 0 1.8rem;border:1px solid #cfdedb;background:#f9fcfb;border-radius:20px;padding:1.15rem;color:#173c39}
+.header{display:flex;justify-content:space-between;gap:1.2rem;align-items:flex-start;margin-bottom:.8rem}
+.header h3{font-size:1.12rem;line-height:1.3;margin:0 0 .3rem;font-weight:700}
+.header p{font-size:.87rem;line-height:1.5;margin:0;color:#42645d}
+.counter{flex-shrink:0;text-align:right;font-size:1.35rem;font-weight:800;color:#126f65}
+.counter small{display:block;font-size:.67rem;line-height:1.4;font-weight:500;color:#516d69}
+.notice{font-size:.78rem;line-height:1.5;color:#6a6353;margin:.7rem 0 1rem}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:.75rem}
+.resultsCount{grid-column:1/-1;margin:0;font-size:.83rem;color:#42645d}
+.card{border:1px solid #d8e5e2;border-radius:14px;background:#fff;padding:.9rem;min-width:0;display:flex;flex-direction:column;gap:.45rem}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:.7rem}
+.top strong{font-size:.91rem;line-height:1.35;overflow-wrap:anywhere}
+.research{flex-shrink:0;background:#e8efed;color:#3d6660;border-radius:30px;font-size:.66rem;padding:.24rem .42rem}
+.card p{margin:0;font-size:.79rem;line-height:1.45;color:#455a56}
+.card b{font-weight:650;color:#2b4e47}
+.metadata{display:flex;gap:.35rem;flex-wrap:wrap}
+.metadata span{font-size:.69rem;background:#f1f5f4;padding:.23rem .4rem;border-radius:6px;color:#47605b}
+.card .caution{color:#7b6146;font-size:.71rem}
+.external{margin-top:auto;align-self:flex-start;color:#08756b;font-size:.82rem;font-weight:650;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.empty{grid-column:1/-1;font-size:.84rem;color:#516e68}
+.pages{display:flex;justify-content:center;align-items:center;gap:.9rem;margin-top:1rem;font-size:.84rem;color:#365c56}
+.pages button{padding:.5rem .9rem;color:#085b54;background:white;border:1px solid #9cbbb5;border-radius:9px;cursor:pointer}
+.pages button:disabled{opacity:.45;cursor:default}
+@media(max-width:600px){.root{padding:.8rem;border-radius:14px}.header{flex-direction:column}.counter{text-align:left;font-size:1.05rem}.counter small{display:inline;margin-left:.4rem}.results{grid-template-columns:1fr}}

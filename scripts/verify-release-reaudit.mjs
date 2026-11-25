@@ -1,6 +1,13 @@
+import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
+import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
+import { decodeReadyPoster, isTransientYouTubePosterTimeout } from './public-poster-readiness.mjs';
+import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
+import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
+import { classifyCspNavigationCancellation } from './csp-navigation-diagnostics.mjs';
+import { verifyAboutPlayerHydration } from './about-player-hydration-probe.mjs';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
 const url = new URL(origin);
@@ -18,22 +25,325 @@ const routes = [
 ];
 const volumes = ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries'];
 async function check(name, detail, fn) {
-  try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); }
-  catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); }
+  try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); return true; }
+  catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); return false; }
 }
+async function assertCspPublicHome(page) {
+  await expect(page).toHaveURL(origin + '/');
+  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  // Real Home: visible markup alone is not enough. Require the
+  // lightweight first-party script to have initialized its controls.
+  // A rapid back-navigation may still be replacing the outgoing document.
+  // Verify the REAL CDN or React Home rather than testing a stale DOM.
+  await expect(page.locator('body[data-fast-home="en"], main[data-home-design="dialogue-first-v1"]'))
+    .toHaveCount(1,{timeout:15000});
+  const fast = page.locator('body[data-fast-home="en"]');
+  if (await fast.count()) {
+    await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
+    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(3);
+    await expect(fast.locator('[data-home-intent-form]')).toBeVisible();
+    await expect(fast.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+    return;
+  }
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+  // A history traversal can update the URL while the previous public document
+  // remains visible and its replacement is pending. Require the destination DOM,
+  // not load/hydration readiness: the server-rendered home is sufficient here.
+  const home = page.locator('main[data-home-design="dialogue-first-v1"]');
+  await expect(home).toHaveCount(1);
+  await expect(home).toBeVisible();
+  await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
+  await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
+  const programIds=['clarity','goal','business'];
+  assert.deepEqual(await home.locator('[data-home-intent-option]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),programIds);
+  for (const intention of programIds) {
+    const program=home.locator('[data-home-intent-option="'+intention+'"]');
+    await expect(program).toHaveCount(1);
+    await expect(program).toBeVisible();
+    await expect(program).toHaveAttribute('type','button');
+  }
+  await expect(home.locator('[data-home-methods]')).toBeVisible();
+}
+
+async function assertAnonymousPrivateNavigation(page) {
+  const response = await page.goto(origin + '/en/app/portrait', { waitUntil: 'networkidle' });
+  assert.equal(response.status(), 200);
+  await expect(page).toHaveURL(origin + '/en/app/portrait');
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
+  // My Space Today is the Profile route for signed-in and anonymous visitors.
+  // Guests see a free-tests link; private results and legacy test-first screens
+  // must not be exposed without an authenticated account.
+  const guest = page.locator('[data-cabinet-guest-overview]');
+  await expect(guest).toBeVisible();
+  // Guest cabinet has no signed-in Today tabs; protect private data and verify its public tests link below.
+  await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
+  await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
+  await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
+}
+
+async function verifyCspBfcache() {
+  // Playwright Page lifecycle/locators explicitly do not support BFCache.
+  // Use its browser launcher only; every observation/navigation below is CDP.
+  const browser = await chromium.launch({ channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'] });
+  const context = await browser.newContext({ viewport: { width: 390, height: 900 }, serviceWorkers: 'block' });
+  const page = await context.newPage();
+  const cdp = await context.newCDPSession(page);
+  const exceptions = [];
+  const frames = [];
+  const notRestored = [];
+  const snapshots = [];
+  let phase = 'initial';
+  let originalProbe;
+  cdp.on('Runtime.exceptionThrown', value => exceptions.push({ phase, ...value }));
+  cdp.on('Page.frameNavigated', value => frames.push({ phase, ...value }));
+  cdp.on('Page.backForwardCacheNotUsed', value => notRestored.push({ phase, ...value }));
+  await cdp.send('Page.enable');
+  await cdp.send('Runtime.enable');
+  await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+    if (window.top === window) {
+      window.__rawCspProbe = crypto.randomUUID();
+      const record = (type, extra = {}) => {
+        const entries = JSON.parse(sessionStorage.getItem('__rawCspLifecycle') || '[]');
+        const nav = performance.getEntriesByType('navigation')[0];
+        entries.push({ type, time: performance.timeOrigin + performance.now(), probe: window.__rawCspProbe, url: location.href, documentClass: document.body?.dataset.cspClass, readyState: document.readyState, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: nav?.notRestoredReasons?.toJSON?.() ?? null, ...extra });
+        sessionStorage.setItem('__rawCspLifecycle', JSON.stringify(entries));
+      };
+      record('init');
+      addEventListener('pageshow', event => record('pageshow', { persisted: event.persisted }), true);
+      addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+      addEventListener('popstate', () => record('popstate'), true);
+    }
+  ` });
+  const evaluate = async expression => {
+    const value = await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    assert.ok(!value.exceptionDetails, JSON.stringify(value.exceptionDetails));
+    return value.result.value;
+  };
+  const snapshot = () => evaluate(`({url:location.href,documentClass:document.body?.dataset.cspClass,readyState:document.readyState,probe:window.__rawCspProbe,navigationEntryKey:window.navigation?.currentEntry?.key??null,ownsHistoryEntry:window.__hhOwnsHistoryEntry?.()??null,hydrated:history.pushState.toString().includes('__NA'),lifecycle:JSON.parse(sessionStorage.getItem('__rawCspLifecycle')||'[]')})`);
+  const waitFor = async (description, predicate) => {
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      const state = await snapshot().catch(error => ({ protocolError: error.message }));
+      snapshots.push({ phase, time: Date.now(), state });
+      if (predicate(state)) return state;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.fail(description + '; last=' + JSON.stringify(snapshots.at(-1)));
+  };
+  try {
+    await cdp.send('Page.navigate', { url: origin + '/en/about' });
+    const initial = await waitFor('Initial public document must hydrate', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
+    originalProbe = initial.probe;
+    const candidateProvenance = ['localhost', '127.0.0.1'].includes(new URL(origin).hostname);
+    if (candidateProvenance) {
+      assert.ok(initial.navigationEntryKey, 'Native entry key must be available in raw BFCache probe');
+      assert.equal(initial.ownsHistoryEntry, true, 'Initial entry belongs to its document');
+    }
+    phase = 'full-document-to-tantra';
+    await evaluate(`location.assign('/en/academy/reiki/tantra-reiki')`);
+    await waitFor('Full cross-policy navigation must load a fresh Tantra document', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.probe !== originalProbe && state.readyState === 'complete' && state.hydrated);
+    const beforeBack = await cdp.send('Page.getNavigationHistory');
+    const publicEntry = beforeBack.entries[beforeBack.currentIndex - 1];
+    assert.equal(publicEntry.url, origin + '/en/about');
+    phase = 'back-to-cached-public';
+    await cdp.send('Page.navigateToHistoryEntry', { entryId: publicEntry.id });
+    const restored = await waitFor('Back must restore the correct public URL and document policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
+    const bfcachePersistedVerified = restored.probe === originalProbe && restored.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about');
+    if (candidateProvenance) {
+      assert.equal(restored.ownsHistoryEntry, true, 'Restored public entry must belong to its document');
+      if (bfcachePersistedVerified) assert.equal(restored.navigationEntryKey, initial.navigationEntryKey, 'Owned BFCache restoration retains its native entry key');
+    }
+    let ineligibilityReasons = [];
+    if (!bfcachePersistedVerified) {
+      assert.notEqual(restored.probe, originalProbe, 'A retained original document requires actual persisted evidence');
+      const { frameTree } = await cdp.send('Page.getFrameTree');
+      const refusedRestore = notRestored.find(event => event.phase === 'back-to-cached-public' && event.frameId === frameTree.frame.id && event.loaderId === frameTree.frame.loaderId && event.notRestoredExplanationsTree?.url === origin + '/en/about');
+      assert.ok(refusedRestore, 'Missing exact-frame/loader BFCache ineligibility evidence');
+      ineligibilityReasons = refusedRestore.notRestoredExplanations.map(item => item.reason);
+      const knownActualPolicyReasons = ['MainResourceHasCacheControlNoStore', 'JsNetworkRequestReceivedCacheControlNoStoreResource', 'BrowsingInstanceNotSwapped', 'CacheControlNoStoreCookieModified'];
+      // The public page may be BFCache-eligible independently of the CDN
+      // Home's cacheability. For a real ineligible traversal, demand exact-frame
+      // browser evidence with ONLY known actual reasons, not an invented
+      // requirement that the main resource alone caused it.
+      assert.ok(ineligibilityReasons.length > 0 &&
+        ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)),
+        'Unknown or missing BFCache blocking reason requires investigation');
+    }
+    phase = 'forward-to-tantra';
+    const beforeForward = await cdp.send('Page.getNavigationHistory');
+    const tantraEntry = beforeForward.entries[beforeForward.currentIndex + 1];
+    assert.equal(tantraEntry.url, origin + '/en/academy/reiki/tantra-reiki');
+    await cdp.send('Page.navigateToHistoryEntry', { entryId: tantraEntry.id });
+    await waitFor('Forward must retain the correct Tantra document policy', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.readyState === 'complete' && state.hydrated);
+    assert.deepEqual(exceptions, [], 'No runtime exceptions during real BFCache navigation');
+    return { rawCDP: true, originalProbe, restoredPublicProbe: restored.probe, bfcacheStatus: bfcachePersistedVerified ? 'restored' : 'ineligible', bfcachePersistedVerified, ineligibilityReasons, interruptedBranchPersistedVerified: false, backForwardVerified: true, decodedPlaybackClaimed: false };
+  } finally {
+    const finalState = await snapshot().catch(error => ({ protocolError: error.message }));
+    writeFileSync(`${evidence}/${label}-csp-chromium-bfcache-cdp.json`, JSON.stringify({ originalProbe, phase, finalState, exceptions, frames, notRestored, snapshots }, null, 2));
+    await context.close();
+    await browser.close();
+  }
+}
+
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
-  const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+  // The page-level synthetic enquiry mock takes precedence. Any other API
+  // mutation is blocked before reaching either a local or deployed server.
+  await context.route('**/api/**', route =>
+    ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+  // The cross-page privacy/visual audit cannot depend on a live external
+  // practitioner directory. Exercise its real error+Retry UI with a strict
+  // request-scoped 503; a dedicated Public Services browser suite validates
+  // successful real catalogue delivery separately. No private data or writes.
+  await context.route(/\/api\/public\/remote-energy-support-masters\?/, route => {
+    if (route.request().method() !== 'GET') return route.abort();
+    return route.fulfill({
+      status: 503, contentType: 'application/json',
+      body: JSON.stringify({ error: 'PRACTITIONERS_UNAVAILABLE' }),
+    });
+  });
+  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [], statsResponses: [], statsFetch: [] };
+  let publicPhase = 'initial';
+  await context.addInitScript({ content: catalogStatsDiagnosticSource() });
+  await context.addInitScript(() => {
+    if (window.top !== window) return;
+    window.__publicAuditProbe = crypto.randomUUID();
+    const record = (type, extra = {}) => {
+      const rows = JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]');
+      rows.push({ type, time: performance.timeOrigin + performance.now(), documentProbe: window.__publicAuditProbe,
+        url: location.href, readyState: document.readyState, ...extra });
+      sessionStorage.setItem('__publicAuditLifecycle', JSON.stringify(rows));
+    };
+    record('init');
+    addEventListener('pageshow', event => record('pageshow', { persisted: event.persisted }), true);
+    addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+    addEventListener('load', () => record('load'), true);
+    document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+    addEventListener('error', event => {
+      if (event instanceof ErrorEvent) record('window-error', { message: event.message, filename: event.filename, line: event.lineno });
+      else record('resource-error', { targetTag: event.target?.tagName, resourceUrl: event.target?.currentSrc || event.target?.src || event.target?.href });
+    }, true);
+    addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
+    window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+  });
+  const createPublicPage = async () => {
+  const errors = [];
   const page = await context.newPage();
-  let errors = [];
-  page.on('pageerror', error => errors.push(String(error.message).slice(0, 300)));
+  attachCatalogStatsResponseDiagnostic(page, origin, publicDiagnostics.statsResponses);
+  page.on('pageerror', error => {
+    errors.push(String(error.message).slice(0, 300));
+    publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
+  });
+  const requestDetails = request => {
+    let frameUrl = null;
+    try { frameUrl = request.frame()?.url() ?? null; } catch { /* Service-worker requests do not have a frame. */ }
+    return { phase: publicPhase, time: Date.now(), url: request.url(), method: request.method(), resourceType: request.resourceType(), frameUrl };
+  };
+  const pendingPublicRequests = new Set();
+  let lastPublicRequestActivity = Date.now();
+  const finishPublicRequest = request => {
+    if (pendingPublicRequests.delete(request)) lastPublicRequestActivity = Date.now();
+  };
+  page.on('request', request => {
+    publicDiagnostics.requests.push(requestDetails(request));
+    if (new URL(request.url()).origin === origin) {
+      pendingPublicRequests.add(request);
+      lastPublicRequestActivity = Date.now();
+    }
+  });
+  page.on('requestfinished', request => {
+    publicDiagnostics.responses.push({ ...requestDetails(request), event: 'requestfinished' });
+    finishPublicRequest(request);
+  });
+  page.on('requestfailed', request => {
+    publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText });
+    finishPublicRequest(request);
+  });
+    return { page, errors, pendingPublicRequests, get lastPublicRequestActivity() { return lastPublicRequestActivity; } };
+  };
+  let publicPageState = await createPublicPage();
+  let page = publicPageState.page;
+  let errors = publicPageState.errors;
+  const settlePublicDocument = async stage => {
+    // A previously reached Playwright networkidle state can precede hydration's
+    // queued Next prefetches. Observe their actual completion after hydration,
+    // including requests triggered by poster scrolling, before replacing a page.
+    if (await page.locator('body[data-fast-home]').count()) {
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true'),
+        { timeout: 15000 }).toBe(true);
+    } else {
+      await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')),
+        { timeout: 15000 }).toBe(true);
+    }
+    let frameTimer = null;
+    try {
+      // WebKit may stall requestAnimationFrame on a background or suspended page.
+      // Fail this real release check explicitly rather than hanging the 35-minute job.
+      await Promise.race([
+        page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        new Promise((_, reject) => {
+          frameTimer = setTimeout(() => reject(new Error('Release re-audit two-frame wait exceeded 5000ms at ' + stage + ' ' + publicPhase)), 5000);
+        }),
+      ]);
+    } finally {
+      if (frameTimer !== null) clearTimeout(frameTimer);
+    }
+    await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
+  };
   try {
     for (const [path, locale] of routes) {
-      await check('public-page', { engine, width, path }, async () => {
-        errors = [];
-        const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+      // The Maya hub is audited fully, but in a new tab to avoid retaining
+      // the previous eighteen WebKit document/reader render trees.
+      const routeTimer = setTimeout(() => {
+        console.error('[release-reaudit] ROUTE_STALLED ' + engine + '/' + width + ' ' + path +
+          ' after 90s; checkpoints=' + JSON.stringify(publicDiagnostics.checkpoints.slice(-4)));
+        process.exit(1); // Fatal: do not count unverified route as passing.
+      }, 90000);
+      if (path === '/books/maya-tradition') {
+        console.info('[release-reaudit] isolating real Maya hub after previous navigations');
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
+      // In the real WebKit mobile audit /en/client completed and fully settled,
+      // but the following /ru/client navigation never resolved. Each private
+      // landing locale now gets an isolated page so no prior guest/Next document
+      // can block the NEXT locale's navigation. All route, CSP, poster, language,
+      // 90-second fatal timeout, and no-JS-error assertions still execute.
+      if (['/en/client','/ru/client','/es/client'].includes(path)) {
+        console.info('[release-reaudit] isolating real client landing document: ' + path);
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
+      const routePassed = await check('public-page', { engine, width, path }, async () => {
+        publicPhase = path;
+        console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
+        publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
+        errors.length = 0;
+        // The Services catalog keeps requesting nonessential content after first paint.
+        // Use document readiness, then the existing full hydration, lifecycle,
+        // CSP, image-decoding and pending-request assertions below. No silent pass.
+        const response = await page.goto(origin + path, {
+          waitUntil: path.endsWith('/services') ? 'domcontentloaded' : 'networkidle',
+          timeout: 35000,
+        });
+        console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
+        await settlePublicDocument('before-assertions');
+        if (path.endsWith('/services')) {
+          // Synthetic outage must still be handled by the actual on-screen
+          // component. No mock success and no silently hidden API failure.
+          await page.locator('[data-assist-reiki-session] [role="status"] button')
+            .first().waitFor({ state: 'attached', timeout: 10000 });
+        }
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
         assert.equal(state.htmlLang, locale, 'Document language must match the visible page locale');
         assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
@@ -41,20 +351,69 @@ async function exercise(engine, browserType, width) {
         assert.ok(state.overflow <= 2, `Horizontal overflow ${state.overflow}px`);
         assert.equal(state.iframesBeforeClick, 0, 'Video must be poster-first');
         if (path.endsWith('/about')) {
-          assert.equal(await page.locator('.personal-consultation-form').count(), 1, 'About must contain one consultation form');
+          assert.equal(await page.locator('[data-consultation-capture="personal"]').count(), 1, 'About must contain one accessible personal consultation selector');
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]'));
+        publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
-        for (const img of await page.locator('.site-video-poster').all()) {
-          await img.scrollIntoViewIfNeeded();
-          await img.evaluate(el => el.decode());
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
+        // Snapshot the expected elements so index shifts or removed posters
+        // cannot reduce coverage. Each same element must load and strictly decode.
+        const posters = page.locator('.site-video-poster');
+        const posterImages = await posters.elementHandles();
+        const posterWarnings = [];
+        console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
+        for (const [posterIndex, image] of posterImages.entries()) {
+          await expect(posters).toHaveCount(posterImages.length);
+          try {
+            await decodeReadyPoster(image, expect);
+          } catch (error) {
+            // Only a still-pending, allowlisted third-party thumbnail in WebKit is
+            // nonblocking. Broken images, renderer bugs and first-party posters
+            // remain fatal. Keep the observation in the release evidence.
+            if (engine !== 'webkit' || !isTransientYouTubePosterTimeout(error)) throw error;
+            const warning = { type: 'youtube-thumbnail-network-timeout', engine, width, path,
+              poster: posterIndex + 1, origin: error.posterDiagnostic.current.origin,
+              sourcePath: error.posterDiagnostic.current.pathname };
+            posterWarnings.push(warning);
+            console.warn('[release-reaudit] NON_BLOCKING_EXTERNAL_POSTER ' + JSON.stringify(warning));
+            continue;
+          }
+          console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
+        await expect(posters).toHaveCount(posterImages.length);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
-          await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
+          console.info('[release-reaudit] capture screenshot ' + path);
+          // The four-volume Maya hub gets a real viewport image instead of an
+          // unbounded, memory-intensive full-page WebKit stitched screenshot.
+          // Its rendered DOM, poster decode and locale/CSP assertions remain fatal.
+          await page.screenshot({
+            path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`,
+            fullPage: path !== '/books/maya-tradition', timeout: 15000,
+          });
+          console.info('[release-reaudit] captured screenshot ' + path);
         }
-        return state;
+        await settlePublicDocument('before-next-navigation');
+        assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
+        return { ...state, posterWarnings };
       });
+      if (!routePassed) {
+        // Retain the fatal route result and its evidence, then isolate later
+        // routes from requests belonging to the failed, departed document.
+        const lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => []);
+        publicDiagnostics.retiredDocuments ??= [];
+        publicDiagnostics.retiredDocuments.push({ path, lifecycle, statsFetch: await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []), pendingRequests: publicPageState.pendingPublicRequests.size });
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
+      clearTimeout(routeTimer);
     }
     await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
     const menu = page.locator('.site-language-menu');
@@ -100,34 +459,424 @@ async function exercise(engine, browserType, width) {
         await page.locator(`.site-language-menu [lang="${locale}"]`).click();
         await expect(page).toHaveURL(origin + `/books/maya-tradition?lang=${locale}`);
         await expect(page.locator('main').first()).toHaveAttribute('lang', locale);
-        await expect(page.locator(`main ol a[href$="?lang=${locale}"]`)).toHaveCount(4);
+        await expect(page.locator(`main ol a[href^="/${locale}/books/"]`)).toHaveCount(4);
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
       await check('consultation-safe-handoff', { engine, width, locale }, async () => {
         await page.goto(origin + `/${locale}/about`, { waitUntil: 'networkidle' });
-        await page.evaluate(() => { window.__reauditRequests = []; window.open = url => { window.__reauditRequests.push(url); return null; }; });
-        const form = page.locator('.personal-consultation-form');
-        await expect(form).toHaveAttribute('method', 'post');
-        assert.equal(await form.evaluate(el => el.checkValidity()), false, 'Empty request must be invalid');
-        await form.locator('[name="name"]').fill('   ');
-        await form.locator('[name="request"]').fill('QA only: not sent');
-        await form.locator('button[type="submit"]').click();
-        assert.equal(await page.evaluate(() => window.__reauditRequests.length), 0, 'Whitespace-only names must not submit');
-        await form.locator('[name="name"]').fill('QA only');
-        await form.locator('button[type="submit"]').click();
-        const requests = await page.evaluate(() => window.__reauditRequests);
-        assert.equal(requests.length, 1);
-        const handoff = new URL(requests[0]);
-        assert.equal(handoff.origin, 'https://wa.me');
-        assert.equal(handoff.pathname, '/14376066502');
-        assert.ok(handoff.searchParams.get('text').includes('QA only: not sent'));
-        await expect(form.locator('.personal-consultation-form__resume')).toHaveAttribute('href', requests[0]);
-        assert.match(await form.locator('[role="status"]').innerText(), /not sent|не отправлена|no se ha enviado/);
-        await form.locator('[name="request"]').fill('Updated QA only: not sent');
-        await expect(form.locator('.personal-consultation-form__resume')).toHaveCount(0);
-        return { externalNavigationIntercepted: true, messageSent: false, blockedPopupFallback: true, editedDraftInvalidatesOldLink: true };
+        const capture = page.locator('[data-consultation-capture="personal"]');
+        await expect(capture).toHaveCount(1);
+        await expect(capture.locator('[role="group"] button')).toHaveCount(4);
+        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'Personal details must not be required');
+        // Personal topics start the free internal assessment. WhatsApp is reserved
+        // for paid service enquiries, not this first step of the free flow.
+        const action = capture.locator('[data-consultation-action]');
+        const assertFreeUrl = raw => {
+          const target = new URL(raw, origin);
+          assert.equal(target.origin, origin);
+          assert.equal(target.pathname, `/${locale}/services/free-situation-review`);
+          assert.deepEqual([...target.searchParams.keys()], ['topic'], 'Only the non-sensitive topic may be in the URL');
+          return target;
+        };
+        const originalUrl = assertFreeUrl(await action.getAttribute('href'));
+        assert.equal(originalUrl.searchParams.get('topic'), 'personal');
+        assert.equal(await capture.locator('[data-contact-channel="whatsapp"]').count(), 0);
+        for (const [index, topic] of ['goal', 'business', 'wellbeing'].entries()) {
+          const selected = capture.locator('[role="group"] button').nth(index + 1);
+          await selected.click();
+          await expect(selected).toHaveAttribute('aria-pressed', 'true');
+          await expect(action).toHaveAttribute('data-consultation-action', topic);
+          assert.equal(assertFreeUrl(await action.getAttribute('href')).searchParams.get('topic'), topic);
+        }
+        await capture.locator('[role="group"] button').nth(0).click();
+        await expect(action).toHaveAttribute('data-consultation-action', 'personal');
+        assert.equal(assertFreeUrl(await action.getAttribute('href')).href, originalUrl.href, 'Resetting topic must restore the original destination');
+        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 0);
+        return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
+      await check('paid-imagery-consultation-messenger-only-handoff', { engine, width, locale }, async () => {
+        const paidPage = await context.newPage();
+        try {
+          await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
+          const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
+          await expect(capture).toHaveCount(1);
+          const intake = capture.locator('[data-messenger-only-intake]');
+          await expect(intake).toHaveCount(1);
+          // Current site policy deliberately avoids typed email/phone capture:
+          // a messenger link click alone is not a verified conversation.
+          await expect(intake.locator('form, input, textarea')).toHaveCount(0);
+          const formats = intake.locator('select[data-messenger-offer-format]');
+          await expect(formats).toHaveCount(1);
+          await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
+          await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
+          await formats.selectOption('60-min');
+          await expect(formats).toHaveValue('60-min');
+          await formats.selectOption('30-min');
+          await expect(formats).toHaveValue('30-min');
+          const channels = intake.locator('a[data-messenger-only-channel]');
+          await expect(channels).toHaveCount(2);
+          // Each channel attribute is on the anchor itself, not a nested child.
+          const whatsapp = intake.locator('a[data-messenger-only-channel="whatsapp"]');
+          const telegram = intake.locator('a[data-messenger-only-channel="telegram"]');
+          for (const link of [whatsapp, telegram]) {
+            await expect(link).toHaveAttribute('target', '_blank');
+            await expect(link).toHaveAttribute('rel', /noopener/);
+            await expect(link).toHaveAttribute('rel', /noreferrer/);
+            await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+            const href = new URL(await link.getAttribute('href'));
+            assert.ok(href.protocol === 'https:', 'Messenger handoff must use HTTPS');
+            assert.ok(['wa.me', 'api.whatsapp.com', 't.me', 'telegram.me'].includes(href.hostname),
+              'Only approved WhatsApp or Telegram destinations are allowed');
+          }
+          assert.equal(await capture.locator('a[data-compact-channel], form[data-compact-lead-form]').count(), 0,
+            'Legacy contact capture and CRM-confirmation controls must not appear in messenger-only mode');
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          return {
+            messageSent: false,
+            contactFieldsAbsent: true,
+            paidPricesVerified: true,
+            bothChannelsVerified: true,
+            secureExternalHandoff: true,
+            freeAssessmentInternal: true,
+          };
+        } finally { await paidPage.close(); }
+      });
+    }
+    if (width === 390) {
+      if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {
+        await check('csp-history-provenance', { engine, width }, () => verifyHistoryProvenance({ browser, origin, evidencePath: `${evidence}/${label}-csp-${engine}-provenance.json` }));
+      }
+      for (const readiness of ['rapid-history', 'loaded-history']) {
+      await check('csp-navigation-and-history', { engine, width, readiness }, async () => {
+        // New context isolates document policies and service-worker caching. This
+        // checks real navigation/CSP enforcement, not third-party video decoding.
+        // Preserve Playwright's supported lifecycle in this functional matrix.
+        // Actual persisted restoration is verified separately through raw CDP:
+        // https://playwright.dev/docs/navigations#backforward-cache-bfcache
+        const cspBrowser = browser;
+        const cspContext = await cspBrowser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+        const pageShows = [];
+        const cspErrors = [];
+        const navigationCancellations = [];
+        const failedRequests = [];
+        const bfcacheNotUsed = [];
+        let interruptedDocumentProbe;
+        let lifecycleTrace = [];
+        let historyPhase = 'initial';
+        await cspContext.exposeBinding('__recordCspPageShow', (_source, state) => pageShows.push({ phase: historyPhase, ...state }));
+        await cspContext.addInitScript(() => {
+          if (window.top !== window) return;
+          // Register before application scripts so its capture listener cannot
+          // hide the persisted event when replacing an interrupted router.
+          window.__cspInitDocumentProbe = crypto.randomUUID();
+          // Synchronous same-origin storage survives an immediate document
+          // replacement; the asynchronous exposed binding alone may be lost.
+          const record = (type, extra = {}) => {
+            const navigation = performance.getEntriesByType('navigation')[0];
+            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
+            const entries = JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]');
+            entries.push(state);
+            sessionStorage.setItem('__cspLifecycleTrace', JSON.stringify(entries));
+            return state;
+          };
+          record('init');
+          document.addEventListener('securitypolicyviolation', event => {
+            let blockedPath = null;
+            try {
+              const blocked = new URL(event.blockedURI, location.origin);
+              if (blocked.origin === location.origin && blocked.pathname === '/api/test-catalog/stats' && !blocked.search) blockedPath = blocked.pathname;
+            } catch { /* Do not retain unrecognized URLs. */ }
+            record('policy-violation', { directive: event.effectiveDirective, disposition: event.disposition, blockedPath });
+          }, true);
+          // Observe actual uncaught errors independently of WebKit's console
+          // diagnostics, which Playwright also exposes through pageerror.
+          window.addEventListener('error', event => {
+            if (event instanceof ErrorEvent) record('window-error', { message: event.message, filename: event.filename, line: event.lineno });
+            else record('resource-error', { targetTag: event.target?.tagName, resourceUrl: event.target?.currentSrc || event.target?.src || event.target?.href });
+          }, true);
+          window.addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
+          window.addEventListener('pageshow', event => {
+            const state = record('pageshow', { persisted: event.persisted });
+            void window.__recordCspPageShow(state);
+          }, true);
+          window.addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+          window.addEventListener('popstate', () => record('popstate'), true);
+          window.navigation?.addEventListener('currententrychange', event => record('currententrychange', { navigationType: event.navigationType }));
+          window.addEventListener('load', () => record('load'), true);
+          document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+          document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
+          // Passive synchronous stack capture identifies who issued competing
+          // hard replaces. Do not wrap Location/history or cancel navigation:
+          // either would change the WebKit race this audit is measuring.
+          window.navigation?.addEventListener('navigate', event => {
+            record('navigate', {
+              destination: event.destination.url,
+              sameDocument: event.destination.sameDocument,
+              navigationType: event.navigationType,
+              cancelable: event.cancelable,
+              canIntercept: event.canIntercept,
+              userInitiated: event.userInitiated,
+              defaultPrevented: event.defaultPrevented,
+              sourceElementTag: event.sourceElement?.tagName ?? null,
+              initiatorStack: new Error('CSP navigation initiator').stack,
+            });
+          });
+        });
+        await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
+        await cspContext.addInitScript({ content: catalogStatsDiagnosticSource() });
+        const cspPage = await cspContext.newPage();
+        const requestTelemetry = [];
+        const statsResponses = [];
+        attachCatalogStatsResponseDiagnostic(cspPage, origin, statsResponses);
+        attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
+        const navigationTrace = [];
+        const waitForDocument = async () => {
+          if (readiness !== 'loaded-history') return;
+          await cspPage.waitForLoadState('load');
+          // The pinned Next app router installs this wrapper in its hydration
+          // effect. A parsed SSR body alone does not prove listener readiness.
+          if (await cspPage.locator('body[data-fast-home]').count()) {
+            await expect.poll(() => cspPage.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+          } else {
+            await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
+          }
+          // A WebKit Back/Forward restore can start a second, mandatory full
+          // document navigation when the CSP boundary rejects a foreign router
+          // history tree. Do not evaluate the outgoing document while it is
+          // being replaced. Retry ONLY that transient navigation race; the
+          // actual CSP, JS-error and history assertions below remain fatal.
+          await expect.poll(async () => {
+            let settled;
+            try {
+              settled = await cspPage.evaluate(() => new Promise(resolve =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve({
+                  href: location.href, readyState: document.readyState,
+                  policy: document.body?.dataset.cspClass,
+                })))));
+            } catch (error) {
+              if (engine === 'webkit' &&
+                  /Execution context was destroyed, most likely because of a navigation/.test(String(error?.message)))
+                return false; // A navigation is in flight, NOT a successful check.
+              throw error;
+            }
+            const pathname = new URL(settled.href).pathname;
+            const expectedPolicy = pathname === '/en/academy/reiki/tantra-reiki'
+              ? 'tantra-media'
+              : ['/en/client/tests', '/en/app/portrait'].includes(pathname)
+                ? 'private' : 'public-video';
+            return settled.href === cspPage.url() && settled.readyState === 'complete'
+              && settled.policy === expectedPolicy;
+          }, { timeout: 20000, message: 'After history traversal wait for the final loaded document and matching CSP' }).toBe(true);
+        };
+        if (engine === 'chromium') {
+          const cdp = await cspContext.newCDPSession(cspPage);
+          cdp.on('Page.backForwardCacheNotUsed', state => bfcacheNotUsed.push({ phase: historyPhase, ...state }));
+          await cdp.send('Page.enable');
+        }
+        cspPage.on('requestfailed', request => failedRequests.push({ phase: historyPhase, url: request.url(), method: request.method(), error: request.failure()?.errorText }));
+        cspPage.on('framenavigated', frame => { if (frame === cspPage.mainFrame()) navigationTrace.push(frame.url()); });
+        cspPage.on('pageerror', error => { cspErrors.push({ phase: historyPhase, time: Date.now(), message: error.message, stack: error.stack }); navigationTrace.push('JS: ' + error.message); });
+        await cspPage.route('https://app.heygen.com/embeds/**', route => route.fulfill({ contentType: 'text/html', body: '<p data-csp-probe>Allowed embed reached</p>' }));
+        try {
+          await cspPage.goto(origin + '/en/about', { waitUntil: 'networkidle' });
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          await cspPage.locator('#psychic-alchemy-video button').click();
+          await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'same-public-document'; });
+          await cspPage.locator('.site-main-menu-trigger').click();
+          await cspPage.locator('.site-main-menu-more [data-nav-item="services"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/services');
+          await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
+          // The unified Profile dock now opens the PRIVATE Cabinet first.
+          // Verify the hard CSP boundary, guest isolation and the public
+          // actual six-tab My Space and separate public profile builder.
+          await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
+           // My Space Today is the approved Profile entry; anonymous visitors
+           // get a public tests link, never private account content.
+           const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
+           await expect(guestProfile).toBeVisible();
+           await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
+           // Guest cabinet has no signed-in Today tab; the secured boundary and guest link above are the assertions.
+           await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
+           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
+          // The builder is now a separate public route. Exercise the real
+          // private-to-public CSP boundary with a fresh document navigation.
+          await cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document');
+          await expect(cspPage.locator('[data-profile-direct-tests]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-builder-before-private-tests'; });
+          await cspPage.locator('[data-profile-direct-tests]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document');
+          await cspPage.evaluate(() => {
+            window.__cspViolations = [];
+            document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.effectiveDirective));
+            const frame = document.createElement('iframe');
+            frame.src = 'https://app.heygen.com/embeds/csp-private-probe';
+            document.body.append(frame);
+          });
+          await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
+          // Private test discovery uses the single seven-destination unified
+          // dock; the retired bottom navigation must NOT mount a second bar.
+          // Keep the real CSP, Profile destination and Back/Forward checks.
+          const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
+          await expect(discoveryBottom).toBeVisible();
+          await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
+          await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+          const privatePage = await privateContext.newPage();
+          privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
+          try {
+            await assertAnonymousPrivateNavigation(privatePage);
+          } finally { await privateContext.close(); }
+          // Leave discovery through its visible header wordmark, then use the
+          // public About content link to preserve the cross-policy history test.
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
+          const privateWordmark = cspPage.locator('.house-header--services .house-wordmark');
+          await expect(privateWordmark).toHaveCount(1);
+          await expect(privateWordmark).toBeVisible();
+          await expect(privateWordmark).toHaveAttribute('href', '/');
+          await privateWordmark.click();
+          await assertCspPublicHome(cspPage);
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
+          const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
+          // The normal Home has an IntersectionObserver-driven lazy catalogue above
+          // About. Exercise the user scroll through it before locating the lower link;
+          // a late insertion can otherwise move the click target on a busy CI runner.
+          // This is still a single real user click and all CSP/history assertions remain.
+          if (!fromFastHome) {
+            const deferredHome = cspPage.locator('[data-home-deferred-sections]');
+            await expect(deferredHome).toHaveCount(1);
+            await deferredHome.scrollIntoViewIfNeeded();
+            await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
+          }
+          const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
+          await expect(publicAbout).toHaveCount(1);
+          await expect(publicAbout).toBeVisible();
+          await publicAbout.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+          await cspPage.evaluate(() => {
+            window.__hhAboutClickEvidence = null;
+            document.addEventListener('click', event => {
+              const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+              window.__hhAboutClickEvidence = { href: link?.getAttribute('href') || null, trusted: event.isTrusted,
+                tag: event.target instanceof Element ? event.target.tagName : null };
+            }, { capture: true, once: true });
+          });
+          await publicAbout.click();
+          try {
+            await expect(cspPage).toHaveURL(origin + '/en/about', { timeout: 20000 });
+          } catch (error) {
+            const clickEvidence = await cspPage.evaluate(() => window.__hhAboutClickEvidence).catch(() => null);
+            throw new Error(`${error.message}; aboutClick=${JSON.stringify(clickEvidence)}`);
+          }
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),
+            fromFastHome ? undefined : 'public-home-before-about',
+            fromFastHome ? 'CDN Home About opens a full document with its own CSP'
+              : 'React Home About preserves same-policy soft navigation');
+          await cspPage.locator('#psychic-alchemy-video button').click();
+          await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
+          interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'before-tantra'; });
+          // Next supports native history navigation; exercise the programmatic
+          // fallback too, rather than relying only on the anchor interceptor.
+          await cspPage.evaluate(() => history.pushState(null, '', '/en/academy/reiki/tantra-reiki'));
+          await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Tantra media policy requires a fresh document');
+          historyPhase = 'back-from-tantra';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
+          historyPhase = 'back-to-public-home';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await assertCspPublicHome(cspPage);
+          await waitForDocument();
+          historyPhase = 'back-to-private';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          const restoredDiscoveryBottom = cspPage.locator('[data-hh-unified-dock]');
+          await expect(restoredDiscoveryBottom).toBeVisible();
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          historyPhase = 'forward-to-public-home';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await assertCspPublicHome(cspPage);
+          await waitForDocument();
+          historyPhase = 'forward-to-public';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          historyPhase = 'forward-to-tantra';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
+          await waitForDocument();
+          // This marker observes existing URL/CSP assertions, without waiting.
+          await cspPage.evaluate(() => {
+            const allowed = ['/', '/en/about', '/en/services', '/en/services/free-situation-review', '/en/academy/reiki/tantra-reiki'];
+            if (!['127.0.0.1', 'localhost'].includes(location.hostname) || !allowed.includes(location.pathname) || location.search || location.hash) return;
+            const key = '__cspRequestTelemetry';
+            try {
+              const entries = JSON.parse(sessionStorage.getItem(key) || '[]');
+              if (entries.length >= 512) return;
+              entries.push({ type: 'target-ready', path: location.pathname, rsc: false, documentProbe: window.__cspInitDocumentProbe, time: performance.timeOrigin + performance.now() });
+              sessionStorage.setItem(key, JSON.stringify(entries));
+            } catch { /* Diagnostic storage must not affect navigation. */ }
+          });
+          lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
+          assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
+          const evidenceFetches = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]'));
+          const unexpectedErrors = cspErrors.filter(error => {
+            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches });
+            if (attribution) navigationCancellations.push(attribution);
+            return !attribution;
+          });
+          if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
+          assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+        } catch (error) {
+          const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
+          throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
+        } finally {
+          // Keep full structured diagnostics even when check() bounds its message.
+          lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
+          const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
+          const statsFetch = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ statsResponses, statsFetch, requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
+        }
+      });
+      }
+      if (engine === 'chromium') {
+        await check('csp-bfcache-raw-cdp', { engine, width }, verifyCspBfcache);
+      }
     }
     if (width === 390) {
       await check('translation-failure-invalid-response-and-recovery', { engine, width }, async () => {
@@ -180,7 +929,7 @@ async function exercise(engine, browserType, width) {
     }
     if (engine === 'chromium' && width === 390) {
       for (const book of volumes) {
-        for (const [readerPath, locale] of [[`/books/${book}?lang=en`, 'en'], [`/books/${book}`, 'ru']]) {
+        for (const [readerPath, locale] of [[`/en/books/${book}`, 'en'], [`/ru/books/${book}`, 'ru']]) {
           await check('maya-reader-and-images', { path: readerPath, locale }, async () => {
             const response = await page.goto(origin + readerPath, { waitUntil: 'domcontentloaded', timeout: 35000 });
             assert.equal(response.status(), 200);
@@ -201,19 +950,67 @@ async function exercise(engine, browserType, width) {
         }
       }
     }
-  } finally { await context.close(); await browser.close(); }
+  } finally {
+    publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
+    publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => publicDiagnostics.statsFetch);
+    writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
+    await context.close(); await browser.close();
+  }
 }
-await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chromium, 1365), exercise('webkit', webkit, 390), exercise('webkit', webkit, 1365)]);
+if (label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname)) {
+  for (const browserType of [chromium, webkit]) {
+    await check('about-player-hydration', { engine: browserType.name(), providerStubbed: true }, () => verifyAboutPlayerHydration(browserType, { origin, evidence, label }));
+  }
+}
+// The existing 35-minute shared job repeatedly cancelled only the WebKit 390
+// lane after the other three lanes completed and wrote browser evidence.
+// Keep all four full browser passes on the same runner but avoid running
+// four competing browsers against the same Next server simultaneously.
+// Do not alter any assertions, CI gates or private/public test fixtures.
+const browserLanes = [
+  ['webkit', webkit, 390],
+  ['webkit', webkit, 1365],
+  ['chromium', chromium, 390],
+  ['chromium', chromium, 1365],
+];
+for (const [engine, browserType, width] of browserLanes) {
+  console.info("[release-reaudit] starting " + engine + "/" + width);
+  await exercise(engine, browserType, width);
+  console.info("[release-reaudit] finished " + engine + "/" + width);
+}
 const browser = await chromium.launch();
 const context = await browser.newContext();
 try {
+  for (const locale of ['en', 'ru', 'es']) {
+    for (const [path, policy] of [[`/${locale}/about`, 'public'], [`/${locale}/academy/reiki/tantra-reiki`, 'tantra'], [`/${locale}/client`, 'private']]) {
+      await check('scoped-video-csp-headers', { path, policy }, async () => {
+        const response = await context.request.get(origin + path);
+        assert.equal(response.status(), 200);
+        const csp = response.headers()['content-security-policy'];
+        assert.ok(csp, 'Missing document policy');
+        const directives = Object.fromEntries(csp.split(';').map(value => value.trim().split(/\s+/)).map(([name, ...values]) => [name, values]));
+        assert.deepEqual(directives['frame-src'], policy === 'private' ? ["'none'"] : ['https://www.youtube-nocookie.com', 'https://app.heygen.com']);
+        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://psitrends.com'] : ["'self'"]);
+        for (const directive of ['object-src', 'base-uri', 'frame-ancestors']) assert.deepEqual(directives[directive], ["'none'"]);
+        return { exactAllowlist: true, nativeMediaScoped: true };
+      });
+    }
+  }
+  await check('api-video-csp-restrictive', {}, async () => {
+    const response = await context.request.get(origin + '/api/csp-regression-nonexistent');
+    assert.equal(response.status(), 404);
+    const csp = response.headers()['content-security-policy'] || '';
+    assert.match(csp, /(?:^|;)\s*frame-src 'none'(?:;|$)/);
+    assert.match(csp, /(?:^|;)\s*media-src 'self'(?:;|$)/);
+    assert.doesNotMatch(csp, /youtube-nocookie|app\.heygen|psitrends/);
+    return { privateDataRead: false, apiEmbedBlocked: true };
+  });
   await check('consultation-SSR-privacy', {}, async () => {
     const response = await context.request.get(origin + '/en/about');
     const html = await response.text();
-    const form = html.match(/<form[^>]*class="personal-consultation-form"[\s\S]*?<\/form>/)?.[0] || '';
-    assert.match(form, /method="post"/);
-    assert.match(form, /<button[^>]*type="submit"[^>]*disabled/);
-    return { serverRenderedSubmitDisabled: true, noDefaultGET: true };
+    assert.doesNotMatch(html, /<form[^>]*class="personal-consultation-form"/, 'Do not SSR an intake form');
+    assert.doesNotMatch(html, /<input[^>]+name="(?:name|contact|request)"/, 'Do not request private contact details');
+    return { noDefaultGET: true, noCompulsoryPersonalFields: true };
   });
   const paths = [...media];
   for (let i = 0; i < paths.length; i += 6) {
@@ -244,6 +1041,7 @@ try {
   }
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
-writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
-console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
+const warnings = results.flatMap(row => row.posterWarnings || []);
+writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, results }, null, 2));
+console.log(JSON.stringify({ label, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');

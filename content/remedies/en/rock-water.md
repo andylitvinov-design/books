@@ -105,3 +105,11 @@ It is illustrative. Bach remedies: first they activate the symptom in order to l
 In constellations, it is known: the connection disappears—the symptom disappears. This is
 
 healing formula.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: High expectations turn inner discipline into rigid control and a prohibition on rest.
+
+After (desired state): Steady inner support that allows you to ease the pressure on yourself and take a pause.

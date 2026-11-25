@@ -10,13 +10,13 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.match(source, /\/MediaBox \[0 0 595.28 841.89\]/)
   assert.match(source, /ANDRII LITVINOV/)
   assert.match(source, /\/Subtype \/Image/)
-  assert.match(source, /190 766 Tm/)
-  assert.match(source, /68 668 m/)
+  assert.match(source, /164 788 Tm/, 'practitioner name anchors the restored premium letterhead')
+  assert.match(source, /68 715 m/, 'letterhead separator is below the restored logo and credentials')
   assert.match(source, /\/URI \(https:\/\/example.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
   const guidance = recommendationGuidance({ ...recommendation, recommendationType: 'homeopathy' }, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('5 granules of the remedy.'))
-  assert.match(source, /\(1\. Arsenicum album\) Tj ET/)
+  assert.match(source, /\(1\. Arsenicum album 30C\) Tj ET/, 'approved potency is shown inline in the real PDF card')
 })
 
 test('font metrics preserve newlines and wrap long unbroken values within content width', () => {
@@ -55,7 +55,8 @@ test('Bach PDF renders the Bach title and automatic mixture instructions', () =>
     items: [{ displayName: 'Mimulus' }, { displayName: 'Larch' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /BACH FLOWER ESSENCE RECOMMENDATION/)
+  assert.match(source, /Bach flower essence recommendation/)
+  assert.match(source, /PERSONAL REPORT/, 'premium compact first-page document eyebrow stays visible')
   const guidance = recommendationGuidance(document, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Take 2')))
@@ -90,7 +91,7 @@ test('Mixed PDF groups Homeopathy and Bach items and renders both guidance secti
     ],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /INTEGRATED RECOMMENDATION/)
+  assert.match(source, /Integrated recommendation/)
   assert.match(source, /HOMEOPATHY/)
   assert.match(source, /BACH ESSENCES/)
   const guidance = recommendationGuidance(document, 'en')

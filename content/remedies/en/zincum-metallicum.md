@@ -53,3 +53,11 @@ I often use this remedy in my work.
 In my observations, it supports tone, concentration and the activation of needed inner resources. It is associated with muscular tone, mental activity and attention to detail.
 
 I consider it particularly relevant to states of mental overstrain, a tense nervous system and stress without permission to rest.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Mental overstrain and stress that seem to leave no right to rest.
+
+After (desired state): Focused attention and the ability to notice the strain you are under, while allowing yourself the right to pause.

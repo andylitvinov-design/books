@@ -1,0 +1,294 @@
+/* Owner-approved Daybook palette, shared only by the existing client pages.
+   Course lessons, Business, practitioner editors and original report readers
+   do not opt in. Score, warning and validation colors keep their own meaning. */
+:is([data-cabinet-theme="daybook"], main.client-entry-shell, main[data-free-entry-landing="tests"]) {
+  --hh-cabinet-canvas: #21160d;
+  --hh-cabinet-surface: #fff6e3;
+  --hh-cabinet-surface-soft: #f5e3bf;
+  --hh-cabinet-ink: #3c291c;
+  --hh-cabinet-muted: #695644;
+  --hh-cabinet-border: #d7b576;
+  --hh-cabinet-primary: #006b4e;
+  --hh-cabinet-primary-hover: #00513d;
+  --hh-cabinet-selected: #e3f0df;
+  --hh-cabinet-heading-font: Georgia, 'Times New Roman', serif;
+  --hh-cabinet-card: linear-gradient(135deg, #fff9ea, #f9e5bd);
+  --hh-cabinet-shadow: 0 6px 20px rgb(15 9 4 / 15%), inset 0 1px 0 #fffaf1;
+  --hh-ink: var(--hh-cabinet-ink);
+  --hh-text: var(--hh-cabinet-ink);
+  --hh-muted: var(--hh-cabinet-muted);
+  --hh-accent: var(--hh-cabinet-primary);
+  --hh-paper: var(--hh-cabinet-surface);
+  --hh-surface: var(--hh-cabinet-surface);
+  --hh-soft: var(--hh-cabinet-surface-soft);
+  --hh-line: var(--hh-cabinet-border);
+  --hh-border: var(--hh-cabinet-border);
+  --hh-light-ink: var(--hh-cabinet-ink);
+  --hh-light-muted: var(--hh-cabinet-muted);
+  --hh-light-canvas: var(--hh-cabinet-surface);
+  --hh-light-surface: var(--hh-cabinet-surface);
+  --hh-light-surface-soft: var(--hh-cabinet-surface-soft);
+  --hh-light-border: var(--hh-cabinet-border);
+  --hh-light-primary: var(--hh-cabinet-primary);
+  --hh-light-focus: #a27025;
+  --hh-design-ink: var(--hh-cabinet-ink);
+  --hh-design-surface: var(--hh-cabinet-surface);
+  --hh-design-primary: var(--hh-cabinet-primary);
+  --hh-design-primary-hover: var(--hh-cabinet-primary-hover);
+  --hh-design-selected: var(--hh-cabinet-selected);
+  color-scheme: light;
+}
+
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) {
+  background: #21160d !important;
+}
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-sitewide-antistress-banner] {
+  display: none;
+}
+main.hh-app[data-cabinet-theme="daybook"]:not(.hh-app--document-reader) {
+  box-sizing: border-box;
+  width: min(1120px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 16px clamp(12px, 3vw, 24px) calc(125px + env(safe-area-inset-bottom));
+  background: radial-gradient(ellipse at 85% 0, #6d502c45, transparent 48%), #21160d;
+  color: var(--hh-cabinet-ink);
+}
+main.hh-app[data-cabinet-theme="daybook"]:has([data-profile-space-dashboard]) {
+  background: linear-gradient(180deg, #21160d80, #21160df5 650px),
+    url('/images/holistic-house/support-therapy-cabinet-hd.webp') center top / 100% auto no-repeat,
+    #21160d;
+}
+.hh-app[data-cabinet-theme="daybook"] :is(.hh-panel, .hh-heading, .hh-result-hero,
+  .hh-result-context, .hh-result-comparison, .hh-result-consultation,
+  .hh-assessment-history-item, .hh-assessment-history-next, .hh-psi-recommended,
+  .hh-result-section, .hh-result-footer, .hh-profile-domains[data-profile-mode="account"]) {
+  border: 1px solid var(--hh-cabinet-border);
+  border-radius: 24px;
+  background: var(--hh-cabinet-card);
+  color: var(--hh-cabinet-ink);
+  box-shadow: var(--hh-cabinet-shadow);
+}
+.hh-app[data-cabinet-theme="daybook"] :is(.hh-heading, .hh-result-section, .hh-result-footer) {
+  padding: clamp(16px, 3vw, 24px);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-panel .hh-heading {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-header {
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 8px 0;
+  color: #fff1d4;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-brand { color: #fff1d4; }
+.hh-app[data-cabinet-theme="daybook"] .hh-brand span { color: #e5cda6; }
+.hh-app[data-cabinet-theme="daybook"] > :is(p, h1) { color: #fff1d4; }
+.hh-app[data-cabinet-theme="daybook"] .hh-account-menu { min-width: 0; }
+.hh-app[data-cabinet-theme="daybook"] .hh-account-menu > summary {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 28px 10px 14px;
+  border: 1px solid var(--hh-cabinet-border);
+  border-radius: 18px;
+  list-style: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-account-menu > summary::-webkit-details-marker { display: none; }
+.hh-app[data-cabinet-theme="daybook"] .hh-account-menu > summary::after {
+  content: '⌄';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  margin: 0;
+  transform: translateY(-50%);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-account-menu > div {
+  background: var(--hh-cabinet-surface);
+  color: var(--hh-cabinet-ink);
+  max-width: calc(100vw - 32px);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-nav {
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+  border: 1px solid var(--hh-cabinet-border);
+  background: var(--hh-cabinet-surface-soft);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-nav a[aria-current='page'] {
+  background: var(--hh-cabinet-primary);
+  color: #fff8e7;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-primary {
+  min-height: 48px;
+  border-color: #d7b576;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #07815e, #00513d);
+  color: #fff9e7;
+  box-shadow: inset 0 1px 0 #fff8db30, 0 3px 10px #11322422;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-primary:hover:not(:disabled) {
+  background: var(--hh-cabinet-primary-hover);
+}
+.hh-app[data-cabinet-theme="daybook"] :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  font-size: max(16px, 1em);
+  border-color: var(--hh-cabinet-border);
+}
+.hh-app[data-cabinet-theme="daybook"] :is(a, button, summary, input, select, textarea):focus-visible {
+  outline: 3px solid var(--hh-light-focus);
+  outline-offset: 3px;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-footer {
+  color: #ead3ae;
+  border-color: #8c6b3d;
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-scale button {
+  min-height: 52px;
+  border-radius: 16px;
+  border-color: var(--hh-cabinet-border);
+  background: #fffaf0;
+  color: var(--hh-cabinet-ink);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-scale button[aria-pressed='true'] {
+  color: #fff9e7;
+  background: var(--hh-cabinet-primary);
+  border-color: var(--hh-cabinet-primary);
+  box-shadow: 0 0 0 2px var(--hh-cabinet-primary);
+}
+.hh-app[data-cabinet-theme="daybook"] .hh-runner-segments > span { background: #e6cda1; }
+.hh-app[data-cabinet-theme="daybook"] .hh-runner-segments > span.is-done { background: #789d73; }
+.hh-app[data-cabinet-theme="daybook"] .hh-runner-segments > span.is-current { background: var(--hh-cabinet-primary); }
+.hh-app[data-cabinet-theme="daybook"] .hh-runner progress { color: var(--hh-cabinet-primary); }
+.hh-app[data-cabinet-theme="daybook"] .hh-runner progress::-webkit-progress-value { background: var(--hh-cabinet-primary); }
+.hh-app[data-cabinet-theme="daybook"] .hh-runner progress::-moz-progress-bar { background: var(--hh-cabinet-primary); }
+.hh-app[data-cabinet-theme="daybook"] :is(.hh-psi-section-head, .hh-assessment-history-heading) {
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--hh-cabinet-card);
+  color: var(--hh-cabinet-ink);
+}
+
+/* Reuse the real global dock; do not create a second navigation component. */
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-hh-unified-dock] {
+  border: 1px solid #d7b576;
+  border-bottom: 0;
+  border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, #07523bf5, #012d21fa 70%, #012117) !important;
+  box-shadow: 0 -5px 24px #07070480, inset 0 1px #f5d58b59;
+}
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item] { color: #fff1d6; }
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]) {
+  color: #fff8dc;
+  background: #347c3b85;
+}
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item="ai"] svg {
+  border: 2px solid #f9db94;
+  background: radial-gradient(circle at 35% 14%, #13c88d, #00754d 60%, #004532);
+  box-shadow: 0 0 0 4px #e8ba6482, 0 1px 18px 3px #e7bf6744;
+}
+body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])) [data-unified-dock-item="ai"] span {
+  color: #fff7de;
+  background: linear-gradient(#087953, #03482e);
+}
+
+@media (max-width: 600px) {
+  .hh-app[data-cabinet-theme="daybook"] .hh-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  .hh-app[data-cabinet-theme="daybook"] .hh-nav a { flex: 0 0 auto; }
+  .hh-app[data-cabinet-theme="daybook"] .hh-panel { padding: 16px; }
+  .hh-app[data-cabinet-theme="daybook"] .hh-heading { margin: 16px 0; }
+}
+@media print {
+  body:has(main:is([data-cabinet-theme="daybook"], .client-entry-shell, [data-free-entry-landing="tests"])),
+  main.hh-app[data-cabinet-theme="daybook"]:not(.hh-app--document-reader) {
+    background: #fff !important;
+    color: #21160d;
+  }
+}
+
+/* Assessment routes outside the /app layout share the approved profile skin.
+   Explicit root scopes exclude client documents, other landings and courses. */
+main.client-entry-shell {
+  background: radial-gradient(ellipse at 90% 0, #6d502c45, transparent 48%), var(--hh-cabinet-canvas);
+  color: #fff1d4;
+  min-width: 0;
+}
+main.client-entry-shell > .house-header,
+main[data-free-entry-landing="tests"] > .house-header {
+  background: var(--hh-cabinet-canvas);
+  border-color: var(--hh-cabinet-border);
+  color: #fff1d4;
+}
+main.client-entry-shell .house-wordmark,
+main[data-free-entry-landing="tests"] .house-wordmark { color: #fff1d4; }
+main.client-entry-shell .house-wordmark span,
+main[data-free-entry-landing="tests"] .house-wordmark span { color: #ead3ae; }
+main.client-entry-shell :is(.cabinet-signin-hero,.cabinet-guest-runner,.cabinet-guest-result,.cabinet-result-section,.cabinet-test-row,.cabinet-legacy-entry) {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--hh-cabinet-ink);
+  background: var(--hh-cabinet-card);
+  border-color: var(--hh-cabinet-border);
+  border-radius: 20px;
+}
+main.client-entry-shell .cabinet-guest-tests { background: transparent; color: #fff1d4; min-width: 0; }
+main.client-entry-shell :is(.cabinet-tests-heading,.cabinet-tests-heading h2,.cabinet-tests-heading p) { color: #fff1d4; }
+main.client-entry-shell :is(.cabinet-signin-hero h2,.cabinet-signin-hero h3,.cabinet-guest-runner h3,.cabinet-result-hero h3,.cabinet-result-section h4) {
+  color: var(--hh-cabinet-ink);
+  font-family: var(--hh-cabinet-heading-font);
+}
+main.client-entry-shell :is(.cabinet-signin-hero p,.cabinet-guest-runner .cabinet-test-note,.cabinet-result-intro,.cabinet-result-footer .cabinet-test-note,.cabinet-answer-anchors) { color: var(--hh-cabinet-muted); }
+main.client-entry-shell .cabinet-guest-tests > .cabinet-test-note { color: #ead3ae; }
+main.client-entry-shell :is(.cabinet-quick-question,.cabinet-guided-question) {
+  box-sizing: border-box; min-width: 0; max-width: 100%;
+  border: 1px solid var(--hh-cabinet-border);
+  border-radius: 16px;
+  background: var(--hh-cabinet-surface);
+  color: var(--hh-cabinet-ink);
+  padding: clamp(12px,3vw,18px);
+}
+main.client-entry-shell .cabinet-quick-question legend { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+main.client-entry-shell .cabinet-question-number { color: var(--hh-cabinet-primary); }
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale,.hh-test-mode-toggle) button {
+  box-sizing: border-box; min-height: 44px; min-width: 0;
+  border-color: var(--hh-cabinet-border); border-radius: 12px;
+  white-space: normal; overflow-wrap: anywhere;
+}
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale) button:not([class]) {
+  background: #fffaf0; color: var(--hh-cabinet-ink);
+}
+main.client-entry-shell .hh-test-mode-toggle button { background: var(--hh-cabinet-surface-soft); color: var(--hh-cabinet-ink); }
+main.client-entry-shell :is(.cabinet-answer-list,.cabinet-answer-scale,.hh-test-mode-toggle) button[aria-pressed="true"] {
+  background: var(--hh-cabinet-primary); border-color: var(--hh-cabinet-primary); color: #fff9e7;
+}
+main.client-entry-shell :is(.cabinet-test-actions button,.cabinet-save-result,.cabinet-google-button) {
+  min-height: 44px; border-radius: 14px; border-color: var(--hh-cabinet-primary);
+  background: var(--hh-cabinet-primary); color: #fff9e7; white-space: normal;
+}
+main.client-entry-shell .hh-runner-segments > span { background: #e6cda1; }
+main.client-entry-shell .hh-runner-segments > span.is-done { background: #789d73; }
+main.client-entry-shell .hh-runner-segments > span.is-current { background: var(--hh-cabinet-primary); }
+main.client-entry-shell :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { font-size: 16px; border-color: var(--hh-cabinet-border); max-width: 100%; box-sizing: border-box; }
+main.client-entry-shell :is(a,button,summary,input,select,textarea):focus-visible { outline: 3px solid #a27025; outline-offset: 2px; }
+@media (max-width: 759px) {
+  body:has(main:is([data-daybook-vectors],.client-entry-shell,[data-free-entry-landing="tests"])) [data-hh-ihelp-trigger] {
+    top: auto; bottom: calc(var(--hh-unified-nav-height,94px) + 12px); right: max(10px,env(safe-area-inset-right,0px));
+    width: 46px; min-width: 46px; min-height: 46px; padding: 8px; font-size: 0; gap: 0;
+  }
+  body:has(main:is([data-daybook-vectors],.client-entry-shell,[data-free-entry-landing="tests"])) [data-hh-ihelp-trigger] svg { width: 22px; height: 22px; }
+  main.client-entry-shell, main[data-free-entry-landing="tests"] { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+}
+@media print {
+  main.client-entry-shell, main[data-free-entry-landing="tests"] { background: #fff; color: #21160d; }
+}

@@ -6,18 +6,25 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Services, Academy and Library share the same showcase component", () => {
+test("Services leads with free tests and five photo cards while Home preserves four offers", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
+  const home = read("components", "holistic-house-home.tsx");
+  const solutions = read("components", "services-solutions.tsx");
   const academy = read("components", "academy-hub.tsx");
   const library = read("components", "library-hub.tsx");
-
-  assert.match(services, /CatalogShowcase/);
-  assert.match(academy, /CatalogShowcase/);
+  assert.match(services, /<ServicesSolutions locale=/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
+  assert.ok(solutions.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
+  assert.ok(services.includes("<ServicesTestsIntro locale={locale as Locale} />"));
+  assert.doesNotMatch(services, /<FreeInsightsPaths/);
+  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
+  assert.doesNotMatch(services, /<CatalogShowcase/);
+  assert.match(academy, /AcademyCourseItem/);
+  assert.match(read("components", "academy-discovery.tsx"), /<AcademyCourseCardList/);
   assert.match(library, /CatalogShowcase/);
-  assert.match(services, /serviceShowcaseItems/);
   assert.match(academy, /academy-featured-yggdrasil/);
   assert.match(academy, /academy-featured-tantra-reiki/);
-  assert.match(academy, /academyDirections\.filter/);
+  assert.match(academy, /academy-featured-temple-studies/);
   assert.match(library, /bookItems\(locale\)/);
 });
 
@@ -43,36 +50,31 @@ test("shared showcase has compact contents, visual panels and a clear choice act
   assert.match(styles, /grid-template-rows: minmax\(250px, 42svh\) auto/);
 });
 
-test("Services keeps marketplace and published video surfaces after the redesign", () => {
+test("Services preserves published video and marketplace content in optional disclosures", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
-
   assert.match(services, /services-marketplace/);
   assert.match(services, /featuredService/);
+  assert.match(services, /id="available-services"/);
+  assert.match(services, /id="method-videos"/);
   assert.match(services, /PageVideo slot="services-intro"/);
-  assert.match(services, /slot=\{"service-" \+ id\}/);
   assert.match(services, /method-hypnotherapy/);
   assert.match(services, /method-constellations/);
+  assert.match(services, /PageVideo slot="consultation"/);
+  assert.match(services, /PersonalTestimonials/);
 });
 
-
-test("mini cards navigate to direct destinations instead of in-page anchors", () => {
-  const component = read("components", "catalog-showcase.tsx");
-  const services = read("app", "[locale]", "services", "page.tsx");
+test("core offer links lead to distinct native EN/RU pages, with optional method details", () => {
+  const ui = read("components", "services-solutions.tsx");
+  const offers = read("data", "core-service-offers.ts");
   const academy = read("components", "academy-hub.tsx");
   const library = read("components", "library-hub.tsx");
-
-  assert.match(component, /indexHref\?: string/);
-  assert.match(component, /item\.indexHref \?\? item\.href/);
-  assert.match(services, /indexHref: serviceIndexHrefs\[id\]/);
-  assert.match(services, /academy\/applied\/hypnotherapy-regressions/);
-  assert.match(services, /academy\/reiki/);
-  assert.match(services, /personal-constellation-session/);
-  assert.match(services, /business-situation-constellation/);
-  assert.match(services, /homeopathy-consultation/);
-
-  assert.match(academy, /href: "\/" \+ locale \+ "\/academy\/" \+ direction\.path/);
-  assert.match(library, /href: `\/\$\{locale\}\/books`/);
-  assert.match(library, /href: `\/\$\{locale\}\/homeopathy\/remedies`/);
-  assert.match(library, /href: `\/\$\{locale\}\/wu-xing`/);
+  for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) {
+    assert.ok(offers.includes('route: "' + route + '"'), route);
+  }
+  for (const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"]) {
+    assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'), slug);
+  }
+  assert.match(ui, /id="methods"/);
+  assert.match(academy, /academy\/temple-studies/);
   assert.doesNotMatch(library, /books\?section=/);
 });

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="460" viewBox="0 0 480 460" fill="none" role="img" aria-label="Delicate botanical branch">
+  <defs><linearGradient id="leaf" x1="75" y1="20" x2="320" y2="420"><stop stop-color="#9ca587"/><stop offset="1" stop-color="#c8cbb4"/></linearGradient></defs>
+  <path d="M103 438C151 351 190 266 207 185 217 133 219 89 232 20" stroke="#a0a689" stroke-width="4.8" stroke-linecap="round"/>
+  <path d="M151 345C113 310 73 313 25 283c8 60 54 85 126 62Zm30-61c59-16 96-61 101-110-61 12-96 46-101 110Zm20-96c-52-22-75-62-73-112 48 14 77 52 73 112Zm18-81c41-35 58-72 53-106-37 25-55 58-53 106ZM133 379c-54 3-90-9-121-41 58-17 101-3 121 41Zm61-126c-11-54-3-91 29-126 18 59 8 103-29 126Zm-29 68c37-7 79 2 113 34-51 17-98 4-113-34Z" fill="url(#leaf)" fill-opacity=".66" stroke="#96a084" stroke-width="1.4" stroke-opacity=".48"/>
+  <path d="M232 20c4 29 13 46 31 60M209 178c-20-19-45-26-70-30M190 275c22-20 47-29 70-31M151 344c-25-14-58-15-88-16" stroke="#a0a689" stroke-width="1.5" opacity=".65"/>
+</svg>

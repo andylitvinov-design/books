@@ -1,0 +1,178 @@
+{
+  "checked_at_utc": "2026-10-12T05:12:00Z",
+  "source_page": "https://license.tov.med.nyu.edu/product/asrs6Qscreener",
+  "authority_redirect": "https://rckessler.scholars.harvard.edu/adult-adhd-self-report-scales-asrs",
+  "method": "Public patient-facing DOWNLOAD controls in the supported cloud browser; no account, consent form, payment or CAPTCHA.",
+  "files": [
+    {
+      "locale": "en",
+      "filename": "6Q_ASRS_ENGLISH_final.pdf",
+      "nyu_dom_data_file_id": "5372",
+      "bytes": 110811,
+      "sha256": "3383491ecbbd65beb79b97c86a49e72fac8a5fdf8c40d94bfe58ed9189bdfee4",
+      "pages": 2,
+      "questionnaire_pdf_page": 2,
+      "metadata": {
+        "format": "PDF 1.6",
+        "title": "",
+        "author": "Teresa Gorman",
+        "subject": "",
+        "keywords": "",
+        "creator": "Acrobat PDFMaker 25 for Word",
+        "producer": "Adobe PDF Library 25.1.20",
+        "creationDate": "D:20251117124138-05'00'",
+        "modDate": "D:20251117124139-05'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "visual_inspection": "All pages inspected. Six-question shading verified independently from PDF filled-cell colors.",
+      "shading_rows_from_vectors": [
+        {
+          "y": 385.2,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 410.6,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 436.1,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 461.5,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 487.0,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 512.4,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "ru",
+      "filename": "6Q_Russian_final.pdf",
+      "nyu_dom_data_file_id": "5359",
+      "bytes": 119807,
+      "sha256": "43068fbc890d8f05ab08d563d9efd6464feafd130a9c881be73afc2f07651382",
+      "pages": 3,
+      "questionnaire_pdf_page": 2,
+      "metadata": {
+        "format": "PDF 1.6",
+        "title": "Adult Self-Report Scale-V1",
+        "author": "LanguageWorks",
+        "subject": "",
+        "keywords": "",
+        "creator": "Acrobat PDFMaker 10.0 for Word",
+        "producer": "Adobe PDF Library 10.0",
+        "creationDate": "D:20131101141404-04'00'",
+        "modDate": "D:20250722121219-04'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "visual_inspection": "All pages inspected. Six-question shading verified independently from PDF filled-cell colors.",
+      "shading_rows_from_vectors": [
+        {
+          "y": 422.4,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 447.7,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 473.2,
+          "cells": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 498.6,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 524.0,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "y": 549.4,
+          "cells": [
+            0,
+            0,
+            0,
+            1,
+            1
+          ]
+        }
+      ]
+    }
+  ]
+}

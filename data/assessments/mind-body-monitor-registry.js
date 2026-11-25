@@ -1,3 +1,5 @@
+import { NEW_PSYCHOTHERAPY_REFERENCES } from './psychotherapy-core-100.js'
+
 // Canonical Mind–Body Monitor research registry.
 // Product source: Holistic House — Psychic Health Monitoring Test Database
 // https://docs.google.com/spreadsheets/d/13tKxFlypfuaEWh0Vy0NeYasCZ-iItRkmZTEx7eB9E5k/edit
@@ -47,6 +49,7 @@ function row(
   duration,
   rightsStatus,
   access = 'account',
+  metadata = {},
 ) {
   return Object.freeze({
     key,
@@ -60,6 +63,7 @@ function row(
     rightsStatus,
     access,
     enabled: false,
+    ...metadata,
   })
 }
 
@@ -75,6 +79,7 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   // 2. Mood & anxiety — 8
   row('phq-2', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire-2', 'PHQ-2', 2, '<1 min', RIGHTS_STATUS.READY_PUBLIC, 'public'),
   row('phq-9', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire-9', 'PHQ-9', 9, '~2 min', RIGHTS_STATUS.MANAGED_SAFETY_ONLY, 'managed'),
+  row('phq-8', 'mood_anxiety', 'mood', 'A', 'Patient Health Questionnaire – 8', 'PHQ-8', 8, '2–3 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18752852/', rightsNote: 'Pfizer PHQ family: no copyright restriction; EN only here' }),
   row('gad-2', 'mood_anxiety', 'mood', 'A', 'Generalized Anxiety Disorder-2', 'GAD-2', 2, '<1 min', RIGHTS_STATUS.READY_PUBLIC, 'public'),
   row('gad-7', 'mood_anxiety', 'mood', 'A', 'Generalized Anxiety Disorder-7', 'GAD-7', 7, '1–2 min', RIGHTS_STATUS.READY_ACCOUNT),
   row('promis-anxiety-4a', 'mood_anxiety', 'mood', 'B', 'PROMIS Anxiety Short Form 4a', 'PROMIS Anxiety 4a', 4, '~1 min', RIGHTS_STATUS.RIGHTS_REVIEW),
@@ -123,6 +128,9 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
 
   // 9. Burnout & work health — 2
   row('cbi', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory', 'CBI', 19, '4–5 min', RIGHTS_STATUS.RIGHTS_REVIEW),
+  row('cbi-personal', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory — Personal', 'CBI Personal', 6, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
+  row('cbi-work', 'burnout_work', 'stress', 'A', 'Copenhagen Burnout Inventory — Work', 'CBI Work', 7, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
+  row('cbi-client', 'burnout_work', 'stress', 'B', 'Copenhagen Burnout Inventory — Client Work', 'CBI Client', 6, '2 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://nfa.dk/media/a4wheblj/cbi-scales.pdf', rightsNote: 'NFA commercial reuse with attribution: Borritz et al. (2006)' }),
   row('mbi', 'burnout_work', 'stress', 'C', 'Maslach Burnout Inventory', 'MBI', 22, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY),
 
   // 10. Product-specific monitoring — 3
@@ -172,6 +180,215 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   row('mmpi-3', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-3', 'MMPI-3', 335, '25–50 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
   row('pai', 'clinician_reference', 'personality', 'C', 'Personality Assessment Inventory', 'PAI', 344, '25–55 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
   row('mini-interview', 'clinician_reference', 'personality', 'C', 'Mini International Neuropsychiatric Interview', 'MINI', 'structured modules', '15–30 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician'),
+
+  // Additional validated professional instruments. Metadata only until commercial rights, original items and scoring are cleared.
+  row('ders-16', 'emotion_recovery', 'resources', 'A', 'Difficulties in Emotion Regulation Scale – 16', 'DERS-16', 16, '2–4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4882111/', rightsNote: 'Published psychometric validation does not by itself authorize commercial digital reproduction' }),
+  row('wemwbs-14', 'overall_wellbeing', 'resources', 'B', 'Warwick–Edinburgh Mental Wellbeing Scale', 'WEMWBS', 14, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://warwick.ac.uk/services/innovations/wemwbs/how/', rightsNote: 'Commercial use requires Warwick licence' }),
+  row('swemwbs-7', 'overall_wellbeing', 'resources', 'B', 'Short Warwick–Edinburgh Mental Wellbeing Scale', 'SWEMWBS', 7, '2 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://warwick.ac.uk/services/innovations/wemwbs/how/', rightsNote: 'Commercial use requires Warwick licence' }),
+  row('bdi-ii', 'mood_anxiety', 'mood', 'C', 'Beck Depression Inventory – II', 'BDI-II', 21, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://www.pearsonassessments.com/en-us/Store/Professional-Assessments/Personality-%26-Biopsychosocial/Beck-Depression-Inventory/p/100000159', rightsNote: 'Pearson digital administration licensed; qualification required' }),
+  row('bai-21', 'mood_anxiety', 'mood', 'C', 'Beck Anxiety Inventory', 'BAI', 21, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'account', { sourceUrl: 'https://www.pearsonassessments.com/en-us/Store/Professional-Assessments/Personality-%26-Biopsychosocial/Beck-Anxiety-Inventory/p/100000251', rightsNote: 'Pearson digital administration licensed; qualification required' }),
+  row('maas-15', 'emotion_recovery', 'resources', 'B', 'Mindful Attention Awareness Scale', 'MAAS', 15, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://ppc.sas.upenn.edu/node/214', rightsNote: 'Publisher/author commercial electronic reproduction terms not confirmed' }),
+  row('tas-20', 'emotion_recovery', 'resources', 'B', 'Toronto Alexithymia Scale – 20', 'TAS-20', 20, '4–6 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://doi.org/10.1016/0022-3999(94)90005-1', rightsNote: 'Copyright holder permission required; not a free online test' }),
+  row('panas-20', 'overall_wellbeing', 'mood', 'B', 'Positive and Negative Affect Schedule', 'PANAS', 20, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://doi.org/10.1037/0022-3514.54.6.1063', rightsNote: 'Commercial online item use not verified' }),
+  row('gse-10', 'resilience_coping', 'resources', 'B', 'General Self-Efficacy Scale', 'GSE', 10, '2–4 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://userpage.fu-berlin.de/~health/selfscal.htm', rightsNote: 'Authors support research/educational use; commercial site terms must be confirmed' }),
+  row('spane-12', 'overall_wellbeing', 'mood', 'B', 'Scale of Positive and Negative Experience', 'SPANE', 12, '3 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'account', { sourceUrl: 'https://eddiener.com/scale-of-positive-and-negative-experience-spane/', rightsNote: 'Author site limits free use to non-commercial purposes' }),
+  // Newly runnable professional instruments: rights verified against original authors and official US repositories.
+  row('rses-10', 'resilience_coping', 'resources', 'A', 'Rosenberg Self-Esteem Scale', 'RSES-10', 10, '2–3 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://socy.umd.edu/about-us/using-rosenberg-self-esteem-scale', rightsNote: 'University of Maryland Sociology Department states the original is public domain, including adaptation with attribution; official original English now runnable.' }),
+  row('ces-d-20', 'mood_anxiety', 'mood', 'B', 'Center for Epidemiologic Studies Depression Scale – 20', 'CES-D 20', 20, '4–6 min', RIGHTS_STATUS.READY_ACCOUNT, 'account', { sourceUrl: 'https://www.ncbi.nlm.nih.gov/books/NBK572958/table/ap2.t1/', rightsNote: 'SAMHSA public-domain instrument; original English self-report now runnable with four reverse items. Not a diagnosis.' }),
+  // Additional clinically common reference instruments. No test questions, scoring or start action
+  // may appear until actual electronic/commercial-use rights and validated version are cleared.
+  row('stai-40', 'anxiety_deep_dive', 'mood', 'B', 'State–Trait Anxiety Inventory', 'STAI', 40, '8–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', { sourceUrl:'https://www.mindgarden.com/145-state-trait-anxiety-inventory-for-adults', rightsNote:'Mind Garden commercial licence and qualified use; metadata only.' }),
+  row('bfi-2-60', 'clinician_reference', 'personality', 'B', 'Big Five Inventory–2', 'BFI-2', 60, '8–12 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://www.colby.edu/academics/departments-and-programs/psychology/research-and-resources/big-five-inventory-2/', rightsNote:'Author electronic/commercial questionnaire rights and version should be reviewed.' }),
+  row('ecr-r-36', 'relationships_support', 'relationships', 'B', 'Experiences in Close Relationships – Revised', 'ECR-R', 36, '5–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://labs.psychology.illinois.edu/~rcfraley/measures/ecrr.htm', rightsNote:'Original validated items and electronic/commercial use terms pending.' }),
+  row('pswq-16', 'anxiety_deep_dive', 'mood', 'B', 'Penn State Worry Questionnaire', 'PSWQ', 16, '3–4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/3191488/', rightsNote:'Original item and electronic-use rights not established; reference only.' }),
+  row('lsas-sr-24', 'anxiety_deep_dive', 'mood', 'B', 'Liebowitz Social Anxiety Scale – Self Report', 'LSAS-SR', 24, '5–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/8613463/', rightsNote:'Original digital reproduction permission and version review pending.' }),
+  row('ybocs-10', 'anxiety_deep_dive', 'mood', 'B', 'Yale–Brown Obsessive Compulsive Scale', 'Y-BOCS', 10, '10–15 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', { sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/2871574/', rightsNote:'Clinician-administered version and digital licensing need verification; do not automate administration.' }),
+  row('ctq-sf-28', 'trauma_ptsd', 'trauma', 'C', 'Childhood Trauma Questionnaire – Short Form', 'CTQ-SF', 28, '5–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', { sourceUrl:'https://www.pearsonassessments.com/', rightsNote:'Protected questionnaire; licensed professional use. Do not display items or invite unsupervised administration.' }),
+  row('sf-36', 'function_qol', 'function', 'B', 'SF-36 Health Survey', 'SF-36', 36, '8–10 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', { sourceUrl:'https://www.optum.com/', rightsNote:'Commercial survey licence required; metadata only.' }),
+  row('asrs-v1-18', 'attention_bipolar', 'attention', 'B', 'Adult ADHD Self-Report Scale v1.1 – Full Form', 'ASRS-18', 18, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://www.hcp.med.harvard.edu/ncs/asrs.php', rightsNote:'Full questionnaire permissions and original scoring workflow require verification.' }),
+  row('aaq-ii', 'emotion_recovery', 'resources', 'B', 'Acceptance and Action Questionnaire – II', 'AAQ-II', 7, '2–3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/22035996/', rightsNote:'Psychometric publication is not commercial digital-use permission; reference only.' }),
+  row('sias-20', 'anxiety_deep_dive', 'mood', 'B', 'Social Interaction Anxiety Scale', 'SIAS', 20, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/1613112/', rightsNote:'Digital and commercial reproduction permission not verified; metadata only.' }),
+  row('srs-2', 'clinician_reference', 'personality', 'C', 'Social Responsiveness Scale – Second Edition', 'SRS-2', 65, '15–20 min', RIGHTS_STATUS.LICENSED_ONLY, 'clinician', { sourceUrl:'https://www.wpspublish.com/', rightsNote:'Protected clinician measure; proprietary forms and scoring require a purchase/qualification.' }),
+  // Further source-verified CDC/HealthMeasures/COPSOQ research instrument metadata.
+  row('cdc-hrqol-4', 'function_qol', 'function', 'A', 'CDC Healthy Days Core (HRQOL-4)', 'CDC HRQOL-4', 4, '~3 min', RIGHTS_STATUS.READY_PUBLIC, 'public', { sourceUrl: 'https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm', rightsNote: 'CDC federal public domain, official four questions; now runnable EN' }),
+  row('cdc-healthy-days-symptoms', 'body_fatigue_cognition', 'body', 'A', 'CDC Healthy Days Symptoms Module', 'CDC Healthy Days 5', 5, '~3 min', RIGHTS_STATUS.READY_PUBLIC, 'public', { sourceUrl: 'https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm', rightsNote: 'CDC federal public domain, original five questions; now runnable EN' }),
+  row('cdc-healthy-days-activity', 'function_qol', 'function', 'B', 'CDC Healthy Days Activity Limitations Module', 'CDC Activity 5', 5, '5–7 min', RIGHTS_STATUS.INTERNAL_REFERENCE, 'internal', { sourceUrl: 'https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm', rightsNote: 'Validated public domain module but skip logic and nonnumeric response codes not yet implemented; metadata only' }),
+  row('cdc-hrqol-14', 'function_qol', 'function', 'B', 'CDC Healthy Days Complete 14-item Set', 'CDC HRQOL-14', 14, '8–12 min', RIGHTS_STATUS.INTERNAL_REFERENCE, 'internal', { sourceUrl: 'https://archive.cdc.gov/www_cdc_gov/hrqol/hrqol14_measure.htm', rightsNote: 'Full three-module combination. Core and symptoms are separately runnable; do not duplicate their answers as a separate test' }),
+  row('copsoq-iii', 'burnout_work', 'stress', 'A', 'Copenhagen Psychosocial Questionnaire III', 'COPSOQ III', "version-dependent", '15–30 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.copsoq-network.org/licence-guidelines-and-questionnaire', rightsNote: 'Conditional commercial reuse under network guidance; national contact, original format and use-case agreement pending' }),
+  row('promis-pain-interference-4a', 'body_fatigue_cognition', 'body', 'B', 'PROMIS Pain Interference Short Form 4a', 'PROMIS Pain 4a', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
+  row('promis-emotional-support-4a', 'relationships_support', 'relationships', 'B', 'PROMIS Emotional Support Short Form 4a', 'PROMIS Support 4a', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
+  row('promis-sleep-impairment-4a', 'sleep_recovery', 'sleep', 'B', 'PROMIS Sleep-Related Impairment Short Form 4a', 'PROMIS Sleep Impact 4a', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
+  row('neuro-qol-cognitive-8', 'body_fatigue_cognition', 'body', 'B', 'Neuro-QoL Cognitive Function Short Form 8', 'Neuro-QoL Cog 8', 8, '~3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/images/PROMIS/Terms_of_Use_HM_approved_1-12-17_-_Updated_Copyright_Notices.pdf', rightsNote: 'Northwestern HealthMeasures copyright; digital reproduction/electronic integration permission required' }),
+  row('promis-companionship-4a', 'relationships_support', 'relationships', 'B', 'PROMIS Companionship Short Form 4a', 'PROMIS Companionship', 4, '~2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', { sourceUrl: 'https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures', rightsNote: 'HEAP/electronic permission required for commercial portal; not runnable' }),
+
+  // Psychotherapy-specific measures absent from the initial research registry.
+  // Reference metadata only: no questions, scoring or public start actions without verified
+  // electronic/commercial permission, appropriate clinical safeguards and a source-validated form.
+  row('iip-32', 'relationships_support', 'relationships', 'A', 'Inventory of Interpersonal Problems – 32', 'IIP-32', 32, '7–12 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://shop.mindgarden.info/113-inventory-of-interpersonal-problems',
+    rightsNote: 'Mind Garden licenses each administration, including non-Mind Garden digital forms. No item reproduction without purchase.',
+  }),
+  row('iip-64', 'relationships_support', 'relationships', 'B', 'Inventory of Interpersonal Problems – 64', 'IIP-64', 64, '10–15 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://shop.mindgarden.info/113-inventory-of-interpersonal-problems',
+    rightsNote: 'Mind Garden per-administration commercial/digital licence required.',
+  }),
+  row('wai-sr-12', 'routine_outcomes', 'therapy', 'A', 'Working Alliance Inventory – Short Revised', 'WAI-SR', 12, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.psychotherapyresearch.org/store/viewproduct.aspx?id=24834231',
+    rightsNote: 'Society for Psychotherapy Research paid clinical licence; both client/therapist form and qualified workflow must be reviewed.',
+  }),
+  row('srs-pcoms-4', 'routine_outcomes', 'therapy', 'A', 'Session Rating Scale – Therapeutic Alliance', 'SRS / PCOMS', 4, '1–2 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'PCOMS/Session Rating Scale administration and proprietary scoring require commercial-use licence review. Different from Social Responsiveness Scale (SRS-2).',
+  }),
+  row('ysq-s3-90', 'clinician_reference', 'personality', 'A', 'Young Schema Questionnaire – Short Form 3', 'YSQ-S3', 90, '15–25 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Schema-therapy original wording, translation rights, version, scoring and digital commercial permission must be reviewed; not for unsupervised self-diagnosis.',
+  }),
+  row('smi-118', 'clinician_reference', 'personality', 'B', 'Schema Mode Inventory – Short Form', 'SMI', 118, '20–30 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Licensed/original items, 14 mode scales, translations and electronic reproduction not verified. Clinical interpretation required.',
+  }),
+  row('rfq-8', 'emotion_recovery', 'resources', 'B', 'Reflective Functioning Questionnaire – 8 item', 'RFQ-8', 8, '2–3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Mentalization-oriented questionnaire: obtain author permission for commercial electronic use, version-specific scoring and translation.',
+  }),
+  row('des-ii-28', 'trauma_ptsd', 'trauma', 'B', 'Dissociative Experiences Scale – II', 'DES-II', 28, '5–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Dissociation screening requires source scoring, rights confirmation and trauma-informed qualified review; no casual public quiz.',
+  }),
+  row('ecr-rs-9', 'relationships_support', 'relationships', 'A', 'Experiences in Close Relationships – Relationship Structures', 'ECR-RS', '9 per relationship', '3–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Relationship-specific attachment variant distinct from ECR-R-36. Confirm complete original forms, targets, scoring and online permission.',
+  }),
+  row('csq-8', 'routine_outcomes', 'therapy', 'B', 'Client Satisfaction Questionnaire – 8', 'CSQ-8', 8, '2–3 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Service satisfaction outcome measure; licensing and client/therapist independence required. Not a symptom or diagnostic test.',
+  }),
+  row('hads-14', 'mood_anxiety', 'mood', 'B', 'Hospital Anxiety and Depression Scale', 'HADS', 14, '3–5 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled use and scoring; do not publish protected questionnaires.',
+  }),
+  row('aas-collins-read-18', 'relationships_support', 'relationships', 'B', 'Adult Attachment Scale – Collins & Read', 'AAS', 18, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Attachment scale; original wording, 3-subscale key, permissions and validated language need review.',
+  }),
+  row('ace-10', 'trauma_ptsd', 'trauma', 'C', 'Adverse Childhood Experiences Questionnaire', 'ACE-10', 10, '3–5 min', RIGHTS_STATUS.MANAGED_SAFETY_ONLY, 'practitioner', {
+    rightsNote: 'Adversity exposure, not PTSD diagnosis and not an automatic personalized treatment selector. Trauma-informed informed consent and professional support needed.',
+  }),
+  row('beaq-15', 'emotion_recovery', 'resources', 'B', 'Brief Experiential Avoidance Questionnaire', 'BEAQ', 15, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Experiential avoidance relevant to ACT; publication alone does not grant permission for electronic commercial items.',
+  }),
+  row('ius-12', 'anxiety_deep_dive', 'mood', 'B', 'Intolerance of Uncertainty Scale – 12', 'IUS-12', 12, '3–4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'account', {
+    rightsNote: 'Original 12-item version, scoring key and online-commercial terms not confirmed.',
+  }),
+  row('ptgi-21', 'trauma_ptsd', 'trauma', 'C', 'Posttraumatic Growth Inventory', 'PTGI', 21, '5–7 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Posttraumatic growth is not evidence that trauma was beneficial; verify authorized items and trauma-informed administration.',
+  }),
+  row('fad-gf-12', 'relationships_support', 'relationships', 'B', 'McMaster Family Assessment Device – General Functioning', 'FAD-GF', 12, '3–5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'practitioner', {
+    rightsNote: 'Family functioning scale; rights, version, scoring, translations and respondent permissions require review.',
+  }),
+
+
+  // Clinical and licensed personality assessments are reference entries only.
+  // MMPI-3 is already listed above; do not create duplicate keys or public scoring clones.
+  row('mmpi-2', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-2', 'MMPI-2', 567, '60–90 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    sourceUrl: 'https://www.pearsonclinical.ca/',
+    rightsNote: 'University of Minnesota/Pearson copyrighted assessment; qualification level C, paid digital/manual administration and independent qualified interpretation required. No public questionnaire.',
+  }),
+  row('mmpi-2-rf', 'clinician_reference', 'personality', 'C', 'Minnesota Multiphasic Personality Inventory-2 Restructured Form', 'MMPI-2-RF', 338, '35–50 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    sourceUrl: 'https://www.pearsonclinical.ca/en-ca/mmpi-2/Minnesota-Multiphasic-Personality-Inventory-2-Restructured-Form/p/P100008141',
+    rightsNote: 'Level C/Pearson and University of Minnesota protected scales; not available for public online self-testing.',
+  }),
+  row('mbti-step-i', 'clinician_reference', 'personality', 'B', 'Myers–Briggs Type Indicator Step I', 'MBTI Step I', 'licensed form', '15–25 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Official MBTI forms, type scoring, reports, norms and logos are copyrighted; qualified practitioner and digital-use licence required. The HH original socionics quiz is NOT MBTI.',
+  }),
+  row('mbti-step-ii', 'clinician_reference', 'personality', 'B', 'Myers–Briggs Type Indicator Step II', 'MBTI Step II', 'licensed form', '20–35 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Official MBTI Step II licensed practitioner scoring and protected copyrighted material. Not equivalent to socionics J/P.',
+  }),
+  row('neo-pi-3', 'clinician_reference', 'personality', 'B', 'NEO Personality Inventory 3', 'NEO-PI-3', 240, '30–45 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled NEO-PI-3 items, factor/facet scores and normative interpretations. Obtain commercial/digital licence and qualification.',
+  }),
+  row('neo-ffi-3', 'clinician_reference', 'personality', 'B', 'NEO Five-Factor Inventory 3', 'NEO-FFI-3', 60, '10–15 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Publisher-controlled NEO-FFI-3; the site already uses licensed-free IPIP Big Five alternatives.',
+  }),
+  row('hexaco-60', 'clinician_reference', 'personality', 'B', 'HEXACO Personality Inventory Revised – 60', 'HEXACO-60', 60, '10–15 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'practitioner', {
+    sourceUrl: 'https://hexaco.org/hexaco-inventory',
+    rightsNote: 'Official HEXACO online/for-profit counselling use requires authorization from authors; downloadable research forms are not permission for this commercial public site.',
+  }),
+  row('hexaco-100', 'clinician_reference', 'personality', 'B', 'HEXACO Personality Inventory Revised – 100', 'HEXACO-100', 100, '15–25 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'practitioner', {
+    sourceUrl: 'https://hexaco.org/nonacademicuse.htm',
+    rightsNote: 'Non-academic use and public electronic administration are subject to author permission and qualification requirements.',
+  }),
+  row('16pf-fifth-edition', 'clinician_reference', 'personality', 'B', '16 Personality Factor Questionnaire – Fifth Edition', '16PF-5', 185, '30–50 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    rightsNote: 'Proprietary 16PF questionnaires/norms are licensed assessments, not a public 16-type quiz.',
+  }),
+  row('mcmi-iv', 'clinician_reference', 'personality', 'C', 'Millon Clinical Multiaxial Inventory IV', 'MCMI-IV', 195, '25–35 min', RIGHTS_STATUS.CLINICIAN_ONLY, 'clinician', {
+    rightsNote: 'Pearson copyrighted clinical personality/psychopathology scales. Qualified clinician and appropriate population required; no self-diagnosis.',
+  }),
+  row('cpi-260', 'clinician_reference', 'personality', 'B', 'California Psychological Inventory 260', 'CPI 260', 260, '35–50 min', RIGHTS_STATUS.LICENSED_ONLY, 'practitioner', {
+    sourceUrl: 'https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions',
+    rightsNote: 'Publisher controlled CPI 260 forms, scoring and reports; qualification/licence required.',
+  }),
+
+  // 2026-10 professional expansion - established instruments, research metadata only.
+  // None are runnable until their exact item/translation/scoring permissions and
+  // safety workflow are verified. Public PDFs describe scales only, never questions.
+  row('maia-2-37', 'interoception', 'body', 'A', 'Multidimensional Assessment of Interoceptive Awareness - Version 2', 'MAIA-2', 37, '7-10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://osher.ucsf.edu/research/maia',
+    rightsNote: 'Official UCSF PDF is free to use with source attribution and conditions; link to its original document, do not duplicate or translate it as part of this release.',
+  }),
+  row('bfne-12', 'social_evaluation', 'mood', 'A', 'Brief Fear of Negative Evaluation Scale', 'BFNE-12', 12, '2-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'No approved commercial online questionnaire or validated translations are on file.',
+  }),
+  row('fscrs-22', 'self_criticism', 'resources', 'A', 'Forms of Self-Criticizing/Attacking and Self-Reassuring Scale', 'FSCRS', 22, '4-6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'This reference introduces the three published constructs, without copying questionnaire items.',
+  }),
+  row('ras-7', 'relationship_satisfaction', 'relationships', 'A', 'Relationship Assessment Scale', 'RAS', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Only research metadata; verify permission before public self-administration.',
+  }),
+  row('cfq-7', 'psychological_flexibility', 'resources', 'A', 'Cognitive Fusion Questionnaire - 7', 'CFQ-7', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://doi.org/10.1371/journal.pone.0246434',
+    rightsNote: 'Open-access research does not automatically license commercial item reproduction.',
+  }),
+  row('mlq-10', 'meaning_and_values', 'resources', 'B', 'Meaning in Life Questionnaire', 'MLQ', 10, '2-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Original questionnaire and normed interpretations remain unavailable pending permission audit.',
+  }),
+  row('sdi-2-14', 'sexual_desire', 'relationships', 'B', 'Sexual Desire Inventory - 2', 'SDI-2', 14, '3-5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Measures dyadic and solitary desire. Do not reproduce protected content or infer a diagnosis.',
+  }),
+  row('gq-6', 'gratitude', 'resources', 'B', 'Gratitude Questionnaire - 6', 'GQ-6', 6, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Permission and translation review are required before any digital questionnaire.',
+  }),
+  row('uwes-9', 'work_engagement', 'stress', 'B', 'Utrecht Work Engagement Scale - 9', 'UWES-9', 9, '2-3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Professional research index only; actual form not distributed.',
+  }),
+  row('ffmq-15', 'mindfulness', 'resources', 'B', 'Five Facet Mindfulness Questionnaire - short form', 'FFMQ-15', 15, '3-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Multiple abbreviated forms exist; verify specific version and normed scoring before administration.',
+  }),
+  row('fss-9', 'fatigue', 'body', 'B', 'Fatigue Severity Scale', 'FSS-9', 9, '2-3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Clinically relevant fatigue impact is described, not diagnosed. Original items are not reproduced.',
+  }),
+
+  // Tantra-adjacent external research references: NEVER expose protected original items
+  // as Holistic House runnable questionnaires without verified digital/commercial rights.
+  row('tantric-sex-scale-25', 'relationships_support', 'relationships', 'B', 'Tantric Sex Scale (Gordon, 2018)', 'TSS-25', 25, '5–7 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'research', {
+    sourceUrl: 'https://etd.ohiolink.edu/acprod/odb_etd/r/etd/search/10?clear=10&p10_accession_num=bgsu154203013060414',
+    rightsNote: '2018 Bowling Green thesis is CC BY-NC-ND 3.0; non-commercial, no derivatives. Electronic commercial questionnaire reuse NOT cleared. Reference only.',
+  }),
+  row('sexual-mindfulness-measure-7', 'relationships_support', 'relationships', 'B', 'Sexual Mindfulness Measure', 'SMM-7', 7, '2–3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6640099/',
+    rightsNote: 'Original wording and online/commercial administration require verification; reference only.',
+  }),
+  row('scale-body-connection-20', 'body_fatigue_cognition', 'body', 'B', 'Scale of Body Connection', 'SBC-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18047441/',
+    rightsNote: 'Price and Thompson research measure, 20 items; original electronic item rights and reproduction not yet cleared.',
+  }),
+  row('new-sexual-satisfaction-scale-20', 'relationships_support', 'relationships', 'B', 'New Sexual Satisfaction Scale', 'NSSS-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/19629836/',
+    rightsNote: 'Stulhofer, Busko and Brouillard 2010; 20 items. Publisher/author electronic reproduction permission not established.',
+  }),
+
+
+  // Additional curated research references; questionnaire access stays gated.
+  // RAS-7 already has a fuller rights-reviewed record above. Import it once.
+  ...NEW_PSYCHOTHERAPY_REFERENCES.filter((item) => item.key !== 'ras-7').map((item) => row(
+    item.key, item.category, item.area, item.priority, item.instrument,
+    item.acronym, item.items, item.duration, item.rightsStatus, item.access,
+    { rightsNote: item.rightsNote },
+  )),
 ])
 
 export const PRODUCT_MONITOR_MODULES = Object.freeze([

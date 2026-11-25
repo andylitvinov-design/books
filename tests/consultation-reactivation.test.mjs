@@ -22,3 +22,16 @@ test('concurrent reactivation uses atomic pair revision guard',async()=>{
  assert.equal(outcomes.filter(o=>o.status==='fulfilled').length,1)
  assert.equal((await store.findById(p.id)).status,'active')
 })
+
+test('standalone prescription can be revoked and reactivated without payment', async () => {
+ const store = createMemoryPrescriptionStore()
+ const { recommendation } = await createConsultation({
+   patientName: 'Synthetic', consultationDate: '2026-09-20', items: [{ remedySlug: 'aconitum' }],
+   includeInvoice: false,
+ }, { store, requestId: randomUUID() })
+ await changeConsultationDocumentStatus(store, recommendation.id, recommendation.id, 'revoked')
+ assert.equal((await store.findById(recommendation.id)).status, 'revoked')
+ await changeConsultationDocumentStatus(store, recommendation.id, recommendation.id, 'active')
+ assert.equal((await store.findById(recommendation.id)).status, 'active')
+ await assert.rejects(changeConsultationDocumentStatus(store, recommendation.id, randomUUID(), 'revoked'), /unavailable/i)
+})

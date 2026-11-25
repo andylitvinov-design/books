@@ -1,0 +1,216 @@
+{
+  "language": "en",
+  "checked_at": "2026-10-14",
+  "use": "Adult self-report, clinically supported screening or symptom measurement; not standalone diagnosis",
+  "rights": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+  "missingness": {
+    "official_rule_found": false,
+    "recommended_conservative_implementation": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule."
+  },
+  "reverse_scored_items": [],
+  "weighting": "unweighted",
+  "rounding": "none; integer sums",
+  "implementation_ready": false,
+  "instrument": "ITQ",
+  "form": "Final adult 12 symptom items plus 6 impairment items; not ITQ-CA or ITQ-CC",
+  "version": "Developer-hosted English DOCX retrieved 2026-10-14; no explicit edition date; pin SHA-256 in extraction-audit.json",
+  "source": "https://cdn.prod.website-files.com/686e835a5683f56bbfc4c3a4/68b0694afb8eccbc37bb76c0_ITQ_English.docx",
+  "rights_source": "https://www.traumameasuresglobal.com/ptsd",
+  "responses": [
+    {
+      "value": 0,
+      "label": "Not at all"
+    },
+    {
+      "value": 1,
+      "label": "A little bit"
+    },
+    {
+      "value": 2,
+      "label": "Moderately"
+    },
+    {
+      "value": 3,
+      "label": "Quite a bit"
+    },
+    {
+      "value": 4,
+      "label": "Extremely"
+    }
+  ],
+  "items": [
+    {
+      "id": "P1",
+      "text": "Having upsetting dreams that replay part of the experience or are clearly related to the experience?"
+    },
+    {
+      "id": "P2",
+      "text": "Having powerful images or memories that sometimes come into your mind in which you feel the experience is happening again in the here and now?"
+    },
+    {
+      "id": "P3",
+      "text": "Avoiding internal reminders of the experience (for example, thoughts, feelings, or physical sensations)?"
+    },
+    {
+      "id": "P4",
+      "text": "Avoiding external reminders of the experience (for example, people, places, conversations, objects, activities, or situations)?"
+    },
+    {
+      "id": "P5",
+      "text": "Being “super-alert”, watchful, or on guard?"
+    },
+    {
+      "id": "P6",
+      "text": "Feeling jumpy or easily startled?"
+    },
+    {
+      "id": "P7",
+      "text": "Affected your relationships or social life?"
+    },
+    {
+      "id": "P8",
+      "text": "Affected your work or ability to work?"
+    },
+    {
+      "id": "P9",
+      "text": "Affected any other important part of your life such as parenting, or school or college work, or other important activities?"
+    },
+    {
+      "id": "C1",
+      "text": "When I am upset, it takes me a long time to calm down."
+    },
+    {
+      "id": "C2",
+      "text": "I feel numb or emotionally shut down."
+    },
+    {
+      "id": "C3",
+      "text": "I feel like a failure."
+    },
+    {
+      "id": "C4",
+      "text": "I feel worthless."
+    },
+    {
+      "id": "C5",
+      "text": "I feel distant or cut off from people."
+    },
+    {
+      "id": "C6",
+      "text": "I find it hard to stay emotionally close to people."
+    },
+    {
+      "id": "C7",
+      "text": "Created concern or distress about your relationships or social life?"
+    },
+    {
+      "id": "C8",
+      "text": "Affected your work or ability to work?"
+    },
+    {
+      "id": "C9",
+      "text": "Affected any other important parts of your life such as parenting, or school or college work, or other important activities?"
+    }
+  ],
+  "intro": "Please identify the experience that troubles you most and answer the questions in relation to this experience.",
+  "event_fields": {
+    "description": "Brief description of the experience",
+    "time_since": [
+      "less than 6 months ago",
+      "6 to 12 months ago",
+      "1 to 5 years ago",
+      "5 to 10 years ago",
+      "10 to 20 years ago",
+      "more than 20 years ago"
+    ]
+  },
+  "section_instructions": {
+    "P1-P6": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month.",
+    "P7-P9": "In the past month have the above problems:",
+    "C1-C6": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you.",
+    "C7-C9": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+  },
+  "clusters": {
+    "re_experiencing": [
+      "P1",
+      "P2"
+    ],
+    "avoidance": [
+      "P3",
+      "P4"
+    ],
+    "current_threat": [
+      "P5",
+      "P6"
+    ],
+    "affective_dysregulation": [
+      "C1",
+      "C2"
+    ],
+    "negative_self_concept": [
+      "C3",
+      "C4"
+    ],
+    "disturbed_relationships": [
+      "C5",
+      "C6"
+    ]
+  },
+  "dimensional": {
+    "PTSD": {
+      "items": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6"
+      ],
+      "range": [
+        0,
+        24
+      ]
+    },
+    "DSO": {
+      "items": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "range": [
+        0,
+        24
+      ]
+    },
+    "cluster_ranges": [
+      0,
+      8
+    ],
+    "excluded_from_symptom_totals": [
+      "P7",
+      "P8",
+      "P9",
+      "C7",
+      "C8",
+      "C9"
+    ]
+  },
+  "algorithm": {
+    "endorsement": "integer >=2 (underlined > in DOCX means >=; not >2)",
+    "ptsd_requirements": "any P1/P2 endorsed AND any P3/P4 AND any P5/P6 AND any P7/P8/P9",
+    "dso_requirements": "any C1/C2 endorsed AND any C3/C4 AND any C5/C6 AND any C7/C8/C9",
+    "mutually_exclusive": "CPTSD pattern if PTSD and DSO requirements; PTSD-only pattern if PTSD and not DSO; neither otherwise. DSO alone does not establish either.",
+    "clinical_label": "Self-report algorithm pattern / provisional assessment for clinician review, never diagnosis",
+    "total_cutoffs": "Explicitly disallowed by developer for caseness"
+  },
+  "trauma_requirement": "Anchor to identified troubling event; do not silently replace with a DSM-5 gate. ICD-11 qualifying exposure and clinical relevance need separate clinical review if interpreting caseness.",
+  "remaining": [
+    "Preserve both impairment sections and different P/C time instructions",
+    "Explicit clinical exposure/interpretation workflow for any provisional algorithm output",
+    "Source-to-UI comparison, >=2 boundary and mutual-exclusivity tests",
+    "No validated RU form verified in this task"
+  ]
+}

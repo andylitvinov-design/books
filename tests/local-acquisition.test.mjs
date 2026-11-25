@@ -17,7 +17,7 @@ test('the English Maps entry exposes only the approved local acquisition offers'
     'business-decision-constellations',
     'reiki-energy-work',
   ])
-  assert.equal(entry.selfCheck.href, '/en/app')
+  assert.equal(entry.selfCheck.href, '/en/client#cabinet-tests')
   assert.doesNotMatch(JSON.stringify(entry), /psychotherapist|homeopath|cure/i)
 })
 
@@ -40,25 +40,35 @@ test('acquisition events are an allowlist and never describe personal or assessm
   assert.doesNotMatch(JSON.stringify(ACQUISITION_EVENTS), /answer|score|email|name|health/i)
 })
 
-test('the public Home and Services surfaces consume the single local acquisition model', () => {
-  const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8')
+test('public Home and Services use four shared offers without exposing private answers', () => {
+  const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8');
+  const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../components/services-solutions.tsx', import.meta.url), 'utf8');
+  const offers = readFileSync(new URL('../data/core-service-offers.ts', import.meta.url), 'utf8');
+  assert.match(home, /LOCAL_ACQUISITION/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
+  assert.match(services, /<ServicesSolutions locale=/);
+  assert.doesNotMatch(services, /<CatalogShowcase/);
+  assert.match(ui, /coreServiceOffers\(locale\)/);
+  assert.match(offers, /dao-health-profile/);
+  assert.match(offers, /alchemy-of-soul/);
+  assert.match(offers, /hypnotherapy-course/);
+});
+
+test('Services exposes source-backed method videos after service cards, booking and testimonials', () => {
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
-  const styles = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
+  const start = services.indexOf('<details className={solutionStyles.extra} id="method-videos" open>')
+  const end = services.indexOf('</details>', start)
+  const videoSection = services.slice(start, end)
 
-  assert.match(home, /LOCAL_ACQUISITION/)
-  assert.match(services, /LOCAL_ACQUISITION/)
-  assert.match(styles, /\.service-home-self-check/)
-})
-
-test('the local acquisition service cards use only registered page-video slots', () => {
-  const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
-  const acquisitionCardsStart = services.indexOf('{entry.services.map')
-  const acquisitionCardsEnd = services.indexOf('</section>', acquisitionCardsStart)
-  const acquisitionCards = services.slice(acquisitionCardsStart, acquisitionCardsEnd)
-
-  assert.doesNotMatch(acquisitionCards, /PageVideo/)
-  assert.match(services, /current\.cards\.map/)
-  assert.match(services, /PageVideo slot=\{"service-" \+ id\}/)
+  assert.ok(start > services.indexOf('<ServicesSolutions'))
+  assert.ok(start > services.indexOf('<PersonalTestimonials'))
+  assert.ok(services.indexOf('<PersonalTestimonials') > services.indexOf('<PublicConsultationCta'))
+  assert.match(videoSection, /PageVideo slot="services-intro"/)
+  assert.match(videoSection, /method-hypnotherapy/)
+  assert.match(videoSection, /method-constellations/)
+  assert.match(videoSection, /PageVideo slot="consultation"/)
+  assert.doesNotMatch(services.slice(services.indexOf('<main className='), start), /<PageVideo/)
 })
 
 test('event instrumentation is consent-gated and has no personal-data payload path', () => {

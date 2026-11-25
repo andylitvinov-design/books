@@ -28,7 +28,7 @@ test('the lightweight mode is opt-in for Russian About, not testimonials or Engl
 test('minimal mode keeps accessible title and collapsed transcript without a large caption panel', () => {
   const minimal = player.split('{minimal ? (')[1].split(') : (')[0];
   assert.match(minimal, /styles.accessibleTitle/);
-  assert.match(minimal, /<details className="site-video-transcript">/);
+  assert.match(minimal, /<details ref=\{transcriptRef\} className="site-video-transcript">/);
   assert.match(minimal, /text.transcriptShort/);
   assert.match(minimal, /site-video-ai-badge/);
   assert.doesNotMatch(minimal, /site-video-title|site-video-description|site-video-duration-text|<details[^>]*\bopen/);
@@ -38,7 +38,17 @@ test('minimal mode keeps accessible title and collapsed transcript without a lar
 
 test('playback remains click-gated and uses the unchanged stable provider embed', () => {
   assert.match(player, /useState\(false\)/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.doesNotMatch(player, /<video|setInterval|fetch\(/);
 });
+
+test('RU About retains internal-only player after transcript and EN About retains ten original videos',()=>{
+  const script=readFileSync(new URL('../scripts/verify-ru-about-video.mjs',import.meta.url),'utf8')
+  assert.match(script,/await expect\(intro\.locator\('\.site-video-watch-link'\)\)\.toHaveCount\(0\)/)
+  assert.match(script,/await expect\(intro\.locator\('\.site-video-more'\)\)\.toContainText/)
+  assert.match(script,/data-personal-testimonials="about"/)
+  assert.match(script,/toHaveCount\(10\)/)
+  assert.match(page,/internalOnly/)
+})
+

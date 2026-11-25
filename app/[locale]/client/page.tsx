@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import "./client-teal.css";
 import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { ClientAssessmentInvite } from "@/components/client-assessment-invite";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -13,12 +15,12 @@ type PageProps = { params: Promise<{ locale: string }> };
 
 const copy = {
   en: {
-    title: "Personal Cabinet — Holistic House",
-    description: "Google sign-in, guest self-observation tests and private Holistic House results.",
+    title: "Free wellbeing monitoring | Holistic House",
+    description: "Take available self-assessments without registration. See your scales immediately and receive a free personal analysis after you choose to sign in to your Cabinet. Not a medical diagnosis.",
   },
   ru: {
-    title: "Личный кабинет — Holistic House",
-    description: "Вход через Google, тесты без регистрации и приватные результаты Holistic House.",
+    title: "Бесплатный мониторинг состояния | Holistic House",
+    description: "Пройдите доступные тесты без регистрации, посмотрите шкалы и баллы. Бесплатные пояснения и персональный анализ — после входа в кабинет. Не медицинский диагноз.",
   },
 } as const;
 
@@ -33,6 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: current.title,
     description: current.description,
     robots: { index: false, follow: false },
+    referrer: 'no-referrer',
     alternates: {
       canonical: "/" + locale + "/client",
       languages: { ru: "/ru/client", en: "/en/client" },
@@ -48,12 +51,13 @@ export default async function ClientEntryPage({ params }: PageProps) {
   const typedLocale = locale as Locale;
   return (
     <main className="client-entry-shell cabinet-landing-shell" lang={typedLocale}>
-      <PublicSiteHeader locale={typedLocale} />
+      <PublicSiteHeader locale={typedLocale} showAssessmentStrip={false} />
       <CabinetLanding
         locale={typedLocale}
         appAvailable={appEnabled()}
         legacySelector={session?.selector}
       />
+      <ClientAssessmentInvite locale={typedLocale} />
     </main>
   );
 }

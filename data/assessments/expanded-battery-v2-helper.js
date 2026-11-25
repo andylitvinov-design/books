@@ -9,9 +9,11 @@ export function buildFunDefinition(config, locale) {
   }))
   const dimensionClass =
     config.axis === 'function' ? 'function' : config.axis === 'state' ? 'state' : 'resources'
-  const timeframe = ['hh-sleep-reset','hh-evening-landing','hh-workload-weather','hh-money-pressure','hh-daily-rhythm'].includes(config.key)
-    ? 'past-7-days'
-    : 'right-now'
+  const timeframe = config.timeframe || (
+    ['hh-sleep-reset','hh-evening-landing','hh-workload-weather','hh-money-pressure','hh-daily-rhythm'].includes(config.key)
+      ? 'past-7-days'
+      : 'right-now'
+  )
   return {
     id: config.ids[locale],
     key: config.key,
@@ -26,7 +28,7 @@ export function buildFunDefinition(config, locale) {
     source: {
       title: `Holistic House — ${config.titles.en}`,
       status: 'original-playful-non-diagnostic-reflection',
-      reviewedAt: '2026-10-06',
+      reviewedAt: config.reviewedAt || '2026-10-06',
     },
     answerScale: { min: 0, max: 4 },
     responseAnchors: locale === 'ru'

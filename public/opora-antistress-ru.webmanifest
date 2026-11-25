@@ -1,0 +1,26 @@
+{
+  "id": "/opora-antistress",
+  "name": "ОПОРА — Антистресс",
+  "short_name": "ОПОРА",
+  "description": "Короткие уроки антистресс и личная практика",
+  "start_url": "/ru/app/course?program=stress",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ecfafa",
+  "theme_color": "#123e53",
+  "icons": [
+    {
+      "src": "/opora-course-icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/opora-course-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

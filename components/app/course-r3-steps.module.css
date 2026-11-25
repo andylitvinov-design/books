@@ -1,0 +1,965 @@
+.section{display:grid;gap:15px;padding:clamp(18px,3vw,29px);min-width:0}
+.section h2{font-size:clamp(23px,3vw,30px);line-height:1.22;margin:0}
+.section h3{font-size:19px;line-height:1.3;margin:5px 0 0}
+.section>p,.progress p{color:#716457;font-size:15px;line-height:1.55;margin:0}
+.small{font-size:12.5px!important;color:#71685f!important;line-height:1.5!important}
+.topics{display:flex;gap:8px;flex-wrap:wrap}
+.topics button{border:1px solid #e2d4c4;background:#fffefa;color:#4f473e;border-radius:23px;min-height:39px;padding:8px 13px;font-size:13px;line-height:1.25}
+.topics button[aria-pressed=true]{background:#e4efe6;border-color:#7daf95;color:#295e4e;font-weight:750}
+.details{display:grid;gap:12px;background:#fffcf7;border:1px solid #e4d6c7;padding:13px 15px;border-radius:15px}
+.details summary{cursor:pointer;font-size:14px;font-weight:700;color:#425f52}
+.details[open]>*:not(summary){margin-top:11px}
+.details label,.formBottom label:not(.consent){display:block;font-size:14px;font-weight:700;color:#4b4138}
+.details textarea,.formBottom input:not([type=checkbox]){width:100%;border:1px solid #d8cbbd;border-radius:12px;padding:13px 14px;color:#4a4035;background:#fffefa;font:inherit;font-size:15px}
+.details textarea{min-height:100px;resize:vertical}
+.cta{min-height:50px;display:flex;gap:8px;justify-content:center;align-items:center;max-width:100%}
+.secondary,.controls a,.link{display:inline-flex;align-items:center;gap:7px;color:#366e5a;font-weight:750;font-size:13px;text-align:left}
+.secondary{border:1px solid #c2d6c8;background:#f3f8f0;padding:10px 13px;border-radius:12px;cursor:pointer;justify-content:center}
+.warning{background:#fff5ec;border:1px solid #d9ada0;padding:12px;border-radius:12px}
+.sectionHeading{display:flex;justify-content:space-between;align-items:center;gap:13px;flex-wrap:wrap}
+.testList{display:grid;gap:9px;max-height:940px;overflow-y:auto}
+.testRow{display:flex;align-items:flex-start;gap:11px;border:1px solid #e2d9cc;background:#fffdf8;border-radius:17px;padding:13px;cursor:pointer;min-width:0}
+.testRow[data-checked=true]{border-color:#9ac3ab;background:#f3f8f2}
+.testRow>input,.scaleOption>input{accent-color:#336f60;width:19px;height:19px;flex:none;margin:3px 0 0}
+.testBody{display:grid;gap:6px;min-width:0;flex:1}
+.testBody strong{font-size:14px;line-height:1.38;color:#3a342f}
+.testBody small{font-size:12px;line-height:1.3;color:#786a5e}
+.testBody .completed,.completed{color:#33745c;font-weight:700}
+.testBody .completed{display:flex;gap:3px;align-items:center}
+.pending{color:#916b4f!important}
+.match{flex:none;color:#397262;font-weight:800;font-size:17px;text-align:right}
+.match small,.scaleOption em small{display:block;max-width:80px;font-weight:600;font-size:10px;color:#74685b;line-height:1.3}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.selectionActions{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:14px;border:1px solid #d6e0d0;background:#f4f7f0;border-radius:15px}
+.selectionActions strong{font-size:14px;color:#4f6d59}
+.progress{border:1px solid #e5d9c9;background:#fcf7ee;border-radius:17px;padding:17px;display:grid;gap:13px}
+.progress>strong{font-size:14px;color:#366959}
+.pendingList{display:grid;gap:6px}
+.pendingList>div{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fffefa;padding:10px 12px;border-radius:11px;border:1px solid #ece4d9;font-size:13px}
+.pendingList>div span{display:flex;gap:8px;align-items:center;min-width:0;overflow-wrap:anywhere}
+.pendingList>div small{white-space:nowrap;color:#7d6a5c;font-size:11px}
+.ctaLink{display:flex;gap:9px;justify-content:center;align-items:center;padding:12px 15px;border:1px solid #b2cfb6;color:#346553;font-weight:700;border-radius:13px}
+.link{justify-self:start}
+.scaleOptions{display:grid;gap:9px}
+.scaleOption{display:flex;align-items:flex-start;gap:11px;background:#fffefa;border:1px solid #e4d9cb;border-radius:15px;padding:13px;cursor:pointer}
+.scaleOption[data-checked=true]{background:#f0f7ef;border-color:#8baf97}
+.scaleOption>span{flex:1;display:grid;gap:5px;min-width:0}
+.scaleOption strong{font-size:14px;line-height:1.4}
+.scaleOption small{font-size:12px;color:#7b6c60;line-height:1.45}
+.scaleOption em{font-style:normal;color:#446f56;font-size:16px;font-weight:800;text-align:right}
+.scaleRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #ebe0d2;padding:10px 0}
+.scaleRow>div:first-child{display:grid;gap:4px;min-width:0}
+.scaleRow strong{font-size:13px}
+.scaleRow small{color:#776b60;font-size:11.5px;line-height:1.35}
+.score{display:grid;gap:6px;text-align:right;flex:none}
+.score strong{font-variant-numeric:tabular-nums;color:#326958}
+.score a{color:#397562;font-size:12px;text-decoration:underline}
+.allScales{margin-top:8px;max-height:480px;overflow-y:auto}
+.formBottom{display:grid;gap:11px;padding:16px;background:#f5f8f2;border:1px solid #dfe9de;border-radius:17px}
+.formBottom .consent{display:flex;align-items:flex-start;gap:10px;line-height:1.45;font-weight:500;font-size:13px}
+.formBottom .consent input{width:18px;height:18px;flex:none;margin-top:2px;accent-color:#356b58}
+@media(max-width:530px){
+ .section{gap:13px;padding:18px 15px}
+ .section h2{font-size:25px}
+ .testList{max-height:760px}
+ .testRow{padding:11px 10px;gap:8px}
+ .testBody strong{font-size:13px}
+ .match{font-size:14px}
+ .match small{max-width:62px}
+ .selectionActions{display:grid;gap:9px}
+ .selectionActions>.cta{width:100%}
+ .cta{width:100%}
+ .pendingList>div{font-size:12px}
+ .scaleOption{padding:11px}
+ .scaleOption em{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.section *{scroll-behavior:auto;transition:none;animation:none}}
+
+
+.measuredPanel{display:grid;gap:10px;border:1px solid #e1e9de;border-radius:18px;background:linear-gradient(145deg,#fafdf8,#f9f6ed);padding:16px}
+.profileHeading{display:grid;gap:5px}
+.profileHeading h3{margin:0}
+.profileHeading p{margin:0}
+.measuredPanel .allScales{max-height:500px;overflow:auto;padding-right:3px}
+.scaleDetail{display:grid;gap:5px;min-width:0;flex:1}
+.scaleMeter{width:100%;height:11px;max-width:440px;accent-color:#568271}
+.scaleMeter::-webkit-meter-bar{border:0;border-radius:999px;background:#e9e1d5}
+.scaleMeter::-webkit-meter-optimum-value,.scaleMeter::-webkit-meter-suboptimum-value,.scaleMeter::-webkit-meter-even-less-good-value{border-radius:999px;background:#568271}
+.measuredPanel .scaleRow{gap:16px;padding:13px 0}
+@media(max-width:530px){.measuredPanel{padding:13px 11px}.measuredPanel .allScales{max-height:430px}.measuredPanel .scaleRow{gap:9px}}
+
+/* Compact final course-testing checkpoint and authentic questionnaire scores. */
+.completeScreen{gap:19px}
+.completeHero{display:grid;justify-items:center;text-align:center;gap:9px;border:1px solid #c9dfcf;background:linear-gradient(155deg,#e8f4ec,#fbfaf3);border-radius:21px;padding:23px 16px}
+.completeHero h2{max-width:540px;color:#2c6e5a;font-size:clamp(23px,4vw,32px)}
+.completeHero p{max-width:510px;margin:0;color:#675e56;font-size:15px;line-height:1.5}
+.completeHero>strong{font-weight:800;color:#326c57}
+.completeSymbol{display:grid;place-items:center;border:2px solid #9ac5ad;background:#fff;width:58px;height:58px;border-radius:50%;color:#30735e}
+.briefSummary{display:grid;gap:12px;border:1px solid #e5dcd0;background:#fffef9;border-radius:19px;padding:17px}
+.briefSummary h3{margin:0!important}
+.summaryTest{display:grid;gap:9px;border-top:1px solid #e5e6db;padding:13px 0 2px}
+.summaryHeading{display:flex;gap:8px;justify-content:space-between;align-items:center}
+.summaryHeading strong{font-size:15px}
+.summaryHeading a{font-size:12px;color:#31735f;display:inline-flex;align-items:center;gap:4px}
+.briefScales{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.briefScales li{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(80px,1fr) auto;gap:12px;align-items:center}
+.briefScales li>span{font-size:13px;line-height:1.4;color:#574e45}
+.briefScales meter{width:100%;height:11px;accent-color:#538874}
+.briefScales strong{font-size:14px;color:#386959;white-space:nowrap}
+.briefScales small{font-size:11px;color:#756d64;font-weight:400}
+.ctaLink{cursor:pointer;font:inherit}
+.ctaLink:disabled{opacity:.55;cursor:wait}
+@media(max-width:600px){.briefSummary{padding:12px}.briefScales li{grid-template-columns:minmax(0,1fr) 90px auto;gap:7px}.briefScales li>span{font-size:12px}.briefScales strong{font-size:12px}.briefScales small{font-size:10px}}
+@media(max-width:370px){.briefScales li{grid-template-columns:minmax(0,1fr) auto}.briefScales meter{grid-column:1 / -1;grid-row:2;max-width:none}}
+
+/*
+ * A single unmistakable primary action during the test phase.
+ * The test-selection editor is secondary; the next test is the only
+ * saturated CTA until the full course battery has finished.
+ */
+.progress > button.ctaLink {
+  display: flex;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 18px;
+  background: #a53f34;
+  color: #fff;
+  border: 1px solid #a53f34;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: clamp(16px, 2.2vw, 18px);
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 5px 14px rgb(101 40 34 / 12%);
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.progress > button.ctaLink:hover:not(:disabled) {
+  background: #842e28;
+  border-color: #842e28;
+}
+.progress > button.ctaLink:disabled {
+  background: #a53f34;
+  border-color: #a53f34;
+  color: #fff;
+  box-shadow: none;
+  opacity: .55;
+}
+.progress > button.ctaLink:focus-visible {
+  outline: 3px solid #d7a567;
+  outline-offset: 3px;
+}
+.selectionActions > button.editSelection {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-height: 43px;
+  padding: 9px 14px;
+  border: 1px solid #becfbe;
+  border-radius: 12px;
+  background: #fffefa;
+  color: #496a59;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.selectionActions > button.editSelection:hover:not(:disabled) {
+  background: #edf5ed;
+  border-color: #9dbda9;
+}
+@media (max-width: 530px) {
+  .progress > button.ctaLink { min-height: 58px; padding: 13px 12px; font-size: 16px; }
+  .selectionActions > button.editSelection { justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress > button.ctaLink { transition: none; }
+}
+
+/* My Course: use the completed-results card system throughout focus selection.
+   Two actions, always: saturated primary burgundy and quiet white alternative. */
+.textEdit{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:5px 7px;min-height:30px;border:0;background:transparent;
+  color:#496d5b;text-decoration:underline;font-size:12px;font-weight:650;cursor:pointer
+}
+.textEdit:disabled{opacity:.55}
+.recommendedPanel{
+  display:grid;gap:16px;border:1px solid #dce5d8;border-radius:19px;
+  background:linear-gradient(155deg,#f2f8f1,#fffdf9);
+  padding:clamp(15px,2.6vw,22px)
+}
+.recommendedHeader{display:grid;gap:8px}
+.recommendKicker{
+  margin:0!important;font-size:11px!important;line-height:1.4!important;
+  font-weight:800;letter-spacing:.1em;color:#34735d!important
+}
+.recommendedHeader h3{font:800 clamp(19px,3.4vw,24px)/1.3 system-ui,-apple-system,sans-serif!important;color:#39362f;margin:0!important}
+.recommendedHeader>p:not(.recommendKicker){
+  margin:0;color:#6a635b;font-size:13px;line-height:1.55
+}
+.suggestedScales{display:grid;gap:9px;list-style:none;padding:0;margin:0}
+.suggestedScales li{
+  display:flex;align-items:flex-start;gap:11px;min-width:0;
+  border:1px solid #e4e6dd;background:#fffefa;border-radius:15px;padding:13px
+}
+.suggestedScales li>div{display:grid;gap:3px;min-width:0}
+.suggestedScales strong{font-size:15px;line-height:1.35;color:#443c34;overflow-wrap:anywhere}
+.suggestedScales small{font-size:11px;line-height:1.45;color:#7b6e62}
+.suggestedScales li p{font-size:12px;line-height:1.5;color:#546a59;margin:1px 0 0}
+.suggestNumber{
+  display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:50%;
+  background:#e2efe5;color:#2e755c;font-size:14px;font-weight:850
+}
+.recommendNote{font-size:11.5px!important;line-height:1.5;color:#766e65!important;margin:0!important}
+.focusActions{display:grid;gap:10px}
+.focusActions > button.burgundyPrimary{
+  display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+  min-height:61px;padding:15px 18px;border:1px solid #b64b31!important;
+  background:#b64b31!important;color:#fff!important;border-radius:15px;
+  text-align:center;font:800 clamp(15px,2.2vw,17px)/1.35 system-ui,-apple-system,sans-serif;
+  box-shadow:0 5px 15px rgb(117 48 35 / 12%);cursor:pointer;white-space:normal
+}
+.focusActions > button.burgundyPrimary > span{min-width:0;flex:1;overflow-wrap:anywhere}
+.focusActions > button.burgundyPrimary > svg{flex:none}
+.focusActions > button.burgundyPrimary:hover:not(:disabled){
+  background:#923727!important;border-color:#923727!important
+}
+.focusActions > button.burgundyPrimary:disabled{opacity:.55;box-shadow:none}
+.focusActions > button.whiteSecondary{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  min-height:54px;padding:13px 16px;border:1px solid #dfd2c2!important;
+  background:#fffdf9!important;color:#4c423a!important;border-radius:15px;
+  text-align:center;font:730 clamp(14px,2.2vw,16px)/1.35 system-ui,-apple-system,sans-serif;
+  cursor:pointer;white-space:normal
+}
+.focusActions > button.whiteSecondary:hover:not(:disabled){background:#f6f5ee!important;border-color:#c4d4c6!important}
+.focusActions > button:focus-visible{outline:3px solid #c69868;outline-offset:3px}
+
+/* The optional picker is a separate calm screen, not seven oversized cards. */
+.focusPicker{gap:15px}
+.pickerHero{
+  display:grid;gap:10px;padding:clamp(16px,2.8vw,22px);
+  border:1px solid #d9e3d7;border-radius:19px;
+  background:linear-gradient(135deg,#f0f7ef,#fffefa)
+}
+.pickerHero h2{font:800 clamp(22px,3.7vw,28px)/1.24 system-ui,-apple-system,sans-serif!important;margin:0!important;color:#39362f}
+.pickerHero > p:not(.recommendKicker){color:#75695f;font-size:13px;line-height:1.5;margin:0}
+.pickerCounter{display:flex;align-items:center;gap:10px;color:#376e58;font-size:12px}
+.pickerCounter span{padding:6px 10px;border:1px solid #c4dfcb;background:#fffef9;border-radius:11px;font:850 19px/1 system-ui,-apple-system,sans-serif}
+.pickerCounter strong{font-weight:700}
+.pickerListPanel{
+  display:grid;gap:12px;padding:clamp(12px,2.3vw,19px);
+  border:1px solid #e6d9ca;border-radius:19px;background:#fffefa
+}
+.pickerListHeading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pickerListHeading strong{font-size:15px;color:#4a4038}
+.pickerListHeading small{font-size:11px;color:#806f60;white-space:nowrap}
+.compactScaleList{display:grid;gap:7px;max-height:min(560px,58vh);overflow-y:auto;overscroll-behavior:contain;padding:3px;scrollbar-gutter:stable}
+.compactScale{
+  display:grid;grid-template-columns:20px minmax(0,1fr) 18px;gap:11px;
+  align-items:start;min-width:0;border:1px solid #e8e0d5;border-radius:13px;
+  background:#fff;padding:12px 13px;cursor:pointer
+}
+.compactScale[data-checked=true]{border-color:#9fbfaa;background:#f2f8f1}
+.compactScale:focus-within{outline:2px solid #86a990;outline-offset:2px}
+.compactScale > input{appearance:auto;width:19px;height:19px;margin:2px 0 0;accent-color:#34745d;cursor:pointer}
+.compactScaleContent{display:grid;gap:4px;min-width:0}
+.compactScaleTitle{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.compactScaleContent strong{font:780 14px/1.3 system-ui,-apple-system,sans-serif;color:#443b34}
+.compactScaleTitle em{
+  color:#347055;background:#e3f0e5;font-size:10px;font-style:normal;
+  line-height:1.2;font-weight:750;border-radius:7px;padding:4px 6px
+}
+.compactScaleContent small{font-size:11.5px;line-height:1.35;color:#797168}
+.compactScaleContent > span:last-child:not(.compactScaleTitle){font-size:11.5px;line-height:1.4;color:#5b7462}
+.checkedMark{color:#37775f;margin-top:2px}
+.pickerDisclaimer{margin:0!important;color:#766c62;font-size:12px;line-height:1.5}
+.trackingSetup{
+  display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;
+  border:1px solid #dce7d9;border-radius:19px;background:#f1f7f0;
+  padding:clamp(14px,2.5vw,20px)
+}
+.trackingSetup>div{display:grid;gap:9px;min-width:0}
+.trackingIcon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#fffef9;color:#39705b}
+.trackingSetup h3{font:800 18px/1.35 system-ui,-apple-system,sans-serif!important;margin:0!important;color:#443e35}
+.trackingSetup p{font-size:12.5px;line-height:1.5;color:#756e63;margin:0}
+.trackingSetup label{font-size:13px;font-weight:750}
+.trackingSetup input{
+  display:block;width:100%;min-width:0;padding:12px 13px;border:1px solid #dacbbc;
+  border-radius:12px;background:#fffdf9;color:#3f3932;font:500 14px system-ui,-apple-system,sans-serif
+}
+.trackingSetup small{font-size:11px;line-height:1.5;color:#756c62}
+.pickerFooter{display:grid;gap:10px;padding:5px 0 0}
+.pickerFooter>p{font-size:12px;line-height:1.5;color:#776d63;margin:0}
+.pickerFooter>p.pickerValidation{color:#995638;font-weight:700}
+@media(max-width:530px){
+  .recommendedPanel{gap:13px;padding:14px 12px}
+  .suggestedScales li{padding:11px}
+  .suggestedScales strong{font-size:14px}
+  .focusActions > button.burgundyPrimary{padding:13px 12px;min-height:57px;font-size:15px}
+  .focusActions > button.whiteSecondary{min-height:51px;padding:11px 12px}
+  .pickerHero{padding:16px 13px}
+  .pickerListPanel{padding:12px 10px}
+  .compactScaleList{max-height:54vh}
+  .compactScale{gap:9px;padding:11px 9px}
+  .compactScaleContent strong{font-size:13px}
+  .trackingSetup{grid-template-columns:1fr;padding:14px 12px}
+  .trackingIcon{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .focusActions > button.burgundyPrimary,.focusActions > button.whiteSecondary{transition:none}
+}
+
+/* A screening count is discrete: give its existing caution a full-width row. */
+.briefScales li[data-course-screening-scale="true"]{grid-template-columns:minmax(0,1fr) auto}
+.briefScales li[data-course-screening-scale="true"] > [data-course-screening-count]{grid-column:1 / -1;grid-row:2}
+.briefScales li[data-course-screening-scale="true"] > strong{color:#574e45}
+/* Visible informed choice of the main skill before launching the V3 cycle. */
+.primaryScaleChoice{display:grid;gap:9px;margin:16px 0;padding:15px 17px;border:1px solid #dfd2c2;border-radius:15px;background:#fffbf4}
+.primaryScaleChoice label{font-size:15px;font-weight:800;color:#743f31}
+.primaryScaleChoice select{width:100%;min-height:45px;max-width:100%;padding:10px 12px;border:1px solid #cdbda7;border-radius:10px;background:#fff;color:#3e382f;font-size:15px}
+.primaryScaleChoice select:focus-visible{outline:3px solid #e3b3a3;outline-offset:2px}
+.primaryScaleChoice p{margin:0!important;font-size:13px;line-height:1.6;color:#6d6359}
+@media(max-width:530px){.primaryScaleChoice{padding:13px}}
+
+
+/* V6 blue-turquoise guided setup, recommendations and test confirmations. */
+.section{color:#173f5d}
+.section h2,.section h3{color:#184965}
+.section>p,.progress p{color:#54788a}
+.topics button,.testRow,.scaleOption{border-color:#d1e9ed;background:#fff}
+.topics button[aria-pressed=true],.testRow[data-checked=true],.scaleOption[data-checked=true]{background:#e6f9f7;border-color:#25b5bd;color:#146e82}
+.topics button[aria-pressed=true]{font-weight:800}
+.testRow>input,.scaleOption>input{accent-color:#079bae}
+.testBody strong{color:#214961}
+.match{color:#0d96aa}
+.secondary{background:#ecfafa;border-color:#b9dfe4;color:#147e94}
+.selectionActions,.progress,.measuredPanel,.formBottom,.primaryScaleChoice{background:#f5fcfe;border-color:#cbe8ec}
+.selectionActions strong,.progress>strong,.scaleOption em,.score strong{color:#158c9d}
+.section .progress > button.ctaLink,.section .focusActions > button.burgundyPrimary,.section .cta:global(.hh-primary){background:linear-gradient(100deg,#17b8c7,#078fa8)!important;color:#fff!important;border:1px solid #078da5!important;border-bottom:4px solid #07778b!important;border-radius:14px!important}
+.section .focusActions > button.whiteSecondary{background:#fff!important;color:#157e95!important;border-color:#cde7eb!important}
+.primaryScaleChoice label{color:#176c82}
+.primaryScaleChoice select{border-color:#b8dce3;color:#174a65}
+.completeHero{background:linear-gradient(145deg,#e3f8f9,#ffffff);border-color:#b9e5e7}
+.completeHero h2,.completeHero>strong{color:#178c9e}
+.completeSymbol{color:#059daf;border-color:#85cfd8}
+@media(max-width:530px){.section{padding:17px 13px}.testRow{border-radius:14px}.section .progress > button.ctaLink{min-height:52px!important}}
+
+/* A chosen course remains recognizable during the existing test wizard. */
+.programmeContext{display:inline-flex!important;align-items:center;gap:5px;flex-wrap:wrap;justify-self:start;border:1px solid #a8e0e7;border-radius:999px;background:#e9fafa;color:#156984!important;padding:8px 13px;font-size:12px!important;line-height:1.4!important}
+.programmeContext strong{color:#155773}
+
+/* Anti-Stress intake: exactly one required self-report and visible optional tests. */
+.stressBaselineIntro{
+  display:grid;grid-template-columns:49px minmax(0,1fr);gap:13px;align-items:start;
+  padding:clamp(15px,2.5vw,22px);border:1px solid #acdce4;border-radius:18px;
+  background:linear-gradient(135deg,#e8f9fc,#f8fdfb);
+}
+.stressBaselineIntro > div{display:grid;gap:8px;min-width:0}
+.stressBaselineIntro strong{font:800 clamp(17px,2.5vw,21px)/1.3 system-ui,-apple-system,sans-serif;color:#154963}
+.stressBaselineIntro p{margin:0;color:#4d7483;font-size:13px;line-height:1.6}
+.baselineIcon{display:grid;place-items:center;width:47px;height:47px;border-radius:14px;background:#d4f1f6;color:#087e9a}
+.testRow[data-course-required-baseline="true"]{border:2px solid #438da6;background:#f0fbfd;cursor:default}
+.testRow[data-course-required-baseline="true"]>input{accent-color:#0d8197;opacity:1}
+.requiredBadge,.optionalBadge{display:inline-flex!important;align-items:center;justify-self:start;width:fit-content;
+  border:1px solid #b3d9e3;background:#dcf3f7;color:#166a7e!important;border-radius:8px;
+  padding:4px 8px;font-size:11px!important;line-height:1.3!important;font-weight:800}
+.optionalBadge{background:#f5f7f9;border-color:#dbe5e9;color:#5b7080!important;font-weight:650}
+@media(max-width:530px){.stressBaselineIntro{grid-template-columns:1fr;gap:9px;padding:15px 13px}
+  .baselineIcon{width:39px;height:39px;border-radius:12px}.stressBaselineIntro strong{font-size:17px}
+  .stressBaselineIntro p{font-size:12px}}
+
+/* Start-of-course Anti-Stress measures. No color suggests a clinical grade. */
+.stressMeasureProtocol{display:grid;gap:8px;margin:14px 0;padding:15px 17px;background:#edf3f9;border:1px solid #cadaea;border-radius:13px}
+.stressMeasureProtocol>strong{font-size:15px;color:#1c3856}
+.stressMeasureProtocol p{font-size:12px;line-height:1.55;color:#4c6680;margin:0}
+.stressMeasureProtocol ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:5px 0 0;padding:0}
+.stressMeasureProtocol li{display:grid;gap:4px;min-width:150px;padding:10px 12px;background:#fff;border:1px solid #dce6ef;border-radius:10px}
+.stressMeasureProtocol li>span{font-size:12px;font-weight:800;color:#1e3c5c}
+.stressMeasureProtocol li>small{font-size:11px;color:#5a718a}
+.stressMeasureProtocol li>strong{font-size:11px;color:#793852}
+.primaryOutcomeTag{display:inline-block;margin:0 7px 0 0;padding:4px 6px;border-radius:5px;background:#f4e7ed;color:#753751;font-size:9px;font-weight:800;font-style:normal;letter-spacing:.03em}
+.completeScreen [data-antistress-measure-role="primary"]{background:#f9f0f4;border-radius:8px}
+@media(max-width:530px){.stressMeasureProtocol{padding:12px}.stressMeasureProtocol li{flex:1 1 140px;min-width:0}}
+
+.originalLanguage{display:inline-block;margin:4px 8px 4px 0;color:#687c92;font-size:10px;font-weight:700}
+
+
+/* OPORA direct journey: three visible questionnaires, not a catalogue. */
+.compactTests{gap:11px;max-width:690px;margin-inline:auto;width:100%;padding:clamp(18px,3vw,24px)!important}
+.compactTests h2{color:#173f59;font-size:clamp(24px,4vw,30px);line-height:1.17}
+.compactEyebrow{font:800 11px/1.35 system-ui,-apple-system,sans-serif!important;color:#008ba2!important;letter-spacing:.12em}
+.compactTests .compactLead{font-size:14px;line-height:1.47;color:#52798a;margin:0}
+.shortTestList{display:grid;gap:8px;margin:3px 0}
+.shortTestRow{display:flex;align-items:center;gap:11px;min-height:63px;border:1px solid #d3e4e8;border-radius:14px;
+  padding:11px 12px;background:#fff;cursor:pointer}
+.shortTestRow[data-checked=true]{border-color:#8dcbd1;background:#f2fbfb}
+.shortTestRow[data-course-required-baseline=true]{border:1.5px solid #56b5c1;background:#e9f9fb}
+.shortTestRow>input{width:20px;height:20px;flex:none;accent-color:#078fa6;margin:0}
+.shortTestBody{display:grid;gap:4px;min-width:0;flex:1}
+.shortTestBody strong{color:#173f59;font-size:14px;line-height:1.25}
+.shortTestBody small{font-size:11.5px;color:#57778a;line-height:1.35}
+.shortTestCheck{color:#168c7e;flex-shrink:0}
+.fastTestButton{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:53px;
+  padding:12px 14px;border:1px solid #088da2!important;border-bottom:4px solid #08768e!important;
+  border-radius:14px;background:linear-gradient(105deg,#18b7c7,#078ea7)!important;color:#fff!important;
+  font-size:16px;font-weight:800;cursor:pointer}
+.fastTestButton:disabled{opacity:.65;cursor:wait}
+.fastTestButton:focus-visible,.shortTestRow:focus-within{outline:3px solid #e9b566;outline-offset:3px}
+.shortTestExtras{display:flex;gap:6px 19px;justify-content:center;align-items:center;flex-wrap:wrap}
+.shortTestExtras button{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:6px 8px;border:0;
+  background:transparent;color:#087a96;font-size:12px;font-weight:750;cursor:pointer}
+.shortTestDetails{border-top:1px solid #d6e9eb;margin-top:2px;padding-top:12px;color:#587a8b}
+.shortTestDetails summary{cursor:pointer;color:#25687d;font-size:12px;font-weight:700}
+.shortTestDetails p{font-size:12px!important;line-height:1.5!important;color:#547587!important;margin-top:10px}
+.shortTestDetails a{display:inline-block;font-size:12px;color:#087d98;text-decoration:underline;margin-top:7px}
+@media(max-width:530px){.compactTests{padding:15px 13px!important;gap:10px}
+  .compactTests h2{font-size:25px}.shortTestRow{min-height:58px;padding:10px 11px}
+  .shortTestBody strong{font-size:13.5px}.shortTestBody small{font-size:11px}
+  .fastTestButton{min-height:51px;font-size:15px}}
+
+/* Pre-lesson confirmation: the chosen module is a draft until these
+   owner-scoped measurements are explicitly approved by the learner. */
+.scaleConfirmationJourney{display:grid;gap:14px;max-width:920px;min-width:0;margin-inline:auto;width:100%}
+.selectedModuleBar{display:flex;align-items:center;flex-wrap:wrap;gap:13px;
+  padding:clamp(15px,2.5vw,22px)!important;border:1px solid #b8e6eb!important;
+  background:linear-gradient(140deg,#effaff,#fff)!important}
+.selectedModuleBar>div{display:grid;gap:7px;min-width:0;flex:1 1 270px}
+.selectedModuleBar small{color:#0b8299;font-size:11px;font-weight:800;letter-spacing:.04em}
+.selectedModuleBar h2{font-size:clamp(19px,3vw,25px);line-height:1.25;color:#16334f;margin:0}
+.selectedModuleBar p{font-size:13px;line-height:1.5;color:#4c6979;margin:0}
+.selectedModuleBar strong{font-size:12px;color:#156b7f}
+.selectedModuleBar button.whiteSecondary{min-height:43px;padding:10px 13px;
+  border:1px solid #b9dfe4;border-radius:12px;background:#fff;color:#177e92;
+  font-weight:750;font-size:12px;cursor:pointer}
+.selectedModuleBar button.whiteSecondary:disabled{opacity:.55;cursor:wait}
+.selectedModuleBar button.whiteSecondary:focus-visible{outline:3px solid #e9b566;outline-offset:3px}
+.collapsibleSummary{border:1px solid #cde7eb;border-radius:15px;background:#fff;min-width:0;overflow:hidden}
+.collapsibleSummary>summary{cursor:pointer;padding:16px;color:#176b83;font-size:14px;font-weight:800;
+  list-style-position:inside}
+.collapsibleSummary>summary:focus-visible{outline:3px solid #e9b566;outline-offset:-3px}
+.collapsibleSummary[open]>summary{border-bottom:1px solid #d4e9ed}
+.collapsibleSummary>.briefSummary{border:0;box-shadow:none;padding:14px;background:transparent}
+@media(max-width:530px){.selectedModuleBar{padding:14px 12px!important}
+  .selectedModuleBar button.whiteSecondary{width:100%}
+  .collapsibleSummary>summary{padding:14px 12px}}
+
+
+/* OPORA mobile baseline: a single first-view decision. Long explanations stay
+   in the disclosure; extra questionnaires scroll inside the list, not past CTA.
+   No assessment data or server safeguards are changed by these styles. */
+.compactTests{max-width:760px;gap:8px;padding:14px 16px!important}
+.baselineHero{display:grid;gap:6px;padding:12px 14px;border:1px solid #c8e6e9;
+  border-radius:15px;background:linear-gradient(125deg,#f3fdfe,#eaf9fa 72%,#f9fffc);min-width:0}
+.baselineHero .compactEyebrow{margin:0!important}
+.baselineHero h2{font:500 clamp(23px,3.7vw,29px)/1.12 Georgia,serif;
+  color:#143f5c;letter-spacing:-.02em;margin:0}
+.baselineHero .compactLead{font-size:12.5px;line-height:1.33;color:#486e80;margin:0}
+.baselineTimeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.baselineTimeline>span{padding:4px 7px;border-radius:7px;background:#fff;border:1px solid #cde7ed;
+  color:#087e96;font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:1.2}
+.baselineArrow{color:#0b94a6;flex:none}
+.baselineHero .baselineContext{font-size:10.5px;line-height:1.3;color:#527685;margin:0}
+.baselineListIntro{display:grid;gap:3px;padding:0 2px}
+.baselineListIntro h3{margin:0;font-size:15px;color:#174d65;line-height:1.2}
+.baselineListIntro p{margin:0;font-size:11.5px;line-height:1.3;color:#5c7a88}
+.compactTests .baselineSaved{display:flex;align-items:center;gap:7px;
+  margin:0;border:1px solid #b8e0d5;border-radius:9px;padding:6px 9px;
+  background:#f0faf5;color:#286e61;font-size:11.5px;line-height:1.27;font-weight:700}
+.baselineSaved svg{flex:none}
+.compactTests .shortTestList{gap:6px;margin:0;max-height:clamp(155px,31dvh,245px);
+  overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.compactTests .shortTestRow{min-height:48px;padding:7px 10px;gap:9px;
+  transition:border-color .15s,background-color .15s}
+.compactTests .shortTestRow:hover{border-color:#7fc4d1}
+.compactTests .shortTestRow[data-checked=true]{background:#effbfc;border-color:#9bd8df}
+.compactTests .shortTestRow[data-course-required-baseline=true]{background:#eaf8fb;border-color:#63becb}
+.compactTests .shortTestBody{gap:3px}
+.compactTests .shortTestBody strong{font-size:13px;line-height:1.2}
+.compactTests .shortTestBody small{font-size:11px;line-height:1.22}
+.compactTests .fastTestButton{min-height:47px;margin:0;padding:9px 11px;font-size:14px}
+.compactTests .shortTestExtras{gap:5px 12px;justify-content:space-between}
+.compactTests .shortTestExtras button{min-height:29px;padding:3px 5px;font-size:11.5px}
+.compactTests .shortTestDetails{margin-top:0;padding-top:6px}
+.compactTests .shortTestDetails summary{font-size:11.5px;line-height:1.25}
+@media(max-width:530px){
+  .compactTests{padding:10px!important;gap:7px}
+  .baselineHero{padding:10px 11px;gap:5px;border-radius:13px}
+  .baselineHero h2{font-size:clamp(22px,6vw,26px)}
+  .baselineHero .compactLead{font-size:12px;line-height:1.3}
+  .baselineHero .baselineContext{font-size:10.5px;line-height:1.26}
+  .baselineTimeline{gap:5px}
+  .baselineTimeline>span{font-size:9.5px;padding:3px 6px}
+  .baselineListIntro h3{font-size:14px}
+  .baselineListIntro p{font-size:11px}
+  .compactTests .shortTestRow{min-height:46px;padding:7px 8px}
+  .compactTests .shortTestRow>input{width:18px;height:18px}
+  .compactTests .shortTestBody strong{font-size:12.5px}
+  .compactTests .shortTestBody small{font-size:10.5px}
+  .compactTests .shortTestCheck{width:16px;height:16px}
+  .compactTests .fastTestButton{min-height:45px;font-size:14px}
+}
+@media(max-width:360px){
+  .compactTests .shortTestExtras{gap:2px}
+  .compactTests .shortTestExtras button{font-size:10.5px;padding-inline:3px}
+}
+@media(prefers-reduced-motion:reduce){.compactTests .shortTestRow{transition:none}}
+
+
+/* 2026-10-19 · OPORA baseline visual hierarchy.
+   Keep the short, single-screen flow and all original assessment controls:
+   one primary "continue" action, quieter optional test choices, and a
+   distinct saved-state acknowledgement. No clinical score colors. */
+.compactTests[data-course-baseline-one-screen]{
+  --baseline-navy:#123e58;
+  --baseline-teal:#058fa3;
+  border-color:#dde8e8;
+  box-shadow:0 8px 28px rgba(18,62,88,.055);
+}
+.compactTests .baselineHero{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border-color:#10566b;
+  background:
+    radial-gradient(circle at 95% 0%,rgba(111,228,216,.22),transparent 44%),
+    linear-gradient(118deg,#123c58 0%,#104c65 59%,#087a89 100%);
+  box-shadow:0 4px 13px rgba(18,69,87,.12);
+}
+.compactTests .baselineHero::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:linear-gradient(90deg,#a4e8db,#e8cc92 54%,transparent);
+  pointer-events:none;
+}
+.compactTests .baselineHero .compactEyebrow{
+  color:#9fe7e4!important;
+  letter-spacing:.14em;
+}
+.compactTests .baselineHero h2{
+  color:#fff!important;
+  font-weight:600;
+  letter-spacing:-.023em;
+}
+.compactTests .baselineHero .compactLead{
+  color:#e1f2f5!important;
+}
+.compactTests .baselineHero .baselineContext{
+  color:#d4e5ec!important;
+}
+.compactTests .baselineTimeline>span{
+  border-color:rgba(213,244,244,.38);
+  background:rgba(255,255,255,.095);
+  color:#eefcfd;
+}
+.compactTests .baselineTimeline>span:first-child{
+  border-color:#d3e9d9;
+  background:#e4f8ef;
+  color:#165b6a;
+}
+.compactTests .baselineArrow{color:#a7eee4}
+.compactTests .baselineListIntro p{
+  color:#577585;
+  font-weight:600;
+}
+.compactTests .baselineSaved{
+  width:fit-content;
+  max-width:100%;
+  border-color:#b9e5d3;
+  border-radius:999px;
+  background:#eaf8f1;
+  color:#216d57;
+  padding:5px 11px;
+  font-weight:750;
+  font-size:11px;
+}
+.compactTests .baselineSaved svg{color:#148368}
+.compactTests .shortTestRow{
+  border-color:#dae6e8;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(26,67,83,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  border-color:#b2dfe1;
+  background:#f3fbfc;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #8cd2db;
+  border-left:4px solid #06a3b5;
+  padding-left:5px;
+  background:#eaf8fb;
+}
+.compactTests .shortTestRow>input{accent-color:#078fa6}
+.compactTests .shortTestRow[data-course-required-baseline=true]>input:disabled{
+  opacity:1;
+}
+.compactTests .shortTestBody strong{
+  color:#173f59;
+  font-weight:800;
+}
+.compactTests .shortTestBody small{color:#637f8b}
+.compactTests .shortTestCheck{color:#158b77;opacity:.75}
+.compactTests .shortTestRow[data-checked=false] .shortTestCheck{
+  display:none; /* An unselected optional test may still have a saved result. */
+}
+.compactTests .fastTestButton{
+  position:relative;
+  min-height:50px;
+  padding:10px 39px 10px 13px;
+  border:1px solid #0a879e!important;
+  border-bottom:4px solid #0b6579!important;
+  border-radius:13px;
+  background:linear-gradient(108deg,#17b9c5 0%,#0795aa 55%,#08778f 100%)!important;
+  box-shadow:0 6px 14px rgba(5,125,148,.22);
+  color:#fff!important;
+  font-weight:850;
+  letter-spacing:.005em;
+}
+.compactTests .fastTestButton>svg{
+  position:absolute;
+  right:11px;
+  top:50%;
+  box-sizing:content-box;
+  width:17px;
+  height:17px;
+  padding:5px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  transform:translateY(-50%);
+}
+.compactTests .fastTestButton:not(:disabled):hover{
+  filter:brightness(1.055);
+  box-shadow:0 8px 17px rgba(5,125,148,.28);
+}
+.compactTests .fastTestButton:not(:disabled):active{
+  box-shadow:0 2px 6px rgba(5,125,148,.18);
+}
+.compactTests .shortTestExtras button{
+  font-weight:700;
+  color:#34778a;
+}
+.compactTests .shortTestDetails{
+  border-top-color:#e3ebee;
+}
+@media(max-width:530px){
+  .compactTests .baselineHero{padding:11px 12px}
+  .compactTests .baselineHero h2{font-size:clamp(23px,5.7vw,26px)}
+  .compactTests .baselineSaved{font-size:10.5px;padding:4px 9px}
+  .compactTests .fastTestButton{min-height:48px;font-size:14px}
+}
+@media(max-width:360px){
+  .compactTests .fastTestButton{font-size:12.5px;padding-left:7px;padding-right:34px}
+  .compactTests .fastTestButton>svg{right:5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .compactTests .fastTestButton{transition:none}
+}
+
+
+/* OPORA free pre-course check-ins · approved compact mobile design (2026-10-19).
+   Structural/test state is unchanged; all three appear selected by default
+   through CourseR3Steps, while completed tests remain server-authoritative. */
+.compactTests[data-course-baseline-one-screen]{
+  gap:9px;
+  border-color:#dbe8e9;
+  background:linear-gradient(180deg,#fffcf6 0%,#ffffff 78%);
+}
+.compactTests .baselineHero{
+  position:relative;
+  z-index:0;
+  overflow:hidden;
+  isolation:isolate;
+  gap:6px;
+  padding:17px 17px 13px;
+  border-radius:19px;
+  border:1px solid #0b8492;
+  background:
+    radial-gradient(ellipse 85% 100% at 105% 10%,rgba(102,222,189,.55),transparent 65%),
+    radial-gradient(ellipse 56% 72% at 88% 98%,rgba(0,190,184,.38),transparent 74%),
+    linear-gradient(115deg,#0b3755 0%,#0e516d 64%,#07899b 100%);
+}
+.compactTests .baselineHero::after{
+  content:"";
+  z-index:-1;
+  position:absolute;
+  right:-31px;
+  top:26%;
+  width:136px;
+  height:173px;
+  border-radius:76% 18% 78% 22%;
+  transform:rotate(-37deg);
+  background:linear-gradient(55deg,rgba(39,184,168,.12),rgba(126,234,194,.24) 45%,rgba(203,246,205,.06));
+  border:1px solid rgba(160,232,204,.15);
+  pointer-events:none;
+}
+.compactTests .baselineDecoration{
+  position:absolute;
+  pointer-events:none;
+  right:6px;
+  top:26px;
+  display:grid;
+  place-items:center;
+  width:105px;
+  height:105px;
+  border:1px solid rgba(194,242,224,.28);
+  border-radius:50%;
+  color:rgba(197,248,227,.65);
+  background:radial-gradient(circle,rgba(21,165,151,.18),transparent 73%);
+}
+.compactTests .baselineHero .compactEyebrow{
+  max-width:calc(100% - 45px);
+  color:#a6edf0!important;
+  font-size:10px!important;
+  line-height:1.3;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+.compactTests .baselineHero h2{
+  position:relative;
+  max-width:100%;
+  color:#fff!important;
+  font:600 clamp(23px,4vw,29px)/1.08 Georgia,serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+  text-shadow:0 1px 1px rgba(0,0,0,.06);
+}
+.compactTests .baselineHero .compactLead{
+  position:relative;
+  max-width:89%;
+  color:#e9f7f9!important;
+  font-size:12.5px;
+  line-height:1.4;
+  font-weight:500;
+}
+.compactTests .baselineHighlights{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:2px 0 0;
+}
+.compactTests .baselineHighlights>span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 8px;
+  min-height:27px;
+  border-radius:999px;
+  border:1px solid rgba(231,251,255,.75);
+  background:#dff9fb;
+  color:#12516b;
+  font-size:10.2px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  letter-spacing:.01em;
+}
+.compactTests .baselineHighlights>span:first-child{
+  background:#d9fae6;
+  color:#0a654d;
+  border-color:#abefd5;
+}
+.compactTests .baselineHighlights svg{flex:none}
+.compactTests .baselineTimeline{
+  gap:5px;
+  margin:1px 0 0;
+}
+.compactTests .baselineTimeline>span,
+.compactTests .baselineTimeline>span:first-child{
+  border:1px solid rgba(198,230,238,.36);
+  background:rgba(255,255,255,.1);
+  color:#e6f9fc;
+  border-radius:7px;
+  font-size:9px;
+  padding:3px 6px;
+}
+.compactTests .baselineTimeline>span:first-child{
+  background:#e2faef;
+  border-color:#c3eedc;
+  color:#176573;
+}
+.compactTests .baselineHero .baselineContext{
+  margin-top:2px;
+  padding-top:7px;
+  border-top:1px solid rgba(215,244,244,.26);
+  color:#cee9f0!important;
+  font-size:10px;
+  line-height:1.28;
+}
+.compactTests .baselineListIntro{
+  padding:1px 2px 0;
+  gap:4px;
+}
+.compactTests .baselineListIntro h3{
+  margin:0;
+  color:#143b59;
+  font:600 clamp(19px,3.7vw,24px)/1.18 Georgia,serif;
+  letter-spacing:-.015em;
+}
+.compactTests .baselineListIntro p{
+  color:#587b89;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:550;
+}
+.compactTests .shortTestList{
+  gap:6px;
+  max-height:clamp(158px,31dvh,245px);
+}
+.compactTests .shortTestRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:51px;
+  padding:9px 11px;
+  border:1px solid #d4e5e9;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(32,67,88,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  background:#f0fbfb;
+  border-color:#a6d9de;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #78cbd3;
+  border-left:4px solid #11adba;
+  background:linear-gradient(105deg,#e9f9fa,#f5fdfc);
+  padding-left:7px;
+}
+.compactTests .shortTestIcon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  background:#e7f2f8;
+  color:#2c7696;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true] .shortTestIcon{
+  background:#cceff1;
+  color:#048b9d;
+}
+.compactTests .shortTestBody{gap:3px}
+.compactTests .shortTestBody strong{
+  font-size:12.8px;
+  line-height:1.2;
+  color:#113d5a;
+}
+.compactTests .shortTestBody small{
+  font-size:10.6px;
+  line-height:1.25;
+  color:#658294;
+}
+.compactTests .shortTestRow>input{
+  flex:none;
+  position:relative;
+  appearance:none;
+  -webkit-appearance:none;
+  width:23px;
+  height:23px;
+  margin:0;
+  border:2px solid #9aaeb9;
+  background:#fff;
+  border-radius:50%;
+  cursor:pointer;
+}
+.compactTests .shortTestRow>input:checked{
+  border-color:#0795a6;
+  background:#0795a6;
+}
+.compactTests .shortTestRow>input:checked::after{
+  content:"";
+  position:absolute;
+  top:3px;
+  left:6px;
+  width:6px;
+  height:10px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform:rotate(45deg);
+}
+.compactTests .shortTestRow>input:disabled{
+  opacity:1;
+  cursor:default;
+}
+.compactTests .shortTestRow:focus-within{outline:3px solid #e6bf75;outline-offset:2px}
+.compactTests .shortTestRow .baselineSaved,
+.compactTests .shortTestSaved{
+  display:inline-flex;
+  align-items:center;
+  justify-self:start;
+  align-self:start;
+  width:fit-content;
+  max-width:100%;
+  gap:4px;
+  margin:1px 0 0;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid #bce7d4;
+  background:#ddf7e8;
+  color:#147359;
+  font-size:9.8px;
+  font-weight:780;
+  line-height:1.23;
+}
+.compactTests .shortTestSaved{
+  background:#eefaf6;
+  color:#3a7d71;
+  border-color:#d6ece2;
+  padding:2px 6px;
+}
+.compactTests .shortTestRow .baselineSaved svg,
+.compactTests .shortTestSaved svg{flex:none;color:#128265}
+.compactTests .fastTestButton{
+  min-height:48px;
+  font-size:14px;
+  margin-top:2px;
+  box-shadow:0 6px 13px rgba(0,136,153,.20);
+}
+.compactTests .shortTestExtras{
+  justify-content:space-between;
+  gap:4px 8px;
+}
+.compactTests .shortTestExtras button{
+  min-height:28px;
+  padding:2px 4px;
+  color:#267c92;
+  font-size:11px;
+  font-weight:770;
+}
+@media(max-width:530px){
+  .compactTests[data-course-baseline-one-screen]{gap:8px}
+  .compactTests .baselineHero{padding:13px 13px 10px;gap:5px;border-radius:17px}
+  .compactTests .baselineDecoration{right:0;top:24px;width:79px;height:79px;opacity:.66}
+  .compactTests .baselineDecoration svg{width:58px;height:58px}
+  .compactTests .baselineHero .compactEyebrow{font-size:9.6px!important}
+  .compactTests .baselineHero h2{font-size:clamp(22px,5.8vw,26px)}
+  .compactTests .baselineHero .compactLead{max-width:96%;font-size:11.7px}
+  .compactTests .baselineHighlights>span{padding:4px 7px;min-height:25px;font-size:9.6px}
+  .compactTests .baselineListIntro h3{font-size:21px}
+  .compactTests .baselineListIntro p{font-size:10.6px}
+  .compactTests .shortTestRow{padding:7px 8px;gap:8px;min-height:48px}
+  .compactTests .shortTestRow[data-course-required-baseline=true]{padding-left:5px}
+  .compactTests .shortTestIcon{width:33px;height:33px;border-radius:9px}
+  .compactTests .shortTestIcon svg{width:20px;height:20px}
+  .compactTests .shortTestBody strong{font-size:12.4px}
+  .compactTests .shortTestBody small{font-size:10.2px}
+  .compactTests .shortTestRow>input{width:21px;height:21px}
+  .compactTests .shortTestRow>input:checked::after{top:2px;left:5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:9.3px;padding:2px 6px}
+}
+@media(max-width:360px){
+  .compactTests .baselineHero .compactEyebrow{letter-spacing:.075em}
+  .compactTests .baselineHighlights{gap:4px}
+  .compactTests .baselineHighlights>span{font-size:8.6px;padding:4px 6px}
+  .compactTests .baselineListIntro h3{font-size:19px}
+  .compactTests .shortTestIcon{width:30px;height:30px}
+  .compactTests .shortTestBody strong{font-size:11.5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:8.9px}
+}

@@ -120,6 +120,12 @@ LESSON / TRANSFORMATION
 
 - Accept yourself as you are, find your light and pride in it.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: You want to hide from the world; your own strength seems insufficient to cope with difficulties.
+
+After (desired state): Self-respect and the courage to state your position, see a goal and identify a possible next step.
+
 KALIUM
 
 PHOSPHORICUM

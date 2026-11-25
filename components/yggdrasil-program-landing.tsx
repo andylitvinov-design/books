@@ -1,14 +1,22 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
+import { YggdrasilTestimonials } from "@/components/yggdrasil-testimonials";
+import { YggdrasilMeditationFeature } from "@/components/yggdrasil-meditation-feature";
+import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
 
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
+import { basicStepDescriptions, basicAttunementName } from "@/data/academy/yggdrasil-basic-level-copy";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import {
+  yggdrasilSourceImages,
   yggdrasilAcademyStoryImages,
   yggdrasilAcademyStorySourcePage,
   yggdrasilProgramSourcePage,
-  yggdrasilSourceImages,
 } from "@/data/academy/yggdrasil-program-map";
 import type { PublicLocale } from "@/lib/public-locales";
 
@@ -20,108 +28,123 @@ type BasicStep = {
   settings: Array<{ id: string; title: string }>;
 };
 
-const basicStepDescriptions: Record<number, Record<PublicLocale, string>> = {
-  1: {
-    en: "Health, intuition, protection and working with a chosen situation: the entry point into the Reiki Yggdrasil flow.",
-    ru: "Здоровье, интуиция, защита и работа с выбранной ситуацией — вход в поток Рейки Иггдрасиль.",
-    es: "Salud, intuición, protección y trabajo con una situación elegida: entrada al flujo Reiki Yggdrasil.",
-  },
-  2: {
-    en: "Cleansing, charging objects and money-flow activation: releasing what feels excessive and directing attention toward resource.",
-    ru: "Очищение, зарядка объектов и денежная активация: освобождение от лишнего и направление внимания на ресурс.",
-    es: "Limpieza, carga de objetos y activación del flujo del dinero: liberar lo innecesario y orientar la atención al recurso.",
-  },
-  3: {
-    en: "Predestination, power, emotion, sexuality, intellect, karma and flight: direction and personal strength.",
-    ru: "Предопределение, сила, эмоция, сексуальность, интеллект, карма и полёт: направление и личная сила.",
-    es: "Predestinación, poder, emoción, sexualidad, intelecto, karma y vuelo: dirección y fuerza personal.",
-  },
-  4: {
-    en: "Extrasensory vision, past-life imagery, situation creation and knowledge: the perception-focused level.",
-    ru: "Сверхчувственное видение, прошлые жизни, создание ситуации и знание — ступень восприятия.",
-    es: "Visión extrasensorial, vidas pasadas, creación de situaciones y conocimiento: nivel de percepción.",
-  },
-  5: {
-    en: "Connection with the World and the Gods: the Master Level integrating the Basic Course.",
-    ru: "Связь с Миром и Богами — мастерская ступень, объединяющая Базовый курс.",
-    es: "Conexión con el Mundo y los Dioses: nivel de maestro que integra el Curso Básico.",
-  },
+// The five authentic PsiTrends level photos already used by the detailed Basic Course.
+// Keep the overview consistent with the full curriculum, rather than generic illustrations.
+const basicLevelPhotos: Record<number, string> = {
+  1: "https://psitrends.com/images/Screenshot_25.png",
+  2: "https://psitrends.com/images/photo_2023-07-10_08-26-39.jpg",
+  3: "https://psitrends.com/images/Screenshot_31.png",
+  4: "https://psitrends.com/images/tulumhypnotherapy.jpg",
+  5: "https://psitrends.com/images/world_magic_traditions_overview.jpg",
 };
 
 const copy = {
   en: {
-    eyebrow: "Academy · Current program",
+    eyebrow: "Ancient symbols · Personal practice",
+    tagline: "Rediscover your centre. Discover a wider world within.",
+    free: "Get Level 1 for free",
     title: "DAO Reiki Yggdrasil",
-    lead: "The system is now organised as seven clear course landings. Start with the five-level Basic Course, continue through the six-step Instructor Course, then open each advanced module separately.",
+    lead: "The World Tree is an invitation to explore yourself in a new way. Through guided imagery, mindful attention and the language of runes, find space for intuition, clarity and a more conscious connection with everyday life. Begin with the five-level Basic Course and follow the path that speaks to you.",
     start: "Open Basic Course",
-    instructor: "Open Instructor Course",
-    archive: "Full historical program text",
+    description: "Read the Basic Course book",
+    explore: "Explore 7 modules",
+    benefits: "What you will explore",
     mapEyebrow: "Current course map",
     mapTitle: "7 Reiki Yggdrasil modules",
-    mapLead: "Each module has its own landing page with all canonical steps, attunements and verified public video lectures. The older PsiTrends 10-module program wording remains preserved in the historical source archive.",
+    mapLead: "One learning path, seven modules. Begin with the foundations and continue through the World Tree traditions. Each step combines attunements, practical exercises and available video lessons, all here in Holistic House.",
     module: "Module",
     open: "Open module",
-    basicEyebrow: "Basic Course preview",
+    basicEyebrow: "Your first five levels",
     basicTitle: "Basic Course · 5 levels",
-    basicLead: "The first five levels are shown here as a quick orientation. The dedicated Basic Course landing contains the full descriptions, attunements, videos and practice material.",
+    basicLead: "See what you will explore at each level. Each stage has its own practices and attunements; open the complete course for lessons and videos.",
     basicLevel: "Level",
     basicSettings: "attunements",
+    basicStepOpen: "Explore level",
     storyEyebrow: "School & lineage",
     storyTitle: "The Academy behind Reiki Yggdrasil",
-    storyLead: "Key background from the earlier Academy landing is now placed beside the images it explains, rather than shown as an unrelated photo gallery.",
-    storySource: "Open the earlier Academy landing",
-    source: "Open full Reiki Yggdrasil source",
-    sourceNote: "Current curriculum: canonical Reiki Yggdrasil project. Historical school and lineage material: PsiTrends.",
+    storyLead: "Explore the school’s historical account, teaching tradition and current programme.",
+    storySource: "Earlier Academy source",
+    source: "Original Reiki Yggdrasil source",
+    archive: "Historical archive",
+    sourceNote: "Historical school and lineage material: PsiTrends. Current curriculum: Holistic House.",
   },
   ru: {
-    eyebrow: "Академия · Актуальная программа",
+    eyebrow: "Древние символы · Живая практика",
+    tagline: "Найдите внутреннюю опору. Откройте глубину своего мира.",
+    free: "Получить 1-ю ступень бесплатно",
     title: "Дао Рейки Иггдрасиль",
-    lead: "Теперь система разложена на семь понятных отдельных лендингов. Сначала Базовый курс из пяти уровней, затем Инструкторский курс из шести ступеней, после него — каждый продвинутый модуль отдельно.",
+    lead: "Мировое Древо становится картой внутреннего путешествия. Через образы, руны, медитации и работу с вниманием вы можете глубже почувствовать себя, исследовать интуицию и яснее видеть свой путь. Начните с пяти ступеней Базового курса и двигайтесь в своём ритме.",
     start: "Открыть Базовый курс",
-    instructor: "Открыть Инструкторский курс",
-    archive: "Полный исторический текст программы",
+    description: "Читать книгу Базового курса",
+    explore: "Посмотреть 7 модулей",
+    benefits: "Что вы будете осваивать",
     mapEyebrow: "Актуальная карта обучения",
     mapTitle: "7 модулей Рейки Иггдрасиль",
-    mapLead: "Каждый модуль получил отдельную страницу со всеми каноническими ступенями, настройками и проверенными публичными видеолекциями. Старая 10-модульная формулировка PsiTrends сохранена в полном историческом архиве.",
+    mapLead: "Одна программа из семи модулей: каждая ступень включает описание настроек, практические упражнения и доступные видеолекции. Все учебные материалы открываются внутри Holistic House.",
     module: "Модуль",
     open: "Открыть модуль",
-    basicEyebrow: "Кратко о Базовом курсе",
+    basicEyebrow: "Первые пять ступеней",
     basicTitle: "Базовый курс · 5 уровней",
-    basicLead: "Здесь пять уровней показаны кратко. На отдельном лендинге Базового курса находятся полные описания, настройки, видео и практические материалы.",
+    basicLead: "Коротко и понятно о каждой ступени. Полные описания, настройки, уроки и видео находятся на странице Базового курса.",
     basicLevel: "Уровень",
     basicSettings: "настроек",
+    basicStepOpen: "Подробнее о ступени",
     storyEyebrow: "Школа и линия обучения",
     storyTitle: "Академия, из которой выросла система Рейки Иггдрасиль",
-    storyLead: "Ключевая информация со старого лендинга Академии теперь стоит рядом с теми фотографиями, которые её объясняют, а не отдельной стеной несвязанных изображений.",
-    storySource: "Открыть старый лендинг Академии",
-    source: "Открыть полный источник Рейки Иггдрасиль",
-    sourceNote: "Актуальная программа: канонический проект Reiki Yggdrasil. История школы и линии обучения: PsiTrends.",
+    storyLead: "История школы, традиция обучения и современная программа по материалам Академии.",
+    storySource: "Исторический источник Академии",
+    source: "Исходная страница Рейки Иггдрасиль",
+    archive: "Исторический архив",
+    sourceNote: "История школы и линии обучения: PsiTrends. Актуальная программа: Holistic House.",
   },
   es: {
-    eyebrow: "Academia · Programa actual",
+    eyebrow: "Símbolos antiguos · Práctica personal",
+    tagline: "Encuentra tu centro. Explora tu mundo interior.",
+    free: "Recibe el primer nivel gratis",
     title: "DAO Reiki Yggdrasil",
-    lead: "El sistema está organizado en siete páginas de curso: Curso Básico, Curso de Instructor y cada módulo avanzado por separado.",
+    lead: "El Árbol del Mundo es una invitación a explorar tu mundo interior. Mediante imágenes guiadas, runas y prácticas de atención, descubre nuevas formas de escuchar tu intuición y reflexionar sobre tu vida. Comienza por los cinco niveles básicos y avanza a tu propio ritmo.",
     start: "Abrir Curso Básico",
-    instructor: "Abrir Curso de Instructor",
-    archive: "Texto histórico completo",
+    description: "Leer el libro del Curso Básico",
+    explore: "Ver los 7 módulos",
+    benefits: "Qué vas a explorar",
     mapEyebrow: "Mapa formativo actual",
     mapTitle: "7 módulos Reiki Yggdrasil",
-    mapLead: "Cada módulo tiene su propia página con etapas, sintonizaciones y videoclases verificadas.",
+    mapLead: "Un programa de siete módulos. Cada etapa reúne sintonizaciones, ejercicios y videoclases disponibles, todo dentro de Holistic House.",
     module: "Módulo",
     open: "Abrir módulo",
-    basicEyebrow: "Vista rápida del Curso Básico",
+    basicEyebrow: "Tus cinco primeros niveles",
     basicTitle: "Curso Básico · 5 niveles",
-    basicLead: "La página específica del Curso Básico contiene las descripciones completas, sintonizaciones, videos y materiales.",
+    basicLead: "Descubre qué se aprende en cada nivel. Abre el Curso Básico para ver prácticas, sintonizaciones, lecciones y videos.",
     basicLevel: "Nivel",
     basicSettings: "sintonizaciones",
+    basicStepOpen: "Explorar nivel",
     storyEyebrow: "Escuela y linaje",
     storyTitle: "La Academia detrás de Reiki Yggdrasil",
-    storyLead: "La información histórica se muestra junto a las imágenes que explica, en lugar de una galería de fotos sin contexto.",
-    storySource: "Abrir la página anterior de la Academia",
-    source: "Abrir la fuente completa de Reiki Yggdrasil",
-    sourceNote: "Currículo actual: proyecto canónico Reiki Yggdrasil. Historia de la escuela y del linaje: PsiTrends.",
+    storyLead: "Conoce el relato histórico de la escuela, su tradición formativa y el programa actual.",
+    storySource: "Fuente histórica de la Academia",
+    source: "Fuente original de Reiki Yggdrasil",
+    archive: "Archivo histórico",
+    sourceNote: "Historia y linaje: PsiTrends. Programa actual: Holistic House.",
   },
 } satisfies Record<PublicLocale, Record<string, string>>;
+
+const heroHighlights: Record<PublicLocale, string[]> = {
+  en: [
+    "Find a calmer, more focused way to meet everyday challenges",
+    "Discover symbolic tools for intuition and self-reflection",
+    "Begin gently, then explore seven connected areas of practice",
+  ],
+  ru: [
+    "Осваивать концентрацию и заземление",
+    "Исследовать интуицию через практические упражнения",
+    "Постепенно переходить от основы к продвинутым направлениям",
+  ],
+  es: [
+    "Practicar la atención y el arraigo",
+    "Explorar la intuición mediante ejercicios guiados",
+    "Avanzar desde la base hacia estudios especializados",
+  ],
+};
 
 const academyStory: Record<PublicLocale, Array<{
   key: keyof typeof yggdrasilAcademyStoryImages;
@@ -216,7 +239,7 @@ function SourceVisual({ url, label, className = "" }: { url: string; label: stri
       aria-label={label}
       className={"yggdrasil-source-visual " + className}
       role="img"
-      style={{ backgroundImage: `linear-gradient(180deg, rgba(35,25,20,.03), rgba(35,25,20,.16)), url("${url}")` }}
+      style={{ backgroundImage: `linear-gradient(180deg, rgba(35,25,20,.03), rgba(35,25,20,.16)), url("${reikiPhotoUrl(url, 1200)}")` }}
     />
   );
 }
@@ -230,30 +253,55 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
 
   return (
     <div className="yggdrasil-program-landing">
-      <section className="yggdrasil-program-hero">
+      <section className="yggdrasil-program-hero reiki-screen reiki-screen--hero">
         <SourceVisual url={hero.localUrl ?? hero.sourceUrl} label={hero.label[locale]} className="yggdrasil-program-hero-image" />
         <div className="yggdrasil-program-hero-copy">
           <p className="homeopathy-kicker">{text.eyebrow}</p>
-          <h2>{text.title}</h2>
-          <p>{text.lead}</p>
+          <h1>{text.title}</h1>
+          <p className="yggdrasil-hero-tagline">{text.tagline}</p>
+          <p className="yggdrasil-program-intro">{text.lead}</p>
+          <details className="reiki-disclosure reiki-disclosure--hero">
+             <summary>{text.benefits}<span aria-hidden="true">＋</span></summary>
+             <ul className="yggdrasil-program-highlights">
+            {heroHighlights[locale].map((highlight) => <li key={highlight}>{highlight}</li>)}
+          </ul>
+           </details>
           <div className="yggdrasil-program-actions">
-            <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
-            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/instructor-course`}>{text.instructor}</Link>
-            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/archive`}>{text.archive}</Link>
+            <Link className="yggdrasil-primary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"} <span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-secondary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{text.free} <span aria-hidden="true">→</span></Link>
           </div>
+          <details className="reiki-disclosure reiki-disclosure--hero-links">
+            <summary>{locale === "ru" ? "Программа, модули и полное описание" : locale === "es" ? "Programa, módulos y descripción completa" : "Explore modules, full programme & guide"}<span aria-hidden="true">＋</span></summary>
+            <nav className="reiki-hero-links" aria-label={locale === "ru" ? "Дополнительные варианты" : locale === "es" ? "Más opciones" : "More options"}>
+              <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+              <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
+              <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+              <Link className="yggdrasil-program-detail-link" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{locale === "ru" ? "Условия вводной инициации" : locale === "es" ? "Detalles de la iniciación introductoria" : "Introductory initiation details"} <span aria-hidden="true">↗</span></Link>
+            </nav>
+          </details>
         </div>
       </section>
 
-      <YggdrasilEnglishVideoGuide locale={locale} />
+      {/* Guide-first, compact capture after the authentic course hero. */}
+      <details className="reiki-optional-capture">
+         <summary>{locale === "ru" ? "Получить программу и вводную инициацию" : locale === "es" ? "Recibir la guía y la iniciación introductoria" : "Get the study guide & introductory initiation"}<span aria-hidden="true">＋</span></summary>
+         <YggdrasilLeadForms locale={locale} placement="top" />
+       </details>
 
-      <section className="yggdrasil-program-section" id="system-modules">
+      <section className="yggdrasil-program-section reiki-screen reiki-screen--explore" id="system-modules">
         <p className="homeopathy-kicker">{text.mapEyebrow}</p>
         <h2>{text.mapTitle}</h2>
         <p className="yggdrasil-program-section-lead">{text.mapLead}</p>
-        <div className="yggdrasil-module-grid">
+        <nav className="reiki-module-jumps" aria-label={locale === "ru" ? "Выбрать модуль" : locale === "es" ? "Elegir módulo" : "Choose a module"}>
+           {yggdrasilModuleLandings.map((module, index) => <a href={"#yggdrasil-module-" + module.slug} key={module.slug}>{String(index + 1).padStart(2, "0")} · {module.title[locale]}</a>)}
+         </nav>
+         <p className="reiki-swipe-cue">{locale === "ru" ? "Листайте модули горизонтально →" : locale === "es" ? "Desliza entre módulos →" : "Swipe or scroll through the modules →"}</p>
+         <div className="yggdrasil-module-grid" tabIndex={0} aria-label={locale === "ru" ? "Модули Рейки Иггдрасиль" : locale === "es" ? "Módulos de Reiki Yggdrasil" : "Reiki Yggdrasil modules"}>
           {yggdrasilModuleLandings.map((module) => (
-            <article className="yggdrasil-module-card" key={module.slug}>
-              <SourceVisual url={module.image} label={module.title[locale]} />
+            <article className="yggdrasil-module-card" id={"yggdrasil-module-" + module.slug} key={module.slug}>
+              <Link className={"yggdrasil-module-art yggdrasil-module-art--" + module.slug} href={`/${locale}/academy/reiki/yggdrasil/${module.slug}`} aria-label={`${text.open}: ${module.title[locale]}`}>
+                <Image src={cardArtworkUrl(module.image)} unoptimized={hasCardArtwork(module.image)} alt={module.title[locale]} fill sizes="(max-width: 680px) 130px, (max-width: 1100px) 240px, 240px" className="yggdrasil-module-art-image" />
+              </Link>
               <div className="yggdrasil-module-card-copy">
                 <small>{text.module} {module.levelId}</small>
                 <h3>{module.title[locale]}</h3>
@@ -265,26 +313,53 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
-      <section className="yggdrasil-basic-course" id="basic-course">
+      <section className="yggdrasil-basic-course reiki-chapter-collection" id="basic-course">
         <div className="yggdrasil-basic-course-heading">
           <p className="homeopathy-kicker">{text.basicEyebrow}</p>
           <h2>{text.basicTitle}</h2>
           <p>{text.basicLead}</p>
-          <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
+          <div className="yggdrasil-basic-course-actions">
+            <Link className="yggdrasil-source-link yggdrasil-basic-course-start" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">↗</span></Link>
+            <Link className="yggdrasil-source-link" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{text.free}<span aria-hidden="true">→</span></Link>
+          </div>
         </div>
         <div className="yggdrasil-basic-levels">
           {basicSteps.map((step) => (
-            <article className="yggdrasil-basic-level-card" key={step.id}>
-              <div className="yggdrasil-basic-level-number">{String(step.number).padStart(2, "0")}</div>
-              <div>
+            <article className="yggdrasil-basic-level-card reiki-screen reiki-screen--chapter" key={step.id}>
+              <Link
+                className="yggdrasil-basic-level-photo-link"
+                href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}
+                aria-label={`${text.basicLevel} ${step.number}: ${step.title[locale]}`}
+              >
+                <SourceVisual
+                  url={basicLevelPhotos[step.number]}
+                  label={step.title[locale]}
+                  className="yggdrasil-basic-level-photo"
+                />
+                <span className="yggdrasil-basic-level-photo-number" aria-hidden="true">{String(step.number).padStart(2, "0")}</span>
+              </Link>
+              <div className="yggdrasil-basic-level-copy">
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
                 <h3>{step.title[locale]}</h3>
                 <p>{basicStepDescriptions[step.number][locale]}</p>
+                <details className="yggdrasil-basic-level-attunements reiki-disclosure">
+                   <summary>{locale === "ru" ? "Раскрыть настройки ступени" : locale === "es" ? "Ver sintonizaciones del nivel" : "Explore level attunements"}<span aria-hidden="true">＋</span></summary>
+                  <strong>{locale === "ru" ? "Настройки ступени" : locale === "es" ? "Sintonizaciones del nivel" : "Attunements included"}</strong>
+                  <ul>{step.settings.map((setting, index) => <li key={setting.id}>{basicAttunementName(locale, step, setting, index)}</li>)}</ul>
+                </details>
+                <Link className="yggdrasil-basic-level-open" href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}>
+                  {text.basicStepOpen} {step.number} <span aria-hidden="true">→</span>
+                </Link>
               </div>
             </article>
           ))}
         </div>
       </section>
+
+      <div className="reiki-screen reiki-screen--media"><YggdrasilMeditationFeature locale={locale} /></div>
+
+      <div className="reiki-screen reiki-screen--social"><YggdrasilTestimonials locale={locale} /></div>
 
       <section className="yggdrasil-school-story" aria-labelledby="yggdrasil-school-story-title">
         <div className="yggdrasil-school-story__heading">
@@ -316,6 +391,14 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <Link className="yggdrasil-source-link" href={yggdrasilProgramSourcePage} target="_blank" rel="noreferrer">{text.source}<span aria-hidden="true">↗</span></Link>
         </div>
       </section>
+
+      <details className="reiki-disclosure reiki-disclosure--archive">
+         <summary>{locale === "ru" ? "Полный видеоархив и дополнительные материалы" : locale === "es" ? "Archivo de vídeos y materiales adicionales" : "Complete video archive & further resources"}<span aria-hidden="true">＋</span></summary>
+         <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
+       </details>
+
+
+
     </div>
   );
 }

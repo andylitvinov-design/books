@@ -1,0 +1,4577 @@
+/* Private practitioner notes and document preview · Holistic House */
+/* One full-width card per narrative block: Analysis → Recommendations → Notes. */
+.consultation-studio .consultation-report-note-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+.consultation-studio .consultation-report-note {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  padding: 17px;
+  border: 1px solid #c9e4e2;
+  border-radius: 16px;
+  background: linear-gradient(150deg, #f0faf9, #fffdfa 80%);
+}
+.consultation-studio .consultation-report-note > span {
+  color: #215968;
+  font-size: 17px;
+  font-weight: 750;
+}
+.consultation-studio .consultation-report-note > small {
+  min-height: 2.6em;
+  color: #5b797e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-studio .consultation-report-note textarea {
+  width: 100%;
+  min-height: 132px;
+  padding: 13px 14px;
+  border: 1px solid #badbdc;
+  border-radius: 11px;
+  background: #fff;
+  color: #254d5c;
+  font-size: 16px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.consultation-studio .consultation-report-note textarea:focus-visible {
+  outline: 3px solid #91c9c9;
+  outline-offset: 2px;
+}
+.consultation-report-review-hint {
+  margin: 18px 0;
+  padding: 16px 19px;
+  border: 1px solid #c1dfde;
+  border-left: 4px solid #307b84;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #f0fbfa, #f8fcfb);
+  color: #305e68;
+}
+.consultation-report-review-hint strong {
+  display: block;
+  color: #1c5464;
+  font-size: 17px;
+}
+.consultation-report-review-hint p {
+  margin: 5px 0 0;
+  color: #59797e;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.consultation-document-actions a.consultation-action-primary {
+  min-height: 45px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+.canonical-document .canonical-report-analysis,
+.canonical-document .canonical-report-notes {
+  border: 1px solid #cce4e3;
+  border-left: 4px solid #418991;
+  border-radius: 11px;
+  padding: 14px 18px;
+  background: #f5fbfa;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.canonical-document .canonical-report-analysis h2,
+.canonical-document .canonical-report-notes h2 {
+  margin-top: 0;
+  color: #276873;
+}
+.canonical-document .canonical-report-analysis p,
+.canonical-document .canonical-report-notes p {
+  margin-bottom: 0;
+  color: #2a4e59;
+  line-height: 1.65;
+}
+@media (max-width: 680px) {
+  .consultation-studio .consultation-report-note-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+  .consultation-studio .consultation-report-note { padding: 14px; }
+  .consultation-studio .consultation-report-note > small { min-height: 0; }
+  .consultation-document-actions { flex-wrap: wrap; }
+  .consultation-document-actions a { min-height: 44px; }
+  .consultation-report-review-hint { margin: 13px 0; padding: 15px; }
+}
+@media print {
+  .consultation-report-review-hint { display: none !important; }
+  .canonical-document .canonical-report-analysis,
+  .canonical-document .canonical-report-notes { box-shadow: none; }
+}
+
+/* The observation fields belong to the recommendation, before step 03. */
+.consultation-studio .consultation-report-notes-panel {
+  margin: 12px 0 20px;
+  border: 1px solid #c7e1e0;
+  background: linear-gradient(140deg, #f9fefd, #fffdfb);
+}
+.consultation-review-notes-title h2 {
+  margin: 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(21px, 3vw, 28px);
+  font-weight: 400;
+  color: #224c5b;
+}
+.consultation-review-notes-title p {
+  margin: 5px 0 0;
+  color: #65818a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.consultation-studio .consultation-report-notes-panel .consultation-report-note-grid {
+  margin-top: 16px;
+}
+.consultation-studio .consultation-legacy-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+  color: #2c6776;
+}
+.consultation-studio .consultation-legacy-instructions textarea {
+  min-height: 92px;
+  font-size: 16px;
+  border: 1px solid #cce1e2;
+  border-radius: 11px;
+  background: white;
+  padding: 13px;
+}
+.consultation-studio-submit-buttons {
+  display: grid;
+  min-width: 225px;
+  gap: 10px;
+}
+.consultation-studio-submit-buttons .consultation-primary-action {
+  width: 100%;
+}
+.consultation-preview-actions {
+  display: grid;
+  gap: 8px;
+}
+.consultation-preview-actions .consultation-preview-button {
+  min-height: 51px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #9dcdd1;
+  background: #e6f6f7;
+  color: #236778;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.consultation-preview-actions .consultation-preview-button-secondary {
+  min-height: 44px;
+  background: #fffdf9;
+  border-color: #c5dfde;
+  font-size: 13px;
+}
+.consultation-preview-actions .consultation-preview-button:hover:not(:disabled) {
+  background: #d7f0f0;
+}
+.consultation-preview-actions .consultation-preview-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.consultation-preview-error {
+  margin: 0;
+  color: #a23d39;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.consultation-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  background: rgba(13, 39, 49, 0.76);
+}
+.consultation-preview-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 950px);
+  height: min(94vh, 1000px);
+  overflow: hidden;
+  border: 1px solid #c3dfe1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 65px rgba(14, 37, 44, 0.24);
+}
+.consultation-preview-heading,
+.consultation-preview-footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: #f3fafa;
+}
+.consultation-preview-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.consultation-preview-heading strong {
+  font: 400 23px/1.2 Georgia, serif;
+  color: #225667;
+}
+.consultation-preview-heading small {
+  font-size: 12px;
+  color: #607b81;
+}
+.consultation-preview-heading button,
+.consultation-preview-footer button,
+.consultation-preview-footer a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  border: 1px solid #c0dfe0;
+  background: #fff;
+  color: #225d6d;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.consultation-preview-heading button { width: 43px; }
+.consultation-preview-frame {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #f7f8f8;
+}
+@media (max-width: 680px) {
+  .consultation-studio-submit-buttons { width: 100%; min-width: 0; }
+  .consultation-preview-overlay { padding: 4px; }
+  .consultation-preview-modal { width: 100%; height: 98vh; border-radius: 12px; }
+  .consultation-preview-heading, .consultation-preview-footer { padding: 10px; }
+  .consultation-preview-heading strong { font-size: 19px; }
+  .consultation-preview-footer { flex-wrap: wrap; }
+}
+
+/* Documents ready — editorial Holistic House layout with every action visible. */
+.consultation-result {
+  max-width: 1020px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+}
+.consultation-result .consultation-result-topbar--dense {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 15px 24px;
+  padding: 22px 0 20px;
+  border-bottom: 1px solid #ddcbb9;
+}
+.consultation-result .consultation-result-breadcrumb {
+  color: #86654f;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-topbar--dense h1 {
+  margin: 6px 0 0;
+  color: #382b25;
+  font-size: clamp(34px, 5vw, 52px);
+  letter-spacing: -.035em;
+  line-height: 1.04;
+}
+.consultation-result .consultation-result-top-actions {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link,
+.consultation-result .consultation-result-top-actions .consultation-result-logout {
+  max-width: none;
+  min-height: 43px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+}
+.consultation-result .consultation-result-top-actions .consultation-result-new-link {
+  border: 1px solid #c5a892;
+  background: #fffaf4;
+  color: #70452e;
+}
+.consultation-result .consultation-result-summary--dense {
+  gap: 18px;
+  margin: 17px 0 0;
+  padding: 18px 21px;
+  border: 1px solid #e0d0be;
+  border-radius: 18px;
+  background: #fffcf7;
+}
+.consultation-result .consultation-result-client--inline {
+  align-items: baseline;
+  gap: 8px;
+}
+.consultation-result .consultation-result-client--inline > span {
+  color: #895940;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+.consultation-result .consultation-result-client--inline > strong {
+  color: #3c302a;
+  font-size: clamp(22px, 2.9vw, 29px);
+}
+.consultation-result .consultation-result-client--inline > p {
+  color: #716255;
+  font-size: 13px;
+}
+.consultation-result .consultation-report-review-hint {
+  margin: 15px 0 17px;
+  padding: 15px 19px;
+  border: 1px solid #b8d8d9;
+  border-left: 5px solid #267d87;
+  border-radius: 15px;
+  background: #eff9f8;
+}
+.consultation-result .consultation-report-review-hint strong {
+  color: #1a5360;
+  font-size: 17px;
+}
+.consultation-result .consultation-report-review-hint p {
+  color: #4d7278;
+  font-size: 14px;
+}
+.consultation-result .consultation-result-documents {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(18px, 3vw, 25px);
+  border: 1px solid #dbc7b5;
+  border-radius: 19px;
+  background: #fffdf9;
+  box-shadow: 0 9px 22px rgba(66, 47, 36, .05);
+}
+.consultation-result .consultation-document-heading--inline {
+  align-items: baseline;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e8dcd1;
+}
+.consultation-result .consultation-document-heading--inline h2 {
+  color: #8c5335;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  line-height: 1.45;
+}
+.consultation-result .consultation-document-heading--inline .consultation-document-meta {
+  color: #40312a;
+  font-size: 20px;
+  text-align: left;
+}
+.consultation-result .consultation-document-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 49px;
+  padding: 10px 12px;
+  border: 1px solid #cdb6a2;
+  border-radius: 12px;
+  background: #fff;
+  color: #594637;
+  font: 700 13px/1.35 system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary {
+  border-color: #65364e;
+  background: #65364e;
+  color: #fff;
+}
+.consultation-result .consultation-document-actions > a.consultation-action-primary:hover {
+  background: #4b263a;
+}
+.consultation-result .consultation-document-actions > .consultation-share-action {
+  border-color: #8ebfbe;
+  background: #eaf6f5;
+  color: #1b6470;
+}
+.consultation-result .consultation-document-actions > button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.consultation-result .consultation-document-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+.consultation-result .consultation-document-secondary-actions > form {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.consultation-result .consultation-document-secondary-actions > form > p {
+  margin: 0;
+  color: #725f51;
+  font-size: 12px;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-revoke {
+  border-color: #dfc7c2;
+  color: #8b4340;
+  background: #fffaf9;
+}
+.consultation-result .consultation-document-secondary-actions > form > button.consultation-access-restore {
+  border-color: #a2c9b4;
+  background: #f0faf4;
+  color: #27614c;
+}
+.consultation-result .consultation-copy-feedback {
+  margin-top: 10px;
+  color: #4e7076;
+  font-size: 12px;
+}
+.consultation-result .consultation-cabinet-card--dense {
+  margin-top: 15px;
+  padding: 21px;
+  border: 1px solid #cbdedb;
+  border-radius: 18px;
+  background: #f4faf7;
+}
+.consultation-result :is(a, button):focus-visible {
+  outline: 3px solid #c17983;
+  outline-offset: 3px;
+}
+.consultation-studio .consultation-template-notice {
+  margin: 15px 0 0;
+  padding: 12px 15px;
+  border: 1px solid #e1cda9;
+  border-radius: 10px;
+  background: #fffbef;
+  color: #755338;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* The web document also exposes remedy descriptions without relying on color. */
+.canonical-document .canonical-remedy > a {
+  display: inline-flex;
+  margin: 8px 0;
+  color: #135f79;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-topbar--dense { align-items: flex-start; padding-top: 14px; }
+  .consultation-result .consultation-result-top-actions { flex-direction: row; }
+  .consultation-result .consultation-result-summary--dense { padding: 15px; flex-wrap: wrap; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .consultation-result .consultation-document-card--dense { padding: 17px; }
+}
+@media (max-width: 390px) {
+  .consultation-result .consultation-result-topbar--dense h1 { font-size: 36px; }
+  .consultation-result .consultation-result-top-actions { width: 100%; }
+  .consultation-result .consultation-result-top-actions .consultation-result-new-link,
+  .consultation-result .consultation-result-top-actions form { flex: 1 1 130px; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button {
+    min-height: 49px;
+    padding: 10px 7px;
+    font-size: 12px;
+  }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.consultation-studio .consultation-template-review {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 13px;
+  padding: 12px 15px;
+  border: 1px solid #d8c8ba;
+  border-radius: 12px;
+  background: #fffdfa;
+  color: #4b483e;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.consultation-studio .consultation-template-review input[type="checkbox"] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #65364e;
+}
+.consultation-studio .consultation-template-review input:focus-visible {
+  outline: 3px solid #a87591;
+  outline-offset: 3px;
+}
+
+/* Original remedy descriptions and optional guide in client HTML/print reports. */
+.canonical-remedy-profiles {
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 2px solid #9b6976;
+}
+.canonical-remedy-profiles > h2 { color: #6d3042; margin-bottom: 9px; }
+.canonical-remedy-profiles > p { color: #5c5655; margin-bottom: 22px; }
+.canonical-remedy-profile { border-top: 1px solid #e5d8d8; padding: 26px 0 32px; }
+.canonical-remedy-profile > h3 { color: #643147; font-size: 22px; margin: 0 0 14px; }
+.canonical-remedy-profile-photo { margin: 16px 0 21px; }
+.canonical-remedy-profile-photo img { display: block; width: auto; max-width: 100%; max-height: 340px; object-fit: contain; border-radius: 14px; }
+.canonical-remedy-profile .remedy-content-pair { display: block; }
+.canonical-remedy-profile .remedy-content-section { margin: 16px 0; }
+.canonical-remedy-profile-link a { text-decoration: underline; text-underline-offset: 3px; }
+@media print {
+  .canonical-remedy-profiles { break-before: page; }
+  .canonical-remedy-profile { break-inside: auto; }
+  .canonical-remedy-profile h3 { break-after: avoid; }
+  .canonical-remedy-profile-photo { break-inside: avoid; }
+}
+
+.canonical-remedy-photo-unavailable { font-size: .88rem; color: #806d6f; font-style: italic; margin: 8px 0 18px; }
+
+/* Holistic House client report — editorial print-safe redesign */
+/* Keep colors clear and contrast high on screen, in browser print, and in PDF preview. */
+.prescription-shell.canonical-shell {
+  max-width: 940px;
+}
+.canonical-shell .canonical-document {
+  max-width: 830px;
+  margin-inline: auto;
+  padding: clamp(27px, 6vw, 60px);
+  border: 1px solid #e6d8ca;
+  border-top: 6px solid #64354b;
+  border-radius: 4px;
+  background: #fffdfa;
+  box-shadow: 0 18px 52px rgba(52, 33, 35, .10);
+  color: #342b2a;
+  font: 14px/1.65 Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+.canonical-document .canonical-letterhead {
+  gap: 22px;
+  margin: 0 0 30px;
+  padding: 0 0 24px;
+  border-bottom: 1px solid #dfd0c2;
+}
+.canonical-document .canonical-letterhead img {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+}
+.canonical-document .canonical-practitioner {
+  margin: 0 0 5px;
+  color: #4d283b;
+  font: 26px/1.15 Georgia, 'Times New Roman', serif;
+}
+.canonical-document .canonical-credentials {
+  color: #665955;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.canonical-document .canonical-contact {
+  margin-top: 9px;
+  color: #685c54;
+  font-size: 11px;
+}
+.canonical-document .canonical-report-eyebrow {
+  margin: 0 0 9px;
+  color: #854e63;
+  font: 700 10px/1.5 Arial, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-report-heading h1 {
+  margin: 0 0 22px;
+  color: #37252c;
+  font: 400 clamp(26px, 4vw, 37px)/1.18 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.025em;
+}
+.canonical-document .canonical-client {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 15px 23px;
+  padding: 19px 22px;
+  border: 1px solid #e8d8c8;
+  border-left: 4px solid #64354b;
+  border-radius: 12px;
+  background: #f9f4ee;
+}
+.canonical-document .canonical-client > div { min-width: 0; }
+.canonical-document .canonical-client dt {
+  margin-bottom: 5px;
+  color: #725d58;
+  font: 700 10px/1.4 Arial, sans-serif;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-client dd {
+  margin: 0;
+  color: #3a292b;
+  font: 700 15px/1.45 Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-intro {
+  margin: 20px 0 30px;
+  max-width: 66ch;
+  color: #514744;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.canonical-document .canonical-remedy-group {
+  margin-top: 28px;
+}
+.canonical-document .canonical-remedy-group-title {
+  margin: 0 0 14px;
+  padding: 0 0 10px;
+  border-bottom: 2px solid #dcc5c7;
+  color: #67364b;
+  font: 700 12px/1.4 Arial, sans-serif;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  break-after: avoid;
+}
+.canonical-document .canonical-remedy {
+  margin: 0 0 14px;
+  padding: 20px 22px;
+  border: 1px solid #e7dad0;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(66, 45, 38, .035);
+  break-inside: auto;
+}
+.canonical-document .canonical-remedy-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 13px;
+  break-after: avoid;
+}
+.canonical-document .canonical-remedy-number {
+  flex: 0 0 38px;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #64354b;
+  color: #fff;
+  font: 700 13px/1 Arial, sans-serif;
+  letter-spacing: .03em;
+}
+.canonical-document .canonical-remedy-title { min-width: 0; flex: 1 1 auto; }
+.canonical-document .canonical-remedy-title h3 {
+  margin: 0;
+  color: #37252c;
+  font: 400 23px/1.25 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-remedy-title h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.canonical-document .canonical-remedy-title h3 a:hover { color: #763b54; }
+.canonical-document .canonical-remedy-schedule {
+  display: inline-flex;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  max-width: 100%;
+  border-radius: 7px;
+  background: #f7f0ed;
+  color: #704758;
+  font: 700 12px/1.45 Arial, sans-serif;
+  text-align: left;
+  white-space: normal;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 16px 0 1px 51px;
+  padding: 9px 13px;
+  max-width: calc(100% - 51px);
+  border: 1px solid #dbc2c9;
+  border-radius: 9px;
+  background: #faf3f5;
+  color: #673047;
+  font: 700 12px/1.4 Arial, sans-serif;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action:hover {
+  background: #f3e5ea;
+  border-color: #b68c9b;
+}
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action:focus-visible,
+.canonical-document a:focus-visible {
+  outline: 3px solid #c58b9d;
+  outline-offset: 3px;
+}
+.canonical-document .canonical-remedy-fields {
+  display: grid;
+  gap: 0;
+  margin: 15px 0 0;
+}
+.canonical-document .canonical-remedy-fields > div {
+  display: grid;
+  grid-template-columns: minmax(92px, 122px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #eee7e1;
+  break-inside: avoid;
+}
+.canonical-document .canonical-remedy-fields dt,
+.canonical-document .canonical-remedy-fields dd { display: block; }
+.canonical-document .canonical-remedy-fields dt {
+  color: #76595a;
+  font: 700 11px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-remedy-fields dd {
+  margin: 0;
+  color: #342c2b;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions {
+  margin: 22px 0;
+  padding: 21px 23px;
+  border: 1px solid #e0c9c9;
+  border-left: 4px solid #64354b;
+  border-radius: 11px;
+  background: #fbf6f4;
+  box-shadow: none;
+  break-inside: auto;
+}
+.canonical-shell .canonical-document .canonical-report-notes {
+  border-color: #e1d6c5;
+  border-left-color: #9b7352;
+  background: #fcf9f3;
+}
+.canonical-document .canonical-general-instructions {
+  border-color: #e6dad1;
+  border-left-color: #ae9078;
+  background: #fffdf9;
+}
+.canonical-shell .canonical-document .canonical-report-analysis h2,
+.canonical-shell .canonical-document .canonical-report-notes h2,
+.canonical-document .canonical-general-instructions h2 {
+  margin: 0 0 11px;
+  color: #63364a;
+  font: 700 13px/1.45 Arial, sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.canonical-shell .canonical-document .canonical-report-analysis p,
+.canonical-shell .canonical-document .canonical-report-notes p,
+.canonical-document .canonical-general-instructions p {
+  margin: 0;
+  color: #3b302e;
+  font-size: 13px;
+  line-height: 1.78;
+  white-space: pre-wrap;
+}
+.canonical-document .canonical-guidance {
+  margin: 24px 0;
+  padding: 21px 23px;
+  border: 1px solid #e2d2c4;
+  border-radius: 11px;
+  background: #f9f5ee;
+  break-inside: auto;
+}
+.canonical-document .canonical-guidance h2 {
+  margin: 0 0 12px;
+  color: #63364a;
+  font: 700 14px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-guidance h3 { color: #72585a; }
+.canonical-document .canonical-guidance ul { margin-left: 18px; }
+.canonical-document .canonical-guidance li { margin-bottom: 7px; }
+.canonical-document .canonical-guidance-contact { color: #665957; }
+.canonical-document .canonical-follow-up {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 18px;
+  margin-top: 20px;
+  padding: 15px 18px;
+  border-top: 1px solid #e1d3c8;
+  border-bottom: 1px solid #e1d3c8;
+  color: #5c474b;
+}
+.canonical-document .canonical-follow-up span {
+  font: 700 11px/1.5 Arial, sans-serif;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.canonical-document .canonical-follow-up strong {
+  color: #3a292c;
+  font: 600 14px/1.5 Arial, sans-serif;
+}
+.canonical-document .canonical-signature { margin-top: 30px; }
+.canonical-document .canonical-signature strong { color: #4b2939; }
+.canonical-document .canonical-disclaimer {
+  margin-top: 30px;
+  padding-top: 14px;
+  border-top: 1px solid #eee3dc;
+  color: #756d68;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.canonical-document .canonical-remedy-profiles {
+  margin-top: 48px;
+  padding-top: 27px;
+  border-top: 3px solid #64354b;
+}
+.canonical-document .canonical-remedy-profiles > h2 {
+  margin: 0 0 8px;
+  color: #63364a;
+  font: 400 27px/1.25 Georgia, serif;
+}
+.canonical-document .canonical-remedy-profiles > p { color: #625553; }
+.canonical-document .canonical-remedy-profile {
+  padding: 23px 0 28px;
+  border-top: 1px solid #e5d7ce;
+}
+.canonical-document .canonical-remedy-profile > h3 {
+  color: #60364a;
+  font: 400 22px/1.3 Georgia, serif;
+}
+.canonical-document .canonical-remedy-profile-photo img {
+  max-height: 310px;
+  border: 1px solid #ecdfd4;
+  border-radius: 10px;
+  background: #fff;
+}
+.canonical-document .canonical-remedy-profile-link a {
+  color: #66374d;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 24px 18px 30px; }
+  .canonical-document .canonical-letterhead { gap: 13px; }
+  .canonical-document .canonical-letterhead img { width: 62px; height: 62px; flex-basis: 62px; }
+  .canonical-document .canonical-practitioner { font-size: 20px; }
+  .canonical-document .canonical-contact { font-size: 10px; }
+  .canonical-document .canonical-report-heading h1 { font-size: 26px; }
+  .canonical-document .canonical-client { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+  .canonical-document .canonical-client > div + div { padding-top: 12px; border-top: 1px solid #eadbd1; }
+  .canonical-document .canonical-remedy { padding: 16px; }
+  .canonical-document .canonical-remedy-title h3 { font-size: 20px; }
+  .canonical-document .canonical-remedy-number { flex-basis: 32px; width: 32px; height: 32px; }
+  .canonical-document .canonical-remedy > a.canonical-remedy-profile-action { margin-left: 0; max-width: 100%; }
+  .canonical-document .canonical-remedy-fields > div { grid-template-columns: 1fr; gap: 3px; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-general-instructions,
+  .canonical-document .canonical-guidance { padding: 17px; }
+}
+@media print {
+  @page { size: A4; margin: 13mm 12mm; }
+  .canonical-shell .canonical-document {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0 !important;
+    border: 0;
+    border-top: 0;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .canonical-document .canonical-letterhead { break-after: avoid; }
+  .canonical-document .canonical-report-heading,
+  .canonical-document .canonical-remedy-heading,
+  .canonical-document .canonical-remedy-group-title { break-after: avoid; }
+  .canonical-document .canonical-remedy { box-shadow: none; border-radius: 6px; }
+  .canonical-document .canonical-remedy-fields > div { break-inside: avoid; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-guidance { break-inside: auto; }
+  .canonical-document .canonical-remedy-profiles { break-before: page; }
+  .canonical-document .canonical-remedy-profile-photo { break-inside: avoid; }
+  .canonical-document a { color: #603248; }
+}
+
+
+/* Compact document handoff controls: preserve every action and full labels. */
+.consultation-result .consultation-report-review-hint {
+  margin: 11px 0 12px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: #f1f8f7;
+}
+.consultation-result .consultation-report-review-hint strong { font-size: 15px; }
+.consultation-result .consultation-report-review-hint p { margin: 4px 0 0; font-size: 13px; line-height: 1.38; }
+.consultation-result .consultation-document-card--dense {
+  padding: clamp(15px, 2.5vw, 21px);
+  border-color: #e5d6cc;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgb(52 33 35 / 4%);
+}
+.consultation-result .consultation-document-heading--inline { padding-bottom: 10px; gap: 6px 12px; }
+.consultation-result .consultation-document-actions { gap: 8px; margin-top: 11px; }
+.consultation-result .consultation-document-secondary-actions { gap: 8px; margin-top: 8px; }
+.consultation-result .consultation-document-actions > a,
+.consultation-result .consultation-document-actions > button,
+.consultation-result .consultation-document-secondary-actions > a,
+.consultation-result .consultation-document-secondary-actions > form > button {
+  min-height: 44px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.28;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+  hyphens: none;
+}
+.consultation-result .consultation-cabinet-card--dense { padding: 15px; border-radius: 14px; margin-top: 11px; }
+@media (max-width: 700px) {
+  .consultation-result .consultation-result-summary--dense { gap: 9px; margin-top: 12px; }
+  .consultation-result .consultation-document-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .consultation-result .consultation-document-secondary-actions > form:last-child { grid-column: 1 / -1; }
+  .consultation-result .consultation-document-actions > a,
+  .consultation-result .consultation-document-actions > button,
+  .consultation-result .consultation-document-secondary-actions > a,
+  .consultation-result .consultation-document-secondary-actions > form > button { min-height: 44px; padding: 9px 8px; font-size: 13px; }
+}
+/* Client reading surface: larger body type, less leading, cleaner editorial rhythm. */
+.canonical-shell .canonical-document {
+  padding: clamp(20px, 3.6vw, 42px);
+  background: #fff;
+  color: #302b2a;
+  font: 16px/1.44 Arial, Helvetica, sans-serif;
+}
+.canonical-document .canonical-letterhead { margin-bottom: 20px; padding-bottom: 16px; gap: 15px; }
+.canonical-document .canonical-practitioner { font-size: 25px; }
+.canonical-document .canonical-report-heading h1 { margin-bottom: 16px; }
+.canonical-document .canonical-client { gap: 10px 18px; padding: 14px 16px; }
+.canonical-document .canonical-client dd { font-size: 16px; line-height: 1.35; }
+.canonical-document .canonical-intro { margin: 16px 0 18px; font-size: 15px; line-height: 1.43; }
+.canonical-document .canonical-remedy-group { margin-top: 18px; }
+.canonical-document .canonical-remedy { margin-bottom: 11px; padding: 16px 18px; }
+.canonical-document .canonical-remedy-fields { margin-top: 10px; }
+.canonical-document .canonical-remedy-fields > div { gap: 9px; padding: 7px 0; }
+.canonical-document .canonical-remedy-fields dt { font-size: 12px; line-height: 1.3; }
+.canonical-document .canonical-remedy-fields dd { font-size: 15px; line-height: 1.43; }
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions { margin: 16px 0; padding: 16px 18px; }
+.canonical-shell .canonical-document .canonical-report-analysis p,
+.canonical-shell .canonical-document .canonical-report-notes p,
+.canonical-document .canonical-general-instructions p { font-size: 16px; line-height: 1.43; }
+.canonical-document .canonical-guidance { margin: 16px 0; padding: 17px 19px; }
+.canonical-document .canonical-guidance :is(p,li) { font-size: 15px; line-height: 1.45; }
+.canonical-document .canonical-guidance li { margin-bottom: 4px; }
+.canonical-document .canonical-remedy-profiles { margin-top: 28px; padding-top: 18px; }
+.canonical-document .canonical-remedy-profile { padding: 17px 0 20px; }
+.canonical-document .canonical-remedy-profile .remedy-content-section { margin: 10px 0; font-size: 16px; line-height: 1.44; }
+.canonical-document .canonical-remedy-profile :is(p,li) { font-size: 16px; line-height: 1.44; }
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 18px 15px 24px; font-size: 16px; }
+  .canonical-document .canonical-letterhead { margin-bottom: 15px; gap: 10px; }
+  .canonical-document .canonical-letterhead img { width: 58px; height: 58px; flex-basis: 58px; }
+  .canonical-document .canonical-practitioner { font-size: 19px; }
+  .canonical-document .canonical-report-heading h1 { font-size: 25px; }
+  .canonical-document .canonical-client { gap: 8px; padding: 12px 14px; }
+  .canonical-shell .canonical-document .canonical-report-analysis,
+  .canonical-shell .canonical-document .canonical-report-notes,
+  .canonical-document .canonical-general-instructions,
+  .canonical-document .canonical-guidance { padding: 14px 15px; }
+}
+@media print {
+  .canonical-shell .canonical-document { padding: 0 !important; font-size: 12.2pt; line-height: 1.32; }
+  .canonical-document .canonical-client dd,
+  .canonical-document .canonical-remedy-fields dd,
+  .canonical-shell .canonical-document .canonical-report-analysis p,
+  .canonical-shell .canonical-document .canonical-report-notes p,
+  .canonical-document .canonical-general-instructions p { font-size: 11.8pt; line-height: 1.34; }
+  .canonical-document .canonical-remedy { box-shadow: none; }
+}
+
+/* Client-report appendix: readable on phones and compact in print. */
+.canonical-shell .canonical-document .canonical-remedy-profiles {
+  margin-top: 32px;
+  padding-top: 20px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profiles > h2 {
+  margin: 0 0 8px;
+  color: #603248;
+  font: 400 28px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile {
+  display: flow-root;
+  padding: 18px 0 22px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+  margin: 0 0 11px;
+  color: #513044;
+  font: 400 24px/1.2 Georgia, 'Times New Roman', serif;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo {
+  float: right;
+  width: min(33%, 196px);
+  max-width: 45%;
+  margin: 1px 0 10px 18px;
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 230px;
+  object-fit: contain;
+  border: 1px solid #e7d8cd;
+  border-radius: 8px;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+  margin-top: 0;
+  color: #30292a;
+  font: 18.5px/1.36 Arial, Helvetica, sans-serif;
+  overflow-wrap: break-word;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body p {
+  margin: .3em 0 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body :is(p, li) {
+  font-size: inherit;
+  line-height: inherit;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-intro {
+  margin-bottom: .42rem;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-pair {
+  display: block;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section {
+  margin: .62rem 0 0;
+  padding: 0;
+  border-top: 0;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+  margin: 0 0 .18em;
+  color: #603248;
+  font-size: 19px;
+  line-height: 1.25;
+}
+.canonical-shell .canonical-document .canonical-remedy-profile-link {
+  clear: both;
+  margin-top: 12px;
+  padding-top: 3px;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    padding: 14px 0 18px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile > h3 {
+    font-size: 23px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    width: clamp(105px, 39%, 155px);
+    max-width: 46%;
+    margin: 1px 0 8px 12px;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 18px;
+    line-height: 1.34;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section h3 {
+    font-size: 18px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document .canonical-remedy-profile-photo {
+    float: right;
+    width: 31%;
+    max-width: 190px;
+    margin: 1px 0 7px 13px;
+    break-inside: avoid;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-body {
+    font-size: 12pt;
+    line-height: 1.28;
+  }
+  .canonical-shell .canonical-document .canonical-remedy-profile {
+    break-inside: auto;
+  }
+}
+
+
+/* Premium compact client report: one clear visual system, no decorative filler. */
+.canonical-shell .canonical-document {
+  padding: clamp(16px, 3vw, 34px);
+}
+.canonical-document .canonical-letterhead--compact {
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 13px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2d6d0;
+}
+.canonical-document .canonical-letterhead--compact img {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+}
+.canonical-document .canonical-letterhead--compact .canonical-practitioner {
+  font-size: 21px;
+  line-height: 1.12;
+}
+.canonical-document .canonical-letterhead--compact .canonical-credentials {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.34;
+}
+.canonical-document .canonical-report-heading h1 { margin-bottom: 10px; }
+.canonical-document .canonical-report-eyebrow { margin-bottom: 4px; letter-spacing: .1em; }
+.canonical-document .canonical-client { gap: 8px 12px; padding: 11px 13px; }
+.canonical-document .canonical-client dd { font-size: 15px; }
+.canonical-document .canonical-intro { margin: 10px 0 13px; }
+.canonical-document .canonical-progress {
+  margin: 11px 0 15px;
+  padding: 12px 13px 10px;
+  border: 1px solid #e4dad7;
+  border-left: 3px solid #65384a;
+  border-radius: 9px;
+  background: #f9f6f3;
+  break-inside: avoid;
+}
+.canonical-document .canonical-progress > h2 {
+  margin: 0 0 9px;
+  color: #65384a;
+  font: 700 12px/1.25 Arial, sans-serif;
+}
+.canonical-document .canonical-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.canonical-document .canonical-progress-item {
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid #ede4de;
+  border-radius: 7px;
+  background: #fff;
+}
+.canonical-document .canonical-progress-item > span {
+  display: block;
+  min-height: 2em;
+  color: #685a5a;
+  font: 600 11px/1.2 Arial, sans-serif;
+}
+.canonical-document .canonical-progress-item > strong {
+  display: block;
+  margin: 4px 0 7px;
+  color: #795762;
+  font: 700 24px/1.1 Georgia, serif;
+  white-space: nowrap;
+}
+.canonical-document .canonical-progress-item--after > strong { color: #377f78; }
+.canonical-document .canonical-progress-item--target > strong { color: #65384a; }
+.canonical-document .canonical-progress-item > strong small {
+  margin-left: 2px;
+  font: 400 11px/1 Arial, sans-serif;
+  color: #77706c;
+}
+.canonical-document .canonical-progress-track {
+  height: 4px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #e4dcd8;
+}
+.canonical-document .canonical-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a68891;
+}
+.canonical-document .canonical-progress-item--after .canonical-progress-track i { background: #377f78; }
+.canonical-document .canonical-progress-item--target .canonical-progress-track i { background: #65384a; }
+.canonical-document .canonical-progress-caption {
+  margin: 7px 0 0;
+  color: #766b69;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.canonical-document .canonical-remedy-group { margin-top: 15px; }
+.canonical-document .canonical-remedy-group-title { padding-bottom: 6px; margin-bottom: 9px; }
+.canonical-document .canonical-remedy { padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; }
+.canonical-document .canonical-remedy-schedule { margin-top: 5px; padding: 4px 7px; }
+.canonical-document .canonical-remedy > a.canonical-remedy-profile-action {
+  margin-top: 8px;
+  padding: 6px 9px;
+}
+.canonical-shell .canonical-document .canonical-report-analysis,
+.canonical-shell .canonical-document .canonical-report-notes,
+.canonical-document .canonical-general-instructions { margin: 12px 0; padding: 12px 14px; border-radius: 8px; }
+.canonical-document .canonical-guidance { margin: 12px 0; padding: 13px 15px; }
+.canonical-document .canonical-guidance h2 { margin-bottom: 6px; }
+.canonical-document .canonical-signature--compact { margin-top: 16px; }
+.canonical-document .canonical-signature--compact .canonical-signature-art {
+  width: 128pt !important;
+  margin-left: 0 !important;
+  margin-bottom: 0 !important;
+}
+.canonical-document .canonical-disclaimer { margin-top: 12px; padding-top: 8px; }
+.canonical-shell .canonical-document .canonical-remedy-profiles { margin-top: 19px; padding-top: 13px; }
+.canonical-shell .canonical-document .canonical-remedy-profile { padding: 12px 0 16px; }
+.canonical-shell .canonical-document .canonical-remedy-profile .remedy-content-section { margin-top: .42rem; }
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document { padding: 16px 12px 24px; }
+  .canonical-document .canonical-letterhead--compact img { width: 53px; height: 53px; flex-basis: 53px; }
+  .canonical-document .canonical-letterhead--compact .canonical-practitioner { font-size: 17px; }
+  .canonical-document .canonical-letterhead--compact .canonical-credentials { font-size: 10px; }
+  .canonical-document .canonical-client { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); padding: 10px 11px; }
+  .canonical-document .canonical-client > div + div { border-top: 0; padding-top: 0; }
+  .canonical-document .canonical-progress { padding: 9px 8px; }
+  .canonical-document .canonical-progress-grid { gap: 5px; }
+  .canonical-document .canonical-progress-item { padding: 8px 6px; }
+  .canonical-document .canonical-progress-item > span { font-size: 10px; }
+  .canonical-document .canonical-progress-item > strong { font-size: 21px; }
+  .canonical-document .canonical-remedy { padding: 11px 12px; }
+}
+@media print {
+  .canonical-document .canonical-progress { break-inside: avoid; }
+  .canonical-document .canonical-letterhead--compact { break-after: avoid; }
+  .canonical-document .canonical-progress-item { break-inside: avoid; }
+  .canonical-document .canonical-remedy-heading { break-after: avoid; }
+  .canonical-shell .canonical-document .canonical-remedy-profile > h3 { break-after: avoid; }
+}
+
+/* Adaptive Premium Report — approved editorial direction, not a fixed screenshot.
+   All panels reflow to the client's actual data and original remedy assets. */
+.canonical-shell .canonical-document--editorial {
+  --report-plum: #5b293f;
+  --report-teal: #31796e;
+  --report-sage: #e8f2ec;
+  --report-ivory: #faf6f2;
+  --report-line: #e8dcd6;
+  max-width: 830px;
+  padding: clamp(20px, 4.2vw, 46px);
+  background: #fffdfa;
+  color: #332e2e;
+  border-top: 6px solid var(--report-plum);
+  box-shadow: 0 12px 35px rgb(47 28 28 / 10%);
+}
+.canonical-document--editorial .canonical-letterhead--compact {
+  gap: 15px;
+  margin-bottom: 14px;
+  padding-bottom: 13px;
+  border-color: #dbcac3;
+}
+.canonical-document--editorial .canonical-practitioner {
+  color: #5b293f;
+  font: 400 clamp(21px,3vw,27px)/1.1 Georgia,'Times New Roman',serif;
+  letter-spacing: .015em;
+}
+.canonical-document--editorial .canonical-report-hero {
+  position: relative;
+  isolation: isolate;
+  margin: 0 0 14px;
+  padding: 9px 0 15px;
+  border-bottom: 1px solid var(--report-line);
+  break-after: avoid;
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 5px;
+  right: 0;
+  width: 125px;
+  height: 90%;
+  opacity: .48;
+  background: radial-gradient(ellipse at 100% 30%,#e3eee9 0%,transparent 72%);
+  pointer-events:none;
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  color: #74485c;
+  letter-spacing: .15em;
+  font-size: 11px;
+}
+.canonical-document--editorial .canonical-report-heading h1 {
+  max-width: 25ch;
+  margin: 5px 0 10px;
+  color: var(--report-plum);
+  font: 400 clamp(30px,5.4vw,42px)/1.07 Georgia,'Times New Roman',serif;
+  letter-spacing: -.027em;
+  overflow-wrap: anywhere;
+}
+.canonical-document--editorial .canonical-report-hero-subtitle {
+  margin: 0;
+  color: #75645f;
+  font: italic 14px/1.38 Georgia,'Times New Roman',serif;
+}
+.canonical-document--editorial .canonical-client {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+  gap: 0;
+  padding: 11px 14px;
+  border: 1px solid #efe4df;
+  border-left: 4px solid var(--report-plum);
+  border-radius: 9px;
+  background: linear-gradient(105deg,#f7f0ec,#fcf9f6);
+}
+.canonical-document--editorial .canonical-client > div {
+  padding-inline: 11px;
+}
+.canonical-document--editorial .canonical-client > div + div {
+  border-left: 1px solid #e2d3cf;
+}
+.canonical-document--editorial .canonical-client dt {
+  color: #865769;
+  margin-bottom: 4px;
+}
+.canonical-document--editorial .canonical-client dd {
+  color: #563245;
+  font: 600 17px/1.3 Georgia,'Times New Roman',serif;
+}
+.canonical-document--editorial .canonical-intro {
+  margin: 12px 0 14px;
+  font-size: 14px;
+  line-height: 1.43;
+  color: #554745;
+}
+.canonical-document--editorial .canonical-progress {
+  padding: 13px 14px 11px;
+  margin: 12px 0 18px;
+  border: 1px solid var(--report-line);
+  border-radius: 10px;
+  border-left: 0;
+  background: #fbf7f4;
+  break-inside: avoid;
+}
+.canonical-document--editorial .canonical-progress > h2 {
+  margin: 0 0 11px;
+  text-transform: uppercase;
+  color: var(--report-plum);
+  letter-spacing: .1em;
+  font: 700 12px/1.3 Arial, sans-serif;
+}
+.canonical-document--editorial .canonical-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  max-width: 570px;
+  margin-inline: auto;
+}
+.canonical-document--editorial .canonical-progress-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 7px;
+  border: 1px solid #eae0db;
+  border-radius: 9px;
+  background: #fffdfc;
+  text-align: center;
+  min-width: 0;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  --ring: #a57f8d;
+  --progress: 0%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  background: conic-gradient(var(--ring) var(--progress),#e7e0db 0);
+  border-radius: 100%;
+}
+.canonical-document--editorial .canonical-progress-dial::before {
+  content:'';
+  position:absolute;
+  inset: 6px;
+  background:#fffdfc;
+  border-radius:50%;
+}
+.canonical-document--editorial .canonical-progress-item--after .canonical-progress-dial {--ring:var(--report-teal)}
+.canonical-document--editorial .canonical-progress-dial strong {
+  position:relative;
+  display:block;
+  margin:0;
+  color:#573047;
+  font:600 23px/1.1 Georgia,serif;
+}
+.canonical-document--editorial .canonical-progress-dial strong small {
+  color:#8e7778;
+  font:400 12px/1 Arial,sans-serif;
+  margin-left:1px;
+}
+.canonical-document--editorial .canonical-progress-item--after .canonical-progress-dial strong {color:#17685f}
+.canonical-document--editorial .canonical-progress-item > span {
+  min-height:0;
+  color:#69565d;
+  font:700 12px/1.28 Arial,sans-serif;
+}
+.canonical-document--editorial .canonical-progress-caption {
+  margin:8px 2px 0;
+  color:#746d6b;
+  font-size:11px;
+}
+.canonical-document--editorial .canonical-remedy-group { margin-top: 13px; }
+.canonical-document--editorial .canonical-remedy-group-title {
+  color:var(--report-plum);
+  border-bottom:1px solid #e6d6d1;
+  margin-bottom:9px;
+}
+.canonical-document--editorial .canonical-remedy {
+  display:flow-root;
+  padding:13px 15px;
+  background:linear-gradient(110deg,#fcf6f2,#fffcfa);
+  border-color:var(--report-line);
+  box-shadow:none;
+  break-inside:avoid;
+}
+.canonical-document--editorial .canonical-remedy-card-photo {
+  float:left;
+  width:78px;
+  margin:0 13px 4px 0;
+  padding:3px;
+  border:1px solid #eaddd5;
+  border-radius:7px;
+  background:white;
+}
+.canonical-document--editorial .canonical-remedy-card-photo img {
+  width:100%;
+  height:87px;
+  display:block;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-remedy-number {
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  border-radius:50%;
+  font-size:12px;
+}
+.canonical-document--editorial .canonical-remedy-title h3 {
+  color:var(--report-plum);
+  font:600 clamp(20px,3vw,25px)/1.2 Georgia,serif;
+}
+.canonical-document--editorial .canonical-remedy-title h3 a {color:inherit}
+.canonical-document--editorial .canonical-remedy-schedule {
+  display:block;
+  font:600 12px/1.35 Arial,sans-serif;
+  padding:0;
+  background:none;
+  color:#72505d;
+}
+.canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+  display:inline-flex;
+  clear:both;
+  margin:10px 0 0;
+  padding:5px 0;
+  max-width:100%;
+  background:transparent;
+  border:0;
+  color:var(--report-plum);
+}
+.canonical-document--editorial .canonical-remedy-fields { clear:both; }
+.canonical-document--editorial .canonical-general {
+  border-color:var(--report-line);
+  background:#fffcfa;
+}
+.canonical-document--editorial .canonical-report-analysis,
+.canonical-document--editorial .canonical-report-notes { padding:12px 15px; }
+.canonical-document--editorial .canonical-remedy-profiles {
+  break-before:page;
+  margin-top:24px;
+  padding-top:15px;
+  border-top:3px solid var(--report-plum);
+}
+.canonical-document--editorial .canonical-remedy-profiles > h2 {
+  margin:0 0 8px;
+  color:var(--report-plum);
+  font:400 30px/1.2 Georgia,serif;
+}
+.canonical-document--editorial .canonical-remedy-profile {
+  padding:14px 0;
+}
+.canonical-document--editorial .canonical-remedy-profile > h3 {color:var(--report-plum)}
+.canonical-document--editorial .canonical-remedy-profile-photo {
+  float:right;
+  margin:0 0 10px 14px;
+  width:min(32%,175px);
+}
+.canonical-document--editorial .canonical-remedy-profile .remedy-content-body {
+  font:16px/1.33 Arial, sans-serif;
+  color:#383130;
+}
+.canonical-document--editorial .canonical-remedy-profile .remedy-content-body :is(p,li) {
+  font-size:inherit;
+  line-height:inherit;
+}
+.canonical-document--editorial .canonical-remedy-profile .remedy-content-section h3 {
+  color:var(--report-plum);
+}
+.canonical-document--editorial .canonical-signature--compact {
+  display:grid;
+  grid-template-columns:minmax(135px,165px) minmax(0,1fr);
+  grid-template-rows:auto auto auto;
+  gap:4px 19px;
+  align-items:center;
+  margin:16px 0 8px;
+  padding:12px 15px;
+  border:1px solid var(--report-line);
+  border-left:3px solid var(--report-plum);
+  border-radius:8px;
+  background:#faf7f3;
+  break-inside:avoid;
+}
+.canonical-document--editorial .canonical-signature--compact > p:first-child {
+  grid-column:2;grid-row:3;
+  margin:0;font-size:12px;
+}
+.canonical-document--editorial .canonical-signature--compact .canonical-signature-art {
+  grid-column:1;grid-row:1 / span 2;
+  width:122px!important;
+  margin:0!important;
+}
+.canonical-document--editorial .canonical-signature--compact .canonical-signature-line {
+  grid-column:1;grid-row:3;
+  width:125px!important;
+  margin:0;
+}
+.canonical-document--editorial .canonical-signature--compact strong {
+  grid-column:2;grid-row:1;
+  color:var(--report-plum);
+  font-size:15px;
+}
+.canonical-document--editorial .canonical-signature--compact > p:last-child {
+  grid-column:2;grid-row:2;
+  margin:0;
+  line-height:1.25;
+  font-size:10px;
+}
+@media (max-width: 600px) {
+  .canonical-shell .canonical-document--editorial {padding:16px 12px 22px}
+  .canonical-document--editorial .canonical-report-heading h1 {font-size:29px}
+  .canonical-document--editorial .canonical-client {grid-template-columns:1fr 1fr;padding:9px}
+  .canonical-document--editorial .canonical-client > div {padding:3px 6px}
+  .canonical-document--editorial .canonical-client > div + div {border:0;padding-top:3px}
+  .canonical-document--editorial .canonical-client > div:last-child:nth-child(3) {
+    grid-column:1/-1;border-top:1px solid #e4d7cf;margin-top:7px;padding-top:8px;
+  }
+  .canonical-document--editorial .canonical-client dd {font-size:14px}
+  .canonical-document--editorial .canonical-progress {padding:10px 8px}
+  .canonical-document--editorial .canonical-progress-grid {gap:5px}
+  .canonical-document--editorial .canonical-progress-item {padding:9px 3px}
+  .canonical-document--editorial .canonical-progress-dial {width:62px;height:62px;flex-basis:62px}
+  .canonical-document--editorial .canonical-progress-dial strong {font-size:19px}
+  .canonical-document--editorial .canonical-progress-item > span {font-size:10px}
+  .canonical-document--editorial .canonical-remedy-card-photo {width:66px;margin-right:10px}
+  .canonical-document--editorial .canonical-remedy-card-photo img {height:73px}
+  .canonical-document--editorial .canonical-signature--compact {grid-template-columns:110px minmax(0,1fr);padding:10px;column-gap:9px}
+  .canonical-document--editorial .canonical-signature--compact .canonical-signature-art {width:105px!important}
+  .canonical-document--editorial .canonical-signature--compact .canonical-signature-line {width:105px!important}
+  .canonical-document--editorial .canonical-remedy-profile .remedy-content-body {font-size:17px;line-height:1.36}
+}
+@media print {
+  .canonical-shell .canonical-document--editorial {
+    padding:0!important;
+    background:white!important;
+    border:0;
+    box-shadow:none;
+    color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-report-hero {break-after:avoid}
+  .canonical-document--editorial .canonical-progress {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy-card-photo {break-inside:avoid}
+  .canonical-document--editorial .canonical-signature--compact {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy-profile h3 {break-after:avoid}
+  .canonical-document--editorial .canonical-remedy-profiles {break-before:page}
+  .canonical-document--editorial .canonical-remedy-profile .remedy-content-body {font-size:11.5pt;line-height:1.28}
+}
+
+/* Report appendix: the complete original library description, not a preview. */
+.canonical-document--editorial .canonical-remedy-appendix-description {
+  margin: 0 0 15px;
+  color: #776564;
+  font: 12px/1.4 Arial, sans-serif;
+}
+.canonical-document--editorial .remedy-source-full {
+  display: flow-root;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.canonical-document--editorial .remedy-source-full .remedy-source-heading {
+  clear: none;
+  margin: 14px 0 5px;
+  color: var(--report-plum);
+  font: 700 15px/1.32 Arial, sans-serif;
+  break-after: avoid;
+}
+.canonical-document--editorial .remedy-source-full .remedy-source-paragraphs > p {
+  margin: 5px 0;
+}
+.canonical-document--editorial .remedy-source-full .remedy-source-paragraphs ul {
+  margin: 5px 0 8px 19px;
+  padding-left: 0;
+  list-style-type: disc;
+}
+.canonical-document--editorial .remedy-source-full .remedy-source-paragraphs li {
+  margin-bottom: 4px;
+}
+@media (max-width: 600px) {
+  .canonical-document--editorial .canonical-progress-grid { gap: 8px; }
+  .canonical-document--editorial .remedy-source-full .remedy-source-heading { font-size: 16px; }
+}
+@media print {
+  .canonical-document--editorial .remedy-source-full .remedy-source-heading { break-after: avoid; }
+  .canonical-document--editorial .remedy-source-full .remedy-source-paragraphs { break-inside: auto; }
+}
+
+
+/* ---------------------------------------------------------------------------
+   Premium client report v3 — true editorial reading sheet, responsive to each
+   saved client report. Cream, authentic burgundy and restrained evidence-teal.
+   This intentionally follows (not replaces) the approved appendix/print rules.
+   --------------------------------------------------------------------------- */
+.canonical-shell .canonical-document--editorial {
+  --report-plum: #5b2e46;
+  --report-teal: #287f7c;
+  --report-sage: #e8f5ef;
+  --report-ivory: #fbf8f3;
+  --report-line: #e1e8e5;
+  position:relative;
+  max-width:860px;
+  min-width:0;
+  padding:clamp(17px,3.7vw,43px);
+  border:1px solid #e1e8e4;
+  border-top:5px solid #5b2e46;
+  border-radius:18px;
+  background:#fffefa;
+  box-shadow:0 20px 65px rgba(28,56,60,.09);
+  color:#373331;
+  font:16px/1.48 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;
+}
+.canonical-document--editorial .canonical-report-brandline {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border-bottom:1px solid #dfe8e3;
+  padding-bottom:13px;
+  margin-bottom:15px;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {
+  flex:1;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  gap:12px;
+  align-items:center;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact img {
+  flex:0 0 58px;
+  width:58px;
+  height:58px;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-practitioner {
+  font:400 clamp(18px,2.4vw,25px)/1.1 Georgia,'Times New Roman',serif;
+  color:var(--report-plum);
+  letter-spacing:-.015em;
+  margin:0 0 4px;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-credentials {
+  font:11.5px/1.3 Arial,Helvetica,sans-serif;
+  color:#607078;
+  letter-spacing:0;
+}
+.canonical-document--editorial .canonical-report-private-label {
+  align-self:center;
+  flex:0 0 auto;
+  padding:8px 10px;
+  border:1px solid #cae4dd;
+  border-radius:999px;
+  background:#edf8f4;
+  color:#28766d;
+  font:700 9px/1.3 Arial,Helvetica,sans-serif;
+  letter-spacing:.12em;
+}
+.canonical-document--editorial .canonical-report-hero {
+  z-index:0;
+  display:block;
+  margin:0 0 13px;
+  padding:17px 20px 19px;
+  border:1px solid #e7ebe5;
+  border-left:4px solid #397c76;
+  border-radius:17px;
+  background:linear-gradient(118deg,#fdf7f2 0%,#fbf9f4 45%,#eef9f5 100%);
+  break-inside:avoid;
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  width:38%;
+  top:0;
+  right:0;
+  opacity:.5;
+  background:radial-gradient(ellipse at top right,#e2f3e9 0%,transparent 75%);
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  position:relative;
+  display:block;
+  margin:0 0 7px;
+  color:#4f817a;
+  font:800 10px/1.3 Arial,Helvetica,sans-serif;
+  letter-spacing:.14em;
+}
+.canonical-document--editorial .canonical-report-heading h1 {
+  position:relative;
+  max-width:none;
+  margin:0 0 8px;
+  font:400 clamp(27px,4vw,37px)/1.12 Georgia,'Times New Roman',serif;
+  letter-spacing:-.035em;
+  color:#4c263e;
+  text-transform:none;
+  overflow-wrap:normal;
+  word-break:normal;
+  hyphens:auto;
+}
+.canonical-document--editorial .canonical-report-hero-subtitle {
+  position:relative;
+  margin:0;
+  color:#687077;
+  font:400 13px/1.43 Arial,Helvetica,sans-serif;
+}
+.canonical-document--editorial .canonical-client {
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+  gap:0;
+  margin:0;
+  padding:10px 15px;
+  border:1px solid #dfe9e7;
+  border-radius:13px;
+  border-left:3px solid #2f827c;
+  background:#f7fbf9;
+}
+.canonical-document--editorial .canonical-client > div {
+  min-width:0;
+  padding:3px 11px;
+}
+.canonical-document--editorial .canonical-client > div + div {
+  border-left:1px solid #dceae6;
+}
+.canonical-document--editorial .canonical-client > div:last-child:nth-child(3) {
+  grid-column:1 / -1;
+  border-left:0;
+  border-top:1px solid #e0eae7;
+  margin-top:5px;
+  padding-top:8px;
+}
+.canonical-document--editorial .canonical-client dt {
+  color:#4d7878;
+  margin:0 0 4px;
+  font:800 10px/1.35 Arial,Helvetica,sans-serif;
+  letter-spacing:.10em;
+}
+.canonical-document--editorial .canonical-client dd {
+  margin:0;
+  color:#374348;
+  font:650 clamp(14px,2.2vw,17px)/1.27 Arial,Helvetica,sans-serif;
+}
+.canonical-document--editorial .canonical-intro {
+  max-width:68ch;
+  margin:12px 2px 16px;
+  color:#68716d;
+  font:400 13px/1.46 Arial,Helvetica,sans-serif;
+}
+.canonical-document--editorial .canonical-progress {
+  margin:14px 0 17px;
+  padding:16px 18px;
+  border:1px solid #d3e5e0;
+  border-radius:16px;
+  background:linear-gradient(120deg,#f3faf7 0%,#fbfdfa 100%);
+  break-inside:avoid;
+}
+.canonical-document--editorial .canonical-progress > h2 {
+  margin:0;
+  font:750 13px/1.3 Arial,Helvetica,sans-serif;
+  letter-spacing:.095em;
+  color:#245e5c;
+  text-transform:uppercase;
+}
+.canonical-document--editorial .canonical-progress-subtitle {
+  margin:3px 0 13px;
+  font:400 12px/1.38 Arial,Helvetica,sans-serif;
+  color:#6a7977;
+}
+.canonical-document--editorial .canonical-progress-grid {
+  max-width:none;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:0;
+}
+.canonical-document--editorial .canonical-progress-item {
+  min-width:0;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+  gap:15px;
+  margin:0;
+  padding:13px 16px;
+  border:1px solid #deeae6;
+  border-radius:13px;
+  background:#fff;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  flex:0 0 70px;
+  width:70px;
+  height:70px;
+  background:conic-gradient(var(--ring) var(--progress),#e6ebe7 0);
+}
+.canonical-document--editorial .canonical-progress-dial::before { inset:5px;background:#fff; }
+.canonical-document--editorial .canonical-progress-item--before .canonical-progress-dial {--ring:#ab8194}
+.canonical-document--editorial .canonical-progress-item--after {
+  border-color:#c8e4db;
+  background:linear-gradient(112deg,#fff 0%,#effaf6 100%);
+}
+.canonical-document--editorial .canonical-progress-item--after .canonical-progress-dial {--ring:#2c8b7f}
+.canonical-document--editorial .canonical-progress-dial strong {
+  font:650 24px/1 Georgia,'Times New Roman',serif;
+  color:#65334a;
+}
+.canonical-document--editorial .canonical-progress-item--after .canonical-progress-dial strong {color:#1e6e63}
+.canonical-document--editorial .canonical-progress-item > span {
+  margin:0;
+  font:750 13px/1.3 Arial,Helvetica,sans-serif;
+  color:#4e6363;
+}
+.canonical-document--editorial .canonical-report-analysis,
+.canonical-document--editorial .canonical-report-notes,
+.canonical-document--editorial .canonical-general-instructions {
+  margin:17px 0;
+  padding:17px 20px;
+  border:1px solid #e0e7e4;
+  border-left:3px solid #3d8c80;
+  border-radius:14px;
+  background:#fffefb;
+  box-shadow:0 6px 18px rgba(56,82,81,.03);
+  break-inside:auto;
+}
+.canonical-document--editorial .canonical-report-analysis {background:linear-gradient(125deg,#fffefa,#f7fbf8)}
+.canonical-document--editorial .canonical-report-notes {border-left-color:#a07c8e;background:#fbf8f6}
+.canonical-document--editorial .canonical-report-analysis h2,
+.canonical-document--editorial .canonical-report-notes h2,
+.canonical-document--editorial .canonical-general-instructions h2 {
+  margin:0 0 9px;
+  color:#4c2f40;
+  font:750 13px/1.3 Arial,Helvetica,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.085em;
+}
+.canonical-document--editorial .canonical-report-analysis p,
+.canonical-document--editorial .canonical-report-notes p,
+.canonical-document--editorial .canonical-general-instructions p {
+  margin:0;
+  color:#3c4342;
+  font:400 16px/1.49 Arial,Helvetica,sans-serif;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.canonical-document--editorial .canonical-remedy-group {margin:18px 0 0}
+.canonical-document--editorial .canonical-remedy-group-title {
+  margin:0 0 10px;
+  padding:0 0 10px;
+  border-bottom:1px solid #dce8e4;
+  color:#4a3041;
+  font:750 13px/1.34 Arial,Helvetica,sans-serif;
+  letter-spacing:.11em;
+}
+.canonical-document--editorial .canonical-remedy {
+  padding:15px 16px;
+  margin:0 0 10px;
+  border:1px solid #e6e8e2;
+  border-radius:14px;
+  background:linear-gradient(135deg,#fffdfa,#faf8f3);
+  box-shadow:0 5px 14px #284f4c08;
+  break-inside:avoid;
+}
+.canonical-document--editorial .canonical-remedy-card-photo {
+  width:76px;
+  margin:0 13px 6px 0;
+  padding:4px;
+  border:1px solid #dce6e2;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 4px 12px #254f4e0a;
+}
+.canonical-document--editorial .canonical-remedy-title h3 {
+  color:#4a2f40;
+  font:500 clamp(19px,2.5vw,23px)/1.24 Georgia,'Times New Roman',serif;
+  text-transform:none;
+}
+.canonical-document--editorial .canonical-remedy-number {
+  color:#fff;
+  background:#527c79;
+  border:0;
+}
+.canonical-document--editorial .canonical-remedy-profile-action {
+  font:750 12px/1.3 Arial,Helvetica,sans-serif;
+  color:#237972;
+}
+.canonical-document--editorial .canonical-remedy-profiles {
+  margin-top:26px;
+  padding-top:17px;
+  border-top:2px solid #d5e5e0;
+}
+.canonical-document--editorial .canonical-remedy-profiles > h2 {
+  font:400 26px/1.2 Georgia,'Times New Roman',serif;
+  color:#4c3044;
+}
+.canonical-document--editorial .canonical-remedy-profile {
+  margin-top:17px;
+}
+.canonical-document--editorial .canonical-remedy-profile .remedy-content-body {
+  font:400 18.5px/1.36 Arial,Helvetica,sans-serif;
+}
+@media(max-width:680px) {
+  .canonical-shell .canonical-document--editorial {
+    padding:16px 13px 22px;
+    border-radius:13px;
+    border-top-width:4px;
+  }
+  .canonical-document--editorial .canonical-report-brandline {margin-bottom:10px;padding-bottom:10px}
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {gap:10px}
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact img {
+    width:44px;height:44px;flex-basis:44px;
+  }
+  .canonical-document--editorial .canonical-report-brandline .canonical-practitioner {font-size:19px}
+  .canonical-document--editorial .canonical-report-brandline .canonical-credentials {font-size:10px;line-height:1.25}
+  .canonical-document--editorial .canonical-report-private-label {display:none}
+  .canonical-document--editorial .canonical-report-hero {padding:15px 14px;border-radius:12px;margin-bottom:11px}
+  .canonical-document--editorial .canonical-report-heading h1 {font-size:clamp(25px,7vw,32px);line-height:1.12}
+  .canonical-document--editorial .canonical-report-hero-subtitle {font-size:12px}
+  .canonical-document--editorial .canonical-client {grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);padding:9px 8px}
+  .canonical-document--editorial .canonical-client > div {padding:3px 8px}
+  .canonical-document--editorial .canonical-client dd {font:650 14px/1.33 Arial,Helvetica,sans-serif}
+  .canonical-document--editorial .canonical-intro {font-size:12.5px;margin:9px 0 12px}
+  .canonical-document--editorial .canonical-progress {padding:12px 10px}
+  .canonical-document--editorial .canonical-progress-grid {gap:7px}
+  .canonical-document--editorial .canonical-progress-item {
+    gap:7px;
+    padding:9px 7px;
+    flex-direction:column;
+    text-align:center;
+    justify-content:center;
+  }
+  .canonical-document--editorial .canonical-progress-dial {width:62px;height:62px;flex-basis:62px}
+  .canonical-document--editorial .canonical-progress-dial strong {font-size:21px}
+  .canonical-document--editorial .canonical-progress-item > span {font-size:12px}
+  .canonical-document--editorial .canonical-report-analysis,
+  .canonical-document--editorial .canonical-report-notes,
+  .canonical-document--editorial .canonical-general-instructions {padding:14px 14px}
+  .canonical-document--editorial .canonical-report-analysis p,
+  .canonical-document--editorial .canonical-report-notes p,
+  .canonical-document--editorial .canonical-general-instructions p {font-size:16px;line-height:1.46}
+  .canonical-document--editorial .canonical-remedy {padding:12px}
+  .canonical-document--editorial .canonical-remedy-card-photo {width:68px;margin-right:11px}
+  .canonical-document--editorial .canonical-remedy-profile .remedy-content-body {font-size:17px;line-height:1.38}
+}
+@media print {
+  .canonical-shell .canonical-document--editorial {
+    padding:0!important;
+    border:0!important;
+    box-shadow:none!important;
+    background:#fff!important;
+    border-radius:0;
+  }
+  .canonical-document--editorial .canonical-report-private-label {display:none}
+  .canonical-document--editorial .canonical-report-hero {
+    background:#fbf8f4;
+    border-color:#dde8e2;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-report-analysis,
+  .canonical-document--editorial .canonical-report-notes {break-inside:avoid-page}
+  .canonical-document--editorial .canonical-remedy-profile h3 {break-after:avoid}
+}
+
+
+/* Optional follow-up session date: a single compact CTA in both editor and client report. */
+.consultation-studio .consultation-follow-up-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 225px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 14px 0;
+  padding: 13px 15px;
+  border: 1px solid #c2dedb;
+  border-radius: 13px;
+  background: #f3faf9;
+}
+.consultation-studio .consultation-follow-up-setting label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  color: #205e64;
+  font-size: 13px;
+  font-weight: 700;
+}
+.consultation-studio .consultation-follow-up-setting input {
+  min-width: 0;
+  min-height: 43px;
+  padding: 8px 10px;
+  border: 1px solid #a9cfcb;
+  border-radius: 9px;
+  background: white;
+  color: #1d4e54;
+  font-size: 16px;
+}
+.consultation-studio .consultation-follow-up-setting small {
+  color: #5e7679;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.consultation-studio .consultation-follow-up-setting p {
+  margin: 0;
+  color: #3a6268;
+  font-size: 13px;
+  line-height: 1.48;
+}
+.canonical-document--editorial .canonical-follow-up-appointment {
+  margin: 17px 0 10px;
+  padding: 14px 17px;
+  border: 1px solid #bad9d4;
+  border-left: 4px solid #287f7c;
+  border-radius: 12px;
+  background: #f3faf8;
+  break-inside: avoid;
+}
+.canonical-document--editorial .canonical-follow-up-appointment h2 {
+  margin: 0 0 5px;
+  color: #286b70;
+  font: 700 11px/1.4 Arial, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.canonical-document--editorial .canonical-follow-up-appointment time {
+  display: block;
+  color: #4d2c40;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 750;
+}
+.canonical-document--editorial .canonical-follow-up-appointment p {
+  margin: 8px 0 0;
+  color: #34545a;
+  font-size: 15px;
+  line-height: 1.48;
+}
+@media (max-width: 680px) {
+  .consultation-studio .consultation-follow-up-setting { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; }
+  .canonical-document--editorial .canonical-follow-up-appointment { padding: 13px 14px; }
+  .canonical-document--editorial .canonical-follow-up-appointment p { font-size: 16px; line-height: 1.46; }
+}
+@media print {
+  .canonical-document--editorial .canonical-follow-up-appointment { background: #fff; border-color: #c4d8d5; box-shadow: none; }
+}
+
+
+/* Graphic editorial report v4: real lighthouse artwork, ocean atmosphere,
+   authentic remedy illustrations and two actual self-rated measurements.
+   The client HTML and printed view share the generated PDF's visual system. */
+.canonical-document--editorial .canonical-report-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 148px;
+  border: 1px solid #c8e0df;
+  border-left: 5px solid #447c83;
+  overflow: hidden;
+  background-color: #edf5f5;
+  background-image:
+    linear-gradient(108deg, rgba(247,252,250,0.98) 0%,rgba(241,249,246,0.96) 52%,rgba(233,245,245,0.63) 100%),
+    url('/document-assets/lighthouse.png');
+  background-repeat: no-repeat;
+  background-size: cover, 138px 138px;
+  background-position: center, right 14px center;
+  padding-right: clamp(96px,24%,164px);
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 32px;
+  opacity: .58;
+  background: radial-gradient(ellipse at 85% 110%,#95bdc2 0%,transparent 65%),
+              linear-gradient(178deg,transparent 32%,#d4e8e8 52%,#bcdad9 54%,#e6f3ee 74%);
+}
+.canonical-document--editorial .canonical-progress {
+  border-left: 4px solid #527c83;
+  background: linear-gradient(110deg,#f7fbf8 0%,#eef8f6 100%);
+}
+.canonical-document--editorial .canonical-progress-grid {
+  gap: 20px;
+}
+.canonical-document--editorial .canonical-progress-item {
+  position:relative;
+}
+.canonical-document--editorial .canonical-progress-item--after::before {
+  content: '→';
+  position:absolute;
+  top:50%;
+  left:-22px;
+  transform:translateY(-50%);
+  color:#598d90;
+  font:700 19px/1 Georgia,serif;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  box-shadow:0 1px 8px rgba(56,116,113,.10);
+}
+.canonical-document--editorial .canonical-report-analysis h2::before,
+.canonical-document--editorial .canonical-report-notes h2::before,
+.canonical-document--editorial .canonical-general-instructions h2::before {
+  content:'✧';
+  display:inline-block;
+  margin-right:8px;
+  color:#42857f;
+  font-size:18px;
+  vertical-align:-1px;
+}
+.canonical-document--editorial .canonical-remedy-profiles > h2 {
+  background-image:url('/images/holistic-house/homepage-botanical.svg');
+  background-repeat:no-repeat;
+  background-position:right center;
+  background-size:40px 40px;
+  padding-right:45px;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:130px;
+    padding-right:60px;
+    background-size:cover,76px 76px;
+    background-position:center,right 5px bottom 8px;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(24px,6.7vw,30px);
+    overflow-wrap:anywhere;
+  }
+  .canonical-document--editorial .canonical-progress-grid {gap:14px}
+  .canonical-document--editorial .canonical-progress-item--after::before {left:-17px;font-size:15px}
+}
+@media print {
+  .canonical-document--editorial .canonical-report-hero {
+    background-color:#edf5f5!important;
+    background-image:
+      linear-gradient(108deg,rgba(247,252,250,.98) 0%,rgba(241,249,246,.95) 52%,rgba(233,245,245,.63) 100%),
+      url('/document-assets/lighthouse.png')!important;
+    background-size:cover,105px 105px!important;
+    background-position:center,right 12px center!important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-progress {break-inside:avoid}
+  .canonical-document--editorial .canonical-progress-item--after::before {color:#598d90}
+}
+
+
+/* Premium editorial report v4 — single source-driven layout, not fixed pages. */
+.canonical-shell .canonical-document--editorial {
+  --report-grid-gap: 14px;
+  background: #fffdfa;
+  border-top-color: #5d3449;
+}
+.canonical-document--editorial .canonical-report-brandline {
+  border-bottom-color: #e1dcd4;
+  margin-bottom: 14px;
+}
+.canonical-document--editorial .canonical-report-hero {
+  isolation: isolate;
+  min-height: 148px;
+  padding: 18px clamp(122px,29%,185px) 19px 21px;
+  border: 1px solid #d6e6e3;
+  border-left: 4px solid #5d3449;
+  background-color:#fdf8f3;
+  background-image:
+    linear-gradient(90deg,#fbf7f2 0%,#fbf7f2 55%,rgba(234,245,244,.4) 100%),
+    url('/document-assets/lighthouse.png');
+  background-repeat: no-repeat;
+  background-size: cover, clamp(95px,22%,158px) auto;
+  background-position: center, right 10px center;
+  overflow: hidden;
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  content:"";
+  z-index:-1;
+  width:36%;
+  height:24%;
+  bottom:0;
+  top:auto;
+  right:0;
+  border:0;
+  opacity:.55;
+  background:linear-gradient(175deg,transparent 20%,#cbe5e4 62%,#e4f1ec 64%,transparent 95%);
+}
+.canonical-document--editorial .canonical-report-heading h1 {
+  max-width: 18ch;
+  font-size: clamp(28px,3.9vw,36px);
+  line-height: 1.12;
+  letter-spacing:-.022em;
+  overflow-wrap:anywhere;
+}
+.canonical-document--editorial .canonical-client {
+  background: #faf5f0;
+  border-color: #e8ded8;
+  border-left-color:#5d3449;
+}
+.canonical-document--editorial .canonical-progress {
+  margin:13px 0 15px;
+  background:#f3f8f5;
+  border:1px solid #dbe7e2;
+  border-left:4px solid #5d3449;
+  border-radius:12px;
+}
+.canonical-document--editorial .canonical-progress-grid {
+  gap:24px;
+  max-width:none;
+}
+.canonical-document--editorial .canonical-progress-item {
+  position:relative;
+  padding:11px 14px;
+  border-color:#e2e8e3;
+  min-height:84px;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-progress-item--after::before {
+  content:"→";
+  position:absolute;
+  left:-23px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#6a4b5a;
+  font:700 19px/1 Georgia,'Times New Roman',serif;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  width:76px;
+  height:76px;
+  flex-basis:76px;
+  box-shadow:0 1px 8px rgba(54,100,99,.07);
+}
+.canonical-document--editorial .canonical-report-analysis,
+.canonical-document--editorial .canonical-report-notes,
+.canonical-document--editorial .canonical-general-instructions {
+  margin:14px 0;
+  padding:15px 17px;
+  border:1px solid #e6e1d9;
+  border-left:4px solid #5d3449;
+  border-radius:11px;
+  background:#fcfaf6;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-report-analysis h2,
+.canonical-document--editorial .canonical-report-notes h2,
+.canonical-document--editorial .canonical-general-instructions h2 {
+  margin:0 0 9px;
+  padding:0 0 7px;
+  border-bottom:1px solid #e9dfd8;
+  font:700 12.5px/1.35 Arial,Helvetica,sans-serif;
+  letter-spacing:.06em;
+}
+.canonical-document--editorial .canonical-report-analysis p,
+.canonical-document--editorial .canonical-report-notes p,
+.canonical-document--editorial .canonical-general-instructions p {
+  line-height:1.47;
+}
+.canonical-document--editorial .canonical-remedy {
+  display:flow-root;
+  padding:15px 16px;
+  border:1px solid #e6ddd5;
+  border-left:4px solid #5d3449;
+  border-radius:11px;
+  background:#faf5f0;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-remedy-card-photo {
+  float:left;
+  width:92px;
+  height:auto;
+  margin:0 15px 7px 0;
+  padding:5px;
+  border:1px solid #e2d9d0;
+  border-radius:9px;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-remedy-card-photo img {
+  display:block;
+  width:100%;
+  height:96px;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-remedy-heading {
+  align-items:flex-start;
+  min-height:61px;
+}
+.canonical-document--editorial .canonical-remedy-title h3 {
+  font:600 clamp(20px,2.7vw,24px)/1.2 Georgia,'Times New Roman',serif;
+  color:#542f43;
+}
+.canonical-document--editorial .canonical-remedy-schedule {
+  color:#755663;
+  margin:5px 0 0;
+}
+.canonical-document--editorial .canonical-remedy > .canonical-remedy-profile-action {
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  max-width:calc(100% - 115px);
+  margin:8px 0 3px;
+  padding:7px 10px;
+  color:#275f5a;
+  background:#e9f4ee;
+  border:1px solid #cfe2d8;
+  border-radius:7px;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:700;
+}
+.canonical-document--editorial .canonical-remedy-fields {clear:both}
+.canonical-document--editorial .canonical-remedy-profiles {
+  margin-top:22px;
+  padding-top:15px;
+  border-top:3px solid #d4e5dd;
+}
+.canonical-document--editorial .canonical-remedy-profile {
+  display:flow-root;
+  margin-top:16px;
+}
+.canonical-document--editorial .canonical-remedy-profile-photo {
+  float:right;
+  max-width:155px;
+  width:min(34%,155px);
+  margin:0 0 12px 17px;
+  padding:6px;
+  background:#f8f4ed;
+  border:1px solid #e6e0d7;
+  border-radius:7px;
+}
+.canonical-document--editorial .remedy-source-intro {display:flow-root}
+.canonical-document--editorial .remedy-source-rest {
+  clear:both;
+  display:block;
+  padding-top:7px;
+}
+.canonical-document--editorial .remedy-source-rest .remedy-source-heading {
+  display:block;
+  margin:14px 0 7px;
+  padding:8px 12px;
+  border-left:3px solid #5d3449;
+  background:#f3f7f2;
+  font:700 13px/1.35 Arial,Helvetica,sans-serif;
+  letter-spacing:.035em;
+}
+.canonical-document--editorial .remedy-source-rest .remedy-source-paragraphs {
+  margin:0 0 8px;
+}
+@media(max-width:680px){
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:128px;
+    padding:16px 82px 16px 14px;
+    background-size:cover,79px auto;
+    background-position:center,right 5px center;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(23px,6.4vw,29px);
+    max-width:19ch;
+  }
+  .canonical-document--editorial .canonical-progress-grid {gap:15px}
+  .canonical-document--editorial .canonical-progress-item {min-height:70px;padding:8px 6px}
+  .canonical-document--editorial .canonical-progress-item--after::before {left:-15px;font-size:15px}
+  .canonical-document--editorial .canonical-progress-dial {width:62px;height:62px;flex-basis:62px}
+  .canonical-document--editorial .canonical-remedy-card-photo {width:74px;margin-right:11px}
+  .canonical-document--editorial .canonical-remedy-card-photo img {height:78px}
+  .canonical-document--editorial .canonical-remedy > .canonical-remedy-profile-action {
+    max-width:100%;
+    clear:both;
+    margin-top:8px;
+  }
+  .canonical-document--editorial .canonical-remedy-profile-photo {width:37%;max-width:126px;margin-left:11px}
+  .canonical-document--editorial .remedy-source-rest .remedy-source-heading {font-size:13px}
+}
+@media print{
+  .canonical-document--editorial .canonical-report-hero{
+    min-height:115px;
+    padding-right:124px;
+    background-image:linear-gradient(90deg,#fbf7f2 0%,#fbf7f2 55%,rgba(234,245,244,.4) 100%),
+      url('/document-assets/lighthouse.png')!important;
+    background-size:cover,118px auto!important;
+    background-position:center,right 9px center!important;
+    print-color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-remedy {break-inside:avoid}
+  .canonical-document--editorial .remedy-source-rest .remedy-source-heading {break-after:avoid}
+  .canonical-document--editorial .remedy-source-intro {break-inside:auto}
+  .canonical-document--editorial .remedy-source-rest {break-inside:auto}
+}
+
+
+/* iOS Safari client report: natural whole-word headline wrapping.
+   Avoid "ре- / комендация" while keeping the lighthouse visible. */
+@media (max-width: 680px) {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height: 154px;
+    padding: 14px 13px 16px;
+    background-size: cover, 84px auto;
+    background-position: center, right 7px bottom 10px;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {
+    width: 100%;
+    max-width: none;
+    margin: 5px 0 8px;
+    font-size: clamp(23px, 5.6vw, 28px);
+    line-height: 1.16;
+    letter-spacing: -.025em;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+  .canonical-document--editorial .canonical-report-hero-subtitle {
+    max-width: calc(100% - 91px);
+    font-size: 12px;
+    line-height: 1.36;
+  }
+  .canonical-document--editorial .canonical-report-eyebrow {
+    max-width: 100%;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .canonical-document--editorial .canonical-progress-item {
+    padding: 8px 6px;
+    gap: 8px;
+  }
+  .canonical-document--editorial .canonical-progress-dial {
+    width: 59px;
+    height: 59px;
+    flex-basis: 59px;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-report-heading h1 {
+    hyphens: none;
+    word-break: normal;
+  }
+}
+
+
+/* Signed recommendation v5: restore the original broad handwritten closing.
+   White A4 paper remains visible underneath the ink; the legal disclaimer
+   and pagination stay below it, never around the signature. */
+.canonical-document--editorial .canonical-signature--wide {
+  display:grid;
+  grid-template-columns:minmax(0, 47%) minmax(0, 1fr);
+  grid-template-rows:auto;
+  align-items:center;
+  column-gap:clamp(16px,4vw,34px);
+  min-height:122px;
+  margin:20px 0 18px;
+  padding:15px 6px 17px;
+  background:#fff;
+  border:0;
+  border-top:1px solid #e5e0dc;
+  border-radius:0;
+  box-shadow:none;
+  break-inside:avoid-page;
+  page-break-inside:avoid;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-mark {
+  grid-column:1;
+  grid-row:1;
+  display:flex;
+  justify-content:flex-start;
+  align-items:center;
+  min-width:0;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-art {
+  display:block;
+  width:min(100%,245px)!important;
+  max-width:100%;
+  height:auto!important;
+  margin:0!important;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-identity {
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-identity strong {
+  display:block;
+  margin:0 0 5px;
+  font:700 17px/1.3 Georgia,'Times New Roman',serif;
+  color:#542c40;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-identity p {
+  margin:0 0 8px;
+  color:#655c59;
+  font:12px/1.4 Arial,Helvetica,sans-serif;
+}
+.canonical-document--editorial .canonical-signature--wide .canonical-signature-identity time {
+  display:block;
+  color:#766d69;
+  font:12px/1.35 Arial,Helvetica,sans-serif;
+}
+@media (max-width:600px) {
+  .canonical-document--editorial .canonical-signature--wide {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto;
+    gap:8px;
+    min-height:0;
+    padding:15px 3px 16px;
+    margin:20px 0 16px;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-mark {
+    grid-column:1;
+    grid-row:1;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-identity {
+    grid-column:1;
+    grid-row:2;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-art {
+    width:min(100%,230px)!important;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-signature--wide {
+    grid-template-columns:minmax(0,47%) minmax(0,1fr);
+    grid-template-rows:auto;
+    min-height:0;
+    margin:14px 0 13px;
+    padding:12px 3px 13px;
+    background:#fff!important;
+    break-inside:avoid-page;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-mark {
+    grid-column:1;
+    grid-row:1;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-identity {
+    grid-column:2;
+    grid-row:1;
+  }
+  .canonical-document--editorial .canonical-signature--wide .canonical-signature-art {
+    width:207pt!important;
+  }
+}
+
+
+/* HH Editorial Report v6 — the live report and downloadable PDF share
+   ivory paper, an unboxed lighthouse, decorative outer margins and two
+   *recorded* progress rings. This is not a mockup image overlay. */
+.canonical-shell .canonical-document--editorial {
+  --report-plum:#612c46;
+  --report-ink:#353034;
+  --report-sage:#487e76;
+  --report-ivory:#fffdf9;
+  background:var(--report-ivory);
+  border-top:6px solid #633049;
+}
+.canonical-document--editorial .canonical-report-brandline {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:7px 16px;
+  background:#fffefa;
+  border-bottom:0;
+  margin:0 0 7px;
+  padding:0;
+}
+.canonical-document--editorial .canonical-editorial-brand {
+  grid-column:1;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+.canonical-document--editorial .canonical-editorial-brand strong {
+  color:#612c46;
+  font:400 clamp(25px,3.8vw,35px)/1.13 Georgia,'Times New Roman',serif;
+  letter-spacing:.035em;
+}
+.canonical-document--editorial .canonical-editorial-brand span {
+  color:#8b767e;
+  font:11px/1.3 Georgia,'Times New Roman',serif;
+  letter-spacing:.12em;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {
+  grid-row:2;
+  grid-column:1;
+  display:flex;
+  gap:10px;
+  margin:13px 0 5px;
+  background:none;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+  display:none;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-practitioner {
+  font:400 clamp(18px,2.3vw,23px)/1.15 Georgia,'Times New Roman',serif;
+  color:#442a37;
+}
+.canonical-document--editorial .canonical-report-private-label {
+  grid-column:2;grid-row:1;
+  margin-top:7px;
+  background:transparent;
+  border:0;
+  border-left:1px solid #d9c8ce;
+  border-radius:0;
+  color:#785c69;
+  font-size:9px;
+  letter-spacing:.08em;
+}
+.canonical-document--editorial .canonical-report-hero {
+  position:relative;
+  isolation:isolate;
+  min-height:200px;
+  padding:23px min(33%,265px) 22px 0;
+  margin:0 0 16px;
+  border:0;
+  border-bottom:1px solid #dcd6d1;
+  border-left:0;
+  border-radius:0;
+  overflow:visible;
+  background-color:#fffefa;
+  background-image:
+    linear-gradient(90deg,#fffefa 0%,#fffefa 50%,rgba(255,254,250,.35) 71%,rgba(235,245,243,.30) 100%),
+    url('/document-assets/lighthouse.png');
+  background-size:cover,auto 188px;
+  background-repeat:no-repeat;
+  background-position:center,right 10px center;
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  content:"";
+  z-index:-1;
+  position:absolute;
+  width:37%;
+  height:63%;
+  right:-7px;
+  bottom:0;
+  top:auto;
+  border:0;
+  opacity:.6;
+  background: url('/images/holistic-house/homepage-botanical.svg') right bottom/81px auto no-repeat,
+    linear-gradient(175deg,transparent 35%,#d5e7e6 54%,#e4f0ed 62%,transparent 80%);
+  pointer-events:none;
+}
+.canonical-document--editorial .canonical-report-heading h1 {
+  max-width:17ch;
+  color:var(--report-plum);
+  font-size:clamp(30px,4.3vw,42px);
+  line-height:1.11;
+  letter-spacing:-.028em;
+  hyphens:none;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  color:#715267;
+  font-size:10px;
+  font-weight:650;
+  letter-spacing:.13em;
+}
+.canonical-document--editorial .canonical-report-hero-subtitle {
+  color:#687271;
+  max-width:31ch;
+  font-size:12px;
+  line-height:1.48;
+}
+.canonical-document--editorial .canonical-editorial-hero-motto {
+  display:block;
+  position:absolute;
+  right:6px;
+  top:12px;
+  max-width:76px;
+  color:#6b5360;
+  font:italic 12px/1.38 Georgia,'Times New Roman',serif;
+  text-align:right;
+  letter-spacing:.025em;
+}
+.canonical-document--editorial .canonical-client {
+  margin:0 0 17px;
+  gap:10px;
+  background:transparent;
+  padding:0;
+  border:0;
+  border-radius:0;
+}
+.canonical-document--editorial .canonical-client > div {
+  background:#faf5f1;
+  padding:13px 17px;
+  border:1px solid #ede5df;
+  border-radius:9px;
+}
+.canonical-document--editorial .canonical-client > div + div {
+  border:1px solid #ede5df;
+  padding-top:13px;
+}
+.canonical-document--editorial .canonical-progress {
+  padding:10px 14px 14px;
+  background:#fffefa;
+  border:0;
+  border-top:1px solid #e6ded9;
+  border-left:0;
+  border-radius:0;
+  margin:0 0 17px;
+}
+.canonical-document--editorial .canonical-progress > h2 {
+  font:500 12px/1.4 Georgia,'Times New Roman',serif;
+  color:var(--report-plum);
+  letter-spacing:.09em;
+}
+.canonical-document--editorial .canonical-progress-grid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  max-width:490px;
+  gap:25px;
+  margin:14px 0 3px;
+}
+.canonical-document--editorial .canonical-progress-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:4px 2px;
+  min-height:84px;
+  box-shadow:none;
+  background:transparent;
+  border:0;
+}
+.canonical-document--editorial .canonical-progress-item--after::before {
+  left:-20px;
+  color:#66364c;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  width:88px;
+  height:88px;
+  flex:0 0 88px;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-report-analysis {
+  background:#faf7f3;
+  border:1px solid #ebe1d8;
+  border-left:3px solid #633049;
+  border-radius:10px;
+}
+.canonical-document--editorial .canonical-remedy {
+  border:1px solid #eadfd6;
+  border-radius:12px;
+  background:#fbf7f2;
+}
+.canonical-document--editorial .canonical-remedy-card-photo {
+  width:105px;
+  padding:6px;
+  background:#fffefa;
+}
+.canonical-document--editorial .canonical-remedy-card-photo img {
+  display:block;
+  width:100%;
+  height:108px;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-remedy-title h3 {
+  color:var(--report-plum);
+  font-size:clamp(21px,2.9vw,28px);
+}
+.canonical-document--editorial .canonical-remedy-profiles {
+  border-top:2px solid #d7e4de;
+}
+.canonical-document--editorial .canonical-remedy-profiles > h2 {
+  color:var(--report-plum);
+  font:400 28px/1.24 Georgia,'Times New Roman',serif;
+}
+.canonical-document--editorial .canonical-remedy-profile {
+  position:relative;
+  padding-right:min(5vw,32px);
+}
+.canonical-document--editorial .canonical-remedy-profile::after {
+  content:"";
+  position:absolute;
+  right:-16px;top:210px;
+  width:32px;height:112px;
+  opacity:.35;
+  background:url('/images/holistic-house/homepage-botanical.svg') center/contain no-repeat;
+  pointer-events:none;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {margin:9px 0 4px}
+  .canonical-document--editorial .canonical-editorial-brand strong {font-size:25px}
+  .canonical-document--editorial .canonical-report-private-label {font-size:8px;padding:4px}
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:178px;
+    padding:16px 83px 15px 0;
+    background-size:cover,102px auto;
+    background-position:center,right 3px bottom 7px;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(22px,5.7vw,29px);
+    max-width:none;
+  }
+  .canonical-document--editorial .canonical-editorial-hero-motto {
+    right:1px;top:7px;font-size:9px;max-width:65px;
+  }
+  .canonical-document--editorial .canonical-report-hero::after {
+    width:31%;height:48%;background-size:36px auto,cover;
+  }
+  .canonical-document--editorial .canonical-client {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .canonical-document--editorial .canonical-client > div,
+  .canonical-document--editorial .canonical-client > div + div {
+    padding:10px 8px;min-width:0;
+  }
+  .canonical-document--editorial .canonical-progress-grid {gap:11px;max-width:none}
+  .canonical-document--editorial .canonical-progress-item {flex-direction:column;gap:7px;min-height:0}
+  .canonical-document--editorial .canonical-progress-dial {width:69px;height:69px;flex-basis:69px}
+  .canonical-document--editorial .canonical-remedy-card-photo {width:80px}
+  .canonical-document--editorial .canonical-remedy-card-photo img {height:84px}
+}
+@media print {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:175px;
+    padding-right:170px;
+    background-size:cover,160px auto!important;
+    background-position:center,right 5px center!important;
+    background-color:#fffefa!important;
+    print-color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {font-size:32px;hyphens:none}
+  .canonical-document--editorial .canonical-progress {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy-profile::after {display:none}
+}
+
+
+/* Premium report composition v7: factual two-gauge dashboard plus the narrow
+   editorial quotation column from the approved first-page mockup. */
+.canonical-document--editorial .canonical-progress-grid {
+  display:grid;
+  grid-template-columns:minmax(0,.93fr) minmax(0,.93fr) minmax(125px,1fr);
+  align-items:center;
+  max-width:none;
+  gap:12px;
+  margin-top:15px;
+}
+.canonical-document--editorial .canonical-progress-item {
+  min-width:0;
+  padding:8px 0;
+  background:transparent;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  width:79px;
+  height:79px;
+  flex:0 0 79px;
+}
+.canonical-document--editorial .canonical-progress-note {
+  display:flex;
+  position:relative;
+  flex-direction:column;
+  justify-content:center;
+  min-height:92px;
+  padding:15px 12px 15px 26px;
+  margin:0;
+  border-left:1px solid #cbd8d3;
+  border-radius:0;
+  background:
+    url('/images/holistic-house/homepage-botanical.svg') right 10px bottom 5px/29px auto no-repeat,
+    linear-gradient(105deg,#faf5ef,#f4f9f5);
+}
+.canonical-document--editorial .canonical-progress-note span {
+  position:relative;
+  z-index:1;
+  display:block;
+  padding-right:15px;
+  color:#5c4654;
+  font:italic 13px/1.45 Georgia,'Times New Roman',serif;
+  text-wrap:pretty;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .canonical-document--editorial .canonical-progress-dial {width:67px;height:67px;flex-basis:67px}
+  .canonical-document--editorial .canonical-progress-note {
+    grid-column:1/-1;
+    min-height:0;
+    margin-top:2px;
+    padding:11px 14px 11px 18px;
+  }
+  .canonical-document--editorial .canonical-progress-note span {
+    font-size:12px;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(125px,1fr);
+    gap:10px;
+    break-inside:avoid;
+  }
+  .canonical-document--editorial .canonical-progress-dial {width:69px;height:69px;flex-basis:69px}
+  .canonical-document--editorial .canonical-progress-note {
+    grid-column:auto;
+    background:#faf5ef!important;
+    min-height:75px;
+    padding:10px 9px 10px 18px;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+}
+
+
+/* Match the approved original masthead in the browser reader as well as PDF:
+   retain the authentic small lighthouse beside the practitioner's credentials. */
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+  display:block;
+  flex:0 0 66px;
+  width:66px;
+  height:66px;
+  object-fit:contain;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+    width:51px;height:51px;flex-basis:51px;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+    display:block;
+    width:55px;height:55px;flex-basis:55px;
+  }
+}
+
+
+/* Editorial cover correction: make the on-screen report breathe without
+   repeating the masthead or stretching a low-resolution lighthouse fill. */
+.canonical-document--editorial .canonical-report-hero {
+  background-color:#fffefa;
+  border-bottom-color:#e0d8d3;
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  color:#754e64;
+}
+.canonical-document--editorial .canonical-report-analysis {
+  margin-top:15px;
+  background:#fcf8f4;
+  border-color:#eaded7;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:151px;
+    padding:12px 88px 14px 0;
+    margin-bottom:11px;
+    background-size:cover,94px auto;
+    background-position:center,right 3px bottom 8px;
+  }
+  .canonical-document--editorial .canonical-report-eyebrow {
+    letter-spacing:.07em;
+  }
+  .canonical-document--editorial .canonical-report-hero-subtitle {
+    max-width:29ch;
+    line-height:1.38;
+  }
+}
+
+
+/* Phone-first personal report reader. Reading comfort outranks page-count and
+   dense multi-column mockup fidelity; printing remains independent below. */
+@media screen and (max-width:700px) {
+  .prescription-shell.canonical-shell {
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+    padding:0 8px 22px;
+  }
+  .prescription-shell .canonical-document--editorial {
+    padding:22px 16px 32px;
+    width:100%;
+    min-width:0;
+    border-radius:13px;
+    font-size:19px;
+    line-height:1.55;
+    overflow-wrap:break-word;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(30px,8vw,39px);
+    line-height:1.18;
+    max-width:none;
+    hyphens:none;
+    word-break:normal;
+  }
+  .prescription-shell .canonical-document--editorial :is(
+    .canonical-report-analysis p,
+    .canonical-report-notes p,
+    .canonical-general-instructions p,
+    .canonical-guidance p,
+    .canonical-guidance li,
+    .canonical-remedy-fields dd,
+    .canonical-remedy-schedule,
+    .canonical-follow-up-appointment p,
+    .canonical-follow-up p,
+    .canonical-remedy-profile .remedy-content-body,
+    .canonical-remedy-profile .remedy-content-body p,
+    .canonical-remedy-profile .remedy-content-body li
+  ) {
+    font-size:18.5px;
+    line-height:1.56;
+    letter-spacing:normal;
+    overflow-wrap:break-word;
+  }
+  .prescription-shell .canonical-document--editorial :is(
+    .canonical-report-analysis h2,
+    .canonical-report-notes h2,
+    .canonical-general-instructions h2,
+    .canonical-guidance h2,
+    .canonical-remedy-profiles > h2
+  ) {
+    font-size:23px;
+    line-height:1.25;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size:25px;
+    line-height:1.27;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile .remedy-content-section h3 {
+    font-size:21px;
+    line-height:1.3;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client > div,
+  .prescription-shell .canonical-document--editorial .canonical-client > div + div {
+    grid-column:auto;
+    border:1px solid #e5d9d4;
+    padding:13px 15px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client dd {
+    font-size:19px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-note {
+    grid-column:1/-1;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-dial {
+    width:82px;
+    height:82px;
+    flex-basis:82px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-dial strong {
+    font-size:23px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-note span {
+    font-size:17px;
+    line-height:1.45;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-card-photo {
+    max-width:110px;
+    width:30%;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-card-photo img {
+    height:auto;
+    aspect-ratio:1;
+    object-fit:contain;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile-photo {
+    float:none;
+    width:min(100%,260px);
+    max-width:100%;
+    margin:12px auto 20px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile-photo img {
+    width:100%;
+    max-height:300px;
+    object-fit:contain;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile::after {
+    display:none;
+  }
+}
+
+
+/* Client report appendix disclosure v1.
+   Only full remedy descriptions collapse; the consultation analysis, scores,
+   source recommendations, practitioner notes and signature remain fully visible. */
+@media screen {
+  .canonical-document--editorial .canonical-remedy-appendix-description {
+    display:block;
+    margin:4px 0 16px;
+    color:#567176;
+    font:500 clamp(14px,2vw,16px)/1.5 system-ui,-apple-system,sans-serif;
+  }
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    display:block;
+    flex:0 0 78px;
+    width:78px;
+    height:73px;
+    overflow:hidden;
+    border:1px solid #d4e4dd;
+    border-radius:12px;
+    background:#f1f7f3;
+  }
+  .canonical-document--editorial .canonical-remedy-profile-thumb img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    display:block;
+    margin:10px 0 0;
+    padding:0;
+    border:1px solid #e3d8d9;
+    border-radius:13px;
+    background:#fffdfa;
+    box-shadow:0 3px 12px rgba(88,51,65,.045);
+    overflow:hidden;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure::after {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    display:flex;
+    gap:15px;
+    align-items:center;
+    justify-content:space-between;
+    min-height:60px;
+    padding:13px 17px;
+    list-style:none;
+    cursor:pointer;
+    color:var(--report-plum,#643147);
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::-webkit-details-marker {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    min-width:0;
+    flex:1;
+    margin:0;
+    color:var(--report-plum,#643147);
+    font:600 clamp(17px,2.8vw,22px)/1.32 Georgia,'Times New Roman',serif;
+    overflow-wrap:anywhere;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    content:"";
+    display:block;
+    flex:0 0 10px;
+    width:10px;
+    height:10px;
+    margin-right:5px;
+    border-right:2px solid #6b4960;
+    border-bottom:2px solid #6b4960;
+    transform:rotate(45deg);
+    transition:transform .18s ease;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure[open] > summary {
+    background:#fbf7f4;
+    border-bottom:1px solid #e8dcdf;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure[open] > summary::after {
+    transform:rotate(225deg);
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary:focus-visible {
+    outline:3px solid #3f8d81;
+    outline-offset:-3px;
+    border-radius:12px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    display:flow-root;
+    padding:18px;
+    min-width:0;
+  }
+}
+@media screen and (max-width:600px) {
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    min-height:56px;
+    padding:12px 14px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    padding:14px;
+  }
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis:66px;
+    width:66px;
+    height:65px;
+    border-radius:10px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    gap:11px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    transition:none;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-remedy-appendix-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:inline;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {display:none!important;}
+  /* The print expander opens all source descriptions before this CSS runs. */
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    display:flow-root;
+    padding:14px 0;
+    margin:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:visible;
+    break-inside:auto;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    display:block;
+    padding:0;
+    list-style:none;
+    border:0;
+    background:transparent;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    margin:0 0 12px;
+    color:#603248;
+    font:400 23px/1.23 Georgia,'Times New Roman',serif;
+    break-after:avoid;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    display:flow-root!important;
+    padding:0;
+    border:0;
+  }
+}
+
+
+/* Report share recovery: iPhone Safari can deny clipboard after async issuance.
+   Always provide a selectable scoped URL and an explicit second-tap Copy. */
+.consultation-share-link-ready{
+  margin:12px 0;
+  padding:13px;
+  display:grid;
+  gap:8px;
+  min-width:0;
+  border:1px solid #c7ddda;
+  border-radius:13px;
+  background:#f2f9f7;
+}
+.consultation-share-link-ready label{
+  color:#265b5a;
+  font-size:13px;
+  line-height:1.4;
+  font-weight:750;
+}
+.consultation-share-link-controls{
+  min-width:0;
+  display:flex;
+  align-items:stretch;
+  gap:9px;
+}
+.consultation-share-link-controls input{
+  flex:1 1 210px;
+  min-width:0;
+  max-width:100%;
+  min-height:46px;
+  box-sizing:border-box;
+  padding:9px 11px;
+  border:1px solid #b9d5d1;
+  border-radius:10px;
+  background:white;
+  color:#224b4d;
+  font-size:16px;
+  direction:ltr;
+  text-align:left;
+}
+.consultation-share-link-controls button,
+.consultation-prepare-session{
+  min-height:46px;
+  padding:10px 14px;
+  border:1px solid #9dbfbb;
+  border-radius:11px;
+  background:#e6f3ef;
+  color:#235d54;
+  font-size:14px;
+  font-weight:760;
+  line-height:1.3;
+  cursor:pointer;
+}
+.consultation-prepare-session{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  margin:8px 0 12px;
+  background:#65364e;
+  border-color:#65364e;
+  color:white;
+}
+.consultation-prepare-session:disabled{opacity:.6;cursor:wait}
+.consultation-prepare-session:hover:not(:disabled){background:#4e293c}
+.consultation-share-link-controls :is(input,button):focus-visible,
+.consultation-prepare-session:focus-visible{
+  outline:3px solid #3d887e;
+  outline-offset:3px;
+}
+@media(max-width:520px){
+  .consultation-share-link-controls{flex-direction:column}
+  .consultation-share-link-controls input,.consultation-share-link-controls button{
+    flex:0 1 auto;
+    width:100%;
+  }
+  .consultation-prepare-session{width:100%}
+}
+
+
+/* Private report auto-publication: distinguish verified success from retry state. */
+.consultation-result .consultation-publication-state{
+  display:grid;
+  gap:9px;
+  margin:14px auto 18px;
+  padding:18px 20px;
+  border:1px solid #c5dcd1;
+  border-left:4px solid #377666;
+  border-radius:14px;
+  background:#f2f8f3;
+  color:#35594a;
+}
+.consultation-result .consultation-publication-state strong{
+  font-size:17px;
+  line-height:1.4;
+  font-weight:800;
+}
+.consultation-result .consultation-publication-state p{
+  margin:0;
+  color:#506e65;
+  line-height:1.6;
+  font-size:14px;
+}
+.consultation-result .consultation-publication-state--needs-action{
+  border-color:#dfd2bc;
+  border-left-color:#9e7256;
+  background:#fffaf3;
+}
+.consultation-result .consultation-publication-state--needs-action strong{
+  color:#6e4935;
+}
+.consultation-result .consultation-publication-state form{margin-top:4px}
+.consultation-result .consultation-publication-retry{
+  min-height:46px;
+  padding:10px 15px;
+  border:1px solid #63364e;
+  border-radius:10px;
+  background:#63364e;
+  color:white;
+  font-size:14px;
+  font-weight:750;
+  cursor:pointer;
+}
+.consultation-result .consultation-publication-retry:hover{background:#51283c}
+.consultation-result .consultation-publication-retry:focus-visible{
+  outline:3px solid #3d8279;
+  outline-offset:3px;
+}
+@media(max-width:600px){
+  .consultation-result .consultation-publication-state{padding:15px}
+  .consultation-result .consultation-publication-retry{width:100%}
+}
+
+
+/* Practitioner-selected tests: one compact, accessible picker in the report. */
+.consultation-studio .consultation-recommended-tests {
+  margin: 20px 0 14px;
+  padding: clamp(16px, 3vw, 22px);
+  border: 1px solid #c7dedd;
+  border-radius: 17px;
+  background: linear-gradient(145deg, #f0f9f7, #fffdf9);
+  color: #254f59;
+}
+.consultation-recommended-tests-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consultation-recommended-tests-heading h3 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  color: #184e5b;
+}
+.consultation-recommended-tests-heading > span {
+  color: #46686d;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.consultation-recommended-tests > p {
+  max-width: 65ch;
+  margin: 8px 0 14px;
+  color: #526b6c;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.consultation-recommended-tests > label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.consultation-recommended-tests > input,
+.consultation-recommended-tests > select {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #b2d1ce;
+  border-radius: 10px;
+  background: #fff;
+  color: #234955;
+  font: inherit;
+  font-size: 16px;
+}
+.consultation-recommended-tests > select { margin-top: 9px; }
+.consultation-recommended-tests :is(input,select,button):focus-visible {
+  outline: 3px solid #73b5b9;
+  outline-offset: 2px;
+}
+.consultation-recommended-tests > small {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+  color: #657c7e;
+}
+.consultation-recommended-tests-selection {
+  padding: 0;
+  margin: 13px 0 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+.consultation-recommended-tests-selection > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid #d4e5e3;
+  border-radius: 10px;
+  background: #fff;
+}
+.consultation-recommended-tests-selection > li span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.consultation-recommended-tests-selection > li small { color: #617a7a; }
+.consultation-recommended-tests-selection button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 6px 11px;
+  border: 1px solid #d1dcdf;
+  border-radius: 8px;
+  background: #f7f9f9;
+  color: #723d50;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.canonical-document .canonical-recommended-tests {
+  margin: 22px 0;
+  padding: 18px 20px;
+  border: 1px solid #cfe0df;
+  border-left: 4px solid #398a90;
+  border-radius: 13px;
+  background: #f3f9f8;
+  break-inside: avoid;
+}
+.canonical-document .canonical-recommended-tests h2 {
+  margin: 0 0 7px;
+  color: #1c5564;
+  font-size: 20px;
+}
+.canonical-document .canonical-recommended-tests p {
+  margin: 0 0 12px;
+  color: #536a6d;
+  line-height: 1.5;
+}
+.canonical-document .canonical-recommended-tests ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 23px;
+}
+.canonical-document .canonical-recommended-tests li {
+  padding-left: 3px;
+  color: #23545d;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-recommended-tests a {
+  color: #205a6d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 700;
+}
+.canonical-document .canonical-recommended-tests small {
+  display: block;
+  margin-top: 3px;
+  color: #657579;
+}
+@media (max-width: 680px) {
+  .consultation-recommended-tests-selection > li { align-items: flex-start; }
+  .canonical-document .canonical-recommended-tests { padding: 15px; }
+}
+
+
+/* Five-report-test matching is a suggestion; only checked tests are attached. */
+.consultation-test-auto {
+  display: grid;
+  gap: 9px;
+  margin: 5px 0 21px;
+  padding: 13px 14px;
+  border: 1px solid #a9d2cf;
+  border-radius: 13px;
+  background: #e9f5f2;
+}
+.consultation-test-auto-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: #276f74;
+  color: white;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.consultation-test-auto-button:hover { background: #1c5763; }
+.consultation-test-auto > small,
+.consultation-test-suggestions > small {
+  color: #476b70;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-test-auto-message,
+.consultation-test-stale {
+  margin: 0;
+  color: #734b2d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.consultation-test-suggestions {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 12px;
+  border: 1px solid #c5ddda;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+.consultation-test-suggestions legend {
+  max-width: 100%;
+  padding: 0 5px;
+  color: #1d5260;
+  font-size: 15px;
+  font-weight: 750;
+}
+.consultation-test-suggestions > p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5b6c70;
+}
+.consultation-test-suggestion {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5e5e2;
+  background: #f8fbf9;
+  cursor: pointer;
+}
+.consultation-test-suggestion:has(input:checked) {
+  border-color: #65aaa1;
+  background: #eaf8f2;
+}
+.consultation-test-suggestion > input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  width: 21px;
+  height: 21px;
+  accent-color: #287b78;
+}
+.consultation-test-suggestion-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.consultation-test-suggestion-copy > strong {
+  font-size: 15px;
+  line-height: 1.35;
+  color: #194957;
+  overflow-wrap: anywhere;
+}
+.consultation-test-suggestion-copy > small {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #587277;
+}
+@media (max-width: 680px) {
+  .consultation-test-auto { padding: 11px; }
+  .consultation-test-suggestions { padding: 10px; }
+  .consultation-test-suggestion { padding: 10px; }
+}
+
+/* Compact image-free recommendation cards — owner approved 2026-10-18.
+   Prescription-sheet refinement: calm rows, no photographs, no decorative
+   pill bubbles. Original dosage and extra instructions are always preserved.
+   Photographs belong only in the separate remedy-description appendix. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-group {
+  width: 100%;
+  max-width: 680px;
+  margin: 22px auto 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #d5e4e3;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-group-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #205967;
+  font: 750 12px/1.45 Arial, Helvetica, sans-serif;
+  letter-spacing: .105em;
+  text-transform: uppercase;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-group-caption {
+  margin: 0;
+  color: #73888b;
+  font: 500 12px/1.4 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 14px;
+  margin: 0 0 9px;
+  padding: 13px 15px;
+  border: 1px solid #d8e6e4;
+  border-left: 3px solid #42948e;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 13px rgba(31, 83, 85, .035);
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+  display: flex;
+  grid-column: 1;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  gap: 9px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-number {
+  flex: 0 0 27px;
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  background: #e9f4f2;
+  color: #246d70;
+  font: 750 11px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: .02em;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+  margin: 0;
+  color: #1e4d5b;
+  font: 600 clamp(17px, 2.25vw, 19px)/1.3 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 5px;
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #436b71;
+  font: 600 13px/1.5 Arial, Helvetica, sans-serif;
+  text-align: left;
+  white-space: normal;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-part {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-dot {
+  color: #a8bec0;
+  font-weight: 400;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+  display: inline-flex;
+  grid-column: 2;
+  grid-row: 1;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid #d9e8e7;
+  border-radius: 8px;
+  background: #f8fbfb;
+  color: #236b75;
+  font: 650 12px/1.4 Arial, Helvetica, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action:hover {
+  border-color: #a9d0ce;
+  background: #eff8f7;
+  color: #144f59;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action:focus-visible {
+  outline: 3px solid #4d9398;
+  outline-offset: 2px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0;
+  margin: 9px 0 0 36px;
+  padding: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+  display: grid;
+  grid-template-columns: minmax(85px, 115px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid #e8f0ef;
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields dt {
+  color: #6b8285;
+  font: 650 12px/1.45 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+  margin: 0;
+  color: #294e58;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    width: 100%;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 13px;
+    gap: 0;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    grid-column: 1;
+    grid-row: auto;
+    min-height: 34px;
+    margin: 3px 0 0 36px;
+    padding: 3px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+    grid-column: 1;
+    margin: 8px 0 0 36px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
+@media screen and (max-width: 380px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group-caption {
+    font-size: 11px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    font-size: 13.5px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    width: 100%;
+    max-width: none;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 9px 11px;
+    border-radius: 5px;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 11pt;
+  }
+}
+
+
+/* Separate narrative blocks in the consultation editor and the client report. */
+.consultation-studio .consultation-report-notes-panel .consultation-report-note-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.consultation-studio .consultation-report-note--recommendations {
+  border-color: #cedfd4;
+  background: linear-gradient(145deg, #f3faf5, #fffdf9 85%);
+}
+.canonical-document--editorial .canonical-report-recommendations {
+  border-left-color: #789f81;
+  background: linear-gradient(125deg, #fffefa, #f3faf5);
+}
+
+/* Report prescriptions + immediately-following appendix, compact pass 2026-10-19.
+   Keep every practitioner-authored instruction visible; print/PDF rules above are unchanged. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-profile-action-short {
+  display: none;
+}
+@media screen {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    margin-top: 14px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-section-heading {
+    margin-bottom: 7px;
+    padding-bottom: 6px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    align-items: center;
+    margin-bottom: 7px;
+    padding: 10px 12px;
+    gap: 3px 9px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+    align-items: center;
+    gap: 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 18px;
+    line-height: 1.22;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.38;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    align-self: center;
+    min-height: 40px;
+    padding: 8px 5px;
+    font-size: 12px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+    margin-top: 5px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+    padding: 5px 0;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles {
+    width: 100%;
+    max-width: 680px;
+    margin: 12px auto 0;
+    padding-top: 11px;
+    border-top: 1px solid #d7e4de;
+    break-before: auto;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    margin: 0 0 3px;
+    font: 400 22px/1.25 Georgia, 'Times New Roman', serif;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-appendix-description {
+    margin: 2px 0 8px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    margin-top: 7px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    min-height: 0;
+    padding: 8px 11px;
+    gap: 10px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex: 0 0 53px;
+    width: 53px;
+    height: 53px;
+    border-radius: 8px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 18px;
+    line-height: 1.26;
+  }
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 10px;
+    gap: 3px 6px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 7px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-number {
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 16px;
+    line-height: 1.22;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    gap: 1px 4px;
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.33;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 2px;
+    border: 0;
+    background: transparent;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action-full {
+    display: none;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action-short {
+    display: inline;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+    grid-column: 1 / -1;
+    margin: 5px 0 0 31px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+    padding: 5px 0;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 13px;
+    line-height: 1.42;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles {
+    margin-top: 9px;
+    padding-top: 9px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    font-size: 21px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    padding: 7px 10px;
+    gap: 9px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 16px;
+    line-height: 1.24;
+  }
+}
+@media screen and (max-width: 360px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    gap: 3px 4px;
+    padding-inline: 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 15px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    font-size: 11px;
+  }
+}
+
+
+/* Client-report polish 2026-10-19: keep the supplied potency next to the
+   remedy name and let the instructions + library appendix remain compact.
+   This only affects the screen presentation; print/source text is retained. */
+@media screen {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 .canonical-remedy-potency {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    white-space: nowrap;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 9px 12px;
+    border: 1px solid #d7e6e5;
+    border-left: 2px solid #78b8b4;
+    border-radius: 10px;
+    background: #fcfefe;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-number {
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    color: #58747a;
+    font-weight: 500;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles {
+    border-top-color: #d7e5e2;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    margin-bottom: 3px;
+    font: 500 19px/1.3 Georgia, 'Times New Roman', serif;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-appendix-description {
+    margin: 0 0 7px;
+    color: #70676b;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    margin-top: 6px;
+    border-color: #d7e4e3;
+    border-radius: 10px;
+    background: #fefefd;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    min-height: 0;
+    padding: 7px 10px;
+    gap: 10px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    flex-basis: 9px;
+    width: 9px;
+    height: 9px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-section-heading {
+    gap: 2px 9px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 8px 9px;
+    gap: 2px 6px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+    gap: 7px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    min-height: 44px;
+    padding: 9px 2px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    font-size: 18px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 15.5px;
+  }
+}
+
+
+/* Unified prescription + remedy library cards — 2026-10-19.
+   One card per prescribed item; factual instructions stay visible while the
+   author-approved library description unfolds below the same card. */
+.canonical-shell .canonical-document--editorial .canonical-remedy.canonical-remedy--unified {
+  display: block;
+  width: 100%;
+  margin: 0 0 11px;
+  padding: 0;
+  border: 1px solid #d3e3df;
+  border-left: 3px solid #70b4ad;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fffefd;
+  box-shadow: 0 4px 18px rgba(29, 80, 78, .055);
+  break-inside: auto;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+  display: grid;
+  grid-template-columns: 65px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 91px;
+  padding: 12px 15px;
+  margin: 0;
+  border: 0;
+  list-style: none;
+  cursor: pointer;
+  background: transparent;
+  color: #1c4b55;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary::-webkit-details-marker,
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary::marker {
+  display: none;
+  content: '';
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary::after {
+  display: none;
+  content: none;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:hover {
+  background: #f6faf8;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:focus-visible {
+  outline: 3px solid #2c8886;
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  overflow: hidden;
+  flex: 0 0 65px;
+  border: 1px solid #d6e5da;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #eff8f0, #e2ede9);
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-photo-fallback {
+  color: #57988a;
+  font: 34px/1 Georgia, serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-index.canonical-remedy-number {
+  position: absolute;
+  bottom: 3px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #267d7b;
+  color: #fff;
+  font: 700 10px/1 Arial, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title {
+  display: block;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
+  margin: 0;
+  padding: 0;
+  color: #1b4e5a;
+  font: 650 clamp(17px, 2.5vw, 21px)/1.24 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-potency {
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 0;
+  color: #59777b;
+  font: 550 13px/1.42 system-ui, sans-serif;
+  white-space: normal;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields.canonical-remedy-unified-instructions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction {
+  display: block;
+  color: #466b6f;
+  font: 500 12px/1.45 system-ui, sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction > strong {
+  color: #245c60;
+  font-weight: 650;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #c5dfda;
+  border-radius: 999px;
+  background: #f1f8f6;
+  box-shadow: none;
+  color: #246d71;
+  font: 600 12px/1.2 system-ui, -apple-system, sans-serif;
+  text-decoration: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-chevron {
+  display: inline-block;
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: inherit;
+  transform: rotate(45deg);
+  transition: transform .18s ease;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-unified-chevron {
+  transform: rotate(225deg);
+}
+/* A compact disclosure control, not an oversized underlined link. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle > span {
+  text-decoration: none;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-toggle-label-open {
+  display: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-toggle-label-closed {
+  display: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-toggle-label-open {
+  display: inline;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:hover .canonical-remedy-unified-toggle,
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:focus-visible .canonical-remedy-unified-toggle {
+  border-color: #9dcac3;
+  background: #e4f3ef;
+  color: #175f66;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-unified-toggle {
+  border-color: #abcfc8;
+  background: #e7f3f0;
+  color: #1c6268;
+}
+@media (prefers-reduced-motion: reduce) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle,
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-chevron {
+    transition: none;
+  }
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] > summary {
+  background: #f7faf8;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+  display: flow-root;
+  margin: 0;
+  padding: 18px 19px 22px;
+  border-top: 1px solid #e1ebe6;
+  background: #fffefd;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+  margin: 0 0 14px;
+  color: #21565c;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading > strong {
+  font: 600 21px/1.25 Georgia, serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading > small {
+  color: #748787;
+  font: 500 12px/1.5 system-ui, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+  float: right;
+  max-width: min(36%, 210px);
+  margin: 2px 0 14px 18px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-unavailable {
+  color: #617b7e;
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 53px minmax(0, 1fr) auto;
+    gap: 9px;
+    min-height: 74px;
+    padding: 10px 11px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 53px;
+    height: 57px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
+    font-size: clamp(16px, 4.1vw, 19px);
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule {
+    font-size: 12.5px;
+    line-height: 1.36;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    min-height: 32px;
+    padding: 6px 8px;
+    gap: 5px;
+    font-size: 11.5px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction {
+    font-size: 12px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+    padding: 14px 12px 17px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+    float: none;
+    width: min(100%, 230px);
+    max-width: 100%;
+    margin: 2px auto 14px;
+  }
+}
+@media screen and (max-width: 360px) {
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: 9px 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 44px;
+    height: 49px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
+    font-size: 15px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    grid-row: 1 / 3;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    margin-left: 0;
+    font-size: 11px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document--editorial .canonical-remedy.canonical-remedy--unified {
+    break-inside: auto;
+    box-shadow: none;
+    border-radius: 7px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    padding: 8px 11px;
+    min-height: 68px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 56px;
+    height: 56px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    display: none;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+    padding: 9px 11px;
+    break-inside: auto;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+    max-width: 160px;
+  }
+}

@@ -51,7 +51,7 @@ export async function saveAssessmentAction(clientId, assessmentId, _state, data)
   try {
     const { store, client } = await ownerContext(clientId)
     locale = client.preferredLocale
-    const contentFields = ['kind', 'title', 'occurredOn', 'language', 'sourceName', 'sourceVersion', 'description', 'originalResult', 'practitionerComment']
+    const contentFields = ['kind', 'title', 'occurredOn', 'language', 'profileArea', 'sourceName', 'sourceVersion', 'description', 'originalResult', 'practitionerComment']
     fields(data, [...contentFields, 'relatedDocumentIds', assessmentId ? 'expectedRevision' : 'requestId'], ['relatedDocumentIds'])
     const input = Object.fromEntries(contentFields.map(key => [key, data.get(key)]))
     input.relatedDocumentIds = data.getAll('relatedDocumentIds')

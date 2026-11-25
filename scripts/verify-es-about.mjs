@@ -49,10 +49,21 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        // The current public About design has one independently approved ES
+        // introduction and TEN provenance-checked original testimonials,
+        // not the retired three-card grid. Verify real media cards rather than
+        // weakening the original browser acceptance.
+        const intro = page.locator('[data-video-slot="about-intro"][data-video-locale="es"]');
+        await expect(intro.locator('.site-video-player')).toHaveCount(1);
+        const reviews = page.locator('[data-personal-testimonials="about"]');
+        await expect(reviews.locator('[data-testimonial-video-id] .site-video-player')).toHaveCount(10);
+        await expect(reviews.locator('[data-testimonial-video-id="Dk0LBmOivQo"]')).toHaveCount(1);
+        assert.ok(await reviews.locator('.site-video-caption [lang="en"]').count() > 0);
+        assert.ok(await reviews.locator('.site-video-caption [lang="ru"]').count() > 0);
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
-        const intro = page.locator('[data-video-locale="es"]');
+        // Reuse the exact independent ES introduction scoped above; RU/EN
+        // testimonials retain their original audio and disclosure languages.
         await expect.poll(() => intro.locator('img.site-video-poster').evaluate(el => el.complete && el.naturalWidth >= 320)).toBe(true);
         assert.equal(await page.locator('iframe').count(), 0);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('Avatar IA');
@@ -64,30 +75,36 @@ try {
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
-        assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
+        // Never mistake original RU-language testimonial titles for untranslated
+        // Spanish primary copy; preserve their genuine source language.
+        const spanishCopy = await page.locator(
+          '.about-introduction, .about-biography, .about-explore, .about-consultation, .about-client-cabinet',
+        ).allInnerTexts();
+        assert.doesNotMatch(spanishCopy.join('\n'), /[\u0400-\u04ff]/);
         await summary.press('Enter');
-        const form = page.locator('.personal-consultation-form');
-        await expect(form).toHaveAttribute('lang', 'es');
-        await expect(form.locator('button[type="submit"]')).toContainText('Continuar en WhatsApp');
+        const capture = page.locator('[data-consultation-capture="personal"]');
+        await expect(capture).toHaveAttribute('lang', 'es');
+        await expect(capture.locator('[role="group"] button')).toHaveCount(4);
+        await expect(capture.locator('[data-consultation-action="personal"]')).toContainText('Iniciar evaluación gratuita por dibujo');
+        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No sensitive written intake required');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'ES horizontal overflow');
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-about-${engine}-${width}.png`, fullPage: true });
         await intro.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-es-video-${engine}-${width}.png` });
         if (!live) {
-          await page.evaluate(() => { window.open = (url, target, features) => { window.__esFormTest = { url, target, features }; return null; }; });
-          await form.locator('input[name="name"]').fill('Prueba de interfaz');
-          await form.locator('input[name="contact"]').fill('qa@example.invalid');
-          await form.locator('textarea').fill('Comprobación local sin enviar mensajes.');
-          await form.locator('button[type="submit"]').click();
-          const opened = await page.evaluate(() => window.__esFormTest);
-          const url = new URL(opened.url);
-          assert.equal(url.origin, 'https://wa.me');
-          assert.equal(url.pathname, '/14376066502');
-          assert.match(url.searchParams.get('text'), /Solicitud de consulta personal/);
-          assert.match(url.searchParams.get('text'), /Nombre: Prueba de interfaz/);
-          assert.match(url.searchParams.get('text'), /Contacto preferido:/);
-          assert.equal(opened.features, 'noopener,noreferrer');
+          // The current approved free offer is a drawing/coach-form diagnostic,
+          // not a free live WhatsApp conversation.
+          const action = capture.locator('[data-consultation-action]');
+          const initial = new URL(await action.getAttribute('href'), origin);
+          await capture.locator('[role="group"] button').nth(2).click();
+          await expect(capture.locator('[role="group"] button').nth(2)).toHaveAttribute('aria-pressed', 'true');
+          const updated = new URL(await action.getAttribute('href'), origin);
+          assert.equal(updated.origin, new URL(origin).origin);
+          assert.equal(updated.pathname, '/es/services/free-situation-review');
+          assert.notEqual(updated.searchParams.get('topic'), initial.searchParams.get('topic'));
+          assert.equal(updated.searchParams.get('topic'), 'business');
+          assert.equal(await capture.locator('form, input, textarea').count(), 0);
         }
         await intro.getByRole('button', { name: /^Ver vídeo:/ }).click();
         await expect(intro.locator('iframe')).toHaveAttribute('src', 'https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b');
@@ -99,7 +116,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only labels' : 'Spanish WhatsApp text intercepted, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript + 10 genuine RU/EN testimonial players', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }

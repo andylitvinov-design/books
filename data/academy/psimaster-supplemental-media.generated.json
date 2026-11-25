@@ -1,0 +1,30 @@
+[
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "sourceTaxonomyId": "12308",
+    "sourceProvider": "psimaster",
+    "logicalId": "applied/imagery-therapy/mirrorland",
+    "status": "source_linked_public_video",
+    "platform": "youtube",
+    "mediaUrl": "https://www.youtube.com/embed/EhQPjuyNCS4",
+    "videoId": "EhQPjuyNCS4",
+    "order": 1,
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Эмоционально-образная терапия — введение",
+    "lessonTitleEn": "Imagery Therapy — introduction"
+  },
+  {
+    "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+    "sourceTaxonomyId": "12308",
+    "sourceProvider": "psimaster",
+    "logicalId": "applied/imagery-therapy/mirrorland",
+    "status": "source_linked_public_video",
+    "platform": "youtube",
+    "mediaUrl": "https://www.youtube.com/embed/m03fo3CW7Eo",
+    "videoId": "m03fo3CW7Eo",
+    "order": 2,
+    "extractionMethod": "iframe_src",
+    "lessonTitle": "Эмоционально-образная терапия и символдрама — введение",
+    "lessonTitleEn": "Imagery Therapy & Symboldrama — introduction"
+  }
+]

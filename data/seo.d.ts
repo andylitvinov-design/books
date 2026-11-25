@@ -7,4 +7,4 @@ export type SitemapEntry = {
 };
 
 export function getSitemapEntries(baseUrl: string): SitemapEntry[];
-export function getRobotsPolicy(baseUrl: string): { rules: { userAgent: string; allow: string }; sitemap: string };
+export function getRobotsPolicy(baseUrl: string): { rules: { userAgent: string; allow: string; disallow: string[] }; sitemap: string };

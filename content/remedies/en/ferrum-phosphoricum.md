@@ -80,6 +80,14 @@ FERRUM.
 
 Provides focus, firmness, determination toward the goal, like the blade of a sword. Relieves shyness and fears of expressing oneself. Helps to be yourself.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The fear of falling short of expectations makes you prove your resilience and prevents you from relaxing.
+
+After (desired state): Composure and determination in pursuing your own goal, with permission to be yourself without constantly proving your strength.
+
 __
 
 PS. I wondered, what if you just put iron on a photo, would it work?

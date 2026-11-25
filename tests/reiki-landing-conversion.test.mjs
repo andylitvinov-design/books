@@ -1,0 +1,144 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+test("Reiki Yggdrasil restores a guide-first hero capture and a final capture after the video archive and resource links", async () => {
+  const hub = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
+  const record = await readFile("components/academy-record-page.tsx", "utf8");
+  const hero = hub.indexOf('<section className="yggdrasil-program-hero reiki-screen reiki-screen--hero">');
+  const top = hub.indexOf('<YggdrasilLeadForms locale={locale} placement="top" />');
+  const modules = hub.indexOf('id="system-modules"');
+  const meditation = hub.indexOf("<YggdrasilMeditationFeature");
+  const reviews = hub.indexOf("<YggdrasilTestimonials");
+  const archive = hub.indexOf('<YggdrasilEnglishVideoGuide locale={locale} scope="all" />');
+  const resources = record.indexOf('className="academy-resource-links"');
+  const bottom = record.indexOf('isCanonicalYggdrasil ? <YggdrasilLeadForms locale={locale} placement="bottom" />');
+  assert.ok(hero >= 0 && hero < top && top < modules && modules < meditation && meditation < reviews && reviews < archive);
+  assert.ok(resources >= 0 && resources < bottom, "Bottom capture must follow the actual last archive/resource links");
+  assert.equal((hub.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
+  assert.equal((record.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
+  assert.match(record, /isCanonicalYggdrasil \? <YggdrasilLeadForms/);
+  assert.match(hub, /\/academy\/reiki\/yggdrasil\/free-initiation/);
+  assert.match(hub, /Rediscover your centre/);
+  assert.match(hub, /Encuentra tu centro/);
+});
+
+test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () => {
+  const [wrapper, capture, css] = await Promise.all([
+    readFile("components/reiki-landing-forms.tsx", "utf8"),
+    readFile("components/reiki-choice-capture.tsx", "utf8"),
+    readFile("components/reiki-choice-capture.module.css", "utf8"),
+  ]);
+  assert.match(wrapper, /<ReikiChoiceCapture locale=\{locale\} course="yggdrasil"/);
+  assert.match(capture, /"guide", "express", "personal"/);
+  assert.match(capture, /data-reiki-choice-capture=\{course\}/);
+  assert.match(capture, /aria-pressed=\{selected === choice\}/);
+  assert.match(capture, /compactPhone/);
+  assert.match(capture, /publicTopic=\{t\.common\.options\[selected\]\}/);
+  assert.doesNotMatch(capture, /<div className=\{styles\.footer\}>/);
+  assert.match(capture, /"yggdrasil-top-capture"/);
+  assert.match(capture, /: course === "tantra" \? "tantra-next-steps" : "reiki-free-level-one"/);
+  assert.match(capture, /const isTop = placement === "top"/);
+  assert.match(capture, /isTop \? "guide" : "express"/);
+  assert.match(capture, /id=\{sectionId\}/);
+  assert.match(capture, /course === "yggdrasil" && !isTop/);
+  assert.match(capture, /styles\.yggdrasilTopCapture/);
+  assert.match(capture, /Request free express Level 1 initiation/);
+  assert.match(capture, /Бесплатная экспресс-инициация 1-й ступени/);
+  assert.match(capture, /Скачать учебные материалы и цены/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
+  assert.match(capture, /<ContactChannelChooser/);
+  assert.match(capture, /option: t\.common\.options\[selected\]/);
+  assert.match(capture, /reiki-guide/);
+  assert.match(capture, /formatReikiLevelPrice\(course, locale\)/);
+  assert.match(capture, /data-reiki-initiation-price=\{course\}/);
+  assert.doesNotMatch(capture, /href="https:\/\/t\.me\/AndyTherapist"/);
+  assert.match(capture, /href=\{guideUrl\}/);
+  for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
+    assert.ok(!capture.includes(tag), "Unexpected long lead form: " + tag);
+  }
+  assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
+  assert.match(css, /\.choice\[data-selected="true"\]/);
+  assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /\.choices \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.choice:nth-child\(3\) \{ grid-column: 1 \/ -1/);
+  // Top Yggdrasil keeps the approved compact 2 + 1 layout without modifying Tantra.
+  assert.match(css, /\.yggdrasilTopCapture \.choices \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.yggdrasilTopCapture \.choice:nth-child\(3\) \{/);
+  assert.match(css, /\.yggdrasilTopCapture \.action \{ min-height: 48px/);
+  const mobile = css.split("@media (max-width: 640px) {")[1];
+  assert.match(mobile, /\.choices \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(mobile, /\.choice:nth-child\(3\) \{ min-height: 60px/);
+  assert.doesNotMatch(mobile, /\.choices \{ grid-template-columns: minmax\(0, 1fr\)/);
+});
+
+test("all ten YouTube testimonials are immediately accessible, with accurate classification", async () => {
+  const [testimonials, audit] = await Promise.all([
+    readFile("components/yggdrasil-testimonials.tsx", "utf8"),
+    readFile("data/academy/yggdrasil-legacy-english-videos.ts", "utf8"),
+  ]);
+  assert.match(testimonials, /yggdrasilVideoTestimonials.map/);
+  assert.doesNotMatch(testimonials, /<details/);
+  assert.match(testimonials, /yggdrasil-testimonial-card__top/);
+  for (const id of ["wN_SNwZ1Epo", "3Apc8P1Yudc", "XvMdX5czoOc", "hjmVJrgEsZ8", "u275Zz78vhs", "3msoUyWr6bY", "0G_xvbuClII", "Hk9XpeUI0BQ", "Nx8DwWk27VY", "p29qu8-dtZk"]) {
+    assert.ok(audit.includes(id));
+  }
+});
+
+test("Russian lesson videos are preserved but collapsed by default at bottom", async () => {
+  const [guide, meditation] = await Promise.all([
+    readFile("components/yggdrasil-english-video-guide.tsx", "utf8"),
+    readFile("components/yggdrasil-meditation-feature.tsx", "utf8"),
+  ]);
+  assert.match(guide, /level.steps.map/);
+  assert.match(guide, /RU audio · Original class/);
+  assert.match(guide, /<details className="yggdrasil-russian-video-archive">/);
+  assert.match(guide, /Collapsed · \{recordingCount\} Russian-language videos hidden · Tap to expand/);
+  assert.doesNotMatch(guide, /<details[^>]+open=/);
+  assert.match(guide, /Show videos/);
+  assert.match(guide, /Hide videos/);
+  assert.match(guide, /<AcademyVideoPlayer youtubeId=\{recording.youtubeId\}/);
+  assert.match(guide, /id=\{scope === "all" \? "yggdrasil-english-guide"/);
+  assert.match(meditation, /recording.youtubeId \? \(/);
+  assert.match(meditation, /<AcademyVideoPlayer youtubeId=\{recording.youtubeId\}/);
+  assert.doesNotMatch(meditation, /wN_SNwZ1Epo|qM_nFUkYJ1k/);
+});
+
+test("Tantra Reiki ends with the shared selector, without a long Master application", async () => {
+  const [page, wrapper, chooser] = await Promise.all([
+    readFile("components/academy-record-page.tsx", "utf8"),
+    readFile("components/tantra-reiki-lead-forms.tsx", "utf8"),
+    readFile("components/reiki-choice-capture.tsx", "utf8"),
+  ]);
+  assert.match(page, /isVerbatimTantraArchive \? <TantraReikiLeadForms locale=\{locale\}/);
+  assert.match(wrapper, /<ReikiChoiceCapture locale=\{locale\} course="tantra"/);
+  assert.match(chooser, /"tantra-master-course"/);
+  assert.match(chooser, /Request free express Level 1 initiation/);
+  assert.match(chooser, /Request full personal Level 1 initiation/);
+  assert.match(chooser, /compactPhone/);
+  assert.doesNotMatch(chooser, /data-reiki-choice-action="guide-secondary"/);
+  assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea/);
+  assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
+});
+
+test("mobile testimonial cards and two-stage forms have responsive spacing", async () => {
+  const css = await readFile("app/academy.css", "utf8");
+  assert.match(css, /\.reiki-landing-forms \{ scroll-margin-top/);
+  assert.match(css, /Both contact cards fit one mobile screen/);
+  assert.match(css, /\.reiki-offer-card__actions \{ display: grid/);
+  assert.match(css, /\.yggdrasil-russian-video-archive\[open\]/);
+  assert.match(css, /\.yggdrasil-testimonial-card__top/);
+  assert.match(css, /@media \(max-width: 550px\)/);
+});
+
+test("all six download links serve actual localized detailed course guides", async () => {
+  const chooser = await readFile("components/reiki-choice-capture.tsx", "utf8");
+  assert.match(chooser, /reiki-guide/);
+  for (const course of ["tantra", "yggdrasil"]) {
+    for (const locale of ["en", "ru", "es"]) {
+      const text = await readFile("public/academy/course-guides/" + course + "." + locale + ".txt", "utf8");
+      assert.ok(text.length > 1100, "Guide is too short: " + course + "/" + locale);
+      assert.match(text, new RegExp("holistichouse\\.vercel\\.app/" + locale + "/academy/reiki/" + (course === "tantra" ? "tantra-reiki" : "yggdrasil")));
+    }
+  }
+});

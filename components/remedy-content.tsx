@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import type { Locale, Remedy } from "@/data/remedies";
 import { countSupplementarySources } from "@/lib/remedy-sources";
+import { splitAtRemedyIndications } from "@/lib/remedies/symptom-placement";
+import { RemedySymptomsSection } from "@/components/remedy-symptoms-section";
 
 type RemedyContentProps = {
   locale: Locale;
@@ -9,6 +11,9 @@ type RemedyContentProps = {
   sourceUrl?: string;
   variant: "standalone" | "book";
   showEssence?: boolean;
+  expandSupplementary?: boolean;
+  /** Preserve all source paragraphs and their order in client report appendices. */
+  fullSource?: boolean;
 };
 
 type Section = {
@@ -148,6 +153,45 @@ function ContentBlocks({ blocks, locale, sourceUrl }: { blocks: string[]; locale
   return rendered;
 }
 
+// Client report appendices display the entire original library card, in order.
+// This deliberately skips the directory reader's curated section sorting.
+function CompleteSourceDescription({
+  description, locale, sourceUrl, variant,
+}: { description: string; locale: Locale; sourceUrl?: string; variant: RemedyContentProps["variant"] }) {
+  // No filtering, rewriting or sorting: the entire library source survives.
+  const chunks = description.replace(/\r\n?/g, "\n").split(/\n{2,}/).map(part=>part.trim()).filter(Boolean);
+  const Heading=variant==="book"?"h3":"h2";
+  const renderChunks=(parts:string[]):ReactNode[]=>{
+    const output:ReactNode[]=[];
+    let buffer:string[]=[];
+    const flush=()=>{
+      if(!buffer.length)return;
+      output.push(<div className="remedy-source-paragraphs" key={"source-"+output.length}>
+        <ContentBlocks blocks={buffer} locale={locale} sourceUrl={sourceUrl} />
+      </div>);
+      buffer=[];
+    };
+    for(const block of parts){
+      const plain=block.replace(/^#{1,6}\s+/,"")
+        .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u,"").trim();
+      const mdHeading=/^#{1,6}\s+\S/u.test(block)&&!block.includes("\n");
+      const capsHeading=!block.includes("\n")&&plain.length<=65&&
+        /\p{L}/u.test(plain)&&plain===plain.toLocaleUpperCase(locale);
+      if(mdHeading||capsHeading){
+        flush();
+        output.push(<Heading className="remedy-source-heading" key={"heading-"+output.length}>{plain}</Heading>);
+      }else buffer.push(block);
+    }
+    flush();
+    return output;
+  };
+  // Only four opening source paragraphs/chunks sit beside the original photo;
+  // the rest must clear the photo and use the entire reading column.
+  return <div className="remedy-source-full">
+    <div className="remedy-source-intro">{renderChunks(chunks.slice(0,4))}</div>
+    {chunks.length>4&&<div className="remedy-source-rest">{renderChunks(chunks.slice(4))}</div>}
+  </div>;
+}
 function ContentSection({ section, locale, variant, sourceUrl }: { section: Section; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
   const Heading = variant === "book" ? "h3" : "h2";
   const sectionClass = section.key === "basis"
@@ -161,8 +205,10 @@ function ContentSection({ section, locale, variant, sourceUrl }: { section: Sect
   </section>;
 }
 
-function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Section[]; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
+function SectionLayout({ sections, locale, variant, sourceUrl, slug, symptomsAfterState }: { sections: Section[]; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string; slug: string; symptomsAfterState: boolean }) {
   const rendered: ReactNode[] = [];
+  const indicatedIndex = sections.findIndex((section) => /^(показания|indications)$/u.test(normaliseHeading(section.heading)));
+  const symptomIndex = indicatedIndex >= 0 ? indicatedIndex : sections.findIndex((section) => section.key === "state");
   for (let index = 0; index < sections.length;) {
     const first = sections[index];
     const second = sections[index + 1];
@@ -173,21 +219,36 @@ function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Sec
       continue;
     }
     rendered.push(<ContentSection key={`${first.heading}-${first.index}`} locale={locale} section={first} sourceUrl={sourceUrl} variant={variant} />);
+    if (symptomsAfterState && index === symptomIndex) {
+      rendered.push(<RemedySymptomsSection key={`symptoms-after-${first.index}`} slug={slug} locale={locale} variant={variant} />);
+    }
     index += 1;
   }
   return rendered;
 }
 
-export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true }: RemedyContentProps) {
+export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true, expandSupplementary = false, fullSource = false }: RemedyContentProps) {
+  if (fullSource) return <div className={"remedy-content-body remedy-content-body--" + variant}>
+    <CompleteSourceDescription description={remedy.description} locale={locale} sourceUrl={sourceUrl} variant={variant} />
+  </div>;
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
+  const sourceIntroPlacement = splitAtRemedyIndications(content.intro);
+  const symptomsAfterState = !sourceIntroPlacement.foundIndications && content.sections.some((section) => section.key === "state");
+  const introPlacement = symptomsAfterState ? null : sourceIntroPlacement;
   const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);
 
   return <div className={`remedy-content-body remedy-content-body--${variant}`}>
     {showEssence ? <RemedyEssence locale={locale} remedy={remedy} /> : null}
-    {content.intro.length ? <div className="remedy-content-intro"><ContentBlocks blocks={content.intro} locale={locale} sourceUrl={sourceUrl} /></div> : null}
-    <SectionLayout locale={locale} sections={content.sections} sourceUrl={sourceUrl} variant={variant} />
-    {content.supplementary ? <details className="remedy-supplementary" open={false}>
+    {content.intro.length ? <div className="remedy-content-intro">
+      {introPlacement ? <>
+        <ContentBlocks blocks={introPlacement.before} locale={locale} sourceUrl={sourceUrl} />
+        <RemedySymptomsSection slug={remedy.slug} locale={locale} variant={variant} />
+        <ContentBlocks blocks={introPlacement.after} locale={locale} sourceUrl={sourceUrl} />
+      </> : <ContentBlocks blocks={content.intro} locale={locale} sourceUrl={sourceUrl} />}
+    </div> : !symptomsAfterState ? <RemedySymptomsSection slug={remedy.slug} locale={locale} variant={variant} /> : null}
+    <SectionLayout locale={locale} sections={content.sections} sourceUrl={sourceUrl} variant={variant} slug={remedy.slug} symptomsAfterState={symptomsAfterState} />
+    {content.supplementary ? <details className="remedy-supplementary" open={expandSupplementary}>
       <summary>{labels.supplementary}{supplementaryCount ? ` (${supplementaryCount})` : ""}</summary>
       <div><ContentBlocks blocks={content.supplementary.blocks} locale={locale} sourceUrl={sourceUrl} /></div>
     </details> : null}

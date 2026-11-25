@@ -2,6 +2,7 @@ import sources from "./sources.generated.json";
 import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
+import psimasterSupplementalMedia from "./psimaster-supplemental-media.generated.json";
 import psimasterTranslations from "./psimaster-translations.generated.json";
 import legacyTranslations from "./legacy-translations.generated.json";
 import tantraReikiFullArchive from "./tantra-reiki-full.generated.json";
@@ -55,12 +56,12 @@ export const academyDirections: Array<{
   title: Record<PublicLocale, string>;
   description: Record<PublicLocale, string>;
 }> = [
-  { id: "reiki", path: "reiki", image: "/images/holistic-house/hero-olive-incense.webp", title: { en: "Reiki & Energy Systems", ru: "Рейки и энергетические системы", es: "Reiki y sistemas energéticos" }, description: { en: "Yggdrasil, Tantra Reiki, shamanic and energy-work study paths.", ru: "Иггдрасиль, Тантра Рейки, шаманские и энергетические учебные программы.", es: "Yggdrasil, Tantra Reiki y programas históricos de trabajo energético." } },
+  { id: "reiki", path: "reiki", image: "/academy/reiki-yggdrasil/source/basic-program.jpg", title: { en: "Reiki & Energy Systems", ru: "Рейки и энергетические системы", es: "Reiki y sistemas energéticos" }, description: { en: "Yggdrasil, Tantra Reiki, Kundalini Reiki and other symbolic energy-work study paths.", ru: "Иггдрасиль, Тантра Рейки, Кундалини Рейки и другие символические энергетические системы.", es: "Yggdrasil, Tantra Reiki, Kundalini Reiki y otras tradiciones simbólicas." } },
   { id: "mysteries", path: "mysteries", image: "/library/maya-mysteries/media/post-244-1.jpg", title: { en: "Mysteries & Ancient Traditions", ru: "Мистерии и древние традиции", es: "Misterios y tradiciones antiguas" }, description: { en: "Greek, Egyptian, Maya and archetypal study material.", ru: "Греческие, египетские, майянские и архетипические материалы.", es: "Materiales griegos, egipcios, mayas y arquetípicos." } },
-  { id: "symbolic", path: "symbolic", image: "/library/maya-egregor-gods/media/post-203-1.jpg", title: { en: "Runes, Elements & Symbolic Arts", ru: "Руны, стихии и символические искусства", es: "Runas, elementos y artes simbólicas" }, description: { en: "Runes, elements, water, talismans and symbolic practice.", ru: "Руны, стихии, вода, талисманы и символические практики.", es: "Runas, elementos, agua, talismanes y práctica simbólica." } },
+  { id: "symbolic", path: "symbolic", image: "/academy/reiki-yggdrasil/source/advanced-runes.png", title: { en: "Runes, Elements & Symbolic Arts", ru: "Руны, стихии и символические искусства", es: "Runas, elementos y artes simbólicas" }, description: { en: "Runes, elements, water, talismans and symbolic practice.", ru: "Руны, стихии, вода, талисманы и символические практики.", es: "Runas, elementos, agua, talismanes y práctica simbólica." } },
   { id: "applied", path: "applied", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: { en: "Applied Archetypal Practice", ru: "Прикладная архетипическая практика", es: "Práctica arquetípica aplicada" }, description: { en: "Applied attunement and archetypal-method learning material.", ru: "Прикладные настройки и обучение архетипическим методам.", es: "Material aplicado sobre sintonización y métodos arquetípicos." } },
-  { id: "school", path: "path", image: "/images/holistic-house/andy-about.png", title: { en: "Academy Path & School", ru: "Путь Академии и школа", es: "Trayectoria y escuela de la Academia" }, description: { en: "Long-form study paths, school structure and historical faculties.", ru: "Долгие учебные пути, структура школы и исторические факультеты.", es: "Trayectorias largas, estructura de la escuela y facultades históricas." } },
-  { id: "archive", path: "archive", image: "/images/holistic-house/books-library.webp", title: { en: "Archive", ru: "Архив", es: "Archivo" }, description: { en: "Historical programs, festivals and previous Academy material.", ru: "Исторические программы, фестивали и прежние материалы Академии.", es: "Programas históricos, festivales y materiales anteriores de la Academia." } },
+  { id: "school", path: "path", image: "/academy/reiki-yggdrasil/source/school-introduction.jpg", title: { en: "Academy Path & School", ru: "Путь Академии и школа", es: "Trayectoria y escuela de la Academia" }, description: { en: "Long-form study paths, school structure and historical faculties.", ru: "Долгие учебные пути, структура школы и исторические факультеты.", es: "Trayectorias largas, estructura de la escuela y facultades históricas." } },
+  { id: "archive", path: "archive", image: "/academy/reiki-yggdrasil/source/program-overview.jpg", title: { en: "Archive", ru: "Архив", es: "Archivo" }, description: { en: "Historical programs, festivals and previous Academy material.", ru: "Исторические программы, фестивали и прежние материалы Академии.", es: "Programas históricos, festivales y materiales anteriores de la Academia." } },
 ];
 
 export const academyProgramTitles: Record<string, Record<PublicLocale, string>> = {
@@ -101,7 +102,7 @@ export const academyProgramTitles: Record<string, Record<PublicLocale, string>> 
   "path/magister-archetypal-therapies": { en: "Historical Magister Program — Archetypal Therapies & Shamanism", ru: "Историческая программа Magister — архетипические терапии и шаманизм", es: "Programa histórico Magister — terapias arquetípicas y chamanismo" },
   "reiki/free-energy-healing": { en: "Energy Healing — Introductory Course", ru: "Введение в энергетическую практику", es: "Introducción a la práctica energética" },
   "reiki/master-shamanic-healing": { en: "Reiki Yggdrasil — Shamanic Practice Program", ru: "Рейки Иггдрасиль — программа шаманской практики", es: "Reiki Yggdrasil — programa de práctica chamánica" },
-  "reiki/kundalini-reiki": { en: "Kundalini Reiki — Historical Course", ru: "Кундалини Рейки — исторический курс", es: "Kundalini Reiki — curso histórico" },
+  "reiki/kundalini-reiki": { en: "Kundalini Reiki — 3 Levels", ru: "Кундалини Рейки — 3 ступени", es: "Kundalini Reiki — 3 niveles" },
   "reiki/tantra-reiki": { en: "Tantra Reiki", ru: "Тантра Рейки", es: "Tantra Reiki" },
   "reiki/yggdrasil": { en: "Tao Reiki Yggdrasil", ru: "Дао Рейки Иггдрасиль", es: "Tao Reiki Yggdrasil" },
   "reiki/yggdrasil/faq": { en: "Reiki Yggdrasil — FAQ", ru: "Рейки Иггдрасиль — вопросы и ответы", es: "Reiki Yggdrasil — preguntas frecuentes" },
@@ -133,7 +134,7 @@ export const academyCopy = {
 } as const;
 
 const sourceRecords = [...(sources as AcademySourceRecord[]), ...(psimasterSources as AcademySourceRecord[])];
-const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[])];
+const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[]), ...(psimasterSupplementalMedia as AcademyMediaRecord[])];
 
 const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
   "reiki/tantra-reiki": tantraReikiFullArchive.blocks as Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>,
@@ -223,7 +224,7 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
   "mysteries/archetypes-of-love": {
     en: [
       { type: "h2", text: "Mysteries of Love — course map" },
-      { type: "p", text: "The PsiTrends archive presents this as an archetypal constellation journey through relationships, desire, intimacy, identity and the symbolic “light and shadow” parts of the psyche." },
+      { type: "p", text: "This course is a series of personal constellation-mysteries, each devoted to a particular theme for inner transformation. The PsiTrends archive describes an archetypal journey through relationships, desire, intimacy, identity and the symbolic “light and shadow” parts of the psyche." },
       { type: "h3", text: "1. Eros and libido" },
       { type: "p", text: "Exploring desire, vitality, hidden wishes and tensions around the life impulse." },
       { type: "h3", text: "2. Love and sexuality" },
@@ -244,7 +245,7 @@ const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademyS
     ],
     ru: [
       { type: "h2", text: "Малые мистерии: Архетипы любви" },
-      { type: "p", text: "Курс в архиве PsiTrends построен как архетипическое исследование отношений, желания, близости, свободы и внутренних мужских/женских образов через расстановочную форму." },
+      { type: "p", text: "Этот курс — серия личных расстановок-мистерий по отдельным темам для внутренней трансформации. В архиве PsiTrends программа представлена как исследование отношений, желания, близости, свободы и внутренних мужских и женских образов через расстановочную форму." },
       { type: "h3", text: "1. Эрос и либидо" },
       { type: "p", text: "Исследование желания, жизненного импульса и скрытых напряжений." },
       { type: "h3", text: "2. Любовь и сексуальность" },
@@ -657,16 +658,22 @@ function compareAcademyRecords(a: AcademySourceRecord, b: AcademySourceRecord, l
 }
 export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: AcademySourceRecord) => boolean) {
   const byId = new Map<string, AcademySourceRecord[]>();
-  for (const record of sourceRecords) { if (filter && !filter(record)) continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
+  for (const record of sourceRecords) { if (filter && !filter(record)) continue; if (locale !== "ru" && record.sourceLocale === "ru") continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
   return [...byId.values()].map((list) => [...list].sort((a, b) => compareAcademyRecords(a, b, locale))[0]).sort((a, b) => a.routeKey.localeCompare(b.routeKey));
 }
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }
 export function videoRecords(locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === "videos"); }
 export function findAcademyRecord(routeKey: string, locale: PublicLocale) { const matches = sourceRecords.filter((record) => record.routeKey === routeKey); if (!matches.length) return undefined; return [...matches].sort((a, b) => compareAcademyRecords(a, b, locale))[0]; }
+// Retain the archived source reference, but temporarily hide publicly broken
+// previews. The nightly crawl observed this video's YouTube poster HTTP 404 on
+// 2026-10-18. Re-enable after the video and poster are externally reverified.
+const unavailablePublicYouTubeIds = new Set(["OrdMvKn2Zg8"]);
 export function mediaForRecord(record: AcademySourceRecord) {
-  const exact = mediaRecords.filter((item) => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl);
+  const visible = mediaRecords.filter(item =>
+    !unavailablePublicYouTubeIds.has(youtubeIdFromUrl(item.mediaUrl) ?? ""));
+  const exact = visible.filter(item => item.logicalId === record.logicalId && item.sourceUrl === record.sourceUrl);
   if (exact.some((item) => youtubeIdFromUrl(item.mediaUrl))) return exact;
-  return mediaRecords.filter((item) => item.logicalId === record.logicalId);
+  return visible.filter(item => item.logicalId === record.logicalId);
 }
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
 export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) {

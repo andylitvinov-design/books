@@ -1,0 +1,72 @@
+.box{margin:16px 0;padding:16px 14px;background:#fff;border:1px solid #d9e3e6;border-radius:16px;color:#293d4a}
+.head h3{margin:0 0 4px!important;font:700 17px/1.35 system-ui,sans-serif;color:#263f4c}
+.head h3 span{color:#8b5667}
+.head p,.caution{font:12px/1.6 system-ui,sans-serif;color:#657a84;margin:0}
+.list{list-style:none;display:grid;gap:10px;margin:14px 0;padding:0}
+.item{border:1px solid #e4e5e4;border-radius:12px;background:#f9faf9;padding:13px;overflow-wrap:anywhere;display:grid;gap:8px}
+.heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.heading strong{font:750 15px/1.4 system-ui,sans-serif}
+.heading span{border-radius:30px;padding:4px 10px;background:#f2e7e9;color:#7b4255;font:700 11px/1.35 system-ui,sans-serif}
+.heading time{font:11px/1.4 system-ui,sans-serif;color:#697981;margin-left:auto}
+.contacts{display:flex;gap:13px;flex-wrap:wrap;color:#305d6b;font:12px/1.5 system-ui,sans-serif}
+.question{white-space:pre-wrap;font:13px/1.6 system-ui,sans-serif!important;color:#304552!important;margin:0!important}
+.attribution{font:11px/1.5 system-ui,sans-serif;color:#72808a}
+.control{display:flex;align-items:center;gap:9px;font:700 12px/1.4 system-ui,sans-serif;color:#344d59}
+.control select{width:auto!important;min-height:42px;border:1px solid #b6c9d0;border-radius:9px;background:#fff;color:#1e4553;padding:8px 9px;font:13px/1.4 system-ui,sans-serif}
+.caution{margin-top:12px}.empty{margin:13px 0 3px;color:#738591;font:13px/1.6 system-ui,sans-serif}
+.box :focus-visible{outline:3px solid #92566e;outline-offset:3px}
+@media(max-width:600px){.box{padding:14px 11px}.heading{align-items:flex-start;flex-direction:column;gap:5px}.heading time{margin-left:0}}
+
+.importBox{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:9px 0 3px;border-top:1px solid #e3e8e8}
+.importBox small{font-size:11px;color:#667d84;line-height:1.4}
+.importButton{background:#24617a;color:#fff;border:0;padding:9px 12px;min-height:42px;border-radius:10px;font:700 12px/1.3 system-ui,sans-serif}
+.importButton:disabled{opacity:.55;cursor:not-allowed}
+
+.preferred{font:700 12px/1.45 system-ui,sans-serif;color:#245e6b;margin:1px 0!important}
+.smsReply{border:1px solid #bdd9d2;background:#f3faf7;border-radius:12px;padding:11px;display:grid;gap:7px;max-width:100%;min-width:0}
+.smsReply>strong{font-size:12px;color:#245f4c}
+.smsReply p,.smsReply small{font:500 11px/1.5 system-ui,sans-serif;color:#576f65;margin:0}
+.smsReply .smsBlocked{font-weight:650;color:#a34540}
+.smsReply textarea{box-sizing:border-box;width:100%;min-height:85px;border:1px solid #b7d4c9;border-radius:9px;background:white;padding:8px;font:500 12px/1.5 system-ui,sans-serif;resize:vertical}
+.smsActions{display:flex;gap:8px;flex-wrap:wrap}
+.smsActions button,.smsActions a{min-height:42px;border:1px solid #276954;border-radius:9px;padding:9px 13px;font:700 12px/1.3 system-ui,sans-serif;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:white;background:#276954}
+.smsActions a{color:#276954;background:white}
+@media(max-width:480px){.smsActions>*{flex:1 1 125px}}
+
+.otherReply{display:grid;gap:7px;border-radius:12px;border:1px solid #cbdedc;background:#f7fbfa;padding:11px;justify-items:start}
+.otherReply strong{font:750 12px/1.35 system-ui,sans-serif;color:#2b535a}
+.otherReply a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;border-radius:9px;background:#2b6670;color:white!important;text-decoration:none;font:700 12px/1.3 system-ui,sans-serif}
+.otherReply p,.otherReply small{font:500 11px/1.5 system-ui,sans-serif;color:#60767a;margin:0}
+.otherReply p[role=alert]{color:#934044;font-weight:650}
+
+/* Clean-room CRM pipeline: warm Holistic House palette, not competitor branding. */
+.boardNotice{font:700 11px/1.5 system-ui,sans-serif;color:#694c41;margin:9px 0 7px!important}
+.boardSearch{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;font:700 12px/1.4 system-ui,sans-serif;color:#4c4038}
+.boardSearch input{width:min(100%,360px);min-width:0;min-height:44px;border:1px solid #cdb9a5;border-radius:11px;background:white;color:#342b25;padding:10px 12px;font:500 16px/1.3 system-ui,sans-serif}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0;align-items:start;min-width:0}
+.boardColumn{min-width:0;display:flex;flex-direction:column;gap:8px;background:#f7f2ec;border:1px solid #e4d3c3;border-radius:14px;padding:10px}
+.columnHeader{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:3px 2px 8px;border-bottom:1px solid #decbbc}
+.columnHeader h4{margin:0;font:750 12px/1.35 system-ui,sans-serif;color:#564037}
+.columnHeader span{display:grid;place-items:center;min-width:26px;min-height:26px;border-radius:99px;background:#e9d9c8;color:#573d34;font:800 12px/1 system-ui,sans-serif}
+.boardList{list-style:none;margin:0;padding:0;display:grid;gap:9px;min-width:0}
+.boardList .item{min-width:0;background:#fffdf9;border-color:#e7d8ca;padding:11px}
+.boardList .heading{gap:5px;align-items:flex-start}
+.boardList .heading time{margin-left:0;flex-basis:100%}
+.boardList .control{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.boardList .control select{width:100%!important}
+.privateDetails{padding:8px 0;border-top:1px solid #eee4d9;border-bottom:1px solid #eee4d9;min-width:0}
+.privateDetails summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#70384b;font:700 12px/1.45 system-ui,sans-serif}
+.privateDetails[open]{display:grid;gap:9px}
+.privateDetails .contacts{font-size:12px;overflow-wrap:anywhere}
+.boardList .question{max-height:20rem;overflow-y:auto}
+.boardList .importBox{min-width:0}
+.boardList button,.control select,.importButton{min-height:44px}
+.box .boardSearch input:focus-visible,.box .privateDetails summary:focus-visible{outline:3px solid #93476a;outline-offset:2px}
+@media(max-width:1150px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .board{grid-template-columns:minmax(0,1fr);gap:9px}
+ .boardColumn{padding:10px;border-radius:13px}
+ .boardList .heading{flex-direction:row;flex-wrap:wrap;align-items:center}
+ .boardList .heading time{flex-basis:100%}
+ .boardSearch input{width:100%}
+}

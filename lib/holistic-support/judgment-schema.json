@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://holistichouse.vercel.app/schemas/holistic-judgment-mind-1.1.json",
+  "title": "Judgment Mind 1.1 safe conversational output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "state",
+    "situationCode",
+    "evidenceTier",
+    "hypotheses",
+    "uncertainty",
+    "turnId",
+    "conversationRevision",
+    "expiresInSeconds",
+    "choices",
+    "needsChoice",
+    "actionExecuted",
+    "clinicalConclusion",
+    "memorySaved",
+    "reply",
+    "pending"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hh-judgment-mind-v1.1"
+    },
+    "status": {
+      "enum": [
+        "handled",
+        "abstain",
+        "handoff"
+      ]
+    },
+    "state": {
+      "enum": [
+        "abstained",
+        "awaiting_choice",
+        "step_offered",
+        "feedback_received",
+        "paused",
+        "safety_handoff",
+        "reframed",
+        "emotion_acknowledged"
+      ]
+    },
+    "situationCode": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/situation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidenceTier": {
+      "enum": [
+        "E0",
+        "E1",
+        "E2",
+        "E3"
+      ]
+    },
+    "hypotheses": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "string",
+        "maxLength": 64,
+        "pattern": "^(overload|starting|conflict|loneliness|self_criticism|uncertainty|fatigue|stress)\\.[ab]$"
+      }
+    },
+    "uncertainty": {
+      "enum": [
+        "unconfirmed",
+        "tentative",
+        "user_selected",
+        "user_feedback",
+        "user_declined"
+      ]
+    },
+    "turnId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "conversationRevision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "expiresInSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300
+    },
+    "choices": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/choice"
+      }
+    },
+    "needsChoice": {
+      "type": "boolean"
+    },
+    "actionExecuted": {
+      "const": false
+    },
+    "clinicalConclusion": {
+      "const": false
+    },
+    "memorySaved": {
+      "const": false
+    },
+    "reply": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "pending": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/pending"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1600
+    }
+  },
+  "$defs": {
+    "situation": {
+      "type": "string",
+      "enum": [
+        "overload",
+        "starting",
+        "conflict",
+        "loneliness",
+        "self_criticism",
+        "uncertainty",
+        "fatigue",
+        "stress"
+      ]
+    },
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "a",
+            "b",
+            "helpful",
+            "not_helpful"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "pending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "situationCode"
+      ],
+      "properties": {
+        "stage": {
+          "enum": [
+            "awaiting_choice",
+            "feedback"
+          ]
+        },
+        "situationCode": {
+          "$ref": "#/$defs/situation"
+        },
+        "choiceId": {
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "awaiting_choice"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidenceTier": {
+            "const": "E1"
+          },
+          "needsChoice": {
+            "const": true
+          },
+          "choices": {
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "handoff"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "state": {
+            "const": "safety_handoff"
+          },
+          "choices": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

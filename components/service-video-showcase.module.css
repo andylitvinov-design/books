@@ -1,0 +1,37 @@
+/* Compact photo-first video alongside service descriptions; never cover the form. */
+.section {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.15fr);
+  gap: clamp(16px, 2.5vw, 32px);
+  align-items: center;
+  margin: 24px 0 35px;
+  padding: clamp(16px, 2.5vw, 30px);
+  border: 1px solid #ded9cc;
+  border-radius: 21px;
+  color: #342d26;
+  background: #f7f5ef;
+  scroll-margin-top: 24px;
+}
+.intro { min-width: 0; }
+.eyebrow { margin: 0 0 10px; color: #87634a; font: 750 11px/1.5 Arial,Helvetica,sans-serif; text-transform: uppercase; letter-spacing: .11em; }
+.intro h2 { margin: 0 0 13px; color: #322b26; font: 400 clamp(24px, 2.8vw, 34px)/1.16 Georgia,serif; letter-spacing: -.02em; }
+.intro p:last-child { margin: 0; color: #615b53; font: 13px/1.65 Arial,Helvetica,sans-serif; }
+.player { min-width: 0; }
+.player :global(.site-video-player) { max-width: 100%; border-radius: 15px; }
+.player :global(.site-video-caption) { padding: 13px 16px 12px; }
+.player :global(.site-video-title) { font-size: 20px; }
+.player :global(.site-video-actions a) { min-height: 44px; }
+@media (max-width: 767px) {
+  .section { grid-template-columns: minmax(0, 1fr); gap: 15px; padding: 16px 14px; margin: 17px 0 25px; border-radius: 17px; }
+  .intro h2 { font-size: 26px; }
+  .intro p:last-child { font-size: 12px; }
+  .player :global(.site-video-title) { font-size: 19px; }
+}
+
+/* Method videos use compact posters; visible source link when embeds are blocked. */
+.original{display:inline-flex;align-items:center;min-height:44px;margin:5px 3px 0;color:#79503c;font:700 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.original:hover{color:#305e4a}
+.original:focus-visible{outline:3px solid #a47751;outline-offset:3px;border-radius:3px}

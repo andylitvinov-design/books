@@ -1,0 +1,183 @@
+{
+  "artifact_type": "Research handoff; not application code or clinical approval",
+  "instrument": "Adult ADHD Self-Report Scale v1.1 6-Question Screener",
+  "version_identity": "ASRS-v1.1 6Q, patient-facing shaded form; not ASRS-5 or the full 18Q",
+  "source_page": "https://license.tov.med.nyu.edu/product/asrs6Qscreener",
+  "minimum_age": 18,
+  "timeframe_months": 6,
+  "scoring": {
+    "name": "Classic shaded-cell count printed on the pinned NYU patient-facing masters",
+    "response_encoding": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "positive_minimum_response": [
+      2,
+      2,
+      2,
+      3,
+      3,
+      3
+    ],
+    "reverse_items": [],
+    "aggregation": "Count qualifying answers; integer range 0–6",
+    "positive_screen_minimum": 4,
+    "subscales": [],
+    "missingness_policy": "Require all six valid answers. This is an HH implementation guardrail; no official prorating/imputation rule was located. Never convert missing to zero."
+  },
+  "required_site_attribution": "The 6-question Adult Self-Report Scale-Version1.1 (ASRS-V1.1) Screener is a subset of the 18-question Adult ADHD Self-Report Scale-Version1.1 (Adult ASRSV1.1) Symptom Checklist. © New York University and the President and Fellows of Harvard College.",
+  "english_form_copyright": "© New York University and President and Fellows of Harvard College. All rights reserved.",
+  "locales": {
+    "en": {
+      "file": "6Q_ASRS_ENGLISH_final.pdf",
+      "anchors": [
+        "Never",
+        "Rarely",
+        "Sometimes",
+        "Often",
+        "Very Often"
+      ],
+      "instructions": "Check the box that best describes how you have felt and conducted yourself over the past 6 months. Please give the completed questionnaire to your healthcare professional during your next appointment to discuss the results.",
+      "printed_scoring_text": "Add the number of checkmarks that appear in the darkly shaded area. Four (4) or more checkmarks indicate that your symptoms may be consistent with Adult ADHD. It may be beneficial for you to talk with your healthcare provider about an evaluation.",
+      "eligibility": "This Adult Self-Report Scale-V1.1 (ASRS-V1.1) Screener is intended for people aged 18 years or older.",
+      "safety_text": "The following questionnaire can be used as a starting point to help you recognize the signs/symptoms of Adult ADHD but is not meant to replace consultation with a trained healthcare professional. An accurate diagnosis can only be made through a clinical evaluation. Regardless of the questionnaire results, if you have concerns about diagnosis and treatment of Adult ADHD, please discuss your concerns with your physician.",
+      "items": [
+        "How often do you have trouble wrapping up the final details of a project, once the challenging parts have been done?",
+        "How often do you have difficulty getting things in order when you have to do a task that requires organization?",
+        "How often do you have problems remembering appointments or obligations?",
+        "When you have a task that requires a lot of thought, how often do you avoid or delay getting started?",
+        "How often do you fidget or squirm with your hands or feet when you have to sit down for a long time?",
+        "How often do you feel overly active and compelled to do things, like you were driven by a motor?"
+      ]
+    },
+    "ru": {
+      "file": "6Q_Russian_final.pdf",
+      "anchors": [
+        "Никогда",
+        "Редко",
+        "Иногда",
+        "Часто",
+        "Очень часто"
+      ],
+      "instructions": "Отметьте клетку с ответом, который лучше всего описывает ваше самочувствие и поведение за последние 6 месяцев. Чтобы обсудить результаты, передайте, пожалуйста, заполненную анкету обслуживающему вас профессиональному медицинскому работнику во время следующего визита к нему.",
+      "printed_scoring_text": "Подсчитайте количество отметок, сделанных в темной заштрихованной части графика. Четыре (4) или большее количество таких отметок свидетельствует о том, что ваши симптомы, возможно, совпадают с симптомами ADHD-синдрома у взрослых. Теперь может оказаться полезным поговорить с обслуживающим вас профессиональным медицинским работником об оценке этих результатов.",
+      "eligibility": "Этот скринер со шкалой самооценки V1.1 (ASRS-V1.1) предназначен для людей в возрасте от 18 лет.",
+      "safety_text": "Приведенная ниже анкета, для начала, может помочь вам распознать признаки и (или) симптомы ADHD-синдрома у взрослых, но не заменит консультацию специально обученного профессионального медицинского работника. Точный диагноз можно поставить только после клинического обследования. Независимо от ответов на вопросы анкеты, если вас что-то беспокоит в связи с диагнозом и лечением ADHD-синдрома у взрослых, обсудите это с вашим врачом.",
+      "translation_status": "Official Russian translation distributed by NYU. Exact-version Russian validation was not established. Do not attach the performance figures of the differently worded 2026 Russian validation.",
+      "items": [
+        "Как часто вам бывает трудно закончить работу после того как самое трудное уже сделано?",
+        "Как часто вам бывает трудно навести порядок перед выполнением работы, требующей организованности?",
+        "Как часто у вас возникают трудности с запоминанием времени встреч или своих обязанностей?",
+        "Как часто вы избегаете или откладываете начало работы, требующей больших умственных усилий?",
+        "Как часто вы беспокойно перебираете руками или ногами, когда приходится долго сидеть на одном месте?",
+        "Как часто вы испытываете чрезмерную активность и непреодолимое желание что-то сделать, как если бы у вас внутри был мотор?"
+      ]
+    }
+  },
+  "synthetic_test_fixtures": [
+    {
+      "responses": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "classic_count": 0,
+      "positive": false
+    },
+    {
+      "responses": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "classic_count": 6,
+      "positive": true
+    },
+    {
+      "responses": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2
+      ],
+      "classic_count": 0,
+      "positive": false
+    },
+    {
+      "responses": [
+        2,
+        2,
+        2,
+        3,
+        3,
+        3
+      ],
+      "classic_count": 6,
+      "positive": true
+    },
+    {
+      "responses": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "classic_count": 3,
+      "positive": false
+    },
+    {
+      "responses": [
+        2,
+        2,
+        2,
+        3,
+        0,
+        0
+      ],
+      "classic_count": 4,
+      "positive": true,
+      "continuous_2024_sum": 9,
+      "continuous_positive": false
+    },
+    {
+      "responses": [
+        4,
+        4,
+        4,
+        2,
+        0,
+        0
+      ],
+      "classic_count": 3,
+      "positive": false,
+      "continuous_2024_sum": 14,
+      "continuous_positive": true
+    },
+    {
+      "responses": [
+        2,
+        2,
+        2,
+        3,
+        0,
+        null
+      ],
+      "classic_count": null,
+      "positive": null,
+      "expected_state": "incomplete; no result"
+    }
+  ]
+}

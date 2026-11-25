@@ -1,21 +1,142 @@
 import assert from 'node:assert/strict';
+import { isTransientYouTubePosterTimeout } from '../scripts/public-poster-readiness.mjs';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 const read = path => readFileSync(path, 'utf8');
-test('language disclosure handles escape, outside focus and selected locale with cleanup', () => {
-  const nav = read('components/site-navigation.tsx');
-  for (const type of ['pointerdown', 'focusin', 'keydown']) {
-    assert.ok(nav.includes(`addEventListener("${type}"`));
-    assert.ok(nav.includes(`removeEventListener("${type}"`));
+// Execute the real effect callbacks, transpiling TypeScript without rewriting their logic.
+const navigationSource = read('components/site-navigation.tsx');
+const navigationAst = ts.createSourceFile('site-navigation.tsx', navigationSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const navigationEffects = [];
+function collectNavigationEffects(node) {
+  if (ts.isCallExpression(node) && node.expression.getText(navigationAst) === 'useEffect') {
+    navigationEffects.push(node);
   }
-  assert.match(nav, /event\.key !== "Escape"/);
-  assert.match(nav, /querySelector<HTMLElement>\("summary"\)\?\.focus/);
-  assert.match(nav, /if \(menuRef\.current\) menuRef\.current\.open = false/);
+  ts.forEachChild(node, collectNavigationEffects);
+}
+collectNavigationEffects(navigationAst);
+function navigationEffect(dependencies, context) {
+  const matches = navigationEffects.filter(node => {
+    const deps = node.arguments[1];
+    return deps && ts.isArrayLiteralExpression(deps)
+      && deps.elements.map(entry => entry.getText(navigationAst)).join(',') === dependencies.join(',');
+  });
+  assert.equal(matches.length, 1, `exactly one effect for [${dependencies}]`);
+  const callback = matches[0].arguments[0].getText(navigationAst);
+  const compiled = ts.transpileModule(`(${callback})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  return runInNewContext(compiled, context)();
+}
+function navigationHarness() {
+  class Node {}
+  const menus = ['language', 'site'].map(name => {
+    const inside = new Node();
+    const menu = {
+      name, inside, open: true, focusCount: 0, dataset: {},
+      contains: target => target === inside || target === menu,
+      querySelector: selector => {
+        assert.equal(selector, 'summary');
+        return { focus: () => { menu.focusCount += 1; } };
+      },
+    };
+    return menu;
+  });
+  const listeners = new Map();
+  const context = {
+    Node,
+    pathname: "/en", activeLocale: "en",
+    previousNavigation: { current: { pathname: "/en", locale: "en" } },
+    languageRef: { current: menus[0] }, siteMenuRef: { current: menus[1] },
+    document: {
+      addEventListener: (type, listener) => {
+        assert.equal(listeners.has(type), false, `no duplicate ${type} listener`);
+        listeners.set(type, listener);
+      },
+      removeEventListener: (type, listener) => {
+        assert.equal(listeners.get(type), listener, `remove the registered ${type} listener`);
+        listeners.delete(type);
+      },
+    },
+  };
+  const cleanup = navigationEffect([], context);
+  assert.deepEqual([...listeners.keys()].sort(), ['focusin', 'keydown', 'pointerdown']);
+  return { menus, context, listeners, cleanup, outside: new Node() };
+}
+test('both navigation disclosures dismiss outside pointer/focus, but retain the targeted menu', () => {
+  for (const type of ['pointerdown', 'focusin']) {
+    const { menus, listeners, outside, cleanup } = navigationHarness();
+    for (const active of menus) {
+      menus.forEach(menu => { menu.open = true; });
+      listeners.get(type)({ target: active.inside });
+      assert.equal(active.open, true, `${type} inside ${active.name} must keep it open`);
+      assert.equal(menus.find(menu => menu !== active).open, false);
+      listeners.get(type)({ target: outside });
+      assert.ok(menus.every(menu => !menu.open), `${type} outside closes both menus`);
+    }
+    menus.forEach(menu => { menu.open = true; });
+    listeners.get(type)({ target: null });
+    assert.ok(menus.every(menu => menu.open), 'non-Node event targets are ignored');
+    cleanup();
+  }
+});
+test('Escape closes either disclosure and restores its summary focus; unrelated keys do nothing', () => {
+  for (const index of [0, 1]) {
+    const { menus, listeners, cleanup } = navigationHarness();
+    menus.forEach((menu, i) => { menu.open = i === index; });
+    let prevented = 0;
+    const event = { key: 'Enter', preventDefault: () => { prevented += 1; } };
+    listeners.get('keydown')(event);
+    assert.equal(menus[index].open, true);
+    assert.equal(prevented, 0);
+    assert.ok(menus.every(menu => menu.focusCount === 0));
+    event.key = 'Escape';
+    listeners.get('keydown')(event);
+    assert.ok(menus.every(menu => !menu.open));
+    assert.equal(menus[index].focusCount, 1);
+    assert.equal(menus[1 - index].focusCount, 0);
+    assert.equal(prevented, 1);
+    listeners.get('keydown')(event);
+    assert.equal(prevented, 1, 'Escape without an open menu is not intercepted');
+    assert.equal(menus[index].focusCount, 1, 'closed menus do not steal focus');
+    cleanup();
+  }
+});
+test('Escape closes both open disclosures and unmount removes every registered listener', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  listeners.get('keydown')({ key: 'Escape', preventDefault() {} });
+  assert.ok(menus.every(menu => !menu.open));
+  assert.equal(menus.reduce((count, menu) => count + menu.focusCount, 0), 1);
+  assert.equal(typeof cleanup, 'function');
+  cleanup();
+  assert.equal(listeners.size, 0);
+});
+test('route or active-locale changes close both disclosures without stealing focus', () => {
+  const { menus, context, cleanup } = navigationHarness();
+  context.pathname = '/en/services';
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => !menu.open));
+  menus.forEach(menu => { menu.open = true; });
+  context.activeLocale = 'ru';
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => !menu.open));
+  assert.ok(menus.every(menu => menu.focusCount === 0));
+  context.languageRef.current = null;
+  context.siteMenuRef.current = null;
+  assert.doesNotThrow(() => navigationEffect(['pathname', 'activeLocale'], context));
+  cleanup();
+});
+test('locale selection and site-menu links close their own disclosures immediately', () => {
+  assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
+  assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 9, 'All nine menu link groups close their disclosure, including Services, human specialists, Shop, Cart and Free App');
+  assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');
   assert.match(hub, /localizedBookText\(volume, locale\)/);
-  assert.match(hub, /lang=\$\{locale\}/);
+  assert.ok(hub.includes('href={`/${locale}/books/${volume.id}`}'));
   assert.match(hub, /generateMetadata/);
   assert.match(read('components/site-navigation.tsx'), /pathname === "\/books\/maya-tradition"/);
 });
@@ -43,15 +164,14 @@ test('optional translation never blanks the source and can be cancelled and retr
   assert.match(reader, /Retry English translation/);
   assert.match(reader, /lang=\{translated \? 'en' : 'ru'\}/);
 });
-test('consultation cannot fall back to a GET containing personal fields before hydration', () => {
+test('consultation never falls back to an accidental GET with private form fields', () => {
   const form = read('components/personal-consultation-form.tsx');
-  assert.match(form, /method="post"/);
-  assert.match(form, /disabled=\{!interactive\}/);
-  assert.match(form, /useState\(false\)/);
-  assert.match(form, /event\.preventDefault\(\)/);
-  assert.match(form, /setCustomValidity/);
-  assert.match(form, /personal-consultation-form__resume/);
-  assert.match(form, /sent automatically/);
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(form, /ConsultationChoiceCapture/);
+  assert.match(capture, /whatsappEnquiryUrl\(\{/);
+  assert.match(capture, /request: t\.serviceMessages\[serviceChoice\]/);
+  assert.match(capture, /Nothing is sent until you press Send/);
+  assert.doesNotMatch(capture, /<form|<input|<textarea|FormData|sessionStorage|localStorage/);
 });
 
 // Exercise the real network-validation function without React, source rewriting or any external request.
@@ -82,8 +202,59 @@ test('unmount cancellation aborts the real in-flight translation request', async
   await assert.rejects(pending, /aborted/);
   assert.equal(requestSignal.aborted, true);
 });
-test('editing a prepared consultation invalidates the old handoff link', () => {
-  assert.match(read('components/personal-consultation-form.tsx'), /onInput=\{\(\) => \{ if \(preparedUrl\) setPreparedUrl\(""\); \}\}/);
+test('changing paid service choices derives a fresh WhatsApp URL; free choices open assessment', () => {
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(capture, /onClick=\{\(\) => setServiceChoice\(choice\)\}/);
+  assert.match(capture, /onClick=\{\(\) => setTopic\(choice\)\}/);
+  assert.match(capture, /t\.serviceMessages\[serviceChoice\]/);
+  assert.match(capture, /t\.topicOptions\[choice\]/);
+  assert.match(capture, /const whatsappUrl =/);
+  assert.match(capture, /isPaidRequest \? whatsappUrl/);
+  assert.match(capture, /services\/free-situation-review/);
+  assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
+});
+
+test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const helper = read('scripts/public-poster-readiness.mjs');
+  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(helper,/if \(await image\.isVisible\(\)\)/);
+  assert.match(helper,/el\.loading = 'eager'/);
+  assert.match(helper,/if \(await summary\.isVisible\(\)\)/);
+  assert.match(helper,/await details\.evaluate\(el => \{ el\.open = true; \}\)/);
+  assert.match(helper,/await expect\.poll/);
+  assert.match(helper,/el\.decode\(\)/);
+  assert.match(helper,/el\.currentSrc === selected/);
+  assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
+});
+
+test('Services release audit scopes simulated directory failure without weakening page or image gates', () => {
+  const verifier=read('scripts/verify-release-reaudit.mjs');
+  const reiki=read('components/assist-reiki-session.tsx');
+  assert.match(verifier,/context\.route\(\/\\\/api\\\/public\\\/remote-energy-support-masters/);
+  assert.match(verifier,/status: 503, contentType: 'application\/json'/);
+  assert.match(verifier,/\[data-assist-reiki-session\] \[role="status"\] button/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(verifier,/assert\.deepEqual\(errors, \[\]/);
+  assert.match(reiki,/const deadline = window\.setTimeout/);
+  assert.match(reiki,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(reiki,/\}, 8000\)/);
+  assert.match(reiki,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(reiki,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(reiki,/onClick=\{\(\) => setRetry\(value => value \+ 1\)\}/);
+});
+
+test('Public Services master directory has a real bounded abort and an unavailable state', () => {
+  const gallery = read('components/holistic-support-master-gallery.tsx');
+  assert.match(gallery,/const deadline = window\.setTimeout/);
+  assert.match(gallery,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(gallery,/\}, 8000\)/);
+  assert.match(gallery,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(gallery,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(gallery,/if \(!controller\.signal\.aborted\) setFailed\(true\)/);
 });
 
 test('long Maya readers wait for rendered content instead of global network idleness', () => {
@@ -92,4 +263,242 @@ test('long Maya readers wait for rendered content instead of global network idle
   assert.match(block, /waitUntil: 'domcontentloaded'/);
   assert.match(block, /reader-article'\)\.waitFor/);
   assert.doesNotMatch(block, /waitUntil: 'networkidle'/);
+});
+
+
+
+test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  assert.match(verifier, /check\('consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-messenger-only-handoff'/);
+  assert.match(verifier, /data-consultation-action/);
+  assert.match(verifier, /searchParams\.get\('topic'\)/);
+  assert.match(verifier, /option\[value="30-min"\].*€50/);
+  assert.match(verifier, /option\[value="60-min"\].*€100/);
+  assert.match(verifier, /data-messenger-only-intake/);
+  assert.match(verifier, /data-messenger-only-channel/);
+  assert.match(verifier, /contactFieldsAbsent: true/);
+  assert.match(verifier, /check\('csp-navigation-and-history'/);
+  assert.match(verifier, /privateIframeBlocked: true/);
+  assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
+  assert.match(verifier, /event\.persisted === true && event\.probe === originalProbe && event\.url/);
+  assert.match(verifier, /check\('csp-bfcache-raw-cdp'/);
+  assert.match(verifier, /Page\.navigateToHistoryEntry/);
+  assert.match(verifier, /assert\.deepEqual\(exceptions, \[\]/);
+  assert.match(verifier, /assert\.deepEqual\(cspErrors, \[\]/);
+  assert.match(verifier, /decodedPlaybackClaimed: false/);
+  assert.match(verifier, /check\('api-video-csp-restrictive'/);
+});
+
+test('release audit verifies messenger-only paid service capture without collecting typed personal data', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-messenger-only-handoff'"), verifier.indexOf('if (width === 390)'));
+  assert.match(paid, /data-service-visual-screen="final-capture"/);
+  assert.match(paid, /data-messenger-only-intake/);
+  assert.match(paid, /form, input, textarea/);
+  assert.match(paid, /data-messenger-offer-format/);
+  assert.match(paid, /option\[value="30-min"\].*€50/);
+  assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /data-messenger-only-channel/);
+  assert.match(paid, /noopener/);
+  assert.match(paid, /noreferrer/);
+  assert.match(paid, /referrerpolicy/);
+  assert.match(paid, /Only approved WhatsApp or Telegram destinations/);
+  assert.match(paid, /services\/free-situation-review/);
+  assert.match(paid, /messageSent: false/);
+  assert.match(paid, /contactFieldsAbsent: true/);
+  assert.doesNotMatch(paid, /data-compact-hydrated|contactConsent|enquiry-qa@/);
+});
+
+test('initial navigation effect and identical replay preserve preopened native menus', () => {
+  const { menus, context, cleanup } = navigationHarness();
+  navigationEffect(['pathname', 'activeLocale'], context);
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => menu.open));
+  assert.ok(menus.every(menu => menu.focusCount === 0));
+  cleanup();
+});
+
+test('release audit preserves all four browser lanes while isolating CI process load', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const segment = verifier.match(/const browserLanes = \[([\s\S]*?)\];/)?.[1] || '';
+  const lanes = [...segment.matchAll(/\['(chromium|webkit)',\s*(chromium|webkit),\s*(390|1365)\]/g)];
+  assert.deepEqual(lanes.map(row => row[1] + '/' + row[3]),
+    ['webkit/390', 'webkit/1365', 'chromium/390', 'chromium/1365']);
+  assert.ok(lanes.every(row => row[1] === row[2]), 'Browser names must match launchers');
+  assert.match(verifier, /for \(const \[engine, browserType, width\] of browserLanes\) \{/);
+  assert.match(verifier, /await exercise\(engine, browserType, width\)/);
+  assert.doesNotMatch(verifier, /Promise\.all\(\[exercise\(/);
+  assert.match(verifier, /console\.info\('\[release-reaudit\] public route '/);
+  for (const safety of ["check('public-page'", "check('csp-navigation-and-history'",
+    "check('private-anonymous'", "check('api-video-csp-restrictive'"]) {
+    assert.ok(verifier.includes(safety), 'Preserve release safety contract: ' + safety);
+  }
+});
+
+
+test('release re-audit follows current My Space Today guest Profile and explicit CSP transitions', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  const navigation = read('lib/site-navigation-model.js');
+  const route = read('app/[locale]/app/portrait/page.jsx');
+  const workspace = read('components/app/app-workspace.jsx');
+  const guest = read('components/app/cabinet-guest-overview.jsx');
+  const hub = read('components/app/profile-hub-tabs.jsx');
+  const builder = read('components/personality-profiles-builder.tsx');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps canonical route');
+  assert.ok(route.includes("return <AppWorkspaceNavigator locale={locale} path={['portrait']} />"), 'My Space Today is the real entry');
+  assert.ok(!route.includes('ProfileTestEntry') && !route.includes('hasPrivateIntent'), 'No obsolete test-first route');
+  assert.ok(workspace.includes("state !== 'ready' && page === 'portrait'"), 'Signed-out visitors need a guest view');
+  assert.ok(workspace.includes('<CabinetGuestOverview'), 'Approved My Space guest view remains');
+  assert.ok(workspace.includes('<ProfileHubTabs locale={locale} active="today" />'), 'Today is the first tab');
+  assert.ok(guest.includes('data-cabinet-guest-overview'));
+  assert.ok(guest.includes("'/client/tests'"), 'Free tests remain reachable without sign-in');
+  assert.ok(!guest.includes('appFetch('), 'Guest overview does not fetch private client data');
+  assert.ok(hub.includes('publicEntry = false') && hub.includes('data-profile-hub-tabs'));
+  assert.ok(builder.includes('data-profile-direct-tests'), 'Public builder still exposes tests');
+  const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
+  const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
+  assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
+  const flow = source.slice(start, finish);
+  for (const required of [
+    "toHaveURL(origin + '/en/app/portrait')",
+    "toHaveAttribute('data-csp-class', 'private')",
+    "locator('[data-cabinet-guest-overview]')",
+    "locator('a[href=\"/en/client/tests\"]')",
+    // Signed-out visitors must see the guest cabinet, not the authenticated Today tab.
+    "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
+    "locator('.mobile-bottom-navigation')).toHaveCount(0)",
+    "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
+    "toHaveURL(origin + '/en/personality-profiles')",
+    "toHaveAttribute('data-csp-class', 'public-video')",
+    "locator('[data-profile-direct-tests]').click()",
+    "toHaveURL(origin + '/en/client/tests')",
+  ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
+  assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
+    'Anonymous My Space no longer relies on signed-in Today navigation');
+  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
+  assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
+});
+
+test('release audit refuses unbounded public animation frame stalls while retaining real browser coverage', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const begin = verifier.indexOf('const settlePublicDocument = async stage =>');
+  const end = verifier.indexOf('const routePassed = await check(', begin);
+  assert.ok(begin > 0 && end > begin, 'Exact public document settling scope exists');
+  const scope = verifier.slice(begin, end);
+  for (const anchor of [
+    'await Promise.race([',
+    'requestAnimationFrame(() => requestAnimationFrame(resolve))',
+    'frameTimer = setTimeout(() => reject(new Error',
+    'two-frame wait exceeded 5000ms',
+    'clearTimeout(frameTimer)',
+    'pendingPublicRequests.size === 0',
+    "checkpoints.push({ type: 'settled'",
+  ]) assert.ok(scope.includes(anchor), 'Bounded WebKit settling preserves '+anchor);
+});
+
+test('Maya hub route remains fatal with bounded WebKit navigation and poster decode', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const poster = read('scripts/public-poster-readiness.mjs');
+  for (const anchor of [
+    "['/books/maya-tradition', 'en']",
+    "['/books/maya-tradition?lang=ru', 'ru']",
+    'const routeTimer = setTimeout(',
+    "'[release-reaudit] ROUTE_STALLED '",
+    'process.exit(1)',
+    "if (path === '/books/maya-tradition')",
+    'publicPageState = await createPublicPage()',
+    "console.info('[release-reaudit] strict poster decode count='",
+    'await decodeReadyPoster(image, expect)',
+    "fullPage: path !== '/books/maya-tradition', timeout: 15000",
+    'clearTimeout(routeTimer)',
+  ]) assert.ok(verifier.includes(anchor), 'Real route remains checked: ' + anchor);
+  for (const anchor of [
+    'await Promise.race([',
+    'el.decode()',
+    'Poster decode timed out after 7000ms',
+    'clearTimeout(decodeDeadline)',
+    "throw new Error('Poster identity/readiness changed during decode')",
+  ]) assert.ok(poster.includes(anchor), 'Strict bounded poster decoding: ' + anchor);
+});
+
+test('language menu keyboard readiness is installed with native handlers and cleared on cleanup', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  assert.equal(menus[0].dataset.hhKeyboardReady, 'true');
+  assert.equal(listeners.has('keydown'),true);
+  cleanup();
+  assert.equal(menus[0].dataset.hhKeyboardReady,undefined);
+  assert.equal(listeners.size,0);
+});
+
+test('client landing locale pages use independent real browser pages and retain fatal acceptance', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const isolate = verifier.indexOf("if (['/en/client','/ru/client','/es/client'].includes(path))");
+  const assertRoute = verifier.indexOf("const routePassed = await check('public-page'", isolate);
+  assert.ok(isolate > 0 && assertRoute > isolate,
+    'all three guest Client locales isolate the previous WebKit document before audit');
+  const scope = verifier.slice(isolate, assertRoute);
+  for (const assertion of ['await page.close()', 'publicPageState = await createPublicPage()',
+    'page = publicPageState.page', 'errors = publicPageState.errors'])
+    assert.ok(scope.includes(assertion), 'isolated route retains new document tracking: ' + assertion);
+  for (const required of ['const routeTimer = setTimeout(',
+    "process.exit(1)", "await settlePublicDocument('before-assertions')",
+    "await settlePublicDocument('before-next-navigation')",
+    'await decodeReadyPoster(image, expect)', "assert.equal(state.htmlLang, locale",
+    "if (path === '/books/maya-tradition')"])
+    assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
+});
+
+test('private public-test discovery keeps the current unified seven-destination dock through real CSP back navigation', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const first = verifier.slice(verifier.indexOf('const discoveryBottom ='), verifier.indexOf('const privateContext ='));
+  const back = verifier.slice(verifier.indexOf("historyPhase = 'back-to-private'"), verifier.indexOf("historyPhase = 'forward-to-public-home'"));
+  for (const scope of [first, back]) {
+    assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
+    assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
+    assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
+  }
+  assert.ok(verifier.includes("window.__cspViolations.includes('frame-src')"), 'Private media CSP denial remains a real browser gate');
+  assert.ok(verifier.includes('assert.deepEqual(unexpectedErrors, []'), 'Browser error failures remain enforced');
+});
+
+
+test('a pending allowlisted YouTube thumbnail timeout is diagnostic, not a release defect', () => {
+  const thumbnail = { origin: 'https://i.ytimg.com', pathname: '/vi/m9RfDgK76PU/hqdefault.jpg', search: '', hash: '' };
+  const poster = { src: { ...thumbnail }, current: { ...thumbnail }, connected: true,
+    visibility: 'visible', complete: false, naturalWidth: 0, naturalHeight: 0 };
+  const message = 'Current poster must finish loading before strict decode\nTimeout 7000ms exceeded while waiting on the predicate';
+  const error = (overrides = {}, text = message) => Object.assign(new Error(text), {
+    posterDiagnostic: { ...poster, ...overrides },
+  });
+  assert.equal(isTransientYouTubePosterTimeout(error()), true);
+  assert.equal(isTransientYouTubePosterTimeout(error({ current: { ...thumbnail, origin: 'https://img.youtube.com' } })), true);
+  for (const diagnostic of [
+    { src: { ...thumbnail, origin: 'http://i.ytimg.com' } },
+    { current: { ...thumbnail, origin: 'https://i.ytimg.com.evil.invalid' } },
+    { current: { ...thumbnail, origin: 'http://127.0.0.1:3123' } },
+    { src: { ...thumbnail, pathname: '/private/video.mp4' } },
+    { current: { ...thumbnail, pathname: '/vi/invalid/hqdefault.jpg' } },
+    { current: { ...thumbnail, search: '?token=secret' } },
+    { complete: true },
+    { naturalWidth: 1 },
+    { connected: false },
+    { visibility: 'hidden' },
+  ]) assert.equal(isTransientYouTubePosterTimeout(error(diagnostic)), false, JSON.stringify(diagnostic));
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster decode timed out after 7000ms')), false);
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster source changed before decode')), false);
+  assert.equal(isTransientYouTubePosterTimeout(new Error(message)), false);
+});
+
+test('release WebKit warning does not bypass browser, local poster, CSP or build failure gates', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  assert.match(source, /if \(engine !== 'webkit' \|\| !isTransientYouTubePosterTimeout\(error\)\) throw error/);
+  assert.match(source, /await decodeReadyPoster\(image, expect\)/);
+  assert.match(source, /posterWarnings\.push\(warning\)/);
+  assert.match(source, /return \{ \.\.\.state, posterWarnings \}/);
+  assert.match(source, /warningCount: warnings\.length/);
+  assert.match(source, /assert\.deepEqual\(errors, \[\]/);
+  assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
 });

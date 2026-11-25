@@ -1,0 +1,8 @@
+.panel{margin:18px 0;padding:18px;border:1px solid rgba(95,105,115,.22);border-radius:18px;background:rgba(255,255,255,.88);color:#20252c}
+.panel h2{font-size:18px;margin:0 0 8px}.panel p{font-size:14px;line-height:1.5;margin:0 0 14px;color:#59616b}
+.field{display:grid;gap:6px;margin:12px 0;font-size:14px;font-weight:650}
+.field textarea,.field select{width:100%;min-height:56px;padding:11px 12px;border:1px solid #cbd1d8;border-radius:11px;background:#fff;color:#20252c;font:inherit;font-weight:400;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.actions button{min-height:44px;padding:10px 15px;border:0;border-radius:999px;background:#243b63;color:#fff;font:inherit;font-weight:650;cursor:pointer}
+.actions .secondary{background:#eef1f5;color:#303944}
+@media(max-width:480px){.panel{padding:14px}.actions button{flex:1}}

@@ -1,1 +1,1598 @@
 .explorer{--ink:#46352e;--sand:#f4ecdd;--paper:#fffaf2;--line:#d8c6ad;--gold:#b98443;--teal:#467a73;--rose:#b77775;color:var(--ink);max-width:1560px;margin:0 auto;padding:32px 16px 118px;background:linear-gradient(130deg,#fffaf1,#f3eadb 55%,#eef0e8);min-height:100svh}.header{max-width:740px}.eyebrow{margin:0 0 8px;color:#7d6047;font-size:.76rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase}.header h1,.visual h2{font-family:Georgia,serif;font-weight:500;letter-spacing:-.035em;margin:0}.header h1{font-size:clamp(2.2rem,5vw,4.8rem);line-height:.98}.header>p:last-child{max-width:54ch;font-size:1.05rem;line-height:1.55}.availability{display:flex;gap:8px;margin:30px 0 14px}.availability button,.toolbar button,.databaseHeader button,.variantToggle button,.secondaryAxes button,.axisRing button,.battery button,.filter button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:8px 12px;font:inherit;font-size:.86rem;cursor:pointer}.availability button[aria-selected=true],.toolbar button[aria-pressed=true],.filter button[aria-pressed=true],.variantToggle button[aria-pressed=true],.axisRing button[aria-pressed=true],.secondaryAxes button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fffaf2}.toolbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:16px 0;border-block:1px solid var(--line);align-items:start}.filterGroup{grid-column:1/-1}.filterGroup>span,.filter legend{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.filterGroup>div{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.moreFilters summary{cursor:pointer;font-weight:600}.filterGrid{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.filter{padding:0;border:0;display:flex;gap:5px;flex-wrap:wrap}.check{display:flex;gap:6px;align-items:center;font-size:.88rem}.search,.sort select{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:9px 10px;font:inherit;color:inherit}.search{width:100%;min-width:200px}.sort{font-size:.78rem;display:grid;gap:4px}.workspace{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(320px,1fr);gap:26px;margin-top:24px;align-items:start}.database{min-width:0}.databaseHeader{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.list{border-top:1px solid var(--line)}.row{display:grid;grid-template-columns:38px 1fr 84px;gap:10px;padding:17px 6px;border-bottom:1px solid var(--line);transition:background .2s,border-color .2s}.row:hover,.rowSelected{background:rgba(255,250,242,.72)}.rowSelected{box-shadow:inset 3px 0 var(--gold)}.rowAxis{border-color:var(--teal);background:rgba(70,122,115,.08)}.rowSelect{padding-top:7px}.rowSelect input{inline-size:20px;block-size:20px;accent-color:var(--teal)}.status{font-size:.72rem;color:#796d62}.rowTitle{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px}.rowTitle h2{font-size:1.08rem;margin:0}.rowTitle b{font-size:.7rem;color:#735231}.area,.meta span{font-size:.72rem;color:#755b47}.area{text-transform:capitalize}.rowBody>p{margin:5px 0 8px;font-size:.88rem;line-height:1.45}.meta{display:flex;gap:8px;flex-wrap:wrap}.relevance{display:grid;align-content:center;text-align:center;border-left:1px solid var(--line);font-size:.63rem;color:#765d49}.relevance strong{font-size:1rem;color:var(--teal)}.visual{position:sticky;top:20px;padding:18px;border:1px solid var(--line);background:rgba(255,250,242,.73);box-shadow:0 16px 45px rgba(90,61,36,.1)}.visualHeader{display:flex;gap:12px;justify-content:space-between;align-items:start}.visual h2{font-size:1.55rem;line-height:1.05}.variantToggle{display:flex;gap:4px}.variantToggle button{padding:6px 8px;font-size:.72rem}.modelStage{position:relative;min-height:395px;outline:0;touch-action:none;cursor:grab}.modelStage:focus-visible{outline:2px solid var(--teal);outline-offset:3px}.model{width:100%;height:390px;overflow:visible}.aura{fill:none;stroke:#d4b384;stroke-width:1;stroke-dasharray:4 7}.bust{fill:#dfc4a2;stroke:#805e49;stroke-width:1.25}.head{fill:#f1d2ac;stroke:#805e49;stroke-width:1.25}.faceLine,.neural{fill:none;stroke:#617a72;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}.node{stroke:#fffaf2;stroke-width:2}.nodeinactive{fill:#c8b49c}.nodefaint{fill:#ba8c6c}.nodemedium{fill:#5e978c}.nodestrong{fill:#b26c70}.axisRing{position:absolute;inset:15px 0;pointer-events:none}.axisRing button{position:absolute;pointer-events:auto;font-size:.68rem;padding:5px 7px;background:var(--paper)}.axisRing button:nth-child(1){left:0;top:16%}.axisRing button:nth-child(2){right:0;top:14%}.axisRing button:nth-child(3){left:2%;top:36%}.axisRing button:nth-child(4){right:0;top:36%}.axisRing button:nth-child(5){left:0;top:58%}.axisRing button:nth-child(6){right:0;top:58%}.axisRing button:nth-child(7){left:7%;top:78%}.axisRing button:nth-child(8){right:5%;top:78%}.axisRing button:nth-child(9){left:27%;bottom:0}.axisRing button:nth-child(10){right:27%;bottom:0}.secondaryAxes{display:flex;gap:6px;flex-wrap:wrap}.secondaryAxes button[data-intensity=strong],.axisRing button[data-intensity=strong]{border-color:var(--rose);box-shadow:0 0 0 2px rgba(183,119,117,.18)}.secondaryAxes button[data-intensity=medium],.axisRing button[data-intensity=medium]{border-color:var(--teal)}.visualFooter{display:flex;gap:12px;align-items:start;margin-top:12px;font-size:.72rem;line-height:1.4}.visualFooter p{margin:0}.reset{border:0;background:none;text-decoration:underline;padding:0;color:inherit;cursor:pointer;white-space:nowrap}.battery{position:fixed;z-index:10;bottom:0;left:0;right:0;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:12px max(16px,calc((100vw - 1528px)/2));background:rgba(67,50,42,.97);color:#fffaf2;box-shadow:0 -8px 28px rgba(50,30,20,.18)}.battery strong{font-size:.88rem}.battery p,.battery small{display:block;margin:3px 0;font-size:.73rem}.battery button{border-color:rgba(255,250,242,.5);color:#fffaf2;margin-left:7px}.battery .primary{background:#c59150;color:#30231e;border-color:#c59150;font-weight:700}@media (prefers-reduced-motion:no-preference){.aura{animation:auraPulse 7s ease-in-out infinite}}@keyframes auraPulse{50%{stroke-opacity:.4;stroke-dashoffset:18}}@media(max-width:760px){.explorer{padding:18px 12px 140px}.toolbar{grid-template-columns:1fr}.workspace{grid-template-columns:1fr;gap:16px}.visual{position:static;order:-1}.modelStage{min-height:320px}.model{height:320px}.axisRing button{font-size:.61rem}.row{grid-template-columns:30px 1fr}.relevance{grid-column:2;border-left:0;display:flex;gap:5px;text-align:left;align-items:baseline}.battery{padding:10px 12px calc(10px + env(safe-area-inset-bottom));align-items:end}.battery>div:first-child{max-width:54%}.battery button{padding:8px}.moreFilters{grid-row:auto}.header h1{font-size:2.35rem}}@media(max-width:360px){.rowTitle h2{font-size:1rem}.axisRing button:nth-child(n+7){display:none}.battery strong{font-size:.76rem}.battery small{display:none}}
+
+/* Approved 2026-10-06 Holistic House concept: photorealistic neural portrait
+   beneath the existing functional, localized coverage controls. */
+.visual{border-radius:24px;overflow:hidden;background:linear-gradient(145deg,#fffaf3 0%,#f7ecdc 68%,#f1eee8 100%);box-shadow:0 20px 50px rgba(90,61,36,.09)}
+.visualHeader{position:relative;z-index:3}
+.modelStage{isolation:isolate;border-radius:20px;background:radial-gradient(ellipse at 50% 48%,rgba(255,255,255,.88),rgba(244,224,200,.3) 53%,rgba(255,250,242,.68) 93%)}
+.portraitArt{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:1;transition:opacity .25s ease;will-change:transform;-webkit-mask-image:radial-gradient(ellipse 53% 65% at 50% 50%,#000 44%,rgba(0,0,0,.9) 57%,transparent 100%);mask-image:radial-gradient(ellipse 53% 65% at 50% 50%,#000 44%,rgba(0,0,0,.9) 57%,transparent 100%)}
+.portraitArt[data-visible=false]{opacity:0}
+.portraitSource{position:absolute!important;max-width:none!important;width:1672px!important;height:941px!important;left:calc(50% - 1338px)!important;top:calc(50% - 470px)!important;object-fit:fill!important;user-select:none}
+.model{position:relative;z-index:1;pointer-events:none}
+.modelPhoto .head,.modelPhoto .bust,.modelPhoto .faceLine{opacity:0}
+.modelPhoto .neural{stroke:rgba(184,135,77,.28)}
+.modelPhoto .aura{stroke:rgba(191,146,92,.35)}
+.node{filter:drop-shadow(0 0 5px rgba(255,250,243,.85))}
+.axisRing{z-index:2}
+.axisRing button{background:rgba(255,250,243,.91);border-color:rgba(211,182,150,.83);box-shadow:0 3px 12px rgba(91,64,41,.09);backdrop-filter:blur(4px)}
+.variantToggle button{background:rgba(255,250,243,.75)}
+@media(max-width:760px){.visual{border-radius:20px}.modelStage{min-height:320px}.portraitSource{width:1386px!important;height:780px!important;left:calc(50% - 1110px)!important;top:calc(50% - 390px)!important}}
+
+/* Place the approved imagery on the first screen, beside the filters and
+   recommendations, rather than below the whole filter toolbar. */
+@media(min-width:980px){
+  .explorer{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(340px,1fr);column-gap:26px;align-items:start}
+  .workspace{display:contents}
+  .header{grid-column:1;grid-row:1}
+  .availability{grid-column:1;grid-row:2;margin:18px 0 8px}
+  .toolbar{grid-column:1;grid-row:3}
+  .database{grid-column:1;grid-row:4;min-width:0;margin-top:18px}
+  .visual{grid-column:2;grid-row:1 / span 4;position:sticky;top:20px}
+}
+@media(min-width:761px) and (max-width:979px){
+  .workspace{grid-template-columns:1fr}
+  .visual{position:static}
+}
+.relevance{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.relevance strong{display:grid;place-items:center;flex:none;width:61px;height:61px;border-radius:50%;font-size:1rem;color:var(--teal);background:radial-gradient(closest-side,#fffaf2 72%,transparent 74%),conic-gradient(var(--teal) var(--match,0%),#e3d7c8 0)}
+.relevance span{font-size:.66rem;line-height:1.2}
+@media(max-width:760px){
+  .relevance{flex-direction:row;justify-content:flex-start}
+  .relevance strong{width:43px;height:43px;font-size:.78rem}
+}
+
+/* Full Test Explorer also lives directly on the public EN/RU Client Cabinet home. */
+.embedded{max-width:1560px;width:100%;min-height:auto;margin:24px auto 42px;padding:26px 20px 24px;border:1px solid #e1d0bc;border-radius:26px;box-shadow:0 14px 42px rgba(89,63,39,.09)}
+.embedded .header h1{font-size:clamp(2rem,4vw,3.6rem);line-height:1.05}
+.embedded .header>p:last-child{max-width:74ch}
+.embedded .battery{position:sticky;grid-column:1 / -1;left:auto;right:auto;bottom:12px;margin-top:18px;border-radius:18px;padding:12px 18px;z-index:4}
+.embedded .database{min-width:0}
+@media(max-width:760px){
+ .embedded{margin:16px auto 28px;border-radius:17px;padding:18px 10px 24px}
+ .embedded .header h1{font-size:2.2rem}
+ .embedded .battery{bottom:calc(68px + env(safe-area-inset-bottom));padding:12px 10px;gap:8px;flex-wrap:wrap}
+ .embedded .battery>div:first-child{max-width:100%;width:100%}
+ .embedded .battery>div:last-child{display:flex;width:100%;justify-content:flex-end;gap:8px}
+ .embedded .battery button{margin-left:0}
+}
+
+/* Live discovery: all working facets are visible and the result count is never hidden. */
+.filterStatus{grid-column:1/-1;display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;background:#efe3d2;border:1px solid #dbc7ad;border-radius:14px;padding:10px 14px}
+.filterStatus strong{font-size:1.05rem;color:#423128}
+.filterStatus span{font-size:.78rem;color:#79604c}
+.filterStatus button{margin-left:auto;background:#fffaf2;border:1px solid #cfb89c;border-radius:999px;padding:7px 12px;font-weight:650;cursor:pointer}
+.topicHint{font-size:.8rem;color:#7e6551;line-height:1.45;margin:5px 0 8px}
+.moreFilters{grid-column:1/-1;padding:12px 14px;border:1px solid var(--line);background:rgba(255,250,242,.67);border-radius:14px;min-width:0}
+.moreFilters summary{font-size:.88rem;min-height:28px}
+.filterGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;margin-top:14px}
+.filter{display:flex;flex-wrap:wrap;align-content:start;gap:7px;min-width:0}
+.filter legend{margin-bottom:7px}
+.filter button{background:#fffaf3;min-height:36px}
+.filter button[aria-pressed=true],.filterGroup button[aria-pressed=true]{box-shadow:0 0 0 2px #cda56c66}
+.check{align-self:center}
+.countBlock{display:grid;gap:4px}
+.countBlock strong{font-size:1.15rem}
+.countBlock small{font-size:.74rem;color:#786250}
+.emptyState{border:1px dashed var(--line);border-radius:12px;background:rgba(255,250,242,.65);padding:24px 16px;color:#705941}
+.visualState{position:relative;z-index:3;display:grid;gap:5px;margin:14px 0 6px;padding:12px;border-radius:12px;background:rgba(230,238,233,.82);border:1px solid #a9c3b7}
+.visualState strong{font-size:.92rem;color:#356d64}
+.visualState span{font-size:.76rem;color:#615447;line-height:1.4}
+.axisRing button[data-intensity=medium],.secondaryAxes button[data-intensity=medium]{background:#e3efe9;border:2px solid #467a73;color:#27554d;font-weight:700;box-shadow:0 3px 12px rgba(55,111,94,.18)}
+.axisRing button[data-intensity=strong],.secondaryAxes button[data-intensity=strong]{background:#f6e5db;border:2px solid #b26c70;color:#753c45;font-weight:700;box-shadow:0 3px 12px rgba(154,89,98,.18)}
+.axisRing button[aria-pressed=true],.secondaryAxes button[aria-pressed=true]{background:#46352e;color:#fffaf2;border-color:#46352e}
+@media(max-width:760px){
+  .filterStatus{align-items:start}
+  .filterStatus button{margin-left:0}
+  .filterGrid{grid-template-columns:1fr;gap:14px}
+  .databaseHeader{align-items:start;flex-wrap:wrap}
+  .visualState{padding:10px}
+}
+
+.axisMeters{position:relative;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin:12px 0;padding:12px 0;border-top:1px solid var(--line)}
+.axisMeter{min-width:0;display:grid;gap:4px;font-size:.75rem;color:#5b493d}
+.axisMeter progress{appearance:none;width:100%;height:7px;border:0;border-radius:99px;overflow:hidden}
+.axisMeter progress::-webkit-progress-bar{background:#ebdfd0;border-radius:99px}
+.axisMeter progress::-webkit-progress-value{background:#467a73;border-radius:99px}
+.axisMeter progress::-moz-progress-bar{background:#467a73;border-radius:99px}
+.axisInterest{font-size:.7rem;color:#376e64;font-weight:700}
+@media(max-width:400px){.axisMeters{grid-template-columns:1fr}}
+
+
+/* Privacy-preserving problem prompt and personalized test navigation. */
+.concernPanel,.personalNext{display:grid;gap:12px;margin:18px 0;padding:22px 24px;border:1px solid #ddc9ac;border-radius:20px;background:linear-gradient(115deg,#fbf2e4,#fffaf4)}
+.concernPanel h2,.personalNext h2{font:600 clamp(1.3rem,2.4vw,1.85rem)/1.2 Georgia,serif;color:#453327;margin:4px 0 8px}
+.concernPanel p,.personalNext p{line-height:1.52;margin:4px 0;color:#685447}
+.concernPanel small,.personalNext small{font-size:.77rem;color:#7e6656}
+.concernActions{display:grid;gap:9px}
+.concernActions textarea{width:100%;min-height:75px;resize:vertical;border-radius:12px;border:1px solid #cdb69e;padding:12px 14px;font:inherit;background:#fffefb;color:#332b24}
+.concernActions textarea:focus-visible{outline:3px solid #b68c64;outline-offset:1px}
+.concernActions>div{display:flex;flex-wrap:wrap;gap:8px}
+.concernActions button,.personalNext button,.personalNext a{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:9px 16px;border-radius:999px;border:1px solid #ac8368;background:#5c4134;color:#fffaf3;font-weight:650;cursor:pointer;text-decoration:none}
+.concernActions button+button{color:#5c4134;background:#fffaf3}
+.concernActions button:disabled{opacity:.5;cursor:not-allowed}
+.concernHint{font-size:.9rem;font-weight:650}
+.personalNext{grid-template-columns:minmax(0,1fr) auto;align-items:center;background:#edf1e9;border-color:#cad8cb}
+.historyStatus{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#5c493b;font-size:.84rem;margin:7px 0}
+.historyStatus button,.historyStatus a{background:#fff8ec;border:1px solid #d4bea4;padding:5px 10px;border-radius:99px;color:#5e4031;cursor:pointer;font-size:.78rem}
+@media(max-width:760px){.concernPanel,.personalNext{padding:16px}.personalNext{grid-template-columns:1fr}.concernActions>div button{flex:1}}
+
+/* Advanced test discovery: visible filter groups, readable options and responsive counts. */
+.advancedIntro{font-size:.82rem;line-height:1.5;color:#6d5543;margin:10px 0 14px;max-width:80ch}
+.advancedIntro strong{color:#443127}
+.advancedNote{font-size:.76rem;line-height:1.5;color:#806754;margin:14px 0 0}
+.filterGrid > .filter:nth-child(5),.filterGrid > .filter:nth-child(6){grid-column:1/-1}
+.filterGrid > .filter:nth-child(5),.filterGrid > .filter:nth-child(6){padding:14px;border:1px solid #e2cfb5;border-radius:12px;background:#fffaf3}
+.filterGrid .filter button{line-height:1.3;text-align:left;white-space:normal;min-height:38px}
+.filterGrid .filter button:focus-visible,.filterStatus button:focus-visible{outline:3px solid #467a73;outline-offset:2px}
+@media(max-width:760px){.filterGrid > .filter:nth-child(5),.filterGrid > .filter:nth-child(6){padding:12px}.filterGrid .filter button{font-size:.8rem}}
+
+/* Individual measurements on the photographic portrait. Coverage of selected
+   tests is intentionally NOT presented as a person's measured state. */
+.portraitRadar{position:absolute;inset:0;width:100%;height:390px;z-index:2;pointer-events:none;overflow:visible;filter:drop-shadow(0 5px 8px rgba(49,65,58,.1))}
+.radarReference{fill:none;stroke:#7f9b91;stroke-width:1.75;stroke-dasharray:4 7;opacity:.75}
+.radarGrid{fill:none;stroke:#846c5e;stroke-width:1;stroke-dasharray:3 9;opacity:.42}
+.radarGuide{stroke:#a89277;stroke-width:1.4;stroke-dasharray:2 5;opacity:.75}
+.radarRay{stroke:#185f59;stroke-width:5;stroke-linecap:round;opacity:.97}
+.radarArea{fill:rgba(53,143,134,.18);stroke:none}
+.radarOutline{fill:none;stroke:#155f58;stroke-width:2.4;stroke-linejoin:round}
+.radarPoint{fill:#fffcf4;stroke:#1d716a;stroke-width:2.8}
+.radarCenter{fill:#2d6760;stroke:#fff7eb;stroke-width:2}
+/* Four intentional domains: restrained segmented arc + faint quadrant guides. */
+.radarSectorArc{fill:none;stroke-width:3;stroke-linecap:round;opacity:.73}
+.radarSectorArc[data-radar-sector=body]{stroke:#317a70}
+.radarSectorArc[data-radar-sector=work]{stroke:#527c9c}
+.radarSectorArc[data-radar-sector=relationships]{stroke:#ae7977}
+.radarSectorArc[data-radar-sector=growth]{stroke:#9b815b}
+.radarSectorArc[data-selected=false]{opacity:.12}
+.radarSectorDivider{stroke:#65847c;stroke-width:.8;stroke-dasharray:2 11;opacity:.23}
+/* Captions are plain words near the actual measured dots, with a light halo
+   rather than rectangles over the portrait. Short leaders appear only when
+   automatic collision avoidance moves a caption away from its point. */
+.radarLabel{pointer-events:none}
+.radarInlineLabel{fill:#185d55;font:750 14px/1.2 system-ui,sans-serif;letter-spacing:-.15px;paint-order:stroke fill;stroke:rgba(255,253,249,.97);stroke-width:3.1px;stroke-linejoin:round}
+.radarInlineLeader{stroke:#398279;stroke-width:1.15;stroke-dasharray:2 3;opacity:.7}
+.radarLabelUnmeasured .radarInlineLabel{fill:#756d61}
+.radarLabelUnmeasured .radarInlineLeader{opacity:.35}
+/* The sector controls live above the illustration; individual scale
+   checkboxes remain compact two-column cards below it. */
+.portraitSectorPicker{min-width:0;margin:14px 0 8px;padding:6px 12px 11px;border:1px solid #c9d9d1;border-radius:15px;background:rgba(246,251,247,.83)}
+.portraitSectorPicker legend{padding:0 6px;color:#2a5b51;font-size:.85rem;font-weight:750}
+.portraitSectorAll{display:inline-flex;align-items:center;gap:7px;margin:0 0 9px;color:#205e53;font-weight:700;font-size:.8rem;cursor:pointer}
+.portraitSectorPicker input{width:16px;height:16px;margin:0;accent-color:#23786c;flex:none;cursor:pointer}
+.portraitSectorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.portraitSectorChip{display:flex;gap:7px;align-items:center;min-width:0;min-height:40px;padding:8px 9px;border:1px solid #b4d6c9;border-radius:10px;background:#e6f3ed;color:#1d5d53;cursor:pointer}
+.portraitSectorChip[data-selected=false]{border-color:#e2dfd9;background:rgba(250,249,246,.85);color:#777169}
+.portraitSectorChip span{min-width:0;flex:1;font-size:.79rem;font-weight:650;line-height:1.18;overflow-wrap:break-word}
+.portraitSectorChip small{margin-left:auto;font-variant-numeric:tabular-nums;font-size:.68rem;color:#536f66;white-space:nowrap}
+.portraitSectorPicker p{margin:9px 1px 0;color:#5e7169;font-size:.7rem;line-height:1.4}
+.portraitSectorChip:focus-within,.portraitSectorAll:focus-within{outline:2px solid #266f64;outline-offset:2px}
+.portraitControls{margin-top:15px;padding:13px 14px;border:1px solid #d9cab4;border-radius:15px;background:rgba(255,253,248,.84)}
+.portraitControlsHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:.93rem}
+.portraitControlsHeading span{color:#6e6558;font-size:.79rem}
+.portraitRayOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}
+.portraitRayOption{display:grid;grid-template-columns:18px minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:7px;row-gap:2px;min-width:0;min-height:50px;padding:8px 9px;background:#f8f1e6;border-radius:10px;font-size:.78rem;line-height:1.26;cursor:pointer;box-sizing:border-box}
+.portraitRayOption:has(input:checked){background:#dcece5;color:#285b53}
+.portraitRayOption input{grid-column:1;grid-row:1/span 2;accent-color:#2d726b;width:17px;height:17px;margin:0;flex:none}
+.portraitRayOption span{grid-column:2;grid-row:1/span 2;min-width:0;overflow-wrap:break-word;word-break:normal}
+.portraitRayOption strong{grid-column:3;grid-row:1;justify-self:end;align-self:end;margin:0;font-size:.8rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.portraitRayOption strong:last-child{grid-row:1/span 2;align-self:center}
+.portraitControls .portraitShowMore{display:flex;align-items:center;justify-content:center;gap:7px;width:max-content;max-width:100%;min-height:38px;margin:8px auto 0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:#246c5f;font:750 .79rem/1.3 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.portraitControls .portraitShowMore:hover{background:#eaf2ec;color:#164c45}
+.portraitControls .portraitShowMore:focus-visible{outline:3px solid #387b70;outline-offset:2px}
+.portraitShowMore span{font-size:1rem;line-height:1}
+.portraitControls>p{margin:11px 0 0;font-size:.75rem;color:#78675b;line-height:1.5}
+@media(max-width:760px){
+  .portraitRadar{height:320px}
+  .radarInlineLabel{font-size:14.5px}
+  .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:440px){
+  .portraitSectorPicker{padding:6px 9px 10px}
+  .portraitSectorGrid{gap:6px}
+  .portraitSectorChip{gap:5px;padding:7px 6px;min-height:40px}
+  .portraitSectorChip span{font-size:.72rem}
+  .portraitSectorChip small{font-size:.64rem}
+  .portraitControls{padding:11px 10px}
+  .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .portraitRayOption{grid-template-columns:16px minmax(0,1fr) auto;column-gap:5px;padding:7px 6px;min-height:48px;font-size:.7rem}
+  .portraitRayOption input{width:16px;height:16px}
+  .portraitRayOption strong{font-size:.72rem}
+  .portraitRayOption .portraitDelta{font-size:.61rem}
+}
+@media(max-width:340px){.portraitRayOption{column-gap:4px;padding:6px 5px;font-size:.66rem}}
+@media(prefers-reduced-motion:reduce){.portraitRadar{transition:none}}
+
+/* Prior comparison is shown only when the same scored instrument has a repeat. */
+.radarPrior{fill:#fff6e9;stroke:#915e44;stroke-width:2.3}
+.portraitDelta{grid-column:3;grid-row:2;justify-self:end;align-self:start;color:#475e58;white-space:nowrap;font-size:.68rem;line-height:1.2;font-variant-numeric:tabular-nums}
+.portraitLegend{display:flex;gap:12px;flex-wrap:wrap;font-size:.74rem;margin-top:12px;color:#655747}
+.legendCurrent::before,.legendPrior::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.legendCurrent::before{background:#1d716a}
+.legendPrior::before{background:#fff6e9;border:2px solid #915e44;box-sizing:border-box}
+.modelStage:has(.portraitRadar){cursor:default;touch-action:auto}
+.portraitRayOption:focus-within{outline:2px solid #467a73;outline-offset:2px}
+
+.portraitSources{margin:12px 0;padding:10px 12px;border:1px solid #d8cab5;border-radius:12px;background:#fcf9f3}
+.portraitSources summary{cursor:pointer;color:#365f57;font-size:.79rem;font-weight:700}
+.portraitSources>div{display:grid;gap:10px;padding-top:12px}
+.portraitSourceRow{display:flex;flex-direction:column;gap:3px;padding-bottom:9px;border-bottom:1px solid #eadfd3;min-width:0;font-size:.75rem;line-height:1.4}
+.portraitSourceRow:last-child{border-bottom:0}
+.portraitSourceRow span{color:#776557;overflow-wrap:anywhere}
+.portraitSourceRow a{color:#265d54;text-decoration:underline;font-weight:650;margin-top:3px}
+
+
+/* One-click progressive test explorer: keep the first screen focused on starting,
+   and never obscure mobile content with a fixed test-selection banner. */
+.explorer{display:block;min-height:0;padding-bottom:42px}
+.quickStart{max-width:900px;margin:0 auto 12px;padding:30px clamp(20px,3vw,44px);border:1px solid #dfcbb1;border-radius:25px;background:linear-gradient(118deg,#fffaf2 0%,#f8eddd 100%);box-shadow:0 10px 30px rgba(74,51,37,.07)}
+.quickStart h1{max-width:19ch;margin:5px 0 13px;font:500 clamp(2rem,4vw,3.35rem)/1.07 Georgia,serif;letter-spacing:-.04em;color:#46352e}
+.quickIntro{max-width:55ch;margin:0 0 22px;font-size:clamp(1rem,1.4vw,1.13rem);line-height:1.5;color:#5f5147}
+.quickActions{display:flex;align-items:center;flex-wrap:wrap;gap:11px 20px}
+.quickPrimary{appearance:none;min-height:56px;min-width:270px;padding:13px 25px;border:1px solid #604532;border-radius:15px;background:#573d30;color:#fffaf2;font-family:inherit;font-size:1.08rem;font-weight:700;line-height:1.3;cursor:pointer;box-shadow:0 6px 16px rgba(77,50,37,.14)}
+.quickPrimary:hover:not(:disabled){background:#3e3029}
+.quickPrimary:focus-visible,.customizeButton:focus-visible,.showMore:focus-visible,.battery button:focus-visible,.problemDetails summary:focus-visible,.visualDetails summary:focus-visible{outline:3px solid #2f7d76;outline-offset:3px}
+.quickPrimary:disabled{opacity:.55;cursor:not-allowed}
+.quickActions span{font-size:.85rem;color:#76604d}
+.customizeButton{display:inline-flex;align-items:center;min-height:44px;margin-top:9px;padding:8px 0;border:0;background:transparent;color:#5c4134;text-align:left;font-family:inherit;font-size:.95rem;font-weight:650;line-height:1.45;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.quickPrivacy{font-size:.76rem;line-height:1.5;color:#806c5b;max-width:75ch;margin:9px 0 0}
+.quickError{margin:8px 0 0;color:#96382f;font-size:.9rem}
+.resumeButton{display:inline-flex;margin:0 0 18px;padding:11px 17px;border:1px solid #4b776a;border-radius:12px;background:#e0eee7;color:#2e584e;cursor:pointer}
+.customizer[hidden]{display:none!important}
+.customizer{max-width:1440px;margin:25px auto 0;padding-top:19px;border-top:1px solid #ddcab1}
+.problemDetails{border:1px solid #dfcbb2;border-radius:14px;background:#fffaf2;margin-bottom:20px}
+.problemDetails summary{cursor:pointer;padding:14px 17px;font-size:.93rem;color:#5c4134;font-weight:650;list-style-position:inside;min-height:48px}
+.problemDetails .concernPanel{margin:0;border:0;border-top:1px solid #e7d9c7;border-radius:0 0 14px 14px}
+.explorer .header{max-width:860px;margin:8px 0 12px}
+.explorer .header h2{font:500 clamp(1.6rem,3vw,2.5rem)/1.1 Georgia,serif;letter-spacing:-.03em;margin:0}
+.explorer .header p{margin:8px 0 0;font-size:.96rem;line-height:1.45}
+.explorer .availability{margin:16px 0 12px}
+.explorer .toolbar{grid-template-columns:minmax(0,1fr) auto;gap:12px}
+.explorer .filterGroup,.explorer .filterStatus,.explorer .moreFilters{grid-column:1/-1}
+.explorer .workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(270px,.85fr);gap:18px;margin:24px 0 0;align-items:start}
+.explorer .database{grid-column:auto;grid-row:auto;margin-top:0}
+.visualDetails{min-width:0;border:1px solid #dfcdb6;background:rgba(255,250,243,.75);border-radius:15px;align-self:start}
+.visualDetails summary{min-height:52px;cursor:pointer;padding:14px 16px;font-size:.92rem;font-weight:650;color:#5a4336;line-height:1.35}
+.visualDetails[open]{background:#fffaf2}
+.visualDetails[open] .visual{position:static;top:auto;margin:0 8px 8px;padding:12px;border-radius:13px;box-shadow:none}
+.explorer .battery{position:static;left:auto;right:auto;bottom:auto;display:flex;grid-column:auto;margin:20px 0 0;padding:17px 20px;border:1px solid #dcc7ac;border-radius:16px;background:#f1e7d8;color:#46352e;box-shadow:none;gap:16px}
+.explorer .battery strong{color:#46352e}
+.explorer .battery small,.explorer .battery p{color:#675344}
+.explorer .battery button{margin-left:0;border-color:#c1a88c;color:#533e32;background:#fffaf2;min-height:43px}
+.explorer .battery>div:last-child{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.explorer .battery .primary{background:#5c4134;color:#fffaf2;border-color:#5c4134}
+.showMore{display:block;width:100%;padding:13px 16px;margin:14px 0 0;border:1px solid #c6aa87;border-radius:12px;background:#fffaf2;color:#5c4134;font-weight:650;cursor:pointer}
+.embedded .quickStart{margin:0 auto;padding:12px 10px 18px;border:0;border-radius:0;box-shadow:none;background:transparent}
+@media(min-width:980px){.explorer{display:block}.explorer .workspace{display:grid}.explorer .visual{grid-column:auto;grid-row:auto;position:static}}
+@media(max-width:800px){
+  .explorer{padding:12px 12px 96px;min-height:0}
+  .embedded{padding:14px 12px calc(90px + env(safe-area-inset-bottom));margin:14px auto 24px}
+  .quickStart,.embedded .quickStart{padding:14px 8px 18px;margin:0 auto}
+  .quickStart h1{font-size:clamp(1.9rem,8vw,2.5rem);line-height:1.07}
+  .quickIntro{font-size:.98rem;line-height:1.45;margin-bottom:18px}
+  .quickActions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .quickPrimary{width:100%;min-width:0;min-height:55px;font-size:1rem}
+  .quickActions span{font-size:.79rem}
+  .customizeButton{font-size:.9rem}
+  .customizer{margin-top:12px;padding-top:14px}
+  .explorer .toolbar{display:grid;grid-template-columns:minmax(0,1fr);padding:12px 0}
+  .explorer .workspace{grid-template-columns:minmax(0,1fr);gap:14px}
+  .visualDetails{grid-column:1;grid-row:auto}
+  .explorer .battery{display:grid;padding:14px;gap:12px}
+  .explorer .battery>div:first-child{width:auto;max-width:none}
+  .explorer .battery>div:last-child{width:100%;justify-content:stretch}
+  .explorer .battery>div:last-child button{flex:1;min-width:0;margin:0}
+  .explorer .battery>div:last-child .primary{flex:1.3;font-size:.86rem}
+  .explorer .databaseHeader{gap:10px}
+  .filterGroup>div{gap:6px}
+  .filterGroup button{min-height:42px;line-height:1.3}
+}
+@media(max-width:390px){.explorer .battery>div:last-child{flex-direction:column}.explorer .battery>div:last-child button{width:100%}}
+
+
+/* Booking-style search and visible psychological portrait: a clear, always
+   available first-screen action; no filter menu must be opened to see the head.
+   All shortcut chips use the SAME state and live result count as the full list. */
+.explorer{--hh-blue:#155fa2;--hh-blue-soft:#e8f3ff;--hh-coral:#be4b2a;--hh-card:#fff;--hh-outline:#d9e3e9;background:linear-gradient(135deg,#f4f9ff 0%,#fdf9f3 72%,#eff7f5 100%);color:#263b49}
+.explorerHero{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(340px,.85fr);gap:clamp(14px,2vw,26px);align-items:stretch;margin:0 auto 24px}
+.explorer .quickStart{max-width:none;margin:0;padding:clamp(22px,3vw,38px);background:#fff;border:1px solid var(--hh-outline);border-radius:24px;box-shadow:0 12px 40px rgba(24,75,105,.07)}
+.explorer .quickStart h1{max-width:23ch;color:#173c59;font-size:clamp(2.1rem,3.7vw,3.55rem);line-height:1.07}
+.explorer .quickIntro{color:#526578;max-width:56ch}
+.explorer .quickPrimary{min-width:240px;background:#be4b2a;color:#fff;border-color:#a94124;box-shadow:0 8px 20px rgba(190,75,42,.22);border-radius:14px}
+.explorer .quickPrimary:hover:not(:disabled){background:#a43d20;transform:translateY(-1px)}
+.explorer .quickPrimary:focus-visible,.explorer .quickFilterChips button:focus-visible,.explorer .quickFilterExtras button:focus-visible{outline:3px solid #226bb4;outline-offset:3px}
+.explorer .quickActions span{color:#586979;font-weight:600}
+.explorer .quickPrivacy{color:#687581}
+.explorer .customizeButton{color:#155fa2;text-decoration:none;font-weight:750;margin-top:12px;border:1px solid #b9d3e9;background:#eef6ff;padding:10px 15px;border-radius:12px;min-height:46px}
+.explorer .customizeButton:hover{background:#dceeff}
+.quickFilters{display:grid;gap:11px;margin:24px 0 4px;padding:17px;border:1px solid #dae6ef;background:#f8fbff;border-radius:17px}
+.quickFiltersHeader{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:7px 14px}
+.quickFiltersHeader strong{color:#29475f;font-size:.97rem}
+.quickFiltersHeader span{color:#155fa2;font-size:.86rem;font-weight:650;font-variant-numeric:tabular-nums}
+.quickFiltersHeader b{font-size:1.12rem}
+.quickFilterChips,.quickFilterExtras{display:flex;gap:8px;flex-wrap:wrap}
+.quickFilterChips button,.quickFilterExtras button{font:inherit;font-size:.85rem;line-height:1.26;padding:9px 13px;min-height:42px;border-radius:99px;border:1px solid #c5d8e6;background:#fff;color:#28485e;cursor:pointer;font-weight:620;transition:background .14s,color .14s,border-color .14s}
+.quickFilterChips button:hover,.quickFilterExtras button:hover{border-color:#155fa2;background:#e8f3ff}
+.quickFilterChips button[aria-pressed=true]{background:#155fa2;border-color:#155fa2;color:#fff;box-shadow:0 2px 7px #155fa227}
+.quickFilterExtras{padding-top:10px;border-top:1px solid #e0eaf1}
+.quickFilterExtras button{border-style:dashed;border-color:#b3cbdc;background:#f8fbfe}
+.quickFilterExtras button[aria-pressed=true]{background:#dcefe9;border:1px solid #488b77;color:#245746}
+.quickFilterExtras .quickFilterReset{margin-left:auto;color:#934c36;border:0;background:transparent;text-decoration:underline;padding-inline:9px}
+.explorer .heroPortrait{min-width:0;display:flex;flex-direction:column;justify-content:flex-start;padding:15px;border:1px solid #c5dfdc;border-radius:24px;background:linear-gradient(145deg,#f1faf8,#e4f1f7 70%,#fff9f0);box-shadow:0 14px 40px rgba(23,83,92,.08)}
+.explorer .visualCompact{width:100%;max-width:none;min-width:0;position:relative;top:auto;margin:0;padding:8px 10px 4px;border:0;background:transparent;box-shadow:none;border-radius:18px}
+.visualCompact .visualHeader{padding:8px 5px 0}
+.visualCompact .visualHeader .eyebrow{color:#1c706d}
+.visualCompact .visualHeader h2{color:#174b53;font-size:clamp(1.35rem,2vw,1.78rem);line-height:1.15}
+.visualCompact .modelStage{height:355px;min-height:355px;width:100%;margin:10px auto 0;border-radius:20px;background:radial-gradient(ellipse at 50% 44%,rgba(255,255,255,.96) 3%,rgba(232,245,246,.76) 62%,rgba(221,238,242,.45) 100%);overflow:hidden;cursor:default;touch-action:auto}
+.visualCompact .modelStage .model{width:100%;height:355px;max-height:100%}
+.visualCompact .portraitArt{-webkit-mask-image:radial-gradient(ellipse 65% 76% at 50% 48%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 65% 76% at 50% 48%,#000 52%,transparent 100%)}
+.visualCompact .portraitSource{display:block!important;opacity:1!important}
+.visualCompact .node{filter:drop-shadow(0 2px 6px rgba(255,255,255,.9))}
+.visualCompact .nodestrong{fill:#f08353;stroke:#fff;stroke-width:3}
+.visualCompact .nodemedium{fill:#15958f;stroke:#fff;stroke-width:3}
+.compactAxes{display:grid;gap:7px;padding:11px 5px 1px}
+.compactAxes>strong{color:#376570;font-size:.78rem;letter-spacing:.02em}
+.compactAxes>div{display:flex;flex-wrap:wrap;gap:6px}
+.compactAxes span{font-size:.77rem;border:1px solid #c1dcd9;background:#fff;border-radius:99px;color:#35646a;padding:6px 10px}
+.heroPortraitNote{color:#536f78;font-size:.79rem;line-height:1.48;margin:auto 15px 13px;padding-top:14px;max-width:46ch}
+.explorer .customizer{width:100%;max-width:1440px;border-top:1px solid #d3e0e7;padding-top:22px;margin-top:8px}
+.explorer .toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(175px,220px);align-items:center;gap:14px;background:#fff;border:1px solid var(--hh-outline);padding:19px;border-radius:18px}
+.explorer .toolbar .filterStatus{background:#eaf4ff;border-color:#c6dff7;color:#1f5d92}
+.explorer .filterStatus strong{color:#155fa2}
+.explorer .filterGroup>div{gap:8px}
+.explorer .filterGroup button{min-height:42px;background:#f8fbff;border-color:#c9dce9;font-weight:600}
+.explorer .filterGroup button[aria-pressed=true]{background:#155fa2;color:#fff;border-color:#155fa2}
+.explorer .moreFilters{background:#f7fbff;border-color:#cbdfea}
+.explorer .moreFilters summary{color:#155fa2;font-weight:750;min-height:36px}
+.explorer .filterGrid{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.explorer .filterGrid .filter{padding:12px;min-width:0;background:#fff;border:1px solid #e0e9ef;border-radius:13px}
+.explorer .filterGrid .filter button{background:#f7fafc;border:1px solid #cbdce6;min-height:39px}
+.explorer .filterGrid .filter button[aria-pressed=true]{background:#155fa2;color:#fff;border-color:#155fa2}
+.explorer .search,.explorer .sort select{background:#fff;border:1px solid #bbcedc;min-height:44px;border-radius:11px}
+.explorer .workspace{display:block;max-width:1440px;margin:21px auto 0}
+.explorer .database{margin-top:0;width:100%;min-width:0}
+.explorer .databaseHeader{margin-bottom:14px}
+.explorer .databaseHeader .countBlock strong{font-size:1.3rem;color:#155fa2}
+.explorer .databaseHeader button{background:#eef6ff;color:#145b98;border-color:#b4d5ed;font-weight:700;min-height:42px}
+.explorer .list{border:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.explorer .row{grid-template-columns:26px minmax(0,1fr);align-items:start;gap:11px;padding:17px;background:#fff;border:1px solid #dce6ef;border-radius:16px;box-shadow:0 4px 15px rgba(37,86,111,.04);min-height:162px}
+.explorer .row:hover{border-color:#a8cfdf;background:#fbfdff}
+.explorer .rowSelected{border-color:#2278a9;box-shadow:inset 4px 0 #1a78af,0 4px 15px #1f78ac11;background:#f2faff}
+.explorer .rowSelect{padding-top:2px}
+.explorer .rowSelect input{width:22px;height:22px;accent-color:#1768a0}
+.explorer .rowTitle h2{color:#1d455b;font-size:1.08rem;line-height:1.3}
+.explorer .rowTitle b{background:#e4f4eb;color:#286b54;border-radius:99px;padding:4px 8px}
+.explorer .rowBody>p{color:#506879;font-size:.88rem}
+.explorer .meta span{color:#657583;font-size:.72rem}
+.explorer .battery{border:1px solid #c6dbe8;background:#eaf5fc;color:#284657}
+.explorer .battery strong,.explorer .battery small,.explorer .battery p{color:#284657}
+.explorer .battery .primary{background:#be4b2a;color:#fff;border-color:#aa4324}
+@media(max-width:960px){
+  .explorerHero{grid-template-columns:minmax(0,1fr)}
+  .explorer .heroPortrait{width:100%;max-width:800px;margin:0 auto}
+  .visualCompact .modelStage{height:350px;min-height:350px}
+}
+@media(max-width:760px){
+  .explorer{padding-inline:10px}
+  .explorer .quickStart,.explorer .embedded .quickStart{padding:20px 15px;border-radius:18px}
+  .explorer .quickStart h1{font-size:clamp(2rem,8.2vw,2.6rem)}
+  .quickFilters{padding:13px;margin:17px 0 0}
+  .quickFilterChips button,.quickFilterExtras button{font-size:.81rem;min-height:43px}
+  .explorer .heroPortrait{border-radius:18px;padding:10px}
+  .explorer .visualCompact{padding:5px}
+  .visualCompact .modelStage{height:320px;min-height:320px}
+  .visualCompact .modelStage .model{height:320px}
+  .explorer .toolbar{grid-template-columns:1fr;padding:13px}
+  .explorer .filterGrid{grid-template-columns:1fr}
+  .explorer .filterGrid > .filter:nth-child(5),.explorer .filterGrid > .filter:nth-child(6){grid-column:auto}
+  .explorer .list{grid-template-columns:1fr}
+  .explorer .row{min-height:0}
+  .explorer .quickPrimary{width:100%;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .explorer .quickPrimary,.quickFilterChips button,.quickFilterExtras button{transition:none}
+}
+
+
+/* Mobile graphic design v2: source-order hero, portrait, quick chips.
+   Breakpoints intentionally follow common 360–430px phones and compact tablets. */
+.explorerHero{grid-template-areas:"start portrait" "discovery portrait";grid-template-rows:auto 1fr}
+.explorerHero>.quickStart{grid-area:start}
+.explorerHero>.heroPortrait{grid-area:portrait}
+.explorerHero>.quickDiscovery{grid-area:discovery;min-width:0;align-self:start}
+.explorer .quickDiscovery{display:grid;gap:10px}
+.explorer .quickDiscovery .quickFilters{margin:0}
+.quickChipIcon{display:inline-flex;align-items:center;justify-content:center;margin-right:6px;width:20px;height:20px;flex:none;font-size:1.08rem;line-height:1;color:#26817b}
+.quickFilterChips button{display:inline-flex;align-items:center;white-space:nowrap;gap:0}
+.quickFilterChips button[aria-pressed=true] .quickChipIcon{color:#fff}
+.quickDiscoveryFooter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
+.explorer .quickDiscoveryFooter .customizeButton{margin:0;min-height:44px}
+.quickDiscoveryFooter .quickPrivacy{margin:0;max-width:32ch}
+.explorer .heroPortrait{height:100%}
+.explorer .heroPortrait .visualCompact{align-self:stretch}
+.explorer .row{grid-template-columns:24px 62px minmax(0,1fr)}
+.testArtwork{height:58px;width:58px;max-width:100%;flex:none;display:grid;place-items:center;position:relative;isolation:isolate;overflow:hidden;border-radius:15px;background:linear-gradient(140deg,#d7eafa,#a7cee8);color:#285c83}
+.testArtwork>svg{position:relative;z-index:2}
+.testArtworkOrb{position:absolute;z-index:1;width:66px;height:66px;border-radius:50%;right:-32px;bottom:-30px;filter:blur(1px);background:#fff9}
+.testArtwork[data-theme=stress],.testArtwork[data-theme=anxiety]{background:linear-gradient(140deg,#e6dbff,#a8b9ef);color:#5b55a1}
+.testArtwork[data-theme=mood],.testArtwork[data-theme=relationships]{background:linear-gradient(140deg,#ffe0dc,#efb0ba);color:#a54f66}
+.testArtwork[data-theme=sleep]{background:linear-gradient(140deg,#d7e8fc,#a8bde5);color:#375c9b}
+.testArtwork[data-theme=energy],.testArtwork[data-theme=body],.testArtwork[data-theme=functioning]{background:linear-gradient(140deg,#ffe9c5,#e9bd85);color:#92581e}
+.testArtwork[data-theme=resource],.testArtwork[data-theme=self_support]{background:linear-gradient(140deg,#d9f1e3,#a8d9c3);color:#276f61}
+.testArtwork[data-theme=meaning],.testArtwork[data-theme=clarity],.testArtwork[data-theme=focus]{background:linear-gradient(140deg,#d1eaf5,#a8dcd8);color:#2c667b}
+.explorer .quickFilters .quickFilterChips button{box-shadow:0 2px 3px rgba(37,81,119,.025)}
+@media (min-width:961px) and (max-width:1160px) {
+  .explorerHero{grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr)}
+  .explorer .quickStart{padding:24px}
+  .explorer .quickStart h1{font-size:clamp(2rem,3vw,2.65rem)}
+}
+@media (max-width:960px) {
+  .explorerHero{grid-template-columns:minmax(0,1fr);grid-template-areas:"start" "portrait" "discovery";grid-template-rows:auto}
+  .explorer .quickStart{padding:22px}
+  .explorer .quickDiscovery{background:#fff;border:1px solid #dce7f0;border-radius:19px;padding:15px}
+  .explorer .quickDiscovery .quickFilters{margin:0}
+  .explorer .quickDiscoveryFooter{padding:4px}
+  .explorer .heroPortrait{height:auto;max-width:none}
+  .explorer .heroPortrait .modelStage{height:310px;min-height:310px}
+  .explorer .heroPortrait .modelStage .model{height:310px}
+}
+@media (max-width:600px) {
+  .explorer,.explorer.embedded{padding:10px 10px calc(104px + env(safe-area-inset-bottom));border:0;border-radius:0;background:linear-gradient(180deg,#eaf5ff 0%,#f7fbff 260px,#f6f9fc 650px,#fff 100%);box-shadow:none;overflow:visible}
+  .explorerHero{gap:10px;margin:0 auto 16px}
+  .explorer .quickStart{padding:20px 18px 17px;border:1px solid #d0e4f4;background:linear-gradient(135deg,#fff 0%,#f5fbff 100%);box-shadow:0 6px 20px rgba(22,83,126,.05);border-radius:19px}
+  .explorer .quickStart h1{font-size:clamp(1.84rem,8.3vw,2.5rem);line-height:1.08;letter-spacing:-.036em;max-width:16ch;margin:5px 0 9px;color:#143e60}
+  .explorer .quickStart .eyebrow{letter-spacing:.11em;color:#137b80;font-size:.7rem}
+  .explorer .quickIntro{font-size:.91rem;line-height:1.43;color:#526775;margin-bottom:14px}
+  .explorer .quickActions{display:grid;gap:8px}
+  .explorer .quickPrimary{border-radius:13px;min-height:53px;font-size:1.04rem;font-weight:760}
+  .explorer .quickActions span{text-align:center;font-size:.76rem;color:#597587}
+  .explorer .heroPortrait{padding:8px 10px 9px;background:linear-gradient(133deg,#e2f8f3 0%,#e2f2ff 55%,#fff6e9 100%);border-color:#c6e2e4;border-radius:18px;box-shadow:0 6px 18px rgba(31,110,121,.05)}
+  .explorer .visualCompact{padding:0 5px 1px}
+  .visualCompact .visualHeader{padding:6px 7px 0}
+  .visualCompact .visualHeader h2{font-size:1.1rem;font-weight:650;letter-spacing:-.02em;white-space:normal}
+  .visualCompact .visualHeader .eyebrow{font-size:.65rem;letter-spacing:.11em;margin-bottom:4px}
+  .explorer .heroPortrait .modelStage{margin-top:0;height:235px;min-height:235px;border-radius:14px;background:radial-gradient(ellipse at 50% 50%,#ffffffd9 0%,#f2f9ff8a 65%,#eaf7f2aa 100%)}
+  .explorer .heroPortrait .modelStage .model{height:235px}
+  .visualCompact .portraitSource{width:1019px!important;height:574px!important;left:calc(50% - 816px)!important;top:calc(50% - 286px)!important}
+  .explorer .heroPortrait .compactAxes{padding:7px 6px}
+  .compactAxes>strong{font-size:.7rem}
+  .compactAxes span{font-size:.69rem;padding:5px 8px}
+  .heroPortraitNote{font-size:.71rem;line-height:1.4;margin:5px 10px 4px;padding-top:0}
+  .explorer .quickDiscovery{padding:13px;border-radius:18px;gap:9px}
+  .quickFilters{padding:12px;border-radius:14px;gap:9px}
+  .quickFiltersHeader{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .quickFiltersHeader strong{font-size:.89rem}
+  .quickFiltersHeader span{font-size:.75rem;display:inline-flex;align-items:center;gap:4px;border-radius:99px;background:#dff0ff;padding:6px 9px;white-space:nowrap}
+  .quickFiltersHeader b{font-size:.96rem}
+  .quickFilterChips{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#b4cee2 transparent;margin-inline:-1px;padding:2px 2px 8px;gap:7px}
+  .quickFilterChips button{flex:0 0 auto;scroll-snap-align:start;min-height:43px;font-size:.8rem;padding:10px 13px;border-radius:13px;background:#fff}
+  .quickChipIcon{font-size:1rem;margin-right:5px;width:17px}
+  .quickFilterExtras{padding-top:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:7px}
+  .quickFilterExtras::-webkit-scrollbar{display:none}
+  .quickFilterExtras button{min-height:39px;flex:0 0 auto;font-size:.77rem;padding:8px 10px}
+  .quickFilterExtras .quickFilterReset{margin-left:3px}
+  .quickDiscoveryFooter{display:grid;gap:5px;justify-items:start}
+  .explorer .quickDiscoveryFooter .customizeButton{margin:0;width:100%;display:flex;justify-content:center;background:#e9f4ff;border-color:#b7d5ee;color:#195b8b;min-height:47px;border-radius:12px;text-decoration:none}
+  .explorer .quickDiscoveryFooter .quickPrivacy{margin:5px 1px 0;max-width:none;font-size:.69rem;line-height:1.42}
+  .explorer .customizer{margin:16px auto 0}
+  .explorer .toolbar{padding:12px}
+  .explorer .filterGroup>div{gap:6px}
+  .explorer .filterGroup button{font-size:.77rem;min-height:40px}
+  .explorer .list{display:grid;gap:10px}
+  .explorer .row{padding:14px 11px;gap:10px;grid-template-columns:22px 52px minmax(0,1fr);border-radius:15px;min-height:0}
+  .testArtwork{width:52px;height:52px;border-radius:13px}
+  .explorer .rowBody{min-width:0}
+  .explorer .rowTitle{display:block}
+  .explorer .rowTitle h2{font-size:.96rem;line-height:1.26;margin:3px 0 4px}
+  .explorer .rowTitle .area{font-size:.66rem}
+  .explorer .rowTitle b{display:inline-block;font-size:.64rem;margin:0 0 5px}
+  .explorer .rowBody>p{font-size:.76rem;line-height:1.4;margin:5px 0 7px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .explorer .meta{gap:5px}
+  .explorer .meta span{display:inline-flex;padding:3px 5px;border-radius:7px;background:#f2f6f9;font-size:.65rem}
+  .explorer .databaseHeader{align-items:center}
+  .explorer .databaseHeader .countBlock strong{font-size:1.1rem}
+  .explorer .databaseHeader button{font-size:.73rem;padding:9px 10px;min-height:38px}
+  .explorer .battery{margin-top:15px;border-radius:14px}
+}
+@media(max-width:370px){
+  .explorer .quickStart h1{font-size:1.78rem}
+  .explorer .heroPortrait .modelStage{height:220px;min-height:220px}
+  .explorer .heroPortrait .modelStage .model{height:220px}
+  .explorer .row{grid-template-columns:21px 44px minmax(0,1fr);gap:8px;padding:12px 9px}
+  .testArtwork{width:44px;height:44px}
+  .explorer .rowTitle h2{font-size:.9rem}
+  .quickFiltersHeader strong{font-size:.8rem}
+}
+
+
+/* Topic rays are an illustrative map of chosen questionnaire coverage.
+   They never imply measured mental-health outcomes or a clinical score. */
+.visualCompact .focusRays{position:absolute;z-index:3;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;filter:drop-shadow(0 1px 6px rgba(20,110,110,.2))}
+.focusRing{fill:none;stroke:#65a59a;stroke-width:2;stroke-dasharray:3 9;opacity:.53}
+.focusRay line{stroke:#2a9c95;stroke-width:3.5;stroke-linecap:round;opacity:.78}
+.focusRay circle{fill:#fff;stroke:#2a9c95;stroke-width:3}
+.focusRayStrong line{stroke:#eb7d51;stroke-width:5;stroke-linecap:round;opacity:.91}
+.focusRayStrong circle{fill:#fff;stroke:#db734b;stroke-width:3.5}
+.visualCompact .portraitRadar{width:100%;height:100%}
+@media(max-width:600px){
+  .visualCompact .focusRays{opacity:.88}
+  .focusRay line{stroke-width:4}
+  .focusRayStrong line{stroke-width:5.5}
+}
+
+
+/* Always-visible test catalog: hotel-style discoverability, with only
+   specialist facets hidden behind the optional advanced disclosure. */
+.catalogTopbar{
+  display:grid;
+  gap:16px;
+  width:100%;
+  max-width:1440px;
+  margin:20px auto 0;
+  padding:22px 24px;
+  border:1px solid #d8e5ee;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(36,84,115,.055);
+  scroll-margin-top:24px;
+}
+.catalogTopline{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:14px;
+}
+.catalogHeading{min-width:0;flex:1 1 300px}
+.catalogHeading .eyebrow{margin:0 0 4px;color:#1c797d;font-size:.72rem}
+.catalogHeading h2{font-size:clamp(1.3rem,2.3vw,1.95rem);line-height:1.17;color:#183f5e;margin:0 0 6px}
+.catalogHeading p:not(.eyebrow){max-width:68ch;font-size:.91rem;line-height:1.48;color:#5b6c79;margin:0}
+.catalogTopbar .availability{display:flex;gap:4px;flex:0 0 auto;align-self:flex-start;margin:0;padding:5px;background:#eff6fc;border:1px solid #d4e2ee;border-radius:13px}
+.catalogTopbar .availability button{min-height:40px;border-radius:9px;padding:8px 14px;font-size:.86rem}
+.catalogControls{display:grid;grid-template-columns:minmax(0,1fr) minmax(185px,245px) minmax(145px,205px);align-items:end;gap:12px}
+.catalogSearchLabel{display:grid;gap:6px;min-width:0}
+.catalogSearchLabel>span{color:#315267;font-size:.77rem;font-weight:700}
+.catalogTopbar .search{width:100%;margin:0;padding:12px 14px;min-height:48px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.91rem}
+.catalogTopbar .sort{min-width:0;display:grid;gap:6px;font-size:.77rem;font-weight:700;color:#315267}
+.catalogTopbar .sort select{width:100%;margin:0;min-height:48px;padding:11px 32px 11px 11px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.86rem}
+.catalogTopbar :is(button,input,select):focus-visible{outline:3px solid #1768a9;outline-offset:3px}
+@media(max-width:950px){
+  .catalogControls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .catalogControls .catalogSearchLabel{grid-column:1/-1}
+}
+@media(max-width:600px){
+  .catalogTopbar{margin:14px auto 0;padding:16px 13px;border-radius:17px;gap:13px}
+  .catalogHeading{flex-basis:100%}
+  .catalogHeading h2{font-size:1.34rem}
+  .catalogHeading p:not(.eyebrow){font-size:.79rem}
+  .catalogTopline{gap:12px}
+  .catalogTopbar .availability{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .catalogTopbar .availability button{font-size:.79rem;padding:9px 8px}
+  .catalogControls{grid-template-columns:minmax(0,1fr);gap:9px}
+  .catalogTopbar .search,.catalogTopbar .sort select{min-height:46px}
+  .catalogTopbar .sort{font-size:.75rem}
+}
+
+
+/* Guided mobile-first facets. The user selects a category before seeing options;
+   the actual test catalog and the original filter state remain unchanged. */
+.explorer .customizer{border:0;padding:0;margin:17px auto 0}
+.guidedPicker{
+  display:grid;gap:17px;
+  border:1px solid #bfd8e6;
+  border-radius:22px;
+  background:linear-gradient(140deg,#f2fbff 0%,#ffffff 42%,#f0f9f7 100%);
+  padding:clamp(17px,2.6vw,30px);
+  color:#23475d;box-shadow:0 10px 30px rgba(24,78,103,.065);
+}
+.guidedIntro{display:grid;gap:10px}
+.guidedStep{
+  align-self:start;justify-self:start;
+  display:inline-flex;border:1px solid #b7ded9;border-radius:99px;
+  background:#e4f6f1;color:#136e70;
+  padding:6px 12px;font-size:.72rem;letter-spacing:.055em;font-weight:800;
+}
+.guidedLead{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.guidedLead>div{min-width:0;flex:1 1 260px}
+.guidedLead h2{color:#153e59;font:650 clamp(1.4rem,2.5vw,2rem)/1.12 system-ui,sans-serif;letter-spacing:-.03em;margin:0 0 6px}
+.guidedLead p{color:#5c7380;font-size:.94rem;line-height:1.43;margin:0}
+.guidedMatches{display:flex;align-items:center;gap:5px;align-self:start;
+  padding:9px 13px;border-radius:99px;color:#185b8e;background:#e1f1fd;
+  border:1px solid #c3dff1;font-size:.82rem;font-weight:700;white-space:nowrap}
+.guidedMatches strong{font-variant-numeric:tabular-nums;font-size:1.12rem}
+.guidedCategories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.guidedCategory{
+  display:grid;grid-template-columns:46px minmax(0,1fr) auto 17px;align-items:center;gap:10px;
+  text-align:left;min-width:0;min-height:81px;
+  border:1px solid #d5e4ea;border-radius:15px;background:#fff;
+  padding:12px;box-shadow:0 3px 9px rgba(28,72,104,.035);
+  color:#24465d;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.guidedCategory:hover{background:#f4fbff;border-color:#87c3df;box-shadow:0 5px 15px rgba(28,72,104,.07)}
+.guidedCategory[data-active=true]{border-color:#6dbbb3;background:#f5fcfa}
+.guidedCategoryIcon{width:42px;height:42px;display:grid;place-items:center;
+  border-radius:12px;background:linear-gradient(140deg,#dceefa,#c1e3f0);color:#24718a}
+.guidedCategory:nth-child(3n+2) .guidedCategoryIcon{background:linear-gradient(145deg,#def3ed,#bce2d5);color:#167a73}
+.guidedCategory:nth-child(3n) .guidedCategoryIcon{background:linear-gradient(145deg,#fff0e5,#f7d9ce);color:#b36048}
+.guidedCategoryText{display:grid;gap:4px;min-width:0}
+.guidedCategoryText strong{font-size:.91rem;line-height:1.3;font-weight:750;color:#24475d}
+.guidedCategoryText small{font-size:.74rem;line-height:1.35;color:#6b7f8a;font-weight:450}
+.guidedCategoryAction{font-size:.7rem;line-height:1.2;color:#357991;border-radius:99px;background:#edf7fc;padding:6px 7px;white-space:nowrap}
+.guidedCategory[data-active=true] .guidedCategoryAction{color:#16766c;background:#dff6ef}
+.guidedCategory>svg{color:#7895a5}
+.guidedDetail{display:grid;gap:13px;min-width:0}
+.guidedBack{display:inline-flex;gap:8px;align-items:center;justify-self:start;min-height:43px;border:1px solid #c8dfeb;background:white;border-radius:11px;padding:9px 13px;color:#23678c;font-size:.83rem;font-weight:740;cursor:pointer}
+.guidedChoices{min-width:0}
+.guidedOptionStack{display:grid;gap:12px;min-width:0}
+.guidedChoices .filter{
+  display:flex;flex-wrap:wrap;gap:8px;min-width:0;width:100%;
+  padding:18px 17px;border:1px solid #dce9f0;border-radius:17px;background:#fff;
+}
+.guidedChoices .filter legend{float:none;margin:0 0 6px;padding:0;font-size:.93rem;font-weight:750;color:#244962}
+.guidedChoices .filter button{
+  min-height:43px;border:1px solid #bfd6e4;background:#f6faff;border-radius:11px;
+  color:#2b5268;padding:9px 12px;font-family:inherit;font-size:.83rem;font-weight:650;line-height:1.3;cursor:pointer;
+  text-align:left;white-space:normal;
+}
+.guidedChoices .filter button:hover{background:#e9f5fd;border-color:#8dbbd2}
+.guidedChoices .filter button[aria-pressed=true]{background:#18638c;color:#fff;border-color:#18638c;box-shadow:0 2px 9px #12588520}
+.guidedChoices .check{
+  display:flex;align-items:center;gap:12px;
+  padding:17px;border:1px solid #dce9f0;border-radius:15px;background:#fff;color:#284c63;
+  font-size:.9rem;font-weight:650;
+}
+.guidedChoices .check input{inline-size:21px;block-size:21px;accent-color:#177b7b}
+.guidedTip{font-size:.78rem;color:#627b85;line-height:1.4;margin:0}
+.guidedFooter{
+  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;
+  border-top:1px solid #dceaf0;padding-top:17px;
+}
+.guidedSelected{margin-right:auto;font-size:.8rem;color:#4d7382;font-weight:660}
+.guidedClear,.guidedResults{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:45px;padding:10px 15px;border-radius:12px;cursor:pointer;font-weight:750;font-size:.82rem}
+.guidedClear{border:1px solid #c4dce5;color:#2d617b;background:#fff}
+.guidedResults{border:1px solid #126c8a;color:#fff;background:#147994;box-shadow:0 5px 15px #117b9326}
+.guidedResults:hover{background:#0d607c}
+.guidedPicker button:focus-visible{outline:3px solid #176eaa;outline-offset:3px}
+.guidedDescription .concernPanel{border:1px solid #d8e6ee;border-radius:15px;background:#fff;padding:16px;box-shadow:none}
+.guidedDescription .concernPanel textarea{border:1px solid #b9d5e2;background:#f9fcff;color:#23475d;border-radius:11px}
+.guidedDescription .concernPanel button{border:1px solid #a1c9dd;border-radius:11px;background:#eaf7fc;color:#15577b;min-height:44px}
+.explorer .catalogTopbar .availability button[aria-selected=true]{border-color:#16658c;background:#176991;color:white}
+.explorer .catalogTopbar .availability button[aria-selected=false]{border-color:transparent;color:#285c7a;background:transparent}
+.explorer .catalogTopbar .availability button[aria-selected=false]:hover{background:#e0eff8}
+@media (max-width:780px){
+  .guidedCategories{grid-template-columns:minmax(0,1fr)}
+  .guidedLead{gap:10px}
+  .guidedCategory{min-height:75px}
+}
+@media (max-width:600px){
+  .explorer .customizer{margin:12px auto 0}
+  .guidedPicker{padding:16px 12px;border-radius:18px;gap:13px}
+  .guidedLead h2{font-size:1.35rem}
+  .guidedLead p{font-size:.82rem}
+  .guidedMatches{font-size:.76rem;padding:7px 10px}
+  .guidedCategories{gap:8px}
+  .guidedCategory{padding:10px;grid-template-columns:40px minmax(0,1fr) auto 14px;gap:8px;min-height:68px;border-radius:13px}
+  .guidedCategoryIcon{width:38px;height:38px;border-radius:10px}
+  .guidedCategoryText strong{font-size:.84rem}
+  .guidedCategoryText small{font-size:.71rem}
+  .guidedCategoryAction{font-size:.67rem;padding:4px 6px}
+  .guidedChoices .filter{padding:13px;gap:7px}
+  .guidedChoices .filter button{font-size:.8rem;min-height:43px}
+  .guidedFooter{display:grid;grid-template-columns:1fr auto;gap:8px}
+  .guidedSelected{min-width:0;margin:0}
+  .guidedClear{font-size:.78rem;padding:9px 12px}
+  .guidedResults{grid-column:1 / -1;width:100%;min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){.guidedCategory{transition:none}}
+
+/* Optional return from the approved public easy-selection view to full research catalog. */
+.simpleBack{grid-column:1/-1;display:inline-flex;justify-content:center;align-items:center;gap:8px;width:max-content;min-height:43px;border-radius:99px;padding:8px 15px;border:1px solid #bed6cb;background:#eef6f1;color:#286b5e;font-weight:650;margin:0 0 10px;cursor:pointer}
+.simpleBack:focus-visible{outline:3px solid #286b5e;outline-offset:3px}
+@media(max-width:760px){.simpleBack{margin:0 0 10px}}
+
+/* Canonical warm terracotta for all Test Explorer primary start actions. */
+.explorer .quickPrimary,.explorer .battery .primary,.explorer .primary{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important;box-shadow:0 9px 23px #92371d20}
+.explorer .quickPrimary:hover:not(:disabled),.explorer .battery .primary:hover:not(:disabled),.explorer .primary:hover:not(:disabled){background:#a84227!important;border-color:#a84227!important}
+
+/* Scale-first discovery: compact measured-area rail, subordinate to no topic categories. */
+.explorer .scaleFirst{margin:9px 0 11px;padding:12px 13px;border:1px solid #d7e4db;border-radius:14px;background:#f6faf5;color:#3a5248}
+.explorer .scaleFirst strong{display:block;font-size:.87rem;font-weight:750}
+.explorer .scaleFirst p{font-size:.73rem;line-height:1.42;margin:3px 0 9px;color:#6a776e}
+.explorer .scaleRail{display:flex;gap:7px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:6px}
+.explorer .scaleRail button{flex:0 0 auto;min-height:36px;padding:6px 10px;border:1px solid #c8d8ce;border-radius:999px;background:#fffdf9;color:#365a4b;font-size:.77rem;cursor:pointer}
+.explorer .scaleRail button[aria-pressed=true]{background:#2c6e60;color:#fff;border-color:#2c6e60}
+.explorer .scaleRail button:focus-visible{outline:3px solid #28776a;outline-offset:2px}
+.explorer .rowBody [data-scale-guide]{max-width:100%;margin:7px 0 5px}
+@media(max-width:650px){.explorer .scaleFirst{padding:10px;margin:7px 0}.explorer .scaleFirst p{font-size:.7rem}}
+
+/* Methodology and rights remain distinct from source-backed scale guides. */
+.explorer .rowBody>.methodology{color:#77685e;font-size:.76rem;line-height:1.49;margin:5px 0 8px;font-weight:400}
+.explorer .rowBody .sourceLink{display:inline-block;color:#356f65;font-size:.75rem;text-decoration:underline;text-underline-offset:2px;margin-left:8px;font-weight:650}
+.explorer .rowBody .sourceLink:focus-visible{outline:2px solid #356f65;outline-offset:2px}
+@media(max-width:760px){.explorer .rowBody>.methodology{font-size:.73rem;line-height:1.43}}
+
+
+/* Three auditable assessment kinds, independent of presentation-style facets. */
+.kindFilters{margin:12px 0 4px;min-width:0;padding:12px;border:1px solid #dedacf;border-radius:14px;background:#faf8f4}
+.kindFilters legend{padding:0 5px;font-weight:750;font-size:.83rem;color:#47372e}
+.kindChoices{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.kindChoice{min-height:43px;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid #d3d7d0;border-radius:12px;background:#fffefa;cursor:pointer;color:#514239;font-size:.85rem;font-weight:650}
+.kindChoice[data-checked=true]{border-color:#8a4b46;background:#f7e9e5;color:#793e40}
+.kindChoice input{width:17px;height:17px;margin:0;accent-color:#8a3945;cursor:pointer}
+.kindChoice svg{flex:0 0 auto;opacity:.92}
+.kindChoice:focus-within{outline:2px solid #7f3943;outline-offset:2px}
+.testKindBadge{display:inline-flex;align-items:center;gap:5px;width:max-content;max-width:100%;font-size:.72rem;line-height:1.25;padding:4px 8px;border-radius:10px;background:#f3eee8;border:1px solid #e5dcd2;color:#684738;font-weight:650}
+.testKindBadge[data-test-kind-badge=monitoring]{background:#e9f3ef;color:#2e695b;border-color:#d4e7df}
+.testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;color:#766085;border-color:#e7daeb}
+.testKindBadge svg{flex:0 0 auto}
+@media(max-width:590px){.kindChoices{display:grid;grid-template-columns:1fr;gap:6px}.kindChoice{width:100%;min-width:0}}
+
+
+/* iPhone layout: prevent explorer grids and scrollable rails from widening the page. */
+.explorer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.explorer :is(.explorerHero, .quickStart, .heroPortrait, .quickDiscovery, .quickFilters, .scaleFirst, .customizer, .guidedPicker, .workspace, .database, .list, .row, .rowBody, .catalogTopbar, .catalogControls) {
+  min-width: 0;
+  max-width: 100%;
+}
+.explorer .scaleRail, .explorer .quickFilterChips, .explorer .quickFilterExtras {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.explorer .rowBody { overflow-wrap: anywhere; }
+.explorer .heroPortrait .modelStage, .explorer .heroPortrait .portraitArt {
+  max-width: 100%;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .explorerHero { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+/* 2026-10-15 — Full test selection: navy choices, burgundy test starts only.
+   Preserve white inactive choices and accessible active/pressed contrast. */
+.explorer{
+  --choice-navy:#173957;--choice-hover:#102d47;
+  --choice-soft:#edf3f8;--choice-border:#b9cad9;
+  --wine-start:#873a53;
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button,
+  .kindChoice,.axisRing button,.secondaryAxes button){
+  border-color:var(--choice-border);color:var(--choice-navy);background:#fff
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button):hover{
+  background:var(--choice-soft);border-color:#7190a9
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button,
+  .axisRing button,.secondaryAxes button)[aria-pressed=true],
+.explorer .kindChoice[data-checked=true]{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff;
+  box-shadow:0 2px 8px rgba(23,55,83,.12)
+}
+.explorer .kindChoice[data-checked=true] svg{color:#fff}
+.explorer .kindChoice input,.explorer .rowSelect input,
+.explorer .guidedChoices .check input{accent-color:var(--choice-navy)}
+.explorer .kindChoice[data-checked=true] input{accent-color:#d2e6f5}
+.explorer .guidedCategory{border-color:var(--choice-border);color:var(--choice-navy)}
+.explorer .guidedCategory:hover,.explorer .guidedCategory[data-active=true]{
+  background:var(--choice-soft);border-color:#7798b1
+}
+.explorer .guidedCategoryAction,.explorer .guidedCategory[data-active=true] .guidedCategoryAction{
+  background:#dde8f2;color:var(--choice-navy)
+}
+.explorer .guidedCategoryIcon,.explorer .guidedCategory:nth-child(3n) .guidedCategoryIcon,
+.explorer .guidedCategory:nth-child(3n+2) .guidedCategoryIcon{
+  background:#e6eef5;color:var(--choice-navy)
+}
+.explorer .catalogTopbar .availability button[aria-selected=true]{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff
+}
+.explorer .catalogTopbar .availability button[aria-selected=false]{color:var(--choice-navy)}
+.explorer :is(.simpleBack,.customizeButton,.resumeButton,.guidedBack,.guidedClear,.showMore,.filterStatus button){
+  background:#f1f5f9;color:var(--choice-navy);border-color:var(--choice-border)
+}
+.explorer :is(.simpleBack,.customizeButton,.resumeButton,.guidedBack,.guidedClear,.showMore,.filterStatus button):hover{
+  background:#e2ebf3;border-color:#7b98b0
+}
+.explorer .guidedResults,.explorer .databaseHeader button{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff
+}
+.explorer .guidedResults:hover,.explorer .databaseHeader button:hover{
+  background:var(--choice-hover);border-color:var(--choice-hover)
+}
+.explorer .guidedDescription .concernPanel button{
+  background:#eaf0f6;border-color:var(--choice-border);color:var(--choice-navy)
+}
+.explorer .battery button:not(.primary){
+  background:#fff;color:var(--choice-navy);border-color:var(--choice-border)
+}
+.explorer .battery button:not(.primary):hover{background:var(--choice-soft)}
+.explorer .rowSelected{border-color:#99b2c6;background:#f1f6fa;box-shadow:inset 3px 0 var(--choice-navy)}
+.explorer .catalogHeading .eyebrow,.explorer .catalogHeading h2{color:var(--choice-navy)}
+.explorer :is(.guide,.scaleFirst) strong,.explorer .scaleRail button:focus-visible{color:var(--choice-navy)}
+/* Saving a test selection is not starting a test. */
+.explorer .quickPrimary[data-test-action=save],
+.explorer .battery .primary[data-test-action=save]{
+  background:var(--choice-navy)!important;border-color:var(--choice-navy)!important;
+  color:#fff!important;box-shadow:0 6px 16px rgba(19,48,76,.18)
+}
+.explorer .quickPrimary[data-test-action=save]:hover:not(:disabled),
+.explorer .battery .primary[data-test-action=save]:hover:not(:disabled){
+  background:var(--choice-hover)!important;border-color:var(--choice-hover)!important
+}
+/* Only buttons that begin selected questionnaires remain wine-colored. */
+.explorer .quickPrimary[data-test-action=start],
+.explorer .battery .primary[data-test-action=start]{
+  background:var(--wine-start)!important;border-color:var(--wine-start)!important;
+  color:#fff!important;box-shadow:0 7px 19px rgba(127,52,76,.19)
+}
+.explorer .quickPrimary[data-test-action=start]:hover:not(:disabled),
+.explorer .battery .primary[data-test-action=start]:hover:not(:disabled){
+  background:#6f2c43!important;border-color:#6f2c43!important
+}
+.explorer :is(button,input,select,summary):focus-visible{outline-color:#315c7f}
+
+
+/* Scale selection inside the detailed measured-scales guide uses the same navy states. */
+.explorer [data-scale-guide] button{background:#fff;color:var(--choice-navy);border-color:var(--choice-border)}
+.explorer [data-scale-guide] button[aria-pressed=true]{background:var(--choice-navy);color:#fff;border-color:var(--choice-navy)}
+.explorer [data-scale-guide] button:focus-visible{outline-color:#315c7f}
+
+
+/* Optional IPIP-VIA-R disclosure: one full 96-item card by default, 27 source-cleared standalones on request. */
+.viaFamilyNote{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  margin:8px 0 14px;padding:11px 13px;border:1px solid #b8c9d5;
+  border-radius:13px;background:#f1f5f8;color:#16334d;font-size:13px;line-height:1.45;
+}
+.viaFamilyNote span{flex:1 1 270px}
+.viaFamilyNote button{
+  border:1px solid #264863;border-radius:10px;background:#fff;color:#16334d;
+  padding:8px 12px;font:inherit;font-weight:650;cursor:pointer;
+}
+.viaFamilyNote button:hover,.viaFamilyNote button:focus-visible{
+  background:#16334d;color:#fff;outline-offset:3px;
+}
+
+
+/* Public full catalog: the same explicit type label as the compact test cards. */
+.explorer .rowTitle .testKindBadge{
+  display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;width:fit-content;white-space:normal;
+  font-size:.72rem;line-height:1.25;padding:4px 8px;
+  color:#244a68;background:#edf3f9;border-color:#d3e2ee;
+}
+.explorer .rowTitle .testKindBadge svg{flex:0 0 auto}
+.explorer .rowTitle .testKindBadge .testKindBadgeLabel{
+  display:inline!important;white-space:normal;overflow-wrap:anywhere;
+}
+.explorer .rowTitle .testKindBadge[data-test-kind-badge=monitoring]{
+  color:#206c77;background:#e8f8f8;border-color:#c8e9e9;
+}
+.explorer .rowTitle .testKindBadge[data-test-kind-badge=hobby]{
+  color:#76536b;background:#f8f1f7;border-color:#ecdfeb;
+}
+@media(max-width:590px){
+  .explorer .rowTitle .testKindBadge{font-size:.66rem;padding:3px 7px}
+  .explorer .rowTitle .testKindBadgeLabel{display:inline!important}
+}
+
+/* Professional reference downloads: restrained, readable, never confused with a test start. */
+.availability{flex-wrap:wrap}
+.pdfResource{margin:12px 0 8px;padding:13px 15px;border:1px solid #c9d8d2;border-radius:14px;background:#f0f7f3}
+.pdfResourceActions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.pdfResourcePrimary{display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:1px solid #3f7369;background:#386d62;color:#fff!important;padding:10px 15px;text-decoration:none;font-size:.85rem;font-weight:700;line-height:1.3}
+.pdfResourcePrimary:hover,.pdfResourcePrimary:focus-visible{background:#28594f;outline-offset:2px}
+.pdfResourceSecondary{font-size:.82rem;color:#386d62!important;font-weight:650;text-decoration:underline}
+.pdfResource small{display:block;margin-top:9px;font-size:.76rem;line-height:1.5;color:#52665f}
+@media(max-width:540px){.pdfResourcePrimary{width:100%;justify-content:center}.pdfResourceActions{align-items:stretch}}
+
+/* Real, privacy-safe catalog popularity and voluntary user-usefulness ratings. */
+.socialProof{display:flex;gap:6px 15px;flex-wrap:wrap;align-items:center;margin-top:9px;font-size:.76rem;line-height:1.35;color:#626c69;font-variant-numeric:tabular-nums}
+.socialProof strong{color:#a16c2b;font-size:.84rem;white-space:nowrap}
+.socialProof small{font-weight:500;color:#6d726c;font-size:.73rem}
+@media(max-width:500px){.socialProof{gap:6px 10px;font-size:.72rem}}
+
+/* A missing ray offers one small test-discovery action without making its checkbox a link. */
+.portraitRayItem{position:relative;min-width:0}
+.portraitRayItem .portraitRayOption{width:100%;height:100%}
+.portraitRayItem[data-measured=false] .portraitRayOption{min-height:80px;padding-bottom:37px}
+.portraitRayItem:has(.portraitRayDetailsLink) .portraitRayOption{min-height:80px;padding-bottom:37px}
+.portraitRayTestLink,.portraitRayDetailsLink{
+  position:absolute;right:8px;bottom:7px;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  min-height:29px;padding:5px 9px;border:1px solid #accdbd;border-radius:8px;
+  background:#fffdfa;color:#276b5b!important;text-decoration:none;
+  font:750 11px/1.1 system-ui,sans-serif;white-space:nowrap;
+}
+.portraitRayTestLink:hover,.portraitRayDetailsLink:hover{background:#ecf7f1;border-color:#78ab95}
+.portraitRayTestLink:focus-visible,.portraitRayDetailsLink:focus-visible{outline:3px solid #1e8e83;outline-offset:2px}
+.portraitRayTestLink span,.portraitRayDetailsLink span{font-size:13px;line-height:1}
+/* An unavailable source never becomes a fake Test it action. */
+.portraitUnavailable{display:block;padding:5px 7px;font:650 10px/1.35 system-ui,sans-serif;color:#766c61}
+.portraitRayItem[data-portrait-status=descriptive] .portraitRayOption{background:#f3f1eb;color:#49615d}
+.portraitRayItem[data-portrait-status=stale] .portraitRayOption{background:#f6f4ef;color:#766c61}
+.portraitRayItem .portraitRayOption strong{font-variant-numeric:tabular-nums}
+.portraitRayItem .portraitDelta{font-size:10px;letter-spacing:-.15px;white-space:nowrap}
+
+@media(max-width:440px){
+  .portraitRayItem[data-measured=false] .portraitRayOption{min-height:77px;padding-bottom:36px}
+  .portraitRayItem:has(.portraitRayDetailsLink) .portraitRayOption{min-height:77px;padding-bottom:36px}
+  .portraitRayTestLink,.portraitRayDetailsLink{right:6px;bottom:6px;min-height:28px;padding:5px 7px;font-size:10px}
+}
+
+/* Focused, consent-first test choice from an unfinished portrait scale. */
+.portraitAxisBrowse{
+  margin:0 0 15px;padding:12px 14px;
+  border:1px solid #b8dacf;border-radius:12px;
+  background:#eef8f5;color:#275f54;font:400 13px/1.45 system-ui,sans-serif;
+}
+.portraitAxisBrowse strong{display:block;font-weight:750;font-size:14px}
+.portraitAxisBrowse p{margin:4px 0 0!important;font:inherit;color:#436c61}
+@media(max-width:440px){.portraitAxisBrowse{padding:10px 12px;margin-bottom:12px}.portraitAxisBrowse strong{font-size:13px}.portraitAxisBrowse p{font-size:12px}}
+
+/* Portrait: four-sector summary switch (2026-10-17).
+   Keep non-portrait explorer and compact public image untouched. */
+.visual:not(.visualCompact):has(.portraitRadar){
+  min-width:0;
+  padding:clamp(8px,1.4vw,16px);
+  background:linear-gradient(145deg,#fffaf2,#f6f0e6);
+}
+.visual:not(.visualCompact) .portraitSectorPicker{
+  display:grid;
+  gap:7px;
+  margin:2px 0 8px;
+  padding:8px;
+  border:1px solid #bbd9d0;
+  border-radius:14px;
+  background:#f1f9f5;
+}
+.visual:not(.visualCompact) .portraitSectorAll,
+.visual:not(.visualCompact) .portraitSectorChip{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:42px;
+  margin:0;
+  padding:8px 11px;
+  border:1px solid #b1d3ca;
+  border-radius:10px;
+  background:#e7f3ef;
+  color:#226258;
+  font:750 12px/1.27 system-ui,sans-serif;
+  text-align:center;
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  min-width:0;
+  flex:none;
+  font:inherit;
+  line-height:1.27;
+  overflow-wrap:normal;
+}
+.visual:not(.visualCompact) .portraitSectorAll[aria-pressed=true],
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed=true]{
+  background:#22776d;
+  border-color:#22776d;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(19,92,84,.14);
+}
+.visual:not(.visualCompact) .portraitSectorAll:hover:not([aria-pressed=true]),
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed=true]){
+  background:#d8ede5;
+  border-color:#81b9ad;
+}
+.visual:not(.visualCompact) .portraitSectorAll:focus-visible,
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #1b7472;
+  outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+  position:relative;
+  min-height:0;
+  height:auto;
+  width:100%;
+  aspect-ratio:360 / 390;
+  margin:0;
+  border-radius:16px;
+  overflow:hidden;
+  touch-action:auto;
+  cursor:default;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  filter:drop-shadow(0 2px 4px rgba(39,73,67,.09));
+}
+.visual:not(.visualCompact) .radarReference{stroke-width:2}
+.visual:not(.visualCompact) .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .radarPoint{stroke-width:2.6}
+.radarSummarySector{pointer-events:none}
+.radarSummaryMissingRay{stroke:#aab8b4;stroke-width:1.5;stroke-dasharray:4 7;opacity:.47}
+.radarSummaryMissingPoint{fill:#f7f8f4;stroke:#8ca59a;stroke-width:2.2;stroke-dasharray:3 3}
+.radarSummaryLabel{
+  fill:#17544e;
+  font:750 14px/1.18 system-ui,sans-serif;
+  paint-order:stroke fill;
+  stroke:rgba(255,253,246,.97);
+  stroke-width:3.5px;
+  stroke-linejoin:round;
+}
+.radarSummaryValue{fill:#1e7266;font-size:15px;font-weight:800}
+.radarSummarySector[data-measured=false] .radarSummaryValue{fill:#788a82}
+.visual:not(.visualCompact) .radarInlineLabel{
+  font-size:12.5px;
+  stroke-width:3.5px;
+}
+.visual:not(.visualCompact) .portraitControls{
+  padding:12px 13px;
+  margin-top:10px;
+}
+.visual:not(.visualCompact) .visualFooter{
+  margin:7px 1px 0;
+  gap:4px;
+  color:#67736e;
+}
+.visual:not(.visualCompact) .visualFooter p{max-width:68ch;font-size:11px;line-height:1.42}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{min-height:38px;padding:7px 8px;font-size:12px}
+  .visual:not(.visualCompact) .portraitSectorPicker{padding:7px;gap:6px}
+  .visual:not(.visualCompact) .portraitControls{padding:10px}
+  .visual:not(.visualCompact) .radarInlineLabel{font-size:12px}
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:6px}
+  .visual:not(.visualCompact) .portraitSectorPicker{margin-bottom:5px;padding:6px;border-radius:12px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11.5px;min-height:37px;padding:7px 6px}
+  .visual:not(.visualCompact) .modelStage:has(.portraitRadar){border-radius:12px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:13.5px}
+  .visual:not(.visualCompact) .radarSummaryValue{font-size:14px}
+  .visual:not(.visualCompact) .portraitControlsHeading{font-size:13px}
+  .visual:not(.visualCompact) .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:345px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
+
+/* Portrait v3: four compact tabs and full-circle category scales, 17 Oct 2026. */
+/* Keep the photo, public explorer and compact test illustrations unchanged. */
+.visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+  display:block;
+  margin:2px 0 6px;
+  padding:6px;
+  min-width:0;
+  border:1px solid #c0ded5;
+  border-radius:12px;
+  background:rgba(242,250,245,.9);
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  min-width:0;
+}
+.visual:not(.visualCompact) .portraitSectorChip{
+  width:100%;
+  min-width:0;
+  min-height:51px;
+  margin:0;
+  padding:8px 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #b4d7cd;
+  border-radius:10px;
+  background:#e9f5ef;
+  color:#235f56;
+  box-shadow:none;
+  font:750 clamp(10px,1.3vw,13px)/1.2 system-ui,sans-serif;
+  text-align:center;
+  white-space:normal;
+  word-break:normal;
+  cursor:pointer;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  flex:none;
+  display:block;
+  font:inherit;
+  line-height:inherit;
+  min-width:0;
+  overflow-wrap:break-word;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed="true"]{
+  background:#23796f;
+  border-color:#23796f;
+  color:#fff;
+  box-shadow:0 3px 10px rgba(20,89,83,.18);
+}
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed="true"]){
+  background:#daefe7;
+  border-color:#7cb6aa;
+}
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #115e61;
+  outline-offset:2px;
+}
+/* Five or fewer true scales distributed evenly around 360°, with ring
+   markers distinct from actual measured radial values. */
+.radarContourPolygon{
+  fill:rgba(35,121,111,.035);
+  stroke:#257c75;
+  stroke-width:1.75;
+  stroke-linejoin:round;
+  opacity:.74;
+}
+.radarContourMeasured{
+  fill:#fffdf4;
+  stroke:#1d776b;
+  stroke-width:2.6;
+}
+.radarContourUnmeasured{
+  fill:#f9f7ee;
+  stroke:#929f96;
+  stroke-width:1.8;
+  stroke-dasharray:2.4 2.4;
+}
+.visual:not(.visualCompact) .portraitRadar .radarGuide{
+  stroke:#517d70;
+  stroke-width:1.6;
+  stroke-dasharray:2 5;
+  opacity:.52;
+}
+.visual:not(.visualCompact) .portraitRadar .radarInlineLabel{
+  font-size:13px;
+  letter-spacing:-.2px;
+  stroke:rgba(255,253,248,.98);
+  stroke-width:3.8px;
+}
+.visual:not(.visualCompact) .portraitRadar .radarLabelUnmeasured .radarInlineLabel{
+  fill:#636f68;
+}
+.visual:not(.visualCompact) .portraitRadar .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .portraitRadar .radarPoint{
+  fill:#fffdf4;
+  stroke:#1a776d;
+  stroke-width:2.7;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:48px;
+    font-size:clamp(9.5px,2.7vw,12px);
+    padding:7px 3px;
+    line-height:1.16;
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:5px}
+  .visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+    padding:5px;
+    margin-bottom:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:47px;
+    font-size:clamp(9.3px,2.6vw,11.5px);
+    padding:6px 3px;
+    border-radius:9px;
+  }
+  .visual:not(.visualCompact) .portraitRadar .radarInlineLabel{font-size:12.5px}
+}
+@media(max-width:340px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:9px;padding-inline:2px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
+
+/* Five life profiles plus All: goal ratings are separate from four scored portrait sectors. */
+.visual:not(.visualCompact) .portraitSectorGrid{
+  grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
+  gap:5px;
+}
+.visual:not(.visualCompact) .portraitSectorAll{
+  width:100%;
+  min-width:0;
+  min-height:49px;
+  padding:7px 2px;
+  margin:0;
+  font:800 12px/1.2 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  overflow-wrap:anywhere;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .radarSummaryValue{
+  fill:#17695f;
+  font-size:14px;
+  font-weight:850;
+  stroke:rgba(255,253,246,.95);
+  stroke-width:3.8px;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:8px;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+  min-width:0;
+  min-height:65px;
+  padding:9px 4px;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-size:clamp(11px,2.2vw,14px);
+  line-height:1.15;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) :global(svg){
+  flex:none;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:49px;
+    padding:6px 2px;
+    font-size:clamp(9px,2.35vw,12px);
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
+    gap:3px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:47px;
+    padding:5px 2px;
+    font-size:clamp(8.5px,2.45vw,10.5px);
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+    gap:6px;
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+    min-height:58px;
+    font-size:clamp(10px,2.65vw,12px);
+    padding:7px 2px;
+  }
+}
+
+/* Verified original test scores on the portrait, independent of ray length. */
+.visual:not(.visualCompact) .radarSummaryAxis{
+  fill:#225e58;
+  font:700 11px/1.1 system-ui,sans-serif;
+  stroke:rgba(255,253,246,.96);
+  stroke-width:3px;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) .radarActualValue{
+  fill:#135e56;
+  font:850 14px/1 system-ui,sans-serif;
+  stroke:#fffaf2;
+  stroke-width:4.5px;
+  stroke-linejoin:round;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) .radarScoreMissing{
+  fill:#817f77;
+  font-weight:500;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .radarActualValue{font-size:13px;stroke-width:4px}
+  .visual:not(.visualCompact) .radarSummaryAxis{font-size:10.5px}
+}
+
+
+/* Reports portrait: make the source-backed diagram the first-screen focus.
+   Keep the public test explorer, desktop layout and scoring unchanged.
+   The large photo and SVG resize as one 360:390 composition. */
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorShort{display:none}
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorLong{display:block}
+@media(max-width:620px){
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact):has(.portraitRadar){
+    padding:4px;
+    border:0;
+    box-shadow:none;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorPicker{
+    margin:0 0 5px;
+    padding:4px;
+    border-radius:10px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(44px,.64fr) repeat(5,minmax(44px,1fr));
+    gap:3px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip,
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:52px;
+    padding:4px 2px;
+    font-size:clamp(9px,2.5vw,11px);
+    line-height:1.15;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip > span{
+    max-width:100%;
+    overflow-wrap:anywhere;
+    hyphens:auto;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorShort{display:block}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorLong{display:none}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+    min-height:0;
+    /* 43svh rather than 31.38svh: the user's chart should dominate a normal
+       iPhone viewport. Restrict by card width on narrow/short devices. */
+    width:min(100%,clamp(290px,43svh,330px));
+    height:auto;
+    aspect-ratio:360 / 390;
+    margin:0 auto;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model,
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
+    width:100%;
+    height:100%;
+  }
+  /* Preserve the photograph's crop under each real, original test score. */
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) .portraitSource{
+    width:auto!important;
+    height:220%!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-80%,-50%);
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+    gap:5px;
+    margin:4px 0 1px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+    flex-direction:row;
+    flex-wrap:wrap;
+    min-height:52px;
+    padding:6px 3px;
+    gap:3px;
+    font-size:clamp(10px,2.65vw,12px);
+    line-height:1.15;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:first-child){display:none}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:last-child){width:12px;height:12px}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter{margin:4px 2px 0}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter p{font-size:10.5px;line-height:1.32}
+}
+
+/* Very short landscape/legacy iPhone viewports need their own height budget.
+   Ordinary iPhones retain the larger 43svh portrait; controls keep 52px taps. */
+@media(max-width:620px) and (max-height:630px){
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+    width:min(100%,clamp(230px,42svh,275px));
+  }
+}
+
+
+/* Reports: thin second-level chart/axis switch directly below four life profiles.
+   Axis chooser is a distinct view, never a second long list below the chart. */
+.visual:not(.visualCompact) .portraitModeBar{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;padding:3px;margin:0 3px 7px;min-width:0;
+  border:1px solid #c6dbd2;border-radius:11px;background:#edf5f0;
+}
+.visual:not(.visualCompact) .portraitModeButton{
+  display:flex;justify-content:center;align-items:center;gap:4px;
+  min-width:0;min-height:44px;padding:7px 7px;
+  border:1px solid transparent;border-radius:8px;
+  background:transparent;color:#346a61;cursor:pointer;
+  font:700 12px/1.2 system-ui,sans-serif;text-align:center;
+}
+.visual:not(.visualCompact) .portraitModeButton[aria-selected=true]{
+  background:#fffdfa;color:#1b5f55;border-color:#a9cec1;
+  box-shadow:0 1px 3px #195f531a;
+}
+.visual:not(.visualCompact) .portraitModeButton:focus-visible,
+.visual:not(.visualCompact) .portraitRayBulk button:focus-visible{
+  outline:3px solid #23796f;outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage[hidden]{display:none!important}
+.visual:not(.visualCompact) .portraitControls{
+  margin:0 3px 8px;padding:10px;border-radius:12px;
+  background:#fbfbf8;border:1px solid #c6dbd2;
+}
+.visual:not(.visualCompact) .portraitRayBulk{
+  display:flex;justify-content:flex-end;gap:10px;margin:5px 0 10px;
+}
+.visual:not(.visualCompact) .portraitRayBulk button{
+  border:0;background:transparent;color:#23695e;
+  padding:5px 2px;cursor:pointer;font:700 11px/1.25 system-ui,sans-serif;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.visual:not(.visualCompact) .portraitAxisHint{
+  margin:0 0 9px;color:#536e64;font:400 11px/1.4 system-ui,sans-serif;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 2px;padding:2px}
+  .visual:not(.visualCompact) .portraitModeButton{min-height:44px;padding:7px 3px;font-size:11px}
+  .visual:not(.visualCompact) .portraitControls{margin:0 2px 7px;padding:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitModeButton{transition:none}
+}
+
+
+/* Reports: the chart has two display-only wheels. Changing the wheel must
+   never alter saved results, targets or questionnaire scores. */
+.visual:not(.visualCompact) .portraitChartChoices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;margin:2px 4px 8px;padding:3px;border-radius:10px;
+  background:rgba(236,244,239,.72);border:1px solid #cee1d7;
+}
+.visual:not(.visualCompact) .portraitChartChoices button{
+  min-height:44px;min-width:0;padding:7px 9px;border:1px solid transparent;
+  border-radius:7px;background:transparent;color:#4b786d;
+  font:700 11px/1.2 system-ui,sans-serif;cursor:pointer;
+}
+.visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true]{
+  background:#fffdf7;border-color:#b6d2c4;color:#175c54;
+}
+.visual:not(.visualCompact) .portraitChartChoices button:focus-visible{
+  outline:3px solid #20786d;outline-offset:2px;
+}
+.visual:not(.visualCompact) .portraitTestPanel{
+  min-width:0;max-width:100%;padding:0 2px 7px;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitModeButton{
+    min-height:44px;padding:7px 2px;font-size:clamp(10px,2.7vw,11px)
+  }
+  .visual:not(.visualCompact) .portraitChartChoices{
+    margin:2px 2px 5px;gap:3px
+  }
+  .visual:not(.visualCompact) .portraitChartChoices button{
+    min-height:44px;font-size:10.5px;padding:8px 3px
+  }
+  /* The Goals anchor is as touchable as its adjacent actions on iPhone. */
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
+    :global(.hh-portrait-quick-actions) > :global(a){
+    flex-direction:row;flex-wrap:wrap;min-height:52px;
+    padding:6px 3px;gap:3px;font-size:clamp(10px,2.65vw,12px)
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
+    :global(.hh-portrait-quick-actions) > :global(a) > :global(svg){display:none}
+}
+
+/* Direct catalog → single-thread conversational testing, no second test engine. */
+.chatStart{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  width:fit-content;min-height:44px;margin:8px 0;padding:9px 12px;
+  border-radius:11px;border:1px solid #c8e2d2;background:#edf9f0;color:#176048;
+  font-size:.83rem;font-weight:700;text-decoration:none}
+.chatStart:focus-visible{outline:3px solid #0b896c;outline-offset:2px}
+
+/* Daybook palette for cabinet reports and test discovery; chart colors retain their meaning. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .explorer {
+  --ink: var(--hh-cabinet-ink, #3c291c);
+  --paper: var(--hh-cabinet-surface, #fff6e3);
+  --line: var(--hh-cabinet-border, #d7b576);
+  --teal: var(--hh-cabinet-primary, #006b4e);
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--line);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual,
+:global(.hh-app[data-cabinet-theme="daybook"]) :global(.hh-insights-portrait) .visual:not(.visualCompact) {
+  color: var(--hh-cabinet-ink, #3c291c);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: linear-gradient(135deg, var(--hh-cabinet-surface, #fff6e3), var(--hh-cabinet-surface-soft, #f5e3bf));
+  box-shadow: 0 6px 20px #3325141a;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visualHeader h2 {
+  color: var(--hh-cabinet-ink, #3c291c);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual .eyebrow { color: var(--hh-cabinet-primary, #006b4e); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) :is(.portraitSectorPicker, .portraitControls, .portraitModeBar, .portraitChartChoices) {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) :is(.portraitSectorChip, .portraitModeButton, .portraitChartChoices button) {
+  min-height: 44px;
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface-soft, #f5e3bf);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitModeButton[aria-selected=true],
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true],
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=true] {
+  color: #fff6e3;
+  border-color: var(--hh-cabinet-primary, #006b4e);
+  background: var(--hh-cabinet-primary, #006b4e);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=true] small { color: #fff6e3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitSectorChip[data-selected=false] {
+  color: var(--hh-cabinet-muted, #695644);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitRayOption {
+  color: var(--hh-cabinet-ink, #3c291c);
+  background: var(--hh-cabinet-surface-soft, #f5e3bf);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitRayOption:has(input:checked) {
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  background: var(--hh-cabinet-selected, #e3f0df);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .visual:not(.visualCompact) .portraitAxisHint,
+:global(.hh-app[data-cabinet-theme="daybook"]) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter p {
+  color: var(--hh-cabinet-muted, #695644);
+  font-size: 13px;
+  line-height: 1.4;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .chatStart {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-selected, #e3f0df);
+  color: var(--hh-cabinet-primary-hover, #00513d);
+}
+
+/* Same catalogue in public Client Tests and My Space; no alternate test engine. */
+:global(.client-entry-shell) .explorer{
+ --ink:var(--hh-cabinet-ink);--paper:var(--hh-cabinet-surface);--line:var(--hh-cabinet-border);--teal:var(--hh-cabinet-primary);
+ background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line);box-sizing:border-box;min-width:0
+}
+:global(.client-entry-shell) .explorer :is(.visual,.quickDiscovery,.quickFilters,.filterStatus,.moreFilters,.quickStart){background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.header h1,.visual h2,.catalogHeading){font-family:var(--hh-cabinet-heading-font);color:var(--ink)}
+:global(.client-entry-shell) .explorer :is(.quickPrimary,.primary,.pdfResourcePrimary){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary);min-height:44px}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button{min-height:44px;max-width:100%;white-space:normal;border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button:is([aria-selected=true],[aria-pressed=true]){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary)}
+:global(.client-entry-shell) .explorer .row{background:var(--hh-cabinet-surface);border-color:var(--line);border-radius:13px;margin:5px 0;min-width:0}
+:global(.client-entry-shell) .explorer .rowSelected{background:var(--hh-cabinet-selected)}
+:global(.client-entry-shell) .explorer .battery{background:var(--hh-cabinet-canvas);border:1px solid var(--hh-cabinet-border);color:#fff1d4}
+:global(.client-entry-shell) .explorer .search{min-width:0;max-width:100%;font-size:16px}
+@media(max-width:760px){:global(.client-entry-shell) .embedded{width:calc(100% - 22px);margin:10px auto 18px;padding:14px 11px;border-radius:18px}}

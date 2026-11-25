@@ -3,30 +3,60 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
-import styles from './test-explorer-consent.module.css'
+import { TestSelectionCourseBanner } from '@/components/sitewide-antistress-banner'
+import { COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent } from '@/lib/inner-growth/course-entry-intent'
 
-async function request(path, body, method = 'POST') {
-  const response = await fetch(`/api/app/${path}`, { method, credentials: 'same-origin', cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
-  const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
-  if (!response.ok) { const error = new Error(value.error || 'SERVICE_UNAVAILABLE'); error.code = value.error; throw error }
-  return value
+// An entire selected battery can start as a temporary guest session.
+// Selection is limited to rights-cleared, server-verifiable instruments.
+export function guestStartable(entries) {
+  return Array.isArray(entries) && entries.length > 0 && entries.length <= 12 &&
+    entries.every((entry) =>
+      entry?.selectable === true && entry?.startable === true &&
+      entry?.rightsStatus === 'cleared' && entry?.guestEligible === true &&
+      Boolean(entry?.definition))
 }
 
-export function PublicTestExplorer({ locale }) {
-  const [pending, setPending] = useState(null), [adult, setAdult] = useState(false), [necessary, setNecessary] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(null)
-  const router = useRouter(), ru = locale === 'ru'
-  const submit = async (entries, createSession = false) => {
-    setBusy(true); setError(null)
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course', initialBrowseFull?: boolean, reviewFirst?: boolean, onGuestStart?: ((entries: object[]) => Promise<void>) | null }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, reviewFirst = false, onGuestStart = null }) {
+  const router = useRouter()
+  const [error, setError] = useState('')
+  const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
+  const submit = async (entries) => {
+    setError('')
     try {
-      if (createSession) await request('guest/session', { adult, necessary, uiLocale: locale, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })
-      const plan = await request('guest/test-plans', { items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })), operationId: crypto.randomUUID(), replaceActive: false })
-      router.push(`/${locale}/client?plan=${encodeURIComponent(plan.id)}`)
+      if (!guestStartable(entries)) {
+        const cause = new Error('GUEST_TEST_UNAVAILABLE')
+        cause.code = 'GUEST_TEST_UNAVAILABLE'
+        throw cause
+      }
+      if (typeof onGuestStart === 'function') {
+        await onGuestStart(entries)
+      } else {
+        // Only public test keys travel in the URL; never answers, results,
+        // subjective concerns, email or account identity.
+        const keys = entries.map((entry) => entry.definition.key).join(',')
+        router.push('/' + effectiveLocale + '/client?startTests=' + encodeURIComponent(keys))
+      }
     } catch (cause) {
-      if (cause.code === 'GUEST_SESSION_REQUIRED') setPending(entries)
-      else setError(cause)
-    } finally { setBusy(false) }
+      setError(cause?.code === 'GUEST_TEST_UNAVAILABLE'
+        ? (locale === 'ru' ? 'Этот тест пока недоступен без регистрации из-за ограничений методики или безопасности. Выберите другой доступный тест.' : locale === 'es' ? 'Esta prueba no está disponible para invitados. Elige una prueba habilitada.' : 'This test is not guest-available due to rights or safety restrictions. Choose an available test.')
+        : (locale === 'ru' ? 'Не удалось начать тесты. Проверьте соединение и повторите попытку.' : locale === 'es' ? 'No se pudieron iniciar las pruebas. Inténtalo de nuevo.' : 'Could not start your tests. Please check your connection and try again.'))
+      throw cause
+    }
   }
-  return <><TestExplorer locale={locale} audience="guest" onStart={(entries) => submit(entries)} />
-    {pending && <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={ru ? 'Перед началом' : 'Before you start'}><section className={styles.dialog}><h2>{ru ? 'Перед началом' : 'Before you start'}</h2><p>{ru ? 'Чтобы временно сохранить выбранный набор и ответы, подтвердите необходимые условия обработки.' : 'To temporarily store your selected set and answers, confirm the necessary processing conditions.'}</p><label><input type="checkbox" checked={adult} onChange={(event) => setAdult(event.target.checked)} />{ru ? 'Мне исполнилось 18 лет.' : 'I am 18 or older.'}</label><label><input type="checkbox" checked={necessary} onChange={(event) => setNecessary(event.target.checked)} />{ru ? 'Я согласен(-на) на временную приватную обработку ответов и результатов.' : 'I agree to temporary private processing of my answers and result.'}</label>{error && <p role="alert">{error.code || error.message}</p>}<div className={styles.actions}><button type="button" onClick={() => setPending(null)}>{ru ? 'Назад' : 'Back'}</button><button type="button" disabled={busy || !adult || !necessary} onClick={() => submit(pending, true)}>{busy ? '…' : (ru ? 'Продолжить' : 'Continue')}</button></div></section></div>}
+  const launchCourse = (entries, selectionPreferences) => {
+    // Courses use their independent consent flow, not a guest result claim.
+    try {
+      window.sessionStorage.setItem(COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent(entries, selectionPreferences))
+    } catch { /* Private mode may block session storage; the course still opens. */ }
+    router.push('/' + effectiveLocale + '/app/course?entry=personal')
+  }
+  return <>
+    {reviewFirst && <TestSelectionCourseBanner locale={locale} showCourse={false} showReview />}
+    <TestExplorer locale={locale} audience="guest" embedded={embedded} simpleMode={embedded}
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
+      initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
+    {error && <p role="alert" className="cabinet-test-error">{error}</p>}
+    <TestSelectionCourseBanner locale={locale} showReview={!reviewFirst} />
   </>
 }

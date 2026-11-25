@@ -125,3 +125,11 @@ Hypericum Perforatum helps to restore the feeling of inner
 Light and strength. This remedy is especially useful in times of loss, pain, and trauma, when it is necessary to regain the joy of life and faith in oneself.
 
 Hypericum is the light of nature that penetrates the dark corners of the soul to revive it and nourish it with energy.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Vulnerability and fear of judgment lead you to withdraw and hide your views.
+
+After (desired state): Care for your feelings and the inner courage to stand up for yourself.

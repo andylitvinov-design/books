@@ -36,7 +36,7 @@ test('a cold SSR play control cannot accept a click before its handler is mounte
   assert.match(player, /const \[interactive, setInteractive\] = useState\(false\)/);
   assert.match(player, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
   assert.match(player, /disabled=\{!interactive\}/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
 });
 test('posters keep the video title visible over the shared warm treatment', () => {
@@ -47,7 +47,8 @@ test('posters keep the video title visible over the shared warm treatment', () =
 });
 test('page-video browser verification opens the compact language menu before selecting Russian', () => {
   assert.match(pageVideoVerifier, /site-language-menu-trigger/);
-  assert.match(pageVideoVerifier, /site-language-switch button\[lang="ru"\]/);
+  assert.match(pageVideoVerifier, /await chooseRussianHome\(page\)/);
+  assert.match(pageVideoVerifier, /menu\.locator\('a\[lang="ru"\]'\)/);
 });
 test('compact defaults are limited to these eight published renders, not About or editor replacements', () => {
   const block = player.split('const minimalPageVideoIds = new Set([')[1].split(']);')[0];
@@ -55,4 +56,84 @@ test('compact defaults are limited to these eight published renders, not About o
   for (const [, id] of cases) assert.ok(block.includes(id));
   assert.doesNotMatch(block, /fd5fcead9b067f9a0649862675a38771|d4e55c984e54b40fbeb8a21f81d27694|2c251709aba74fd96ae8be43257a080b/);
   assert.match(player, /minimal=\{minimal \|\| minimalPageVideoIds\.has\(source\.heygenId \?\? ""\)\}/);
+});
+
+
+// Execute only the existing reporting blocks with a synthetic locator oracle.
+// This checks truthful evidence serialization, not actual browser playback.
+const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+async function run(script,{live=true,present=false,badIframe=false,hydrationReady=true}={}) {
+ const source=readFileSync(new URL(`../scripts/${script}`, import.meta.url), 'utf8');
+ const pageScript=script==='verify-page-video-release.mjs';
+ const start=pageScript?source.indexOf('    const approvedRussian ='):source.indexOf('  let russianPresentationVerified =')>=0?source.indexOf('  let russianPresentationVerified ='):source.indexOf("  for (const home of ['/', '/ru']) {");
+ const end=pageScript?source.indexOf('  } catch (error)',start):source.indexOf('  // Regressions reported',start);
+ assert.ok(start>=0&&end>start);
+ let home='/ru',clicked=false,scrolled=false,hydrated=false;
+ const results=[];
+ const skippedResults=[];
+ function loc(selector,parent='') {
+   const full=parent+' '+selector;
+   return {
+     full,locator:s=>loc(s,full),
+     count:async()=>full.includes('home-presentation')?(home.startsWith('/ru')&&present?1:0):1,
+     scrollIntoViewIfNeeded:async()=>{assert.ok(present);scrolled=true},
+     click:async()=>{
+       // The legacy page-video checker verifies click/iframe but does not
+       // perform the new SiteVideo smoke's explicit scroll/hydration checks.
+       if(!pageScript && full.includes('site-video-play'))
+         assert.ok(scrolled&&hydrated,'RU player cannot play before hydration');
+       clicked=true;
+     },
+   };
+ }
+ const page={
+   locator:s=>loc(s),
+   waitForLoadState:async state=>{assert.equal(state,'load')},
+   // Synthetic browser oracle: never evaluate browser globals in Node.
+   evaluate:async()=>hydrationReady,
+ };
+ const expect=l=>({
+   toHaveCount:async n=>{
+     const actual=l.full.includes('home-intro')?0:l.full.includes('iframe')?0:
+       l.full.includes('home-presentation')?(present?1:0):1;
+     assert.equal(actual,n);
+   },
+   toHaveAttribute:async (name,value)=>{
+     if(name==='aria-busy'){
+       assert.equal(value,'false');
+       assert.ok(scrolled&&hydrated,'Hydration must complete before Play is ready');
+     } else if(name==='src'){
+       assert.ok(clicked,'Expected a real click before iframe is present');
+       assert.match(badIframe
+         ?'https://www.youtube-nocookie.com/embed/WRONG_VIDEO?autoplay=1'
+         :'https://www.youtube-nocookie.com/embed/G0Db6yOCMto?autoplay=1',value);
+     }
+   },
+   toBeEnabled:async()=>{assert.ok(present&&(pageScript||(scrolled&&hydrated)))},
+ });
+ expect.poll=callback=>({
+   toBe:async wanted=>{
+     const actual=await callback();
+     assert.equal(actual,wanted,'Next router is not hydrated');
+     hydrated=actual;
+   },
+ });
+ const fn=new AsyncFunction('page','expect','origin','live','results','engine','pageErrors','assert','navigate','pass','console','skippedResults',source.slice(start,end));
+ await fn(page,expect,live?'https://holistichouse.vercel.app':'http://127.0.0.1:3100',live,results,'synthetic',[],assert,async path=>{home=path},label=>results.push(`PASS: ${label}`),{log(){}},skippedResults);
+ if (!pageScript) {
+   assert.ok(!results.some(item => typeof item === 'string' && item.startsWith('SKIPPED:')), 'Skipped groups must not count as verified');
+   assert.match(source, /passed: results, skipped: skippedResults/);
+ }
+ return [...results, ...skippedResults];
+}
+for(const script of ['verify-page-video-release.mjs','verify-site-video-browser.mjs']) {
+ test(`${script}: absent live slot must not claim RU verified`,async()=>{const r=await run(script);if(typeof r[0]==='object'){assert.equal(r[0].approvedRussianPresentation,null);assert.equal(r[0].russianPresentationStatus,'skipped-live-slot-absent')}else{assert.ok(r.some(x=>x.startsWith('SKIPPED:')));assert.ok(!r.some(x=>x.startsWith('PASS:')&&/RU presentation/.test(x)))}});
+ test(`${script}: present slot reports only after click and exact iframe assertion`,async()=>{const r=await run(script,{present:true});assert.ok(r.some(x=>typeof x==='object'?x.approvedRussianPresentation===true:/PASS:.*RU presentation.*(?:verified|checked)/.test(x)))});
+ test(`${script}: absent local slot remains failure`,async()=>{await assert.rejects(run(script,{live:false}))});
+ test(`${script}: failed iframe remains failure, not success evidence`,async()=>{await assert.rejects(run(script,{present:true,badIframe:true}))});
+}
+
+test('synthetic site-video reporter cannot pass before actual React hydration',async()=>{
+  await assert.rejects(run('verify-site-video-browser.mjs',{present:true,hydrationReady:false}),
+    /Next router is not hydrated/);
 });

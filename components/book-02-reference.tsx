@@ -146,7 +146,7 @@ export function Book02Reference({ locale, remedies, entries, video }: Book02Refe
     remedies: locale === "ru" ? `Препараты (${remedies.length})` : `Remedies (${remedies.length})`,
   };
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const otherLanguageHref = locale === "ru" ? "/books/alchemy-homeopathy-remedies?lang=en" : "/books/alchemy-homeopathy-remedies";
+  const otherLanguageHref = locale === "ru" ? "/en/books/alchemy-homeopathy-remedies" : "/ru/books/alchemy-homeopathy-remedies";
 
   function jumpFromDrawer(slug: string) {
     setDrawerOpen(false);
@@ -159,7 +159,7 @@ export function Book02Reference({ locale, remedies, entries, video }: Book02Refe
 
   return <main className="book-reference-shell">
     <header className="book-reference-header">
-      <div><Link className="reader-back-link" href="/books">{labels.back}</Link><p className="reader-eyebrow">{labels.book}</p><h1>{labels.title}</h1><p>{labels.description}</p></div>
+      <div><Link className="reader-back-link" href={`/${locale}/books`}>{labels.back}</Link><p className="reader-eyebrow">{labels.book}</p><h1>{labels.title}</h1><p>{labels.description}</p></div>
       <div className="book-reference-header-actions"><span>{labels.count}</span><Link href={`/${locale}/homeopathy/remedies`}>{labels.directory}</Link><Link href={otherLanguageHref} lang={locale === "ru" ? "en" : "ru"}>{labels.language}</Link></div>
     </header>
     {video}

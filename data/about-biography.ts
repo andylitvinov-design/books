@@ -84,7 +84,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
     explore: {
       heading: "Explore my work",
       links: [
-        { label: "Book", href: "https://designrr.page/?id=377444&token=639498968&h=5264" },
+        { label: "Book", href: "/en/books" },
         { label: "Remedies", href: "/en/homeopathy" },
         { label: "Services", href: "/en/services" },
       ],
@@ -94,7 +94,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
       body: "Your personal Cabinet is available through the private link provided to you.",
       prompt: "Need your link?",
       action: "Contact Andy",
-      href: "https://t.me/AndyTherapist",
+      href: "/en/contact",
     },
   },
   ru: {
@@ -166,7 +166,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
     explore: {
       heading: "Исследуйте мою работу",
       links: [
-        { label: "Книга", href: "https://designrr.page/?id=367554&token=1057485987&h=4958" },
+        { label: "Книга", href: "/ru/books" },
         { label: "Препараты", href: "/ru/homeopathy" },
         { label: "Услуги", href: "/ru/services" },
       ],
@@ -176,7 +176,7 @@ export const aboutBiography: Record<"en" | "ru", AboutContent> = {
       body: "Ваш личный кабинет доступен по индивидуальной ссылке, которую вы получили от Andy.",
       prompt: "Нужна ссылка?",
       action: "Связаться с Andy",
-      href: "https://t.me/AndyTherapist",
+      href: "/ru/contact",
     },
   },
 }

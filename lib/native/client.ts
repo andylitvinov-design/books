@@ -12,6 +12,13 @@ export function isNativePsiAlchemy() {
   return typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true
 }
 
+/** Holistic House native and the older PsiAlchemy native shell are separate apps.
+ * The remote hostname alone is never sufficient evidence of native context. */
+export function isNativeHolisticHouse() {
+  return isNativePsiAlchemy() && typeof window !== 'undefined' &&
+    window.location.hostname === 'holistichouse.vercel.app'
+}
+
 export async function sharePublicRemedyUrl(url: string, title: string) {
   if (!isNativePsiAlchemy()) return false
   const { Share } = await import('@capacitor/share')

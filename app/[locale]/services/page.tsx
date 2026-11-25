@@ -1,129 +1,70 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { BriefcaseBusiness, Flower2, Sparkles } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
-import { PageVideo } from "@/components/page-video";
-import { PersonalWorkJourney } from "@/components/personal-work-journey";
+import { PublicSiteHeader } from "@/components/public-site-header";
+import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesAssistQuiz } from "@/components/services-assist-quiz";
+import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
+import { AssistReikiSession } from "@/components/assist-reiki-session";
+import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
+import assistStyles from "@/components/services-assist-mobile.module.css";
+import { ServicesExplorerProvider } from "@/components/services-explorer-state";
+import { ServicesCompactCatalog, ServicesCompactPanel, ServicesHomeopathyLinks } from "@/components/services-unified-catalog";
+import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
+import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { BusinessServiceBrowser } from "@/components/business-service-browser";
+import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
+import compactStyles from "@/components/services-unified-catalog.module.css";
+import uniformStyles from "@/components/services-support-uniform.module.css";
+import { ServicesStudioOffers } from "@/components/services-studio-offers";
+import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
+import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { PublicSiteHeader } from "@/components/public-site-header";
-import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
-import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
-import type { Locale } from "@/data/remedies";
+import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
+import { publicLocales, type PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
-import type { PublicService } from "@/lib/practitioners/public-types";
 
-type PageProps = { params: Promise<{ locale: string }> };
+type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string; assist?: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 // Production release marker: Wu Xing marketplace featured service.
 
 const copy = {
   ru: {
-    title: "Индивидуальная работа в Торонто и онлайн — Holistic House",
-    description: "Гипнотерапия, системные и семейные расстановки, работа с решениями и Рейки в Holistic House.",
-    kicker: "Торонто и онлайн",
-    heading: "Индивидуальная работа",
-    lead: "Исследуйте повторяющиеся паттерны, отношения, важные решения и внутренние блоки в бережной индивидуальной работе.",
-    marketplaceCta: "Выбрать услугу",
-    cards: [
-      {
-        id: "business",
-        title: "Бизнес-расстановки",
-        subtitle: "Анализ перспектив бизнес-проектов",
-        text: "Системное исследование проекта: его перспектив, скрытых динамик, партнёрств, ролей, денег, ограничений и возможных следующих шагов. Это способ увидеть ситуацию шире и проверить решения через расстановочное поле.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Алхимия души / психогомеопатия",
-        subtitle: "Индивидуальная работа с внутренними состояниями",
-        text: "Авторский формат, объединяющий образную и системную работу с навигацией по поддерживающим средствам. Фокус — внутренние состояния, повторяющиеся паттерны, ресурсы и движение к более целостному состоянию.",
-        icon: Flower2,
-      },
-      {
-        id: "archetypal",
-        title: "Архетипические расстановки",
-        subtitle: "Мистерии и инициации",
-        text: "Экспериментальная работа с архетипами, мифологическими образами, ритуальной структурой и трансперсональным полем — индивидуально или в группе.",
-        icon: Sparkles,
-      },
-    ],
-    approachKicker: "Как устроена работа",
-    approachTitle: "Начинаем с вашего реального вопроса",
-    approachText: "Мы обсуждаем ваш запрос, границы и подходящий формат. Системная работа, образы и другие методы используются только по взаимному согласию и в подходящем контексте.",
+    title: "Support — персональная поддержка · Holistic House",
+    description: "Личные сессии в Торонто и онлайн. Три бесплатных способа начать: тесты, письменный анализ ситуации и символический профиль ресурсов У-Син.",
     about: "Об Андрее",
-    consultationKicker: "Первый шаг",
-    consultation: "Начните с короткого разговора",
-    consultationText: "Опишите ваш запрос — вместе определим, какой из трёх форматов сейчас наиболее уместен.",
-    telegram: "Написать в Telegram",
-    whatsapp: "WhatsApp",
-    note: "Эти форматы не заменяют медицинскую диагностику или неотложную помощь. Бизнес-расстановки не заменяют финансовую, юридическую или профессиональную экспертизу и не гарантируют результат.",
+    footerTitle: "Не знаете, с чего начать?",
+    footerLead: "Оставьте контакт — Андрей подскажет подходящий формат.",
+    note: "Символические практики не заменяют медицинскую диагностику и лечение. Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний; конкретные результаты не гарантируются.",
   },
   en: {
-    title: "Personal work in Toronto and online — Holistic House",
-    description: "Hypnotherapy, systemic and family constellations, decision work, and Reiki at Holistic House.",
-    kicker: "Toronto & online",
-    heading: "Personal work",
-    lead: "Explore repeating patterns, relationships, important decisions and inner blocks through thoughtful one-to-one work.",
-    marketplaceCta: "Choose a service",
-    cards: [
-      {
-        id: "business",
-        title: "Business Constellations",
-        subtitle: "Exploring the prospects of business projects",
-        text: "A systemic exploration of a project: its prospects, hidden dynamics, partnerships, roles, money, constraints, and possible next steps. The aim is to widen the view and test decisions through constellation work.",
-        icon: BriefcaseBusiness,
-      },
-      {
-        id: "alchemy",
-        title: "Alchemy of the Soul / Psychohomeopathy",
-        subtitle: "Individual work with inner states",
-        text: "An author-developed format combining imagery and systemic exploration with guidance around supportive remedies. The focus is on inner states, recurring patterns, resources, and movement toward greater wholeness.",
-        icon: Flower2,
-      },
-      {
-        id: "archetypal",
-        title: "Archetypal Constellations",
-        subtitle: "Mysteries & Initiations",
-        text: "Experiential work with archetypes, mythic imagery, ritual structure, and the transpersonal field — individually or in groups.",
-        icon: Sparkles,
-      },
-    ],
-    approachKicker: "How the work begins",
-    approachTitle: "Start with your real question",
-    approachText: "We discuss your question, boundaries and the format that may fit. Systemic work, imagery and other methods are used only by mutual agreement and in an appropriate context.",
+    title: "Support — personal guidance · Holistic House",
+    description: "Personal sessions in Toronto or online, plus three free entry points: self-check tests, a written situation review, and a symbolic Wu Xing resource profile.",
     about: "About Andrey",
-    consultationKicker: "First step",
-    consultation: "Start with a short conversation",
-    consultationText: "Tell me what you would like to explore, and we can choose which of the three formats fits best right now.",
-    telegram: "Message on Telegram",
-    whatsapp: "WhatsApp",
-    note: "These formats do not replace medical diagnosis or urgent care. Business constellations do not replace financial, legal or professional advice and do not guarantee an outcome.",
+    footerTitle: "Not sure where to start?",
+    footerLead: "Leave a contact — Andrey will suggest a suitable first step.",
+    note: "These symbolic approaches do not replace medical assessment or treatment. Homeopathy lacks reliable evidence for treating health conditions. Individual results are not guaranteed.",
+  },
+  es: {
+    title: "Support — apoyo personal · Holistic House",
+    description: "Sesiones personales en Toronto o en línea. Comienza con una autoevaluación, una revisión gratuita de tu situación o un perfil simbólico Wu Xing.",
+    about: "Sobre Andrey",
+    footerTitle: "¿No sabes por dónde empezar?",
+    footerLead: "Escríbenos por Telegram o WhatsApp para consultar opciones de apoyo.",
+    note: "Las prácticas simbólicas no sustituyen una evaluación o tratamiento médico. La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades; no se garantizan resultados.",
   },
 } as const;
 
-const serviceShowcaseImages: Record<string, string> = {
-  hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  "systemic-constellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
-  "business-decision-constellations": "/images/holistic-house/books-library.webp",
-  "reiki-energy-work": "/images/holistic-house/hero-olive-incense.webp",
-  business: "/images/holistic-house/books-library.webp",
-  alchemy: "/images/holistic-house/video-posters/homeopathy-en-v2.webp",
-  archetypal: "/library/maya-mysteries/media/post-244-1.jpg",
-};
-
-export function generateStaticParams() { return getHomeopathyLocaleParams(); }
+function isPublicServiceLocale(value: string): value is PublicLocale { return value==="ru" || value==="en" || value==="es"; }
+export function generateStaticParams() { return publicLocales.map(locale => ({ locale })); }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) return { title: "Not found" };
+  if (!isPublicServiceLocale(locale)) return { title: "Not found" };
   const current = copy[locale];
   return {
     metadataBase: metadataBaseFor(),
@@ -131,262 +72,55 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.description,
     alternates: {
       canonical: "/" + locale + "/services",
-      languages: { ru: "/ru/services", en: "/en/services" },
+      languages: { ru: "/ru/services", en: "/en/services", es: "/es/services", "x-default": "/en/services" },
     },
+    openGraph: { type: "website", siteName: "Holistic House", locale: locale === "ru" ? "ru_RU" : locale === "es" ? "es_ES" : "en_CA",
+      url: "/" + locale + "/services", title: current.title, description: current.description,
+      images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
+    twitter: { card: "summary_large_image", title: current.title, description: current.description,
+      images: ["/images/holistic-house/andy-about.png"] },
   };
 }
 
-export default async function ServicesPage({ params }: PageProps) {
+export default async function ServicesPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  const current = copy[locale as Locale];
-  const entry = LOCAL_ACQUISITION[locale as Locale];
-  let offerings: PublicService[] = [];
-  try {
-    offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
-  } catch {
-    offerings = [];
-  }
-  const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
-  const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
-  const chooseFormatLabel = locale === "ru" ? "Выбрать этот формат" : "Choose this format";
-  const servicePage = (slug: string) => {
-    const service = offerings.find((item) => item.slug === slug);
-    return service ? `/${locale}/services/${service.practitionerSlug}/${service.slug}` : null;
-  };
-  const personalConstellationHref = servicePage("personal-constellation-session");
-  const businessConstellationHref = servicePage("business-situation-constellation");
-  const homeopathyHref = servicePage("homeopathy-consultation");
-  const serviceIndexHrefs: Record<string, string> = {
-    hypnotherapy: `/${locale}/academy/applied/hypnotherapy-regressions`,
-    "systemic-constellations": personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    "business-decision-constellations": businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    "reiki-energy-work": `/${locale}/academy/reiki`,
-    business: businessConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-    alchemy: homeopathyHref ?? `/${locale}/masters/andy-litvinov`,
-    archetypal: personalConstellationHref ?? `/${locale}/masters/andy-litvinov`,
-  };
-  const coreShowcaseItems: CatalogShowcaseItem[] = entry.services.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/hero-olive-incense.webp",
-    eyebrow: locale === "ru" ? "Формат индивидуальной работы" : "Personal work format",
-  }));
-  const additionalShowcaseItems: CatalogShowcaseItem[] = current.cards.map(({ id, title, subtitle, text }) => ({
-    id: "service-" + id,
-    title,
-    subtitle,
-    description: text,
-    href: "#available-services",
-    indexHref: serviceIndexHrefs[id],
-    actionLabel: chooseFormatLabel,
-    image: serviceShowcaseImages[id] ?? "/images/holistic-house/books-library.webp",
-    media: <PageVideo slot={"service-" + id} locale={locale} className="site-video--service-card" />,
-    eyebrow: locale === "ru" ? "Дополнительное направление" : "Additional direction",
-  }));
-  const serviceShowcaseItems = [...coreShowcaseItems, ...additionalShowcaseItems];
-
+  if (!isPublicServiceLocale(locale)) notFound();
+  // Old shared links to the optional finder remain valid after moving the
+  // marketplace out of Andrey's personal consultation landing.
+  const query = await searchParams;
+  if (query?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
+  const current = copy[locale];
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
-      <PublicSiteHeader locale={locale} />
-
-      <section className="services-studio-hero">
-        <div className="services-studio-hero-copy">
-          <p className="homeopathy-kicker">{current.kicker}</p>
-          <h1>{current.heading}</h1>
-          <p>{current.lead}</p>
-          <Link className="services-studio-primary" href="#available-services">
-            {current.marketplaceCta}<span aria-hidden="true">→</span>
-          </Link>
-          <AcquisitionEventLink className="services-studio-primary" href={entry.selfCheck.href} event="self_check_start">
-            {entry.selfCheck.label}<span aria-hidden="true">→</span>
-          </AcquisitionEventLink>
-        </div>
-        <div className="services-studio-photo" aria-hidden="true">
-          <Image
-            src="/images/holistic-house/hero-olive-incense.webp"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 767px) 100vw, 44vw"
-          />
-        </div>
-      </section>
-
-      <PersonalWorkJourney locale={locale as Locale} />
-
-      <CatalogShowcase
-        items={serviceShowcaseItems}
-        label={locale === "ru" ? "Форматы индивидуальной работы" : "Personal work formats"}
-      />
-
-      <section className="services-marketplace" id="available-services" aria-labelledby="services-marketplace-title">
-        <div className="services-marketplace-heading">
-          <p className="homeopathy-kicker">{locale === "ru" ? "Доступные услуги" : "Available services"}</p>
-          <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
-          <p>
-            {locale === "ru"
-              ? "Можно открыть подробности или сразу отправить запрос выбранному мастеру. Публичные профили и услуги проходят модерацию."
-              : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
-          </p>
-        </div>
-
-        {featuredService ? (
-          <article className="services-marketplace-featured">
-            <div className="services-marketplace-featured-mark" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
-            <div className="services-marketplace-featured-copy">
-              <div className="services-marketplace-featured-topline">
-                <span className="services-marketplace-free-badge">
-                  {locale === "ru" ? "Бесплатно" : "Free"}
-                </span>
-                <Link href={`/${locale}/masters/${featuredService.practitionerSlug}`}>
-                  {featuredService.practitionerName}
-                </Link>
-              </div>
-              <h3>{featuredService.copy.title}</h3>
-              <p>{featuredService.copy.shortDescription}</p>
-              <div className="services-marketplace-featured-meta">
-                <span>{locale === "ru" ? "Онлайн" : "Online"}</span>
-                {featuredService.durationMinutes ? <span>{featuredService.durationMinutes} min</span> : null}
-                <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
-              </div>
-              <div className="services-marketplace-actions">
-                <Link
-                  className="services-marketplace-request services-marketplace-request--featured"
-                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
-                >
-                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </Link>
-                <Link
-                  className="services-marketplace-details"
-                  href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
-                >
-                  {locale === "ru" ? "Подробнее" : "Details"}
-                </Link>
-              </div>
-            </div>
-          </article>
-        ) : null}
-
-        {marketplaceOfferings.length ? (
-          <div className="services-marketplace-grid">
-            {marketplaceOfferings.map((service) => {
-              const format =
-                service.deliveryFormat === "in_person"
-                  ? (locale === "ru" ? "Очно" : "In person")
-                  : service.deliveryFormat === "hybrid"
-                    ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
-                    : "Online";
-              const isFree = service.pricingMode === "free" || (service.pricingMode !== "contact" && service.confirmedPrice === 0);
-              const price =
-                isFree
-                  ? (locale === "ru" ? "Бесплатно" : "Free")
-                  : service.pricingMode !== "contact" && service.confirmedPrice != null
-                    ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
-                    : (locale === "ru" ? "По запросу" : "On request");
-              return (
-                <article className="services-marketplace-card" key={service.id}>
-                  <div className="services-marketplace-card-top">
-                    <Link
-                      className="services-marketplace-provider"
-                      href={`/${locale}/masters/${service.practitionerSlug}`}
-                    >
-                      <span className="services-marketplace-avatar" aria-hidden="true">
-                        {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
-                      </span>
-                      <span>
-                        <small>{locale === "ru" ? "Мастер" : "Practitioner"}</small>
-                        <strong>{service.practitionerName}</strong>
-                      </span>
-                    </Link>
-                    <span className={`services-marketplace-price${isFree ? " services-marketplace-price--free" : ""}`}>
-                      {price}
-                    </span>
-                  </div>
-                  <h3>{service.copy.title}</h3>
-                  {service.professionalTitle ? (
-                    <p className="services-marketplace-role">{service.professionalTitle}</p>
-                  ) : null}
-                  <p className="services-marketplace-description">{service.copy.shortDescription}</p>
-                  <div className="services-marketplace-meta">
-                    <span>{format}</span>
-                    {service.locationLabel && service.locationLabel !== "Online" ? <span>{service.locationLabel}</span> : null}
-                    {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
-                  </div>
-                  <div className="services-marketplace-actions">
-                    <Link
-                      className="services-marketplace-request"
-                      href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
-                    >
-                      {isFree ? (locale === "ru" ? "Запросить бесплатно" : "Request free service") : (locale === "ru" ? "Заказать" : "Request")}<span aria-hidden="true">→</span>
-                    </Link>
-                    <Link
-                      className="services-marketplace-details"
-                      href={`/${locale}/services/${service.practitionerSlug}/${service.slug}`}
-                    >
-                      {locale === "ru" ? "Подробнее" : "Details"}
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : !featuredService ? (
-          <p className="services-marketplace-empty">
-            {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
-          </p>
-        ) : null}
-        <p className="services-marketplace-all">
-          <Link href={`/${locale}/masters`}>
-            {locale === "ru" ? "Все мастера и практики" : "View all practitioners"}<span aria-hidden="true">→</span>
-          </Link>
-        </p>
-      </section>
-
-      <PageVideo slot="services-intro" locale={locale} />
-
-      {locale === "en" ? (
-        <section className="services-method-videos" id="methods" aria-labelledby="services-method-videos-title">
-          <div className="services-method-videos-heading">
-            <p className="homeopathy-kicker">Methods in more detail</p>
-            <h2 id="services-method-videos-title">Two short explanations</h2>
-          </div>
-          <div className="services-method-videos-grid">
-            <article className="services-method-video">
-              <h3>Hypnotherapy</h3>
-              <PageVideo slot="method-hypnotherapy" locale="en" />
-            </article>
-            <article className="services-method-video">
-              <h3>Systemic Constellations</h3>
-              <PageVideo slot="method-constellations" locale="en" />
-            </article>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="services-studio-approach">
-        <div>
-          <p className="homeopathy-kicker">{current.approachKicker}</p>
-          <h2>{current.approachTitle}</h2>
-        </div>
-        <div>
-          <p>{current.approachText}</p>
-          <Link href={"/" + locale + "/about"}>{current.about}<span aria-hidden="true">→</span></Link>
-        </div>
-      </section>
-
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
-
-      <PageVideo slot="consultation" locale={locale} />
-
-      <PublicConsultationCta locale={locale as Locale} id="consultation" />
+    <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang={locale}>
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <ServicesExplorerProvider>
+        {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}
+        {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} />}
+        <ServicesCompactCatalog locale={locale}>
+          <ServicesCompactPanel id="consultation">
+            <ServicesPersonalConsultationMobile locale={locale} />
+            <PublicConsultationCta locale={locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+          </ServicesCompactPanel>
+          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
+          <ServicesCompactPanel id="business"><BusinessServiceBrowser locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading">
+            <SpiritualReadingEntry locale={locale} />
+            <ServicesMagicalHelpMobile locale={locale} />
+          </ServicesCompactPanel>
+          <ServicesCompactPanel id="about"><ServicesIntroMedia locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale} variant="services" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="directory">
+            <ServicesDirectoryInvitation locale={locale} />
+          </ServicesCompactPanel>
+        </ServicesCompactCatalog>
+      </ServicesExplorerProvider>
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
     </main>
   );

@@ -69,3 +69,11 @@ __
 According to observations, this remedy
 
 frees and unfolds inner restrained psychic energy, instead of repression there arises courage and the opportunity to express oneself.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Pain and grief are kept inside; high expectations of yourself prevent you from expressing them.
+
+After (desired state): The right to experience and express your feelings, and to be seen in your vulnerability.

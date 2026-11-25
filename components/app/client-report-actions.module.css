@@ -1,0 +1,17 @@
+.wrapper{display:grid;gap:5px;max-width:100%;margin:0 auto}
+.actions{display:flex;align-items:stretch;flex-wrap:wrap;gap:9px}
+.actions button{font:inherit;display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:46px;border-radius:12px;padding:10px 14px;font-weight:650;cursor:pointer;line-height:1.2}
+.download{background:#bf4f2e;border:1px solid #bf4f2e;color:#fff}
+.download:hover{background:#a94526}
+.print{background:#fffdf8;color:#4f463f;border:1px solid #d7c6b7}
+.print:hover{background:#f5ede2}
+.actions button:disabled{opacity:.46;cursor:not-allowed}
+.actions button:focus-visible{outline:3px solid #266e61;outline-offset:3px}
+.privacy{font-size:.74rem!important;color:#74685e!important;line-height:1.43;margin:3px 0!important}
+.message{font-size:.84rem!important;color:#367464!important;line-height:1.4;margin:4px 0!important}
+@media(max-width:600px){.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.actions button{font-size:.78rem;padding:8px 7px;min-width:0;min-height:47px}.actions svg{width:16px;flex:0 0 auto}}
+@media(max-width:360px){.actions{grid-template-columns:1fr}}
+
+.wrapper .download{background:#bf4f2e!important;border-color:#bf4f2e!important;color:#fff!important}
+.wrapper .download:hover:not(:disabled){background:#a84227!important}
+.wrapper .print{background:#fffdf8!important;color:#4f463f!important}

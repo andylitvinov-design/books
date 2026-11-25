@@ -1,0 +1,308 @@
+.solutions{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:44px auto 0;color:#352d27;}
+.header{max-width:770px;margin-bottom:20px;}
+.eyebrow{margin:0 0 8px;color:#a06d4a;font:750 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.13em;text-transform:uppercase}
+.header h2{margin:0;color:#352922;font:400 clamp(30px,3.25vw,45px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.03em;text-wrap:balance}
+.intro{margin:10px 0 0;max-width:700px;color:#655d55;font:14px/1.52 Arial,Helvetica,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}
+.card{position:relative;min-width:0;display:grid;grid-template-columns:clamp(122px,14vw,175px) minmax(0,1fr);gap:17px;padding:12px;overflow:hidden;border:1px solid #e5d9cc;border-radius:21px;background:#fffdfa;box-shadow:0 9px 30px rgba(75,52,39,.045);}
+.photo{position:relative;min-height:205px;display:block;overflow:hidden;border-radius:14px;background:#e7e0d8}
+.photo img{object-fit:cover;object-position:center}
+.anchor{position:absolute;top:0;left:0;width:0;height:0;overflow:hidden}
+.cardContent{min-width:0;display:flex;flex-direction:column;align-items:flex-start;padding:7px 9px 5px 0}
+.cardLabel{color:#557461;font:750 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.055em;text-transform:uppercase}
+.card h3{margin:8px 0 8px;font:400 clamp(21px,2.15vw,29px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em;color:#382d27;text-wrap:balance}
+.card h3 a{color:inherit;text-decoration:none}
+.card h3 a:hover{text-decoration:underline;text-underline-offset:4px}
+.cardSummary{margin:0;color:#57534b;font:13px/1.52 Arial,Helvetica,sans-serif}
+.cardBenefit{margin:10px 0 13px;color:#4b694e;font:700 11px/1.42 Arial,Helvetica,sans-serif}
+.cardPrice{margin:0 0 11px;color:#7b384b;font:750 12px/1.4 Arial,Helvetica,sans-serif}
+.cardCta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:auto;width:100%;padding:9px 13px;box-sizing:border-box;border-radius:12px;background:#285947;color:#fff!important;font:750 12px/1.35 Arial,Helvetica,sans-serif;text-decoration:none}
+.cardCta:hover{background:#1d4839}
+.cardCta svg{flex:none}
+.bridge{margin:21px 0 0;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 21px;background:#e8f1e8;border:1px solid #cadccc;border-radius:18px}
+.bridge>div{min-width:0}
+.bridge h3{margin:0;font:400 24px/1.15 Georgia,"Times New Roman",serif;color:#294838}
+.bridge p{margin:6px 0 0;color:#526958;font:13px/1.45 Arial,Helvetica,sans-serif}
+.bridge>a{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:11px 16px;min-height:48px;box-sizing:border-box;background:#285947;color:#fff!important;text-decoration:none;font:700 13px/1.35 Arial,Helvetica,sans-serif;border-radius:100px}
+.methodDisclosure{margin:17px 0 0;padding:0 18px;border:1px solid #e8dfd6;border-radius:15px;background:#faf7f1;}
+.methodDisclosure>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 0;color:#46604c;font:700 13px/1.5 Arial,Helvetica,sans-serif}
+.methodDisclosure>summary::-webkit-details-marker{display:none}
+.methodDisclosure[open]>summary svg{transform:rotate(180deg)}
+.methodDisclosure>div{padding-bottom:16px}
+.methodDisclosure p{color:#656057;font:13px/1.6 Arial,Helvetica,sans-serif;margin:0 0 12px}
+.methodDisclosure nav{display:flex;flex-wrap:wrap;gap:9px}
+.methodDisclosure nav a{display:inline-flex;align-items:center;gap:6px;color:#2d614c;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.disclaimer{margin:12px 3px 0;color:#777168;font:11px/1.6 Arial,Helvetica,sans-serif}
+.home{margin-block:28px 34px}
+.home .header{max-width:620px;margin-bottom:17px}
+.home .header h2{font-size:clamp(31px,3.7vw,45px)}
+.home .card{grid-template-columns:clamp(112px,13vw,160px) minmax(0,1fr)}
+.home .photo{min-height:185px}
+:is(.photo,.cardCta,.bridge>a,.card h3 a,.methodDisclosure summary,.methodDisclosure nav a):focus-visible{outline:3px solid #a47751;outline-offset:3px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.card{grid-template-columns:160px minmax(0,1fr)}.home .card{grid-template-columns:160px minmax(0,1fr)}.cardContent{padding-right:6px}.photo,.home .photo{min-height:172px}}
+@media(max-width:760px){
+ .solutions{width:calc(100% - 24px);margin-top:28px}
+ .header{margin-bottom:14px;padding:0 3px}
+ .header h2{font-size:clamp(29px,7.9vw,36px)}
+ .intro{font-size:12px;line-height:1.5;margin-top:7px}
+ .grid{gap:10px}
+ .card,.home .card{grid-template-columns:92px minmax(0,1fr);gap:11px;padding:10px;border-radius:17px}
+ .photo,.home .photo{min-height:102px;height:112px;border-radius:12px}
+ .cardContent{padding:2px 1px 1px 0}
+ .cardLabel{font-size:9px;letter-spacing:.025em}
+ .card h3{font-size:clamp(20px,5.7vw,25px);margin:5px 0 5px;line-height:1.14}
+ .cardSummary{font-size:12px;line-height:1.43}
+ .cardBenefit{font-size:10px;margin:7px 0 9px;line-height:1.35}
+ .cardCta{min-height:44px;font-size:12px;padding:9px 12px;border-radius:11px}
+ .bridge{display:grid;gap:11px;padding:17px 15px;border-radius:16px;margin-top:15px}
+ .bridge h3{font-size:22px}
+ .bridge p{font-size:12px}
+ .bridge>a{min-height:46px;width:100%}
+ .methodDisclosure{margin-top:14px}
+ .home{margin:20px auto 25px}
+ .home .header{margin-bottom:12px}
+ .home .header h2{font-size:32px}
+}
+@media(max-width:359px){.card,.home .card{grid-template-columns:78px minmax(0,1fr);gap:9px}.photo,.home .photo{height:93px;min-height:93px}.card h3{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.methodDisclosure>summary svg{transition:none}}
+
+.extra {box-sizing:border-box;width:min(1240px,calc(100% - 38px));margin:24px auto 0;border:1px solid #e5dccf;border-radius:20px;background:#fcfaf5;color:#392f29;overflow:hidden;}
+.extraSummary {display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 25px;cursor:pointer;list-style:none;}
+.extraSummary::-webkit-details-marker {display:none;}
+.extraSummary>span:first-child {display:grid;gap:6px;}
+.extraSummary strong {font:400 24px/1.25 Georgia,"Times New Roman",serif;}
+.extraSummary small {font:14px/1.45 Arial,Helvetica,sans-serif;color:#6f665e;}
+.expandSymbol {display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex:none;border-radius:50%;background:#e5eee4;color:#2b5a49;font:26px/1 Arial,Helvetica,sans-serif;transition:transform .2s ease;}
+.extra[open] .expandSymbol {transform:rotate(45deg);}
+.extraSummary:hover strong {color:#2a634b;}
+.extraSummary:focus-visible {outline:3px solid #a46d46;outline-offset:-5px;}
+.extra :global(.services-marketplace) {max-width:none;width:auto;margin:0;padding:12px 20px 26px;}
+.extra :global(.services-marketplace-heading) {display:none;}
+.extraVideos {padding:0 23px 30px;}
+.extraVideos :global(.services-method-videos) {margin-top:15px;}
+.extraAbout {padding:13px 0 0;text-align:right;}
+.extraAbout a {color:#2a5b49;font:700 14px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px;}
+@media(max-width:760px) {
+ .extra {width:calc(100% - 24px);margin-top:15px;border-radius:17px;}
+ .extraSummary {padding:19px 17px;}
+ .extraSummary strong {font-size:20px;}
+ .extraSummary small {font-size:12px;}
+ .extra :global(.services-marketplace) {padding:7px 12px 22px;}
+ .extraVideos {padding:0 12px 19px;}
+}
+@media(prefers-reduced-motion:reduce){.expandSymbol{transition:none}}
+
+
+.archivedClips {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0;}
+.archivedClips :global(.site-video-block) {min-width:0;}
+@media(max-width:760px){.archivedClips{grid-template-columns:1fr;gap:13px;}}
+
+
+/* Compact outcomes-first cards: detail is optional, the free review is immediate. */
+.solutions { margin-top:50px; }
+.header { max-width:670px; }
+.header h2 { font-size:clamp(31px,3.1vw,44px); }
+.header .intro { max-width:590px; font-size:14px; line-height:1.5; }
+.grid { gap:14px; margin-top:21px; }
+.card { border-radius:20px; }
+.cardTop { grid-template-columns:104px minmax(0,1fr); gap:15px; align-items:center; padding:16px 16px 7px; }
+.photo { min-height:102px; aspect-ratio:1/1; border-radius:14px; }
+.card h3 { font-size:clamp(21px,2vw,26px); line-height:1.16; margin:0 0 7px; }
+.cardIntro>p { font-size:13px; line-height:1.47; }
+.cardMore { margin:0 16px 7px; border-top:1px solid #ede4da; }
+.cardMore summary {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  min-height:37px; padding:7px 1px; list-style:none; cursor:pointer;
+  color:#486d58; font:700 12px/1.35 Arial,Helvetica,sans-serif;
+}
+.cardMore summary::-webkit-details-marker {display:none;}
+.cardMore summary svg {flex:none; transition:transform .15s ease;}
+.cardMore[open] summary svg {transform:rotate(180deg);}
+.cardMore summary:hover {color:#234c3b;}
+.cardMore summary:focus-visible {outline:3px solid #ad784f;outline-offset:2px;border-radius:3px;}
+.cardMore .cardBody {padding:2px 1px 5px;}
+.cardMore .cardBody ul {gap:7px;}
+.cardMore .cardBody li {font-size:12px;line-height:1.5;}
+.cardMore .method {font-size:11px;line-height:1.55;margin:11px 0 5px;padding-top:9px;}
+.cardCta {margin:0 16px 16px;min-height:47px;padding:11px 15px;font-size:13px;border-radius:12px;}
+.bridge {margin-top:21px;padding:27px 31px;}
+.bridge h2 {font-size:clamp(24px,2.4vw,32px);}
+.process {margin-top:40px;}
+.steps {margin-top:18px;gap:10px;}
+.step {padding:20px 22px;}
+.step h3 {font-size:20px;}
+.step p {margin-top:8px;font-size:13px;}
+.methods {margin-top:32px;padding:28px;}
+.methodGrid {margin-top:16px;}
+.methodCard {padding:19px 18px;}
+.methodCard h3 {font-size:20px;}
+.methodCard p {font-size:12px;margin:9px 0 13px;}
+@media(max-width:760px) {
+  .solutions {margin-top:32px;}
+  .header {padding:0 5px;}
+  .header h2 {font-size:clamp(30px,8vw,36px);}
+  .header .intro {font-size:13px;line-height:1.45;margin-top:8px;}
+  .grid {gap:10px;margin-top:16px;}
+  .card {border-radius:17px;}
+  .cardTop {grid-template-columns:84px minmax(0,1fr);gap:12px;padding:13px 13px 7px;}
+  .photo {min-height:90px;width:84px;aspect-ratio:1/1;border-radius:12px;}
+  .card h3 {font-size:clamp(19px,5.4vw,23px);line-height:1.15;margin:0 0 5px;}
+  .cardIntro>p {font-size:12px;line-height:1.4;}
+  .cardMore {margin:0 13px 7px;}
+  .cardMore summary {min-height:34px;font-size:12px;}
+  .cardCta {min-height:47px;margin:0 13px 13px;font-size:13px;padding:10px 14px;}
+  .bridge {margin-top:18px;padding:21px 19px;gap:13px;}
+  .bridge h2 {font-size:25px;}
+  .bridge p:not(.bridgeEyebrow) {font-size:13px;margin-top:6px;}
+  .bridge>a {min-height:48px;}
+  .process {margin-top:33px;}
+  .steps {margin-top:14px;gap:8px;}
+  .step {padding:15px 17px;}
+  .step h3 {font-size:19px;}
+  .step p {font-size:12px;margin-top:5px;}
+  .methods {margin-top:27px;padding:21px 17px;}
+  .methods h2 {font-size:28px;}
+  .methodCard {padding:16px;}
+}
+@media(prefers-reduced-motion:reduce){.cardMore summary svg{transition:none;}}
+
+
+/* Holistic House homepage, approved editorial visual v2. Scoped to .home; full Services unchanged. */
+.home {
+  width:min(1188px,calc(100% - 32px));
+  margin:24px auto 32px;
+  padding:clamp(18px,2.9vw,31px);
+  border:1px solid #e5d5c3;
+  border-radius:25px;
+  background:linear-gradient(125deg,#faf6ed,#f4ebde 68%,#faf8f2);
+  box-shadow:0 12px 36px rgba(70,45,27,.055);
+}
+.home .header{max-width:770px;margin-bottom:21px}
+.home .header h2{color:#382b22;font:400 clamp(35px,4.2vw,54px)/1.09 Georgia,"Times New Roman",serif;letter-spacing:-.035em}
+.home .eyebrow{color:#895a42;letter-spacing:.13em}
+.home .intro{color:#695d53;max-width:640px;font-size:14px;line-height:1.5}
+.home .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:0}
+.home .card {
+  display:grid; grid-template-columns:minmax(0,2fr) minmax(0,3fr);
+  align-items:stretch; min-width:0; min-height:235px; gap:16px;
+  padding:12px; border:1px solid #e5d8c9; border-radius:20px;
+  background:#fffdfa; box-shadow:0 9px 25px rgba(75,52,39,.05);
+}
+.home .card:first-child{border-color:#dfcbb6;background:linear-gradient(125deg,#fffdf9,#faf5ec)}
+.home .card:nth-child(2){background:linear-gradient(125deg,#fffefa,#f1f4ed)}
+.home .photo{
+  display:block;position:relative;min-width:0;width:100%;height:100%;min-height:210px;
+  aspect-ratio:auto;border-radius:15px;overflow:hidden;background:#e8e0d3;
+}
+.home .photo img{object-fit:cover;object-position:center}
+.home .cardContent{
+  display:flex;flex-direction:column;align-items:flex-start;min-width:0;
+  gap:0;padding:10px 3px 5px 0;
+}
+.home .cardLabel{color:#8b593e;font-size:10px;letter-spacing:.05em;line-height:1.4}
+.home .card h3{
+  margin:8px 0 9px;max-width:26ch;
+  color:#392d24;font:400 clamp(24px,2.7vw,33px)/1.12 Georgia,"Times New Roman",serif;
+  letter-spacing:-.025em;text-wrap:balance;
+}
+.home .cardSummary{max-width:40ch;margin:0;color:#655b52;font-size:13px;line-height:1.5}
+.home .cardBenefit{display:none}
+.home .cardCta{
+  display:flex;min-width:0;min-height:45px;align-items:center;justify-content:space-between;
+  width:100%;gap:8px;margin-top:auto;padding:11px 13px;border-radius:999px;
+  background:#85563f;color:#fff!important;
+  font:800 12px/1.3 Arial,Helvetica,sans-serif;box-sizing:border-box;
+}
+.home .cardCta:hover{background:#70442f}
+.home .card:first-child .cardCta{background:#a06143}
+.home .card:first-child .cardCta:hover{background:#86482d}
+.home :is(.cardCta,.card h3 a,.photo):focus-visible{outline:3px solid #b78760;outline-offset:3px}
+@media(max-width:950px){
+  .home .grid{grid-template-columns:1fr}
+  .home .card{grid-template-columns:minmax(150px,2fr) minmax(0,3fr);min-height:204px}
+  .home .photo{min-height:179px}
+}
+@media(max-width:760px){
+  .home{
+    width:calc(100% - 24px);margin:14px auto 24px;padding:20px 13px 16px;
+    border-radius:21px;
+  }
+  .home .header{margin-bottom:17px;padding:0 2px}
+  .home .header h2{font-size:clamp(31px,8.1vw,39px)}
+  .home .intro{font-size:12px;line-height:1.45}
+  .home .grid{grid-template-columns:1fr;gap:10px}
+  .home .card{
+    grid-template-columns:minmax(113px,2fr) minmax(0,3fr);
+    gap:10px;min-height:186px;padding:10px;border-radius:17px;
+  }
+  .home .card:first-child{min-height:199px}
+  .home .photo{
+    align-self:stretch;width:100%;height:100%;min-height:164px;aspect-ratio:auto;
+    border-radius:12px;
+  }
+  .home .cardContent{padding:3px 1px 2px 0}
+  .home .cardLabel{font-size:9px;line-height:1.3}
+  .home .card h3{font-size:clamp(20px,5.6vw,25px);line-height:1.11;margin:6px 0 6px}
+  .home .cardSummary{font-size:11.5px;line-height:1.39;margin:0}
+  .home .cardCta{min-height:37px;margin-top:8px;border-radius:11px;padding:8px 9px;font-size:10.8px;line-height:1.25}
+}
+@media(max-width:355px){
+  .home .card{grid-template-columns:100px minmax(0,1fr);gap:8px}
+  .home .card h3{font-size:20px}
+  .home .cardSummary{font-size:10.5px}
+  .home .cardCta{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.home .card,.home .cardCta{transition:none}}
+
+/* A one-tap source video option on each compact personal-service card. */
+.cardVideo{display:inline-flex;align-items:center;gap:8px;margin:1px 0 9px;min-height:44px;color:#6e4939!important;font:700 12px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.cardVideo svg{flex:none}
+.cardVideo:hover{color:#305e4a!important}
+.cardVideo:focus-visible{outline:3px solid #b48554;outline-offset:3px}
+@media(max-width:760px){.cardVideo{font-size:11px;margin:0 0 5px;min-height:42px}}
+
+/* Visually distinct business offer; the four homepage cards stay unchanged. */
+.card[data-core-service-id="business"]{background:#f5f7fb;border-color:#b8c6da}
+.card[data-core-service-id="business"] .cardLabel,.card[data-core-service-id="business"] .cardBenefit{color:#61364f}
+.card[data-core-service-id="business"] .cardCta{background:#7d2d4c}
+.card[data-core-service-id="business"] .cardCta:hover{background:#61213a}
+
+/* Services restores the same approved photo-left card proportions as Home, not the old text-only panels. */
+.servicesPage { background:linear-gradient(125deg,#fbfaf7,#f3f6f9 82%);border-color:#dbe3ea;margin-top:14px; }
+.servicesPage .card { min-height:198px; }
+.servicesPage .cardBenefit { display:none; }
+.servicesPage .header { max-width:790px; }
+.servicesPage .eyebrow { color:#496b86; }
+.servicesPage .header h2 { color:#243e60;font-size:clamp(31px,3.7vw,45px); }
+.servicesPage .intro {color:#566b7b;max-width:760px;}
+.servicesPage .cardCta { background:#243e62; }
+.servicesPage .cardCta:hover { background:#182f50; }
+.servicesPage .card[data-core-service-id="business"] .cardCta {background:#782e4b}
+@media(max-width:760px) {
+ .servicesPage {margin-top:10px;padding:17px 12px 14px}
+ .servicesPage .card {min-height:174px}
+ .servicesPage .header h2 {font-size:clamp(29px,7.6vw,36px)}
+ .servicesPage .card:first-child {min-height:185px}
+}
+
+
+/* A single, unmistakable service card for Soul Alchemy, in the established
+   Holistic House photo-left / Details-left / burgundy-Order-right system. */
+.card[data-core-service-id="alchemy"]{overflow:visible;z-index:2;border-color:#b6dad6;background:linear-gradient(135deg,#fffefa,#eefaf7)}
+.card[data-core-service-id="alchemy"]:focus-within{z-index:20}
+.cardActionRow{display:grid;grid-template-columns:minmax(0,.79fr) minmax(0,1.21fr);align-items:start;gap:7px;min-width:0;width:100%;margin-top:auto}
+.cardDetails{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:8px;border:1px solid #aecacb;border-radius:12px;background:#f2fcf9;color:#216777!important;font-size:12px;font-weight:800;text-decoration:none}
+.cardDetails:hover{background:#e1f6f1}
+.cardDetails svg{flex:none}
+.cardDirectOrder{position:relative;min-width:0;width:100%}
+.cardDirectOrder :global([data-contact-order]){min-width:0;min-height:44px;padding:8px 6px;border-radius:12px;background:#8c3754;color:#fff;gap:4px;font-size:12px;box-shadow:none}
+.cardDirectOrder :global([data-contact-order]):hover{background:#722942}
+.cardDirectOrder :global([data-contact-order] > svg:first-child){display:none}
+.cardDirectOrder :global([data-contact-order] > svg:last-child){width:15px;height:15px}
+.cardDirectOrder :global([data-contact-channel-chooser] > div[id]){position:absolute;z-index:30;right:0;top:calc(100% + 5px);width:min(310px,calc(100vw - 45px));box-shadow:0 12px 30px rgba(31,62,80,.2)}
+.card[data-core-service-id="alchemy"] .cardActionRow :is(a,button):focus-visible{outline:3px solid #9e6678;outline-offset:2px}
+@media(max-width:760px){
+ .cardActionRow{gap:6px}
+ .cardDetails{min-height:43px;font-size:11px;padding:7px 5px}
+ .cardDirectOrder :global([data-contact-order]){min-height:43px;font-size:11px;gap:3px;padding:7px 4px}
+}

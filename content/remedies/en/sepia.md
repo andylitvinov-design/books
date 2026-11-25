@@ -122,6 +122,12 @@ You have the right to take care of yourself and to withdraw from contacts if the
 
 - You have the right to love.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Detachment has become a form of protection: along with pain, feelings and interest in closeness have been muted.
+
+After (desired state): Care for your boundaries and needs, with room for sadness, joy and new relationships.
+
 SEPIA — helps restore inner security for those who are exhausted and detached from life, teaches self-acceptance and self-care.
 
 Sepia brings you out of the fog of separation, returning fullness of feelings and brightness of life.

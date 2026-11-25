@@ -137,8 +137,12 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
 
   assert.match(workspace, /getPortraitNextStep/)
   assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
-  assert.match(workspace, /\['consultations', c\.consultations, '\/consultations'\]/)
-  assert.match(workspace, /\['monitoring', c\.monitoring, '\/monitoring'\]/)
+  // These tools remain available via the account menu and direct authenticated routes,
+  // rather than occupying slots in the new five-destination bottom navigation.
+  assert.match(workspace, /<InstantCabinetLink href=\{root \+ '\/monitoring'\}/)
+  assert.match(workspace, /page === 'consultations'/)
+  assert.match(workspace, /page === 'monitoring'/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)
@@ -151,7 +155,11 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /Заказать консультацию специалиста/)
   assert.match(workspace, /Your result stays private and is not shared automatically/)
   assert.match(catalog, /cabinet-result-page/)
-  assert.match(catalog, /cabinet-result-actions-grid/)
+  assert.match(catalog, /<GuestScaleInterpretation result=\{guestResult\} locale=\{locale\} \/>\s*(?:<TestRatingCard locale=\{locale\} definitionKey=\{guestResult\.definitionKey\} guest \/>\s*)?<section className=\{guestActions\.capture\} data-guest-analysis-gate/,
+    'guest scores keep the explicit Cabinet explanations gate, with only the optional usefulness-rating prompt between')
+  assert.match(catalog, /className=\{guestActions\.googleButton\} type="button" onClick=\{saveToCabinet\} disabled=\{busy\}/)
+  assert.match(catalog, /This test is saved to your account only after you confirm\./)
+  assert.match(catalog, /<nav className=\{guestActions\.nextActions\}/)
   assert.match(catalog, /cabinet-result-footer/)
   assert.match(workspace, /c\.contextAtCheckIn/)
   assert.match(workspace, /\['trigger', c\.trigger\]/)
@@ -160,7 +168,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
 })
 
 
-test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused in landing and portrait', async () => {
+test('Mood check-in stays in My Tests, not in any guest test questionnaire or the portrait', async () => {
   const [mood, landing, workspace] = await Promise.all([
     readFile('components/app/mood-checkin.jsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
@@ -183,15 +191,22 @@ test('Welcome Home mood check-in keeps sad, neutral, happy order and is reused i
   assert.ok(mood.includes('onMoodChange'))
   assert.ok(mood.includes('onDismiss'))
   assert.doesNotMatch(mood, /localStorage|sessionStorage/)
-  assert.ok(landing.includes('<MoodCheckIn'))
-  assert.ok(landing.includes('onMoodChange={handleGuestMoodChange}'))
-  assert.ok(landing.includes("begin('state', payload)"))
-  assert.ok(landing.includes('className="cabinet-monitor-actions"'))
-  assert.ok(landing.includes('Take a free state analysis and get recommendations'))
-  assert.ok(landing.includes('Build a personal test battery'))
-  assert.ok(landing.includes('Пройти бесплатный тест-анализ состояния и получить рекомендации'))
-  assert.ok(landing.includes('Подобрать персональную батарею тестов'))
-  assert.ok(workspace.includes('<MoodCheckIn'))
+  assert.ok(!landing.includes('<MoodCheckIn'))
+  assert.ok(!landing.includes('latestGuestMood'))
+  assert.ok(!landing.includes('handleGuestMoodChange'))
+  assert.ok(landing.includes("phase === 'questions' && definition"))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
+  assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
+  assert.ok(landing.includes('Start a free wellbeing check-in'))
+  assert.ok(landing.includes('Create my free monitoring plan'))
+  assert.ok(landing.includes('Начать бесплатную проверку состояния'))
+  assert.ok(landing.includes('Составить мой бесплатный план мониторинга'))
+  assert.equal((workspace.match(/<MoodCheckIn/g) || []).length, 1)
+  assert.ok(workspace.includes('data-cabinet-mood-checkin'))
+  assert.ok(workspace.includes("page === 'tests'"))
+  assert.ok(workspace.includes("sourceSurface: 'monitoring'"))
+  assert.ok(workspace.includes("!searchParams.get('courseId')"))
+  assert.ok(!workspace.includes('className="hh-profile-mood"'))
   assert.ok(workspace.includes("getAssessmentDefinition('hh-current-state', 'v2', locale)"))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))
 })
@@ -208,9 +223,10 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!mood.includes('homeopathy-kicker hh-mood-kicker'))
   assert.ok(landing.includes('<h2 id="cabinet-title">{c.title}</h2>'))
   assert.ok(landing.includes("testsKicker: 'Mind–Body Monitor'"))
-  assert.ok(landing.includes("tryTitle: 'Your Mind–Body Monitor'"))
-  assert.ok(landing.includes("title: 'Your personal space'"))
-  assert.ok(landing.includes("title: 'Ваше личное пространство'"))
+  assert.ok(landing.includes("tryTitle: 'Free wellbeing & resources monitoring'"))
+  assert.ok(landing.includes("title: 'Enter your personal cabinet'"))
+  assert.ok(landing.includes("title: 'Войти в личный кабинет'"))
+  assert.ok(landing.includes('cabinet-signin-hero'))
   assert.ok(ia.includes('Cabinet v2.6'))
   assert.ok(ia.includes('.cabinet-signin-strip'))
   assert.ok(ia.includes('.cabinet-test-list'))
@@ -219,33 +235,25 @@ test('Cabinet entry uses a single clean Academy-style hierarchy', async () => {
   assert.ok(!ia.includes('Cabinet v2.4'))
 })
 
-test('Cabinet catalog uses accessible image-led Mind–Body Monitor cards', async () => {
-  const [landing, ia] = await Promise.all([
+test('Cabinet entry prioritizes the one-click monitoring battery with optional Google entry instead of duplicate test cards', async () => {
+  const [landing, explorer, styles] = await Promise.all([
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
-    readFile('app/ia-v2.css', 'utf8'),
+    readFile('components/app/test-explorer.jsx', 'utf8'),
+    readFile('app/globals.css', 'utf8'),
   ])
-  assert.ok(landing.includes('className="cabinet-signin-strip"'))
-  assert.ok(landing.includes('className="cabinet-test-list"'))
-  assert.ok(landing.includes('className="cabinet-test-row"'))
-  assert.ok(
-    landing.indexOf('className="cabinet-guest-tests"') <
-      landing.indexOf('className="cabinet-signin-strip"'),
-    'public Cabinet should show Mind–Body Monitor before Google sign-in',
-  )
-  assert.ok(landing.includes("import Image from 'next/image'"))
-  assert.ok(landing.includes('className="cabinet-test-image"'))
-  assert.ok(landing.includes("stateText: '5 questions · ~1 min'"))
-  assert.ok(landing.includes("traitText: '20 questions · ~3 min'"))
-  assert.ok(landing.includes('aria-label={`${c.start}: ${c.stateTitle}`}'))
-  assert.ok(landing.includes('aria-label={`${c.start}: ${c.traitTitle}`}'))
-  assert.ok(!landing.includes('className="cabinet-test-count"'))
-  assert.ok(!landing.includes('className="cabinet-account-row"'))
-  assert.ok(ia.includes('.cabinet-test-image'))
-  assert.ok(ia.includes('grid-template-columns: 128px minmax(0,1fr) 28px'))
-  assert.ok(ia.includes('.hh-monitoring-grid'))
-  assert.ok(ia.includes('.hh-monitoring-card'))
+  assert.ok(landing.includes('className="cabinet-signin-strip cabinet-signin-hero"'))
+  assert.ok(landing.includes('Enter personal cabinet with Google'))
+  assert.ok(landing.includes('Войти в личный кабинет через Google'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
+  assert.ok(landing.includes("phase !== 'catalog' && <section"))
+  assert.ok(landing.indexOf('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />') < landing.indexOf('cabinet-signin-hero'))
+  assert.ok(!landing.includes('className="cabinet-test-image"'))
+  assert.ok(!landing.includes('className="cabinet-monitor-actions"'))
+  assert.ok(!landing.includes("import Image from 'next/image'"))
+  assert.ok(explorer.includes('matchCount'))
+  assert.ok(styles.includes('.cabinet-signin-hero'))
+  assert.ok(landing.includes('className="cabinet-legacy-entry"') || landing.includes('cabinet-legacy-entry'))
 })
-
 
 test('signed-in tests use the registry-driven Mind–Body Monitor catalogue', async () => {
   const workspace = await readFile('components/app/app-workspace.jsx', 'utf8')
@@ -271,7 +279,7 @@ test('external Cabinet resumes only a server-owned consented test plan from its 
   assert.ok(landing.includes("getDefinitionById(plan.definitionIds[plan.currentIndex])"))
 })
 
-test('public and signed-in Cabinet share a white mood card with three separate mood buttons', async () => {
+test('My Tests reveals the three compact mood buttons only when the optional card is expanded', async () => {
   const [mood, ia] = await Promise.all([
     readFile('components/app/mood-checkin.jsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
@@ -280,7 +288,7 @@ test('public and signed-in Cabinet share a white mood card with three separate m
   assert.ok(mood.includes('<p className="hh-mood-kicker">{c.welcome}</p>'))
   assert.ok(mood.includes('<h1 className="hh-mood-title"'))
   assert.ok(mood.includes('<h2 className="hh-mood-title"'))
-  assert.ok(ia.includes('.cabinet-landing-shell .hh-mood-checkin'))
+  assert.ok(ia.includes('.hh-app .hh-tests-mood-disclosure > summary'))
   assert.ok(ia.includes('.hh-app .hh-mood-checkin--compact'))
   assert.ok(ia.includes('background: #fffdfa'))
   assert.ok(ia.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'))
@@ -348,15 +356,27 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
     assert.ok(source.includes('hh-test-mode-toggle'))
   }
 
-  assert.match(
-    workspace,
-    /mode === 'quick' \? Math\.min\(index \+ 1, def\.questions\.length\) : index/,
-  )
-  assert.match(
-    landing,
-    /progress: quick \? Math\.min\(index \+ 1, definition\.questions\.length\) : index/,
-  )
-  assert.ok(landing.includes("phase === 'mode'"))
+  // Quick is a single scrollable page; out-of-order answers persist without
+  // advancing to the next question. Guided retains its explicit Next action.
+  assert.match(workspace, /className="hh-quick-form"/)
+  assert.match(workspace, /def\.questions\.map\(\(item, step\) => \(/)
+  assert.match(workspace, /async function chooseAnswer\(value, questionId/)
+  assert.match(workspace, /const firstMissing = def\.questions\.findIndex/)
+  assert.match(workspace, /mode === 'quick' \? \(firstMissing < 0/)
+  assert.match(landing, /className="cabinet-quick-form"/)
+  assert.match(landing, /definition\.questions\.map\(\(item, step\) => \(/)
+  assert.match(landing, /async function choose\(value, targetQuestion/)
+  assert.match(landing, /const firstMissing = definition\.questions\.findIndex/)
+  assert.match(landing, /progress,\s*expectedRevision: run\.revision/)
+  assert.match(workspace, /quickMinutes.*monitoringCatalogItem/)
+  assert.match(landing, /quickMinutes.*monitoringCatalogItem/)
+  assert.match(workspace, /guidedMinutes = Math\.max/)
+  assert.match(landing, /guidedMinutes = Math\.max/)
+  assert.match(workspace, /hh-runner-methodology/)
+  assert.match(workspaceCss, /\.hh-app \.hh-runner--guided \.hh-scale-words button/)
+  assert.match(ia, /\.cabinet-landing-shell \.cabinet-guided-question \.cabinet-answer-list button/)
+  assert.ok(landing.includes("phase === 'questions'"))
+  assert.ok(!landing.includes("phase === 'mode'"))
   assert.ok(workspaceCss.includes('Test runner v2 — two equivalent completion modes'))
   assert.ok(ia.includes('Cabinet test runner v2 — shared Quick / Guided interaction model'))
   assert.ok(workspaceCss.includes('@media (prefers-reduced-motion:reduce)'))
@@ -395,8 +415,12 @@ test('My Profile v3 is action-first, prioritizes one next step, and keeps dense 
   assert.ok(workspace.includes('Build a personal test battery'))
   assert.ok(workspace.includes('hh-profile-summary'))
   assert.ok(workspace.includes('hh-profile-next'))
-  assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} />'))
-  assert.ok(workspace.includes('<MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />'))
+  assert.ok(workspace.includes("import { profileScreeningPresentation } from '@/lib/profile/profile-scale-presentation'"))
+  assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} results={data.results} />'))
+  assert.ok(workspace.includes('function ProfileOverview({ profile, locale, results = [] })'))
+  assert.ok(workspace.includes('screening: profileScreeningPresentation(row, results, locale)'))
+  assert.ok(workspace.includes('data-screening-verified={row.screening.verified}>{row.screening.label}'))
+  assert.ok(workspace.includes('<MetricCard key={`${d.sourceDefinitionId}::${d.key}`} dimension={d} locale={locale} onSelect={setSelected} />'))
   assert.ok(workspace.includes('if (!reports.length) return null'))
   assert.ok(workspace.includes("definitionKey: def.key"))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))

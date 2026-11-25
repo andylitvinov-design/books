@@ -10,10 +10,10 @@ import {
   registryCount,
 } from '../data/assessments/mind-body-monitor-registry.js'
 
-test('Mind–Body Monitor registry contains exactly 73 unique research instruments', () => {
-  assert.equal(registryCount(), 73)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 73)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 73)
+test('Mind–Body Monitor registry contains 168 unique research instruments', () => {
+  assert.equal(registryCount(), 168)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 168)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 168)
   assert.equal(MONITOR_AREAS.length, 14)
 })
 
@@ -40,7 +40,7 @@ test('research registry is metadata-gated and cannot silently publish questionna
   }
 })
 
-test('existing runnable modules remain separate from the 73-instrument research registry', () => {
+test('existing runnable modules remain separate from the 145-instrument test catalog', () => {
   assert.deepEqual(
     PRODUCT_MONITOR_MODULES.filter((item) => item.enabled).map((item) => item.key),
     ['hh-current-state', 'mini-ipip-20'],
@@ -57,16 +57,19 @@ test('public monitor discovery is wired without adding a seventh main navigation
     readFile('app/[locale]/wu-xing/page.tsx', 'utf8'),
     readFile('lib/site-navigation-model.js', 'utf8'),
   ])
-  assert.match(header, /MindBodyMonitorStrip/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|mind-body-monitor-strip/)
   assert.match(home, /entry\.selfCheck\.href/)
-  assert.match(home, /Check how you’re doing/)
-  assert.match(home, /Проверить своё состояние/)
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/)
+  assert.match(home, /Wellbeing & inner resources/)
+  assert.match(home, /Психологическое состояние и ресурсы/)
   assert.doesNotMatch(home, /<MindBodyMonitorHome/)
   assert.doesNotMatch(home, /<MindBodyMonitorStrip/)
   assert.match(wuXing, /DAOIST ALCHEMY/)
   assert.match(wuXing, /18 resource stages/)
   assert.match(wuXing, /author-developed symbolic resource and development model/)
-  assert.match(wuXing, /\/services#available-services/)
+  assert.match(wuXing, /client\/tests/)
+  assert.match(wuXing, /https:\/\/t\.me\/AndyTherapist/)
+  assert.doesNotMatch(wuXing, /services#available-services/)
   assert.doesNotMatch(navigation, /mind-body|monitor|wu-xing/i)
 })
 
@@ -107,15 +110,13 @@ test('homepage monitor offers soft focus choices and recommendation framing', as
 })
 
 
-test('public state-check strip stays compact and softly carded on mobile', async () => {
-  const [strip, styles] = await Promise.all([
-    readFile('components/mind-body-monitor-strip.tsx', 'utf8'),
-    readFile('app/ia-v2.css', 'utf8'),
-  ])
+test('legacy public header banner stays removed on every locale', async () => {
+  const header = await readFile('components/public-site-header.tsx', 'utf8')
 
-  assert.match(strip, /Проверьте своё состояние — бесплатно/)
-  assert.match(styles, /\.mind-body-monitor-strip__inner\s*\{[^}]*border-radius:\s*18px/)
-  assert.match(styles, /\.mind-body-monitor-strip__actions a\s*\{[^}]*min-height:\s*35px/)
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.mind-body-monitor-strip__actions a\s*\{[^}]*min-height:\s*34px/)
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?font-size:\s*10\.5px/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|mind-body-monitor-strip|data-monitor-strip/)
+  await assert.rejects(readFile('components/mind-body-monitor-strip.tsx', 'utf8'), { code: 'ENOENT' })
+  assert.ok(header.includes('<SiteNavigation locale={locale} />'))
+  for (const locale of ['en', 'ru', 'es']) {
+    assert.ok(header.includes(`${locale}: { home:`))
+  }
 })

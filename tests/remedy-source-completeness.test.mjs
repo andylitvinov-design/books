@@ -26,7 +26,7 @@ test('Arsenicum Album preserves the complete message188 source card', () => {
 test('Aconitum keeps the reviewed message31 primary paragraphs separate from source references', () => {
   const ru = body(path.join(projectRoot, 'content/remedies/ru/aconitum.md'))
   const [primary, supplementary] = ru.split('## Дополнительные материалы и наблюдения')
-  assert.equal(primary.trim(), `Красивое высокогорное растение - Аконит.
+  const expectedPrimary = `Красивое высокогорное растение - Аконит.
 
 Ядовитое. Еще оно называется Борец, Царь-трава, черный корень, черное зелье.
 
@@ -38,7 +38,17 @@ test('Aconitum keeps the reviewed message31 primary paragraphs separate from sou
 
 Помогает справиться со стрессами, сердцебиением, чувством уязвимости.
 
-Помогает наработать чувство безопасности, уверенности в себе, состояние Безстрашного стража.`)
+Помогает наработать чувство безопасности, уверенности в себе, состояние Безстрашного стража.`
+  const reflectionAddition = "\n\n## ТРАНСФОРМАЦИЯ\n\nОбраз для самонаблюдения, а не обещание лечебного действия препарата.\n\nДо: Испуг и чувство уязвимости: перед опасностью кажется, что нет ни сил, ни опоры.\n\nПосле (желаемое состояние): Спокойная смелость и уверенность в себе: внутренний страж чувствует опору и готов встретить трудность."
+  const assertReviewedPrimary = (value) => {
+    assert.equal(value.split(reflectionAddition).length - 1, 1, 'exactly one reviewed reflective addition')
+    assert.ok(value.endsWith(`${reflectionAddition}\n\n`), 'reflective addition stays separate at the end of the primary card')
+    assert.equal(value.replace(reflectionAddition, '').trim(), expectedPrimary, 'all reviewed message31 paragraphs remain exact')
+  }
+  assertReviewedPrimary(primary)
+  assert.throws(() => assertReviewedPrimary(primary.replace('Красивое', 'Изменённое')), 'reject changed original source text')
+  assert.throws(() => assertReviewedPrimary(primary.replace(reflectionAddition, '')), 'reject missing reflective addition')
+  assert.throws(() => assertReviewedPrimary(primary + reflectionAddition + '\n\n'), 'reject duplicate reflective addition')
   assert.equal(supplementary.split('\n').filter((line) => line.startsWith('- ')).length, 15)
   const en = readFileSync(path.join(projectRoot, 'content/remedies/en/aconitum.md'), 'utf8')
   assert.match(en, /translation_provenance: translated-from-ru/)

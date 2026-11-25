@@ -1,0 +1,377 @@
+{
+  "version": 1,
+  "sourceCommit": "36465c79517e09d210f888b33032e92fa3276c28",
+  "policy": "Serve the exact existing public source photographs directly from same-origin static files. New copies are byte-identical; no crop, recolor, upscale or generated replacement. Original archive hyperlinks remain unchanged.",
+  "assets": [
+    {
+      "source": "https://psitrends.com/images/Screenshot_11.png",
+      "path": "/images/reiki-originals/794cfcfefcd334d0ae36.png",
+      "sha256": "794cfcfefcd334d0ae36610843aaa9e325a195936b33aa1539dfec70739f73a9",
+      "bytes": 33775,
+      "width": 223,
+      "height": 312,
+      "format": "png",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_20.png",
+      "path": "/academy/reiki-yggdrasil/source/advanced-runes.png",
+      "gitBlobSha": "8f9beaa9f18110308b0344a433a56c8fabb0b862",
+      "bytes": 100523,
+      "existingAsset": true,
+      "sha256": "826efd83490c2613dcad9bad9cc36434dc752c1d3ae42a51b5b52d09a3baf1f9",
+      "width": 348,
+      "height": 341,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_25.png",
+      "path": "/images/reiki-originals/30f30a7950c13076560d.png",
+      "sha256": "30f30a7950c13076560d1a15d268fc623e5c24f03acd34e2064d0b71740933fc",
+      "bytes": 65052,
+      "width": 346,
+      "height": 231,
+      "format": "png",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_27.png",
+      "path": "/academy/reiki-yggdrasil/source/temple-studies.png",
+      "gitBlobSha": "2a9168974896a5e625b439183e2529130df05d9d",
+      "bytes": 62219,
+      "existingAsset": true,
+      "sha256": "39691a704fa927a2fe99d915c5024b5e11a1c8f22102c0176b95995f7e5e4406",
+      "width": 414,
+      "height": 231,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_31.png",
+      "path": "/images/reiki-originals/e1636751191028f08d88.png",
+      "sha256": "e1636751191028f08d8818a91b73e545e11d49e6730cae5a74ba3256a1202e03",
+      "bytes": 47949,
+      "width": 323,
+      "height": 250,
+      "format": "png",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_33.png",
+      "path": "/academy/reiki-yggdrasil/source/western-tradition.png",
+      "gitBlobSha": "6288c13fe208130fede9ccbcebc1367e30c61115",
+      "bytes": 111898,
+      "existingAsset": true,
+      "sha256": "c99ae9d35d17482972e84502267f9e742caacfa3e540affeb3dcf7c11c9d1826",
+      "width": 363,
+      "height": 358,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_34.png",
+      "path": "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+      "gitBlobSha": "f5c59f59948a2ae4dd5c95e932018c1aa5f0c54f",
+      "bytes": 48453,
+      "existingAsset": true,
+      "sha256": "25ae21f19727e71a32e4d458e1809b4318706b65a0ce92335f9d1cd578743b66",
+      "width": 390,
+      "height": 308,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_35.png",
+      "path": "/academy/reiki-yggdrasil/source/slavic-tradition.png",
+      "gitBlobSha": "e90f577638dcbfb7bd48110cd3aacb4f66dbe75b",
+      "bytes": 73144,
+      "existingAsset": true,
+      "sha256": "82a49a57b5f71c9a75e7f469db99a44cd41d161d90d50e5dea3db1f341c28012",
+      "width": 367,
+      "height": 293,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_37.png",
+      "path": "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
+      "gitBlobSha": "d8d589e1dcb5a6744bbe9ccd57b88bf93b299fd3",
+      "bytes": 58053,
+      "existingAsset": true,
+      "sha256": "4b49b9a389fce0ed179858d07b171861c2dbfa540eecda81f51d3f0d6eb24986",
+      "width": 279,
+      "height": 369,
+      "format": "png"
+    },
+    {
+      "source": "https://psitrends.com/images/Screenshot_38.png",
+      "path": "/images/reiki-originals/42987fc8179692bb67e1.png",
+      "sha256": "42987fc8179692bb67e1de793404ddf336cb8a26156ff2eaaf046d829c545684",
+      "bytes": 46039,
+      "width": 308,
+      "height": 202,
+      "format": "png",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/atlantean-warriors-temple-of-quetzalcoatl-archaeological-site-of-tula-mexico-toltec-civilization-479635169-57a4f6c23df78cf459636602.jpg",
+      "path": "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
+      "gitBlobSha": "7a841e3b77a7774be7dcd052e1a41b7627c2a1e2",
+      "bytes": 130890,
+      "existingAsset": true,
+      "sha256": "f37fb98a5a3088470402ca4addfda5077769d6a74b482c991e05374588bb486c",
+      "width": 1500,
+      "height": 997,
+      "format": "jpeg"
+    },
+    {
+      "source": "https://psitrends.com/images/e4ae997b3930ab36404c5305907fdba4.jpg",
+      "path": "/academy/reiki-yggdrasil/source/basic-program.jpg",
+      "gitBlobSha": "517f9dd756f8964c8bf116c7684ccb13ba394ff9",
+      "bytes": 103744,
+      "existingAsset": true,
+      "sha256": "3d749b4a1e3ffedbc8d0d18af4c1b48fce0669adccc5a9c10111bbdf24ae2d28",
+      "width": 563,
+      "height": 752,
+      "format": "jpeg"
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-20_22-10-58.jpg",
+      "path": "/images/reiki-originals/d88053840086c146b0d2.jpg",
+      "sha256": "d88053840086c146b0d2c6722ca2c0fc0d80e4e68816283cc5fbde53d46284b2",
+      "bytes": 25378,
+      "width": 300,
+      "height": 448,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-20_22-19-43.jpg",
+      "path": "/images/reiki-originals/8ac1c24cda4b4a7e09bb.jpg",
+      "sha256": "8ac1c24cda4b4a7e09bbca4b199cda202fb203b2ed079dd821ed7ae00ab674d3",
+      "bytes": 38217,
+      "width": 600,
+      "height": 400,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-20_23-25-00.jpg",
+      "path": "/academy/reiki-yggdrasil/source/school-introduction.jpg",
+      "gitBlobSha": "3e7b71f4bf3199901bc202480cdc4c05ede48317",
+      "bytes": 175409,
+      "existingAsset": true,
+      "sha256": "040d744775a0ca36b936e67edf128685daec50fb7573252168fb18b96b63435d",
+      "width": 1280,
+      "height": 800,
+      "format": "jpeg"
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-23-44.jpg",
+      "path": "/images/reiki-originals/acdaa67e6fc53c5b783c.jpg",
+      "sha256": "acdaa67e6fc53c5b783c0e17a3c555a2a886f407d5560f87dc2097b01ae83473",
+      "bytes": 142481,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-25-10.jpg",
+      "path": "/images/reiki-originals/7a5a1f77fd2bcbd6facc.jpg",
+      "sha256": "7a5a1f77fd2bcbd6facc05f65e357f0c7c51ae52abd53ed33142976c4a3bfbe0",
+      "bytes": 114135,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-25-16.jpg",
+      "path": "/images/reiki-originals/03d9dbb4c7e074a9678f.jpg",
+      "sha256": "03d9dbb4c7e074a9678f0c63073b86e352804a3b0966bf05dd594f439b56ffe3",
+      "bytes": 67351,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-25-18 (2).jpg",
+      "path": "/images/reiki-originals/8c9ac32bec78e3b46449.jpg",
+      "sha256": "8c9ac32bec78e3b464496f08caad6988770c54378c77fda01e5c65d2bdc2a79a",
+      "bytes": 74858,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-25-18.jpg",
+      "path": "/images/reiki-originals/41ff78f0c1017d1abb69.jpg",
+      "sha256": "41ff78f0c1017d1abb69d321d601a58e2dcdd738e38f76875b225a62e81d2b0e",
+      "bytes": 95529,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-01-25_21-25-21.jpg",
+      "path": "/images/reiki-originals/4e429119f278a3248bd7.jpg",
+      "sha256": "4e429119f278a3248bd7a412e97fa2e5cbfb595fa9dc0541e5f3c045ce2fae10",
+      "bytes": 108338,
+      "width": 1280,
+      "height": 589,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-03-30_17-52-38.jpg",
+      "path": "/academy/reiki-yggdrasil/source/program-overview.jpg",
+      "gitBlobSha": "193ad1083f8011bd1585eece0178017a91170685",
+      "bytes": 52150,
+      "existingAsset": true,
+      "sha256": "7295b736da9318a5f35f2da11cb100bda853dffbde9750fea8cd0d3c13c900cb",
+      "width": 723,
+      "height": 424,
+      "format": "jpeg"
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-07-10_08-26-39.jpg",
+      "path": "/images/reiki-originals/20bf908393de3fc9f91f.jpg",
+      "sha256": "20bf908393de3fc9f91f29f1aa9807cb0917227e7b8c7a05f213277daaaf19cf",
+      "bytes": 22833,
+      "width": 420,
+      "height": 280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-09-06_22-34-07.jpg",
+      "path": "/images/reiki-originals/4e255c9ae00becfb2ce1.jpg",
+      "sha256": "4e255c9ae00becfb2ce1de2bb88b4d357ce7b2cf2d03db5c3bf46a211e219afd",
+      "bytes": 146021,
+      "width": 1280,
+      "height": 853,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-09-06_22-37-18.jpg",
+      "path": "/images/reiki-originals/07f996ea70fb6b1a234b.jpg",
+      "sha256": "07f996ea70fb6b1a234b97d4a243e509748e83545d9848fd44dc7a1855548133",
+      "bytes": 62297,
+      "width": 1280,
+      "height": 854,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-09-06_22-39-19.jpg",
+      "path": "/images/reiki-originals/401a292e0138873dddd6.jpg",
+      "sha256": "401a292e0138873dddd68cc9d142fd3e733a2b086585cd0fbbf1dda37365d183",
+      "bytes": 128183,
+      "width": 1280,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-09-06_23-00-19.jpg",
+      "path": "/images/reiki-originals/e71e9e2f1f5e3d1af387.jpg",
+      "sha256": "e71e9e2f1f5e3d1af38750d222a0a9f9ba072075b42ff918f03d3988129198a7",
+      "bytes": 77932,
+      "width": 1280,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-10-11_01-10-43 (2).jpg",
+      "path": "/images/reiki-originals/6d23f3510a7daaaf92b8.jpg",
+      "sha256": "6d23f3510a7daaaf92b85259fb95675f90ae5a2beb03600a727890532bd6d732",
+      "bytes": 202672,
+      "width": 731,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-10-11_01-10-43 (3).jpg",
+      "path": "/images/reiki-originals/819618b5e01dee7161d2.jpg",
+      "sha256": "819618b5e01dee7161d2f0cd68bbc8d0f59e0b38d2d116ce28cc2a48496f5a90",
+      "bytes": 192212,
+      "width": 734,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-10-11_01-10-43 (4).jpg",
+      "path": "/images/reiki-originals/9803dba1e2cd3c06c6d3.jpg",
+      "sha256": "9803dba1e2cd3c06c6d3af3a76ba170cf00bc1f09449444c366da07b5d6c428d",
+      "bytes": 173713,
+      "width": 714,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-10-11_01-10-43 (5).jpg",
+      "path": "/images/reiki-originals/89494e17196b20993592.jpg",
+      "sha256": "89494e17196b20993592a935d663786d5a597a622aa5cb56163219aab2a95c69",
+      "bytes": 199644,
+      "width": 856,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2023-10-11_01-10-43 (6).jpg",
+      "path": "/images/reiki-originals/4c5bc74d2e098d372b83.jpg",
+      "sha256": "4c5bc74d2e098d372b83f9cc51faaccc68e9e534da40a46879a0064afd7d8030",
+      "bytes": 174039,
+      "width": 828,
+      "height": 1280,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2024-01-16_10-52-31.jpg",
+      "path": "/images/reiki-originals/54f26c50413a24566711.jpg",
+      "sha256": "54f26c50413a24566711227c4ff9564931f5280e23e59669fd2e5c4cdc368373",
+      "bytes": 95163,
+      "width": 947,
+      "height": 658,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/photo_2024-01-16_10-53-50.jpg",
+      "path": "/images/reiki-originals/3b32ad771623f747dc4b.jpg",
+      "sha256": "3b32ad771623f747dc4b39eab2f603dd03a316e931e530fc2ad8e61d4fa1e99e",
+      "bytes": 142419,
+      "width": 939,
+      "height": 956,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/tulumhypnotherapy.jpg",
+      "path": "/images/reiki-originals/94addfde98c6a141e455.jpg",
+      "sha256": "94addfde98c6a141e455b6e029e5b5eab1322dfcac0267e6e15a7e2a0dcc8809",
+      "bytes": 39810,
+      "width": 512,
+      "height": 348,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    },
+    {
+      "source": "https://psitrends.com/images/world_magic_traditions_overview.jpg",
+      "path": "/images/reiki-originals/438d74a3005eb8e4869b.jpg",
+      "sha256": "438d74a3005eb8e4869b2b877218e59fc12d02edb4d4da9218cca9bfd1f03f51",
+      "bytes": 7251,
+      "width": 275,
+      "height": 183,
+      "format": "jpeg",
+      "originalBytesPreserved": true
+    }
+  ]
+}

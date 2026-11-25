@@ -1237,13 +1237,13 @@
     "en": [],
     "ru": [
       {
-        "src": "https://www.psitrends.com/images/video_2024-01-16_11-06-01.mp4",
-        "poster": "https://www.psitrends.com/images/Снимок экрана 2024-01-16 111348.png",
+        "src": "https://psitrends.com/images/video_2024-01-16_11-06-01.mp4",
+        "poster": "/images/tantra-reiki/participant-1-poster.png",
         "type": "video/mp4"
       },
       {
-        "src": "https://www.psitrends.com/images/video.mp4",
-        "poster": "https://www.psitrends.com/images/Снимок экрана 2024-01-16 111728.png",
+        "src": "https://psitrends.com/images/video.mp4",
+        "poster": "/images/tantra-reiki/participant-2-poster.png",
         "type": "video/mp4"
       }
     ]

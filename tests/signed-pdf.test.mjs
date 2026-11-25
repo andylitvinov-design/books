@@ -14,9 +14,12 @@ test('ordinary two-remedy recommendation keeps a bounded signed closing block in
   for (const locale of ['en', 'ru']) {
     const pdf = buildPrescriptionPdf(getDocumentSample('recommendation', locale), locale, origin)
     const streams = pageStreams(pdf)
-    assert.ok(streams.length <= 2, `${locale} sample must remain compact`)
-    assert.equal((streams.at(-1).match(/\/Signature Do/g) ?? []).length, 1, `${locale} final page must remain signed`)
-    assert.ok(streams.slice(0, -1).every((stream) => !/\/Signature Do/.test(stream)), `${locale} signature must stay on the final page`)
+    // The core document stays signed and bounded; the educational remedy
+    // appendix follows separately, without falsely signing each extra page.
+    const signaturePages = streams.flatMap((stream, index) => /\/Signature Do/.test(stream) ? [index] : [])
+    assert.equal(signaturePages.length, 1, `${locale} core document needs one signature`)
+    assert.ok(signaturePages[0] <= 1, `${locale} core document must remain compact before appendices`)
+    assert.ok(streams.slice(signaturePages[0] + 1).every(stream => !/\/Signature Do/.test(stream)))
   }
 })
 
@@ -61,14 +64,30 @@ for (const [name, build, input, dateY, lineY] of [
     }
     const final = streams.at(-1)
     assert.equal((final.match(/\/Signature Do/g) ?? []).length, 1)
-    assert.match(final, new RegExp(`68 ${dateY} Tm \\(Odesa, Ukraine, 2026-09-18`))
-    const { width, height, offsetX, gap } = DOCUMENT_TEMPLATE.signature
-    assert.ok(final.includes(`q ${width} 0 0 ${height} ${68 + offsetX} ${lineY + gap} cm /Signature Do Q`))
-    assert.ok(dateY - (lineY + gap + height) > 30)
-    const contentBeforeDate = final.slice(0, final.indexOf(`68 ${dateY} Tm`))
-    const baselines = [...contentBeforeDate.matchAll(/1 0 0 1 \d+(?:\.\d+)? (\d+(?:\.\d+)?) Tm/g)].map(match => Number(match[1]))
-    assert.ok(baselines.every(baseline => baseline > dateY + 10), 'prior content must end above date and signature')
+    // Recommendation signatures flow with the content; invoices retain their
+    // approved fixed geometry. Verify actual spacing rather than old coordinates.
+    if (name === 'recommendation') {
+      const stamp = final.match(/q 207 0 0 81\.5 83 (\d+(?:\.\d+)?) cm \/Signature Do Q/)
+      const dateMatch = final.match(/1 0 0 1 318 (\d+(?:\.\d+)?) Tm \(2026-09-18\)/)
+      assert.ok(stamp, 'original handwritten signature restored to a wide white closing')
+      assert.ok(dateMatch, 'date belongs to the signed body closing')
+      const stampY = Number(stamp[1])
+      const dateY = Number(dateMatch[1])
+      assert.ok(stampY > 98 && stampY + 81.5 < 755, 'wide signature stays above reserved footer')
+      assert.ok(dateY > 80 && dateY < 755)
+      assert.equal(stampY, dateY - 5, 'handwriting and date align within the white body closing')
+      assert.doesNotMatch(final, /Tm \(\+380 93 478 88 27\)/)
+    } else {
+      const dateMatch = final.match(/1 0 0 1 68 (\d+(?:\.\d+)?) Tm \(Odesa, Ukraine, 2026-09-18/)
+      assert.ok(dateMatch, 'date stays in the original invoice closing')
+      const actualDateY = Number(dateMatch[1])
+      assert.equal(actualDateY, dateY)
+      const { width, height, offsetX, gap } = DOCUMENT_TEMPLATE.signature
+      assert.ok(final.includes('q ' + width + ' 0 0 ' + height + ' ' + (68 + offsetX) + ' ' + (lineY + gap) + ' cm /Signature Do Q'))
+      assert.ok(actualDateY - (lineY + gap + height) > 30)
+      assert.ok(lineY - 72 > 63)
+      assert.match(final, /Tm \(\+380 93 478 88 27\)/)
+    }
     assert.match(final, /Tm \(Andrii Litvinov\)/)
-    assert.match(final, /Tm \(\+380 93 478 88 27\)/)
   })
 }

@@ -153,6 +153,12 @@ And in this moment is revealed
 
 pure life force.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Intense fear constricts your inner world; it feels impossible to gather yourself.
+
+After (desired state): A sense of inner support and clarity that allows you to choose a manageable action.
+
 ## RITUAL
 
 • take 2–5 drops of ROCK ROSE under the tongue

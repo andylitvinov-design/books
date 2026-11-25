@@ -6,6 +6,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import archive from "@/data/academy/yggdrasil-source-archive.generated.json";
 import { yggdrasilSourceImages } from "@/data/academy/yggdrasil-program-map";
+import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type SourceLocale = "en" | "ru";
@@ -127,7 +128,7 @@ export function YggdrasilSourceArchivePage({ locale }: { locale: PublicLocale })
                   <figure key={src}>
                     <a href={src} target="_blank" rel="noreferrer">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={displayUrl} alt={label} loading="lazy" decoding="async" />
+                      <img src={reikiPhotoUrl(displayUrl, 640)} alt={label} loading="lazy" decoding="async" />
                     </a>
                     <figcaption>{label}</figcaption>
                   </figure>

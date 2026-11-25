@@ -42,7 +42,8 @@ test('makes source and supplementary material secondary without dropping canonic
 
   assert.match(renderer, /Дополнительные материалы и наблюдения/)
   assert.match(renderer, /Additional materials and observations/)
-  assert.match(renderer, /open=\{false\}/)
+  assert.match(renderer, /expandSupplementary = false/)
+  assert.match(renderer, /open=\{expandSupplementary\}/)
   assert.match(styles, /\.remedy-supplementary\s*\{[^}]*margin-top:\s*1\.25rem/)
   assert.match(styles, /\.remedy-source-reference\s*\{[^}]*font-size:\s*13px/)
 })

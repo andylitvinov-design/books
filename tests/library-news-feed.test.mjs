@@ -1,0 +1,94 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import test from 'node:test'
+
+const source = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('Library defaults to Latest news feed with videos, articles and guides while keeping Books access',()=>{
+  const page = source('app/[locale]/library/page.tsx')
+  const hub = source('components/library-hub.tsx')
+  const feed = source('components/library-feed.tsx')
+  const css = source('components/library-feed.module.css')
+  assert.match(page,/rawView === "videos".*"latest"/)
+  assert.match(hub,/library-media-switch/)
+  assert.match(hub,/view=books/)
+  assert.match(hub,/view=videos/)
+  assert.match(hub,/LibraryFeed/)
+  assert.match(feed,/role="group"/)
+  assert.match(feed,/setLimit\(current => current \+ 8\)/)
+  assert.match(feed,/youtube-nocookie\.com\/embed/)
+  assert.match(feed,/setPlayingId\(item.id\)/)
+  assert.match(css,/@media\(max-width:640px\)/)
+  assert.match(css,/grid-template-columns:116px minmax\(0,1fr\)/)
+})
+
+test('Only explicitly approved public YouTube resources are included, not client private storage',()=>{
+  const lib=source('lib/clients/material-library.js')
+  const publicVideos=source('lib/clients/public-library-videos.js')
+  const publicFeed=source('lib/public-library-feed.ts')
+  const pubApi=source('app/api/admin/materials/[id]/route.js')
+  const mediaApi=source('app/api/admin/materials/[id]/media/route.js')
+  const migration=source('supabase/migrations/20261018014000_hh_public_materials_library_feed.sql')
+  const ownerUI=source('components/practitioner-materials-cabinet.jsx')
+  assert.match(publicVideos,/where kind='youtube' and status='ready' and public_locale=\$1 and published_at is not null/)
+  assert.match(publicVideos,/parseSessionYouTubeUrl\(row.url\)/)
+  assert.doesNotMatch(publicVideos,/object_key|storage\.from|privateMediaObjectStream/)
+  assert.match(lib,/export \{ listPublicLibraryVideos \} from "\.\/public-library-videos\.js"/)
+  assert.match(publicFeed,/from "@\/lib\/clients\/public-library-videos"/)
+  assert.doesNotMatch(publicVideos,/session-delivery-storage|private-video-object-store|privateMediaObjectStream/)
+  assert.match(pubApi,/ownerMaterialRequest/)
+  assert.match(pubApi,/data.reviewed!==true/)
+  assert.match(ownerUI,/window.confirm/)
+  assert.match(ownerUI,/Publish to Library/)
+  assert.match(ownerUI,/This original file stays private/)
+  assert.match(mediaApi,/ownerMaterialRequest/)
+  assert.match(migration,/published_at IS NULL OR/)
+  assert.match(migration,/kind='youtube' AND status='ready'/)
+  assert.match(migration,/hh_material_public_feed_idx/)
+})
+
+test('News feed includes approved existing video mirrors without new upload or generating avatars',()=>{
+  const hub=source('components/library-hub.tsx')
+  for(const id of ['Y4K4piEwwA8','s30Y42IwPcg','ILyRWyHtJoE','AE8Pelpo424','Cz6SxXJNZbw','Q9NvYECKWuc'])
+    assert.ok(hub.includes(id),'Missing approved video '+id)
+  assert.match(hub,/publishedIds\.has\(youtubeId\)/)
+  assert.match(hub,/sort\(\(a, b\)/)
+  assert.match(hub,/publishedVideos\.map/)
+  assert.match(hub,/articles\.map/)
+})
+
+// Public Views other than Latest do not initialize the public database readers.
+test("Library keeps book/Dao views out of the public feed and approved-video readers",()=>{
+  const page=source("app/[locale]/library/page.tsx")
+  assert.doesNotMatch(page,/^import \{ loadPublicLibraryFeed \}/m)
+  assert.match(page,/view === "books" \|\| view === "dao"/)
+  assert.match(page,/await import\("@\/lib\/public-library-feed"\)/)
+  assert.match(page,/view === "videos"[\s\S]*await import\("@\/lib\/video-discovery\/approved-meditations"\)/)
+  const legacy=source("app/[locale]/services/psychohomeopathy/page.tsx")
+  assert.match(legacy,/permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/)
+  assert.doesNotMatch(legacy,/PersonalServiceLanding/)
+})
+
+test('External owner-library videos retain their real source labels and exact MyTube topic tags',()=>{
+  const hub=source('components/library-hub.tsx')
+  const metadata=hub.slice(hub.indexOf('const PUBLIC_YOUTUBE_EDITORIAL_METADATA'),hub.indexOf('/** The Library and Ideas surfaces share'))
+  const rows=[
+    ['1Evwgu369Jw','Royal Society of Arts','emotional-intimacy'],
+    ['8KkKuTCFvzI','TED','family-relationships'],
+    ['Rqj7besaGg4','TEDx Talks','money-mindset'],
+    ['l_NYrWqUR40','TED-Ed','self-confidence'],
+    ['w-HYZv6HzAs','TEDx Talks','self-confidence'],
+    ['RcGyVTAoXEU','TED','stress-relief'],
+    ['F2hc2FLOdhI','TED','stress-relief'],
+    ['eBz7iUJu9UM','TED-Ed','personal-growth'],
+    ['7JtjrPcMjBg','Анна Выровая','self-acceptance'],
+    ['KoZn6cKbxXg','Валерий Гут','self-confidence'],
+  ]
+  for(const [id,sourceLabel,topicTag] of rows){
+    assert.ok(metadata.includes('"'+id+'"'),'Missing editorial source '+id)
+    assert.ok(metadata.includes('sourceLabel:"'+sourceLabel+'"'),'Wrong source label for '+id)
+    assert.ok(metadata.includes('topicTags:["'+topicTag+'"]'),'Missing exact MyTube topic '+id)
+  }
+  assert.match(hub,/sourceLabel: editorial\?\.sourceLabel \|\| "Holistic House"/)
+  assert.match(hub,/topicTags: editorial\?\.topicTags \|\| \[\]/)
+})

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 
 import { classifyNativeLink } from '@/lib/native/deep-link-policy'
-import { isNativePsiAlchemy, openExternalNativeUrl } from '@/lib/native/client'
+import { isNativePsiAlchemy, isNativeHolisticHouse, openExternalNativeUrl } from '@/lib/native/client'
 
 const publicHost = 'codex-public-book-library.vercel.app'
 
@@ -16,7 +16,10 @@ export function NativeExternalLinks() {
       let url: URL
       try { url = new URL(anchor.href) } catch { return }
       if (!/^https?:$/.test(url.protocol)) return
-      if (url.host === publicHost) {
+      // Holistic House navigates its own authenticated Cabinet as normal.
+      // This must not open its internal pages in an external browser.
+      if (isNativeHolisticHouse() && url.host === window.location.host) return
+      if (!isNativeHolisticHouse() && url.host === publicHost) {
         if (classifyNativeLink(url.toString()).kind === 'private-blocked') event.preventDefault()
         return
       }

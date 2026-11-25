@@ -6,11 +6,24 @@ import { documentActionUrls, remedyCountLabel, resultLocale, createDocumentLinkC
 test('all admin actions explicitly carry selected locale for either document',()=>{
  for(const id of ['receipt-id','recommendation-id'])for(const locale of ['en','ru']){
   const urls=documentActionUrls(id,locale)
-  assert.equal(urls.open,`/admin/documents/${id}?locale=${locale}`)
+  assert.equal(urls.open,`/admin/documents/${id}/session-preview?locale=${locale}`)
+  assert.equal(documentActionUrls(id,locale,'payment').open,`/admin/documents/${id}/view?locale=${locale}`)
   assert.equal(urls.pdf,`/admin/api/documents/${id}/pdf?locale=${locale}`)
-  assert.equal(urls.print,`/admin/documents/${id}?locale=${locale}&print=1`)
+  assert.equal(urls.print,`/admin/documents/${id}/view?locale=${locale}&print=1`)
  }
 })
+test('session invitations copy the full client page while legacy document links remain separate',async()=>{
+ const load=async()=>({selector:'session-selector',secret:'session-only-secret'})
+ const session=createDocumentLinkCache(load,{scope:'session'})
+ assert.equal(await session.url('ru','https://preview.invalid'),
+   'https://preview.invalid/ru/client/session/session-selector#session-only-secret')
+ assert.equal(await session.url('en','https://preview.invalid'),
+   'https://preview.invalid/en/client/session/session-selector#session-only-secret')
+ const legacy=createDocumentLinkCache(load)
+ assert.equal(await legacy.url('ru','https://preview.invalid'),
+   'https://preview.invalid/ru/prescriptions/session-selector#session-only-secret')
+})
+
 test('preference defaults and remedy grammar',()=>{
  assert.equal(resultLocale('ru'),'ru');assert.equal(resultLocale('en'),'en');assert.equal(resultLocale(undefined),'en');assert.equal(resultLocale('invalid'),'en')
  assert.equal(remedyCountLabel(1),'1 remedy');assert.equal(remedyCountLabel(2),'2 remedies')
@@ -49,21 +62,24 @@ test('Documents Ready uses compact cards with a primary cabinet action and three
 })
 
 
-test('Documents Ready compact mode hides secondary actions under More and uses dense mobile controls', async () => {
+test('Documents Ready exposes all document actions without hidden More controls and remains mobile responsive', async () => {
   const [result, cabinet, actions, css] = await Promise.all([
     readFile('components/consultation-result.jsx', 'utf8'),
     readFile('components/cabinet-link-actions.jsx', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
-    readFile('app/globals.css', 'utf8'),
+    readFile('components/consultation-report.css', 'utf8'),
   ])
   assert.match(result, /consultation-result-topbar--dense/)
   assert.match(result, /consultation-result-summary--dense/)
   assert.match(result, /consultation-document-card--dense/)
   assert.match(cabinet, /consultation-cabinet-card--dense/)
   assert.match(cabinet, /Copy link/)
-  assert.match(actions, /consultation-document-more/)
-  assert.match(actions, />\{ru \? 'Ещё' : 'More'\}</)
-  assert.match(css, /Documents Ready — single-screen mobile density/)
-  assert.match(css, /consultation-cabinet-actions--dense[\s\S]*grid-template-columns: 1\.35fr 1fr 1fr/)
-  assert.match(css, /consultation-document-actions > a[\s\S]*min-height: 36px/)
+  assert.doesNotMatch(actions, /<details/)
+  assert.match(actions, /consultation-share-action/)
+  assert.match(actions, /consultation-document-secondary-actions/)
+  assert.match(actions, /href=\{urls\.print\}/)
+  assert.match(actions, /href=\{editHref\}/)
+  assert.match(actions, /revokeLabel : reactivateLabel/)
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
 })

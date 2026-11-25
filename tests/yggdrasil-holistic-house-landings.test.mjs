@@ -44,13 +44,14 @@ test("all 177 canonical Reiki Yggdrasil attunements have English text", async ()
   }
 });
 
-test("English Yggdrasil UI no longer forces Russian detailed content", async () => {
+test("English Yggdrasil UI uses English settings and source-based step summaries", async () => {
   const component = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.doesNotMatch(component, /className="yggdrasil-step-body" lang="ru"/);
   assert.match(component, /lang=\{locale === "ru" \? "ru"/);
   assert.match(component, /englishSettings/);
-  assert.match(component, /levelOneEnglish/);
-  assert.match(component, /genericEnglishSource/);
+  assert.match(component, /yggdrasilStepSummary/);
+  assert.doesNotMatch(component, /genericEnglishSource/);
+  assert.doesNotMatch(component, /levelOneEnglish/);
 });
 
 test("full EN and RU historical source pages are preserved", async () => {
@@ -98,7 +99,7 @@ test("full EN and RU historical source pages are preserved", async () => {
   assert.equal(archive.verification.sourceContentImages.ru, 14);
 });
 
-test("source-photo set stays preserved in the archive while the program hub uses only contextual imagery", async () => {
+test("historical source-photo set stays in the archive while the program hub no longer renders a photo catalog", async () => {
   const [programMap, landing, sourceArchive] = await Promise.all([
     readFile("data/academy/yggdrasil-program-map.ts", "utf8"),
     readFile("components/yggdrasil-program-landing.tsx", "utf8"),
@@ -114,11 +115,55 @@ test("source-photo set stays preserved in the archive while the program hub uses
     assert.match(programMap, new RegExp(`id: "${id}"`));
   }
 
+  assert.doesNotMatch(landing, /yggdrasil-source-gallery/);
   assert.doesNotMatch(landing, /sourcePhotos = yggdrasilSourceImages\.filter/);
-  assert.doesNotMatch(landing, /className="yggdrasil-source-gallery"/);
-  assert.match(landing, /academyStory\[locale\]/);
-  assert.match(landing, /yggdrasilAcademyStoryImages\[item\.key\]/);
+  assert.match(landing, /YggdrasilTestimonials/);
   assert.match(sourceArchive, /normalizedSourceUrl/);
   assert.match(sourceArchive, /preserved\?\.label\[locale\]/);
   assert.match(sourceArchive, /preserved\?\.localUrl \?\? src/);
+});
+
+test("the canonical Reiki Yggdrasil landing has no obsolete site/archive footer links", async () => {
+  const recordPage = await readFile("components/academy-record-page.tsx", "utf8");
+  const program = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
+  assert.ok(recordPage.includes('!isCanonicalYggdrasil ? (\n          <footer className="academy-source-footer">'));
+  assert.ok(!recordPage.includes('href="https://reiki-yggdrasil.vercel.app/"'));
+  assert.ok(!recordPage.includes('className="academy-secondary-source" href={record.sourceUrl}'));
+  assert.ok(!recordPage.includes('reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a'));
+  assert.ok(!program.includes("yggdrasil-source-footer-panel"));
+});
+
+test("Higher Magic adopts the My Reiki chrome and keeps canonical curriculum and module routes", async () => {
+  const [page, header, curriculumView, theme, detail, dock, model, data] = await Promise.all([
+    readFile("components/yggdrasil-module-landing.tsx", "utf8"),
+    readFile("components/my-reiki-header.tsx", "utf8"),
+    readFile("components/yggdrasil-curriculum.tsx", "utf8"),
+    readFile("components/yggdrasil-curriculum-visual.module.css", "utf8"),
+    readFile("components/yggdrasil-pro-detail.module.css", "utf8"),
+    readFile("app/unified-mobile-dock.css", "utf8"),
+    readFile("lib/unified-mobile-dock.mjs", "utf8"),
+    readFile("data/academy/yggdrasil-curriculum.json", "utf8"),
+  ]);
+  const branch = page.slice(page.indexOf('if (module.slug === "higher-magic")'), page.indexOf('<main className={"academy-reading-shell'));
+  assert.ok(branch.includes('data-my-reiki-module-landing="higher-magic"'));
+  assert.ok(branch.includes('<MyReikiHeader locale={locale} program="pro" modulePath="/academy/reiki/yggdrasil/higher-magic"'));
+  assert.ok(branch.includes('<ReikiProgramNavigation locale={locale} active="pro"'));
+  assert.ok(branch.includes('program=pro#reiki-pro-higher-magic'));
+  assert.ok(branch.includes('href="#yggdrasil-curriculum-title"'));
+  assert.ok(branch.includes('visualTheme="my-reiki"'));
+  assert.ok(branch.includes('<PublicConsultationCta locale={locale} />'));
+  assert.ok(branch.includes('<YggdrasilSideNavigation locale={locale} activeSlug={module.slug} />'));
+  assert.ok(!branch.includes('<PublicSiteHeader'));
+  assert.ok(header.includes('modulePath ? "/" + language + modulePath'));
+  assert.ok(curriculumView.includes('visualTheme?: "navy" | "my-reiki"'));
+  assert.ok(curriculumView.includes("step.settings.map((setting)"));
+  assert.ok(theme.includes('[data-visual-theme="my-reiki"] .stageNavigation'));
+  assert.ok(theme.includes('white-space: normal') && theme.includes('overflow-wrap: anywhere'));
+  assert.ok(detail.includes('support-therapy-cabinet-hd.webp') && detail.includes('#fff19b,#ffc520 44%,#e99000'));
+  assert.ok(dock.includes('body:has([data-my-reiki-module-landing])'));
+  assert.ok(model.includes('higher-magic') && model.includes('return "reiki"'));
+  const level = JSON.parse(data).levels.find(item => item.id === 7);
+  assert.equal(level.steps.length, 6);
+  assert.equal(level.steps.reduce((sum, step) => sum + step.settings.length, 0), 32);
+  assert.equal(level.steps.reduce((sum, step) => sum + (step.video?.videos?.filter(v => Boolean(v.youtubeId)).length ?? 0), 0), 13);
 });

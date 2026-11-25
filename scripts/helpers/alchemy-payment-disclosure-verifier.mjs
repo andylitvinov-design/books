@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict'
+
+// A public request must never reveal payment methods until the assigned
+// practitioner confirms a time. The existing cart is opened afterward.
+export async function assertAlchemyBookingGate(main, expect, width) {
+  const pricing = main.locator('[data-alchemy-booking-formats]')
+  await expect(pricing).toHaveCount(1)
+  const entry=pricing.locator('[data-messenger-only-contact]')
+  await expect(entry).toHaveCount(1)
+  const book=entry.locator('summary')
+  await expect(book).toHaveCount(1)
+  const bounds = await book.boundingBox()
+  assert.ok(bounds && bounds.height >= 44 && bounds.width >= 44,
+    'Messenger request is a reachable 44px touch target at width ' + width)
+  assert.equal(await entry.locator('a[data-messenger-only-channel]').count(),2,
+    'Both customer-initiated WhatsApp and Telegram options exist')
+  assert.equal(await pricing.locator('form,input[type="email"],input[type="tel"]').count(),0,
+    'No unverified website contact-only booking can be submitted')
+  assert.equal(await pricing.locator('[data-alchemy-payment-disclosure]').count(), 0,
+    'Legacy payment links must be removed from the public booking page')
+  assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
+    'Cart methods require a server-confirmed booking')
+  assert.equal(await pricing.locator('[data-booking-cart-link]').count(), 0,
+    'No cart link before master confirmation')
+}
+
+// Kept for the older verifier importing the existing file.
+export const assertAlchemyPaymentsExpanded = assertAlchemyBookingGate

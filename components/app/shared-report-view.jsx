@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
+import { ReportInvitationGate } from '@/components/app/report-invitation-gate'
+import { ReportGoogleSignInPrompt } from '@/components/app/report-google-signin-prompt'
 
 const COPY = {
   en: {
@@ -9,7 +12,7 @@ const COPY = {
     unavailable: 'This report link is unavailable or has expired.',
     save: 'Save this report to my Cabinet',
     saving: 'Preparing secure save…',
-    note: 'You can read this report without an account. If you save it, sign in with Google: this report will be stored in your Cabinet and your client profile with Andy will be linked to that Google Account.',
+    note: 'You can read this report without an account. If you save it, sign in with Google: this report will be pinned under Personal analysis in your Cabinet and your client profile with Andy will be linked to that Google Account.',
     viewOnly: 'This invitation is for viewing only. Saving to a personal Cabinet is not enabled for this link.',
     authUnavailable: 'Google sign-in is not connected in this environment yet.',
     guest: 'Guest access',
@@ -20,7 +23,7 @@ const COPY = {
     unavailable: 'Эта ссылка на отчёт недоступна или больше не действует.',
     save: 'Сохранить отчёт в личном кабинете',
     saving: 'Подготавливаем безопасное сохранение…',
-    note: 'Этот отчёт можно читать без аккаунта. Если вы сохраняете его, войдите через Google: отчёт появится в вашем кабинете, а ваша карточка клиента у Andy свяжется с этим Google-аккаунтом.',
+    note: 'Этот отчёт можно читать без аккаунта. Если вы сохраняете его, войдите через Google: отчёт закрепится во вкладке «Личный анализ», а ваша карточка клиента у Andy свяжется с этим Google-аккаунтом.',
     viewOnly: 'Эта ссылка предназначена только для просмотра. Сохранение в личный кабинет для неё не разрешено.',
     authUnavailable: 'В этом окружении вход через Google пока не подключён.',
     guest: 'Гостевой доступ',
@@ -53,6 +56,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [viewing, setViewing] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -93,7 +97,7 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
         operationId: crypto.randomUUID(),
       })
       if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
+        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
       }
       const auth = await api('auth/start', { locale, intentId: intent.id })
@@ -110,21 +114,44 @@ export function SharedReportView({ selector, locale = 'en', appAvailable = false
     return <section className="shared-report-card"><p role="alert">{c.unavailable}</p></section>
 
   return (
-    <section className="shared-report-card">
-      <p className="about-kicker">{c.guest}</p>
-      <AssessmentReading record={report} locale={locale} />
-      {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
-      <div className="shared-report-save">
-        <p>{c.note}</p>
-        {grant?.saveAllowed ? (
+    <ReportInvitationGate
+      locale={locale}
+      onViewed={() => setViewing(true)}
+      kind="report"
+      saveAction={grant?.saveAllowed && appAvailable ? (
+        <>
           <button type="button" onClick={save} disabled={busy}>
             {busy ? c.saving : c.save}
           </button>
-        ) : (
-          <p className="cabinet-test-note">{c.viewOnly}</p>
-        )}
-        {error && <p role="alert" className="client-entry-error">{error}</p>}
-      </div>
-    </section>
+          {error && <p role="alert" className="client-entry-error">{error}</p>}
+        </>
+      ) : null}
+    >
+      <section className="shared-report-card">
+        <p className="about-kicker">{c.guest}</p>
+        <AssessmentReading record={report} locale={locale} />
+        <div className="hh-analysis-detail-download"><DownloadPractitionerReport report={report} locale={locale} /></div>
+        {grant?.expiresAt && <p className="cabinet-test-note">{c.expires}: {new Date(grant.expiresAt).toLocaleString(locale)}</p>}
+        <div className="shared-report-save">
+          <p>{c.note}</p>
+          {grant?.saveAllowed && appAvailable ? (
+            <button type="button" onClick={save} disabled={busy}>
+              {busy ? c.saving : c.save}
+            </button>
+          ) : (
+            <p className="cabinet-test-note">{appAvailable ? c.viewOnly : c.authUnavailable}</p>
+          )}
+          {error && <p role="alert" className="client-entry-error">{error}</p>}
+        </div>
+      </section>
+      <ReportGoogleSignInPrompt
+        locale={locale}
+        viewing={viewing}
+        enabled={Boolean(grant?.saveAllowed && appAvailable)}
+        onGoogle={save}
+        busy={busy}
+        error={error}
+      />
+    </ReportInvitationGate>
   )
 }

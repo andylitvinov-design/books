@@ -26,8 +26,8 @@ test('mixed bilingual PDFs link only the canonical remedy and omit internal stat
  for(const locale of ['ru','en']){
   const projection=getClientPrescription(record,locale)
   const pdf=buildPrescriptionPdf(projection,locale,'https://synthetic.invalid').toString('latin1')
-  assert.equal((pdf.match(/\/Subtype \/Link/g)||[]).length,1)
-  assert.ok(pdf.includes(`/URI (https://synthetic.invalid/${locale}/homeopathy/remedies/arsenicum-album)`))
+  assert.equal((pdf.match(/\/Subtype \/Link/g)||[]).length,2)
+  assert.equal(pdf.split(`/URI (https://synthetic.invalid/${locale}/homeopathy/remedies/arsenicum-album)`).length-1,2)
   assert.doesNotMatch(pdf,/source_only|custom|NaN|undefined/)
   assert.equal(projection.items[1].displayName,'Medorrhinum')
   assert.equal(projection.items[2].displayName,'Example New Remedy XYZ')

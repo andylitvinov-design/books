@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -129,6 +130,10 @@ const copy = {
     contactText: "Можно пройти экспресс-диагностику или написать мне, чтобы вместе определить текущую ступень и ближайший шаг.",
     contactCta: "Написать @AndyTherapist",
     note: "Это авторская символическая модель ресурса и развития, а не медицинская шкала здоровья и не диагноз.",
+    readingNav: ["О модели", "Все 18 ступеней", "С чего начать"],
+    pathHint: "Прочитайте модель → найдите знакомую ступень → определите ближайший шаг.",
+    personalStageCta: "Обсудить мою ступень",
+    testsCta: "Открыть бесплатные тесты самонаблюдения",
   },
   en: {
     title: "Wu Xing Levels: a beginner’s map",
@@ -178,6 +183,10 @@ const copy = {
     contactText: "Use the express assessment or write to me so we can identify the current stage and the nearest step together.",
     contactCta: "Message @AndyTherapist",
     note: "This is an author-developed symbolic resource and development model, not a medical health scale or diagnosis.",
+    readingNav: ["Understand the model", "All 18 stages", "Find your next step"],
+    pathHint: "Read the model → recognise your stage → identify the nearest step.",
+    personalStageCta: "Discuss my current stage",
+    testsCta: "Explore free self-reflection tests",
   },
   es: {
     title: "Niveles Wu Xing: mapa para principiantes",
@@ -227,6 +236,10 @@ const copy = {
     contactText: "Haz la evaluación breve o escríbeme para identificar juntos la etapa actual y el paso más cercano.",
     contactCta: "Escribir a @AndyTherapist",
     note: "Es un modelo simbólico de recurso y desarrollo creado por el autor, no una escala médica de salud ni un diagnóstico.",
+    readingNav: ["Comprender el modelo", "Las 18 etapas", "Tu siguiente paso"],
+    pathHint: "Lee el modelo → reconoce tu etapa → identifica el siguiente paso.",
+    personalStageCta: "Hablar sobre mi etapa",
+    testsCta: "Explorar pruebas gratuitas de autorreflexión",
   },
 } as const;
 
@@ -250,7 +263,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: text.description,
     alternates: {
       canonical: `/${locale}/wu-xing`,
-      languages: { en: "/en/wu-xing", ru: "/ru/wu-xing", es: "/es/wu-xing" },
+      languages: { en: "/en/wu-xing", ru: "/ru/wu-xing", es: "/es/wu-xing", "x-default": "/en/wu-xing" },
     },
   };
 }
@@ -271,9 +284,18 @@ export default async function WuXingPage({ params }: Props) {
         <h1>{text.heading}</h1>
         <span className={styles.badge}>{text.badge}</span>
         <p className={styles.lead}>{text.lead}</p>
+        <p className={styles.pathHint}>{text.pathHint}</p>
+        <figure className={styles.heroPhoto}>
+          <Image src="/academy/reiki-yggdrasil/source/eastern-tradition.png" alt="" fill sizes="(max-width: 800px) 100vw, 800px" loading="lazy" />
+        </figure>
+        <nav className={styles.jumpNav} aria-label={text.badge}>
+          <a href="#model-overview">{text.readingNav[0]}</a>
+          <a href="#all-stages">{text.readingNav[1]}</a>
+          <a href="#next-step">{text.readingNav[2]}</a>
+        </nav>
       </header>
 
-      <section className={styles.minute}>
+      <section id="model-overview" className={styles.minute}>
         <div>
           <p className="homeopathy-kicker">01</p>
           <h2>{text.minuteTitle}</h2>
@@ -321,7 +343,7 @@ export default async function WuXingPage({ params }: Props) {
         </div>
       </section>
 
-      <section className={styles.baseStages}>
+      <section id="all-stages" className={styles.baseStages}>
         <div className={styles.sectionHeading}>
           <p className="homeopathy-kicker">04</p>
           <h2>{text.baseTitle}</h2>
@@ -353,33 +375,46 @@ export default async function WuXingPage({ params }: Props) {
           <div>
             <h3>{text.three[1].title}</h3>
             {stages.slice(7, 14).map((stage) => (
-              <div className={styles.compactStage} key={stage.number}>
-                <span>{stage.number}</span>
-                <strong>{stage.name}</strong>
-                <small>{stage.resource}</small>
-              </div>
+              <article className={styles.compactStage} key={stage.number}>
+                <span className={styles.stageNumber}>{stage.number}</span>
+                <div>
+                  <div className={styles.stageTop}>
+                    <h4>{stage.name}</h4>
+                    <span>{stage.resource}</span>
+                  </div>
+                  <p>{stage.short}</p>
+                </div>
+              </article>
             ))}
           </div>
           <div>
             <h3>{text.three[2].title}</h3>
             {stages.slice(14).map((stage) => (
-              <div className={styles.compactStage} key={stage.number}>
-                <span>{stage.number}</span>
-                <strong>{stage.name}</strong>
-                <small>{stage.resource}</small>
-              </div>
+              <article className={styles.compactStage} key={stage.number}>
+                <span className={styles.stageNumber}>{stage.number}</span>
+                <div>
+                  <div className={styles.stageTop}>
+                    <h4>{stage.name}</h4>
+                    <span>{stage.resource}</span>
+                  </div>
+                  <p>{stage.short}</p>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className={styles.start}>
+      <section id="next-step" className={styles.start}>
         <div>
           <p className="homeopathy-kicker">06</p>
           <h2>{text.diagnosticTitle}</h2>
           <p>{text.diagnosticText}</p>
+          <div className={styles.nextActions}>
+            <a className="hh-primary" href="https://t.me/AndyTherapist" rel="noreferrer" target="_blank">{text.personalStageCta}</a>
+            <Link href={`/${locale}/client/tests`}>{text.testsCta} →</Link>
+          </div>
         </div>
-        <Link className="hh-primary" href={`/${locale}/services#available-services`}>{text.diagnosticCta}</Link>
       </section>
 
       <section className={styles.deeper}>

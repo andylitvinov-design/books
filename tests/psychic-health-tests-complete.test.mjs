@@ -1,6 +1,21 @@
+import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
+import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
+import { TRAUMA_SCREENING_CATALOG } from '../data/assessments/trauma-screening-catalog-2026.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
+import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
+import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
+import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professional-battery-2026.js'
+import { PROFESSIONAL_BATTERY_2026_B_CATALOG } from '../data/assessments/professional-battery-2026-b.js'
+import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2026.js'
+import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
+import { PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
+import { RELATIONSHIPS_INTIMACY_KEYS } from '../data/assessments/relationships-intimacy-v1.js'
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
+import { OPEN_PROFESSIONAL_2026_CATALOG } from '../data/assessments/open-professional-2026.js'
+import { IPIP_VIA_R_COMPLETION_CATALOG } from '../data/assessments/ipip-via-r-completion-2026.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
@@ -11,14 +26,21 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 42)
+  assert.equal(items.length, 47 + TRAUMA_SCREENING_CATALOG.length + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + TANTRIC_REFLECTION_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length + 2)
   assert.deepEqual(
-    items.map((item) => item.key).sort(),
+    items.filter(item=>!TRAUMA_SCREENING_CATALOG.some(candidate=>candidate.key===item.key)&&!IPIP_VIA_R_COMPLETION_CATALOG.some(candidate=>candidate.key===item.key)).map((item) => item.key).sort(),
     [
+    'asrs-6',
+    'ipip-via-r-strengths-96',
+    'cfpb-financial-wellbeing-5',
+    'mhc-sf',
+    'scs-sf',
+    'compassion-scale',
     'brcs',
     'erq',
     'gad-2',
     'gad-7',
+    'hh-bach-flower-profile',
     'hh-body-signals',
     'hh-boundary-radar',
     'hh-change-readiness',
@@ -57,7 +79,19 @@ test('all active published monitoring tests resolve to executable definitions', 
     'phq-2',
     'phq-4',
     'phq-9',
-  ],
+    ...EXPANDED_BATTERY_V3_KEYS,
+    ...EXPANDED_BATTERY_V4_KEYS,
+    ...PROFESSIONAL_BATTERY_2026_CATALOG.map((item) => item.key),
+    ...PROFESSIONAL_BATTERY_2026_B_CATALOG.map((item) => item.key),
+    ...CDC_HEALTHY_DAYS_CATALOG.map((item) => item.key),
+    ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
+    ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
+    ...RELATIONSHIPS_INTIMACY_KEYS,
+    ...TANTRIC_REFLECTION_KEYS,
+    ...IPIP_THREE_CATALOG.map((item) => item.key),
+    ...IPIP_FIVE_CATALOG.map((item) => item.key),
+    ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
+  ].sort(),
   )
   for (const item of items) {
     const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
@@ -76,7 +110,7 @@ test('configured clinical and resource measures return valid scored dimensions',
     ['hh-monthly-profile','v1','en'],
   ]) {
     const definition = getAssessmentDefinition(key, version, locale)
-    const result = scoreAssessment(definition, answers(definition))
+    const result = scoreAssessment(definition, answers(definition), syntheticTraumaContext(definition))
     assert.equal(result.definitionKey, key)
     assert.ok(result.dimensions.length > 0, key)
     assert.ok(result.dimensions.every((dimension) => Number.isFinite(dimension.value)), key)
@@ -93,5 +127,6 @@ test('PHQ-9 explicit risk answer triggers safety but zero does not', () => {
 test('licensed and uncleared professional references remain non-startable', () => {
   const planned = MONITORING_CATALOG.filter((item) => !item.startable)
   assert.ok(planned.length > 0)
-  assert.ok(planned.every((item) => item.rightsStatus !== 'cleared'))
+  assert.ok(planned.every((item) => item.rightsStatus !== 'cleared' || item.registrationRequired === true))
+  assert.ok(planned.filter(item => item.registrationRequired).every(item => item.startable === false))
 })

@@ -28,6 +28,30 @@ test('accepts real Maya image basenames that include spaces', () => {
   assert.equal(validateMediaRequest('maya', 'photo_82@06-01-2025_09-33-38_thumb (1).jpg'), true)
 })
 
+test('creates safe immutable external media URLs for hosted functions', () => {
+  const sha = 'f55b1f830e62efb5867faf3a4df8940e90080a7d'
+  const alchemy = media.mediaSourceUrlFor('alchemy', 'post_10_01.jpg', sha)
+  const maya = media.mediaSourceUrlFor('maya', 'photo_82@06-01-2025_09-33-38_thumb (1).jpg', sha)
+
+  assert.equal(alchemy, `https://raw.githubusercontent.com/andylitvinov-design/books/${sha}/source-books/book-1-alchemy-soul/media/post_10_01.jpg`)
+  assert.ok(maya.includes('photo_82%4006-01-2025_09-33-38_thumb%20(1).jpg'))
+  assert.equal(media.mediaSourceUrlFor('unknown', 'post_10_01.jpg', sha), undefined)
+  assert.equal(media.mediaSourceUrlFor('dao', '../photo.jpg', sha), undefined)
+  assert.equal(media.mediaSourceUrlFor('dao', 'post_103_1.jpg', 'bad-revision'), undefined)
+  assert.equal(media.mediaSourceUrlFor('dao', 'not-a-photo.html', sha), undefined)
+})
+
+test('prevents the full media corpus being traced into serverless functions', async () => {
+  const config = await readFile('next.config.ts', 'utf8')
+  const route = await readFile('app/media/[series]/[file]/route.ts', 'utf8')
+  assert.ok(config.includes('outputFileTracingExcludes'))
+  assert.ok(config.includes('"/media/**"'))
+  assert.ok(!config.includes('"/media/[series]/[file]": ['))
+  assert.ok(route.includes('getRemoteMediaResponse'))
+  assert.ok(route.includes('if (series === "maya") return getRemoteMediaResponse(series, file, revision)'))
+  assert.ok(route.includes('VERCEL_GIT_COMMIT_SHA'))
+})
+
 test('keeps reader metadata complete for canonical book records', () => {
   const book = getBookById('alchemy-homeopathy-foundations')
 
@@ -62,13 +86,13 @@ test('reads known image assets with a cacheable MIME type only', async () => {
 
 test('provides the server reader, not-found, and strict media route modules', async () => {
   const [readerPage, notFoundPage, mediaRoute] = await Promise.all([
-    readFile('app/books/[bookId]/page.tsx', 'utf8').catch(() => ''),
+    readFile('app/[locale]/books/[bookId]/page.tsx', 'utf8').catch(() => ''),
     readFile('app/books/[bookId]/not-found.tsx', 'utf8').catch(() => ''),
     readFile('app/media/[series]/[file]/route.ts', 'utf8').catch(() => ''),
   ])
 
   await Promise.all([
-    access('app/books/[bookId]/page.tsx'),
+    access('app/[locale]/books/[bookId]/page.tsx'),
     access('app/books/[bookId]/not-found.tsx'),
     access('app/media/[series]/[file]/route.ts'),
   ])

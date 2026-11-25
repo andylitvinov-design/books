@@ -1,0 +1,1919 @@
+import { deepFreeze } from '../../lib/assessments/contracts.js'
+
+// Source: andylitvinov-design/report/src/data/mockData.js (115 items, 38 essences).
+// The original repository contained example answers (some >0): examples are NOT pre-filled here.
+// Each immutable locale definition carries a SHA-256 hash of canonicalJSON(body).
+// This is an exploratory mapping to traditional Bach descriptions, not a clinical assessment.
+export const BACH_PROFILE_EN_V1 = deepFreeze({
+  "id": "7c0f681b-f9b2-4d97-b71a-f85d425ef965",
+  "key": "hh-bach-flower-profile",
+  "version": "v1",
+  "instrumentLocale": "en",
+  "translationVersion": "hh-bach-en-v1",
+  "timeframe": "general",
+  "scoringKey": "bach-flower",
+  "scoringVersion": "v1",
+  "resultVersion": "v1",
+  "title": "Bach Flower Emotional Profile",
+  "source": {
+    "title": "My Alchemist — Bach: Situation, Character, Control",
+    "url": "https://github.com/andylitvinov-design/report/blob/main/src/data/mockData.js",
+    "status": "legacy-site-questionnaire-adapted-for-self-reflection",
+    "reviewedAt": "2026-10-11",
+    "note": "Non-diagnostic traditional flower-essence matching; no clinical treatment or efficacy claims."
+  },
+  "answerScale": {
+    "min": 0,
+    "max": 5
+  },
+  "responseAnchors": [
+    "Not at all",
+    "Slightly",
+    "Noticeably",
+    "Strongly",
+    "Very strongly",
+    "Extremely"
+  ],
+  "questions": [
+    {
+      "id": "bach.situation.01",
+      "text": "I feel guilty and tormented by remorse.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Pine",
+      "theme": "guilt and self-blame"
+    },
+    {
+      "id": "bach.situation.02",
+      "text": "I doubt my own judgment and look to other people's opinions for guidance.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Cerato",
+      "theme": "doubt in one's judgment"
+    },
+    {
+      "id": "bach.situation.03",
+      "text": "I feel hurt, angry, suspicious, jealous, or resentful.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Holly",
+      "theme": "anger, envy, and jealousy"
+    },
+    {
+      "id": "bach.situation.04",
+      "text": "I feel detached from what is happening because my thoughts are somewhere else.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Clematis",
+      "theme": "detachment from the present"
+    },
+    {
+      "id": "bach.situation.05",
+      "text": "Disorder or dirt upsets me; I feel a strong need for cleanliness.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Crab Apple",
+      "theme": "discomfort with imperfections"
+    },
+    {
+      "id": "bach.situation.06",
+      "text": "I feel abandoned by fate and unfairly treated by life.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Willow",
+      "theme": "resentment and perceived injustice"
+    },
+    {
+      "id": "bach.situation.07",
+      "text": "I feel compelled to impose my will on others.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Vine",
+      "theme": "control and imposing one's will"
+    },
+    {
+      "id": "bach.situation.08",
+      "text": "I doubt my resilience and fear losing my sense of self during change.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Walnut",
+      "theme": "adjusting to change"
+    },
+    {
+      "id": "bach.situation.09",
+      "text": "I feel sad or melancholic without understanding why.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Mustard",
+      "theme": "unexplained melancholy"
+    },
+    {
+      "id": "bach.situation.10",
+      "text": "I feel less capable or valuable than other people.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Larch",
+      "theme": "low confidence"
+    },
+    {
+      "id": "bach.situation.11",
+      "text": "I feel like an exhausted fighter who is not allowed to give up.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Oak",
+      "theme": "duty and endurance"
+    },
+    {
+      "id": "bach.situation.12",
+      "text": "I am frightened of a particular person or event.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Mimulus",
+      "theme": "specific fears"
+    },
+    {
+      "id": "bach.situation.13",
+      "text": "I am too accommodating and find it hard to say no.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Centaury",
+      "theme": "difficulty saying no"
+    },
+    {
+      "id": "bach.situation.14",
+      "text": "I am stuck in sadness about a past event or relationship.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Honeysuckle",
+      "theme": "attachment to the past"
+    },
+    {
+      "id": "bach.situation.15",
+      "text": "I am overwhelmed by responsibilities and feel unable to manage them all.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Elm",
+      "theme": "responsibility overload"
+    },
+    {
+      "id": "bach.situation.16",
+      "text": "I have withdrawn and do not feel involved in what is happening.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Water Violet",
+      "theme": "withdrawal and distance"
+    },
+    {
+      "id": "bach.situation.17",
+      "text": "I feel torn between options and cannot decide what I truly want.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Scleranthus",
+      "theme": "indecision"
+    },
+    {
+      "id": "bach.situation.18",
+      "text": "I am impatient; everything seems to move too slowly.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Impatiens",
+      "theme": "impatience"
+    },
+    {
+      "id": "bach.situation.19",
+      "text": "I long for attention, compassion, or emotional support.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Heather",
+      "theme": "seeking attention or reassurance"
+    },
+    {
+      "id": "bach.situation.20",
+      "text": "I keep up a cheerful appearance although I feel troubled inside.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Agrimony",
+      "theme": "concealing distress"
+    },
+    {
+      "id": "bach.situation.21",
+      "text": "I am tired and want to rest.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Olive",
+      "theme": "deep tiredness and depletion"
+    },
+    {
+      "id": "bach.situation.22",
+      "text": "I keep making the same mistakes and do not understand why.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Chestnut Bud",
+      "theme": "repeating mistakes"
+    },
+    {
+      "id": "bach.situation.23",
+      "text": "Unwanted thoughts and repetitive inner conversations exhaust me.",
+      "required": true,
+      "section": "situation",
+      "remedy": "White Chestnut",
+      "theme": "repetitive unwanted thoughts"
+    },
+    {
+      "id": "bach.situation.24",
+      "text": "I feel trapped, desperate, and unsure what to do next.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Sweet Chestnut",
+      "theme": "despair and feeling trapped"
+    },
+    {
+      "id": "bach.situation.25",
+      "text": "I take on too much and push myself to one hundred and fifty percent.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Vervain",
+      "theme": "excessive zeal"
+    },
+    {
+      "id": "bach.situation.26",
+      "text": "I am still shaken by a painful event or sudden shock.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Star of Bethlehem",
+      "theme": "emotional shock"
+    },
+    {
+      "id": "bach.situation.27",
+      "text": "I feel suddenly overwhelmed and out of balance.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Rose",
+      "theme": "panic and acute fear"
+    },
+    {
+      "id": "bach.situation.28",
+      "text": "I feel depleted, worn out, and deeply exhausted.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Olive",
+      "theme": "deep tiredness and depletion"
+    },
+    {
+      "id": "bach.situation.29",
+      "text": "I push myself through relentless discipline and deny myself pleasure.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Water",
+      "theme": "rigid self-discipline"
+    },
+    {
+      "id": "bach.situation.30",
+      "text": "I have lost hope and feel resigned to my circumstances.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Gorse",
+      "theme": "hopelessness"
+    },
+    {
+      "id": "bach.situation.31",
+      "text": "I feel threatened by fears that seem difficult to control.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Aspen",
+      "theme": "vague or unexplained fears"
+    },
+    {
+      "id": "bach.situation.32",
+      "text": "I feel hurt or unloved because I expected more appreciation or recognition.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Chicory",
+      "theme": "unmet needs for appreciation"
+    },
+    {
+      "id": "bach.situation.33",
+      "text": "I am so absorbed in other people's problems that I overlook my own feelings.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Red Chestnut",
+      "theme": "worry about others"
+    },
+    {
+      "id": "bach.situation.34",
+      "text": "I feel discouraged, sceptical, and pessimistic.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Gentian",
+      "theme": "discouragement and pessimism"
+    },
+    {
+      "id": "bach.situation.35",
+      "text": "I feel close to an emotional explosion and fear losing self-control.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Cherry Plum",
+      "theme": "fear of losing control"
+    },
+    {
+      "id": "bach.situation.36",
+      "text": "I feel overly critical, irritable, or confused about being tolerant.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Beech",
+      "theme": "critical judgments"
+    },
+    {
+      "id": "bach.situation.37",
+      "text": "I feel mentally sluggish and without enough energy to begin a task.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Hornbeam",
+      "theme": "mental fatigue before tasks"
+    },
+    {
+      "id": "bach.situation.38",
+      "text": "I feel panic.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Rose",
+      "theme": "panic and acute fear"
+    },
+    {
+      "id": "bach.character.01",
+      "text": "My sense of duty weighs on me; I worry that commitments will be too demanding.",
+      "required": true,
+      "section": "character",
+      "remedy": "Elm",
+      "theme": "responsibility overload"
+    },
+    {
+      "id": "bach.character.02",
+      "text": "I undervalue myself and do not trust my own abilities.",
+      "required": true,
+      "section": "character",
+      "remedy": "Larch",
+      "theme": "low confidence"
+    },
+    {
+      "id": "bach.character.03",
+      "text": "I avoid difficult conversations because I need harmony.",
+      "required": true,
+      "section": "character",
+      "remedy": "Agrimony",
+      "theme": "concealing distress"
+    },
+    {
+      "id": "bach.character.04",
+      "text": "I feel drained and believe I have already given everything I can.",
+      "required": true,
+      "section": "character",
+      "remedy": "Olive",
+      "theme": "deep tiredness and depletion"
+    },
+    {
+      "id": "bach.character.05",
+      "text": "I often expect something bad to happen without a clear reason.",
+      "required": true,
+      "section": "character",
+      "remedy": "Aspen",
+      "theme": "vague or unexplained fears"
+    },
+    {
+      "id": "bach.character.06",
+      "text": "My criticism or self-criticism keeps me stuck.",
+      "required": true,
+      "section": "character",
+      "remedy": "Beech",
+      "theme": "critical judgments"
+    },
+    {
+      "id": "bach.character.07",
+      "text": "I find it difficult to say no, even when I want to.",
+      "required": true,
+      "section": "character",
+      "remedy": "Centaury",
+      "theme": "difficulty saying no"
+    },
+    {
+      "id": "bach.character.08",
+      "text": "I remain strongly attached to events from the past.",
+      "required": true,
+      "section": "character",
+      "remedy": "Honeysuckle",
+      "theme": "attachment to the past"
+    },
+    {
+      "id": "bach.character.09",
+      "text": "A task can feel like an enormous mountain before I even begin.",
+      "required": true,
+      "section": "character",
+      "remedy": "Hornbeam",
+      "theme": "mental fatigue before tasks"
+    },
+    {
+      "id": "bach.character.10",
+      "text": "I fear my own emotions because I might lose control if I let them out.",
+      "required": true,
+      "section": "character",
+      "remedy": "Cherry Plum",
+      "theme": "fear of losing control"
+    },
+    {
+      "id": "bach.character.11",
+      "text": "Suspicion and jealousy can quickly turn into anger for me.",
+      "required": true,
+      "section": "character",
+      "remedy": "Holly",
+      "theme": "anger, envy, and jealousy"
+    },
+    {
+      "id": "bach.character.12",
+      "text": "I often do not know whether I really want what I have chosen.",
+      "required": true,
+      "section": "character",
+      "remedy": "Scleranthus",
+      "theme": "indecision"
+    },
+    {
+      "id": "bach.character.13",
+      "text": "I repeatedly blame myself for what I have done.",
+      "required": true,
+      "section": "character",
+      "remedy": "Pine",
+      "theme": "guilt and self-blame"
+    },
+    {
+      "id": "bach.character.14",
+      "text": "I am very sensitive and find some circumstances difficult to bear.",
+      "required": true,
+      "section": "character",
+      "remedy": "Star of Bethlehem",
+      "theme": "emotional shock"
+    },
+    {
+      "id": "bach.character.15",
+      "text": "I shift between decisions and cannot settle on one choice.",
+      "required": true,
+      "section": "character",
+      "remedy": "Scleranthus",
+      "theme": "indecision"
+    },
+    {
+      "id": "bach.character.16",
+      "text": "I feel that I must finish every task, no matter the cost.",
+      "required": true,
+      "section": "character",
+      "remedy": "Oak",
+      "theme": "duty and endurance"
+    },
+    {
+      "id": "bach.character.17",
+      "text": "I push forward with so much enthusiasm that I can exhaust myself and others.",
+      "required": true,
+      "section": "character",
+      "remedy": "Vervain",
+      "theme": "excessive zeal"
+    },
+    {
+      "id": "bach.character.18",
+      "text": "A sense of injustice is hard for me to let go of.",
+      "required": true,
+      "section": "character",
+      "remedy": "Willow",
+      "theme": "resentment and perceived injustice"
+    },
+    {
+      "id": "bach.character.19",
+      "text": "I ask others for reassurance because I distrust my own judgment.",
+      "required": true,
+      "section": "character",
+      "remedy": "Cerato",
+      "theme": "doubt in one's judgment"
+    },
+    {
+      "id": "bach.character.20",
+      "text": "Under pressure I can panic and find my mind going blank.",
+      "required": true,
+      "section": "character",
+      "remedy": "Rock Rose",
+      "theme": "panic and acute fear"
+    },
+    {
+      "id": "bach.character.21",
+      "text": "I impose rigid discipline on myself and demand too much.",
+      "required": true,
+      "section": "character",
+      "remedy": "Rock Water",
+      "theme": "rigid self-discipline"
+    },
+    {
+      "id": "bach.character.22",
+      "text": "I tend to push my wishes and decisions onto others.",
+      "required": true,
+      "section": "character",
+      "remedy": "Vine",
+      "theme": "control and imposing one's will"
+    },
+    {
+      "id": "bach.character.23",
+      "text": "Small imperfections, disorder, or dirt make me anxious.",
+      "required": true,
+      "section": "character",
+      "remedy": "Crab Apple",
+      "theme": "discomfort with imperfections"
+    },
+    {
+      "id": "bach.character.24",
+      "text": "I often feel hopeless and doubt that anything can improve.",
+      "required": true,
+      "section": "character",
+      "remedy": "Gorse",
+      "theme": "hopelessness"
+    },
+    {
+      "id": "bach.character.25",
+      "text": "I retreat so far into myself that I stop noticing others.",
+      "required": true,
+      "section": "character",
+      "remedy": "Water Violet",
+      "theme": "withdrawal and distance"
+    },
+    {
+      "id": "bach.character.26",
+      "text": "I become absorbed in other thoughts and lose interest in the present situation.",
+      "required": true,
+      "section": "character",
+      "remedy": "Clematis",
+      "theme": "detachment from the present"
+    },
+    {
+      "id": "bach.character.27",
+      "text": "I am impatient and have trouble waiting.",
+      "required": true,
+      "section": "character",
+      "remedy": "Impatiens",
+      "theme": "impatience"
+    },
+    {
+      "id": "bach.character.28",
+      "text": "I absorb other people's emotions and struggle to keep healthy boundaries.",
+      "required": true,
+      "section": "character",
+      "remedy": "Red Chestnut",
+      "theme": "worry about others"
+    },
+    {
+      "id": "bach.character.29",
+      "text": "Melancholy sometimes leaves me unable to act.",
+      "required": true,
+      "section": "character",
+      "remedy": "Mustard",
+      "theme": "unexplained melancholy"
+    },
+    {
+      "id": "bach.character.30",
+      "text": "I can become apathetic and indifferent to what is happening around me.",
+      "required": true,
+      "section": "character",
+      "remedy": "Wild Rose",
+      "theme": "apathy and resignation"
+    },
+    {
+      "id": "bach.character.31",
+      "text": "I prefer withdrawing and find it difficult to work with others.",
+      "required": true,
+      "section": "character",
+      "remedy": "Water Violet",
+      "theme": "withdrawal and distance"
+    },
+    {
+      "id": "bach.character.32",
+      "text": "Repetitive thoughts make it difficult to focus on what matters.",
+      "required": true,
+      "section": "character",
+      "remedy": "White Chestnut",
+      "theme": "repetitive unwanted thoughts"
+    },
+    {
+      "id": "bach.character.33",
+      "text": "I rely on other people to support my plans because I do not trust myself.",
+      "required": true,
+      "section": "character",
+      "remedy": "Walnut",
+      "theme": "adjusting to change"
+    },
+    {
+      "id": "bach.character.34",
+      "text": "I repeat the same mistakes through inattention.",
+      "required": true,
+      "section": "character",
+      "remedy": "Chestnut Bud",
+      "theme": "repeating mistakes"
+    },
+    {
+      "id": "bach.character.35",
+      "text": "I become discouraged and expect my plans to fail.",
+      "required": true,
+      "section": "character",
+      "remedy": "Gentian",
+      "theme": "discouragement and pessimism"
+    },
+    {
+      "id": "bach.character.36",
+      "text": "I carry an excessive sense of responsibility.",
+      "required": true,
+      "section": "character",
+      "remedy": "Elm",
+      "theme": "responsibility overload"
+    },
+    {
+      "id": "bach.character.37",
+      "text": "I may help or interfere and then expect gratitude.",
+      "required": true,
+      "section": "character",
+      "remedy": "Chicory",
+      "theme": "unmet needs for appreciation"
+    },
+    {
+      "id": "bach.character.38",
+      "text": "I sometimes let matters drift until I feel trapped by the consequences.",
+      "required": true,
+      "section": "character",
+      "remedy": "Wild Rose",
+      "theme": "apathy and resignation"
+    },
+    {
+      "id": "bach.character.39",
+      "text": "Resentment can make me feel like a powerless victim of circumstances.",
+      "required": true,
+      "section": "character",
+      "remedy": "Willow",
+      "theme": "resentment and perceived injustice"
+    },
+    {
+      "id": "bach.control.01",
+      "text": "Fearfulness or fear of something specific.",
+      "required": true,
+      "section": "control",
+      "remedy": "Mimulus",
+      "theme": "specific fears"
+    },
+    {
+      "id": "bach.control.02",
+      "text": "Low self-esteem or feelings of inferiority.",
+      "required": true,
+      "section": "control",
+      "remedy": "Larch",
+      "theme": "low confidence"
+    },
+    {
+      "id": "bach.control.03",
+      "text": "Keeping up harmony while hiding my difficulties.",
+      "required": true,
+      "section": "control",
+      "remedy": "Agrimony",
+      "theme": "concealing distress"
+    },
+    {
+      "id": "bach.control.04",
+      "text": "Low energy or exhaustion.",
+      "required": true,
+      "section": "control",
+      "remedy": "Olive",
+      "theme": "deep tiredness and depletion"
+    },
+    {
+      "id": "bach.control.05",
+      "text": "Unexplained fear or apprehension.",
+      "required": true,
+      "section": "control",
+      "remedy": "Aspen",
+      "theme": "vague or unexplained fears"
+    },
+    {
+      "id": "bach.control.06",
+      "text": "Trouble with tolerance or criticism.",
+      "required": true,
+      "section": "control",
+      "remedy": "Beech",
+      "theme": "critical judgments"
+    },
+    {
+      "id": "bach.control.07",
+      "text": "Over-accommodation and difficulty asserting my needs.",
+      "required": true,
+      "section": "control",
+      "remedy": "Centaury",
+      "theme": "difficulty saying no"
+    },
+    {
+      "id": "bach.control.08",
+      "text": "Being preoccupied with the past.",
+      "required": true,
+      "section": "control",
+      "remedy": "Honeysuckle",
+      "theme": "attachment to the past"
+    },
+    {
+      "id": "bach.control.09",
+      "text": "Feeling overwhelmed or mentally sluggish.",
+      "required": true,
+      "section": "control",
+      "remedy": "Hornbeam",
+      "theme": "mental fatigue before tasks"
+    },
+    {
+      "id": "bach.control.10",
+      "text": "Strong feelings building up under pressure.",
+      "required": true,
+      "section": "control",
+      "remedy": "Cherry Plum",
+      "theme": "fear of losing control"
+    },
+    {
+      "id": "bach.control.11",
+      "text": "Distrust, envy, jealousy, or anger.",
+      "required": true,
+      "section": "control",
+      "remedy": "Holly",
+      "theme": "anger, envy, and jealousy"
+    },
+    {
+      "id": "bach.control.12",
+      "text": "Uncertainty about my direction in life.",
+      "required": true,
+      "section": "control",
+      "remedy": "Wild Oat",
+      "theme": "uncertainty about life direction"
+    },
+    {
+      "id": "bach.control.13",
+      "text": "Guilt or remorse.",
+      "required": true,
+      "section": "control",
+      "remedy": "Pine",
+      "theme": "guilt and self-blame"
+    },
+    {
+      "id": "bach.control.14",
+      "text": "Emotional sensitivity after difficult experiences.",
+      "required": true,
+      "section": "control",
+      "remedy": "Star of Bethlehem",
+      "theme": "emotional shock"
+    },
+    {
+      "id": "bach.control.15",
+      "text": "Indecision or switching between alternatives.",
+      "required": true,
+      "section": "control",
+      "remedy": "Scleranthus",
+      "theme": "indecision"
+    },
+    {
+      "id": "bach.control.16",
+      "text": "Pursuing a goal at any cost.",
+      "required": true,
+      "section": "control",
+      "remedy": "Oak",
+      "theme": "duty and endurance"
+    },
+    {
+      "id": "bach.control.17",
+      "text": "Excessive zeal or overenthusiasm.",
+      "required": true,
+      "section": "control",
+      "remedy": "Vervain",
+      "theme": "excessive zeal"
+    },
+    {
+      "id": "bach.control.18",
+      "text": "Doubting my own judgment.",
+      "required": true,
+      "section": "control",
+      "remedy": "Cerato",
+      "theme": "doubt in one's judgment"
+    },
+    {
+      "id": "bach.control.19",
+      "text": "Intense panic.",
+      "required": true,
+      "section": "control",
+      "remedy": "Rock Rose",
+      "theme": "panic and acute fear"
+    },
+    {
+      "id": "bach.control.20",
+      "text": "Rigid self-discipline.",
+      "required": true,
+      "section": "control",
+      "remedy": "Rock Water",
+      "theme": "rigid self-discipline"
+    },
+    {
+      "id": "bach.control.21",
+      "text": "Seeking attention or centring myself in interactions.",
+      "required": true,
+      "section": "control",
+      "remedy": "Heather",
+      "theme": "seeking attention or reassurance"
+    },
+    {
+      "id": "bach.control.22",
+      "text": "Preoccupation with cleanliness or contamination.",
+      "required": true,
+      "section": "control",
+      "remedy": "Crab Apple",
+      "theme": "discomfort with imperfections"
+    },
+    {
+      "id": "bach.control.23",
+      "text": "Pessimistic expectations.",
+      "required": true,
+      "section": "control",
+      "remedy": "Gentian",
+      "theme": "discouragement and pessimism"
+    },
+    {
+      "id": "bach.control.24",
+      "text": "Withdrawing into myself.",
+      "required": true,
+      "section": "control",
+      "remedy": "Water Violet",
+      "theme": "withdrawal and distance"
+    },
+    {
+      "id": "bach.control.25",
+      "text": "Escaping into thoughts instead of the present.",
+      "required": true,
+      "section": "control",
+      "remedy": "Clematis",
+      "theme": "detachment from the present"
+    },
+    {
+      "id": "bach.control.26",
+      "text": "Impatience.",
+      "required": true,
+      "section": "control",
+      "remedy": "Impatiens",
+      "theme": "impatience"
+    },
+    {
+      "id": "bach.control.27",
+      "text": "Over-identifying with other people's suffering.",
+      "required": true,
+      "section": "control",
+      "remedy": "Red Chestnut",
+      "theme": "worry about others"
+    },
+    {
+      "id": "bach.control.28",
+      "text": "Paralysing melancholy.",
+      "required": true,
+      "section": "control",
+      "remedy": "Mustard",
+      "theme": "unexplained melancholy"
+    },
+    {
+      "id": "bach.control.29",
+      "text": "Apathy or resignation.",
+      "required": true,
+      "section": "control",
+      "remedy": "Wild Rose",
+      "theme": "apathy and resignation"
+    },
+    {
+      "id": "bach.control.30",
+      "text": "Isolation or pulling away from others.",
+      "required": true,
+      "section": "control",
+      "remedy": "Water Violet",
+      "theme": "withdrawal and distance"
+    },
+    {
+      "id": "bach.control.31",
+      "text": "Unwanted repetitive thoughts.",
+      "required": true,
+      "section": "control",
+      "remedy": "White Chestnut",
+      "theme": "repetitive unwanted thoughts"
+    },
+    {
+      "id": "bach.control.32",
+      "text": "Feeling unstable during change.",
+      "required": true,
+      "section": "control",
+      "remedy": "Walnut",
+      "theme": "adjusting to change"
+    },
+    {
+      "id": "bach.control.33",
+      "text": "Repeating the same mistakes.",
+      "required": true,
+      "section": "control",
+      "remedy": "Chestnut Bud",
+      "theme": "repeating mistakes"
+    },
+    {
+      "id": "bach.control.34",
+      "text": "Anticipating something bad without a clear reason.",
+      "required": true,
+      "section": "control",
+      "remedy": "Aspen",
+      "theme": "vague or unexplained fears"
+    },
+    {
+      "id": "bach.control.35",
+      "text": "An excessive sense of responsibility.",
+      "required": true,
+      "section": "control",
+      "remedy": "Elm",
+      "theme": "responsibility overload"
+    },
+    {
+      "id": "bach.control.36",
+      "text": "Trying to influence or control others.",
+      "required": true,
+      "section": "control",
+      "remedy": "Vine",
+      "theme": "control and imposing one's will"
+    },
+    {
+      "id": "bach.control.37",
+      "text": "Feeling trapped or without options in difficult circumstances.",
+      "required": true,
+      "section": "control",
+      "remedy": "Sweet Chestnut",
+      "theme": "despair and feeling trapped"
+    },
+    {
+      "id": "bach.control.38",
+      "text": "Bitterness or resentment.",
+      "required": true,
+      "section": "control",
+      "remedy": "Willow",
+      "theme": "resentment and perceived injustice"
+    }
+  ],
+  "optionalContext": [],
+  "suggestedRepeatDays": 14,
+  "contentHash": "sha256:9097f93771fc9aa137fadb87a77f2d7468b16874a4cd45c7babec2f2d99848b9"
+})
+export const BACH_PROFILE_RU_V1 = deepFreeze({
+  "id": "e8b77564-9d17-422e-8c3d-0467c7a2f9ba",
+  "key": "hh-bach-flower-profile",
+  "version": "v1",
+  "instrumentLocale": "ru",
+  "translationVersion": "hh-bach-ru-v1",
+  "timeframe": "general",
+  "scoringKey": "bach-flower",
+  "scoringVersion": "v1",
+  "resultVersion": "v1",
+  "title": "Эмоциональный профиль по цветочным эссенциям Баха",
+  "source": {
+    "title": "My Alchemist — Bach: Situation, Character, Control",
+    "url": "https://github.com/andylitvinov-design/report/blob/main/src/data/mockData.js",
+    "status": "legacy-site-questionnaire-adapted-for-self-reflection",
+    "reviewedAt": "2026-10-11",
+    "note": "Non-diagnostic traditional flower-essence matching; no clinical treatment or efficacy claims."
+  },
+  "answerScale": {
+    "min": 0,
+    "max": 5
+  },
+  "responseAnchors": [
+    "Совсем нет",
+    "Слегка",
+    "Заметно",
+    "Сильно",
+    "Очень сильно",
+    "Максимально"
+  ],
+  "questions": [
+    {
+      "id": "bach.situation.01",
+      "text": "Я чувствую себя виноватой(ым). Меня терзают угрызения совести.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Pine",
+      "theme": "вина, самоукор"
+    },
+    {
+      "id": "bach.situation.02",
+      "text": "Я чувствую себя неуверенно. Я сомневаюсь вправе ли я судить и ориентируюсь на чужое мнение.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Cerato",
+      "theme": "недоверие к себе"
+    },
+    {
+      "id": "bach.situation.03",
+      "text": "Я чувствую себя задетой(ым), гневной(ым), подозрительной(ым), ревнивой(ым), мстительной(ым).",
+      "required": true,
+      "section": "situation",
+      "remedy": "Holly",
+      "theme": "гнев, ревность"
+    },
+    {
+      "id": "bach.situation.04",
+      "text": "Я чувствую себя не особенно тронутой(ым) ситуацией, так как постоянно витаю мыслями где-то в другом месте.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Clematis",
+      "theme": "уход из реальности"
+    },
+    {
+      "id": "bach.situation.05",
+      "text": "Я чувствую себя раздраженной(ым) отсутствием порядка, грязной(ым), мне противно, мне необходима чистота.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Crab Apple",
+      "theme": "брезгливость, очищение"
+    },
+    {
+      "id": "bach.situation.06",
+      "text": "Я чувствую себя брошенной(ым) на произвол судьбы, несправедливо обиженной(ым) ею.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Willow",
+      "theme": "обида, жертва"
+    },
+    {
+      "id": "bach.situation.07",
+      "text": "Я чувствую себя вынужденной(ым) навязать свою волю.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Vine",
+      "theme": "давление, контроль"
+    },
+    {
+      "id": "bach.situation.08",
+      "text": "Я чувствую себя недостаточно стойкой(им). Я боюсь изменить самой(му) себе. Я хочу приняться за дело.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Walnut",
+      "theme": "переход, устойчивость"
+    },
+    {
+      "id": "bach.situation.09",
+      "text": "Я чувствую себя меланхоличной(ым), грустной(ым), в депрессии, не зная, почему.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Mustard",
+      "theme": "меланхолия"
+    },
+    {
+      "id": "bach.situation.10",
+      "text": "Я чувствую себя неполноценной(ым), слабой(ым), менее способной(ым), чем другие люди.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Larch",
+      "theme": "неуверенность"
+    },
+    {
+      "id": "bach.situation.11",
+      "text": "Я чувствую себя изможденным бойцом на посту, которому нельзя сдаваться.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Oak",
+      "theme": "долг, не сдаваться"
+    },
+    {
+      "id": "bach.situation.12",
+      "text": "Я чувствую себя напуганной(ым). Я боюсь конкретного человека или конкретного события.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Mimulus",
+      "theme": "конкретный страх"
+    },
+    {
+      "id": "bach.situation.13",
+      "text": "Я чувствую себя слишком мягкой(им), слишком добросердечной(ым), я не могу сказать «нет».",
+      "required": true,
+      "section": "situation",
+      "remedy": "Centaury",
+      "theme": "слабые границы"
+    },
+    {
+      "id": "bach.situation.14",
+      "text": "Я чувствую себя унылой(ым). Я не могу избавиться от прошлого: события или отношения.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Honeysuckle",
+      "theme": "прошлое"
+    },
+    {
+      "id": "bach.situation.15",
+      "text": "Я чувствую себя перегруженной(ым) своей ответственностью. Я просто не могу все это сделать!",
+      "required": true,
+      "section": "situation",
+      "remedy": "Elm",
+      "theme": "перегруз ответственности"
+    },
+    {
+      "id": "bach.situation.16",
+      "text": "Я чувствую себя не принимающей(им) участие. Я отстранилась от всего этого.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Water Violet",
+      "theme": "отстраненность"
+    },
+    {
+      "id": "bach.situation.17",
+      "text": "Я чувствую себя нерешительной(ым), раздробленной(ым), сомневающейся(имся). Действительно ли это то, чего я хочу?",
+      "required": true,
+      "section": "situation",
+      "remedy": "Scleranthus",
+      "theme": "нерешительность"
+    },
+    {
+      "id": "bach.situation.18",
+      "text": "Я чувствую себя нетерпеливой(ым). Все мне кажется слишком медленно происходящим.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Impatiens",
+      "theme": "нетерпение"
+    },
+    {
+      "id": "bach.situation.19",
+      "text": "Я чувствую себя духовно нуждающейся(имся), мне необходимы участие и поддержка.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Heather",
+      "theme": "потребность во внимании"
+    },
+    {
+      "id": "bach.situation.20",
+      "text": "Я чувствую себя клоуном, делающим хорошую мину при плохой игре.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Agrimony",
+      "theme": "маска, скрытая боль"
+    },
+    {
+      "id": "bach.situation.21",
+      "text": "Я чувствую себя уставшей(им), хочу покоя.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Olive",
+      "theme": "истощение"
+    },
+    {
+      "id": "bach.situation.22",
+      "text": "Я чувствую себя озадаченной(ым), так как постоянно совершаю одни и те же ошибки.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Chestnut Bud",
+      "theme": "повтор ошибок"
+    },
+    {
+      "id": "bach.situation.23",
+      "text": "Я чувствую себя измученной(ым) нежеланными мыслями и внутренними диалогами, от которых не могу избавиться.",
+      "required": true,
+      "section": "situation",
+      "remedy": "White Chestnut",
+      "theme": "мысли, внутренний шум"
+    },
+    {
+      "id": "bach.situation.24",
+      "text": "Я чувствую себя зажатой(ым) в тиски, отчаявшейся(имся), не знаю, что делать дальше.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Sweet Chestnut",
+      "theme": "безвыходность"
+    },
+    {
+      "id": "bach.situation.25",
+      "text": "Я чувствую себя занятой(ым) на сто пятьдесят процентов.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Vervain",
+      "theme": "чрезмерное рвение"
+    },
+    {
+      "id": "bach.situation.26",
+      "text": "Я чувствую себя полностью шокированной(ым), я никак не могу справиться с этим ударом судьбы.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Star of Bethlehem",
+      "theme": "шок, удар"
+    },
+    {
+      "id": "bach.situation.27",
+      "text": "Я чувствую себя выбитой(ым) из равновесия.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Rose",
+      "theme": "паника, острый страх"
+    },
+    {
+      "id": "bach.situation.28",
+      "text": "Я чувствую себя обессиленной(ым), измученной(ым), истощенной(ым).",
+      "required": true,
+      "section": "situation",
+      "remedy": "Olive",
+      "theme": "глубокое истощение"
+    },
+    {
+      "id": "bach.situation.29",
+      "text": "Я чувствую себя рекордсменом, вынужденным постоянно тренироваться, ничего себе не позволять.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Water",
+      "theme": "жесткость к себе"
+    },
+    {
+      "id": "bach.situation.30",
+      "text": "Я чувствую себя лишенной(ым) надежды, покоренной(ым) судьбе.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Gorse",
+      "theme": "безнадежность"
+    },
+    {
+      "id": "bach.situation.31",
+      "text": "Я чувствую себя подверженной(ым) угрозе, меня одолевают страхи, с которыми я не могу справиться.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Aspen",
+      "theme": "неясная тревога"
+    },
+    {
+      "id": "bach.situation.32",
+      "text": "Я чувствую себя недостаточно оценимой(ым) или любимой(ым), раненой(ым), разочарованной(ым), так как я ожидала большего признания или благодарности.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Chicory",
+      "theme": "ожидание признания"
+    },
+    {
+      "id": "bach.situation.33",
+      "text": "Я чувствую себя так сильно погруженной(ым) в положение других людей, что практически не воспринимаю свои собственные чувства и страхи.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Red Chestnut",
+      "theme": "тревога за других"
+    },
+    {
+      "id": "bach.situation.34",
+      "text": "Я чувствую себя обескураженной(ым), настроенной(ым) скептически и пессимистически.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Gentian",
+      "theme": "скепсис, уныние"
+    },
+    {
+      "id": "bach.situation.35",
+      "text": "Я чувствую себя как на бочке с порохом. Я больше не могу владеть собой.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Cherry Plum",
+      "theme": "страх потерять контроль"
+    },
+    {
+      "id": "bach.situation.36",
+      "text": "Я чувствую себя нервной(ым), слишком критичной(ым) или, наоборот, некритичной(ым), терпимой(ым).",
+      "required": true,
+      "section": "situation",
+      "remedy": "Beech",
+      "theme": "критичность"
+    },
+    {
+      "id": "bach.situation.37",
+      "text": "Я чувствую себя внутренне вялой, лишенной(ым) энергии. У меня недостаточно сил, чтобы выполнить мое задание.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Hornbeam",
+      "theme": "усталость перед началом"
+    },
+    {
+      "id": "bach.situation.38",
+      "text": "Я чувствую себя в панике.",
+      "required": true,
+      "section": "situation",
+      "remedy": "Rock Rose",
+      "theme": "паника"
+    },
+    {
+      "id": "bach.character.01",
+      "text": "Мне мешает моя обязательность: я боюсь, что всё это доставит мне слишком много хлопот.",
+      "required": true,
+      "section": "character",
+      "remedy": "Elm",
+      "theme": "перегруз обязательствами"
+    },
+    {
+      "id": "bach.character.02",
+      "text": "Мне мешает моя недооценка самой себя: я просто не доверяю самой(ому) себе.",
+      "required": true,
+      "section": "character",
+      "remedy": "Larch",
+      "theme": "неуверенность в себе"
+    },
+    {
+      "id": "bach.character.03",
+      "text": "Мне мешает моя слишком сильная потребность в гармонии: я не хочу некрасивых дискуссий и споров.",
+      "required": true,
+      "section": "character",
+      "remedy": "Agrimony",
+      "theme": "избегание конфликта"
+    },
+    {
+      "id": "bach.character.04",
+      "text": "Мне мешает мой недостаток силы: я полностью выложился(ась), это слишком много для меня.",
+      "required": true,
+      "section": "character",
+      "remedy": "Olive",
+      "theme": "истощение"
+    },
+    {
+      "id": "bach.character.05",
+      "text": "Мне мешает мое повышенное «чутье»: когда я думаю о чем-либо, у меня появляются плохие предчувствия.",
+      "required": true,
+      "section": "character",
+      "remedy": "Aspen",
+      "theme": "предчувствия"
+    },
+    {
+      "id": "bach.character.06",
+      "text": "Мне мешает моя непростительная склонность к критике и самокритике: многое мешает мне, но я не могу перепрыгнуть через свою голову.",
+      "required": true,
+      "section": "character",
+      "remedy": "Beech",
+      "theme": "критика, самокритика"
+    },
+    {
+      "id": "bach.character.07",
+      "text": "Мне мешает моя слабая воля: я просто не могу сказать «нет».",
+      "required": true,
+      "section": "character",
+      "remedy": "Centaury",
+      "theme": "слабая воля"
+    },
+    {
+      "id": "bach.character.08",
+      "text": "Мне мешает моя сильная зависимость от прошлого: я просто не могу забыть то, что было раньше.",
+      "required": true,
+      "section": "character",
+      "remedy": "Honeysuckle",
+      "theme": "прошлое"
+    },
+    {
+      "id": "bach.character.09",
+      "text": "Мне мешает недостаток внутренней энергии: когда я думаю о какой-либо проблеме, она предстает передо мной в виде огромной серой горы.",
+      "required": true,
+      "section": "character",
+      "remedy": "Hornbeam",
+      "theme": "инерция"
+    },
+    {
+      "id": "bach.character.10",
+      "text": "Мне мешает страх перед моими собственными чувствами: если я отпущу себя, я больше не смогу себя контролировать.",
+      "required": true,
+      "section": "character",
+      "remedy": "Cherry Plum",
+      "theme": "страх потерять контроль"
+    },
+    {
+      "id": "bach.character.11",
+      "text": "Мне мешает моя подозрительность, моя ничем не обоснованная ревность: я быстро становлюсь агрессивным(ой).",
+      "required": true,
+      "section": "character",
+      "remedy": "Holly",
+      "theme": "ревность, агрессия"
+    },
+    {
+      "id": "bach.character.12",
+      "text": "Мне мешает моя внутренняя нерешительность: я не знаю, хочу ли я этого в действительности.",
+      "required": true,
+      "section": "character",
+      "remedy": "Scleranthus",
+      "theme": "нерешительность"
+    },
+    {
+      "id": "bach.character.13",
+      "text": "Мне мешают мои постоянные угрызения совести: я знаю, что снова буду себя упрекать.",
+      "required": true,
+      "section": "character",
+      "remedy": "Pine",
+      "theme": "вина"
+    },
+    {
+      "id": "bach.character.14",
+      "text": "Мне мешает моя душевная ранимость: у меня просто не хватает сил справиться с определенными обстоятельствами.",
+      "required": true,
+      "section": "character",
+      "remedy": "Star of Bethlehem",
+      "theme": "ранимость"
+    },
+    {
+      "id": "bach.character.15",
+      "text": "Мне мешает моя постоянная нерешительность: сначала мне кажется, что лучше всего подходит одно решение, потом — другое.",
+      "required": true,
+      "section": "character",
+      "remedy": "Scleranthus",
+      "theme": "колебания"
+    },
+    {
+      "id": "bach.character.16",
+      "text": "Мне мешает мое избыточное чувство долга: я обязан(а) довести всё до конца.",
+      "required": true,
+      "section": "character",
+      "remedy": "Oak",
+      "theme": "долг"
+    },
+    {
+      "id": "bach.character.17",
+      "text": "Мне мешает мой напор, мое рвение: я знаю, что снова буду выкладываться на сто пятьдесят процентов и даже действовать другим на нервы.",
+      "required": true,
+      "section": "character",
+      "remedy": "Vervain",
+      "theme": "чрезмерное рвение"
+    },
+    {
+      "id": "bach.character.18",
+      "text": "Мне мешает мое сильное чувство справедливости: я не могу просто так это оставить.",
+      "required": true,
+      "section": "character",
+      "remedy": "Willow",
+      "theme": "обида, справедливость"
+    },
+    {
+      "id": "bach.character.19",
+      "text": "Мне мешает мое внутреннее чувство неуверенности: я снова и снова спрашиваю других людей, чтобы увериться в чем-либо.",
+      "required": true,
+      "section": "character",
+      "remedy": "Cerato",
+      "theme": "поиск подтверждения"
+    },
+    {
+      "id": "bach.character.20",
+      "text": "Мне мешает моя склонность моментально впадать в панику: когда я думаю об этом, моя голова пустеет.",
+      "required": true,
+      "section": "character",
+      "remedy": "Rock Rose",
+      "theme": "паника"
+    },
+    {
+      "id": "bach.character.21",
+      "text": "Мне мешает моя склонность к строгой дисциплине: я слишком строг(а) к самой(ому) себе, слишком много от себя требую.",
+      "required": true,
+      "section": "character",
+      "remedy": "Rock Water",
+      "theme": "самодисциплина"
+    },
+    {
+      "id": "bach.character.22",
+      "text": "Мне мешает мое честолюбие: я должна(ен) всегда навязывать свою волю.",
+      "required": true,
+      "section": "character",
+      "remedy": "Vine",
+      "theme": "навязывание воли"
+    },
+    {
+      "id": "bach.character.23",
+      "text": "Мне мешают моя педантичность, мое стремление к чистоте: даже самые маленькие мелочи должны быть в порядке, иначе я нервничаю.",
+      "required": true,
+      "section": "character",
+      "remedy": "Crab Apple",
+      "theme": "порядок, чистота"
+    },
+    {
+      "id": "bach.character.24",
+      "text": "Мне мешает мое чувство безнадежности: я думаю, что больше нет никакого смысла.",
+      "required": true,
+      "section": "character",
+      "remedy": "Gorse",
+      "theme": "безнадежность"
+    },
+    {
+      "id": "bach.character.25",
+      "text": "Мне мешает моя углубленность внутрь себя: я просто не воспринимаю других людей.",
+      "required": true,
+      "section": "character",
+      "remedy": "Water Violet",
+      "theme": "уход в себя"
+    },
+    {
+      "id": "bach.character.26",
+      "text": "Мне мешает мой недостаточный интерес к реальным ситуациям, так как я поглощен(а) мыслями об абсолютно других вещах.",
+      "required": true,
+      "section": "character",
+      "remedy": "Clematis",
+      "theme": "неприятие реальности"
+    },
+    {
+      "id": "bach.character.27",
+      "text": "Мне мешает моя нетерпеливость: я просто не могу ждать ни минуты.",
+      "required": true,
+      "section": "character",
+      "remedy": "Impatiens",
+      "theme": "нетерпение"
+    },
+    {
+      "id": "bach.character.28",
+      "text": "Мне мешает мое слишком сильное сострадание: я точно знаю, что чувствует другой человек, и не могу оградить себя от этого.",
+      "required": true,
+      "section": "character",
+      "remedy": "Red Chestnut",
+      "theme": "сострадание, слияние"
+    },
+    {
+      "id": "bach.character.29",
+      "text": "Мне мешает мой меланхоличный настрой: иногда он меня даже парализует.",
+      "required": true,
+      "section": "character",
+      "remedy": "Mustard",
+      "theme": "меланхолия"
+    },
+    {
+      "id": "bach.character.30",
+      "text": "Мне мешает мое практически апатичное безучастие: мне всё безразлично, я отгородился(ась) от всего этого.",
+      "required": true,
+      "section": "character",
+      "remedy": "Wild Rose",
+      "theme": "апатия"
+    },
+    {
+      "id": "bach.character.31",
+      "text": "Мне мешает моя «склонность к отступлению»: мне тяжело работать с другими людьми.",
+      "required": true,
+      "section": "character",
+      "remedy": "Water Violet",
+      "theme": "изоляция"
+    },
+    {
+      "id": "bach.character.32",
+      "text": "Мне мешает продолжительная карусель мыслей: я не могу сконцентрироваться на самом важном.",
+      "required": true,
+      "section": "character",
+      "remedy": "White Chestnut",
+      "theme": "карусель мыслей"
+    },
+    {
+      "id": "bach.character.33",
+      "text": "Мне мешает моя неустойчивость: в моих планах меня должна всегда поддерживать третья сторона, я не верю самой(ому) себе.",
+      "required": true,
+      "section": "character",
+      "remedy": "Walnut",
+      "theme": "неустойчивость"
+    },
+    {
+      "id": "bach.character.34",
+      "text": "Мне мешает моя невнимательность: я постоянно допускаю одни и те же ошибки.",
+      "required": true,
+      "section": "character",
+      "remedy": "Chestnut Bud",
+      "theme": "повтор ошибок"
+    },
+    {
+      "id": "bach.character.35",
+      "text": "Мне мешает мой скептический настрой: собственно говоря, я уже не жду, что что-либо получится.",
+      "required": true,
+      "section": "character",
+      "remedy": "Gentian",
+      "theme": "скепсис"
+    },
+    {
+      "id": "bach.character.36",
+      "text": "Мне мешает мое слишком сильное чувство ответственности.",
+      "required": true,
+      "section": "character",
+      "remedy": "Elm",
+      "theme": "ответственность"
+    },
+    {
+      "id": "bach.character.37",
+      "text": "Мне мешает моя позиция ожидания: я вмешиваюсь не в свое дело и жду за это благодарности.",
+      "required": true,
+      "section": "character",
+      "remedy": "Chicory",
+      "theme": "ожидание благодарности"
+    },
+    {
+      "id": "bach.character.38",
+      "text": "Мне мешает моя склонность пускать дело на самотек и потом не находить выхода из сложившейся ситуации.",
+      "required": true,
+      "section": "character",
+      "remedy": "Wild Rose",
+      "theme": "пассивность"
+    },
+    {
+      "id": "bach.character.39",
+      "text": "Мне мешает моя озлобленность: я чувствую себя бессильной жертвой обстоятельств.",
+      "required": true,
+      "section": "character",
+      "remedy": "Willow",
+      "theme": "озлобленность"
+    },
+    {
+      "id": "bach.control.01",
+      "text": "Боязливость, страх",
+      "required": true,
+      "section": "control",
+      "remedy": "Mimulus",
+      "theme": "конкретный страх"
+    },
+    {
+      "id": "bach.control.02",
+      "text": "Заниженная самооценка или комплекс неполноценности",
+      "required": true,
+      "section": "control",
+      "remedy": "Larch",
+      "theme": "самооценка"
+    },
+    {
+      "id": "bach.control.03",
+      "text": "Поиск гармонии",
+      "required": true,
+      "section": "control",
+      "remedy": "Agrimony",
+      "theme": "маска гармонии"
+    },
+    {
+      "id": "bach.control.04",
+      "text": "Недостаток силы / истощение",
+      "required": true,
+      "section": "control",
+      "remedy": "Olive",
+      "theme": "истощение"
+    },
+    {
+      "id": "bach.control.05",
+      "text": "Необъяснимое чувство страха",
+      "required": true,
+      "section": "control",
+      "remedy": "Aspen",
+      "theme": "неясная тревога"
+    },
+    {
+      "id": "bach.control.06",
+      "text": "Проблема с терпимостью",
+      "required": true,
+      "section": "control",
+      "remedy": "Beech",
+      "theme": "терпимость"
+    },
+    {
+      "id": "bach.control.07",
+      "text": "Добросердечие и слабая воля",
+      "required": true,
+      "section": "control",
+      "remedy": "Centaury",
+      "theme": "слабая воля"
+    },
+    {
+      "id": "bach.control.08",
+      "text": "Направленность в прошлое",
+      "required": true,
+      "section": "control",
+      "remedy": "Honeysuckle",
+      "theme": "прошлое"
+    },
+    {
+      "id": "bach.control.09",
+      "text": "Чувство перегруженности, внутренняя вялость",
+      "required": true,
+      "section": "control",
+      "remedy": "Hornbeam",
+      "theme": "вялость, перегруз"
+    },
+    {
+      "id": "bach.control.10",
+      "text": "Давление чувств",
+      "required": true,
+      "section": "control",
+      "remedy": "Cherry Plum",
+      "theme": "давление чувств"
+    },
+    {
+      "id": "bach.control.11",
+      "text": "Отрицательные чувства: недоверие, зависть, ярость",
+      "required": true,
+      "section": "control",
+      "remedy": "Holly",
+      "theme": "недоверие, ярость"
+    },
+    {
+      "id": "bach.control.12",
+      "text": "Неуверенность в выборе жизненного пути",
+      "required": true,
+      "section": "control",
+      "remedy": "Wild Oat",
+      "theme": "выбор пути"
+    },
+    {
+      "id": "bach.control.13",
+      "text": "Угрызения совести",
+      "required": true,
+      "section": "control",
+      "remedy": "Pine",
+      "theme": "вина"
+    },
+    {
+      "id": "bach.control.14",
+      "text": "Внутренняя ранимость",
+      "required": true,
+      "section": "control",
+      "remedy": "Star of Bethlehem",
+      "theme": "ранимость"
+    },
+    {
+      "id": "bach.control.15",
+      "text": "Нерешительность",
+      "required": true,
+      "section": "control",
+      "remedy": "Scleranthus",
+      "theme": "нерешительность"
+    },
+    {
+      "id": "bach.control.16",
+      "text": "Достижение цели любой ценой",
+      "required": true,
+      "section": "control",
+      "remedy": "Oak",
+      "theme": "достижение любой ценой"
+    },
+    {
+      "id": "bach.control.17",
+      "text": "Чрезмерное рвение",
+      "required": true,
+      "section": "control",
+      "remedy": "Vervain",
+      "theme": "рвение"
+    },
+    {
+      "id": "bach.control.18",
+      "text": "Внутренняя неуверенность",
+      "required": true,
+      "section": "control",
+      "remedy": "Cerato",
+      "theme": "неуверенность"
+    },
+    {
+      "id": "bach.control.19",
+      "text": "Внутренняя паника",
+      "required": true,
+      "section": "control",
+      "remedy": "Rock Rose",
+      "theme": "паника"
+    },
+    {
+      "id": "bach.control.20",
+      "text": "Чрезмерная самодисциплина",
+      "required": true,
+      "section": "control",
+      "remedy": "Rock Water",
+      "theme": "самодисциплина"
+    },
+    {
+      "id": "bach.control.21",
+      "text": "Эгоистический настрой",
+      "required": true,
+      "section": "control",
+      "remedy": "Heather",
+      "theme": "эгоцентричность"
+    },
+    {
+      "id": "bach.control.22",
+      "text": "Чрезмерная чистоплотность, брезгливость",
+      "required": true,
+      "section": "control",
+      "remedy": "Crab Apple",
+      "theme": "чистота, брезгливость"
+    },
+    {
+      "id": "bach.control.23",
+      "text": "Унылые перспективы",
+      "required": true,
+      "section": "control",
+      "remedy": "Gentian",
+      "theme": "уныние"
+    },
+    {
+      "id": "bach.control.24",
+      "text": "Углубленность внутрь себя, уход в себя",
+      "required": true,
+      "section": "control",
+      "remedy": "Water Violet",
+      "theme": "уход в себя"
+    },
+    {
+      "id": "bach.control.25",
+      "text": "Неприятие реальности",
+      "required": true,
+      "section": "control",
+      "remedy": "Clematis",
+      "theme": "неприятие реальности"
+    },
+    {
+      "id": "bach.control.26",
+      "text": "Нетерпеливость",
+      "required": true,
+      "section": "control",
+      "remedy": "Impatiens",
+      "theme": "нетерпение"
+    },
+    {
+      "id": "bach.control.27",
+      "text": "Чрезмерное сострадание",
+      "required": true,
+      "section": "control",
+      "remedy": "Red Chestnut",
+      "theme": "сострадание"
+    },
+    {
+      "id": "bach.control.28",
+      "text": "Парализующая меланхолия",
+      "required": true,
+      "section": "control",
+      "remedy": "Mustard",
+      "theme": "меланхолия"
+    },
+    {
+      "id": "bach.control.29",
+      "text": "Внутренняя апатия",
+      "required": true,
+      "section": "control",
+      "remedy": "Wild Rose",
+      "theme": "апатия"
+    },
+    {
+      "id": "bach.control.30",
+      "text": "Изоляция, склонность к отступлению",
+      "required": true,
+      "section": "control",
+      "remedy": "Water Violet",
+      "theme": "изоляция"
+    },
+    {
+      "id": "bach.control.31",
+      "text": "Мысленный мусор",
+      "required": true,
+      "section": "control",
+      "remedy": "White Chestnut",
+      "theme": "мысли"
+    },
+    {
+      "id": "bach.control.32",
+      "text": "Неустойчивость",
+      "required": true,
+      "section": "control",
+      "remedy": "Walnut",
+      "theme": "неустойчивость"
+    },
+    {
+      "id": "bach.control.33",
+      "text": "Автоматические ошибки",
+      "required": true,
+      "section": "control",
+      "remedy": "Chestnut Bud",
+      "theme": "повтор ошибок"
+    },
+    {
+      "id": "bach.control.34",
+      "text": "Ожидание чего-то плохого",
+      "required": true,
+      "section": "control",
+      "remedy": "Aspen",
+      "theme": "ожидание плохого"
+    },
+    {
+      "id": "bach.control.35",
+      "text": "Чрезмерное чувство ответственности",
+      "required": true,
+      "section": "control",
+      "remedy": "Elm",
+      "theme": "ответственность"
+    },
+    {
+      "id": "bach.control.36",
+      "text": "Повышенные претензии, стремление к тактическим маневрам",
+      "required": true,
+      "section": "control",
+      "remedy": "Vine",
+      "theme": "претензии, маневры"
+    },
+    {
+      "id": "bach.control.37",
+      "text": "Чувство безвыходности в экстремальных ситуациях",
+      "required": true,
+      "section": "control",
+      "remedy": "Sweet Chestnut",
+      "theme": "безвыходность"
+    },
+    {
+      "id": "bach.control.38",
+      "text": "Озлобленность",
+      "required": true,
+      "section": "control",
+      "remedy": "Willow",
+      "theme": "озлобленность"
+    }
+  ],
+  "optionalContext": [],
+  "suggestedRepeatDays": 14,
+  "contentHash": "sha256:f0e5dfa517e2a5c693f394088743d9fec990a01ac92d4b38ea3814f72bc74948"
+})
+export const BACH_ESSENCE_NAMES = deepFreeze(["Agrimony","Aspen","Beech","Centaury","Cerato","Cherry Plum","Chestnut Bud","Chicory","Clematis","Crab Apple","Elm","Gentian","Gorse","Heather","Holly","Honeysuckle","Hornbeam","Impatiens","Larch","Mimulus","Mustard","Oak","Olive","Pine","Red Chestnut","Rock Rose","Rock Water","Scleranthus","Star of Bethlehem","Sweet Chestnut","Vervain","Vine","Walnut","Water Violet","White Chestnut","Wild Oat","Wild Rose","Willow"])

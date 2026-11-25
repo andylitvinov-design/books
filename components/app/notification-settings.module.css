@@ -1,0 +1,21 @@
+.root{max-width:780px;margin:18px 0;padding:clamp(14px,3vw,24px);background:#f5faf7;color:#234f48;border:1px solid #c7dfd5;border-radius:21px;box-shadow:0 8px 24px #22584b15}
+.heading h2{font-size:clamp(20px,3vw,26px);margin:6px 0;line-height:1.25}.heading p{color:#60766d;margin:0 0 14px;font-size:14px}
+.kicker{display:flex;align-items:center;gap:6px;letter-spacing:.12em;font-size:11px;font-weight:700}
+.preview{color:#fafffa;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 98% 50%,#409877 0,transparent 38%),linear-gradient(120deg,#122e34,#28564d);box-shadow:0 10px 20px #13463928}
+.top,.bottom{display:flex;justify-content:space-between;gap:10px;padding:12px 16px;font-size:11px;font-weight:700;letter-spacing:.06em}
+.top{color:#bdded0}.bottom{background:#122b2f;color:#e2f5e9}.bottom span:last-child{opacity:.65;font-weight:400;letter-spacing:0}
+.middle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:2px 16px 16px}
+.middle h3{font-size:clamp(19px,3vw,25px);line-height:1.22;color:white;margin:7px 0}
+.middle p{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:0;color:#d1e8de;font-size:12px}
+.caption{font-size:11px;font-weight:700;letter-spacing:.04em;color:#b2d6c5}
+.orb{height:74px;width:74px;flex:0 0 74px;border-radius:23px;background:#9ee2c5;box-shadow:inset 0 -9px #64b998;display:grid;place-items:center;font-size:42px;color:#195c4b}
+.status{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:15px 0;font-size:12px}
+.status span:first-child{display:flex;align-items:center;gap:7px;font-weight:700}
+.prefs{padding:12px;border-radius:12px;background:#ffffffb9;display:flex;gap:14px;flex-wrap:wrap}
+.prefs label{display:flex;align-items:center;gap:8px;font-size:13px}.prefs input{accent-color:#2a7964;width:17px;height:17px}
+.prefs select{border:1px solid #b7d3c6;background:white;color:#214c48;border-radius:8px;padding:7px}
+.buttons{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.buttons button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;border:1px solid #286d5e;border-radius:11px;background:#286d5e;color:white;font-size:13px;font-weight:700}
+.buttons button:disabled{opacity:.48;cursor:not-allowed}.buttons .outline{background:transparent;color:#286d5e}
+.subtle{font-size:12px;color:#5b766d;line-height:1.6;margin:12px 0 0}.success{font-size:12px;color:#1e7251;font-weight:700}
+@media(max-width:440px){.root{padding:12px;border-radius:16px}.top,.middle,.bottom{padding-left:12px;padding-right:12px}.orb{width:57px;height:57px;flex-basis:57px}.buttons button{flex:1 1 160px}}

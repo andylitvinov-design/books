@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 
@@ -165,7 +166,7 @@ test("Tantra Reiki publishes the full bilingual source archive instead of a summ
   assert.equal(archive.html5Videos.ru.length, 2);
   assert.ok(archive.youtubeIds.includes("qM_nFUkYJ1k"));
 
-  assert.match(recordPage, /academy-archive-notice/);
+  assert.match(recordPage, /<TantraReikiProgrammeModules locale=\{locale\} publicBlocks=\{publicBlocks\}/);
   assert.match(recordPage, /academy-native-video/);
   assert.match(recordPage, /academy-source-gallery/);
 });
@@ -203,11 +204,34 @@ test("cross-locale Academy fallbacks are curated before publication", async () =
 });
 
 
-test("Academy media falls back across locale variants when the local source has no video", async () => {
+function assertMediaFallbackContract(catalog) {
+  const start = catalog.indexOf('const unavailablePublicYouTubeIds =');
+  const end = catalog.indexOf('export function sourceLanguageNotice', start);
+  assert.ok(start >= 0 && end > start, "Inspect the actual media filtering and fallback functions");
+  const compiled = ts.transpileModule(catalog.slice(start, end), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const rows = [
+    { logicalId: 'course', sourceUrl: 'ru', mediaUrl: 'https://youtube.com/embed/OrdMvKn2Zg8' },
+    { logicalId: 'course', sourceUrl: 'ru', mediaUrl: 'https://example.test/photo.jpg' },
+    { logicalId: 'course', sourceUrl: 'en', mediaUrl: 'https://youtube.com/embed/GOODVIDEO01' },
+    { logicalId: 'other', sourceUrl: 'ru', mediaUrl: 'https://youtube.com/embed/OTHERGOOD01' },
+  ];
+  const before = structuredClone(rows);
+  const exports = {};
+  const mediaForRecord = new Function('mediaRecords', 'exports', compiled + '; return exports.mediaForRecord;')(rows, exports);
+  assert.deepEqual(mediaForRecord({ logicalId: 'course', sourceUrl: 'ru' }), [rows[1], rows[2]], "Unavailable exact video must not suppress valid other-locale fallback");
+  assert.deepEqual(mediaForRecord({ logicalId: 'course', sourceUrl: 'en' }), [rows[2]], "Playable exact locale wins");
+  assert.deepEqual(mediaForRecord({ logicalId: 'missing', sourceUrl: 'ru' }), [], "Never return another course's media");
+  assert.deepEqual(rows, before, "Archived references stay intact");
+}
+
+test("Academy media preserves locale fallback while excluding the verified broken preview", async () => {
   const catalog = await readFile("data/academy/catalog.ts", "utf8");
-  assert.match(catalog, /const exact = mediaRecords\.filter/);
-  assert.match(catalog, /exact\.some\(\(item\) => youtubeIdFromUrl\(item\.mediaUrl\)\)/);
-  assert.match(catalog, /mediaRecords\.filter\(\(item\) => item\.logicalId === record\.logicalId\)/);
+  assertMediaFallbackContract(catalog);
+  for (const mutation of [
+    catalog.replace('!unavailablePublicYouTubeIds.has', 'unavailablePublicYouTubeIds.has'),
+    catalog.replace('return visible.filter(item => item.logicalId === record.logicalId);', 'return exact;'),
+    catalog.replace('if (exact.some((item) => youtubeIdFromUrl(item.mediaUrl))) return exact;', 'if (exact.length) return exact;'),
+  ]) assert.throws(() => assertMediaFallbackContract(mutation));
 });
 
 
@@ -454,7 +478,10 @@ test("Academy promotes DAO Reiki Yggdrasil and Tantra Reiki as separate programs
   assert.match(routePage, /YggdrasilModuleLandingPage/);
   assert.match(routePage, /YggdrasilSourceArchivePage/);
   assert.match(landing, /yggdrasil\/basic-course/);
-  assert.match(landing, /yggdrasil\/instructor-course/);
+  const moduleMap = await readFile("data/academy/yggdrasil-module-map.ts", "utf8");
+  assert.match(moduleMap, /slug: "instructor-course"/);
+  assert.match(landing, /<Image src=\{module\.image\}/);
+  assert.match(landing, /yggdrasil-module-card/);
   assert.match(landing, /yggdrasilModuleLandings/);
   const curriculumComponent = await readFile("components/yggdrasil-curriculum.tsx", "utf8");
   assert.match(curriculumComponent, /id=\{level\.id === 1 \? "yggdrasil-basic-course-learning"/);

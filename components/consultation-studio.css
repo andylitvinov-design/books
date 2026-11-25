@@ -1,0 +1,1198 @@
+/* Holistic House practitioner consultation studio.
+   Scoped to the new/edit consultation views; legacy document flows are untouched. */
+.consultation-studio-shell {
+  --studio-ink: #392b22;
+  --studio-muted: #77665a;
+  --studio-accent: #81553d;
+  --studio-border: #e2d3c1;
+  max-width: 980px;
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  color: var(--studio-ink);
+}
+.consultation-client-created-banner {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 17px;
+  padding: 17px 19px;
+  border: 1px solid #dfcebc;
+  border-radius: 16px;
+  background: #fffaf4;
+}
+.consultation-client-created-banner p {
+  margin: 0;
+  color: #5b4739;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.consultation-client-created-banner strong { color: #392b22; }
+.consultation-client-created-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.consultation-client-created-links a {
+  color: #70452d;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.consultation-client-created-links a:focus-visible {
+  outline: 3px solid #9b7056;
+  outline-offset: 3px;
+}
+.consultation-studio-shell .prescription-admin-topbar {
+  padding-bottom: 15px;
+}
+.consultation-studio-shell .prescription-admin-titleblock {
+  padding: 23px 0 17px;
+}
+.consultation-studio-shell .prescription-admin-titleblock h1 {
+  font-size: clamp(35px, 4.8vw, 51px) !important;
+  line-height: 1.07;
+  letter-spacing: -.035em;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs {
+  gap: 7px !important;
+  margin-bottom: 0 !important;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs a {
+  min-height: 36px;
+  border-color: transparent;
+  border-radius: 10px;
+  padding: 9px 13px;
+  background: transparent;
+  color: #776153 !important;
+  font-size: 12px;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs a:hover,
+.consultation-studio-shell .prescription-admin-navigation--tabs a:focus-visible {
+  background: #eee2d5;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs a:nth-child(n + 4) {
+  display: none;
+}
+.consultation-new-shell .prescription-admin-navigation--tabs a[href="/admin/consultations/new"] {
+  background: #e8d9c7;
+  color: #563925 !important;
+}
+.consultation-studio.prescription-admin-form {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  gap: 15px;
+  margin-top: 13px;
+}
+.consultation-studio-progress {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  align-items: center;
+  margin: 0 0 4px;
+  padding: 0 0 2px;
+  list-style: none;
+  scrollbar-width: none;
+}
+.consultation-studio-progress::-webkit-scrollbar { display: none; }
+.consultation-studio-progress li {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  align-items: center;
+  color: #867365;
+  font-size: 11px;
+  font-weight: 650;
+}
+.consultation-studio-progress li:not(:last-child)::after {
+  content: "";
+  width: 24px;
+  height: 1px;
+  margin-left: 7px;
+  background: #cdb9a4;
+}
+.consultation-studio-progress li span {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid #ccb39d;
+  border-radius: 50%;
+  color: #76513b;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+/* Select a prescription alone or reveal optional invoice details. */
+.consultation-studio-document-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin: 5px 0 15px;
+}
+.consultation-studio-document-choice {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 15px 16px !important;
+  border: 1px solid #dfd2c3;
+  border-radius: 16px;
+  background: #fffdf9;
+  color: #403329;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.consultation-studio-document-choice[data-selected="true"] {
+  border-color: #86b8b4;
+  background: #eaf6f3;
+}
+.consultation-studio-document-choice input[type="checkbox"] {
+  flex: 0 0 23px;
+  width: 23px !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  margin: 0;
+  accent-color: #187b85;
+  cursor: pointer;
+}
+.consultation-studio-document-choice input:focus-visible {
+  outline: 2px solid #187b85;
+  outline-offset: 4px;
+}
+.consultation-studio-document-choice span { display: grid; min-width: 0; gap: 4px; }
+.consultation-studio-document-choice strong { color: #294a4d; font-size: 15px; font-weight: 750; }
+.consultation-studio-document-choice small { color: #776c61; font-size: 11px; line-height: 1.4; }
+.consultation-studio-invoice-panel {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid #e2dacf;
+}
+.consultation-studio-invoice-panel h3 {
+  margin: 0 0 14px;
+  color: #3e5960;
+  font-size: 15px;
+  font-weight: 750;
+}
+.consultation-existing-payment-note { margin: 12px 0 0; color: #756457; font-size: 12px; line-height: 1.5; }
+
+.consultation-studio-card {
+  min-width: 0;
+  border: 1px solid var(--studio-border);
+  border-radius: 21px;
+  background: #fffcf7;
+  padding: clamp(18px, 3vw, 27px);
+  box-shadow: 0 5px 20px rgba(73, 50, 31, .035);
+}
+.consultation-studio-section-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 19px;
+}
+.consultation-studio-section-index {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  flex: 0 0 37px;
+  place-items: center;
+  border: 1px solid #e6d6c1;
+  border-radius: 12px;
+  background: #f3e8db;
+  color: #80553e;
+  font-size: 13px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.consultation-studio-section-head > div {
+  min-width: 0;
+  flex: 1;
+}
+.consultation-studio-section-head h2 {
+  margin: 0;
+  color: var(--studio-ink);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(23px, 3vw, 29px);
+  font-weight: 400;
+  line-height: 1.14;
+  letter-spacing: -.015em;
+}
+.consultation-studio-section-head p {
+  margin: 5px 0 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.consultation-studio-section-head > svg {
+  flex: 0 0 auto;
+  color: #a0836f;
+}
+.consultation-studio-client-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(170px,205px);
+  gap: 14px;
+  align-items: end;
+}
+.consultation-studio .consultation-client-selector {
+  min-width: 0;
+  border: 0;
+  padding: 0 !important;
+}
+.consultation-studio .consultation-client-search label,
+.consultation-studio .consultation-quick-meta > label {
+  gap: 7px !important;
+  color: #685347;
+  font-size: 12px !important;
+  font-weight: 650;
+}
+.consultation-studio .consultation-quick-meta--date-only {
+  display: block;
+  min-width: 0;
+}
+.consultation-studio .consultation-quick-meta--date-only > label {
+  width: 100%;
+}
+.consultation-studio.prescription-admin-form input:not([type="hidden"]),
+.consultation-studio.prescription-admin-form select,
+.consultation-studio.prescription-admin-form textarea {
+  max-width: 100%;
+  min-height: 45px;
+  border: 1px solid #d9c8b7;
+  border-radius: 11px;
+  background: #fff;
+  color: #352920;
+  font-size: 15px;
+}
+.consultation-studio.prescription-admin-form input:focus-visible,
+.consultation-studio.prescription-admin-form select:focus-visible,
+.consultation-studio.prescription-admin-form textarea:focus-visible,
+.consultation-studio button:focus-visible,
+.consultation-studio summary:focus-visible {
+  outline: 2px solid #966e50;
+  outline-offset: 3px;
+}
+.consultation-studio .consultation-client-selected-row {
+  border-radius: 12px;
+  background: #f8f0e6;
+}
+.consultation-studio .consultation-client-selected-row strong { font-size: 14px; }
+.consultation-studio .consultation-create-client {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 38px;
+  margin-top: 6px;
+  border-radius: 9px;
+  color: #7c4c30;
+  font-size: 12px;
+}
+.consultation-studio .consultation-new-client-fields {
+  margin-top: 13px;
+}
+.consultation-studio-report-type {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin: -3px 0 12px;
+  border-radius: 999px;
+  background: #f2e9dd;
+  padding: 6px 11px;
+  color: #7c6757;
+  font-size: 11px;
+}
+.consultation-studio-report-type strong { color: #674932; font-weight: 750; }
+.consultation-studio .consultation-remedy-fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0 !important;
+}
+.consultation-studio .consultation-remedy-fieldset > legend {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+.consultation-studio .consultation-remedies { display: grid; gap: 10px; }
+.consultation-studio .consultation-remedy-row--stacked,
+.consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0,1fr);
+  gap: 9px;
+  border: 1px solid #eadfd2;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+.consultation-studio .consultation-remedy-row-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+.consultation-studio .consultation-remedy-index {
+  color: #ad8e75;
+  font-size: 11px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.consultation-studio .consultation-item-type {
+  display: flex !important;
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.consultation-studio .consultation-item-type > select {
+  width: auto !important;
+  min-width: 112px !important;
+  min-height: 35px !important;
+  border-radius: 9px !important;
+  background: #f8f2eb !important;
+  padding: 5px 26px 5px 10px !important;
+  color: #704e38 !important;
+  font-size: 13px !important;
+  font-weight: 650;
+}
+.consultation-studio .consultation-remove {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  margin-left: auto;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #977f6c;
+  font-size: 20px;
+}
+.consultation-studio .consultation-remove:hover:not(:disabled) {
+  border-color: #e8d3c2;
+  background: #faeee7;
+}
+.consultation-studio .consultation-remedy-row--stacked > .prescription-remedy-search {
+  grid-column: auto;
+  margin: 0;
+}
+.consultation-studio .prescription-remedy-search > input {
+  min-height: 48px !important;
+  border-radius: 11px !important;
+  font-size: 16px !important;
+}
+.consultation-studio .consultation-dose-strip {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  grid-column: auto;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 9px;
+}
+.consultation-studio .consultation-dose-strip .consultation-remedy-dose {
+  min-width: 0;
+  gap: 5px !important;
+}
+.consultation-studio .consultation-dose-strip .consultation-remedy-dose > span {
+  color: #857366;
+  font-size: 11px;
+  font-weight: 650;
+}
+.consultation-studio .consultation-dose-strip .consultation-remedy-dose > input {
+  width: 100%;
+  min-height: 42px !important;
+  height: 42px;
+  border-radius: 9px !important;
+  font-size: 15px !important;
+}
+.consultation-studio .consultation-add-actions {
+  margin-top: 11px;
+  gap: 8px;
+}
+.consultation-studio .consultation-add-actions .prescription-add {
+  display: inline-flex;
+  min-height: 41px;
+  align-items: center;
+  border-radius: 10px;
+  padding: 7px 13px;
+  background: #f8eee2;
+  color: #704630;
+  font-size: 12px;
+  font-weight: 750;
+}
+.consultation-studio .consultation-text-import {
+  margin: 14px 0 0;
+  border: 1px dashed #d6bea6;
+  border-radius: 12px;
+  background: #faf5ee;
+  padding: 0;
+}
+.consultation-studio .consultation-text-import > summary {
+  display: flex;
+  min-height: 45px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  color: #74533e;
+  cursor: pointer;
+  list-style: none;
+}
+.consultation-studio .consultation-text-import > summary::-webkit-details-marker { display: none; }
+.consultation-studio .consultation-text-import > summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 20px;
+  font-weight: 400;
+}
+.consultation-studio .consultation-text-import[open] > summary::after { content: "−"; }
+.consultation-studio .consultation-text-import > summary strong { font-size: 12px; font-weight: 700; }
+.consultation-studio .consultation-text-import > summary span { font-size: 12px; }
+.consultation-studio .consultation-text-import-content {
+  border-top: 1px solid #ebdccc;
+  padding: 12px 14px 14px;
+}
+.consultation-studio .consultation-text-import-content > p {
+  margin: 0 0 10px;
+  color: #826e5e;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.consultation-studio .consultation-text-import-row { margin: 0; }
+.consultation-studio .consultation-text-import textarea {
+  min-height: 70px !important;
+  font-size: 14px !important;
+}
+.consultation-studio .consultation-clinical-note {
+  margin: 13px 0 0;
+  border-left: 2px solid #baa18a;
+  padding: 4px 0 4px 12px;
+  color: #887769;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.consultation-studio .consultation-note {
+  margin-bottom: 16px;
+  gap: 7px !important;
+  font-size: 12px !important;
+}
+.consultation-studio .consultation-note textarea {
+  min-height: 83px !important;
+  font-size: 15px !important;
+}
+.consultation-studio .consultation-studio-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(12,minmax(0,1fr));
+  align-items: end;
+  gap: 13px;
+}
+.consultation-studio-payment-grid > label {
+  grid-column: span 3;
+  gap: 7px !important;
+  color: #685347;
+  font-size: 12px !important;
+  font-weight: 650;
+}
+.consultation-studio-payment-grid > .consultation-studio-payment-service { grid-column: span 6; }
+.consultation-studio-payment-grid > .consultation-studio-payment-status { grid-column: 1 / -1; }
+.consultation-studio .consultation-payment-settings {
+  margin-top: 13px;
+  padding: 0 !important;
+  border-top: 1px solid #e9decf;
+}
+.consultation-studio .consultation-payment-settings summary {
+  display: flex;
+  width: fit-content;
+  min-height: 42px !important;
+  align-items: center;
+  color: #78553e;
+  font-size: 12px !important;
+  font-weight: 650;
+  cursor: pointer;
+}
+.consultation-studio .consultation-payment-settings .consultation-two-columns { margin-top: 5px; }
+.consultation-studio-submit {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 12px 20px;
+  align-items: center;
+  border: 1px solid #dec7ae;
+  border-radius: 18px;
+  background: #f2e6d8;
+  padding: 20px 22px;
+}
+.consultation-studio-submit-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.consultation-studio-submit-copy strong {
+  color: #4b3527;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.consultation-studio-submit-copy span {
+  color: #746052;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.consultation-studio-submit .prescription-form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.consultation-studio-submit .consultation-primary-action {
+  width: auto;
+  min-width: 213px;
+  min-height: 48px !important;
+  border-radius: 11px !important;
+  padding: 10px 17px !important;
+  font-size: 12px !important;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+@media (max-width: 760px) {
+  .consultation-studio-client-layout { grid-template-columns: minmax(0,1fr); }
+  .consultation-studio .consultation-studio-payment-grid { gap: 10px; }
+  .consultation-studio-payment-grid > .consultation-studio-payment-service { grid-column: 1 / -1; }
+  .consultation-studio-payment-grid > label { grid-column: span 6; }
+  .consultation-studio-payment-grid > .consultation-studio-payment-status { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .consultation-studio-document-choices { grid-template-columns: minmax(0, 1fr); }
+  .consultation-studio-document-choice { padding: 14px 15px !important; }
+
+  .consultation-studio-shell {
+    padding: 13px 14px calc(36px + env(safe-area-inset-bottom)) !important;
+  }
+  .consultation-studio-shell .prescription-admin-topbar { padding-bottom: 12px; }
+  .consultation-studio-shell .prescription-admin-titleblock { padding: 18px 0 11px; }
+  .consultation-studio-shell .prescription-admin-titleblock h1 { font-size: 35px !important; }
+  .consultation-studio-shell .prescription-admin-titleblock .prescription-admin-description { display: none; }
+  .consultation-studio-shell .prescription-admin-navigation--tabs {
+    gap: 4px !important;
+    margin: 0 0 3px !important;
+  }
+  .consultation-studio-shell .prescription-admin-navigation--tabs a {
+    min-height: 34px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .consultation-studio.prescription-admin-form {
+    margin-top: 12px;
+    gap: 12px;
+  }
+  .consultation-studio-progress { gap: 4px; }
+  .consultation-studio-progress li { gap: 5px; font-size: 10px; }
+  .consultation-studio-progress li:not(:last-child)::after { width: 10px; margin-left: 5px; }
+  .consultation-studio-progress li span { width: 22px; height: 22px; }
+  .consultation-studio-card { border-radius: 17px; padding: 16px; }
+  .consultation-studio-section-head { gap: 10px; margin-bottom: 15px; }
+  .consultation-studio-section-index { width: 33px; height: 33px; flex-basis: 33px; border-radius: 10px; }
+  .consultation-studio-section-head h2 { font-size: 24px; }
+  .consultation-studio-section-head p { font-size: 11px; }
+  .consultation-studio-section-head > svg { width: 18px; height: 18px; }
+  .consultation-studio.prescription-admin-form input:not([type="hidden"]),
+  .consultation-studio.prescription-admin-form select,
+  .consultation-studio.prescription-admin-form textarea { font-size: 16px; }
+  .consultation-studio .consultation-client-selected-row { grid-template-columns: minmax(0,1fr) auto auto; }
+  .consultation-studio .consultation-quick-meta--date-only { max-width: none; }
+  .consultation-studio .consultation-quick-meta--date-only input { width: 100%; max-width: 100%; }
+  .consultation-studio .consultation-remedy-row--stacked,
+  .consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach { padding: 12px; gap: 8px; }
+  .consultation-studio .consultation-dose-strip { gap: 7px; }
+  .consultation-studio .consultation-dose-strip .consultation-remedy-dose > span { font-size: 10px; }
+  .consultation-studio .consultation-dose-strip .consultation-remedy-dose > input {
+    min-height: 40px !important;
+    height: 40px;
+    padding: 7px 8px;
+    font-size: 16px !important;
+  }
+  .consultation-studio .consultation-text-import-row { grid-template-columns: minmax(0,1fr); }
+  .consultation-studio .consultation-text-import-row > button { min-height: 42px; width: 100%; }
+  .consultation-studio .consultation-note textarea { min-height: 78px !important; }
+  .consultation-studio-submit { grid-template-columns: minmax(0,1fr); padding: 18px; }
+  .consultation-studio-submit .consultation-primary-action { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consultation-studio *, .consultation-studio-shell .prescription-admin-navigation--tabs a {
+    transition: none !important;
+  }
+}
+
+
+/* 2026 owner studio visual refresh
+   Harmonizes with the current blue-mint capture cards and coral primary CTA.
+   Every selector remains scoped to the practitioner consultation studio. */
+.consultation-studio-shell {
+  --studio-ink: #21465a;
+  --studio-muted: #52727a;
+  --studio-accent: #17728b;
+  --studio-border: #d6e6e7;
+  max-width: 1040px;
+}
+.consultation-studio-shell .prescription-admin-titleblock {
+  padding-top: 20px;
+  padding-bottom: 12px;
+}
+.consultation-studio-shell .prescription-admin-titleblock h1 {
+  color: #293c43;
+  font-size: clamp(30px, 4.3vw, 43px) !important;
+  font-weight: 400;
+}
+.consultation-studio-shell .prescription-admin-description {
+  max-width: 680px;
+  color: #62747b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs {
+  margin-top: 7px;
+}
+.consultation-studio-shell .prescription-admin-navigation--tabs a {
+  border: 1px solid transparent;
+  color: #54707a !important;
+}
+.consultation-new-shell .prescription-admin-navigation--tabs a[href="/admin/consultations/new"] {
+  border-color: #b9dcdf;
+  background: #ddf3f4;
+  color: #195d6e !important;
+}
+
+/* Confirmation is about the selected patient and next action, not their portal. */
+.consultation-new-shell .consultation-client-created-banner {
+  gap: 14px;
+  margin: 18px 0 18px;
+  padding: clamp(16px, 3vw, 23px);
+  border: 1px solid #b7dbe0;
+  border-radius: 19px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  box-shadow: 0 9px 27px rgba(26, 91, 105, .075);
+}
+.consultation-client-created-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.consultation-client-created-avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border: 1px solid rgba(23, 114, 139, .16);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .83);
+  color: #26717b;
+  font: 400 29px/1 Georgia, serif;
+}
+.consultation-client-created-identity > div { min-width: 0; }
+.consultation-client-created-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #237a82;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+.consultation-client-created-identity strong {
+  display: block;
+  color: #1c465e;
+  font: 400 clamp(22px, 3vw, 30px)/1.13 Georgia, serif;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.consultation-client-created-identity p {
+  margin: 6px 0 0;
+  color: #52727a;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.consultation-client-created-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-left: 66px;
+}
+.consultation-client-created-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 39px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.consultation-client-created-links .consultation-client-created-report-link {
+  border: 1px solid #bcd9dd;
+  background: rgba(255, 255, 255, .82);
+  color: #245b6d;
+}
+.consultation-client-created-links .consultation-client-created-history-link {
+  padding-inline: 7px;
+  color: #2e6674;
+}
+.consultation-client-created-links a:focus-visible {
+  outline: 3px solid #b6804c;
+  outline-offset: 3px;
+}
+
+/* Three concise steps, no clipped text or horizontal swipe to find the stage. */
+.consultation-studio-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  overflow: visible;
+  padding: 0;
+  margin: 1px 0 2px;
+}
+.consultation-studio-progress li {
+  display: flex;
+  flex: initial;
+  align-items: center;
+  min-width: 0;
+  min-height: 50px;
+  gap: 8px;
+  border: 1px solid #d9e7e9;
+  border-radius: 13px;
+  background: #fffdfb;
+  padding: 9px 11px;
+  color: #50707a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.3;
+  white-space: normal;
+}
+.consultation-studio-progress li:not(:last-child)::after { display: none; }
+.consultation-studio-progress li span {
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border-color: #b6d8dd;
+  border-radius: 9px;
+  background: #e6f6f7;
+  color: #207088;
+  font-size: 11px;
+}
+.consultation-studio-progress li:nth-child(2) span {
+  border-color: #a5d7cb;
+  background: #dff4ee;
+  color: #25675c;
+}
+.consultation-studio-progress li:nth-child(3) span {
+  border-color: #edd3c9;
+  background: #fff0e9;
+  color: #bb6048;
+}
+
+/* Calm white cards and clearly defined input fields. */
+.consultation-studio-card {
+  border-color: #dce8e9;
+  border-radius: 19px;
+  background: #fffdfb;
+  box-shadow: 0 4px 16px rgba(31, 82, 87, .025);
+}
+.consultation-studio-section-head { margin-bottom: 16px; }
+.consultation-studio-section-index {
+  border-color: #cee6e5;
+  background: #e7f5f3;
+  color: #28717e;
+}
+.consultation-studio-section-head h2 { color: #253f4c; }
+.consultation-studio-section-head p {
+  color: #657e86;
+  font-size: 13px;
+}
+.consultation-studio-section-head > svg { color: #5b999e; }
+.consultation-studio .consultation-client-selected-row {
+  border: 1px solid #cce4e2;
+  background: #f0faf8;
+}
+.consultation-studio .consultation-client-selected-row strong { color: #275265; }
+.consultation-studio .consultation-create-client { color: #267084; }
+.consultation-studio .consultation-client-search label,
+.consultation-studio .consultation-quick-meta > label,
+.consultation-studio-payment-grid > label { color: #456b78; }
+.consultation-studio.prescription-admin-form input:not([type="hidden"]),
+.consultation-studio.prescription-admin-form select,
+.consultation-studio.prescription-admin-form textarea {
+  border-color: #cde0e2;
+  background: #fff;
+  color: #264757;
+}
+.consultation-studio.prescription-admin-form input:focus-visible,
+.consultation-studio.prescription-admin-form select:focus-visible,
+.consultation-studio.prescription-admin-form textarea:focus-visible,
+.consultation-studio button:focus-visible,
+.consultation-studio summary:focus-visible {
+  outline: 3px solid #b6804c;
+  outline-offset: 3px;
+}
+.consultation-studio-report-type {
+  background: #e9f7f5;
+  color: #477a7c;
+  font-size: 12px;
+}
+.consultation-studio-report-type strong { color: #245e6d; }
+.consultation-studio .consultation-remedy-row--stacked,
+.consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  border-color: #e1ebeb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(30, 86, 91, .025);
+}
+.consultation-studio .consultation-item-type > select {
+  border-color: #c9e0e1 !important;
+  background: #eaf7f6 !important;
+  color: #286575 !important;
+}
+.consultation-studio .consultation-remedy-index { color: #6c9aa3; }
+.consultation-studio .consultation-dose-strip .consultation-remedy-dose > span {
+  color: #587984;
+  font-size: 12px;
+}
+.consultation-studio .consultation-add-actions .prescription-add {
+  min-height: 44px;
+  border: 1px solid #c4e0e2;
+  border-radius: 11px;
+  background: #ecf9f8;
+  color: #27697b;
+  font-size: 13px;
+}
+.consultation-studio .consultation-text-import {
+  border-color: #c9dfe2;
+  background: #f5fbfb;
+}
+.consultation-studio .consultation-text-import > summary { color: #2e6d7f; }
+.consultation-studio .consultation-clinical-note {
+  border-color: #81bbc0;
+  color: #68828a;
+  font-size: 12px;
+}
+.consultation-studio .consultation-payment-settings { border-color: #e0ebed; }
+.consultation-studio .consultation-payment-settings summary { color: #2e6d7f; }
+
+/* Final action uses the same coral emphasis as contemporary capture flows. */
+.consultation-studio-submit {
+  border: 1px solid #b7dbe0;
+  border-radius: 19px;
+  background: linear-gradient(125deg, #e9f7fe 0%, #ddf5f2 55%, #dcf6ea 100%);
+  box-shadow: 0 9px 25px rgba(26, 91, 105, .055);
+}
+.consultation-studio-submit-copy strong { color: #1c465e; }
+.consultation-studio-submit-copy span { color: #547982; }
+.consultation-studio-submit .consultation-primary-action {
+  min-height: 54px;
+  border: 0;
+  border-radius: 13px;
+  background: #e66d50;
+  box-shadow: 0 7px 18px rgba(222, 97, 66, .14);
+  padding: 12px 20px;
+  color: #fff;
+  font-size: 14px;
+}
+.consultation-studio-submit .consultation-primary-action:hover:not(:disabled) { background: #d95b40; }
+
+@media (max-width: 600px) {
+  .consultation-studio-shell .prescription-admin-titleblock h1 { font-size: 32px !important; }
+  .consultation-studio-shell .prescription-admin-description { font-size: 12px; }
+  .consultation-new-shell .consultation-client-created-banner { border-radius: 17px; padding: 15px; }
+  .consultation-client-created-avatar { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; font-size: 24px; }
+  .consultation-client-created-identity { gap: 10px; }
+  .consultation-client-created-identity strong { font-size: 24px; }
+  .consultation-client-created-links { margin-left: 0; }
+  .consultation-client-created-links a { min-height: 44px; }
+  .consultation-studio-progress { gap: 6px; }
+  .consultation-studio-progress li {
+    min-height: 53px;
+    gap: 5px;
+    padding: 7px;
+    border-radius: 11px;
+    font-size: 10px;
+  }
+  .consultation-studio-progress li span {
+    width: 23px;
+    height: 23px;
+    flex-basis: 23px;
+    border-radius: 8px;
+  }
+  .consultation-studio-card { border-radius: 17px; }
+  .consultation-studio-section-head p { font-size: 12px; }
+  .consultation-studio .consultation-dose-strip .consultation-remedy-dose > span { font-size: 11px; }
+  .consultation-studio-submit { border-radius: 17px; padding: 17px; }
+  .consultation-studio-submit .consultation-primary-action { width: 100%; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consultation-studio-submit .consultation-primary-action { transition: none; }
+}
+
+
+/* Consultation report analysis + client notes — modern responsive input cards. */
+.consultation-report-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 6px;
+}
+.consultation-studio .consultation-report-note-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid #cde4e5;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f2fafb, #fbfffe);
+  color: #295266;
+}
+.consultation-studio .consultation-report-note-card:nth-child(2) {
+  border-color: #d8e6dc;
+  background: linear-gradient(145deg, #f1faf5, #fdfffb);
+}
+.consultation-studio .consultation-report-note-card > strong {
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+.consultation-studio .consultation-report-note-card > small {
+  color: #5a7881;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-studio .consultation-report-note-card textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 126px;
+  margin-top: 9px;
+  padding: 12px 13px;
+  border: 1px solid #cadfe2;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 16px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.consultation-studio .consultation-report-note-card:focus-within { border-color: #5faba9; }
+@media (max-width: 700px) {
+  .consultation-report-notes-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .consultation-studio .consultation-report-note-card { padding: 14px; }
+}
+
+.consultation-distance-homeopathy-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 18px;
+  border: 1px solid #dccacc;
+  border-radius: 16px;
+  padding: 17px 18px;
+  background: #fffdfa;
+}
+.consultation-distance-homeopathy-choice[data-selected="true"] {
+  border-color: #894550;
+  background: #fcf5f4;
+}
+.consultation-distance-homeopathy-choice input { accent-color: #752d3f; margin-top: 4px; }
+.consultation-distance-homeopathy-choice strong { color: #612639; }
+.consultation-distance-homeopathy-choice small { display:block; line-height:1.5; margin-top:5px; }
+
+
+/* 2026-10 client-report studio: editorial mobile density, consistent brand. */
+.consultation-studio-shell {
+  --studio-ink: #263b43;
+  --studio-muted: #60757a;
+  --studio-accent: #692e44;
+  --studio-border: #e4d8d1;
+}
+.consultation-studio.prescription-admin-form { gap: 11px; }
+.consultation-studio-progress { gap: 7px; margin: 0 0 2px; }
+.consultation-studio-progress li {
+  min-height: 41px;
+  padding: 8px 10px;
+  border: 1px solid #e5d9d3;
+  border-radius: 11px;
+  background: #fffdfb;
+  color: #5d4d50;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.consultation-studio-progress li span {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 1px solid #ead9dd;
+  border-radius: 7px;
+  background: #faf0f3;
+  color: #78354d;
+  font-size: 10px;
+}
+.consultation-studio-progress li:nth-child(2) span,
+.consultation-studio-progress li:nth-child(3) span {
+  border-color: #ead9dd;
+  background: #faf0f3;
+  color: #78354d;
+}
+.consultation-studio-card {
+  padding: clamp(14px, 2.5vw, 22px);
+  border: 1px solid var(--studio-border);
+  border-radius: 16px;
+  background: #fffdfb;
+  box-shadow: 0 3px 12px rgb(66 43 42 / 3%);
+}
+.consultation-studio-section-head { gap: 10px; margin-bottom: 13px; }
+.consultation-studio-section-index {
+  width: 31px;
+  height: 31px;
+  flex-basis: 31px;
+  border: 1px solid #e4d8dc;
+  border-radius: 9px;
+  background: #f8eef1;
+  color: #703049;
+  font-size: 12px;
+}
+.consultation-studio-section-head h2 {
+  color: #293d47;
+  font-size: clamp(22px, 2.75vw, 27px);
+  line-height: 1.15;
+}
+.consultation-studio-section-head p { margin-top: 3px; color: #657b80; line-height: 1.35; }
+.consultation-studio-section-head > svg { color: #926b79; }
+.consultation-studio .consultation-report-note-grid { margin-top: 12px; gap: 11px; }
+.consultation-studio .consultation-report-note { padding: 13px; gap: 5px; background: #fcf9f7; border-color: #e5d8d4; }
+.consultation-studio .consultation-report-note > span { color: #69374a; font-size: 15px; }
+.consultation-studio .consultation-report-note > small { min-height: 0; line-height: 1.35; }
+.consultation-studio .consultation-report-note textarea { min-height: 100px; line-height: 1.42; }
+.consultation-studio .consultation-remedy-row--stacked,
+.consultation-studio .consultation-remedy-row--stacked.consultation-remedy-row--bach {
+  padding: 12px;
+  border-color: #e8ddd7;
+  box-shadow: none;
+}
+.consultation-studio-document-choice {
+  padding: 12px 14px !important;
+  border-radius: 12px;
+}
+.consultation-studio-document-choice[data-selected="true"] {
+  border-color: #cba5b2;
+  background: #fbf1f4;
+}
+.consultation-studio-document-choice input[type="checkbox"] { accent-color: #6b2e46; }
+.consultation-studio-document-choice strong { color: #593544; }
+.consultation-studio .consultation-report-language-note { margin: 8px 0 10px; }
+.consultation-studio-submit {
+  padding: 15px 17px;
+  border-color: #e1cdd5;
+  border-radius: 16px;
+  background: #fbf5f5;
+  box-shadow: none;
+}
+.consultation-studio-submit-copy strong { color: #5c2c40; font-size: 20px; }
+.consultation-studio-submit-copy span { color: #74666a; line-height: 1.4; }
+.consultation-studio-submit .consultation-primary-action {
+  min-height: 46px;
+  background: #692e44;
+  box-shadow: none;
+  color: #fff;
+}
+.consultation-studio-submit .consultation-primary-action:hover:not(:disabled) { background: #542438; }
+@media (max-width: 600px) {
+  .consultation-studio-shell { padding: 10px 12px calc(26px + env(safe-area-inset-bottom)) !important; }
+  .consultation-studio.prescription-admin-form { gap: 10px; margin-top: 8px; }
+  .consultation-studio-progress { gap: 5px; }
+  .consultation-studio-progress li {
+    min-height: 37px;
+    padding: 5px 6px;
+    gap: 5px;
+    border-radius: 9px;
+    font-size: 10px;
+    line-height: 1.18;
+  }
+  .consultation-studio-progress li span { width: 22px; height: 22px; flex-basis: 22px; font-size: 10px; }
+  .consultation-studio-card { padding: 14px; border-radius: 14px; }
+  .consultation-studio-section-head { gap: 9px; margin-bottom: 11px; }
+  .consultation-studio-section-index { width: 28px; height: 28px; flex-basis: 28px; }
+  .consultation-studio-section-head h2 { font-size: 22px; }
+  .consultation-studio-section-head p { font-size: 11px; line-height: 1.32; }
+  .consultation-studio-client-layout { gap: 10px; }
+  .consultation-studio .consultation-quick-meta--date-only input { min-height: 42px; }
+  .consultation-studio .consultation-report-note-grid { grid-template-columns: minmax(0,1fr); }
+  .consultation-studio .consultation-report-note { padding: 12px; }
+  .consultation-studio-document-choices { gap: 8px; margin: 4px 0 9px; }
+  .consultation-studio-submit { padding: 13px; gap: 10px; }
+  .consultation-studio-submit .consultation-primary-action { font-size: 15px !important; }
+}
+
+/* Both Create and Edit use the same optional report-builder details. */
+.consultation-advanced-remedy,
+.consultation-extra-details {
+  min-width: 0;
+  margin-top: 8px;
+  border-top: 1px solid #e6dcd0;
+  padding-top: 10px;
+}
+.consultation-advanced-remedy summary,
+.consultation-extra-details summary {
+  cursor: pointer;
+  color: #715140;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 7px 2px;
+}
+.consultation-advanced-remedy summary span { font-size: 11px; color: #277683; }
+.consultation-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 10px 0;
+}
+.consultation-advanced-grid label { min-width: 0; display: grid; gap: 5px; }
+.consultation-advanced-grid label span { font-size: 12px; font-weight: 600; }
+.consultation-advanced-grid input,
+.consultation-advanced-grid textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #d6c5b5;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  color: #392b22;
+  font-size: 16px;
+}
+.consultation-advanced-grid .consultation-advanced-notes { grid-column: 1 / -1; }
+.consultation-edit-return { margin: 15px 0; }
+.consultation-edit-return a { font-size: 14px; color: #70513c; }
+.consultation-edit-materials { margin: 24px auto; max-width: 920px; }
+.consultation-edit-document-links { margin: 24px auto; max-width: 920px; }
+.consultation-edit-document-links > summary { cursor: pointer; padding: 13px; font-weight: 700; }
+@media (max-width: 600px) {
+  .consultation-advanced-grid { grid-template-columns: minmax(0, 1fr); }
+  .consultation-advanced-grid .consultation-advanced-notes { grid-column: 1; }
+}
+
+/* Create and edit offer the same reusable report-materials panel. */
+.consultation-new-materials .consultation-new-materials-help {
+  margin: 8px 0 14px; color: #55747b; font-size: 14px; line-height: 1.5;
+}
+.consultation-new-materials .consultation-new-materials-pending {
+  display: grid; gap: 7px; margin-top: 14px; border: 1px solid #cfdfdf;
+  border-radius: 13px; background: #f4fbfa; padding: 13px;
+  color: #335f68; font-size: 13px; line-height: 1.55;
+}
+.consultation-new-materials .consultation-new-materials-link { color: #246976; font-weight: 700; }
+
+/* Submit actions are portaled after the material and access sections, at the true page end. */
+.consultation-report-save-slot {
+  max-width: 920px;
+  margin: 22px auto 0;
+}
+.consultation-report-save-slot .consultation-studio-submit {
+  margin: 0;
+}

@@ -89,3 +89,11 @@ My shell is support,
 Not a net, not chains.
 
 I bravely face the turns of the road.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: A protective shell offers shelter from the fear of change, but also keeps you apart from the world and from taking new steps.
+
+After (desired state): The shell becomes a source of support: you can move toward change cautiously and steadily, trusting yourself.

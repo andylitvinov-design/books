@@ -1,0 +1,101 @@
+{
+  "reviewedAt": "2026-10-14",
+  "permissionUrl": "https://ipip.ori.org/newPermission.htm",
+  "onlinePermissionUrl": "https://ipip.ori.org/IPIPImplementationsAroundTheWeb.htm",
+  "scoringUrl": "https://ipip.ori.org/newScoringInstructions.htm",
+  "scales": [
+    {
+      "key": "ipip-cognitive-failures-10",
+      "sourceUrl": "https://ipip.ori.org/newSingleConstructsKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newSingleConstructs.htm",
+      "items": [
+        "Get confused easily.",
+        "Often forget things.",
+        "Let my attention wander off.",
+        "Spill things.",
+        "Have difficulty keeping things in mind.",
+        "Can't make up my mind.",
+        "Like to take responsibility for making decisions.",
+        "Always know why I do things.",
+        "Remain calm under pressure.",
+        "Pay attention to details."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "negativePositions": [
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "key": "ipip-optimism-10",
+      "sourceUrl": "https://ipip.ori.org/newSingleConstructsKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newSingleConstructs.htm",
+      "items": [
+        "Just know that I will be a success.",
+        "Feel comfortable with myself.",
+        "Seldom feel blue.",
+        "Look at the bright side of life.",
+        "Have a dark outlook on the future.",
+        "Feel that my life lacks direction.",
+        "Dislike myself.",
+        "Often feel blue.",
+        "See difficulties everywhere.",
+        "Am often in a bad mood."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "negativePositions": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "key": "ipip-attending-to-emotions-10",
+      "sourceUrl": "https://ipip.ori.org/newEmotionalIntelligenceKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newEmotionalIntelligenceTable.htm",
+      "items": [
+        "Think about the causes of my emotions.",
+        "Pay a lot of attention to my feelings.",
+        "Am usually aware of the way that I'm feeling.",
+        "Notice my emotions.",
+        "Often stop to analyze how I'm feeling.",
+        "Rarely think about how I feel.",
+        "Rarely analyze my emotions.",
+        "Am not in touch with my feelings.",
+        "Often ignore my feelings.",
+        "Rarely notice my emotional reactions."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "negativePositions": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  ]
+}

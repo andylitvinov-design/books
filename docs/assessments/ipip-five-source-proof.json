@@ -1,0 +1,161 @@
+{
+  "reviewedAt": "2026-10-14",
+  "permissionUrl": "https://ipip.ori.org/newPermission.htm",
+  "onlinePermissionUrl": "https://ipip.ori.org/IPIPImplementationsAroundTheWeb.htm",
+  "scoringUrl": "https://ipip.ori.org/newScoringInstructions.htm",
+  "scales": [
+    {
+      "key": "ipip-locus-of-control-internality-10",
+      "sourceUrl": "https://ipip.ori.org/newSingleConstructsKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newSingleConstructs.htm",
+      "items": [
+        "Believe that my success depends on ability rather than luck.",
+        "Believe that events in my life are determined only by me.",
+        "Just know that I will be a success.",
+        "Believe that by working hard a person can achieve anything.",
+        "Feel comfortable with myself.",
+        "Always know why I do things.",
+        "See difficulties everywhere.",
+        "Believe that unfortunate events occur because of bad luck.",
+        "Can't stand on my own.",
+        "Feel that my life lacks direction."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "negativePositions": [
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "key": "ipip-locus-of-control-powerful-others-10",
+      "sourceUrl": "https://ipip.ori.org/newSingleConstructsKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newSingleConstructs.htm",
+      "items": [
+        "Believe that the world is controlled by a few powerful people.",
+        "Remember my failures more easily than my successes.",
+        "Feel short-changed in life.",
+        "See difficulties everywhere.",
+        "Dislike myself.",
+        "Feel that my life lacks direction.",
+        "Feel comfortable with myself.",
+        "Just know that I will be a success.",
+        "Feel comfortable around people.",
+        "Know how to enjoy myself."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "negativePositions": [
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "key": "ipip-locus-of-control-chance-10",
+      "sourceUrl": "https://ipip.ori.org/newSingleConstructsKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newSingleConstructs.htm",
+      "items": [
+        "Believe that unfortunate events occur because of bad luck.",
+        "Believe some people are born lucky.",
+        "Believe in the power of fate.",
+        "Feel that my life lacks direction.",
+        "Am resigned to my fate.",
+        "Am not sure where my life is going.",
+        "Believe that my success depends on ability rather than luck.",
+        "Feel comfortable with myself.",
+        "Just know that I will be a success.",
+        "Come up with good solutions."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "negativePositions": [
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "key": "ipip-positive-expressivity-9",
+      "sourceUrl": "https://ipip.ori.org/newEmotionalIntelligenceKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newEmotionalIntelligenceTable.htm",
+      "items": [
+        "Express my affection physically.",
+        "Laugh out loud if something is funny.",
+        "Express my happiness in a childlike manner.",
+        "Sometimes laugh out loud when reading or watching TV.",
+        "Hug my close friends.",
+        "Show my feelings when I'm happy.",
+        "Find it difficult showing people that I care about them.",
+        "Have difficulty showing affection.",
+        "Keep my happy feelings to myself."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "negativePositions": [
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "key": "ipip-negative-expressivity-10",
+      "sourceUrl": "https://ipip.ori.org/newEmotionalIntelligenceKey.htm",
+      "evidenceUrl": "https://ipip.ori.org/newEmotionalIntelligenceTable.htm",
+      "items": [
+        "Shout or scream when I'm angry.",
+        "Can't help but look upset when something bad happens.",
+        "Show my fear.",
+        "Suspect that my facial expressions give me away when I feel sad.",
+        "Show my sadness.",
+        "Keep my feelings to myself, regardless of how unhappy I am.",
+        "Find it difficult showing people that I'm angry with them.",
+        "Keep my feelings to myself, regardless of how scared I am.",
+        "Rarely show my anger.",
+        "Wish I could more easily show my negative feelings."
+      ],
+      "positivePositions": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "negativePositions": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  ]
+}

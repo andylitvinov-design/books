@@ -1,0 +1,2342 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, Heart, LockKeyhole, PlayCircle, Sparkles, Sprout, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
+import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
+import { ReikiInitiationPhoto, type ReikiPhoto } from "@/components/reiki-initiation-photo";
+import ReikiHintsSlide from "@/components/app/reiki-hints-slide";
+import { appFetch } from "@/lib/app/client-fetch";
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
+import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { reikiPractitionerLessonVideos, type ReikiPractitionerLessonVideo } from "@/data/academy/reiki-practitioner-lesson-videos";
+import { useOceanPracticeAudio } from "./ocean-practice-audio";
+import OceanSoundToggle from "./ocean-sound-toggle";
+import {
+  ENERGYWORK_COURSE_ID, ENERGYWORK_COURSE_VERSION,
+  energyworkPhases, energyworkLessons, energyworkInitiationRequirements,
+  energyworkPathChoices, energyworkSlides,
+  type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
+} from "@/data/academy/energywork-ai-curriculum";
+import {
+  ENERGYWORK_FIRST_LESSON_NEXT, ENERGYWORK_FIRST_LESSON_STORAGE_KEY,
+  energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
+} from "@/data/academy/energywork-first-lesson";
+import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS } from "@/data/academy/reiki-initiation-request.js";
+import styles from "./energywork-ai-learner.module.css";
+import daybookStyles from "./reiki-daybook.module.css";
+import "@/app/[locale]/app/cabinet-theme.css";
+
+// Reuse the owned course artwork; each week shares its own visual identity.
+const REIKI_DAYBOOK_ART = [
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
+  "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
+  "/academy/reiki-yggdrasil/source/basic-program.jpg",
+  "/images/holistic-house/andy-about.png",
+] as const;
+
+type Props = { locale: EnergyworkLocale; startAtExperience?: boolean; layout?: "classic" | "daybook" };
+type AnswerMap = Record<string, string>;
+const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
+  "tan-06": "#tantra-original-author-research",
+  "tan-study-02": "#tantra-original-author-research",
+  "tan-study-03": "#tantra-full-source",
+  "tan-study-04": "#tantra-full-source",
+  "tan-study-06": "#tantra-original-master-programme",
+  "tan-study-07": "#tantra-original-master-programme",
+};
+type StoredProgress = {
+  accountId: string; enrolled: boolean; courseVersion: string;
+  slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
+  revision?: number; savedAt?: string; status?: "active" | "completed";
+  sharingWithTeacher?: boolean;
+  enrollmentLead?: { id: string; status: string; createdAt: string } | null;
+  applicationLead?: { id: string; status: string; submittedAt: string } | null;
+};
+type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
+type ReikiBootstrap = { account?: { id?: string; displayName?: string; onboardingState?: string } };
+type FirstLessonHandoff = { answers: Record<string, string>; afterSave?: string };
+type SaveCommand = {
+  action: "save";
+  version: string; slideId: string; nextSlideId: string;
+  answer?: string;
+  secondaryAnswer?: string;
+};
+
+const programmeSystemDescriptions: Record<EnergyworkLocale, Record<EnergyworkPath, string>> = {
+  en: {
+    tantra: "presence & connection",
+    kundalini: "grounding & energy",
+    yggdrasil: "runes & World Tree",
+  },
+  ru: {
+    tantra: "присутствие и контакт",
+    kundalini: "опора и энергия",
+    yggdrasil: "руны и Древо",
+  },
+};
+
+const copy = {
+  en: {
+    shortTitle: "Reiki Practitioner",
+    academyMark: "Holistic House Academy",
+    journey: "Five Reiki lessons",
+    lesson: "Lesson",
+    completedLabel: "completed",
+    startFree: "Start free program",
+    benefits: "What to expect from your learning",
+    shortLessons: "5 short lessons",
+    shortLessonsDetail: "Clear guidance",
+    practicalTasks: "Guided meditations",
+    practicalTasksDetail: "Learn at your pace",
+    privateProgress: "At your own pace",
+    privateProgressDetail: "Save by choice",
+    eyebrow: "FREE COURSE · YOUR REIKI JOURNEY",
+    preview: "Guest preview · Answers are not saved.",
+    previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
+    program: "Discover your Reiki journey",
+    programmeIntro: "Three Reiki traditions — discover each approach.",
+    programmeRead: "Guide",
+    systemDetails: "About this practice",
+    openLesson: "Open lesson",
+    lessonLocked: "Opens as you progress",
+    intro: "Introduction",
+    slidesWord: "slides",
+    saveAndContinue: "Save my lesson and continue",
+    returnAnytime: "Pick up here anytime from My Courses.",
+    tomorrowChoice: "Save my lesson",
+    continueNow: "Continue learning",
+    continueNowSave: "Continue — save lesson 1",
+    lessonChoices: "Choose what to do after this lesson",
+    saveTodayDetail: "Finish for today",
+    saveGuestDetail: "Sign in with Google",
+    accountSaveTitle: "Save your Reiki course",
+    accountSaveText: "Continue with Google to keep your lessons and reflections in your personal Holistic House account.",
+    installPageSaved: "Your course progress is saved",
+    installPageTitle: "Your Reiki course, always close",
+    installPageText: "Add Holistic House to your phone for easy access to My Courses. Installing is optional.",
+    installPageLater: "Not now — go to My Courses",
+    installPageContinue: "Continue learning",
+    installPageNote: "Installing the app does not activate lesson reminders. Notifications require separate permission.",
+    installOption: "Install Holistic House on my phone",
+    backCourse: "Course details",
+    step: "Slide",
+    of: "of",
+    continue: "Continue",
+    back: "Back",
+    stop: "Explore all five steps now. Sign in to save your place as you learn.",
+    stopSaved: "Your progress is saved in My Courses. Revisit any step you have reached.",
+    optional: "Optional reflection",
+    experienceBadge: "Your starting point",
+    experienceNote: "Choose one answer to continue. You can change it later.",
+    blank: "You can leave this unanswered.",
+    notes: "My reflection",
+    placeholder: "Write here (optional)…",
+    sunReflectionPlaceholder: "What did you notice? (optional)…",
+    value: "Your choice",
+    audio: "Original English audio",
+    unavailable: "This recording is not available. You can continue using the written teaching.",
+    welcomeOffer: "5 weeks · 3 Reiki traditions",
+    welcomeRequirement: "Study all five lessons in order.",
+    welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat",
+    welcomeGiftShort: "After the course: request a free Level 1 initiation",
+    welcomeGiftText: "After completing all five lessons, request one free Level 1 initiation guided by Andrey in chat. You can also request a personal 30- or 60-minute session. The course itself does not confer initiation.",
+    welcomeTeacher: "Want individual guidance? Ask about a personal session with Andrey alongside your free chat initiation.",
+    pathway: "All lessons are part of your course",
+    picked: "Completed",
+    fiveLessons: "Five sequential lessons",
+    meditationReport: "Meditation report",
+    lessonQuestion: "Course question",
+    optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
+    tantraAnswerRequired: "Answer required to continue.", tantraStudyHint: "Need a hint? Read the guide", tantraAnswerPlaceholder: "Write a short answer…", required: "Required",
+    feedbackBadge: "Your review",
+    saveReview: "Save review",
+    reviewMissing: "Write at least 50 characters to save your review.",
+    feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
+    feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
+    feedbackCharacters: "characters", feedbackMinimum: "minimum 50",
+    voicesLabel: "Learner experiences",
+    voicesFullText: "Full learner review",
+    voicesNoQuote: "No verified comments for this exact recording are available here yet.",
+    voicesSource: "Original review",
+    voicesNote: "Other people's experiences are not a standard to meet.",
+    voicesPrevious: "Previous review",
+    voicesNext: "Next review",
+    voicesNavigation: "Browse learner reviews",
+    milestoneLabel: "Well done — keep going!",
+    initiationVideoNoteTitle: "A video meditation is not an initiation",
+    initiationVideoNoteText: "A recording alone is not an initiation. After all five lessons you can request a free guided initiation in chat or a separate personal session with Andrey.",
+    firstMilestoneLabel: "Your Reiki journey is underway",
+    firstSaveTitle: "Your reflections, gently kept",
+    firstSaveText: "Your answers and your Flight to the Sun review will be carefully saved in My Courses. Return to them whenever you like, and edit or rewrite them at any time.",
+    firstSaveAssurance: "Only you decide what to share. Your reflections stay private.",
+    firstSaveConsent: "I am 18+ and agree to save this lesson and my answers privately in My Courses.",
+    firstSaveGuestHint: "Save your first lesson privately to unlock Tantra Reiki.",
+    firstSavePolicy: "Privacy Policy",
+    firstSaveGoogle: "Save with Google & continue",
+    firstSaveAccount: "Save to My Courses & continue",
+    firstSaveNext: "Continue to saving",
+    firstSaveError: "We couldn't save your lesson yet. Your answers are still here — please try again.",
+    firstSignInCancelled: "Google sign-in wasn't completed. Please try again to save and continue.",
+    firstSaveReady: "Lesson 1 is saved in My Courses.",
+    committed: "I'm committed!",
+    reviewTitle: "Personal initiation readiness",
+    reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions in Tantra, Kundalini and Yggdrasil Reiki.",
+    reviewDone: "Your meditation reports and study answers are ready for review.",
+    reviewSaveNeeded: "Your answers are complete in this preview. Sign in and consent to private saving before requesting a personal initiation. Guest entries cannot be transferred automatically; copy your notes first.",
+    reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
+    reportMissing: "Add report",
+    questionMissing: "Answer question",
+    backToReview: "Return to initiation checklist",
+    reportReady: "Report recorded",
+    questionReady: "Answer recorded",
+    readyCount: "items completed",
+    initiateRequest: "Request free Level 1 introduction in",
+    finish: "Course completed",
+    finalAcceptedHeading: "Your application has been received!",
+    finalPendingHeading: "One last step — send your initiation request",
+    finalReviewChecklist: "Review your lesson answers",
+    finalEnableShare: "Allow private sharing & continue",
+    finalContactHeading: "Write to Andrey personally",
+    finalContactNote: "I've completed the Reiki Practitioner course and want to take the next step. Open a private chat with this message already prepared — no private course answers are included.",
+    finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
+    summary: "Your personal course journal",
+    nothing: "You did not add written reflections; that is completely fine.",
+    copy: "Copy my notes",
+    copied: "Notes copied",
+    failed: "Copy unavailable. Please select the text and copy it manually.",
+    restart: "Start again",
+    source: "Explore the original course",
+    teacher: "Request teacher-guided Level 1",
+    noInitiation: "Studying the material, completing the course or sending a request does not automatically provide initiation.",
+    continuePath: "Continue to the next lesson",
+    checking: "Checking saved course…", consentTitle: "Save your learning privately",
+    consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
+    teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
+    initiationLetterHeading: "Your Reiki initiation request",
+    initiationLetterHint: "Your free chat initiation, optional donations and personal session choice, contact details and motivation reach Andrey’s private CRM only after you confirm.",
+    initiationConfirm: "I agree to share my photo, initiation and session choices, name, city, preferred time, motivation and all course answers with Andrey in his private CRM. This is not a booking or payment.",
+    initiationSend: "Send my initiation request",
+    initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
+    initiationTooShort: "Complete your initiation request on the previous lesson slide.",
+    initiationShareNeeded: "Enable teacher sharing to send your application.",
+    initiationNotReady: "Complete your lesson reports and answers to request initiation.",
+    enableSave: "Start & save my course", signIn: "Sign in with Google to save",
+    guestHint: "To start Lesson 2, save Lesson 1 in your private account.",
+    saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
+    retry: "Retry", saveFailed: "Could not save. Your answer is still on this screen; retry before continuing.",
+    conflict: "Your course changed in another session. Reload the saved version before continuing.",
+    reload: "Reload saved progress", print: "Print / Save PDF",
+    resetConfirm: "Delete this course, its saved answers, and both related CRM leads (including any initiation request)? Your other courses remain.",
+    signupError: "Could not start Google sign-in. Try again from the My Courses cabinet.",
+    accountError: "Account needs attention. Open your personal cabinet to complete sign-in and consent.",
+    myCourses: "My Courses",
+  },
+  ru: {
+    shortTitle: "Практик Рейки",
+    academyMark: "Академия Holistic House",
+    journey: "Пять уроков Рейки",
+    lesson: "Урок",
+    completedLabel: "пройдено",
+    startFree: "Начать бесплатный курс",
+    benefits: "Что ждёт вас на курсе",
+    shortLessons: "5 коротких уроков",
+    shortLessonsDetail: "Понятные шаги",
+    practicalTasks: "Медитации с сопровождением",
+    practicalTasksDetail: "В своём темпе",
+    privateProgress: "В своём темпе",
+    privateProgressDetail: "По вашему выбору",
+    eyebrow: "БЕСПЛАТНЫЙ КУРС · ВАШ ПУТЬ В РЕЙКИ",
+    preview: "Гостевой просмотр · Ответы не сохраняются.",
+    previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
+    program: "Откройте свой путь в Рейки",
+    programmeIntro: "Три системы Рейки — познакомьтесь с каждой.",
+    programmeRead: "Описание",
+    systemDetails: "Об этой практике",
+    openLesson: "Открыть урок",
+    lessonLocked: "Откроется по мере прохождения",
+    intro: "Введение",
+    slidesWord: "слайдов",
+    saveAndContinue: "Сохранить урок и продолжить",
+    returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
+    tomorrowChoice: "Сохранить урок",
+    continueNow: "Продолжить обучение",
+    continueNowSave: "Продолжить — сохранить урок 1",
+    lessonChoices: "Что сделать после урока",
+    saveTodayDetail: "Завершить на сегодня",
+    saveGuestDetail: "Войти через Google",
+    accountSaveTitle: "Сохраните свой курс Рейки",
+    accountSaveText: "Войдите через Google, чтобы сохранить уроки и личные заметки в кабинете Holistic House.",
+    installPageSaved: "Прогресс курса сохранён",
+    installPageTitle: "Ваш курс Рейки всегда рядом",
+    installPageText: "Добавьте Holistic House на телефон, чтобы быстро открывать «Мои курсы». Установка необязательна.",
+    installPageLater: "Не сейчас — перейти в «Мои курсы»",
+    installPageContinue: "Продолжить обучение",
+    installPageNote: "Установка приложения не включает напоминания об уроках. Для уведомлений потребуется отдельное разрешение.",
+    installOption: "Установить Holistic House на телефон",
+    backCourse: "Описание курса",
+    step: "Слайд",
+    of: "из",
+    continue: "Продолжить",
+    back: "Назад",
+    stop: "Изучайте все пять этапов. Войдите в кабинет, чтобы сохранять свой прогресс.",
+    stopSaved: "Ваш прогресс сохранён в разделе «Мои курсы». Возвращайтесь к пройденным урокам.",
+    optional: "Необязательная рефлексия",
+    experienceBadge: "Ваш уровень знакомства",
+    experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
+    blank: "Можно оставить без ответа.",
+    notes: "Моё наблюдение",
+    placeholder: "Напишите здесь (необязательно)…",
+    sunReflectionPlaceholder: "Что вы почувствовали? (необязательно)…",
+    value: "Ваш выбор",
+    audio: "Оригинальное видео на английском",
+    unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
+    welcomeOffer: "5 недель · 3 системы Рейки",
+    welcomeRequirement: "Проходите все пять уроков по очереди.",
+    welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате",
+    welcomeGiftShort: "После курса — заявка на бесплатную инициацию I ступени",
+    welcomeGiftText: "После пяти уроков можно запросить одну бесплатную инициацию I ступени с Андреем в чате. Дополнительно можно выбрать личную сессию на 30 или 60 минут. Сам курс не является инициацией.",
+    welcomeTeacher: "Хотите индивидуального внимания? Обсудите с Андреем личную сессию в дополнение к бесплатному чату.",
+    pathway: "Все уроки входят в одну программу",
+    picked: "Завершено",
+    fiveLessons: "Пять последовательных уроков",
+    meditationReport: "Отчёт после медитации",
+    lessonQuestion: "Вопрос по уроку",
+    optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
+    tantraAnswerRequired: "Ответ обязателен для продолжения.", tantraStudyHint: "Подсказка: читать материал", tantraAnswerPlaceholder: "Ваш краткий ответ…", required: "Обязательно",
+    feedbackBadge: "Ваш отзыв",
+    saveReview: "Сохранить отзыв",
+    reviewMissing: "Напишите хотя бы 50 символов, чтобы сохранить отзыв.",
+    feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
+    feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
+    feedbackCharacters: "символов", feedbackMinimum: "минимум 50",
+    voicesLabel: "Отзывы участников",
+    voicesFullText: "Полный текст отзыва",
+    voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
+    voicesSource: "Источник отзыва",
+    voicesNote: "Ваш опыт не обязан совпадать с чужим.",
+    voicesPrevious: "Предыдущий отзыв",
+    voicesNext: "Следующий отзыв",
+    voicesNavigation: "Переключение отзывов",
+    milestoneLabel: "Отличный результат!",
+    initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
+    initiationVideoNoteText: "Видеозапись сама по себе не является инициацией. После пяти уроков можно запросить инициацию с Андреем в чате или отдельную личную сессию.",
+    firstMilestoneLabel: "Ваш путь в Рейки начался",
+    firstSaveTitle: "Ваши впечатления будут бережно сохранены",
+    firstSaveText: "Ваши ответы и отзыв о «Полёте к Солнцу» будут бережно сохранены в вашем кабинете. Вы сможете в любой момент к ним вернуться, изменить или переписать.",
+    firstSaveAssurance: "Только вы решаете, чем делиться. Ваши записи остаются личными.",
+    firstSaveConsent: "Мне есть 18 лет, я согласен(на) сохранить урок и ответы приватно в «Моих курсах».",
+    firstSaveGuestHint: "Сохраните первый урок, чтобы перейти к Тантра Рейки.",
+    firstSavePolicy: "Политика конфиденциальности",
+    firstSaveGoogle: "Сохранить через Google и продолжить",
+    firstSaveAccount: "Сохранить в кабинете и продолжить",
+    firstSaveNext: "Продолжить к сохранению",
+    firstSaveError: "Пока не получилось сохранить урок. Ваши ответы на месте — попробуйте ещё раз.",
+    firstSignInCancelled: "Вход через Google не завершён. Повторите вход, чтобы сохранить урок и продолжить.",
+    firstSaveReady: "Первый урок сохранён в «Моих курсах».",
+    committed: "I'm committed!",
+    reviewTitle: "Готовность к личной инициации",
+    reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, по Тантра, Кундалини и Иггдрасиль Рейки. Учёбу можно продолжать без них.",
+    reviewDone: "Ваши отчёты и ответы на вопросы готовы к просмотру.",
+    reviewSaveNeeded: "Ответы заполнены в предварительном просмотре. Для заявки на личную инициацию войдите в кабинет и согласитесь на приватное сохранение. Гостевые записи автоматически не переносятся — сначала скопируйте их.",
+    reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
+    reportMissing: "Заполнить отчёт",
+    questionMissing: "Ответить на вопрос",
+    backToReview: "Вернуться к подготовке инициации",
+    reportReady: "Отчёт есть",
+    questionReady: "Ответ есть",
+    readyCount: "пунктов заполнено",
+    initiateRequest: "Запросить бесплатную вводную инициацию I ступени —",
+    finish: "Курс завершён",
+    finalAcceptedHeading: "Ваша заявка принята!",
+    finalPendingHeading: "Последний шаг — отправьте заявку на инициацию",
+    finalReviewChecklist: "Проверить ответы уроков",
+    finalEnableShare: "Разрешить приватную передачу и продолжить",
+    finalContactHeading: "Напишите Андрею лично",
+    finalContactNote: "Я завершил(а) курс Reiki Practitioner и хочу двигаться дальше. Откройте личный чат с готовым сообщением — ответы и личные данные из курса не передаются.",
+    finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
+    summary: "Ваш личный учебный дневник",
+    nothing: "Вы не записали наблюдения, и это совершенно нормально.",
+    copy: "Скопировать записи",
+    copied: "Записи скопированы",
+    failed: "Копирование недоступно. Выделите текст и скопируйте вручную.",
+    restart: "Начать заново",
+    source: "Материалы курса",
+    teacher: "Запросить 1-ю ступень у преподавателя",
+    noInitiation: "Просмотр материалов, окончание курса или отправка заявки не предоставляют инициацию автоматически.",
+    continuePath: "Перейти к следующему уроку",
+    checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
+    consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
+    teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
+    initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
+    initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, выбранная личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Согласен(на) передать Андрею фото, выбор инициаций и личной сессии, имя, город, удобное время, мотивацию и все ответы курса в закрытую CRM. Это не оплата и не бронь.",
+    initiationSend: "Отправить заявку на инициацию",
+    initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
+    initiationTooShort: "Заполните заявку на инициацию на предыдущем слайде.",
+    initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
+    initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
+    enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
+    guestHint: "Чтобы перейти ко второму уроку, сохраните первый в личном кабинете.",
+    saved: "Сохранено приватно", saving: "Сохраняем…", offline: "Сохранение недоступно. Ответы не записываются на сервер.",
+    retry: "Повторить", saveFailed: "Не удалось сохранить. Ответ остался на экране; повторите перед переходом.",
+    conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
+    reload: "Загрузить прогресс", print: "Печать / Сохранить PDF",
+    resetConfirm: "Удалить курс, ответы и оба связанных лида в CRM, включая заявку на инициацию? Остальные курсы останутся.",
+    signupError: "Не удалось начать вход через Google. Попробуйте через раздел «Мои курсы».",
+    accountError: "Завершите вход и согласие в личном кабинете.",
+    myCourses: "Мои курсы",
+  },
+} as const;
+
+const MEDITATION_REPORT_IDS = new Set(["flight-04", "tan-04", "kun-04", "ygg-04"]);
+// Previously saved reviews may contain the old 0–10 feeling prefix.
+// Display only the written reflection; keep existing private records readable.
+const legacyMeditationPrefix = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/;
+function meditationReviewText(value: string) {
+  const legacy = legacyMeditationPrefix.exec(value);
+  return legacy ? legacy[1] : value;
+}
+
+// Keep the historic "skipped" choice ID readable in encrypted progress.
+// Use the current supportive wording without claiming any particular sensation.
+function flightPracticeResponse(value: string, locale: EnergyworkLocale) {
+  if (value === "tried") return locale === "ru"
+    ? "Я попробовал(а) в комфортном варианте"
+    : "I tried it in a way that suited me";
+  if (value === "skipped") return locale === "ru"
+    ? "Мне нужно ещё попрактиковаться"
+    : "I need more practice";
+  return value;
+}
+
+const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
+  en: {
+    beginner: "Welcome! No Reiki experience is needed.",
+    energywork: "Use your experience to compare the three Reiki traditions.",
+    "reiki-1-2": "Review the foundations at your own pace.",
+    master: "Compare the three traditions at your own pace.",
+  },
+  ru: {
+    beginner: "Добро пожаловать! Опыт Рейки не требуется.",
+    energywork: "Ваш опыт поможет сравнить три традиции Рейки.",
+    "reiki-1-2": "Повторите основы в удобном темпе.",
+    master: "Сравните три традиции Рейки в своём темпе.",
+  },
+};
+
+function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale: EnergyworkLocale) {
+  const lines = [
+    copy[locale].shortTitle,
+    "Course: " + ENERGYWORK_COURSE_ID + " · " + ENERGYWORK_COURSE_VERSION,
+    "",
+    ...slides.flatMap((slide) => {
+      const answer = answers[slide.id];
+      const secondary = slide.secondaryQuestion ? answers[slide.secondaryQuestion.id] : undefined;
+      if (!answer?.trim() && !secondary?.trim()) return [];
+      const shared = Boolean(slide.secondaryQuestion && answer?.trim() && secondary?.trim() &&
+        answer.trim() === secondary.trim());
+      const prompt = shared && slide.secondaryQuestion
+        ? [slide.question?.prompt[locale] || "", slide.secondaryQuestion.prompt[locale]].join("\n")
+        : slide.question?.prompt[locale] || "";
+      const choice = slide.question?.options?.find((option) => option.id === answer);
+      return [slide.title[locale],
+        ...(answer?.trim() ? [prompt,
+          slide.id === "end-01" ? formatReikiInitiationRequest(answer, locale) :
+            choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
+        ...(secondary?.trim() && slide.secondaryQuestion && !shared
+          ? [slide.secondaryQuestion.prompt[locale], secondary, ""] : []),
+      ];
+    }),
+  ];
+  return lines.filter((value) => value !== undefined).join("\n").trim();
+}
+
+function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
+  const highlights: string[] = [];
+  const present = (id: string) => answers[id]?.trim();
+  const experience = energyworkSlides(null).find((item) => item.id === "welcome-02")
+    ?.question?.options?.find((option) => option.id === present("welcome-02"));
+  if (experience) highlights.push(locale === "ru"
+    ? "Ваш исходный опыт: " + experience.label.ru + "."
+    : "Your starting experience: " + experience.label.en + ".");
+  if (present("presence-03")) highlights.push(locale === "ru"
+    ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
+    : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
+  const practicesToRevisit = Object.entries(answers).filter(([id, value]) =>
+    /^(flight-03|presence-02|intention-04|boundaries-03|ygg-03|tan-03|kun-03)$/.test(id) && value === "skipped").length;
+  if (practicesToRevisit) highlights.push(locale === "ru"
+    ? "Практики для повторения: " + practicesToRevisit + ". Можно вернуться к ним в удобном темпе."
+    : "Practices to revisit: " + practicesToRevisit + ". Return to them at your own pace.");
+  if (reikiInitiationRequestValid(present("end-01"))) {
+    const request = readReikiInitiationRequest(present("end-01"));
+    const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
+    highlights.push(locale === "ru" ? "Ваш выбор бесплатной инициации в чате: " + selected + "." :
+      "Your free chat initiation choice: " + selected + ".");
+  }
+  return highlights;
+}
+
+function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLocale; durationSeconds?: number }) {
+  const [remaining, setRemaining] = useState(durationSeconds);
+  const [running, setRunning] = useState(false);
+  const deadline = useRef(0);
+  const pendingStart = useRef(0);
+  const ocean = useOceanPracticeAudio();
+
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => {
+      const time = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+      setRemaining(time);
+      if (time === 0) {
+        setRunning(false);
+        ocean.pause();
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [running, ocean.pause]);
+
+  // Suspend both timer and audio on hidden mobile tabs or an interrupted session.
+  // It never resumes audibly without another explicit user tap.
+  useEffect(() => {
+    const hide = () => {
+      if (document.hidden) {
+        pendingStart.current += 1;
+        if (running) setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+        setRunning(false);
+        ocean.pause();
+      }
+    };
+    document.addEventListener("visibilitychange", hide);
+    return () => document.removeEventListener("visibilitychange", hide);
+  }, [running, ocean.pause]);
+
+  // Browser media must begin before a sound-enabled practice clock starts.
+  async function toggle() {
+    if (running) {
+      pendingStart.current += 1;
+      setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+      setRunning(false);
+      ocean.pause();
+    } else {
+      const ticket = ++pendingStart.current;
+      const soundStarted = await ocean.play();
+      if (ticket !== pendingStart.current || !soundStarted || document.hidden) return;
+      deadline.current = Date.now() + (remaining || durationSeconds) * 1000;
+      if (remaining === 0) setRemaining(durationSeconds);
+      setRunning(true);
+    }
+  }
+
+  function reset() {
+    pendingStart.current += 1;
+    ocean.reset();
+    setRunning(false);
+    setRemaining(durationSeconds);
+  }
+
+  useEffect(() => {
+    if (!running || !ocean.enabled || !["blocked", "paused"].includes(ocean.status)) return;
+    setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+    setRunning(false);
+  }, [running, ocean.enabled, ocean.status]);
+
+  return <div className={styles.practiceTimer} role="group" aria-label={locale === "ru" ? "Таймер необязательной практики" : "Optional practice timer"}>
+    <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}
+      <OceanSoundToggle locale={locale} timerRunning={running} audio={ocean} />
+    </span>
+    <strong aria-label={locale === "ru" ? "Осталось секунд" : "Seconds remaining"}>
+      {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+    </strong>
+    <button type="button" onClick={toggle} disabled={ocean.enabled && ocean.status === "loading"}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
+      (remaining < durationSeconds && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
+        (locale === "ru" ? (durationSeconds === 60 ? "Начать 1 минуту" : "Начать 2 минуты") : (durationSeconds === 60 ? "Start 1 minute" : "Start 2 minutes")))}</button>
+    <button type="button" onClick={reset}>{locale === "ru" ? "Сбросить" : "Reset"}</button>
+    {ocean.enabled && ocean.status === "blocked" ? <small role="alert">{locale === "ru" ? "Звук не запустился. Проверьте громкость и попробуйте снова или выключите волны." : "Sound did not start. Check volume and try again, or turn Waves off."}</small> : null}
+    {ocean.enabled && ocean.status === "loading" ? <small role="status">{locale === "ru" ? "Загружается аудио…" : "Loading waves and soft music…"}</small> : null}
+  </div>;
+}
+
+
+
+/** Intro recordings and original guided meditations are independent slides.
+ * One source per screen; never hide the meditation behind a video selector.
+ */
+function ReikiLessonVideo({ slide, locale, lessonVideo, original, compact = false }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  lessonVideo?: ReikiPractitionerLessonVideo;
+  original: { youtubeId: string | null; title: string } | null;
+  compact?: boolean;
+}) {
+  const t = copy[locale];
+  const youtubeId = lessonVideo?.youtubeId ?? original?.youtubeId;
+  const videoTitle = lessonVideo?.title[locale] ?? original?.title;
+  return (
+    <div className={styles.video} data-reiki-lesson-video={slide.id}
+      data-reiki-media-role={lessonVideo ? "introduction" : "meditation"}>
+      {youtubeId ? (
+        <AcademyVideoPlayer key={slide.id} youtubeId={youtubeId} locale={locale}
+          title={videoTitle ?? slide.title[locale]} />
+      ) : (
+        <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
+          {t.unavailable}</p>
+      )}
+      {youtubeId && (!compact || slide.id === "paths-01") ? (
+        <p className={styles.videoCaption}>
+          {slide.id === "paths-01"
+            ? (locale === "ru"
+              ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
+              : "Lesson five introduction. Watching is not a personal initiation.")
+            : lessonVideo
+              ? (locale === "ru"
+                ? "Вступление Андрея. Оригинальная медитация — на отдельном слайде."
+                : "Andrey’s introduction. The original guided meditation has its own slide.")
+              : (locale === "ru"
+                ? "Оригинальная медитация (EN). Нажмите Play, чтобы начать практику."
+                : "Original guided meditation (EN). Press Play when you are ready.")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Review buttons only change the quote, never the current course slide. */
+/** Compact, accessible carousel: review arrows never advance the lesson. */
+function MeditationVoices({ slide, locale, compact = false }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  compact?: boolean;
+}) {
+  const t = copy[locale];
+  const originalEntries = slide.testimonials ?? [];
+  // Stable shortest-first order in the language actually being read; never mutate the curriculum.
+  const entries = [...originalEntries].sort((a, b) =>
+    Array.from(a.quote[locale]).length - Array.from(b.quote[locale]).length);
+  const [active, setActive] = useState(0);
+  const currentReview = entries[active];
+  const originalNumber = currentReview ? originalEntries.indexOf(currentReview) + 1 : 0;
+  const unnamed = currentReview && (/^(sun-example-|kundalini-example-|tantra-level-1$)/.test(currentReview.id) ||
+    currentReview.sourcePath === "reiki/yggdrasil");
+  // Do not assign invented identities to anonymous source material.
+  const attribution = currentReview && (unnamed
+    ? (locale === "ru" ? "Участник " : "Participant ") + String(originalNumber).padStart(2, "0")
+    : currentReview.attribution[locale].split(" · ")[0]);
+  return (
+    <div className={styles.voicesCard} data-meditation-voices>
+      <div className={styles.voicesHeading} data-review-heading>
+        <span className={styles.voicesEyebrow}><MessageCircle size={17} aria-hidden="true" />{compact ? (locale === "ru" ? "Отзыв" : "Review") : t.voicesLabel}</span>
+        {currentReview ? (
+          <span className={styles.voicesIndex} data-review-counter aria-live="polite">
+            {String(active + 1).padStart(2, "0")} / {String(entries.length).padStart(2, "0")}
+          </span>
+        ) : null}
+      </div>
+      {currentReview ? (
+        <div data-meditation-review-carousel data-review-count={entries.length}>
+          <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
+            <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
+            <p data-review-fulltext role="region" tabIndex={0} aria-label={t.voicesFullText}>{currentReview.quote[locale]}</p>
+            <cite>{attribution}</cite>
+          </blockquote>
+          {entries.length > 1 ? (
+            <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
+              <button type="button" data-review-prev aria-label={t.voicesPrevious}
+                onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
+                <ArrowLeft size={16} aria-hidden="true" />
+              </button>
+              <span className={styles.voicesCount} aria-hidden="true">
+                {entries.map((entry, number) => (
+                  <span key={entry.id} data-review-dot data-review-active={number === active ? "true" : undefined} className={number === active ? styles.voiceDotActive : styles.voiceDot} />
+                ))}
+              </span>
+              <button type="button" data-review-next aria-label={t.voicesNext}
+                onClick={() => setActive((index) => (index + 1) % entries.length)}>
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>
+      )}
+      {currentReview?.sourcePath ? (
+        <div className={styles.voicesReferences}>
+          <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
+            {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
+/** Lesson 5: all selections serialize into the existing encrypted end-01 answer. */
+function ReikiInitiationRequestForm({ value, locale, onChange }: {
+  value: string; locale: EnergyworkLocale; onChange: (next: string) => void;
+}) {
+  const request = readReikiInitiationRequest(value);
+  const ru = locale === "ru";
+  const ready = reikiInitiationRequestValid(value);
+  const change = (patch: Partial<ReturnType<typeof readReikiInitiationRequest>>) => {
+    // Capture the learner's own browser time zone; they may edit it freely.
+    const timezone = request.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    onChange(writeReikiInitiationRequest({ ...request, timezone, ...patch }));
+  };
+  return (
+    <div className={styles.initiationForm} data-reiki-initiation-choice-form>
+      <div className={styles.initiationGiftIntro}>
+        <span><Sparkles size={18} aria-hidden="true" />{ru ? "Ваш подарок после обучения" : "Your gift after the course"}</span>
+        <p>{ru
+          ? "Выберите одну бесплатную инициацию I ступени с Андреем в чате (без личного видеозвонка). Андрей подтвердит формат после заявки. Прохождение курса не является инициацией."
+          : "Choose one free Level 1 initiation guided by Andrey in chat (not a private video call). He will confirm the arrangement after your request. The course itself does not confer initiation."}</p>
+      </div>
+      <fieldset className={styles.initiationChoiceGroup}>
+        <legend>{ru ? "1. Выберите бесплатную инициацию в чате" : "1. Choose your free chat initiation"}</legend>
+        <div className={styles.initiationChoiceGrid} data-reiki-free-choices>
+          {energyworkPathChoices.map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.freeInitiation === choice.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-free-initiation" value={choice.id}
+                checked={request.freeInitiation === choice.id}
+                onChange={() => change({
+                  freeInitiation: choice.id,
+                  donationInitiations: request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "Чат · бесплатно" : "Free · chat"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
+        <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "Необязательно: ещё одна или две системы Рейки в чате за добровольный донейшн. Размер согласуете с Андреем позже, оплаты здесь нет."
+          : "Optional: add one or both other Reiki systems in chat by voluntary donation. Agree the amount later; no payment here."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="checkbox" value={choice.id} checked={request.donationInitiations.includes(choice.id)}
+                onChange={(event) => change({
+                  donationInitiations: event.target.checked
+                    ? [...request.donationInitiations, choice.id]
+                    : request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "За донейшн" : "By donation"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-personal-choices>
+        <legend>{ru ? "3. Какой формат инициации вам ближе?" : "3. Which initiation format feels right for you?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "Бесплатная инициация в чате остаётся доступной. По желанию добавьте личную сессию на 30 или 60 минут; время и формат согласуете с Андреем позже."
+          : "Your free chat initiation stays included. Add a 30- or 60-minute live session if you wish; arrange the time and format with Andrey later."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {REIKI_PERSONAL_SESSIONS.map((option) => (
+            <label key={option.id} className={styles.initiationChoice + (request.personalSession === option.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-personal-session" value={option.id}
+                checked={request.personalSession === option.id}
+                onChange={() => change({ personalSession: option.id })} />
+              <span>{option.id === "none"
+                ? (ru ? "Личная инициация через чат" : "Personal initiation through chat mode")
+                : option.id === "express"
+                  ? (ru ? "Краткая личная инициация вживую" : "Short live personal initiation")
+                  : (ru ? "Полная личная инициация вживую" : "Full live personal initiation")}</span>
+              <small>{option.id === "none" ? (ru ? "Без доплаты" : "No extra fee")
+                : "€" + option.priceEur + " · " + option.minutes + (ru ? " мин" : " min")}</small>
+            </label>
+          ))}
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "Пока только заявка — без оплаты и подтверждённой записи."
+          : "This is only a request — no charge or confirmed booking yet."}</p>
+      </fieldset>
+      <div className={styles.initiationDetails}>
+        <p className={styles.initiationSectionTitle}>{ru ? "4. Как к вам обращаться и когда вам удобно?" : "4. Tell Andrey how to reach you and when you're available"}</p>
+        <div className={styles.initiationFields}>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Имя *" : "First name *"}</span>
+            <input type="text" autoComplete="given-name" maxLength={60} value={request.firstName}
+              onChange={(event) => change({ firstName: event.target.value })} placeholder={ru ? "Ваше имя" : "Your first name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Фамилия *" : "Last name *"}</span>
+            <input type="text" autoComplete="family-name" maxLength={60} value={request.lastName}
+              onChange={(event) => change({ lastName: event.target.value })} placeholder={ru ? "Ваша фамилия" : "Your last name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Город и страна проживания *" : "City and country *"}</span>
+            <input type="text" autoComplete="address-level2" maxLength={120} value={request.location}
+              onChange={(event) => change({ location: event.target.value })}
+              placeholder={ru ? "Например: Торонто, Канада" : "For example: Toronto, Canada"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Ваш часовой пояс *" : "Your time zone *"}</span>
+            <input type="text" maxLength={80} value={request.timezone}
+              onChange={(event) => change({ timezone: event.target.value })}
+              placeholder="America/Toronto" required />
+          </label>
+          <label className={styles.initiationField + " " + styles.initiationFieldWide}>
+            <span>{ru ? "Удобные дни и время для чата или личной сессии *" : "Preferred days and times for chat or personal session *"}</span>
+            <input type="text" maxLength={180} value={request.preferredTime}
+              onChange={(event) => change({ preferredTime: event.target.value })}
+              placeholder={ru ? "Например: будни после 19:00, по моему времени" : "For example: weekdays after 7 PM, my local time"} required />
+          </label>
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "Это не оплата и не автоматическая бронь. Андрей согласует время и формат в чате."
+          : "There is no payment or automatic booking. Andrey will confirm the time and format in chat."}</p>
+      </div>
+      <label className={styles.initiationMotivation}>
+        <span>{ru ? "5. Почему вы выбрали эту инициацию? *" : "5. Why would you like this initiation? *"}</span>
+        <textarea rows={3} maxLength={700} value={request.motivation}
+          placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
+          onChange={(event) => change({ motivation: event.target.value })} required />
+        <small>{ru ? "Минимум 20 символов мотивации" : "At least 20 characters about your motivation"} · {request.motivation.trim().length}/700</small>
+      </label>
+      <p className={styles.initiationFormStatus} role="status">
+        {ready ? <Check size={17} aria-hidden="true" /> : <LockKeyhole size={17} aria-hidden="true" />}
+        {ready
+          ? (ru ? "Анкета заполнена. Перейдите далее, чтобы проверить ответы и отдельно подтвердить отправку Андрею." : "Your form is complete. Continue to review your answers and separately confirm sending them to Andrey.")
+          : (ru ? "Выберите бесплатную инициацию в чате и заполните обязательные поля. Личная сессия необязательна. Продолжить можно без заявки." : "Choose a free chat initiation and complete the required fields. A personal session is optional. You can continue without applying.")}
+      </p>
+    </div>
+  );
+}
+
+export function EnergyworkAiLearner({ locale, startAtExperience = false, layout = "classic" }: Props) {
+  const [daybook, setDaybook] = useState(layout === "daybook");
+  const db = locale === "ru" ? { title: "Практик Рейки", subtitle: "5 недель · Бесплатный курс", week: "Неделя", weeks: "Недели курса", steps: "Материалы и практики недели", done: "Пройдено", current: "Текущий шаг", locked: "Откроется после предыдущих шагов", classic: "Классический формат", shared: "Ваш прогресс общий для обоих форматов.", guest: "Прогресс до сохранения в кабинете временный." } : { title: "Reiki Practitioner", subtitle: "5 weeks · Free course", week: "Week", weeks: "Course weeks", steps: "Weekly lessons & practices", done: "Completed", current: "Current step", locked: "Unlocks after the preceding steps", classic: "Classic format", shared: "Your progress is shared across both formats.", guest: "Progress is temporary until saved to your account." };
+  const [guestFrontier, setGuestFrontier] = useState(startAtExperience ? 1 : 0);
+  const t = copy[locale];
+  // Referral entrants have already read the course overview; saved account progress still wins.
+  const [index, setIndex] = useState(startAtExperience ? energyworkSlides().findIndex((item) => item.id === "welcome-02") : 0);
+  const pageRef = useRef<HTMLElement | null>(null);
+  const focusSlideAfterNavigation = useRef(false);
+  const [programmeOpen, setProgrammeOpen] = useState(false);
+  const [reviewReturn, setReviewReturn] = useState(false);
+  const [answers, setAnswers] = useState<AnswerMap>({});
+  const answersRef = useRef<AnswerMap>({});
+  const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
+  const [sync, setSync] = useState<SyncStatus>("checking");
+  const [consented, setConsented] = useState(false);
+  const [firstLessonConsent, setFirstLessonConsent] = useState(false);
+  const authorizedOAuthLeave = useRef(false);
+  const [shareConsented, setShareConsented] = useState(false);
+  const [unpublishedAudio, setUnpublishedAudio] = useState<string | null>(null);
+  const forwardOptionalAudio = useRef<string | null>(null);
+  const [sharingWithTeacher, setSharingWithTeacher] = useState(false);
+  const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
+  const [applicationConsented, setApplicationConsented] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [initiationPhoto, setInitiationPhoto] = useState<ReikiPhoto | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [dirtyCount, setDirtyCount] = useState(0);
+  const [courseCompleted, setCourseCompleted] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const accountIdRef = useRef<string | null>(null);
+  const revisionRef = useRef(0);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const dirtyRef = useRef(new Set<string>());
+  const progressRef = useRef("welcome-01");
+  const syncedAnswersRef = useRef<AnswerMap>({});
+  const entrySlidePending = useRef(true);
+  const loadedLocale = useRef<EnergyworkLocale | null>(null);
+  const transferredPreviewAnswers = useRef<AnswerMap>({});
+  const clearAccountProgress = useCallback(() => {
+    accountIdRef.current = null;
+    revisionRef.current = 0;
+    progressRef.current = "welcome-01";
+    syncedAnswersRef.current = {};
+    answersRef.current = {};
+    dirtyRef.current.clear();
+    setAnswers({});
+    setIndex(0);
+    setGuestFrontier(0);
+    setCourseCompleted(false);
+    setDirtyCount(0);
+    transferredPreviewAnswers.current = {};
+    setInitiationPhoto(null);
+    setApplicationLead(null);
+    setSharingWithTeacher(false);
+    setShareConsented(false);
+    setApplicationConsented(false);
+    setApplicationMessage("");
+    setFirstLessonConsent(false);
+    setConsented(false);
+    setReviewReturn(false);
+    setSaveError(null);
+  }, []);
+  const request = useCallback((body: SaveCommand) => {
+    const owner = accountIdRef.current;
+    const task = queueRef.current.catch(() => {}).then(async () => {
+      if (!owner || owner !== accountIdRef.current) throw new Error("ACCOUNT_CHANGED");
+      const submit = () => appFetch("academy-energywork", {
+        ...body, expectedRevision: revisionRef.current,
+      }, "POST", { accountId: owner }) as Promise<StoredProgress>;
+      let value: StoredProgress;
+      try {
+        value = await submit();
+      } catch (error) {
+        // Another tab can update the revision while this one is reviewing
+        // earlier slides. Rebase once, but never overwrite a different answer
+        // to this same question without an explicit owner decision.
+        if ((error as { code?: string }).code !== "COURSE_PROGRESS_CHANGED") throw error;
+        const latest = await appFetch("academy-energywork", undefined, "GET", {
+          accountId: owner,
+        }) as StoredProgress;
+        if (!latest.enrolled || latest.accountId !== owner || owner !== accountIdRef.current ||
+            !Number.isSafeInteger(latest.revision)) throw error;
+        const changedElsewhere = (id: string, submitted: string | undefined) =>
+          submitted !== undefined &&
+          (latest.answers?.[id] ?? "") !== (syncedAnswersRef.current[id] ?? "") &&
+          (latest.answers?.[id] ?? "") !== submitted;
+        if (changedElsewhere(body.slideId, body.answer) ||
+            changedElsewhere("tan-study-03", body.secondaryAnswer)) throw error;
+        revisionRef.current = latest.revision!;
+        progressRef.current = latest.slideId ?? "welcome-01";
+        syncedAnswersRef.current = { ...(latest.answers ?? {}) };
+        value = await submit();
+      }
+      if (!value.enrolled || !Number.isSafeInteger(value.revision) || value.accountId !== owner || owner !== accountIdRef.current)
+        throw new Error("INVALID_PROGRESS_RESPONSE");
+      revisionRef.current = value.revision!;
+      progressRef.current = value.slideId ?? "welcome-01";
+      syncedAnswersRef.current = { ...(value.answers ?? {}) };
+      // Accept edits from another tab while keeping all local, unconfirmed input.
+      const merged = { ...syncedAnswersRef.current };
+      for (const id of dirtyRef.current) merged[id] = answersRef.current[id] ?? "";
+      if (Object.keys({ ...answersRef.current, ...merged }).some(id => answersRef.current[id] !== merged[id])) {
+        answersRef.current = merged;
+        setAnswers(merged);
+      }
+      setCourseCompleted(value.status === "completed");
+      setSaveError(null);
+      return value;
+    });
+    queueRef.current = task.catch((error: { code?: string; status?: number }) => {
+      if (owner && accountIdRef.current === owner && (error.code === "ACCOUNT_CHANGED" || error.status === 401)) {
+        clearAccountProgress();
+        setSync(error.status === 401 ? "guest" : "unavailable");
+      }
+    });
+    return task;
+  }, [clearAccountProgress]);
+  const hydrate = useCallback((value: StoredProgress, openEntrySlide = false) => {
+    if (accountIdRef.current && (accountIdRef.current !== value.accountId || (!value.enrolled && revisionRef.current > 0))) {
+      clearAccountProgress();
+    }
+    if (accountIdRef.current !== value.accountId || !value.enrolled) setInitiationPhoto(null);
+    accountIdRef.current = value.accountId;
+    setCourseCompleted(value.status === "completed");
+    if (!value.enrolled) {
+      setSharingWithTeacher(false);
+      setApplicationLead(null);
+      setSync("consent");
+      return;
+    }
+    const restored = energyworkSlides();
+    revisionRef.current = value.revision ?? 0;
+    progressRef.current = value.slideId ?? "welcome-01";
+    const restoredAnswers = value.answers ?? {};
+    syncedAnswersRef.current = { ...restoredAnswers };
+    answersRef.current = restoredAnswers;
+    setAnswers(restoredAnswers);
+    const savedIndex = Math.max(0, restored.findIndex((item) => item.id === value.slideId));
+    // Only previously reached slides may be opened via cabinet deep links.
+    const requestedId = openEntrySlide ? new URLSearchParams(window.location.search).get("slide") : null;
+    const requestedIndex = requestedId ? restored.findIndex((item) => item.id === requestedId) : -1;
+    setIndex(requestedIndex >= 0 && requestedIndex <= savedIndex ? requestedIndex : savedIndex);
+    setSharingWithTeacher(Boolean(value.sharingWithTeacher));
+    setApplicationLead(value.applicationLead || null);
+    dirtyRef.current.clear();
+    setDirtyCount(0);
+    transferredPreviewAnswers.current = {};
+    setSaveError(null);
+    setSync("ready");
+  }, [clearAccountProgress]);
+  const reloadProgress = useCallback(async () => {
+    setBusy(true);
+    try {
+      const response = await appFetch("academy-energywork") as StoredProgress;
+      hydrate(response, entrySlidePending.current);
+      entrySlidePending.current = false;
+    } catch (error) {
+      const unauthorized = (error as { status?: number })?.status === 401;
+      if (unauthorized && accountIdRef.current) clearAccountProgress();
+      setSync(unauthorized ? "guest" : "unavailable");
+    } finally { setBusy(false); }
+  }, [hydrate, clearAccountProgress]);
+
+  const completeFirstLesson = useCallback(async (handoff: FirstLessonHandoff) => {
+    setBusy(true);
+    setSync("checking");
+    setSaveError(null);
+    try {
+      // Google creates a login first; a new cabinet may still require consent.
+      // The adult/necessary-processing consent was explicitly selected on the
+      // Lesson 1 save card before the OAuth redirect.
+      const bootstrap = await appFetch("bootstrap", undefined, "GET") as ReikiBootstrap;
+      if (!bootstrap.account?.id) throw new Error("ACCOUNT_UNAVAILABLE");
+      if (bootstrap.account.onboardingState !== "active") {
+        await appFetch("onboarding", {
+          adult: true, necessary: true, marketing: false,
+          uiLocale: locale, goal: "explore",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          displayName: bootstrap.account.displayName || "",
+        }, "POST", { accountId: bootstrap.account.id });
+      }
+      const value = await appFetch("academy-energywork", {
+        action: "start", consent: true, teacherConsent: false,
+        version: ENERGYWORK_COURSE_VERSION, firstLesson: { answers: handoff.answers },
+      }, "POST", { accountId: bootstrap.account.id }) as StoredProgress;
+      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision) ||
+          !value.answers?.["flight-04"]) {
+        throw new Error("INVALID_FIRST_LESSON_RESPONSE");
+      }
+      hydrate(value); // Private server persistence is confirmed before continuation.
+      try { window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* The confirmed server save survives restricted browser storage. */ }
+      setFirstLessonConsent(false);
+      // The confirmed private snapshot already opens Lesson 2 without another slide.
+      if (handoff.afterSave === "courses") window.location.assign("/" + locale + "/app/course?view=courses");
+      if (handoff.afterSave === "hints") setIndex(energyworkSlides().findIndex(item => item.id === "flight-hints"));
+    } catch (error) {
+      // A network error must never masquerade as a successful saved course.
+      // Retain the short-lived, same-tab handoff for a deliberate retry.
+      const unauthorized = (error as { status?: number })?.status === 401;
+      setSync(unauthorized ? "guest" : "consent");
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      setSaveError(unauthorized ? t.signupError : t.firstSaveError);
+    } finally {
+      setBusy(false);
+    }
+  }, [hydrate, locale, t.firstSaveError, t.signupError]);
+
+  useEffect(() => {
+    // React can replay the mount effect. A consented handoff starts only once.
+    if (loadedLocale.current === locale) return;
+    loadedLocale.current = locale;
+    entrySlidePending.current = true;
+    let raw: string | null = null;
+    try { raw = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+    catch { /* Storage unavailable: the guest course still works normally. */ }
+    const pending = energyworkReadFirstLessonHandoff(raw, locale);
+    if (pending) {
+      const firstLessonEnd = energyworkSlides().findIndex(item => item.id === "flight-done");
+      setGuestFrontier(firstLessonEnd);
+      setIndex(firstLessonEnd);
+      answersRef.current = pending.answers;
+      setAnswers(pending.answers);
+      for (const id of Object.keys(pending.answers)) dirtyRef.current.add(id);
+      setDirtyCount(dirtyRef.current.size);
+    }
+    if (pending && !new URLSearchParams(window.location.search).has("auth")) {
+      // Resume immediately in the lesson, not the cabinet homepage.
+      void completeFirstLesson(pending);
+      return;
+    }
+    if (raw) {
+      try { window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Nonessential cleanup on restricted browsers. */ }
+      if (pending) {
+        setSaveError(t.firstSignInCancelled);
+      }
+    }
+    void reloadProgress();
+  }, [completeFirstLesson, locale, reloadProgress, t.firstSignInCancelled]);
+  useEffect(() => {
+    if (focusSlideAfterNavigation.current) {
+      focusSlideAfterNavigation.current = false;
+      const heading = pageRef.current?.querySelector<HTMLElement>("#energywork-slide-title");
+      heading?.focus({ preventScroll: true });
+      if (daybook) window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [daybook, index]);
+  // Mobile Safari can restore a scrolled document below the fixed classic lesson.
+  // Both formats are viewport-bound; only the teaching panel may scroll.
+  useEffect(() => {
+    const keepCourseAtTop = () => {
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        window.scrollTo(0, 0);
+      }
+    };
+    keepCourseAtTop();
+    window.addEventListener("pageshow", keepCourseAtTop);
+    return () => window.removeEventListener("pageshow", keepCourseAtTop);
+  }, [index]);
+  // iOS Safari does not resize 100dvh when its software keyboard opens.
+  // Reposition the whole lesson to the actual visual viewport so the CTA
+  // stays tappable without sacrificing a long-answer textarea's scroll.
+  useEffect(() => {
+    const page = pageRef.current;
+    const viewport = window.visualViewport;
+    if (!page || !viewport) return;
+    const updateKeyboardViewport = () => {
+      const active = document.activeElement;
+      const editing = active instanceof HTMLElement && page.contains(active) &&
+        (active.matches('textarea, input:not([type="checkbox"]):not([type="radio"])') || active.isContentEditable) &&
+        (!daybook || Boolean(active.closest('[data-daybook-part="slide-main"]')));
+      const obscured = window.innerHeight - viewport.height;
+      // Retain the position during a button tap: blur fires before click and
+      // Safari animates keyboard dismissal afterwards.
+      const keyboardVisible = window.matchMedia("(max-width: 760px)").matches &&
+        viewport.height > 180 && obscured > 100 &&
+        (editing || page.dataset.reikiKeyboardOpen === "true");
+      if (keyboardVisible) {
+        page.dataset.reikiKeyboardOpen = "true";
+        page.style.setProperty("--reiki-visual-height", `${Math.floor(viewport.height)}px`);
+        page.style.setProperty("--reiki-visual-top", `${Math.max(0, Math.floor(viewport.offsetTop))}px`);
+      } else {
+        delete page.dataset.reikiKeyboardOpen;
+        page.style.removeProperty("--reiki-visual-height");
+        page.style.removeProperty("--reiki-visual-top");
+      }
+    };
+    viewport.addEventListener("resize", updateKeyboardViewport);
+    viewport.addEventListener("scroll", updateKeyboardViewport);
+    window.addEventListener("resize", updateKeyboardViewport);
+    document.addEventListener("focusin", updateKeyboardViewport);
+    document.addEventListener("focusout", updateKeyboardViewport);
+    updateKeyboardViewport();
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardViewport);
+      viewport.removeEventListener("scroll", updateKeyboardViewport);
+      window.removeEventListener("resize", updateKeyboardViewport);
+      document.removeEventListener("focusin", updateKeyboardViewport);
+      document.removeEventListener("focusout", updateKeyboardViewport);
+      delete page.dataset.reikiKeyboardOpen;
+      page.style.removeProperty("--reiki-visual-height");
+      page.style.removeProperty("--reiki-visual-top");
+    };
+  }, [daybook]);
+  async function startSaving() {
+    const owner = accountIdRef.current;
+    if (!consented || busy || !owner || sync !== "consent") return;
+    const draft = { ...answersRef.current };
+    setBusy(true);
+    try {
+      let result = await appFetch("academy-energywork", {
+        action: "start", consent: true, teacherConsent: false, version: ENERGYWORK_COURSE_VERSION,
+      }, "POST", { accountId: owner }) as StoredProgress;
+      if (result.accountId !== owner || accountIdRef.current !== owner || !result.enrolled ||
+          !Number.isSafeInteger(result.revision)) throw new Error("INVALID_PROGRESS_RESPONSE");
+      revisionRef.current = result.revision!;
+      syncedAnswersRef.current = { ...result.answers };
+      const serverPosition = Math.max(0, slides.findIndex(item => item.id === result.slideId));
+      const frontier = Math.min(guestFrontier, slides.findIndex(item => item.id === "flight-done"));
+      // Consent may arrive midway through the preview. Replay only reached
+      // transitions and missing answers, so a retry resumes the partial save.
+      for (let position = 0; position <= frontier; position++) {
+        const id = slides[position]!.id;
+        const advance = position >= serverPosition && position < frontier;
+        const storedAnswer = result.answers?.[id] ?? "";
+        const mayWrite = !storedAnswer || storedAnswer === transferredPreviewAnswers.current[id];
+        const writeDraft = typeof draft[id] === "string" && draft[id] !== storedAnswer && mayWrite;
+        if (!advance && !writeDraft) continue;
+        result = await request({
+          action: "save", version: ENERGYWORK_COURSE_VERSION,
+          slideId: id, nextSlideId: advance ? slides[position + 1]!.id : id,
+          ...(writeDraft ? { answer: draft[id] } : {}),
+        });
+        if (writeDraft) transferredPreviewAnswers.current[id] = draft[id]!;
+      }
+      const newEdits = Object.entries(answersRef.current).filter(([id, answer]) =>
+        dirtyRef.current.has(id) && answer !== draft[id]);
+      hydrate(result);
+      if (frontier > 0 && serverPosition <= frontier) setIndex(index);
+      if (newEdits.length) {
+        const updated = { ...answersRef.current, ...Object.fromEntries(newEdits) };
+        for (const [id] of newEdits) dirtyRef.current.add(id);
+        setDirtyCount(dirtyRef.current.size);
+        answersRef.current = updated;
+        setAnswers(updated);
+      }
+      setConsented(false);
+      setShareConsented(false);
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 403 ? t.accountError : t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function shareWithTeacher() {
+    if (busy || !shareConsented || sync !== "ready") return;
+    setBusy(true);
+    try {
+      await queueRef.current.catch(() => {});
+      const value = await appFetch("academy-energywork", {
+        action: "share", version: ENERGYWORK_COURSE_VERSION, consent: true, teacherConsent: shareConsented,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      hydrate(value);
+      setShareConsented(false);
+    } catch {
+      setSaveError(t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function signIn() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const continuation = daybook ? { continueTo: "energywork-daybook" } : { continueTo: "energywork" };
+      const response = await appFetch("auth/start", { locale, ...continuation }, "POST") as { redirectUrl?: string };
+      if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
+      // The short-lived, consented first-lesson handoff is safely kept within
+      // this tab, so an expected OAuth navigation should not warn of lost edits.
+      let pending: string | null = null;
+      try { pending = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Standard Google login still works without storage. */ }
+      authorizedOAuthLeave.current = Boolean(energyworkReadFirstLessonHandoff(pending, locale));
+      window.location.assign(response.redirectUrl);
+    } catch {
+      authorizedOAuthLeave.current = false;
+      setSaveError(t.signupError); setBusy(false);
+    }
+  }
+  async function saveLessonOneToCabinet(afterSave: "continue" | "courses" | "hints" = "continue") {
+    if (busy || !firstLessonConsent || !["guest", "consent"].includes(sync) ||
+        (slide.id !== "flight-done" && !(slide.id === "flight-hints" && afterSave === "hints"))) return;
+    try {
+      const value = energyworkCreateFirstLessonHandoff(answersRef.current, locale, Date.now(), afterSave);
+      // Only an explicit checked save writes a short-lived same-tab OAuth handoff.
+      // Personal reflections never enter Google redirect URLs or the practitioner's CRM.
+      window.sessionStorage.setItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value);
+      const pending = energyworkReadFirstLessonHandoff(value, locale);
+      if (!pending) throw new Error("INVALID_FIRST_LESSON");
+      setSaveError(null);
+      if (sync === "guest") await signIn();
+      else await completeFirstLesson(pending);
+    } catch {
+      setSaveError(t.firstSaveError);
+    }
+  }
+  const slides = useMemo(() => energyworkSlides(), []);
+  const slide = slides[index] ?? slides[0]!;
+  const photoAccountId = sync === "ready" ? accountIdRef.current : null;
+  useEffect(() => {
+    if (!photoAccountId || !["init-photo-01", "end-02"].includes(slide.id)) return;
+    let cancelled = false;
+    void appFetch("academy-energywork/photo", undefined, "GET",
+      { accountId: photoAccountId })
+      .then(result => { if (!cancelled) setInitiationPhoto(result as ReikiPhoto); })
+      .catch(() => { if (!cancelled) setInitiationPhoto(null); });
+    return () => { cancelled = true; };
+  }, [photoAccountId, slide.id]);
+  const total = slides.length;
+  const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
+  const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
+  const savedIndex = sync === "ready" ? Math.max(0, slides.findIndex((item) => item.id === progressRef.current)) : index;
+  // Include the introductory screens in Week 1; every canonical slide appears exactly once.
+  const daybookWeeks = lessonRanges.map((range, i) => ({
+    ...range, start: i === 0 ? 0 : range.start, count: range.end - (i === 0 ? 0 : range.start),
+  }));
+  const activeWeek = daybookWeeks.find(range => index >= range.start && index < range.end) ?? daybookWeeks[0]!;
+  const daybookFrontier = sync === "ready" ? savedIndex : Math.min(Math.max(index, guestFrontier), daybookWeeks[0]!.end - 1);
+  const daybookDone = (position: number) => position < daybookFrontier ||
+    (position === total - 1 && daybookFrontier === position && sync === "ready" && courseCompleted);
+  const daybookCompletedCount = slides.filter((_, position) => daybookDone(position)).length;
+  const weeklyCompleted = slides.slice(activeWeek.start, activeWeek.end).filter((_, position) => daybookDone(activeWeek.start + position)).length;
+  const daybookCanOpen = (position: number) => !busy && sync !== "checking" && sync !== "unavailable" && position <= daybookFrontier;
+  const progressPercent = Math.min(courseCompleted && sync === "ready" ? 100 : 99, Math.round(daybookCompletedCount / total * 100));
+  const lessonProgressLabel = currentLessonRange
+    ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
+    : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
+  const completed = slide.kind === "finish";
+  // A retired p9 step can map to the last screen before its completion was saved.
+  const needsCompletionConfirmation = completed && sync === "ready" && !courseCompleted && index === savedIndex;
+  // Messenger links contain only a generic public service request — no learner data.
+  // Neither link sends automatically; the visitor must confirm in the chat app.
+  const reikiWhatsAppUrl = whatsappEnquiryUrl({
+    locale, service: "Reiki Practitioner",
+    request: locale === "ru"
+      ? "Я завершил(а) все пять уроков Reiki Practitioner и хочу двигаться дальше — обсудить личную инициацию."
+      : "I've completed all five Reiki Practitioner lessons and would like to move forward with personal initiation.",
+    pagePath: "/" + locale + "/academy/principles-of-energywork/learn",
+  });
+  const reikiTelegramUrl = telegramEnquiryUrlFromWhatsApp(reikiWhatsAppUrl);
+  const masterQuestionUrl = whatsappEnquiryUrl({
+    locale, service: "Reiki Practitioner",
+    request: locale === "ru" ? "Здравствуйте! У меня вопрос по курсу Reiki Practitioner." : "Hello! I have a question about the Reiki Practitioner course.",
+    pagePath: "/" + locale + "/academy/principles-of-energywork/daybook",
+  });
+  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
+  const voicesArt = slide.kind === "voices";
+  const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
+  const weekArt = REIKI_DAYBOOK_ART[activeWeek.lesson - 1] ?? REIKI_DAYBOOK_ART[0];
+  const diagramArt = slide.kind !== "audio-intro" && Boolean(slide.image?.includes("kundalini-manual"));
+  const hasVideo = slide.kind === "video" || slide.id === "paths-01";
+  const displayArtSource = slide.id === "flight-hints" ? undefined : daybook ? (hasVideo || ["welcome-02", "init-photo-01", "end-01", "end-02"].includes(slide.id) ? undefined : slide.kind === "audio-intro" ? REIKI_DAYBOOK_ART[4] : slide.kind === "welcome" ? weekArt : slide.image ?? weekArt) : artSource;
+  // Daybook uses a visible thematic image between copy and activity, as approved.
+  // Classic keeps its original background treatment and media.
+  const artBackground = !daybook && Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
+  const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
+  const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
+  const meditationReview = meditationReviewText(answers[slide.id] ?? "");
+  const feedbackLength = Array.from(meditationReview.trim()).length;
+  const feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS;
+  const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
+  const unifiedStudyAnswer = slide.secondaryQuestion
+    ? energyworkCombinedTantraAnswer(answers[slide.id], answers[slide.secondaryQuestion.id])
+    : answers[slide.id];
+  const tantraStudyMissing = isTantraStudyQuestion &&
+    !energyworkTantraStudyAnswerComplete(unifiedStudyAnswer);
+  const isKundaliniStudyQuestion = ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS.includes(slide.id);
+  const isYggdrasilStudyQuestion = ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.includes(slide.id);
+  const isReikiStudyQuestion = isTantraStudyQuestion || isKundaliniStudyQuestion || isYggdrasilStudyQuestion;
+  const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
+    !energyworkReikiStudyAnswerComplete(answers[slide.id]);
+  const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
+  // Four new introduction slides plus the existing fifth intro use teacher videos.
+  // All four original video slides now show their meditations directly.
+  const lessonVideo = slide.kind === "video" || slide.id === "paths-01"
+    ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id)
+    : undefined;
+  const notes = safePreviewNotes(slides, answers, locale);
+  const highlights = learnerHighlights(answers, locale);
+  const lessonNumber = currentLessonRange?.lesson ?? 1;
+  const initiationItems = energyworkInitiationRequirements.map((item) => ({
+    ...item,
+    title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
+    reportDone: item.reportId === "end-01" ? reikiInitiationRequestValid(answers["end-01"]) : Boolean(answers[item.reportId]?.trim()),
+    questionCount: item.questionIds.filter((id) => Boolean(answers[id]?.trim())).length,
+    questionDone: item.questionIds.every((id) => Boolean(answers[id]?.trim())),
+    nextQuestionId: item.questionIds.find((id) => !answers[id]?.trim()) ?? item.questionId,
+  }));
+  const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + item.questionCount, 0);
+  const readyTargetCount = initiationItems.reduce((count, item) => count + 1 + item.questionIds.length, 0);
+  const initiationReady = readyCount === readyTargetCount;
+  const nextIncompleteSlide = initiationItems
+    .map(item => !item.reportDone ? item.reportId : !item.questionDone ? item.nextQuestionId : null)
+    .find((id): id is string => Boolean(id));
+  // Only show application links for a consented account with saved reports.
+  // Guests may explore the lessons and copy their notes before they sign in.
+  const savedInitiationReady = initiationReady && sync === "ready" &&
+    !busy && !saveError && dirtyRef.current.size === 0;
+
+  function switchFormat() {
+    focusSlideAfterNavigation.current = true;
+    setDaybook(current => !current);
+  }
+
+  function setAnswer(value: string, answerId: string = slide.id) {
+    // One textarea on the combined slide updates both existing private answer IDs.
+    const mirrorId = answerId === slide.id ? slide.secondaryQuestion?.id : undefined;
+    const updated = { ...answersRef.current, [answerId]: value,
+      ...(mirrorId ? { [mirrorId]: value } : {}) };
+    answersRef.current = updated;
+    setAnswers(updated);
+    dirtyRef.current.add(answerId);
+    if (mirrorId) dirtyRef.current.add(mirrorId);
+    setDirtyCount(dirtyRef.current.size);
+    setCopyState("idle");
+  }
+  async function store(nextSlideId: string) {
+    if (sync !== "ready") return;
+    const current = answersRef.current;
+    const secondaryId = slide.secondaryQuestion?.id;
+    const combined = secondaryId
+      ? energyworkCombinedTantraAnswer(current[slide.id], current[secondaryId])
+      : "";
+    // Older course records can have only one of the two answer IDs filled.
+    // Backfill the missing ID when continuing, without overwriting distinct
+    // answers from the original two-field version.
+    const needsBackfill = Boolean(secondaryId && combined.trim() &&
+      (!current[slide.id]?.trim() || !current[secondaryId]?.trim()));
+    const primary = needsBackfill ? combined : current[slide.id] || "";
+    const secondary = secondaryId ? (needsBackfill ? combined : current[secondaryId] || "") : undefined;
+    const response = await request({
+      action: "save", version: ENERGYWORK_COURSE_VERSION,
+      slideId: slide.id, nextSlideId,
+      ...(slide.question ? { answer: primary } : {}),
+      ...(secondaryId ? { secondaryAnswer: secondary } : {}),
+    });
+    if (needsBackfill && secondaryId &&
+        (answersRef.current[slide.id] || "") === (current[slide.id] || "") &&
+        (answersRef.current[secondaryId] || "") === (current[secondaryId] || "")) {
+      const updated = { ...answersRef.current, [slide.id]: primary, [secondaryId]: secondary || "" };
+      answersRef.current = updated;
+      setAnswers(updated);
+    }
+    if ((answersRef.current[slide.id] || "") === primary) dirtyRef.current.delete(slide.id);
+    if (secondaryId && (answersRef.current[secondaryId] || "") === secondary)
+      dirtyRef.current.delete(secondaryId);
+    setDirtyCount(dirtyRef.current.size);
+    return response;
+  }
+  // A learner can revisit a report/question without discarding other lesson answers.
+  function currentAnswerIsDirty() {
+    return dirtyRef.current.has(slide.id) ||
+      Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id));
+  }
+  async function jumpToSlide(id: string) {
+    forwardOptionalAudio.current = null;
+    if (busy) return;
+    const target = slides.findIndex((item) => item.id === (id === "tan-study-03" ? "tan-study-02" : id));
+    if (target < 0 || target === index) return;
+    // The Daybook navigation must not advance beyond the verified course cursor.
+    // Existing classic review links retain their original behaviour.
+    if (daybook && !daybookCanOpen(target)) return;
+    // Without a verified private save, Lesson 2 and later remain locked.
+    if (sync !== "ready" && target > slides.findIndex(item => item.id === "flight-done")) return;
+    if (sync === "ready" && slide.question && currentAnswerIsDirty()) {
+      setBusy(true);
+      try { await store(slide.id); }
+      catch { setSaveError(t.saveFailed); setBusy(false); return; }
+      setBusy(false);
+      if (currentAnswerIsDirty()) return;
+    }
+    // Review lives on the final screen; back-links return here after report edits.
+    setReviewReturn(id === "end-02" ? false :
+      slide.kind === "finish" ? true : reviewReturn);
+    focusSlideAfterNavigation.current = daybook;
+    setIndex(target);
+  }
+  async function next() {
+    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing) return;
+    if (completed && !needsCompletionConfirmation) return;
+    if (slide.id === "flight-done" && sync !== "ready") {
+      if (sync === "guest" || sync === "consent") await saveLessonOneToCabinet("continue");
+      return;
+    }
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    // Back / Save review on an already reached slide should move immediately
+    // if its answer is unchanged. No duplicate server revision or cursor write.
+    const alreadyStored = sync === "ready" && energyworkAdvanceAlreadyStored(
+      slide.id, nextId, progressRef.current,
+      currentAnswerIsDirty());
+    if (sync === "ready" && !alreadyStored) {
+      setBusy(true);
+      try {
+        const result = await store(nextId);
+        if (needsCompletionConfirmation && result?.status !== "completed")
+          throw new Error("UNCONFIRMED_COURSE_COMPLETION");
+      }
+      catch (error) {
+        if ((error as Error).message !== "USER_CANCELLED")
+          setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+        setBusy(false); return;
+      }
+      setBusy(false);
+      if (currentAnswerIsDirty()) return;
+    }
+    if (needsCompletionConfirmation) {
+      pageRef.current?.querySelector<HTMLElement>("#energywork-slide-title")?.focus({ preventScroll: true });
+      return;
+    }
+    if (sync !== "ready") setGuestFrontier(current => Math.max(current, Math.min(index + 1, slides.length - 1)));
+    focusSlideAfterNavigation.current = daybook;
+    // A missing optional recording is skipped through the same adjacent save
+    // operation as Continue; never bypass the course cursor or required steps.
+    setUnpublishedAudio(null);
+    forwardOptionalAudio.current = daybook && !alreadyStored && slides[index + 1]?.kind === "audio-intro" ? nextId : null;
+    setSaveError(null);
+    setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  useEffect(() => {
+    if (!daybook || busy || sync === "checking" || sync === "unavailable" ||
+        slide.kind !== "audio-intro" || !slide.introAudioKey ||
+        unpublishedAudio !== slide.introAudioKey || forwardOptionalAudio.current !== slide.id) return;
+    forwardOptionalAudio.current = null;
+    void next();
+  });
+  async function finishForToday() {
+    if (busy || slide.kind !== "milestone") return;
+    if (sync === "guest" || sync === "consent") {
+      // "Finish today" still saves privately and then opens My Courses.
+      if (slide.id === "flight-done") await saveLessonOneToCabinet("courses");
+      else setSaveError(t.accountError);
+      return;
+    }
+    if (sync !== "ready") return;
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    setBusy(true);
+    try {
+      await store(nextId);
+      // Returning learners finish immediately; do not repeat the install
+      // offer at every checkpoint or pretend that a reminder was scheduled.
+      window.location.assign("/" + locale + "/app/course?view=courses");
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function previous() {
+    forwardOptionalAudio.current = null;
+    if (index === 0 || busy) return;
+    if (sync === "ready" && slide.question && currentAnswerIsDirty()) {
+      setBusy(true);
+      try { await store(slide.id); } catch {
+        setSaveError(t.saveFailed); setBusy(false); return;
+      }
+      setBusy(false);
+      if (currentAnswerIsDirty()) return;
+    }
+    focusSlideAfterNavigation.current = daybook;
+    setIndex((current) => Math.max(0, current - 1));
+  }
+  async function restart() {
+    forwardOptionalAudio.current = null;
+    if (busy || (sync === "ready" && !window.confirm(t.resetConfirm))) return;
+    if (sync === "ready") {
+      setBusy(true);
+      try {
+        await queueRef.current.catch(() => {});
+        const value = await appFetch("academy-energywork", { action:"delete", confirmed: true }, "POST",
+          { accountId: accountIdRef.current || undefined }) as StoredProgress;
+        hydrate(value);
+      } catch { setSaveError(t.saveFailed); setBusy(false); return; }
+      setBusy(false);
+    }
+    answersRef.current = {};
+    setIndex(0); setGuestFrontier(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
+    setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
+    setInitiationPhoto(null);
+    dirtyRef.current.clear();
+    setDirtyCount(0);
+    transferredPreviewAnswers.current = {};
+  }
+  // A brief debounce preserves reflections while users type; queued writes and
+  // revision checks prevent racing a Next button or concurrent browser tab.
+  useEffect(() => {
+    const secondaryId = slide.secondaryQuestion?.id;
+    if (sync !== "ready" || !slide.question ||
+      (!dirtyRef.current.has(slide.id) && !(secondaryId && dirtyRef.current.has(secondaryId)))) return;
+    const id = slide.id, value = answers[id] ?? "";
+    const secondary = secondaryId ? answers[secondaryId] ?? "" : undefined;
+    const timer = window.setTimeout(() => {
+      void request({action:"save",version:ENERGYWORK_COURSE_VERSION,
+        slideId:id,nextSlideId:id,answer:value,
+        ...(secondaryId ? { secondaryAnswer: secondary } : {})})
+        .then(() => {
+          if (value === (answersRef.current[id] ?? "")) dirtyRef.current.delete(id);
+          if (secondaryId && secondary === (answersRef.current[secondaryId] ?? ""))
+            dirtyRef.current.delete(secondaryId);
+          setDirtyCount(dirtyRef.current.size);
+        })
+        .catch((error: { status?: number }) => { setSaveError(error.status === 409 ? t.conflict : t.saveFailed); });
+    }, 950);
+    return () => window.clearTimeout(timer);
+  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.conflict, t.saveFailed]);
+  // Warn before losing a not-yet-confirmed private answer.
+  useEffect(() => {
+    if (!dirtyCount) return;
+    const beforeLeave = (event: BeforeUnloadEvent) => {
+      if (authorizedOAuthLeave.current || !dirtyRef.current.size) return;
+      event.preventDefault(); event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeLeave);
+    return () => window.removeEventListener("beforeunload", beforeLeave);
+  }, [dirtyCount]);
+
+  async function applyForInitiation() {
+    if (busy || !applicationConsented || !savedInitiationReady || !sharingWithTeacher ||
+        !initiationPhoto?.exists || applicationLead || !reikiInitiationRequestValid(answers["end-01"])) return;
+    setBusy(true);setApplicationMessage("");
+    try {
+      await queueRef.current.catch(() => {});
+      const value = await appFetch("academy-energywork", {
+        action: "apply", version: ENERGYWORK_COURSE_VERSION,
+        expectedRevision: revisionRef.current, confirmed: true,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      hydrate(value);
+      setApplicationConsented(false);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      setApplicationMessage(code === "COURSE_PROGRESS_CHANGED" ? t.conflict : t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function copyNotes() {
+    if (!navigator.clipboard?.writeText) {
+      setCopyState("error"); return;
+    }
+    try {
+      await navigator.clipboard.writeText(notes);
+      setCopyState("success");
+    } catch {
+      setCopyState("error");
+    }
+  }
+
+  const welcomeOffer = t.welcomeOffer;
+  const daybookIntroTitle = locale === "ru" ? "О курсе" : "About the course";
+  const daybookWelcome = daybook && slide.id === "welcome-01";
+  const compactVoiceCopy: Record<string, { title: string; body: string }> = locale === "ru" ? {
+    "flight-voices": { title: "Отзывы участников", body: "Примеры впечатлений. Каждый опыт уникален." },
+    "tan-voices": { title: "Отзывы участников", body: "Отзывы о курсе, не об этой записи." },
+    "kun-voices": { title: "Отзывы участников", body: "Примеры практик с другими мастерами, не об этой записи." },
+    "ygg-voices": { title: "Отзывы участников", body: "Отзывы о курсе, не об этой записи." },
+  } : {
+    "flight-voices": { title: "Learner Experiences", body: "Shared examples. Every journey is unique." },
+    "tan-voices": { title: "Learner Experiences", body: "Course reviews, not of this recording." },
+    "kun-voices": { title: "Learner Experiences", body: "Examples from other practitioners, not this recording." },
+    "ygg-voices": { title: "Learner Experiences", body: "Course reviews, not of this recording." },
+  };
+  const daybookVoice = daybook && slide.kind === "voices" ? compactVoiceCopy[slide.id] : undefined;
+  const lotusMark = (
+    <svg viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M24 34C12 34 8 25 5 15c8 0 15 4 19 19ZM24 34c12 0 16-9 19-19-8 0-15 4-19 19ZM24 34C13 25 17 12 24 3c7 9 11 22 0 31ZM24 34C10 39 3 30 1 25c9 0 15 2 23 9ZM24 34c14 5 21-4 23-9-9 0-15 2-23 9Z"/>
+    </svg>
+  );
+  const lessonArt = displayArtSource ? (
+              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
+                 data-reiki-diagram={daybook ? (diagramArt ? "true" : undefined) : artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
+                 aria-hidden={artBackground ? true : undefined}>
+                <Image src={displayArtSource}
+                  alt={daybook ? (slide.kind === "audio-intro" ? (locale === "ru" ? "Андрей, ведущий курса" : "Andrey, course teacher") : diagramArt ? (locale === "ru" ? "Иллюстрация из руководства Кундалини Рейки" : "Illustration from the Kundalini Reiki manual") : "") : artBackground ? "" : portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
+                  fill priority={index === 0 || (!daybook && voicesArt)} unoptimized={portraitArt || voicesArt}
+                  sizes={daybook ? "(max-width: 820px) 100vw, 820px" : "(max-width: 720px) 100vw, 42vw"} />
+              </div>
+            ) : null;
+  const lessonVideoBlock = (slide.kind === "video" || slide.id === "paths-01") ? (
+              <ReikiLessonVideo key={slide.id} slide={slide} locale={locale}
+                lessonVideo={lessonVideo} original={media ?? null} compact={daybook} />
+            ) : null;
+  const lesson = daybookWelcome ? (
+    <section className={daybookStyles.welcomeAbout} data-energywork-slide-kind="welcome"
+      data-energywork-slide-id="welcome-01" data-daybook-part="welcome-about" aria-labelledby="reiki-welcome-about">
+      <h2 id="reiki-welcome-about">{daybookIntroTitle}</h2>
+      <p>{slide.body[locale]}</p>
+      <div className={daybookStyles.welcomeFacts} aria-label={t.benefits}>
+        <div>{lotusMark}<span>{locale === "ru" ? "Три системы Рейки" : "Three Reiki traditions"}</span></div>
+        <div><PlayCircle aria-hidden="true" /><span>{t.shortLessons}</span></div>
+        <div><Heart aria-hidden="true" /><span>{t.practicalTasks}</span></div>
+        <div><svg viewBox="0 0 36 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M18 12c-4-6-7-9-11-8-8 1-8 15 0 16 4 1 7-2 11-8s7-9 11-8c8 1 8 15 0 16-4 1-7-2-11-8Z"/></svg><span>{t.privateProgress}</span></div>
+      </div>
+      <div className={daybookStyles.welcomeInitiation} data-reiki-initiation-gift>
+        <Award aria-hidden="true" />
+        <div><small>{locale === "ru" ? "ПОСЛЕ КУРСА:" : "AFTER THE COURSE:"}</small>
+          <strong>{locale === "ru" ? "Заявка на бесплатную инициацию I ступени" : "Request a free Level 1 initiation"}</strong>
+        </div>
+        <span className={daybookStyles.rewardLotus}>{lotusMark}</span>
+      </div>
+    </section>
+  ) : (
+        <section data-daybook-part={daybook ? "sheet" : undefined} className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} data-daybook-density={daybook ? (slide.question || slide.kind === "practice" || slide.kind === "voices" || slide.kind === "milestone" ? "activity" : "lesson") : undefined} aria-labelledby="energywork-slide-title">
+          <div className={styles.slideMain} data-daybook-part={daybook ? "slide-main" : undefined} tabIndex={daybook ? 0 : undefined} aria-label={daybook ? slide.title[locale] : undefined}>
+            <div className={styles.content} data-daybook-part={daybook ? "content" : undefined}>
+              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.id === "flight-hints" ? "Reiki Hints" : slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
+              {daybook && slide.kind !== "welcome"
+                ? <h2 id="energywork-slide-title" tabIndex={-1}>{daybookVoice?.title ?? slide.title[locale]}</h2>
+                : <h1 id="energywork-slide-title" tabIndex={-1}>{daybook ? db.title : slide.title[locale]}</h1>}
+              <p className={styles.description}>{daybook && slide.id === "welcome-video"
+                ? (locale === "ru" ? "Андрей знакомит вас с практикой «Полёт к Солнцу»." : "Andrey introduces the Flight to the Sun practice.")
+                : daybook && slide.kind === "audio-intro"
+                  ? (locale === "ru" ? "Послушайте приветствие или перейдите к медитации." : "Listen to the welcome or continue to the meditation.")
+                  : daybookVoice?.body ?? slide.body[locale]}</p>
+               {daybook ? lessonArt : null}
+               {daybook ? lessonVideoBlock : null}
+              {slide.introAudioKey && slide.introTopics ? (
+                <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Что вас ждёт" : "What to expect"}>
+                  <strong className={styles.lessonIntroTitle}>
+                    <BookOpen size={17} aria-hidden="true" />
+                    {locale === "ru" ? "Что вас ждёт" : "What to expect"}
+                  </strong>
+                  <ul className={styles.lessonIntroTopics}>
+                    {slide.introTopics.map((topic, index) => (
+                      <li key={index}><Check size={15} aria-hidden="true" />{topic[locale]}</li>
+                    ))}
+                  </ul>
+                  {/* The personal audio greeting now has its own optional screen
+                      immediately before the original guided video. */}
+                </section>
+              ) : null}
+              {slide.kind === "audio-intro" && slide.introAudioKey ? (
+                <section className={styles.lessonIntroPanel} data-reiki-audio-welcome={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Личное аудиоприветствие" : "Personal audio welcome"}>
+                  <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
+                    lesson={slide.introAudioKey} locale={locale} showEmpty onUnpublished={daybook ? setUnpublishedAudio : undefined} />
+                  {!daybook ? <p>{locale === "ru"
+                    ? "Прослушивание необязательно. Нажмите «Перейти к видео» для следующего шага."
+                    : "Listening is optional. Choose Continue to video for the next step."}</p> : null}
+                </section>
+              ) : null}
+              {slide.id === "tan-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/tantra-reiki"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-tantra-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Читать описание Тантра Рейки" : "Read the Tantra Reiki guide"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
+              {slide.id === "kun-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/kundalini-reiki"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-kundalini-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Открыть курс Кундалини Рейки" : "Open Kundalini Reiki Course"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
+              {slide.id === "ygg-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-yggdrasil-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Открыть материалы Рейки Иггдрасиль" : "Read the Reiki Yggdrasil guide"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
+              {slide.kind === "welcome" ? (
+                <div className={styles.welcomeReward} data-daybook-welcome={daybook || undefined} aria-label={welcomeOffer}>
+                  <p className={styles.welcomeRewardTitle}>
+                    <Sparkles size={16} aria-hidden="true" />{welcomeOffer}
+                  </p>
+                  <div className={styles.coverFacts} aria-label={t.benefits}>
+                    <span><Check size={14} aria-hidden="true" />{t.shortLessons}</span>
+                    <span><Check size={14} aria-hidden="true" />{t.practicalTasks}</span>
+                    <span><Check size={14} aria-hidden="true" />{t.privateProgress}</span>
+                  </div>
+                  <details className={styles.welcomeGift} data-reiki-initiation-gift>
+                    <summary>
+                      <Award size={19} aria-hidden="true" />
+                      <span>{t.welcomeGiftShort}</span>
+                      <ChevronDown size={17} aria-hidden="true" />
+                    </summary>
+                    <div className={styles.welcomeGiftExpanded}>
+                      <strong>{t.welcomeGiftTitle}</strong>
+                      <p>{t.welcomeGiftText}</p>
+                    </div>
+                  </details>
+                </div>
+              ) : null}
+              {slide.kind === "milestone" ? (
+                <div className={styles.milestoneCard}>
+                  <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
+                  <div className={styles.milestoneCopy}>
+                    <strong>{slide.id === "flight-done" ? t.firstMilestoneLabel : t.milestoneLabel}</strong>
+                    {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
+                  </div>
+                </div>
+              ) : null}
+              {slide.kind === "milestone" ? (
+                <div className={styles.milestoneInlineChoices} role="group" aria-label={t.lessonChoices}
+                  data-reiki-milestone-choices>
+                  <button type="button" className={styles.milestoneSaveChoice}
+                    onClick={finishForToday} disabled={busy || sync === "checking" || sync === "unavailable" || (slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent)}
+                    data-reiki-tomorrow-choice>
+                    <BookOpen size={21} aria-hidden="true" />
+                    <span><strong>{t.tomorrowChoice}</strong>
+                      <small>{sync === "guest" ? t.saveGuestDetail : t.saveTodayDetail}</small></span>
+                  </button>
+                </div>
+              ) : null}
+              {slide.id === "flight-hints" ? <ReikiHintsSlide key={photoAccountId || "guest"} accountId={photoAccountId} locale={locale} /> : null}
+              {(slide.id === "tan-done" || slide.id === "kun-done") ? (
+                 <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
+                   <span className={styles.personalInitiationNoteTitle}><Heart size={17} aria-hidden="true" />{t.initiationVideoNoteTitle}</span>
+                   <p>{t.initiationVideoNoteText}</p>
+                 </aside>
+               ) : null}
+              {["flight-done", "flight-hints"].includes(slide.id) && ["guest", "consent"].includes(sync) ? (
+                <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
+                  aria-label={t.consentTitle}>
+                  <p className={styles.firstLessonAssurance}>
+                    <LockKeyhole size={17} aria-hidden="true" />{t.firstSaveGuestHint}
+                  </p>
+                  <label className={styles.consentLabel}>
+                    <input type="checkbox" checked={firstLessonConsent}
+                      onChange={event => setFirstLessonConsent(event.target.checked)}
+                      data-reiki-first-lesson-consent />
+                    <span>{t.firstSaveConsent}</span>
+                  </label>
+                  <p className={styles.firstLessonPrivacy}>
+                    <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
+                    {" · "}{t.firstSaveAssurance}
+                  </p>
+                  {slide.id === "flight-hints" ? <button type="button" className={styles.studyButton} disabled={!firstLessonConsent || busy} onClick={() => void saveLessonOneToCabinet("hints")}>{sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}</button> : null}
+                </aside>
+              ) : null}
+              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} compact={daybook} /> : null}
+              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
+
+              {slide.id === "init-photo-01" ? (
+                <ReikiInitiationPhoto locale={locale} accountId={accountIdRef.current}
+                  enabled={sync === "ready" && !Boolean(applicationLead)}
+                  photo={initiationPhoto} onSaved={setInitiationPhoto} />
+              ) : null}
+              {slide.id === "end-01" ? (
+                <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
+                  onChange={(value) => setAnswer(value, "end-01")} />
+              ) : slide.question ? (
+                <div className={styles.question} data-daybook-question={daybook || undefined}>
+                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
+                     isMeditationFeedback ? t.feedbackBadge :
+                     initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
+                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? (isReikiStudyQuestion ? t.lessonQuestion + ' · ' + t.required : t.lessonQuestion) : t.optional}</span>
+                  {slide.question.type === "choice"
+                    ? <p className={styles.prompt} data-daybook-duplicate-prompt={daybook && slide.id === "welcome-02" ? "true" : undefined}>{slide.question.prompt[locale]}</p>
+                    : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
+                  {isKundaliniStudyQuestion && slide.question.options?.length ? (
+                    <div className={styles.choices} role="group"
+                      aria-label={slide.question.prompt[locale]} data-kundalini-answer-options>
+                      {slide.question.options.map((option) => (
+                        <label key={option.id} className={styles.choice}>
+                          <input type="radio" name={slide.id + "-suggestion"} value={option.id}
+                            checked={[option.label.en, option.label.ru].includes(answers[slide.id] ?? "")}
+                            onChange={() => setAnswer(option.label[locale])} />
+                          <span>{option.label[locale]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+                  {slide.secondaryQuestion ? (
+                    <p className={styles.tantraSecondPrompt}
+                      id={"tantra-second-" + slide.secondaryQuestion.id} data-tantra-study-combined>
+                      {slide.secondaryQuestion.prompt[locale]}
+                    </p>
+                  ) : null}
+                  {slide.question.type === "text" ? (
+                    <textarea id={"answer-" + slide.id}
+                      value={isMeditationFeedback ? meditationReview : slide.secondaryQuestion ? unifiedStudyAnswer ?? "" : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
+                      className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={slide.secondaryQuestion ? 5 : isKundaliniStudyQuestion ? 2 : 4}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isKundaliniStudyQuestion ? (locale === "ru" ? "Или напишите свой ответ…" : "Or write your own answer…") : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
+                      required={isReikiStudyQuestion}
+                      aria-describedby={isTantraStudyQuestion ? (slide.secondaryQuestion ? "tantra-second-" + slide.secondaryQuestion.id + " " : "") + "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
+                      autoComplete="off" />
+                  ) : null}
+                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
+                  {slide.question.type === "scale" ? (
+                    <div className={styles.scaleWrap}>
+                      <input id={"answer-" + slide.id} className={styles.scale} type="range" min="0" max="10" step="1"
+                        value={answers[slide.id] ?? "5"} onChange={(e) => setAnswer(e.target.value)} />
+                      <div className={styles.scaleEnds}><span>0</span><strong>{answers[slide.id] === undefined ? "—" : answers[slide.id] + " / 10"}</strong><span>10</span></div>
+                    </div>
+                  ) : null}
+                  {slide.question.type === "choice" ? (
+                    <div id={"answer-" + slide.id} className={styles.choices} role="group" aria-label={daybook && slide.id === "welcome-02" ? slide.question.prompt[locale] : t.value}>
+                      {slide.question.options?.map((option) => (
+                        <label key={option.id} className={styles.choice + (slide.id === "welcome-02" ? " " + styles.experienceChoice : "")}>
+                          {slide.id === "welcome-02" ? (
+                            <span className={styles.experienceIcon} aria-hidden="true">
+                              {option.id === "beginner" ? <Sprout size={19} /> :
+                                option.id === "energywork" ? <HandHeart size={19} /> :
+                                  option.id === "reiki-1-2" ? <Sparkles size={19} /> : <Award size={19} />}
+                            </span>
+                          ) : null}
+                          <input type="radio" name={slide.id} value={option.id}
+                            checked={answers[slide.id] === option.id} onChange={() => setAnswer(option.id)} />
+                          <span>{option.label[locale]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+                  {slide.id === "welcome-02" && !experienceMissing ? (
+                    <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
+                  ) : null}
+                  {isKundaliniStudyQuestion && slide.question.help && (answers[slide.id] || "").trim() ? (
+                    <p className={styles.optional} data-kundalini-answer-explanation role="status">{slide.question.help[locale]}</p>
+                  ) : null}
+                  {isTantraStudyQuestion ? (
+                    <div className={styles.tantraStudyHelp} id={"tantra-study-help-" + slide.id} data-tantra-study-required>
+                      <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
+                      <Link className={styles.tantraStudyLink}
+                        href={"/" + locale + "/academy/reiki/tantra-reiki" + TANTRA_STUDY_HINT_ANCHORS[slide.id]}
+                        target="_blank" rel="noopener noreferrer" data-tantra-study-hint>
+                        <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : isKundaliniStudyQuestion || isYggdrasilStudyQuestion ? (
+                    <div className={styles.tantraStudyHelp} id={"reiki-study-help-" + slide.id} data-reiki-study-required>
+                      <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
+                      <Link className={styles.tantraStudyLink}
+                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil/free-initiation")}
+                        target="_blank" rel="noopener noreferrer" data-reiki-study-hint>
+                        <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
+                      role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? (daybook ? (locale === "ru" ? "Выберите один ответ." : "Choose one answer.") : t.experienceNote) :
+                      isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
+                      initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
+                      ? t.optionalForLearning : t.blank}</p>
+                  )}
+                  {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
+                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("end-02")}
+                      disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+                </div>
+              ) : null}
+
+              {slide.kind === "finish" ? (
+                <div className={styles.final} data-initiation-readiness>
+                  <section className={styles.initiationRequestBox} data-reiki-initiation-request>
+                    {applicationLead ? (
+                      <div className={styles.finalReceipt} data-reiki-application-accepted role="status">
+                        <Check size={24} aria-hidden="true" />
+                        <div>
+                          <strong>{t.finalAcceptedHeading}</strong>
+                          <p>{t.initiationSent}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h2>{t.finalPendingHeading}</h2>
+                        <p>{t.initiationLetterHint}</p>
+                        {!savedInitiationReady ? (
+                          <div className={styles.finalPending} data-reiki-application-pending>
+                            <p>{!initiationReady ? t.initiationNotReady : sync !== "ready" ? t.reviewSaveNeeded : t.saving}</p>
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide(nextIncompleteSlide ?? "end-01")} disabled={busy}>
+                              {t.finalReviewChecklist}<ArrowRight size={15} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ) : !sharingWithTeacher ? (
+                          <div className={styles.initiationApplication} data-reiki-final-share-consent>
+                            <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
+                            <label className={styles.consentLabel}>
+                              <input type="checkbox" checked={shareConsented}
+                                onChange={event => setShareConsented(event.target.checked)} />
+                              <span>{t.teacherShareConsent}</span>
+                            </label>
+                            <button type="button" className={styles.initiationSend}
+                              disabled={busy || !shareConsented} onClick={shareWithTeacher}>
+                              {t.finalEnableShare}<ArrowRight size={18} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ) : !initiationPhoto?.exists ? (
+                          <div className={styles.finalPending} data-reiki-photo-required>
+                            <p>{locale === "ru"
+                              ? "Добавьте своё фото для мастера, чтобы завершить заявку на инициацию."
+                              : "Add your photo for the teacher to complete your initiation application."}</p>
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide("init-photo-01")}>
+                              {locale === "ru" ? "Загрузить фото" : "Upload my photo"}<ArrowRight size={15} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
+                          <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide("end-01")}>
+                              {locale === "ru" ? "Открыть анкету" : "Open the form"}
+                            </button>
+                          </p>
+                        ) : (
+                          <div className={styles.initiationApplication}>
+                            <blockquote className={styles.letterPreview}>
+                              {formatReikiInitiationRequest(answers["end-01"], locale)}
+                            </blockquote>
+                            <label className={styles.consentLabel}>
+                              <input type="checkbox" checked={applicationConsented}
+                                onChange={event => setApplicationConsented(event.target.checked)} />
+                              <span>{t.initiationConfirm}</span>
+                            </label>
+                            <button type="button" className={styles.initiationSend}
+                              disabled={busy || !applicationConsented} onClick={applyForInitiation}>
+                              {t.initiationSend}<ArrowRight size={18} aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {applicationMessage ? <p role="alert">{applicationMessage}</p> : null}
+                  </section>
+                  {initiationPhoto?.exists ? <div className={styles.finalPhotoLink}>
+                    <LockKeyhole size={15} aria-hidden="true" />
+                    <button type="button" onClick={() => jumpToSlide("init-photo-01")}>
+                      {locale === "ru" ? "Моё фото для инициации · сохранено в кабинете" : "My initiation photo · saved in My Courses"}
+                    </button>
+                  </div> : null}
+                  <details className={styles.finalDisclosure} data-reiki-contact-disclosure>
+                    <summary><MessageCircle size={17} aria-hidden="true" />{t.finalContactHeading}</summary>
+                    <section className={styles.finalContact} data-reiki-personal-contact
+                      aria-label={t.finalContactHeading}>
+                      <p>{t.finalContactNote}</p>
+                      <div className={styles.finalContactActions}>
+                      <a className={styles.finalContactLink} href={reikiWhatsAppUrl}
+                        target="_blank" rel="noopener noreferrer">
+                        WhatsApp <ExternalLink size={16} aria-hidden="true" />
+                      </a>
+                      <a className={styles.finalContactLink} href={reikiTelegramUrl}
+                        target="_blank" rel="noopener noreferrer">
+                        Telegram <ExternalLink size={16} aria-hidden="true" />
+                      </a>
+                      </div>
+                    </section>
+                  </details>
+                  <section className={styles.finalSnapshot} data-reiki-learning-highlights>
+                    <h2>{locale === "ru" ? "Ваши итоги" : "Your highlights"}</h2>
+                    <p className={styles.guideNote}>{locale === "ru"
+                      ? "Только по вашим ответам · не диагноз."
+                      : "Based on your answers · not a diagnosis."}</p>
+                    {highlights.length ? <ul className={styles.highlights}>
+                      {highlights.map((point, index) => <li key={index}>{point}</li>)}
+                    </ul> : <p>{locale === "ru" ? "Заметки можно добавить позже." : "You can add notes later."}</p>}
+                  </section>
+                  <details className={styles.finalDisclosure} data-reiki-course-journal>
+                    <summary><BookOpen size={17} aria-hidden="true" />{t.summary}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <pre className={styles.notes}>{Object.values(answers).some((value) => value.trim()) ? notes : t.nothing}</pre>
+                      <p>{t.finishNote}</p>
+                      <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
+                      <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
+                      {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
+                    </div>
+                  </details>
+                  <details className={styles.finalDisclosure} data-reiki-readiness-checklist>
+                    <summary><Check size={17} aria-hidden="true" />{t.reviewTitle} · {readyCount}/{readyTargetCount}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
+                      {!savedInitiationReady ? (
+                        <div className={styles.reviewRows}>
+                          {initiationItems.map((item) => (
+                            <div className={styles.reviewRow} key={item.lesson}>
+                              <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
+                              <div>
+                                {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
+                                {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
+                                {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
+                      )}
+                      <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
+                    </div>
+                  </details>
+                  <p className={styles.initiationNote}>{t.noInitiation}</p>
+                  <details className={styles.finalDisclosure} data-reiki-course-resources>
+                    <summary><BookOpen size={17} aria-hidden="true" />{t.source}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <div className={styles.initiationLinks}>
+                        {energyworkPathChoices.map((choice) => (
+                          <Link key={choice.id} className={styles.textLink}
+                            href={"/" + locale + "/academy/" + choice.studyPath}>
+                            {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                          </Link>
+                        ))}
+                        <Link className={styles.textLink} href={"/" + locale + "/pro"} prefetch={false}
+                          data-reiki-profi-continuation>
+                          {locale === "ru" ? "Продолжить путь: стать практиком или предложить свои услуги" : "Next: develop your practice or offer your services"}
+                          <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                      </div>
+                      <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
+                    </div>
+                  </details>
+                </div>
+              ) : null}
+            </div>
+            {!daybook ? lessonArt : null}
+            {!daybook ? lessonVideoBlock : null}
+          </div>
+        </section>
+  );
+
+  // The normal private save indicator and public referral action live in the
+  // existing menu. Consent, retry and actual save failures stay visible.
+  const daybookSaveNeedsAttention = sync === "consent" || sync === "unavailable" || Boolean(saveError);
+  const saveStatusPanel = (
+      <div className={styles.savedLine} data-reiki-private-save-status aria-live="polite">
+        {sync === "ready" ? <>
+          <LockKeyhole size={13} aria-hidden="true" />
+          <span>{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</span>
+          <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
+        </> : null}
+        {sync === "guest" ? <span>{t.preview}</span> : null}
+        {sync === "checking" ? <span>{t.checking}</span> : null}
+        {sync === "consent" ? (
+          slide.id === "flight-done" ? null : (
+            <details className={styles.saveSettings}>
+              <summary>{t.consentTitle}</summary>
+              <label className={styles.consentLabel}>
+                <input type="checkbox" checked={consented}
+                  onChange={event => setConsented(event.target.checked)} />
+                <span>{t.consentText}</span>
+              </label>
+              <button type="button" className={styles.syncButton}
+                disabled={!consented || busy} onClick={startSaving}>{t.enableSave}</button>
+            </details>
+          )
+        ) : null}
+        {sync === "unavailable" ? <>
+          <span>{t.offline}</span>
+          <button type="button" onClick={reloadProgress} disabled={busy}>{t.retry}</button>
+        </> : null}
+        {saveError && slide.kind !== "milestone" ? <p className={styles.saveStatusError} role="alert">
+          {saveError}
+          <button type="button" onClick={reloadProgress} disabled={busy}>{t.reload}</button>
+        </p> : null}
+      </div>
+  );
+  const progressPanel = (
+    <div className={styles.progressFooter} data-daybook-part={daybook ? "progress" : undefined}>
+      <div className={styles.progressHeader}>
+        <span className={styles.progressStep}>{lessonProgressLabel}</span>
+        <div className={styles.progressStatus}>
+          <span aria-label={locale === "ru" ? "Общий прогресс курса: " + progressPercent + "%" : "Overall course progress: " + progressPercent + "%"}>{progressPercent}%{!daybook ? " " + t.completedLabel : ""}</span>
+          {!daybook ? <ReikiCourseReferralShare locale={locale} /> : null}
+        </div>
+      </div>
+      {daybook ? (
+        <progress className={daybookStyles.overallProgress} max={total} value={daybookCompletedCount}
+          aria-label={locale === "ru" ? "Прогресс курса" : "Course progress"} />
+      ) : (
+        <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
+          aria-valuenow={daybookCompletedCount} aria-label={t.lesson}>
+          <span style={{ width: progressPercent + "%" }} />
+        </div>
+      )}
+      {!daybook || daybookSaveNeedsAttention ? saveStatusPanel : null}
+    </div>
+  );
+
+  const daybookOutline = daybook ? (
+    <div className={daybookStyles.steps} data-daybook-outline>
+            <ol>
+              {slides.slice(activeWeek.start, activeWeek.end).map((item, offset) => {
+                const position = activeWeek.start + offset;
+                const isCurrent = index === position;
+                const done = daybookDone(position);
+                return (
+                  <li key={item.id}>
+                    <button type="button" aria-current={isCurrent ? "step" : undefined}
+                      disabled={!daybookCanOpen(position)} onClick={() => { if (!isCurrent) { setProgrammeOpen(false); void jumpToSlide(item.id); } }}>
+                      <span className={daybookStyles.stepNumber}>{done ? <Check size={16} aria-hidden="true" /> : offset + 1}</span>
+                      <span className={daybookStyles.stepTitle}>{item.id === "welcome-01" ? daybookIntroTitle : item.title[locale]}<small>{isCurrent ? db.current : done ? db.done : position > daybookFrontier ? db.locked : ""}</small></span>
+                      {position > daybookFrontier ? <LockKeyhole size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <p>{sync === "checking" ? t.checking : sync === "unavailable" ? t.offline : sync === "ready" ? db.shared : db.guest}</p>
+          </div>
+  ) : null;
+  const programme = (
+    <section className={styles.programme} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
+      <div className={styles.programmeBody} id="reiki-journey-help" hidden={!programmeOpen}>
+        <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+        {daybookOutline}
+        <div className={styles.programmeSystems}>
+          {energyworkPathChoices.map((choice) => (
+            <p key={choice.id} className={styles.programmeSystem}>
+              <strong>{choice.title[locale]}</strong>
+              <span className={styles.programmeSystemDescription}>— {programmeSystemDescriptions[locale][choice.id]}</span>
+              <Link className={styles.programmeSystemLink}
+                href={"/" + locale + "/academy/" + choice.studyPath}
+                target="_blank" rel="noopener noreferrer"
+                aria-label={choice.title[locale] + " — " + t.systemDetails}>
+                {t.programmeRead}<ExternalLink size={12} aria-hidden="true" />
+              </Link>
+            </p>
+          ))}
+        </div>
+      </div>
+      <button type="button" className={styles.programmeSummary}
+        aria-expanded={programmeOpen} aria-controls="reiki-journey-help"
+        onClick={() => setProgrammeOpen((open) => !open)}>
+        <span className={styles.programmeSummaryIcon}><BookOpen size={17} aria-hidden="true" /></span>
+        <span className={styles.programmeSummaryCopy}><strong>{t.program}</strong></span>
+        <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
+      </button>
+    </section>
+  );
+
+  const controls = (
+    <footer className={styles.footer}>
+      <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
+        {slide.kind === "milestone" ? (
+          <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+            className={styles.milestoneBack} aria-label={t.back} title={t.back}>
+            <ArrowLeft size={19} aria-hidden="true" />
+          </button>
+        ) : !daybookWelcome ? (
+          <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+            className={styles.back} aria-label={t.back} title={t.back}><ArrowLeft size={18} aria-hidden="true" />{!daybook ? t.back : null}</button>
+        ) : null}
+        {daybookWelcome && sync === "unavailable" ? (
+          <button type="button" className={styles.next} onClick={reloadProgress} disabled={busy}>{t.retry}</button>
+        ) : (slide.kind === "milestone" || !completed || needsCompletionConfirmation) ? (
+          <button type="button" onClick={next}
+            disabled={busy || sync === "checking" || sync === "unavailable" ||
+              (slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent) ||
+              experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
+            className={styles.next} data-energywork-next
+            data-reiki-first-lesson-google-save={slide.id === "flight-done" && sync !== "ready" ? "" : undefined}>
+            {daybookWelcome ? <span className={daybookStyles.ctaLotus}>{lotusMark}</span> : null}
+            {needsCompletionConfirmation ? (locale === "ru" ? "Подтвердить завершение курса" : "Confirm course completion")
+              : slide.id === "flight-done" && sync !== "ready"
+              ? (sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount)
+              : slide.kind === "milestone" ? (daybook ? (locale === "ru" ? "Перейти к следующему уроку" : "Continue to next lesson") : t.saveAndContinue) : isMeditationFeedback ? t.saveReview
+              : slide.kind === "audio-intro" ? (locale === "ru" ? "Перейти к видео" : "Continue to video")
+              : slide.id === "flight-hints" ? (locale === "ru" ? "Продолжить" : "Continue") : slide.kind === "welcome" ? t.startFree : t.continue}
+            {needsCompletionConfirmation ? <Check size={19} aria-hidden="true" /> : <ArrowRight size={19} aria-hidden="true" />}
+          </button>
+        ) : null}
+      </div>
+      {slide.kind === "milestone" && saveError
+        ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+      {slide.kind !== "milestone" && saveError ?
+        <p className={styles.inlineSaveError} role="alert">{saveError}</p> : null}
+    </footer>
+  );
+
+  // Compact owner-approved tools: preserve navigation in the journey disclosure.
+  const courseTools = (
+    <details className={daybookStyles.courseTools} data-daybook-tools key={"tools-" + slide.id}>
+      <summary aria-label={locale === "ru" ? "Меню курса" : "Course menu"} title={locale === "ru" ? "Меню курса" : "Course menu"}>
+        <BookOpen size={19} aria-hidden="true" />
+      </summary>
+      <div className={daybookStyles.toolsPanel}>
+        <div className={daybookStyles.toolsLinks}>
+          <Link href={"/" + locale + "/academy/principles-of-energywork"}>{t.backCourse}</Link>
+          <button type="button" data-daybook-inline-help aria-haspopup="dialog" onClick={(event) => {
+            event.currentTarget.closest("details")?.removeAttribute("open");
+            window.dispatchEvent(new Event("hh:open-ihelp"));
+          }}><MessageCircle size={16} aria-hidden="true" />iHelp</button>
+          <ReikiCourseReferralShare locale={locale} />
+        </div>
+        {!daybookSaveNeedsAttention ? saveStatusPanel : null}
+        <a className={daybookStyles.masterQuestion} data-reiki-master-question href={masterQuestionUrl} target="_blank" rel="noopener noreferrer">
+          <MessageCircle size={19} aria-hidden="true" />
+          <span>{locale === "ru" ? "Отправить сообщение / вопрос мастеру" : "Send a message / question to master"}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </a>
+        {programme}
+      </div>
+    </details>
+  );
+  const shell = (
+      <div className={styles.shell} data-daybook-part={daybook ? "shell" : undefined}>
+        {daybookWelcome ? (
+          <header className={daybookStyles.hero}>
+            <div className={daybookStyles.heroNav}>
+              <Link href={"/" + locale + "/academy/principles-of-energywork"} className={daybookStyles.backLink}>
+                <ArrowLeft size={17} aria-hidden="true" />{t.backCourse}
+              </Link>
+              <button type="button" className={daybookStyles.helpButton} data-daybook-inline-help
+                aria-haspopup="dialog" aria-label={locale === "ru" ? "Открыть iHelp" : "Open iHelp"}
+                onClick={() => window.dispatchEvent(new Event("hh:open-ihelp"))}>
+                <MessageCircle size={17} aria-hidden="true" />iHelp
+              </button>
+            </div>
+            {daybookWelcome ? (
+              <div className={daybookStyles.welcomeHero}>
+                <span className={daybookStyles.heroLotus}>{lotusMark}</span>
+                <h1 id="energywork-slide-title" tabIndex={-1}>{db.title}</h1>
+                <p>{db.subtitle}</p>
+                <span className={daybookStyles.welcomeRibbon}><Sparkles size={15} aria-hidden="true" />
+                  {locale === "ru" ? "Начните своё путешествие" : "Begin your journey"}</span>
+              </div>
+            ) : <>
+              {slide.kind !== "welcome" ? <h1>{db.title}</h1> : null}
+              <p>{db.subtitle}</p>
+              <div className={daybookStyles.heroBottom}>
+                <span>{daybookCompletedCount}/{total} {db.done.toLowerCase()}</span>
+                <button type="button" onClick={switchFormat}>{db.classic}</button>
+              </div>
+            </>}
+          </header>
+        ) : !daybook ? (<>
+        {slide.kind === "welcome" ? (
+          <header className={styles.top}>
+            <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
+              <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
+            </Link>
+            <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{slide.id === "welcome-01" ? t.academyMark : t.shortTitle}</span>
+            <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
+          </header>
+        ) : null}
+        </>) : null}
+
+        {daybook ? (
+          <>
+            <nav className={daybookStyles.weeks} aria-label={db.weeks}>
+              {daybookWeeks.map((range, number) => {
+                const current = range.lesson === activeWeek.lesson;
+                const count = Math.max(0, Math.min(range.count, daybookCompletedCount - range.start));
+                const locked = range.start > daybookFrontier;
+                const title = energyworkLessons[number]!.title[locale];
+                const label = [db.week + " " + range.lesson, title, db.done + " " + count + "/" + range.count];
+                if (locked) label.push(db.locked);
+                return (
+                  <button type="button" key={range.lesson} aria-pressed={current}
+                    disabled={!daybookCanOpen(range.start)} title={title} aria-label={label.join(". ")}
+                    onClick={() => { if (!current) void jumpToSlide(slides[range.start]!.id); }}>
+                    {daybookWelcome ? <span className={daybookStyles.weekLabel}>{db.week}</span> : null}
+                    <span className={daybookStyles.weekNumber}><b>{range.lesson}</b></span>
+                    {!daybookWelcome ? <span className={daybookStyles.weekTitle}>{title}</span> : null}
+                    <small aria-hidden="true">
+                      {count === range.count ? <Check size={12} /> : locked ? <LockKeyhole size={12} /> : null}
+                      {count}/{range.count}
+                    </small>
+                  </button>
+                );
+              })}
+            </nav>
+            {daybookWelcome ? <div className={daybookStyles.weekHeading}>
+              <span>{db.week} {activeWeek.lesson} / 5</span>
+              <h2>{energyworkLessons[activeWeek.lesson - 1]!.title[locale]}</h2>
+              <div className={daybookStyles.weekProgress}>
+                <progress max={activeWeek.count} value={weeklyCompleted} aria-label={db.done} />
+                <strong>{weeklyCompleted}/{activeWeek.count}</strong>
+                {daybookWelcome && weeklyCompleted === activeWeek.count ? <Check size={16} aria-hidden="true" /> : null}
+              </div>
+            </div> : null}
+          </>
+        ) : (
+        <nav className={styles.journey} aria-label={t.fiveLessons}>
+          <ol>
+            {energyworkLessons.map((lesson, number) => (
+              <li key={lesson.phase}
+                className={lessonNumber === number + 1 ? styles.journeySelected :
+                  lessonNumber > number + 1 ? styles.journeyIntro : ""}
+                aria-current={lessonNumber === number + 1 || (lessonNumber === 0 && number === 0) ? "step" : undefined}>
+                <span className={styles.journeyDot} aria-hidden="true">
+                  {lessonNumber > number + 1 ? <Check size={16} /> : number + 1}
+                </span>
+                <span className={styles.journeyLabel}>{lesson.title[locale]}</span>
+              </li>
+            ))}
+          </ol>
+          {layout === "daybook" ? (
+            <button type="button" className={daybookStyles.returnButton} onClick={switchFormat}
+              aria-label={locale === "ru" ? "Вернуться в Daybook" : "Back to Daybook"}>
+              <BookOpen size={15} aria-hidden="true" />Daybook
+            </button>
+          ) : null}
+        </nav>)}
+
+        {lesson}
+        {!daybookWelcome ? <>
+          {daybook ? <div className={daybookStyles.bottomStatus} data-daybook-part="bottom-status">{progressPanel}{courseTools}</div> : progressPanel}
+          {daybook ? controls : <>{programme}{controls}</>}
+        </> : controls}
+      </div>
+  );
+  const courseAttributes = {
+    lang: locale,
+    "data-course-id": ENERGYWORK_COURSE_ID,
+    "data-course-version": ENERGYWORK_COURSE_VERSION,
+    "data-energywork-phase": slide.phase,
+  };
+  const daybookAttributes = { "data-cabinet-theme": "daybook", "data-reiki-daybook": "true", "data-reiki-daybook-design": "golden-one-screen-v3", "data-reiki-week": activeWeek.lesson, "data-daybook-cover": slide.kind === "welcome" ? "true" : undefined, "data-daybook-welcome-screen": daybookWelcome ? "true" : undefined };
+  return daybook ? (
+    <main ref={pageRef} className={styles.page + " " + daybookStyles.page} {...courseAttributes} {...daybookAttributes}>
+      {shell}
+    </main>
+  ) : (
+    <main ref={pageRef} className={styles.page} {...courseAttributes} data-energywork-ai-learner
+      data-course-one-screen="v1" data-course-theme="reiki-scenic-v1"
+      data-course-visual="reiki-airy-v2" data-course-portrait="v3"
+      data-reiki-reviews="v4" data-reiki-full-reviews="v1"
+      data-reiki-cover={slide.id === "welcome-01" ? "true" : undefined} data-reiki-current-kind={slide.kind}
+      data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined}
+      data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined}
+      data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"}>
+      {shell}
+    </main>
+  );
+}

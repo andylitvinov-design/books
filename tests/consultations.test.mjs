@@ -140,3 +140,70 @@ test('consultations infer Homeopathy, Bach or mixed report type from selected it
  assert.equal(bach.recommendation.recommendationType,'bach')
  assert.equal(mixed.recommendation.recommendationType,'mixed')
 })
+
+test('prescription alone saves atomically to the new client history without a phantom invoice', async () => {
+ const store = createMemoryPrescriptionStore()
+ const requestId = randomUUID()
+ const options = { ...input, includeRecommendation: true, includeInvoice: false,
+   newClient: { fullName: 'Synthetic New Client', preferredLocale: 'en' } }
+ const first = await createConsultation(options, { store, requestId })
+ assert.ok(first.recommendation)
+ assert.equal(first.payment, undefined)
+ assert.equal(first.recommendation.paymentDocumentId, undefined)
+ const record = await store.findById(first.recommendation.id)
+ assert.equal(record.id, first.recommendation.id)
+ assert.equal(record.clientId, first.recommendation.clientId)
+ const client = await store.findClientById(record.clientId)
+ assert.equal(client.fullName, 'Synthetic New Client')
+ const documents = await store.listClientDocuments(client.id)
+ assert.deepEqual(documents.map(item => item.id), [record.id])
+ const retry = await createConsultation(options, { store, requestId })
+ assert.deepEqual(retry, first)
+ assert.equal((await store.listClients()).length, 1)
+ assert.equal((await store.listClientDocuments(client.id)).length, 1)
+})
+
+test('invoice only saves a payment with no remedy requirement and no prescription', async () => {
+ const store = createMemoryPrescriptionStore()
+ const client = (await createConsultation({ ...input, includeInvoice: false, includeRecommendation: true,
+   newClient: { fullName: 'Synthetic Invoice Client', preferredLocale: 'en' } },
+   { store, requestId: randomUUID() })).recommendation.clientId
+ const result = await createConsultation({ patientName: 'synthetic', clientId: client,
+   consultationDate: '2026-09-18', items: [], includeRecommendation: false, includeInvoice: true,
+   amount: '120.00', service: 'Session', paymentStatus: 'unpaid' },
+   { store, requestId: randomUUID() })
+ assert.equal(result.recommendation, undefined)
+ assert.equal(result.payment.kind, 'payment')
+ assert.equal(result.payment.paymentStatus, 'unpaid')
+ assert.equal(result.payment.amount, 12000)
+ assert.equal(result.payment.clientId, client)
+ assert.equal((await store.listClientDocuments(client)).length, 2)
+})
+
+test('no documents selected fails without saving and payment amount zero only matters when invoicing', async () => {
+ const store = createMemoryPrescriptionStore()
+ await assert.rejects(createConsultation({ ...input, includeRecommendation: false, includeInvoice: false },
+   {store, requestId: randomUUID()}), /select at least one/i)
+ await assert.rejects(createConsultation({ ...input, includeRecommendation: true, includeInvoice: true,
+   amount: '0', service: 'Session' }, {store, requestId: randomUUID()}), /amount/i)
+ const result = await createConsultation({ ...input, includeInvoice: false, amount: '0' },
+   {store, requestId: randomUUID()})
+ assert.ok(result.recommendation)
+ assert.equal(result.payment, undefined)
+})
+
+test('invoice can be added to a saved prescription and unchecked invoice never silently revokes it', async () => {
+ const store = createMemoryPrescriptionStore()
+ const initial = await createConsultation({ ...input, includeInvoice: false },
+   { store, requestId: randomUUID() })
+ const pair = await updateConsultation(initial.recommendation, undefined, { ...input,
+   includeInvoice: true, includeRecommendation: true, amount: '145.00', service: 'Consultation', paymentStatus: 'unpaid' },
+   { store })
+ assert.equal(pair.recommendation.paymentDocumentId, pair.payment.id)
+ assert.equal(pair.payment.consultationId, pair.recommendation.id)
+ const updated = await updateConsultation(pair.recommendation, pair.payment, { ...input,
+   includeInvoice: false, includeRecommendation: true, generalInstructions: 'Client note changed' }, { store })
+ assert.equal(updated.recommendation.generalInstructions, 'Client note changed')
+ assert.equal(updated.payment.id, pair.payment.id)
+ assert.deepEqual(await store.findById(pair.payment.id), pair.payment)
+})

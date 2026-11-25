@@ -1,0 +1,201 @@
+# Holistic House · Growth & Conversion — план и ТЗ (18.10.2026)
+
+Статус: **реализация поэтапно**, GitHub issue [#990](https://github.com/andylitvinov-design/books/issues/990).  
+Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel team `super10`, project `codex-public-book-library`; source `andylitvinov-design/books`, production branch `codex/public-book-library`.
+
+## 1. Цели и рамки
+
+**Бизнес-цель:** увеличить число **подтверждённых платных консультаций**, а не просто посещения или нажатия. Сохранить безусловно доступные бесплатные тесты, личный письменный разбор и обучение.
+
+Приоритет услуг:
+1. Личная работа «Алхимия души», расстановки, работа с образами;
+2. Business Consulting / Goal Activation;
+3. Guided Imagery;
+4. Tantra Reiki / Reiki Yggdrasil через отдельные учебные маршруты и согласованные инициации.
+
+Текущий публичный тариф личной сессии: **€50/30 минут**, **€100/60 минут**. Другие мастера и услуги Рейки могут иметь собственные условия. Запрос в мессенджере **не является** забронированным сеансом, подтверждением платежа или согласием на рассылку.
+
+**Правила:** никаких обещаний лечения, гарантированных финансовых/психологических результатов, неустановленных профессиональных лицензий и медицинских диагнозов. Авторские подходы описываются как рефлексивная работа; гомеопатия не заменяет доказательное лечение. Не запрашивать чувствительную медицинскую информацию в публичной форме или в UTM.
+
+## 2. Проверенный исходный статус
+
+- Главная: реальная фотография Андрея, бесплатный разбор и тесты выше предложения платной консультации.
+- Services: умный подбор услуг расположен до основного предложения и формы обращения; объявления конкретных мастеров могут содержать «цена по запросу».
+- Направления `/en|ru|es/explore/{stress,relationships,business,energy,effectiveness}`: тесты и бесплатные курсы, но нет прямого контекстного пути к платной услуге.
+- Рабочий сайт содержит отзывы, объясняющие видео и локализованные страницы услуг.
+- `robots.txt` блокирует частные URL; в sitemap — 670 записей, есть коммерческие страницы. Факт индексации из Search Console не подтверждён.
+- Создан GA4 `properties/558442343` (America/Toronto, CAD). Исторические отчёты 11–18 октября не вернули строк. **Причина в коде:** `PUBLIC_ANALYTICS_AVAILABLE=false` (ограничение до полной проверки приватности); нельзя утверждать, что на сайт никто не заходит.
+- Уже есть owner CRM follow-ups и manual attribution из PR #986: расширять, а не дублировать.
+- Автоматизированный браузерный QA временно заблокирован балансом сервиса; приёмка требует независимых CI/browser smoke и сверки production SHA.
+
+## 3. Целевая архитектура воронки
+
+```
+Реклама / SEO / соцсети → тематический landing
+  → [Личная сессия: узнать и отправить запрос]
+  → [Бесплатный разбор / тест / курс: начать без оплаты]
+  → контакт и согласие
+  → CRM lead (только подтверждённая запись/заявка)
+  → квалификация → согласование даты → подтверждение → оплата → проведено → повторная работа
+```
+
+Выбор тестовой темы **не означает диагноз или предикцию** и не является основанием для обязательной покупки. Тематические CTA выбирают только уже опубликованную страницу по явному интересу пользователя, без переданных ответов и индивидуальных баллов.
+
+## 4. UI/UX-требования
+
+### Главная / EN, RU, ES
+- Первый экран: портрет Андрея; конкретные области «отношения, работа, решения»; место «Toronto & online».
+- CTA №1: **Запросить платную личную сессию · от €50** → `/{locale}/services#consultation`.
+- CTA №2: **Получить бесплатный письменный разбор** → `/{locale}/services/free-situation-review`. Под CTA объяснить «анкета+рисунок → письменный отчёт, без видеозвонка».
+- Дополнительная ссылка: «бесплатные тесты» → `/{locale}/client/tests`. Никаких маскирующих подписку/платёж элементов.
+- На мобильном 320–390 px первый экран читается, кнопки ≥44 px, нет горизонтального скролла, крупное фото и контрастный текст.
+
+### Services / EN, RU, ES
+- Приоритет: hero → карточки основных услуг с ценой и результатом → выбор 30/60 минут и заявка → опыт/отзывы → бесплатные варианты → умный поиск → каталог других мастеров.
+- Директория остаётся доступной, но не перехватывает первый экран.
+- Одна активная цель у каждого CTA: детали, письменный бесплатный разбор или запрос времени. Никакого ложного «Book confirmed».
+- Сторонние специалисты сохраняют собственные цены, видимые лишь при наличии подтверждённого тарифа.
+
+### Тематические страницы
+- Явные соответствия публичной теме → публичной услуге:
+  - relationships → systemic-constellations;
+  - business → business-consulting;
+  - stress → imagery-therapy (EN/RU/ES);
+  - energy → remote-energy-support (другая политика цен);
+  - effectiveness → imagery-therapy.
+- Внизу маршрута, рядом с опциями теста и бесплатного разбора, необязательная ссылка «Обсудить лично»; во всех локалях.
+- Никаких параметров с ответами, баллами, диагнозом, именем или свободным текстом в URL.
+
+### Служебные страницы и доверие
+- Отзывы только реальные и с разрешения, без приписывания исхода работе специалиста; не создавать фиктивный рейтинг.
+- Короткие видео автора (20–45 секунд) только в утверждённой системе (#218/#219), через YouTube lazy-loaded poster/click-to-play. Публикация или траты HeyGen — отдельное разрешение.
+- Основной SEO акцент: личные консультации Toronto/online, контекст проблемы и метод, а не обещание исцеления. Проверить canonical/hreflang EN/RU/ES, веб-витрину и частные noindex.
+
+## 5. События, аналитика и CRM
+
+**Принцип измерения:** `view` ≠ `CTA click` ≠ `message actually sent` ≠ `lead created` ≠ `booking confirmed` ≠ `payment settled`.
+
+| Событие | Источник | Что означает |
+| --- | --- | --- |
+| `page_view` | GA4 после согласия | Просмотр публичной страницы без query и личных данных |
+| `service_view` | CTA public site, после согласия | Открыл описание / раздел личных услуг |
+| `service_request_start` | Сайт, после согласия | Нажал на начало запроса; это не лид |
+| `self_check_start` | Сайт | Переход к тесту, не завершение |
+| `free_situation_assessment_click` | Сайт | Вход в письменный разбор |
+| `contact_whatsapp_click` / `contact_telegram_click` | Сайт | Открыл мессенджер; отправку нельзя подтвердить браузером |
+| `lead_created` | CRM server | Подтверждён реальный входящий запрос, idempotency key |
+| `booking_confirmed` | CRM server | Время согласовано обеими сторонами |
+| `payment_received` | Биллинг / verified webhook | Успешный платёж, не простой redirect |
+
+Не пересылать текст запроса, рисунки, ответы тестов, имена, email, телефон, персональный профиль, health fields, session IDs в GA4/Ads. Атрибуция: whitelisted `source, medium, campaign, content` только с утверждённым согласием и без PII. CRM хранит отдельные owner-only lead/source/consent/status/timestamps; дедупликация и аудит изменений.
+
+Пока `PUBLIC_ANALYTICS_AVAILABLE=false`, event pipeline GA4 **НЕ РАБОТАЕТ**. Перед переключением:
+1. Проверить consent default-denied, корректное отзыв согласия и удаление cookies.
+2. Запретить теги на `/admin`, `/client`, `/app`, `/report`, `/prescriptions` и API. Проверить маршрутизацию и CSP.
+3. Сверить реальный measurement ID `G-...` с GA4 property; не подставлять property ID вместо tag ID.
+4. Безопасно обойти JavaScript hydration и client navigation (EN/RU/ES) тестами на Safari/Chrome.
+5. Реальный user-approved тест в GA DebugView; 24–72 часа наблюдения. Ads pixels/Meta CAPI отдельно по согласию, не включать фоном.
+
+## 6. Реализация, сроки и этапы
+
+| Фаза | Работы | Критерий завершения |
+| --- | --- | --- |
+| P0/A | главный экран + SEO description, Services CTA/порядок, тарифы, тематический CTA, EN/RU/ES | PR и тесты, preview, live SHA readback |
+| P0/B | подтверждённые CRM-лиды/статусы/источники через уже внедрённую CRM | реальные записи в CRM; auth/consent проверены; не считать клики лидом |
+| P0/C | аудит consent, GA4 binding, безопасная активация и DebugView | production-only, public-only, opt-in, анонимные события подтверждены |
+| P1/D | релевантные отзывы, lazy видео, коммерческие SEO-ссылки | QA авторских материалов и отсутствие регресса UX |
+| P1/E | реклама по направлениям, 14 дней baseline и A/B | CPL, qualified-lead rate, paid-booking rate, CAC измерены |
+
+Короткие спринты с отдельными PR: приложение большое и параллельно выпускает CRM и курсы. Автоматическое объединение только при сохранении авторизации/приватности, успешном CI и проверенном preview. Откат через revert PR или стандартный Vercel rollback по конкретному SHA; не менять production DB без бэкапа и миграционных тестов.
+
+## 7. QA/приёмка и релиз
+
+- EN, RU, ES: текст, цена, правильный target CTA, реальные ссылки, no false booking promise.
+- Мобильные 320/390/430 px, десктоп 1365 px, отсутствие scroll/overflow/hydration errors.
+- `npm run test:unit`, `npm run verify:seo`, TypeScript и Next.js build на PR, по возможности browser E2E.
+- Проверить Vercel preview `READY`, production commit SHA и `holistichouse.vercel.app` после слияния.
+- При заблокированной API-аналитике, YouTube OAuth, неутверждённом видео, внешних платежах или отправке почты — **не ставить DONE**.
+
+
+---
+
+## 8. Omnichannel acquisition / события, агрегаторы и реклама (19.10.2026)
+
+Этот раздел дополняет существующий SEO Master Plan (#306), conversion-first план (#990), первую Meta Ads стратегию в Google Drive и реальный Event Publisher TorontoTantra (#74). Не создавать параллельные системы.
+
+### Одна CRM, четыре пути привлечения
+
+1. Персональные услуги: Google/Bing SEO, Google Business Profile при подтвержденной eligibility, локальные каталоги и авторские материалы → платная услуга → реально полученное обращение → согласованное время → проведённая консультация → подтверждённая оплата. Цены для Andy €50/30 мин и €100/60 мин сохраняются только у соответствующих предложений.
+2. Бесплатное знакомство: публичный письменный разбор ситуации, тесты и Wu Xing → добровольный контакт → *подтверждённое получение* запроса → необязательное обсуждение личной работы. Нельзя использовать ответы/результаты тестов для рекламной сегментации.
+3. Настоящие мероприятия: Eventbrite/Meetup/Luma/AllEvents и локальные сообщества → живое событие с конкретной датой → регистрация на официальной площадке → подтвержденное посещение, если его можно проверить → опциональный переход на Holistic House → CRM. Не выдавать обычные услуги и записанные видео за события.
+4. Academy и образовательные видео: YouTube и органический контент → актуальный публичный курс → добровольный Start Course/заявка на обучение → платная индивидуальная работа по отдельному решению посетителя. Не менять ранее утвержденные Unlisted видео на Public.
+
+Главный показатель — **реальные квалифицированные обращения и оплаченные сессии по источнику**, а не просмотры, клики, нажатия WhatsApp или RSVPs. В CRM различать шаги: listing published → platform registration → event attendance → first-party visit where measured → received enquiry → confirmed booking → verified payment. Ни одна стадия автоматически не означает другую.
+
+### Проверено и остаётся подключить
+
+| Канал | Состояние на 19.10.2026 | Безопасный следующий шаг |
+| --- | --- | --- |
+| Сайт Events | Существуют EN/RU/ES каталог, дата, Eventbrite-кнопка, consent-safe UTM и ручная переписка | В этом PR добавлены отдельная страница события, shareable URL и Google Event schema для проверенного адреса; требуется CI и live QA |
+| Eventbrite | Утверждённая ссылка на событие 25 октября есть; owner-only idempotent мост находится в TorontoTantra | Проверить токен/организацию/организатора/venue ID, затем публиковать только точно утверждённое новое событие |
+| Meetup | Условный адаптер есть, авторизованного боевого писателя нет | Нужны Pro/API и express commercial-use permission; не покупать план автоматически |
+| Luma | Бесплатное ручное создание; API требует Plus | После решения, где canonical RSVP, размещать через собственный аккаунт; не покупать Plus ради API |
+| AllEvents | Обнаружение событий, возможно дать внешнюю ссылку на Eventbrite | Проверить реального организатора/права и вручную разместить отдельное утвержденное событие |
+| Humanitix / Ticket Tailor | Альтернативные системы билетов | Включать только при осознанной смене checkout authority, избегать дублирования билетов |
+| Google Business Profile | Есть локальная Toronto-страница и CRM источник google_maps; владельческий профиль не подтверждён | Проверить допустимость реального адреса/личных встреч и доступ к локации. Не выдумывать офис или отзывы |
+| Instagram / Facebook | Metricool подключён только к YouTube; HYPD Meta Ads не возвращает аккаунты | Подключить реальные профессиональные аккаунты/страницу с согласием владельца, затем органический план |
+| YouTube | Один канал Metricool, имеются шесть ранее опубликованных unlisted RU/EN роликов | По #218/#219 ничего не менять/рендерить без отдельной задачи |
+| Google Ads | Файл staging/PAUSED без бюджета, HYPD Google Ads аккаунтов не видит | Только после Account ID, проверенной конверсии и отдельного разрешения на расходы |
+| Meta Ads | Первый сценарий описан в Drive v2, реальный счёт HYPD не видит | Не запускать пока нет аккаунта, consent и реального квалифицированного лида |
+| GA4 | Holistic House property 558442343 доступна, код PUBLIC_ANALYTICS_AVAILABLE=false | Сначала consent default denied, защита кабинета/тестов, measurement ID и DebugView |
+| GSC / SEO | SEO-план и crawl/sitemap живут в books; сторонний GSC Wizard subscription_required | Не покупать подписку. Данные индексации проверять в авторизованном Google Search Console |
+| Telegram / партнёры | Органические referral labels в исходном коде уже есть | Размещать в группах только при праве публиковать, без массовых холодных сообщений |
+
+**Техническое обновление 19.10.2026 (ещё не production):** verified Event leaf page выдаёт локализованный RFC 5545 `.ics` только пока опубликованное мероприятие не началось; календарь содержит лишь уже публичные title, description, time, address и canonical URL. Нативный Share / fallback Copy передаёт только canonical public URL, поэтому мессенджеры используют существующее OG preview. CSP разрешает Eventbrite poster исключительно для public Events directory и его leaf page, а calendar/API/private routes не расширяет. Нет GA4 event, provider write, регистрации, attendee, цены, organizer или payment data.
+
+Контроль внешнего Event Publisher сохраняется в [TorontoTantra #74](https://github.com/andylitvinov-design/torontotantra/issues/74), разрешения в [#69](https://github.com/andylitvinov-design/torontotantra/issues/69), реальные лиды на сайте в [books #801](https://github.com/andylitvinov-design/books/issues/801). Список возможностей и ограничений площадок: [Provider Capability Matrix](https://github.com/andylitvinov-design/torontotantra/blob/main/docs/event-publisher/PROVIDER_CAPABILITY_MATRIX.md).
+
+### Модель события и разграничение ответственности
+
+На одно реальное подтверждённое мероприятие сохраняется единая редакционная карточка: ID, заголовок/описание по языкам, local start/end+timezone, реальный формат/адрес, точный organiser, проверенные poster/media rights, реальные билетные классы, валюта/цена/ёмкость только если подтверждены, canonical registration provider URL, ID/status у каждого внешнего провайдера, owner approval version и fingerprint, timestamp публичной readback.
+
+Статус: draft → approved → provider draft → API published → independently publicly verified → first-party listing → completed/archived. Не создавать вторые Eventbrite-билеты на каждой площадке; лучше единый checkout + cross-platform listing. Не повторять сомнительный POST при timeout без provider reconciliation. Отмена или перенос требуют отдельного изменения с подтверждением.
+
+**Подтвержденный кодом пример (НЕ новая публикация):** Love Magic & Tarot Initiations, **25 октября 2026, 19:00–22:00 EDT**, Toronto, **665 Dupont Street, Toronto, ON M6G 1Z5**. Ссылка Eventbrite: https://www.eventbrite.ca/e/love-magic-tarot-initiations-tickets-2003517510808 . До crossposting проверить анонимно работоспособность Eventbrite, название организатора, фактическую цену/места и права на постер. НИЧЕГО из этого не выдумывать. Страница на Holistic House должна показывать реальную программу, дату и точный адрес, и направлять к официальной регистрации. Разметку Google Event включать лишь при подтверждённой физической локации и дате, без вымышленных Offer/рейтинг/venue name.
+
+### Органика, затем осторожные оплачиваемые тесты
+
+14-дневный бесплатный эксперимент: одну существующую утверждённую афишу, аккуратные RU/EN/ES адаптации и один canonical ticket URL распространять через разрешённые каналы. Публикация T−7, напоминание T−2 разрешённой аудитории, реальный event-day update, T+1 образовательное резюме без данных участников. Не писать в личку незнакомым людям, не собирать чужие attendee lists, не обещать медицинских исходов. Отчёт per platform: published listing, реальные регистрации, вручную верифицированные обращения/оплаты, а трафик только если consent и система реально измеряют.
+
+Для organic event referral использовать существующий first-party whitelist в lib/organic-event-referrals.js: source=eventbrite|meetup|allevents|luma|partner, medium=organic_event, public-safe campaign/content slugs. Ни имени, телефона, email, ответов теста, диагноза, клиента или приватного report в URL. Сохранение source в текст WhatsApp является добровольной подписью черновика; WhatsApp click != message sent != qualified enquiry.
+
+Не превышать прежний предложенный (не активированный) **Meta CAD 5/день × 7 дней, максимум CAD 35 total lifetime**. Пилот только после отдельно подтвержденного hard budget cap и реальной цепочки получения лидов. Не создавать платные новые Google Ads/Meta Ads кампании, не подключать платные Luma/Meetup тарифы, не менять billing самостоятельно. Отдельное подтверждение — для каждого запуска.
+
+### Проверка после этого PR
+
+- Page EN/RU/ES на каждый подтвержденный опубликованный в каталоге event; даты и address должны совпадать с публичной афишей, Google Event markup только для реального подтвержденного места.
+- Один индексируемый event-specific leaf URL и hreflang/canonical; в sitemap только future published events. Past route остается историческим с noindex и без Registration CTA.
+- Визуальная приёмка 320/390/430px/desktop; фото и кнопка регистрации не должны обрезаться, отсутствие hydration/scroll ошибок.
+- Node regression test + TypeScript + Next build + Vercel Preview/production deployment SHA, после merge независимый HTTP readback реальной страницы.
+- Внешний provider URL, OAuth ID, marketplace billing, реальные органические/платные публикации и реальные CRM конверсии подтверждаются отдельно; не отмечать DONE на основании документа или CI.
+
+
+### CRM attribution for additional event platforms (implementation 19 October 2026)
+
+The existing first-party organic-event referral allowlist already accepts Eventbrite, Meetup, Luma, AllEvents, Humanitix, Ticket Tailor and permitted partners. The owner-only marketing CRM previously exposed Eventbrite/Meetup but grouped the other channels as Other. The follow-up PR adds explicit source identifiers in the existing frontend, backend validator and an additive PostgreSQL CHECK constraint migration. For Eventbrite, Meetup, Luma, AllEvents, Humanitix and Ticket Tailor the owner form defaults medium to organic_event; a partner referral remains an explicit owner choice.
+
+No visits, provider RSVPs or platform-side tickets are imported or counted as received leads. Recording a marketing opportunity still requires an existing owner CRM contact and a checked confirmation that an enquiry was actually received. Only source/medium/public-safe campaign/creative/offer/stage are stored; no medical, test, email or attendee content in URL tracking.
+
+The migration must be applied to the verified Supabase **holistichouse** project before the new options can be used. Confirm the source CHECK and forced RLS afterward. This is a code/DB attribution extension, **not** a provider OAuth connection, marketing campaign, event publication, GA4 activation, or client-data sharing.
+
+---
+
+### 2026-10-20 — Paid advertising staging and verified account boundary
+
+HYPD: 0 connected Meta Ads, 0 connected Google Ads; GA4 property properties/558442343 verified. Windsor.ai has Facebook Ads Fenix Andrey (USD, America/Los_Angeles) and Елена Айтерра (USD, Europe/Kiev). Neither matches an owner-confirmed Holistic House CAD + Toronto campaign account. Windsor plan: Trial. Metricool: connected YouTube only; no IG/FB. Do NOT silently use unrelated/USD accounts or change billing.
+
+Public website landings checked HTTP 200 and self-canonical: EN/RU/ES Free Situation Review, EN systemic constellations, EN Reiki Yggdrasil, EN Toronto. GA4 and Meta pixel remain disabled/unverified; PUBLIC_ANALYTICS_AVAILABLE=false must remain until consent, private-path isolation and DebugView tests pass. A messenger-open or click is NOT a verified lead.
+
+Staging branch feat/hh-ads-referrals-readiness-20261020 introduces data/meta-ads-pilot-draft.json: one PAUSED EN/Toronto Meta pilot, two text/real-photo proposals, hard lifetime CAD 35 cap and seven-day maximum, but no account ID, assets uploaded, active ad, spend approval or real campaign. data/google-ads-pilot-draft.json receives honest GA4 property/account metadata and safe landing URL. lib/paid-ad-referrals.js permits only vetted Facebook/Instagram paid_social and Google/Google Ads cpc first-party free-review referrals, stripping click IDs and all personal query parameters. It adds a public-safe source label to the visitor-initiated WhatsApp/Telegram draft, not to an advertiser pixel or server-confirmed lead. Tests cover nonpersonal labels, invalid/duplicate data and nonactivation.
+
+Remaining launch gates: verified CAD + America/Toronto owner ad account; Meta professional Page/IG access; official Google Ads Customer ID; correct platform minimum budget and hard spend limit; verified real owner reception of applications; neutral ad copy/approved real photos; policy and consent QA; explicit owner budget approval. Do not buy paid connectors, alter another brand's ad account, create live ads or send unsolicited client messages.

@@ -1,17 +1,49 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
+import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
+import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import './saved-document-reader.css'
 import Image from 'next/image'
+import consultationStyles from './consultation-offers.module.css'
+import dynamic from 'next/dynamic'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import InstantCabinetLink from './instant-cabinet-link'
+import PracticeRequestConversation from './practice-request-conversation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
+import { assessmentHistoryGroups, assessmentHistoryTitle, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
+import { profileScreeningPresentation } from '@/lib/profile/profile-scale-presentation'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
-import PsiMonitoring from '@/components/app/psi-monitoring'
-import { TestExplorer } from '@/components/app/test-explorer'
+import { ClientReportActions } from '@/components/app/client-report-actions'
+import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { TestResultDiscussion } from '@/components/app/test-result-discussion'
+import { TEST_DISCUSSION_INTENT_KEY } from '@/lib/assessments/test-result-discussion.mjs'
+import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
+import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
+import { TestDynamics } from '@/components/app/test-dynamics'
+import { periodComparison } from '@/lib/assessments/dashboard-gauges'
+import { TestFinishActions } from '@/components/app/test-finish-actions'
+import { TestRatingCard } from '@/components/app/test-rating-card'
+import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
+import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
+import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+import { PortraitTestQuickActions, PortraitTestList } from '@/components/app/portrait-test-quick-actions'
+import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
+import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
+import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
+import { PortraitAnalyses } from '@/components/app/portrait-analyses'
+import { UnifiedProfileLayers } from '@/components/app/unified-profile-layers'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
+import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
   TEST_LENGTH_FILTERS,
   TEST_RECOMMENDATION_FOCUS,
@@ -19,26 +51,65 @@ import {
   rankAssessmentDefinitions,
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
-import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
+import CommunicationPreferences from '@/components/app/communication-preferences'
+import NotificationSettings from '@/components/app/notification-settings'
+import ClientContactPhone from '@/components/app/client-contact-phone'
+import NativeMessageNotifications from '@/components/app/native-message-notifications'
+import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import VideoCreditsPanel from '@/components/app/video-credits-panel'
+import AccountLoginMethods from '@/components/app/account-login-methods'
+import AccountMessagingEntry from '@/components/app/account-messaging-entry'
+import InstallHolisticHouse from '@/components/app/install-holistic-house'
+import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
+import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
+import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
+import { clarityDaybookPath } from '@/lib/app/clarity-program.mjs'
+import {programContinuation,programFromContinuation,programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
+import courseQuizStyles from './course-quiz.module.css'
+import Course14DayOverview from '@/components/app/course-14-day-overview'
+import CourseGuestLanding from '@/components/app/course-guest-landing'
+import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/profile-courses-switch'
+import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
+import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
+import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import ProfileSessionsDashboard from '@/components/app/profile-sessions-dashboard'
+import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
+import CabinetToday from '@/components/app/cabinet-today'
+import MyCoachingPlan from '@/components/app/my-coaching-plan'
+import CoachingDaybook from '@/components/app/coaching-daybook'
+import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
-export async function appFetch(path, body, method) {
-  const response = await fetch(`/api/app/${path}`, {
-    method: method || (body ? 'POST' : 'GET'),
-    cache: 'no-store',
-    credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
-  if (!response.ok) {
-    const error = new Error(value.error || 'SERVICE_UNAVAILABLE')
-    error.code = value.error
-    error.status = response.status
-    throw error
-  }
-  return value
-}
+import { appFetch, clearCabinetBootstrapCache, getCabinetBootstrap, peekCabinetBootstrap } from '@/lib/app/client-fetch'
+import {directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
+import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
+  readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
+  takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
+import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
+export { appFetch }
+
+// The Cabinet shares one catch-all route, but its tabs have independent large
+// feature trees. Load only the active tab rather than hydrating every feature
+// (courses, tests, practice, and personal reports) on the first visit.
+const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
+const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
+const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
+const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
+const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
+const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
+const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
+const MyCourse = dynamic(() => import('@/components/app/my-course'))
+const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
+const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
+const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
+const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
+const MyPersonalVideos = dynamic(() => import('@/components/app/my-personal-videos'), {ssr:false})
+const MyProgress = dynamic(() => import('@/components/app/my-progress'), {ssr:false})
+const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
+const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
+
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
     ? c.conflict
@@ -53,6 +124,9 @@ function dateLabel(value, locale) {
     new Date(value),
   )
 }
+function shortDateLabel(value, locale) {
+  return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { dateStyle: 'medium' }).format(new Date(value))
+}
 function localZone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -61,6 +135,7 @@ function localZone() {
   }
 }
 function goSignedOut(setData) {
+  clearCabinetBootstrapCache()
   setData(null)
   try {
     const channel = new BroadcastChannel('hh-app-session')
@@ -70,25 +145,134 @@ function goSignedOut(setData) {
     /* No persistent browser fallback. */
   }
 }
+// The route stays mounted across first-level tab changes. usePathname
+// observes History API transitions without a new dynamic server round trip.
+export function AppWorkspaceNavigator({ locale, path = [] }) {
+  const pathname = usePathname()
+  const prefix = `/${locale}/app/`
+  const routedPath = typeof pathname === 'string' && pathname.startsWith(prefix)
+    ? pathname.slice(prefix.length).split('/').filter(Boolean)
+    : path
+  return <AppWorkspace locale={locale} path={routedPath} />
+}
+
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
-    searchParams = useSearchParams(),
-    [data, setData] = useState(null),
-    [state, setState] = useState('loading'),
-    [error, setError] = useState(null)
-  const [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false)
+    searchParams = useSearchParams()
   const page = path[0] || 'portrait',
     recordId = path[1],
-    root = `/${locale}/app`
-  const load = useCallback(async () => {
+    root = `/${locale}/app`,
+    view = page === 'portrait' ? 'portrait' : 'full'
+  const cabinetTheme = ['course', 'business', 'coaching', 'practice'].includes(page) ? undefined : 'daybook'
+  // Avoid showing the previous tab's reduced Profile snapshot as full data.
+  const [viewState, setViewState] = useState(() => {
+    const cached = peekCabinetBootstrap(view)
+    return { view, data: cached, state: cached ? 'ready' : 'loading' }
+  })
+  const data = viewState.view === view ? viewState.data : peekCabinetBootstrap(view)
+  const state = viewState.view === view ? viewState.state : (data ? 'ready' : 'loading')
+  const activeView = useRef(view)
+  activeView.current = view
+  const setData = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.data : peekCabinetBootstrap(view)
+      const next = typeof value === 'function' ? value(previous) : value
+      return { view, data: next, state: current.view === view ? current.state : (next ? 'ready' : 'loading') }
+    })
+  }, [view])
+  const setState = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.state : (peekCabinetBootstrap(view) ? 'ready' : 'loading')
+      return {
+        view,
+        data: current.view === view ? current.data : peekCabinetBootstrap(view),
+        state: typeof value === 'function' ? value(previous) : value,
+      }
+    })
+  }, [view])
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false),
+    [deleted, setDeleted] = useState(false),
+    [nativeApp,setNativeApp] = useState(false),
+    [installOfferAccountId,setInstallOfferAccountId] = useState(null)
+  const [savedInstallContext,setSavedInstallContext]=useState(false)
+  const [telegramAvailable,setTelegramAvailable]=useState(false)
+  const [profileAuthOpen,setProfileAuthOpen]=useState(false)
+  // Preview and Life/Work mode switch stay public; guest account actions require sign-in.
+  function interceptGuestProfileAction(event) {
+    const target=event.target?.closest?.('button,a,[role="button"]')
+    // Public tools must remain reachable before registration. Match the actual
+    // localized first-party destination, not arbitrary private cabinet links.
+    const href=target?.getAttribute('href') || ''
+    if (target?.matches('a[data-profile-my-video]') && /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/.test(href)) return
+    if (target?.matches('a[data-clarity-reiki-practitioner]') && /^\/(?:ru|en|es)\/academy\/principles-of-energywork\/?$/.test(href)) return
+    if (!target || target.closest('[data-profile-mode-switch]') ||
+      target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
+      target.closest('[data-profile-language-switch]') ||
+      target.closest('[data-profile-chrome-navigation]') ||
+      target.closest('[data-profile-auth-dialog]') || target.closest('[data-clarity-start]') || target.closest('[data-clarity-details]') || target.closest('[data-program-start]')) return
+    event.preventDefault()
+    event.stopPropagation()
+    const program=target.closest('[data-goal-vector-entry]')?'goal':target.closest('[data-business-start],[data-business-daybook-link]')?'business':null
+    if(program){if(!busy)void signin('google',program);return}
+    setProfileAuthOpen(true)
+  }
+  useEffect(()=>{
+    if(state==='loading'||state==='ready'||state==='unavailable')return
+    const controller=new AbortController()
+    appFetch('auth/providers',undefined,undefined,{signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setTelegramAvailable(value.telegram===true)})
+      .catch(()=>{/* Fail closed: retain Google when Telegram is unavailable. */})
+    return ()=>controller.abort()
+  },[state])
+  // Ephemeral account-scoped handoff: no private Save or report URL in storage.
+  const pendingSaveInstallAccountId=useRef(null)
+  const savedExitDestination=useRef(null)
+  useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
+  const signinAttempted = useRef(false)
+  // Preserve existing report and goal bookmarks when opening a split Profile tab.
+  useEffect(() => {
+    if (page !== 'portrait') return
+    const fragment = window.location.hash
+    const destination = fragment === '#personal-reports' ? 'reports'
+      : fragment === '#hh-development-program' ? 'path' : null
+    if (destination && searchParams.get('space') !== destination)
+      router.replace(root + '/portrait?space=' + destination + fragment, { scroll: false })
+  }, [page, root, router, searchParams])
+  const practiceInner = page === 'practice'
+  const retestLifetime = useRef({ mounted: false, epoch: 0 })
+  const retestScope = useRef(null)
+  retestScope.current = { accountId: data?.account?.id, page, recordId,
+    courseId: searchParams.get('courseId'), cycleId: searchParams.get('cycleId'), courseMode: searchParams.get('course') }
+  useEffect(() => {
+    const lifetime = retestLifetime.current
+    lifetime.mounted = true; lifetime.epoch += 1
+    return () => { lifetime.mounted = false; lifetime.epoch += 1 }
+  }, [])
+  const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
+  // Discovery and OPORA previews are public; a saved lesson belongs to My courses.
+  const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
+    ? 'discover' : 'saved'
+  // The visual Course index inherits the Profile's unified shell; lesson/discovery views remain unchanged.
+  const courseLanding = page === 'course' && searchParams.get('view') === 'courses' && !searchParams.get('courseId')
+  // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
+  const loadEpoch = useRef(0)
+  const load = useCallback(async ({ refresh = true } = {}) => {
+    const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch('bootstrap')
+      const fresh = await getCabinetBootstrap(view, { refresh })
+      if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
+      return fresh
     } catch (e) {
+      if (epoch !== loadEpoch.current) return
       setData(null)
       setError(e)
       setState(
@@ -101,16 +285,26 @@ export default function AppWorkspace({ locale, path = [] }) {
               : 'error',
       )
     }
-  }, [])
+  }, [view, setData, setState])
   useEffect(() => {
-    load()
-  }, [load])
+    const cached = peekCabinetBootstrap(view)
+    if (cached) {
+      setData(cached)
+      setState('ready')
+    } else {
+      setState('loading')
+      void load({ refresh: false })
+    }
+    return () => { loadEpoch.current += 1 }
+  }, [load, view, setData, setState])
   useEffect(() => {
     let channel
     try {
       channel = new BroadcastChannel('hh-app-session')
       channel.onmessage = (e) => {
         if (e.data === 'signed-out') {
+          retestLifetime.current.epoch += 1
+          clearCabinetBootstrapCache()
           setData(null)
           setState('signed-out')
           router.refresh()
@@ -127,6 +321,8 @@ export default function AppWorkspace({ locale, path = [] }) {
         }
       },
       hide = () => {
+        retestLifetime.current.epoch += 1
+        clearCabinetBootstrapCache()
         setData(null)
         setState('loading')
       }
@@ -138,63 +334,275 @@ export default function AppWorkspace({ locale, path = [] }) {
       window.removeEventListener('pagehide', hide)
     }
   }, [load, router])
-  async function signin() {
+  function completeSaveContinuation(destination){
+    // After onboarding from a report, wait for server-confirmed Save before
+    // offering installation. Existing users continue directly to the result.
+    const currentAccountId=data?.account?.id
+    const pendingAccountId=pendingSaveInstallAccountId.current
+    pendingSaveInstallAccountId.current=null
+    if(shouldPauseNewSignupSave({
+      pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
+    }) || shouldOfferWhatsAppAfterSignup({pendingAccountId,accountId:currentAccountId})){
+      savedExitDestination.current=destination
+      setSavedInstallContext(true)
+      setInstallOfferAccountId(currentAccountId)
+      return
+    }
+    router.replace(destination)
+  }
+  function dismissInstallOffer(){
+    setInstallOfferAccountId(null)
+    setSavedInstallContext(false)
+    const destination=savedExitDestination.current
+    savedExitDestination.current=null
+    if(destination)router.replace(destination)
+  }
+  async function signin(providerChoice = 'google', daybookProgram = null) {
+    signinAttempted.current = true
     setBusy(true)
     setError(null)
     try {
+      const native = isNativeHolisticHouse()
+      // A public Pro entry carries only an allowlisted editor choice. Never put
+      // a client note, profile, price, or draft content into OAuth state/URLs.
+      const proPanel = page === 'practice' ? searchParams.get('panel') : null
+      const proStarter = searchParams.get('starter')
+      const proCreate = searchParams.get('create') === '1'
+      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop','diagnostic','energy','personal'].includes(proStarter)
+        ? proStarter
+        : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
+          ? 'course'
+          : proPanel === 'profile' ? 'profile' : proPanel === 'requests' ? 'requests' : null
+      // Returning from the legacy private editor after Google sign-in must
+      // display the EXACT owner-approved Practice dashboard first. Never add
+      // ?ready=service here: that inserts a continuation panel above the six
+      // reference tiles and shifts the hero down on iPhone. A signed-in user
+      // can select any real action directly on the dashboard.
+      // Native-app handoff keeps the original explicit deep-link semantics.
       const result = await appFetch('auth/start', {
         locale,
-        serviceId: searchParams.get('service') || null,
+        ...(providerChoice === 'telegram' ? { provider: 'telegram' } : {}),
+        ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
+        // Private result intent survives Google/Telegram OAuth; never return it to the public test shell.
+        ...(page === 'portrait' && searchParams.get('space') === 'reports' ? { continueTo: 'reports' } : {}),
+        ...(page === 'practice'
+          ? native
+            ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
+            : { continueTo: 'practice-preview' }
+          : {}),
+        ...(native ? { native: true } : {}),
+        serviceId: daybookProgram ? null : searchParams.get('service') || null,
+        ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
+        ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
+        ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
+        ...(page === 'consultations' && searchParams.get('request')
+          ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
+        ...(daybookProgram ? {continueTo:programContinuation(daybookProgram)} : {}),
       })
-      window.location.assign(result.redirectUrl)
+      if (native) {
+        // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
+        // not the app's credential-readable embedded WebView.
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.open({ url: result.redirectUrl })
+        setBusy(false)
+      } else window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
       setBusy(false)
     }
   }
+  // OPORA quick links must show the first-week programme before Google OAuth.
+  // Consent on that slide is a real user click, not an effect of opening a URL.
+
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // Revoke native phone tokens *before* clearing this account's session.
+      // A failed or revoked server session still blocks delivery through the
+      // session-bound native_push_devices lookup.
+      if(isNativeHolisticHouse() && data?.account?.id){
+        try{
+          await appFetch('notifications/native/disable',{},'POST',{accountId:data.account.id})
+          const {registerPlugin}=await import('@capacitor/core')
+          await registerPlugin('PushNotifications').unregister()
+        }catch{/* Sign-out must continue; server also requires a live Auth session. */}
+      }
+      // End account-bound Live Activities before clearing the verified session.
+      if (isNativePsiAlchemy()) {
+        try {
+          const { Capacitor, registerPlugin } = await import('@capacitor/core')
+          if (Capacitor.getPlatform() === 'ios') {
+            await appFetch('notifications/live-stop', { activityId: null }, 'POST', { accountId: data.account.id })
+            await registerPlugin('HHCourseActivity').stop({})
+          }
+        } catch { /* Sign-out must still complete even if iOS is offline. */ }
+      }
+      // An installed device must not remain subscribed to a previous account
+      // after sign-out or account switching. Keep failures non-blocking.
+      try {
+        const registration = 'serviceWorker' in navigator
+          ? await navigator.serviceWorker.getRegistration('/') : null
+        const subscription = await registration?.pushManager?.getSubscription()
+        if (subscription) {
+          await appFetch('notifications/unsubscribe', { endpoint: subscription.endpoint },
+            'POST', { accountId: data.account.id })
+          await subscription.unsubscribe()
+        }
+      } catch { /* Do not block sign-out for an unavailable push service. */ }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
     } finally {
       goSignedOut(setData)
+      setInstallOfferAccountId(null)
+      setSavedInstallContext(false)
+      pendingSaveInstallAccountId.current=null
+      savedExitDestination.current=null
       setState('signed-out')
       setBusy(false)
       router.replace(root)
     }
   }
-  async function openPlanStep(plan) {
-    const definition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-    const existing = data?.runs?.find((run) => run.definitionId === definition.id && ['draft', 'in_progress'].includes(run.status))
-    const run = existing || await appFetch('runs', {
-      definitionKey: definition.key,
-      definitionVersion: definition.version,
-      instrumentLocale: definition.instrumentLocale,
-      operationId: crypto.randomUUID(),
-    })
-    router.push(`${root}/runs/${run.id}?plan=${encodeURIComponent(plan.id)}`)
+  const renderedRetestScope = retestScope.current, renderedRetestEpoch = retestLifetime.current.epoch
+  async function returnFromFinalRetest(completed = false) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || !scope.courseId || !scope.cycleId || !isCurrent()) return
+    const today = await appFetch('course/today?locale=' + encodeURIComponent(locale) + '&courseId=' + encodeURIComponent(scope.courseId),
+      undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || today?.courseId !== scope.courseId || today?.cycle?.id !== scope.cycleId || today.readOnly) return
+    const fresh = await appFetch('bootstrap', undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || fresh?.account?.id !== scope.accountId) return
+    setData(fresh); setState('ready')
+    router.push(root + '/course?courseId=' + encodeURIComponent(scope.courseId) + (completed ? '&retest=updated' : ''))
   }
-  async function completePlan(result) {
-    const planId = searchParams.get('plan')
-    if (!planId) {
-      await load()
-      router.push(root + '/results/' + result.id)
+  async function continueCoursePlan(result) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || scope.courseMode !== '1' || !isCurrent() ||
+        (scope.recordId && result.runId !== scope.recordId)) return
+    const request = async (path, body, method) => {
+      if (!isCurrent()) throw new Error('COURSE_SELECTION_CHANGED')
+      const response = await appFetch(path, body, method, { accountId: scope.accountId })
+      if (!isCurrent() || (path === 'bootstrap' && response?.account?.id !== scope.accountId))
+        throw new Error('COURSE_SELECTION_CHANGED')
+      return response
+    }
+    const refreshCourseOwner = async () => {
+      const fresh = await request('bootstrap')
+      if (!isCurrent()) return
+      setData(fresh); setState('ready')
+    }
+    try {
+      const requestedCourseId = scope.courseId
+      const courseState = await request('course' + (requestedCourseId ? '?courseId=' + encodeURIComponent(requestedCourseId) : ''))
+      if (requestedCourseId && courseState.course?.id !== requestedCourseId) return
+      const courseQuery = courseState.course?.id ? '&courseId=' + encodeURIComponent(courseState.course.id) : ''
+      // Validate membership against the server-owned confirmed set, not only
+      // the URL. Normal non-course tests still use their original result flow.
+      if (isCourseTest(courseState, result.definitionKey)) {
+        // A course owns its NEXT-test choice, but a completed test must still
+        // count in the ordinary account-wide selection. Sync that ledger
+        // independently; stale plan revisions never block course progression.
+        try {
+          const snapshot = await request('bootstrap')
+          const active = snapshot.activeTestPlan
+          if (active?.status === 'active' && active.definitionIds?.includes(result.definitionId)) {
+            const plan = await request('test-plans/' + encodeURIComponent(active.id))
+            await request('test-plans/' + encodeURIComponent(active.id) + '/advance', {
+              completedRunId: result.runId,
+              expectedRevision: plan.revision,
+            })
+          }
+        } catch (error) {
+          if (error.message === 'COURSE_SELECTION_CHANGED') throw error
+          // The saved result and authoritative course state remain intact.
+        }
+        if (!isCurrent()) return
+        const nextKey = coursePendingKeys(courseState)[0]
+        if (nextKey) {
+          const nextRun = await startOrResumeCourseTest({
+            courseState, key: nextKey, locale, request,
+          })
+          await refreshCourseOwner()
+          if (!isCurrent()) return
+          // The approved OPORA starter battery stays in quick mode between
+          // all three check-ins. Other course batteries keep guided mode.
+          const oporaStarter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+          const isOporaStarter=oporaStarter.every(key=>courseState.course?.testKeys?.includes(key))
+          const nextMode=isOporaStarter&&oporaStarter.includes(nextKey)?'quick':'guided'
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=' + nextMode + '&course=1' + courseQuery)
+        } else {
+          await refreshCourseOwner()
+          if (!isCurrent()) return
+          router.push(root + '/course?tests=complete' + courseQuery)
+        }
+        return
+      }
+      await refreshCourseOwner()
+      if (!isCurrent()) return
+      router.push(root + '/results/' + encodeURIComponent(result.id))
+    } catch (error) {
+      if (isCurrent()) throw error
+    }
+  }
+  async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === 'retest') {
+      await returnFromFinalRetest(true)
       return
     }
-    const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
-    const advanced = await appFetch(`test-plans/${encodeURIComponent(planId)}/advance`, {
-      completedRunId: result.runId,
-      expectedRevision: plan.revision,
-    })
+    if (searchParams.get('course') === '1') {
+      await continueCoursePlan(result)
+      return
+    }
+    const planId = searchParams.get('plan')
+    let advanced = null
+    if (planId) {
+      const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
+      advanced = plan.completedRunIds?.includes(result.runId) ? plan : await appFetch('test-plans/' + encodeURIComponent(planId) + '/advance', {
+        completedRunId: result.runId,
+        expectedRevision: plan.revision,
+      })
+    }
+    // Reporting always opens the actual persisted result, even for the last
+    // assessment in a selected battery. Navigation never loses its result.
+    if (destination !== 'next') {
+      await load()
+      const planQuery = planId ? '?plan=' + encodeURIComponent(planId) : ''
+      const discussQuery = destination === 'discuss'
+        ? (planQuery ? '&discuss=1' : '?discuss=1') + '#hh-test-result-discussion'
+        : ''
+      router.push(root + '/results/' + encodeURIComponent(result.id) + planQuery + discussQuery)
+      return
+    }
+    if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
+      const nextDefinition = getDefinitionById(advanced.definitionIds[advanced.currentIndex])
+      const snapshot = await appFetch('bootstrap')
+      const existing = (snapshot.runs || []).find(candidate =>
+        candidate.definitionId === nextDefinition.id &&
+        ['draft', 'in_progress'].includes(candidate.status))
+      const nextRun = existing || await appFetch('runs', {
+        definitionKey: nextDefinition.key,
+        definitionVersion: nextDefinition.version,
+        instrumentLocale: nextDefinition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      await load()
+      router.push(root + '/runs/' + encodeURIComponent(nextRun.id) +
+        '?mode=quick&plan=' + encodeURIComponent(planId))
+      return
+    }
     await load()
-    if (advanced.status === 'active') await openPlanStep(advanced)
-    else router.push(`${root}/tests?plan=${encodeURIComponent(planId)}&summary=1`)
+    router.push(advanced?.status === 'completed'
+      ? root + '/tests?plan=' + encodeURIComponent(planId) + '&summary=1'
+      : root + '/tests?filter=remaining')
   }
   if (deleted || state === 'deletion')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
         <section className="hh-panel">
           <p className="hh-kicker">Holistic House</p>
           <h1>{c.deletion}</h1>
@@ -205,31 +613,104 @@ export default function AppWorkspace({ locale, path = [] }) {
     )
   if (state === 'loading')
     return (
-      <main className="hh-app" aria-busy="true">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.loading}</h1>
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
+        <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
+          : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
+            : page === 'settings' ? 'settings'
+              : ['portfolio', 'reports'].includes(page) ? 'reports' : 'today'} />
+        <section className="hh-panel" role="status" aria-live="polite">
+          <p className="hh-kicker">Holistic House</p>
+          <p>{c.loading}</p>
+        </section>
       </main>
     )
   if (state === 'ready' && !data)
     return (
-      <main className="hh-app" aria-busy="true">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme} aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
         <h1>{c.loading}</h1>
       </main>
     )
+  // Guest/expired-session/failed-bootstrap course screens stay inside My Space.
+  if (state !== 'ready' && page === 'course')
+    return (
+      <main className="hh-app hh-app--course-guest" data-profile-courses-guest>
+        <ProfileHubTabs locale={locale} active="courses" />
+        <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
+        {stressSignup
+          ? <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+              onTelegramStart={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+              onRetry={state === 'error' ? load : undefined}
+              legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+          : <ProfileCoursesGuest locale={locale} mode={courseChoiceMode} busy={busy}
+              onSignin={()=>signin('google')} onTelegramSignin={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              loadingError={state === 'error' || state === 'unavailable'}
+              onRetry={state === 'error' ? load : undefined}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined} />}
+      </main>
+    )
+  // Public Cabinet entry explains the personal and practitioner spaces only to
+  // signed-out visitors. Authenticated accounts keep their existing workspace.
+  // Course/test deep links retain the dedicated Google handoff flows above.
+  if (state !== 'ready' && page === 'portrait' && !stressSignup)
+    return (
+      <main className="hh-app hh-app--cabinet-guest" data-cabinet-theme={cabinetTheme} data-profile-page-shell="life" onClickCapture={interceptGuestProfileAction}>
+        <ProfileHubTabs locale={locale} active="today" />
+        <CabinetGuestOverview
+          locale={locale} busy={busy} onSignin={()=>signin('google')}
+          onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
+          unavailable={state === 'unavailable'}
+          onRetry={state === 'error' ? load : undefined}
+          sessionNotice={state === 'error'}
+          errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+        />
+        <ProfileGuestAuthDialog locale={locale} open={profileAuthOpen} busy={busy}
+          telegramAvailable={telegramAvailable}
+          errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+          onGoogle={()=>signin('google')} onTelegram={()=>signin('telegram')}
+          onDismiss={()=>setProfileAuthOpen(false)} />
+      </main>
+    )
   if (state !== 'ready')
     return (
-      <main className="hh-app">
+      <main className="hh-app" data-cabinet-theme={cabinetTheme}>
+        {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
-          <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
-          <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
+          <h1>{state === 'unavailable' ? c.unavailable : stressSignup
+            ? (locale === 'ru' ? 'ОПОРА — Антистресс: сначала тесты' : 'OPORA Stress Relief: assessments first')
+            : page === 'course'
+              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+          <p>{state === 'unavailable' ? c.unavailableText : stressSignup
+            ? (locale === 'ru'
+              ? 'После входа: основной исходный HH Weekly Pulse (8 вопросов) до урока 1, дополнительные GAD-7 и Resource Pulse — по желанию. Уже пройденный совместимый результат учитывается.'
+              : 'After sign-in: complete HH Weekly Pulse (8 questions) before lesson 1. GAD-7 and Resource Pulse are optional; recent compatible results count.')
+            : page === 'course'
+              ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
+                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
-            <button className="hh-primary" onClick={signin} disabled={busy}>
-              {c.signin}
-            </button>
+            <>
+              {telegramAvailable && <button className="hh-primary" data-telegram-auth="login"
+                onClick={()=>signin('telegram')} disabled={busy}>
+                {locale==='ru'?'Войти через Telegram':locale==='es'?'Entrar con Telegram':'Continue with Telegram'}
+              </button>}
+              <button className="hh-primary" onClick={()=>signin('google')} disabled={busy}>
+                {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
+              </button>
+              {telegramAvailable && <p className="hh-muted">
+                {locale==='ru'?'Уже есть Google-кабинет? Войдите через Google и привяжите Telegram в настройках.':
+                  locale==='es'?'¿Ya usas Google? Entra con Google y vincula Telegram en Ajustes.':
+                  'Existing Google Cabinet? Sign in with Google first and link Telegram in Settings.'}
+              </p>}
+            </>
           )}
+          {page === 'course' && (stressSignup
+            ? <Course14DayOverview locale={locale} programId="stress" compact />
+            : <Course14DayOverview locale={locale} compact />)}
           {state === 'error' && <button onClick={load}>{c.retry}</button>}
           {error && state !== 'signed-out' && state !== 'unavailable' && (
             <p role="alert">{message(error, c)}</p>
@@ -241,68 +722,159 @@ export default function AppWorkspace({ locale, path = [] }) {
         </section>
       </main>
     )
+  // Shared private navigation for desktop, mobile and the Account dropdown.
+// Reports reuses the existing Insights/portfolio screen; Practice is the master cabinet.
   const nav = [
-    ['portrait', c.portrait, ''],
-    ['monitoring', c.monitoring, '/monitoring'],
-    ['history', c.history, '/history'],
-    ['consultations', c.consultations, '/consultations'],
+    { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
+    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
+    { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', href: root + '/progress', icon: Activity },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My Coaching Plan', href: root + '/my-coaching-plan', icon: Target },
+    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
+    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
+  // Five prominent mobile destinations mirror the Orders / Clients design.
+  // The complete six-section Cabinet remains available in its account menu.
+  const mobileNav = [
+    { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
+    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My plan', href: root + '/my-coaching-plan', icon: Target },
+    // Settings remains available from the account menu; the bottom dock keeps My Plan visible.
+  ]
+  const navIsActive = (id) => page === id ||
+    (id === 'portrait' && page === 'labs') ||
+    (id === 'course' && ['business','coaching'].includes(page)) ||
+    (id === 'portfolio' && ['reports', 'monitoring', 'results'].includes(page)) ||
+    (id === 'progress' && page === 'history')
+  const documentReader = Boolean(recordId) &&
+    data.account.onboardingState === 'active' &&
+    page === 'reports'
   return (
-    <main className="hh-app">
-      <header className="hh-header">
+    <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
+    <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
+      visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
+      context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-cabinet-theme={documentReader ? undefined : cabinetTheme} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+      {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{c.portrait}</span>
+          Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={'/' + locale + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
-            <Link href={`${root}/settings`} prefetch={false}>
-              {c.settings}
-            </Link>
-            <Link href={`${root}/practice`} prefetch={false}>
-              {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
-            </Link>
-            <Link
-              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'portrait' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
-              prefetch={false}
-            >
-              {locale === 'en' ? 'Русский' : 'English'}
-            </Link>
-            <button onClick={() => logout()} disabled={busy}>
-              {c.signout}
-            </button>
+            {nav.map(({ id, label, href }) => (
+              <InstantCabinetLink key={id} href={href} prefetch={false}
+                aria-current={navIsActive(id) ? 'page' : undefined}
+                onClick={(event) => event.currentTarget.closest('details.hh-account-menu')?.removeAttribute('open')}
+              >{label}</InstantCabinetLink>
+            ))}
+            <div className="hh-account-menu-secondary">
+              <details className="hh-account-more">
+                <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
+                <InstantCabinetLink href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/history'} prefetch={false}>{c.history}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/monitoring'} prefetch={false}>{c.monitoring}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/settings'} prefetch={false}>{c.settings}</InstantCabinetLink>
+              </details>
+              <Link
+                href={`/${locale === 'en' ? 'ru' : 'en'}/app/${page}${recordId ? `/${recordId}` : ''}`}
+                prefetch={false}
+              >{locale === 'en' ? 'Русский' : 'English'}</Link>
+              <button onClick={() => logout()} disabled={busy}>{c.signout}</button>
+            </div>
           </div>
         </details>
-      </header>
-      {page !== 'runs' && (
+      </header>}
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && (
         <nav className="hh-nav" aria-label={c.account}>
-          {nav.map(([id, label, url]) => (
-            <Link
-              key={id}
-              href={root + url}
-              prefetch={false}
-              aria-current={page === id || (id === 'portrait' && page === 'portfolio') ? 'page' : undefined}
-            >
-              {label}
-            </Link>
+          {nav.map(({ id, label, href }) => (
+            <InstantCabinetLink key={id} href={href} prefetch={false}
+              aria-current={navIsActive(id) ? 'page' : undefined}
+            >{label}</InstantCabinetLink>
           ))}
         </nav>
       )}
       {data.account.onboardingState !== 'active' ? (
-        <Preferences data={data} locale={locale} onboarding onDone={load} />
+        <Preferences data={data} locale={locale} onboarding onDone={async()=>{
+          // Only a successful server-authenticated bootstrap after consent
+          // completion can offer installation. Never show it on failed login,
+          // unfinished onboarding, or a stale/different account.
+          const fresh=await load()
+          if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            // First-time phone Messenger entry: return to the selected master
+            // only AFTER the existing consent is saved by the verified user.
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='clarity'){
+              router.replace(clarityDaybookPath(searchParams.get('clarityLocale') || locale))
+              return
+            }
+            const daybookProgram=programFromContinuation(searchParams.get('afterSignIn'))
+            if(page==='portrait'&&daybookProgram){
+              router.replace(programDaybookPath(searchParams.get('programLocale')||locale,daybookProgram))
+              return
+            }
+            if(page==='portrait'&&searchParams.get('afterSignIn')==='messages'){
+              try{
+                const chatLocale=searchParams.get('chatLocale')
+                const destination=directMessengerReturnPath(
+                  ['en','ru','es'].includes(chatLocale)?chatLocale:locale,
+                  searchParams.get('to')||null)
+                router.replace(destination)
+                return
+              }catch{/* Malformed continuation does not skip onboarding. */}
+            }
+            if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
+            else setInstallOfferAccountId(fresh.account.id)
+          }
+        }} />
       ) : (
         <>
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' || page === 'portrait' ? data.account : null} courseLanding={courseLanding} />}
           {page === 'continue' && (
-            <SaveContinuation data={data} locale={locale} reload={load} />
+            <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
-            <>
-              <Portrait data={data} locale={locale} />
-              <PracticeEntry data={data} locale={locale} />
-            </>
-          )}
+             <>
+               {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
+                 <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <DreamPathMap locale={locale} />
+                 <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
+               </>}
+               {searchParams.get('space') === 'path' && <>
+                 <DreamPathMap locale={locale} />
+                 <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
+                 <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
+                 <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
+               </>}
+               {searchParams.get('space') === 'reports' && <>
+                 <ProfileResultsArchive locale={locale} results={data.results || []} />
+                 <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
+                   reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
+               </>}
+               {searchParams.get('space') === 'sessions' && <ProfileSessionsDashboard locale={locale}
+                 savedSessions={data.savedSessions || []} services={data.services || []} />}
+             </>
+           )}
+           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'practice' && <PracticeWorkspace locale={locale} />}
+           {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
+          {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
+          {page === 'course' && !courseLanding && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+           {page === 'course' && <div id="my-courses-content" data-course-content aria-hidden="true" />}
+           {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
+          {page === 'coaching' && (['egyptian','greek'].includes(recordId)
+             ? <TraditionCoaching key={data.account.id + recordId} accountId={data.account.id}
+                 locale={searchParams.get('lang')==='es'?'es':locale}
+                 template={recordId==='egyptian'?'hh-egyptian-goal-planning-v1':'hh-greek-goal-planning-v1'} />
+             : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
+          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null}
+            accountId={data.account.id} key={data.account.id} showcaseEntry />}
+          {page === 'videos' && <VideoCreditsPanel accountId={data.account.id} locale={locale}/>}
+          {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
@@ -314,32 +886,77 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <TestExplorer
-                  locale={locale}
-                  audience="account"
-                  activePlan={data.activeTestPlan}
-                  onResume={openPlanStep}
-                  onStart={async (entries) => {
-                    const plan = await appFetch('test-plans', {
-                      items: entries.map((entry) => ({ definitionKey: entry.definition.key, definitionVersion: entry.definition.version, instrumentLocale: entry.definition.instrumentLocale })),
-                      operationId: crypto.randomUUID(),
-                      replaceActive: false,
-                    })
-                    await openPlanStep(plan)
-                  }}
-                />
+              : <>
+                  {!searchParams.get('courseId') && (
+                    <details className="hh-tests-mood-disclosure" data-cabinet-mood-checkin>
+                      <summary>
+                        <span className="hh-tests-mood-symbol" aria-hidden="true">🙂</span>
+                        <strong>{locale === 'ru' ? 'Настроение сегодня' : 'Today\u2019s mood'}</strong>
+                        <small>{locale === 'ru' ? 'Отметить самочувствие' : 'Quick check-in'}</small>
+                        <ChevronDown size={18} aria-hidden="true" />
+                      </summary>
+                      <MoodCheckIn
+                        locale={locale}
+                        compact
+                        latestMood={data.moodCheckins?.[0] || null}
+                        onMoodChange={(payload) =>
+                          appFetch('mood', {
+                            ...payload,
+                            timezone: localZone(),
+                            sourceSurface: 'monitoring',
+                          }).then((savedMood) => {
+                            if (savedMood?.id) {
+                              setData((current) => current
+                                ? {
+                                    ...current,
+                                    moodCheckins: [
+                                      savedMood,
+                                      ...(current.moodCheckins || []).filter((item) => item.id !== savedMood.id),
+                                    ],
+                                  }
+                                : current)
+                            }
+                            return savedMood
+                          })
+                        }
+                        onQuickCheckin={async () => {
+                          try {
+                            const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+                            const run = await appFetch('runs', {
+                              definitionKey: def.key,
+                              definitionVersion: def.version,
+                              instrumentLocale: def.instrumentLocale,
+                              operationId: crypto.randomUUID(),
+                            })
+                            window.location.assign('/' + locale + '/app/runs/' + run.id)
+                          } catch {
+                            window.location.assign(root + '/monitoring/hh-current-state')
+                          }
+                        }}
+                      />
+                    </details>
+                  )}
+                  <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
+                    requestedPlanId={searchParams.get('plan')}
+                    recommendedKey={searchParams.get('suggest')}
+                    initialStatusFilter={searchParams.get('filter')}
+                    reload={load} />
+                </>
           )}
           {page === 'runs' && (
             <Runner
               key={recordId}
               id={recordId}
               locale={locale}
+              initialMode={searchParams.get('mode') === 'quick' ? 'quick' : searchParams.get('mode') === 'guided' ? 'guided' : null}
+              courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
+                if (searchParams.get('course') === 'retest') { await returnFromFinalRetest(); return }
                 await load()
-                router.push(root + '/tests')
+                router.push(searchParams.get('course') === '1' ? root + '/course' + (searchParams.get('courseId') ? '?courseId=' + encodeURIComponent(searchParams.get('courseId')) : '') : root + '/tests')
               }}
-              onComplete={async (result) => {
-                await completePlan(result)
+              onComplete={async (result, destination) => {
+                await completePlan(result, destination)
               }}
             />
           )}
@@ -350,41 +967,91 @@ export default function AppWorkspace({ locale, path = [] }) {
             recordId ? (
               <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
             ) : (
-              <ReportsIndex data={data} locale={locale} />
+              <><ReportsIndex data={data} locale={locale} /><ClientExpressReports locale={locale} accountId={data.account.id}/></>
             )
           )}
-          {page === 'documents' && recordId && (
-            <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
-          )}
-          {page === 'history' && <HistoryView data={data} locale={locale} reload={load} />}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} />}
+          {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
-            <>
-              <Preferences data={data} locale={locale} onDone={load} />
-              <Privacy
-                locale={locale}
-                logout={logout}
-                onDeleted={() => {
-                  goSignedOut(setData)
-                  setDeleted(true)
-                }}
-              />
-            </>
+            <div data-profile-settings-disclosures>
+              <ProfileSettingsDisclosure id="hh-settings-account"
+                title={locale === 'ru' ? 'Аккаунт и личные данные' : locale === 'es' ? 'Cuenta y datos' : 'Account & personal data'}
+                subtitle={locale === 'ru' ? 'Имя, язык, часовой пояс и вход' : 'Name, language, time zone and sign-in'}>
+                <Preferences data={data} locale={locale} onDone={load} />
+                {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                  accountId={data.account.id} locale={locale}/>}
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-messengers" deepLinks={['hh-telegram-connect']}
+                title={locale === 'ru' ? 'Telegram и WhatsApp' : 'Telegram & WhatsApp'}
+                subtitle={locale === 'ru' ? 'Подключения, согласия и сообщения' : 'Connections, consent and messages'}>
+                <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
+                <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+                <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-plans"
+                title={locale === 'ru' ? 'Подписка и тарифы' : locale === 'es' ? 'Suscripción y planes' : 'Subscription & plans'}
+                subtitle="Free · Practice €5 · Master €20 · Pro €40">
+                <SubscriptionSettings />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-more" deepLinks={['hh-phone-notifications']}
+                title={locale === 'ru' ? 'Уведомления и приватность' : 'Notifications & privacy'}
+                subtitle={locale === 'ru' ? 'Уведомления, установка и управление данными' : 'Alerts, install and data controls'}>
+                <InstallHolisticHouse locale={locale} />
+                {nativeApp
+                  ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                  : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+                <Privacy
+                  locale={locale}
+                  logout={logout}
+                  onDeleted={() => {
+                    goSignedOut(setData)
+                    setDeleted(true)
+                  }}
+                />
+              </ProfileSettingsDisclosure>
+            </div>
           )}
         </>
       )}
-      <footer className="hh-footer">
+      {!documentReader && !practiceInner && page !== 'portrait' && <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
-      </footer>
+      </footer>}
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+        <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
+          className="hh-mobile-app-nav-home"
+          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
+        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
+        {mobileNav.map(({ id, label, href, icon: Icon }) => (
+          <InstantCabinetLink key={id} href={href} prefetch={false}
+            aria-current={navIsActive(id) ? 'page' : undefined}
+          ><Icon aria-hidden="true" size={22} /><span>{label}</span></InstantCabinetLink>
+        ))}
+      </nav>}
     </main>
+    </SubscriptionProvider>
   )
 }
 
-function SaveContinuation({ data, locale, reload }) {
+function savedGuestDiscussionTarget(destination, sourceKind, intentId) {
+  if (sourceKind !== 'guest_result' || typeof window === 'undefined') return destination
+  try {
+    if (window.sessionStorage.getItem(TEST_DISCUSSION_INTENT_KEY) === intentId) {
+      window.sessionStorage.removeItem(TEST_DISCUSSION_INTENT_KEY)
+      return destination + '?discuss=1#hh-test-result-discussion'
+    }
+  } catch { /* Private browser mode: the saved result still opens safely. */ }
+  return destination
+}
+
+function SaveContinuation({ data, locale, reload, onComplete }) {
   const params = useSearchParams()
   const router = useRouter()
   const intentId = params.get('intent') || ''
+  const autoSave = params.get('auto') === '1'
+  const authFailure = params.get('auth') || ''
+  const autoStarted = useRef('')
+  const committing = useRef(false)
   const [intent, setIntent] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -402,6 +1069,8 @@ function SaveContinuation({ data, locale, reload }) {
         setIntent(value)
         if (value.expired)
           setError(ru ? 'Время подтверждения истекло. Вернитесь к результату и нажмите «Сохранить» ещё раз.' : 'This confirmation expired. Return to the result and choose Save again.')
+        else if (authFailure)
+          setError(ru ? 'Вход через Google не был завершён. Документ ещё не сохранён.' : 'Google sign-in was not completed. Your document has not been saved.')
       })
       .catch(() => {
         if (live) setError(ru ? 'Не удалось открыть подтверждение сохранения.' : 'This save confirmation is unavailable.')
@@ -409,22 +1078,27 @@ function SaveContinuation({ data, locale, reload }) {
     return () => {
       live = false
     }
-  }, [intentId, ru])
+  }, [intentId, ru, authFailure])
 
-  async function commit() {
-    if (!intentId || busy) return
+  const commit = useCallback(async () => {
+    if (!intentId || committing.current) return
+    committing.current = true
     setBusy(true)
     setError('')
     try {
       const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
       await reload()
-      router.replace(
-        saved.sourceKind === 'delivered_report'
-          ? `/${locale}/app/reports/${saved.resource.id}`
-          : saved.sourceKind === 'legacy_document'
-            ? `/${locale}/app/documents/${saved.resource.id}`
-            : `/${locale}/app/results/${saved.resource.id}`,
-      )
+      // A confirmed session Save may have been initiated by a navigation click.
+      // Continue to exactly the first-party section selected before OAuth.
+      const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,saved.sourceKind,saved.resource.id),saved.sourceKind,intentId)
+      // A completed guest test opens directly in the existing full private report.
+      // Skip optional post-signup install and WhatsApp offers for this result.
+      if(saved.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
+      else router.replace(destination)
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -440,12 +1114,34 @@ function SaveContinuation({ data, locale, reload }) {
               : 'The selected item could not be saved.',
       )
     } finally {
+      committing.current = false
       setBusy(false)
     }
-  }
+  }, [intentId, locale, reload, router, ru, onComplete])
+
+  // The explicit recipient click created an item-scoped HttpOnly save intent.
+  // Resume only that selection after Google sign-in (and any new-account consent).
+  useEffect(() => {
+    if (!canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent })) return
+    if (autoStarted.current === intentId) return
+    autoStarted.current = intentId
+    if (intent.status === 'committed' && intent.resourceId) {
+      const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,intent.sourceKind,intent.resourceId),intent.sourceKind,intentId)
+      if(intent.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
+      else router.replace(destination)
+      return
+    }
+    void commit()
+  }, [autoSave, authFailure, intent, intentId, commit, locale, router, onComplete])
 
   const sourceTitle =
-    intent?.sourceKind === 'delivered_report'
+    intent?.sourceKind === 'client_session'
+      ? ru ? 'Сохранение одной консультации' : 'Save one consultation'
+      : intent?.sourceKind === 'delivered_report'
       ? ru
         ? 'Полученный отчёт'
         : 'Received report'
@@ -455,17 +1151,55 @@ function SaveContinuation({ data, locale, reload }) {
           : intent?.source?.documentKind === 'invoice'
             ? ru ? 'Счёт' : 'Invoice'
             : ru ? 'Рекомендация' : 'Recommendation'
-      : intent?.source?.definitionKey === 'hh-current-state'
-        ? ru
-          ? 'Моё состояние сейчас'
-          : 'How I feel now'
-        : ru
-          ? 'Личностные особенности'
-          : 'Personality tendencies'
+      : intent?.sourceKind === 'guest_result'
+        ? (monitoringCatalogItem(intent?.source?.definitionKey)?.title?.[locale] ||
+            monitoringCatalogItem(intent?.source?.definitionKey)?.title?.en ||
+            (ru ? 'Результат теста' : 'Test result'))
+        : (ru ? 'Документ' : 'Document')
+  // After the guest explicitly clicked Get free analysis, the item-scoped
+  // HttpOnly intent is sufficient consent to save that one result. Keep the
+  // OAuth handoff visually transitional, never expose a second Save form.
+  if (autoSave && !authFailure && !error &&
+      (!intent || canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent }))) {
+    return (
+      <section className="hh-panel hh-entry" aria-busy="true">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Открываем ваш результат' : 'Opening your result'}</h1>
+        <p role="status">{ru
+          ? 'Сохраняем выбранный тест в кабинете и открываем пояснения шкал и рекомендации…'
+          : 'Saving your selected test and opening your scale explanations and recommendations…'}</p>
+      </section>
+    )
+  }
+  if (autoSave && intent?.sourceKind === 'guest_result') {
+    // A failed OAuth or import does not require asking for Save consent again.
+    // Keep the selected result in guest storage and offer safe recovery.
+    return (
+      <section className="hh-panel hh-entry">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Не удалось открыть анализ' : 'Could not open your analysis'}</h1>
+        <p role="alert">{error || (ru
+          ? 'Вернитесь к результату теста и повторите вход через Google.'
+          : 'Return to your test result and try Google sign-in again.')}</p>
+        {!authFailure && !intent.expired && intent.status === 'pending' && (
+          <button type="button" className="hh-primary" disabled={busy} onClick={commit}>
+            {busy ? (ru ? 'Повторяем…' : 'Retrying…')
+              : (ru ? 'Повторить открытие анализа' : 'Retry opening analysis')}
+          </button>
+        )}
+        <Link href={`/${locale}/client?result=${encodeURIComponent(intent.sourceId)}`} prefetch={false}>
+          {ru ? 'Вернуться к результату теста' : 'Back to my test result'}
+        </Link>
+      </section>
+    )
+  }
   return (
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
       <h1>{ru ? 'Сохранить в личном кабинете' : 'Save to your Cabinet'}</h1>
+      {canAutoContinueSave({automatic:autoSave,authStatus:authFailure,intent}) && (
+        <p role="status">{ru ? 'Сохраняем и открываем ваш документ в личном кабинете…' : 'Saving and opening your document in your personal Cabinet…'}</p>
+      )}
       {intent && !intent.expired && (
         <>
           <p><strong>{sourceTitle}</strong></p>
@@ -478,7 +1212,11 @@ function SaveContinuation({ data, locale, reload }) {
             {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
-            {intent?.sourceKind === 'guest_result'
+            {intent?.sourceKind === 'client_session'
+              ? (ru
+                  ? 'Вы подтверждаете сохранение только этой консультации в показанный Google-аккаунт. Остальные записи клиента не будут привязаны или открыты автоматически.'
+                  : 'You are confirming this one consultation for the Google Account shown above. No other client records will be linked or unlocked automatically.')
+              : intent?.sourceKind === 'guest_result'
               ? (ru
                   ? 'Будет сохранён только этот выбранный результат.'
                   : 'Only this selected result will be saved.')
@@ -489,20 +1227,14 @@ function SaveContinuation({ data, locale, reload }) {
           {intent.status === 'committed' && intent.resourceId ? (
             <Link
               className="hh-primary"
-              href={
-                intent.sourceKind === 'delivered_report'
-                  ? `/${locale}/app/reports/${intent.resourceId}`
-                  : intent.sourceKind === 'legacy_document'
-                    ? `/${locale}/app/documents/${intent.resourceId}`
-                    : `/${locale}/app/results/${intent.resourceId}`
-              }
+              href={savedResourcePath(locale, intent.sourceKind, intent.resourceId)}
               prefetch={false}
             >
-              {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
+              {intent.sourceKind === 'guest_result' ? (ru ? 'Открыть бесплатный анализ' : 'Open my free analysis') : (ru ? 'Открыть сохранённый материал' : 'Open saved item')}
             </Link>
           ) : (
             <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
-              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Сохранить' : 'Save')}
+              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : intent.sourceKind === 'guest_result' ? (ru ? 'Сохранить результат и открыть бесплатный анализ' : 'Save my result and open free analysis') : (ru ? 'Сохранить' : 'Save')}
             </button>
           )}
         </>
@@ -779,6 +1511,7 @@ function TestCatalog({ data, locale, onStarted }) {
     const completed = data.results.filter((x) => x.definitionId === def.id).at(-1)
     const title = item?.title?.[locale] || item?.title?.en || def.title
     const description = item?.description?.[locale] || item?.description?.en || ''
+    const methodology = assessmentMethodology({key: def.key, catalog: item, definition: def, locale}).text
     const image =
       item?.axis === 'baseline'
         ? (ru ? '/images/holistic-house/video-posters/services-ru-v1.webp' : '/images/holistic-house/video-posters/services-en-v2.webp')
@@ -798,6 +1531,8 @@ function TestCatalog({ data, locale, onStarted }) {
           </p>
           <h2>{title}</h2>
           <p>{description}</p>
+          <p className="hh-fine">{methodology}</p>
+          {/^https:\/\//.test(def.source?.url || '') && <a className="hh-fine" href={def.source.url} rel="noopener noreferrer" target="_blank">{ru ? 'Источник методики' : 'Instrument source'}</a>}
           {def.source?.copyright && <p className="hh-fine">{def.source.copyright}</p>}
           {completed && <p className="hh-fine">{c.latest}: {dateLabel(completed.measurementAt, locale)}</p>}
           <div className="hh-actions">
@@ -936,7 +1671,64 @@ function TestPlanSummary({ locale, planId, results, onBack }) {
   return <section className="hh-panel hh-test-plan-summary"><p className="hh-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h1>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h1><p>{locale === 'ru' ? 'Каждый инструмент остаётся отдельным результатом: здесь нет синтетического медицинского балла или диагноза.' : 'Each instrument remains a separate result: this page does not create a synthetic medical score or diagnosis.'}</p><div className="hh-history-list">{completed.map((result) => <Link key={result.id} href={`/${locale}/app/results/${result.id}`} prefetch={false}>{getDefinitionById(result.definitionId).title} · {new Date(result.measurementAt).toLocaleDateString(locale)}</Link>)}</div><button type="button" onClick={onBack}>{locale === 'ru' ? 'К базе тестов' : 'Back to test explorer'}</button></section>
 }
 
-function Runner({ id, locale, onExit, onComplete }) {
+
+function RunnerAnswerChoices({ definition, question, selected, onChoose, locale, disabled }) {
+  const min = question.min ?? definition.answerScale?.min
+  const max = question.max ?? definition.answerScale?.max
+  const anchors = question.responseAnchors || definition.responseAnchors
+  // ONS4 asks eleven choices; a numeric selector prevents mobile overflow.
+  if (question.inputType === 'scale-select') return (
+    <label className="hh-day-count-select">
+      <span>{locale === 'ru' ? 'Оценка по шкале (0–10)' : 'Rating on a 0–10 scale'}</span>
+      <select aria-label={locale === 'ru' ? 'Оценка от 0 до 10' : 'Rating from 0 to 10'}
+        value={selected ?? ''} disabled={disabled}
+        onChange={event => { if (event.target.value !== '') void onChoose(Number(event.target.value)) }}>
+        <option value="" disabled>{locale === 'ru' ? 'Выберите оценку' : 'Select a rating'}</option>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <option value={value} key={value}>
+            {value}{anchors?.[value - min] ? ' — ' + anchors[value - min] : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+  if (question.inputType === 'day-count') return (
+    <label className="hh-day-count-select">
+      <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
+      <select aria-label={locale === 'ru' ? 'Количество дней' : 'Number of days'}
+        value={selected ?? ''} disabled={disabled}
+        onChange={event => { if (event.target.value !== '') void onChoose(Number(event.target.value)) }}>
+        <option value="" disabled>{locale === 'ru' ? 'Выберите число дней' : 'Select number of days'}</option>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <option value={value} key={value}>{value}</option>
+        ))}
+      </select>
+    </label>
+  )
+  return (
+    <>
+      <div className={anchors ? 'hh-scale hh-scale-words' : 'hh-scale'}>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <button key={value} type="button" aria-pressed={selected === value}
+            className={asrs6ChoiceClass(definition, question, value)}
+            disabled={disabled} onClick={() => void onChoose(value)}>
+            {definition.key !== 'asrs-6' && <strong>{value}</strong>}
+            {anchors && <span lang={definition.instrumentLocale}>{anchors[value - min]}</span>}
+            <Asrs6ChoiceMarker definition={definition} question={question} value={value} />
+          </button>
+        ))}
+      </div>
+      {question.anchors && !anchors && (
+        <div className="hh-anchors">
+          <span>{question.anchors[0]}</span><span>{question.anchors.at(-1)}</span>
+        </div>
+      )}
+    </>
+  )
+}
+
+function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode = false }) {
+  const { offerAfterCompletion } = useSubscription()
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -944,10 +1736,12 @@ function Runner({ id, locale, onExit, onComplete }) {
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(null),
+    [mode, setMode] = useState(initialMode === 'guided' ? 'guided' : 'quick'),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
-    inflight = useRef(false)
+    inflight = useRef(false),
+    completion = useRef(null),
+    finishing = useRef(false)
   const modeCopy =
     locale === 'ru'
       ? {
@@ -955,12 +1749,12 @@ function Runner({ id, locale, onExit, onComplete }) {
           intro: 'Выберите темп. Вопросы и расчёт результата в обоих режимах одинаковые.',
           quick: 'Quick',
           quickTitle: 'Быстро',
-          quickText: 'Один ответ — и сразу следующий вопрос. Минимум лишних шагов.',
+          quickText: 'Все вопросы на одной странице. Ответы сохраняются при выборе.',
           guided: 'Guided',
           guidedTitle: 'С сопровождением',
-          guidedText: 'Спокойный пошаговый формат с подсказками и ручным переходом дальше.',
+          guidedText: 'Один вопрос на экране, затем кнопка «Далее».',
           same: 'В обоих режимах используются те же вопросы и тот же расчёт результата.',
-          tap: 'Нажмите на ответ — он сохранится, и тест продолжится автоматически.',
+          tap: 'Ответы сохраняются автоматически, без перехода между вопросами.',
           guidedPrompt: 'Не спешите. Выберите вариант, который ближе всего к вашему ощущению.',
           part: 'Часть',
           question: 'Вопрос',
@@ -971,12 +1765,12 @@ function Runner({ id, locale, onExit, onComplete }) {
           intro: 'Choose your pace. Both modes use the same questions and the same scoring.',
           quick: 'Quick',
           quickTitle: 'Fast & simple',
-          quickText: 'One tap saves your answer and moves straight to the next question.',
+          quickText: 'All questions on one scrollable page, with automatic saving.',
           guided: 'Guided',
           guidedTitle: 'Calm & guided',
-          guidedText: 'A slower step-by-step flow with gentle prompts and a clear Next action.',
+          guidedText: 'One question per screen, with a clear Next button.',
           same: 'Both use the same questions and produce the same result.',
-          tap: 'Tap an answer to save it and continue automatically.',
+          tap: 'Answers save automatically without changing pages.',
           guidedPrompt: 'Take your time. Choose the answer that feels closest to your experience.',
           part: 'Part',
           question: 'Question',
@@ -987,10 +1781,12 @@ function Runner({ id, locale, onExit, onComplete }) {
     setError(null)
     try {
       const value = await appFetch('runs/' + id)
+      operation.current = null
+      completion.current = null
       setRun(value)
       if (value.safetySignal) setSafetyAcknowledged(false)
       setContext(value.context || {})
-      setStatus(c.saved)
+      setStatus('')
     } catch (e) {
       setError(e)
     }
@@ -1001,9 +1797,29 @@ function Runner({ id, locale, onExit, onComplete }) {
   const def = run ? getDefinitionById(run.definitionId) : null,
     index = run?.progress || 0,
     question = def?.questions[index],
-    isContext = def && index >= def.questions.length
+    isContext = def && index >= def.questions.length,
+    answeredCount = def ? def.questions.filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)).length : 0,
+    allAnswered = def ? answeredCount === def.questions.length : false,
+    quickMinutes = def ? Math.max(1, Number(monitoringCatalogItem(def.key)?.durationMinutes) || Math.ceil(def.questions.length / 5)) : 1,
+    guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4)),
+    timeUnit = locale === 'ru' ? 'мин' : 'min',
+    timeframe = def?.key === 'hh-bach-flower-profile'
+      ? (locale === 'ru' ? 'Часть ответов относится к текущей ситуации, часть — к привычным эмоциональным реакциям. Отвечайте без спешки.' : 'Some statements describe your present situation; others concern your recurring emotional patterns. Answer at your own pace.')
+      : def?.timeframe === 'past-6-months'
+        ? (locale === 'ru' ? 'За последние 6 месяцев' : 'Over the past 6 months')
+      : def?.timeframe === 'past-2-weeks'
+      ? (locale === 'ru' ? 'За последние 2 недели' : 'Over the past 2 weeks')
+      : def?.timeframe === 'past-30-days'
+        ? (locale === 'ru' ? 'За последние 30 дней' : 'Over the past 30 days')
+        : def?.timeframe === 'past-month'
+          ? (locale === 'ru' ? 'За последний месяц' : 'During the past month')
+        : def?.timeframe === 'past-7-days'
+          ? (locale === 'ru' ? 'За последние 7 дней' : 'Over the past 7 days')
+          : def?.timeframe === 'right-now'
+            ? (locale === 'ru' ? 'Как вы чувствуете себя сейчас' : 'How you feel right now')
+            : (locale === 'ru' ? 'В целом, не только сегодня' : 'In general, not only today')
   async function save(answers = {}, progress = index) {
-    if (inflight.current) return null
+    if (inflight.current || completion.current) return null
     inflight.current = true
     setBusy(true)
     setError(null)
@@ -1034,26 +1850,40 @@ function Runner({ id, locale, onExit, onComplete }) {
       setBusy(false)
     }
   }
-  async function chooseAnswer(value) {
-    if (!question) return
-    const progress =
-      mode === 'quick' ? Math.min(index + 1, def.questions.length) : index
-    await save({ [question.id]: value }, progress)
+  async function chooseAnswer(value, questionId = question?.id) {
+    if (!questionId) return
+    const answers = { ...(run.answers || {}), [questionId]: value }
+    const firstMissing = def.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(answers, item.id))
+    const progress = mode === 'quick' ? (firstMissing < 0 ? def.questions.length : firstMissing) : index
+    await save({ [questionId]: value }, progress)
   }
   async function next() {
     if (!question || run.answers[question.id] === undefined) return
     await save({}, index + 1)
   }
-  async function finish() {
-    const saved = await save({}, def.questions.length)
-    if (!saved) return
-    setBusy(true)
+  async function finish(destination = 'report') {
+    if (finishing.current || inflight.current) return
+    finishing.current = true
     try {
-      const result = await appFetch(`runs/${id}/submit`, { expectedRevision: saved.revision })
-      await onComplete(result)
+      // Keep the exact submitted revision across an uncertain response. Never
+      // attempt to edit an already completed run just to recover its report.
+      if (!completion.current) {
+        const saved = await save({}, def.questions.length)
+        if (!saved) return
+        completion.current = { revision: saved.revision, destination, result: null }
+      }
+      setBusy(true)
+      setError(null)
+      const pending = completion.current
+      const result = pending.result || await appFetch(`runs/${id}/submit`, { expectedRevision: pending.revision })
+      pending.result = result
+      // The offer is queued only after server persistence. Course sequencing stays nonblocking.
+      if (result?.id) offerAfterCompletion(`test:${result.id}`)
+      await onComplete(result, pending.destination)
     } catch (e) {
       setError(e)
     } finally {
+      finishing.current = false
       setBusy(false)
     }
   }
@@ -1061,6 +1891,7 @@ function Runner({ id, locale, onExit, onComplete }) {
     if (await save()) await onExit()
   }
   async function discard() {
+    if (completion.current || inflight.current || finishing.current) return
     setBusy(true)
     try {
       await appFetch(`runs/${id}/discard`, { expectedRevision: run.revision })
@@ -1111,168 +1942,134 @@ function Runner({ id, locale, onExit, onComplete }) {
     )
   }
 
+  if (hasTraumaAdministration(def) && !traumaContextReady(def, run.context || {})) {
+    return <TraumaFrontMatter definition={def} context={context} onChange={setContext}
+      onContinue={() => save({}, index)} onExit={onExit} busy={busy || Boolean(operation.current) || Boolean(completion.current)} error={error} />
+  }
+
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max,
-    partCount = Math.min(4, Math.max(1, def.questions.length)),
+    partCount = def.key === 'hh-bach-flower-profile' ? 3 : Math.min(4, Math.max(1, def.questions.length)),
     partSize = Math.ceil(def.questions.length / partCount),
-    currentPart = Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1)
-
-  if (!mode && !isContext)
-    return (
-      <section className="hh-runner hh-panel hh-runner-mode-picker">
-        <div className="hh-test-mode-intro">
-          <p className="hh-kicker">
-            {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title}
-          </p>
-          <h1>{modeCopy.title}</h1>
-          <p>{modeCopy.intro}</p>
-        </div>
-        <div className="hh-test-mode-grid">
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('quick')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
-            <span>
-              <small>{modeCopy.quick}</small>
-              <strong>{modeCopy.quickTitle}</strong>
-              <em>{modeCopy.quickText}</em>
-            </span>
-          </button>
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('guided')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
-            <span>
-              <small>{modeCopy.guided}</small>
-              <strong>{modeCopy.guidedTitle}</strong>
-              <em>{modeCopy.guidedText}</em>
-            </span>
-          </button>
-        </div>
-        <p className="hh-fine hh-test-mode-same">{modeCopy.same}</p>
-        <div className="hh-actions hh-test-mode-exit">
-          <button disabled={busy || Boolean(operation.current)} onClick={exit}>
-            {c.saveExit}
-          </button>
-        </div>
-      </section>
-    )
+    currentPart = def.key === 'hh-bach-flower-profile'
+      ? (index < 38 ? 1 : index < 77 ? 2 : 3)
+      : Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1),
+    bachSectionName = section => {
+      const names = locale === 'ru'
+        ? { situation: '1/3 · Текущая ситуация', character: '2/3 · Эмоциональные паттерны', control: '3/3 · Проверка и поддержка' }
+        : { situation: '1/3 · Current situation', character: '2/3 · Recurring patterns', control: '3/3 · Cross-check & support' }
+      return names[section] || ''
+    }
 
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'}`}>
+    <section className={`hh-runner hh-panel hh-runner--${mode} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
             {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title} ·{' '}
             {def.instrumentLocale.toUpperCase()}
           </p>
-          {!isContext && (
+          {(!isContext || mode === 'quick') && (
             <div className="hh-test-mode-toggle" role="group" aria-label={modeCopy.switch}>
               <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>
-                ⚡ {modeCopy.quick}
+                ⚡ {modeCopy.quick} <small>~{quickMinutes} {timeUnit}</small>
               </button>
               <button type="button" aria-pressed={mode === 'guided'} onClick={() => setMode('guided')}>
-                ✦ {modeCopy.guided}
+                ✦ {modeCopy.guided} <small>~{guidedMinutes} {timeUnit}</small>
               </button>
             </div>
           )}
         </div>
-        <div
-          className="hh-runner-segments"
-          role="progressbar"
-          aria-label={c.tests}
-          aria-valuemin="1"
-          aria-valuemax={def.questions.length}
-          aria-valuenow={Math.min(index + 1, def.questions.length)}
-        >
+        <div className="hh-runner-segments" role="progressbar" aria-label={c.tests}
+          aria-valuemin="0" aria-valuemax={def.questions.length}
+          aria-valuenow={mode === 'quick' ? answeredCount : Math.min(index, def.questions.length)}>
           {def.questions.map((item, step) => (
-            <span
-              key={item.id}
-              className={step < index ? 'is-done' : step === index ? 'is-current' : ''}
-              aria-hidden="true"
-            />
+            <span key={item.id}
+              className={mode === 'quick'
+                ? (Object.prototype.hasOwnProperty.call(run.answers || {}, item.id) ? 'is-done' : '')
+                : step < index ? 'is-done' : step === index ? 'is-current' : ''}
+              aria-hidden="true" />
           ))}
         </div>
         <div className="hh-runner-progress-copy">
-          <span>
-            {modeCopy.question} {Math.min(index + 1, def.questions.length)} / {def.questions.length}
-          </span>
-          {mode === 'guided' && !isContext && (
-            <span>{modeCopy.part} {currentPart} / {partCount}</span>
-          )}
+          <span>{mode === 'quick'
+            ? `${answeredCount} / ${def.questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
+            : `${modeCopy.question} ${Math.min(index + 1, def.questions.length)} / ${def.questions.length}`}</span>
+          <span role="status" aria-live="polite" className="hh-runner-save-state">{status}</span>
         </div>
       </header>
 
-      {def.source?.copyright && (
-        <aside className="hh-instrument-attribution">
-          <small>{def.source.copyright}</small>
-          {def.source.citation && <small>{def.source.citation}</small>}
-        </aside>
-      )}
-      <p className="hh-muted">
-        {def.timeframe === 'past-7-days' ? c.pastWeek : def.timeframe === 'right-now' ? c.rightNow : c.general}
-      </p>
+      <p className="hh-runner-instructions">{hasTraumaAdministration(def) ? (def.key === 'itq-adult' ? 'Follow the instructions for each section below.' : 'During the past month') : timeframe}</p>
+      {hasTraumaAdministration(def) && <p lang="en">{def.safetyText}</p>}
+      {def.instructions && <p className="hh-runner-instructions" lang={def.instrumentLocale}>{def.instructions}</p>}
+      <Asrs6SourceNotice definition={def} startedAt={run.startedAt} locale={locale} />
 
-      {question ? (
-        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
-          {mode === 'guided' && <p className="hh-guided-step">{modeCopy.guidedPrompt}</p>}
+      {mode === 'quick' ? (
+        <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
+          {def.questions.map((item, step) => (
+            <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
+              <legend>
+                <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
+                {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
+                <TraumaSectionInstructions question={item} />
+                <h2>{item.text}</h2>
+              </legend>
+              {def.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
+                <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
+              )}
+              <RunnerAnswerChoices definition={def} question={item}
+                selected={run.answers[item.id]} onChoose={value => chooseAnswer(value, item.id)}
+                locale={locale} disabled={busy || Boolean(operation.current) || Boolean(completion.current)} />
+            </fieldset>
+          ))}
+          <p className="hh-quick-hint">{modeCopy.tap}</p>
+        </div>
+      ) : question ? (
+        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
           <legend>
+            {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
+            <TraumaSectionInstructions question={question} />
             <h1>{question.text}</h1>
           </legend>
-          <div className={def.answerScale ? 'hh-scale hh-scale-words' : 'hh-scale'}>
-            {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={run.answers[question.id] === value}
-                onClick={() => chooseAnswer(value)}
-              >
-                <strong>{value}</strong>
-                {def.responseAnchors && <span>{def.responseAnchors[value - min]}</span>}
-              </button>
-            ))}
-          </div>
-          {question.anchors && (
-            <div className="hh-anchors">
-              <span>{question.anchors[0]}</span>
-              <span>{question.anchors.at(-1)}</span>
-            </div>
+          {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
+            <p className="hh-muted">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
           )}
-          {mode === 'quick' && <p className="hh-quick-hint">{modeCopy.tap}</p>}
+          <RunnerAnswerChoices definition={def} question={question}
+            selected={run.answers[question.id]} onChoose={value => chooseAnswer(value)}
+            locale={locale} disabled={busy || Boolean(operation.current) || Boolean(completion.current)} />
         </fieldset>
       ) : (
         <div className="hh-runner-complete">
           <h1>{def.optionalContext.length ? c.optional : c.result}</h1>
           <p>{def.optionalContext.length ? c.skip : c.nonDiagnostic}</p>
-          {def.optionalContext.length > 0 && (
-            <details className="hh-secondary">
-              <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
-              <div className="hh-form">
-                {[
-                  ['current_focus', c.focus],
-                  ['trigger', c.trigger],
-                  ['what_helps', c.helps],
-                  ['desired_change', c.desiredChange],
-                  ['note', c.note],
-                ].map(([key, label]) => (
-                  <label key={key}>
-                    {label}
-                    <textarea
-                      maxLength={1000}
-                      value={context[key] || ''}
-                      disabled={busy}
-                      onChange={(e) => {
-                        setContext((v) => ({ ...v, [key]: e.target.value }))
-                        setStatus(c.unsaved)
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-            </details>
-          )}
         </div>
       )}
 
-      <p role="status" aria-live="polite" className="hh-fine hh-runner-save-state">
-        {status}
-      </p>
+      {(mode === 'quick' ? allAnswered : isContext) && def.optionalContext.length > 0 && (
+        <details className="hh-secondary hh-runner-context">
+          <summary>{locale === 'ru' ? 'Добавить необязательный контекст' : 'Add optional context'}</summary>
+          <div className="hh-form">
+            {[
+              ['current_focus', c.focus],
+              ['trigger', c.trigger],
+              ['what_helps', c.helps],
+              ['desired_change', c.desiredChange],
+              ['note', c.note],
+            ].map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <textarea
+                  maxLength={1000}
+                  value={context[key] || ''}
+                  disabled={busy || Boolean(operation.current) || Boolean(completion.current)}
+                  onChange={e => { setContext(value => ({ ...value, [key]: e.target.value })); setStatus(c.unsaved) }}
+                />
+              </label>
+            ))}
+          </div>
+        </details>
+      )}
+
       {error && (
         <div role="alert" className="hh-notice">
           <p>{message(error, c)}</p>
@@ -1286,38 +2083,39 @@ function Runner({ id, locale, onExit, onComplete }) {
               {c.reload}
             </button>
           ) : (
-            <button disabled={busy} onClick={() => save()}>
+            <button disabled={busy} onClick={() => completion.current ? finish(completion.current.destination) : save()}>
               {c.retry}
             </button>
           )}
         </div>
       )}
+      {(isContext || (mode === 'quick' && allAnswered) ||
+        (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
+        <TestFinishActions locale={locale} courseMode={courseMode}
+          disabled={busy || Boolean(operation.current) || Boolean(completion.current) || !allAnswered}
+          onReport={() => finish('report')} onNext={() => finish('next')}
+          onDiscuss={!courseMode ? () => finish('discuss') : null} />
+      )}
       <div className="hh-actions hh-runner-actions">
-        <button
-          disabled={busy || index === 0 || Boolean(operation.current)}
-          onClick={() => save({}, index - 1)}
-        >
-          {c.back}
-        </button>
-        {!isContext && mode === 'guided' && (
+        {mode !== 'quick' && (
+          <button
+            disabled={busy || index === 0 || Boolean(operation.current) || Boolean(completion.current)}
+            onClick={() => save({}, index - 1)}
+          >
+            {c.back}
+          </button>
+        )}
+        {!isContext && mode === 'guided' &&
+          !(index === def.questions.length - 1 && allAnswered && !def.optionalContext.length) && (
           <button
             className="hh-primary"
-            disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current)}
+            disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current) || Boolean(completion.current)}
             onClick={next}
           >
             {c.next}
           </button>
         )}
-        {isContext && (
-          <button
-            className="hh-primary"
-            disabled={busy || Boolean(operation.current)}
-            onClick={finish}
-          >
-            {c.finish}
-          </button>
-        )}
-        <button disabled={busy || Boolean(operation.current)} onClick={exit}>
+        <button disabled={busy || Boolean(operation.current) || Boolean(completion.current)} onClick={exit}>
           {c.saveExit}
         </button>
       </div>
@@ -1335,6 +2133,14 @@ function Runner({ id, locale, onExit, onComplete }) {
           <button onClick={() => setShowDiscard(true)}>{c.decline}</button>
         )}
       </details>
+      {(def.source?.copyright || def.source?.citation) && (
+        <details className="hh-secondary hh-runner-methodology">
+          <summary>{locale === 'ru' ? 'Источник и методика' : 'Source and methodology'}</summary>
+          {def.source.copyright && <small>{def.source.copyright}</small>}
+          {def.source.citation && <small>{def.source.citation}</small>}
+          {def.source.url && <a href={def.source.url} target="_blank" rel="noopener noreferrer">{locale === 'ru' ? 'Открыть оригинал' : 'Open original source'}</a>}
+        </details>
+      )}
     </section>
   )
 }
@@ -1651,79 +2457,356 @@ function ProfileActionHub({ data, locale, profile, nextStep }) {
   )
 }
 
+function readableScaleName(dimension, locale) {
+  const raw = String(dimension?.sourceConstruct || dimension?.key || '').trim()
+  if (raw && !/^[a-z_-]+[.][a-z0-9_.-]+$/i.test(raw)) return raw
+  const localized = labelFor(dimension?.key || raw, locale)
+  if (localized && localized !== (dimension?.key || raw)) return localized
+  return raw.split('.').pop().replace(/[_-]+/g, ' ').replace(/^./, letter => letter.toUpperCase())
+}
+
+const INSIGHTS_CATEGORY_ICONS = {
+  stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon, body: Sun,
+  relationships: Users, resources: Leaf, attention: Target, personality: Brain,
+  function: Activity, meaning: Compass, 'wu-xing': Sparkles, other: ClipboardList,
+}
+
 function PortfolioPage({ data, locale }) {
-  const c = COPY[locale]
-  const [selected, setSelected] = useState(null)
+  const ru = locale === 'ru'
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedTab = searchParams.get('tab') === 'dynamics' ? 'dynamics' : 'values'
+  const [activeTab, setActiveTab] = useState(requestedTab)
+  const [retakeBusy, setRetakeBusy] = useState(false)
+  const [retakeError, setRetakeError] = useState('')
+  const accountId = data.account?.id
+  const retakeScope = useRef(null), retakeOperation = useRef(null)
+  const retakeLifetime = useRef({ mounted: false, epoch: 0 })
+  if (!retakeScope.current || retakeScope.current.accountId !== accountId ||
+      retakeScope.current.tab !== activeTab || retakeScope.current.locale !== locale) {
+    retakeScope.current = { accountId, tab: activeTab, locale }
+    retakeOperation.current = null
+  }
+  const renderedRetakeScope = retakeScope.current
+  useEffect(() => {
+    retakeLifetime.current.mounted = true
+    return () => { retakeLifetime.current.mounted = false; retakeLifetime.current.epoch += 1; retakeOperation.current = null }
+  }, [])
+  useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
+  useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
+  const [portraitTab, setPortraitTab] = useState('goals')
+  const retakeDefinitions = useMemo(() => {
+    const definitions = new Map()
+    for (const result of data.results || []) {
+      if (!result.definitionId || definitions.has(result.definitionId)) continue
+      try {
+        const definition = getDefinitionById(result.definitionId)
+        if (definition) definitions.set(result.definitionId, definition)
+      } catch { /* Old or retired assessments remain readable but cannot be retaken. */ }
+    }
+    return definitions
+  }, [data.results])
+  function chooseView(next) {
+    if (next === activeTab) return
+    retakeScope.current = null; retakeOperation.current = null
+    setActiveTab(next)
+    setRetakeError('')
+    const query = new URLSearchParams(searchParams.toString())
+    if (next === 'dynamics') query.set('tab', 'dynamics')
+    else query.delete('tab')
+    router.replace('/' + locale + '/app/portfolio' + (query.toString() ? '?' + query.toString() : ''), { scroll: false })
+  }
+  async function retakeTest(definitionId) {
+    const definition = retakeDefinitions.get(definitionId)
+    const scope = renderedRetakeScope, epoch = retakeLifetime.current.epoch
+    const isCurrent = () => retakeLifetime.current.mounted && retakeLifetime.current.epoch === epoch &&
+      retakeScope.current === scope && scope.accountId === accountId
+    if (!definition || !accountId || !isCurrent() || retakeOperation.current) return
+    const operation = {}; retakeOperation.current = operation
+    setRetakeBusy(true)
+    setRetakeError('')
+    try {
+      const draft = (data.runs || []).find(run =>
+        run.definitionId === definitionId && ['draft', 'in_progress'].includes(run.status))
+      const run = draft || await appFetch('runs', {
+        definitionKey: definition.key,
+        definitionVersion: definition.version,
+        instrumentLocale: definition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      }, 'POST', { accountId })
+      if (!isCurrent() || retakeOperation.current !== operation) return
+      const plan = data.activeTestPlan
+      const planSuffix = plan?.status === 'active' && plan.definitionIds?.includes(definitionId)
+        ? '&plan=' + encodeURIComponent(plan.id) : ''
+      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick' + planSuffix)
+    } catch (cause) {
+      if (!isCurrent() || retakeOperation.current !== operation) return
+      retakeOperation.current = null
+      setRetakeError((ru ? 'Не удалось открыть тест повторно.' : 'Could not open the retake.') +
+        ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
+      setRetakeBusy(false)
+    }
+  }
+  const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
+  const summary = buildInsightsSummary(allGroups)
+  const [selectedCategories, setSelectedCategories] = useState([])
+  const entriesByKey = useMemo(() => new Map(
+    buildExplorerEntries({ locale, audience: 'account' }).map((entry) => [entry.key, entry]),
+  ), [locale])
+  const groups = allGroups.map(group => {
+    const history = group.history
+    const { current, previous } = periodComparison(history)
+    return { ...group, latest: current, periodPrior: previous, history, count: history.length }
+  }).filter(group => group.latest)
+  const { counts: categoryCounts, sections: categorySections } = buildInsightsCategorySections(groups, entriesByKey, selectedCategories)
+  const categoryFilters = INSIGHTS_TEST_CATEGORIES.filter((category, index) =>
+    index < HOME_TEST_TOPICS.length || categoryCounts[category.key] > 0 || selectedCategories.includes(category.key))
+  const activeFilters = selectedCategories.length
+  const visibleCount = categorySections.reduce((sum, section) => sum + section.groups.length, 0)
+  function toggleCategory(key) {
+    setSelectedCategories((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key])
+  }
+  const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
   const dimensions = data.snapshot?.dimensions || []
-  const profile = profileCompletionRecommendations({
-    snapshot: data.snapshot,
-    results: data.results,
-    locale,
-  })
+  const [selected, setSelected] = useState(null)
 
   return (
-    <section>
-      <div className="hh-heading hh-portfolio-heading">
-        <p className="hh-kicker">{locale === 'ru' ? 'Мой профиль' : 'My profile'}</p>
-        <h1>{locale === 'ru' ? 'Портфель результатов' : 'Results portfolio'}</h1>
-        <p>
-          {locale === 'ru'
-            ? 'Подробные результаты, графики, сравнение замеров и рекомендации по тому, какие данные стоит добавить дальше.'
-            : 'Detailed results, charts, measurement comparisons and recommendations for what to add next.'}
-        </p>
+    <section className="hh-insights-page"
+      aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
+      data-testid="completed-test-insights">
+      {/* Reports opens with the large saved-score portrait, before other profile tools. */}
+      <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
+        <summary className="hh-insights-portrait-toggle">
+          <Brain size={20} aria-hidden="true" />
+          <strong>{ru ? 'Мои психологические профили' : locale === 'es' ? 'Mis perfiles psicológicos' : 'My psychological profiles'}</strong>
+          <span className="hh-insights-portrait-collapse">{ru ? 'Свернуть' : 'Collapse'}</span>
+          <span className="hh-insights-portrait-expand">{ru ? 'Раскрыть' : 'Expand'}</span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
+          portrait={buildPsychPortrait(data.results || [])}
+          goalProfileProps={{ accountId, entriesByKey, results: data.results || [] }}
+          portraitTests={({ selectedSector, selectedAxes }) =>
+            <PortraitTestList locale={locale} sector={selectedSector}
+              selectedAxes={selectedAxes} entriesByKey={entriesByKey}
+              results={data.results || []} runs={data.runs || []}
+              accountId={accountId} activeTestPlan={data.activeTestPlan} />}
+          portraitActions={() => <>
+            <PortraitTestQuickActions locale={locale}
+              activeTab={portraitTab} onTabChange={setPortraitTab} />
+            <div id="hh-portrait-panel-analyses" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-analyses" hidden={portraitTab !== 'analyses'}>
+              {portraitTab === 'analyses' && <PortraitAnalyses results={data.results || []} locale={locale} />}
+            </div>
+            <div id="hh-portrait-panel-recommendations" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-recommendations" hidden={portraitTab !== 'recommendations'}>
+              {portraitTab === 'recommendations' && <PortraitRecommendations results={data.results || []} locale={locale} />}
+            </div>
+          </>} />
+      </details>
+      {/* Programme follows the portrait; deeper four-layer records stay available below. */}
+      <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
+      <UnifiedProfileLayers data={data} locale={locale} />
+      <nav className="hh-insights-view-tabs" role="tablist"
+        aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
+        {[
+          ['values', ru ? 'Значения' : 'Values'],
+          ['dynamics', ru ? 'Динамика' : 'Dynamics'],
+        ].map(([key, label]) => <button key={key} type="button"
+          id={'hh-results-tab-' + key} role="tab"
+          aria-selected={activeTab === key} aria-controls={'hh-results-panel-' + key}
+          tabIndex={activeTab === key ? 0 : -1}
+          onClick={() => chooseView(key)}
+          onKeyDown={event => {
+            if (!['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) return
+            event.preventDefault()
+            const next = event.key === 'Home' ? 'values' : event.key === 'End' ? 'dynamics'
+              : key === 'values' ? 'dynamics' : 'values'
+            chooseView(next)
+            event.currentTarget.parentElement?.querySelector('#hh-results-tab-' + next)?.focus()
+          }}>
+          {key === 'values' ? <ClipboardList size={18} aria-hidden="true" /> : <Activity size={18} aria-hidden="true" />}
+          {label}
+        </button>)}
+      </nav>
+      {activeTab === 'dynamics'
+        ? <div role="tabpanel" id="hh-results-panel-dynamics" aria-labelledby="hh-results-tab-dynamics">
+            <TestDynamics results={data.results || []} locale={locale}
+              busy={retakeBusy} canRetake={id => retakeDefinitions.has(id)}
+              onRetake={retakeTest} />
+            {retakeError && <p role="alert" className="hh-insights-retake-error">{retakeError}</p>}
+          </div>
+        : <div role="tabpanel" id="hh-results-panel-values" aria-labelledby="hh-results-tab-values">
+      <header className="hh-insights-intro">
+        <p className="hh-kicker">{ru ? 'Кабинет · Insights' : 'Dashboard · Insights'}</p>
+        <h1 id="hh-insights-title" tabIndex={-1}>{ru ? 'Мои результаты' : 'My results'}</h1>
+        <p>{ru ? 'Ваши пройденные тесты, результаты и динамика.' : 'Your completed tests, scores and trends.'}</p>
+      </header>
+      <details className="hh-insights-portrait-details" data-insights-detailed-scales>
+        <summary><Brain size={18} aria-hidden="true" />{ru ? 'Подробные шкалы и инструменты' : 'Detailed scales and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
+        <Portrait data={data} locale={locale} />
+      </details>
+      <dl className="hh-insights-quickstats" data-testid="insights-summary" aria-label={ru ? 'Общая статистика тестов' : 'All-time test statistics'}>
+        <div><dt>{ru ? 'Пройдено тестов' : 'Tests completed'}</dt><dd>{summary.tests}</dd></div>
+        <div><dt>{ru ? 'Всего прохождений' : 'Total sessions'}</dt><dd>{summary.attempts}</dd></div>
+        <div><dt>{ru ? 'Измерено шкал' : 'Measured scales'}</dt><dd>{summary.scales}</dd></div>
+      </dl>
+      {summary.latestAt && <p className="hh-insights-last-date">{ru ? 'Последний тест' : 'Last test'}: <time dateTime={summary.latestAt}>{shortDateLabel(summary.latestAt, locale)}</time></p>}
+      <details className="hh-insights-filter-disclosure" data-testid="insights-filters">
+        <summary className="hh-insights-filter-toggle">
+          <SlidersHorizontal size={18} aria-hidden="true" />
+          <strong>{ru ? 'Фильтры' : 'Filters'}</strong>
+          {activeFilters > 0 && <span className="hh-insights-active-count">{activeFilters}</span>}
+          <small>{selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')}</small>
+          <ChevronDown className="hh-insights-filter-chevron" size={17} aria-hidden="true" />
+        </summary>
+        <div className="hh-insights-filter-panel">
+          <div className="hh-insights-filter-heading">
+            <span>{ru ? 'Категории' : 'Categories'}</span>
+            {activeFilters > 0 && <button type="button" className="hh-insights-reset"
+              onClick={() => setSelectedCategories([])}>
+              {ru ? 'Сбросить' : 'Reset filters'}</button>}
+          </div>
+      <div className="hh-insights-category-filters" role="group" aria-label={ru ? 'Фильтр по категориям тестов' : 'Filter completed tests by category'} data-testid="insights-category-filters">
+        <button type="button" className="hh-insights-category-filter" aria-pressed={selectedCategories.length === 0} onClick={() => setSelectedCategories([])}>
+          <ClipboardList size={20} aria-hidden="true" />
+          <span>{ru ? 'Все категории' : 'All categories'}</span>
+          <small>{groups.length}</small>
+        </button>
+        {categoryFilters.map((category) => {
+          const Icon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
+          return <button type="button" key={category.key} className="hh-insights-category-filter"
+            aria-pressed={selectedCategories.includes(category.key)} onClick={() => toggleCategory(category.key)}>
+            <Icon size={20} aria-hidden="true" />
+            <span>{category[locale] || category.en}</span>
+            <small>{categoryCounts[category.key]}</small>
+          </button>
+        })}
+      </div>
+        </div>
+      </details>
+      {activeFilters > 0 && <p className="hh-insights-filter-status" role="status">
+        {ru ? 'Показано тестов:' : 'Showing tests:'} {visibleCount} / {summary.tests}
+      </p>}
+      {groups.length || selectedCategories.length > 0 ? (
+        <div className="hh-insights-categories">
+          {categorySections.map(({ category, groups: categoryGroups }) => {
+            const CategoryIcon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
+            return <section className="hh-insights-category" key={category.key} aria-label={category[locale] || category.en}>
+              <header className="hh-insights-category-heading">
+                <div className="hh-insights-category-heading-title">
+                  <span className="hh-insights-category-icon"><CategoryIcon size={22} aria-hidden="true" /></span>
+                  <h2>{category[locale] || category.en}</h2>
+                </div>
+                <div className="hh-insights-category-tools">
+                  <span>{categoryGroups.length} {ru ? 'тестов' : 'tests'}</span>
+                  <Link className="hh-insights-add-test" prefetch={false}
+                    href={'/' + locale + '/app/tests?explore=1&filters=topics&category=' + encodeURIComponent(category.key)}
+                    aria-label={(ru ? 'Добавить тест по теме ' : 'Add test in ') + (category[locale] || category.en)}>
+                    <span aria-hidden="true">+</span>{ru ? 'Тест' : 'Add test'}
+                  </Link>
+                </div>
+              </header>
+              {categoryGroups.length === 0 && <p className="hh-insights-category-empty">
+                {ru ? 'В этой категории пока нет результатов. Можно добавить подходящий тест.' : 'No results in this category yet. You can choose a test for this topic.'}
+              </p>}
+              <div className="hh-insights-test-list">
+                {categoryGroups.map(group => {
+            const latest = group.latest
+            const report = buildAssessmentResultReport(latest, locale)
+            const first = report.sections[0]
+            const main = first?.bandBasis === 'unavailable' ? null : latest.dimensions?.[0]
+            return (
+              <article className="hh-insights-test-card" key={group.key}>
+                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
+                  aria-label={(ru ? 'Открыть отчёт и рекомендации: ' : 'Open analysis & recommendations: ') + group.title}>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact result={latest}
+                    showLegend={false} showScaleNote={false} /></div>
+                  <div className="hh-insights-test-body">
+                    <div className="hh-insights-test-meta">
+                      <time dateTime={latest.measurementAt}>{shortDateLabel(latest.measurementAt, locale)}</time>
+                    </div>
+                    <h2>{group.title}</h2>
+                    {first?.band && <p className="hh-insights-test-summary">{first.band}</p>}
+                    {main && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} compact />}
+                    {latest.dimensions?.length > 1 &&
+                      <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
+                    <strong className="hh-insights-open">{ru ? 'Отчёт и рекомендации' : 'View report & guidance'} <span aria-hidden="true">→</span></strong>
+                  </div>
+                </Link>
+                {group.count > 1 && (
+                  <details className="hh-insights-history">
+                    <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
+                    <ul>{group.history.map(attempt => <li key={attempt.id}>
+                      <time dateTime={attempt.measurementAt}>{dateLabel(attempt.measurementAt, locale)}</time>
+                      <Link href={`/${locale}/app/results/${encodeURIComponent(attempt.id)}`} prefetch={false}>{ru ? 'Посмотреть отчёт' : 'View report'}</Link>
+                    </li>)}</ul>
+                  </details>
+                )}
+              </article>
+            )
+                })}
+              </div>
+
+            </section>
+          })}
+        </div>
+      ) : (
+        <div className="hh-insights-empty hh-panel">
+          <h2>{allGroups.length
+            ? (ru ? 'Нет тестов по выбранным темам' : 'No assessments for these topics')
+            : (ru ? 'Отчётов пока нет' : 'No reports yet')}</h2>
+          <p>{allGroups.length
+            ? (ru ? 'Попробуйте изменить категории — результаты сохранены.' : 'Try other topic categories; your results are still saved.')
+            : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
+          {allGroups.length
+            ? <button type="button" onClick={() => setSelectedCategories([])}>{ru ? 'Показать все категории' : 'Show all categories'}</button>
+            : <Link href={`/${locale}/app/tests?explore=1&filters=topics`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
+        </div>
+      )}
+
+      {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
+      {allGroups.length > 0 && (
+        <details id="hh-insights-export" className="hh-insights-export">
+          <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
+          <ClientReportActions data={data} locale={locale} />
+        </details>
+      )}
+      <div className="hh-insights-links">
+        <Link href={`/${locale}/app/portfolio?tab=dynamics`} prefetch={false}>{ru ? 'Динамика тестов' : 'Test dynamics'}</Link>
+        <Link href={`/${locale}/app/tests?explore=1&filters=topics`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
-      <ProfileOverview profile={profile} locale={locale} />
-
-      {dimensions.length > 0 && (
-        <>
-          {[
-            ['state', c.state],
-            ['symptoms', c.symptoms],
-            ['function', c.functioning],
-            ['resources', c.resources],
-            ['trait', c.personality],
-          ].map(([kind, title]) => {
-            const found = dimensions.filter((d) => d.dimensionClass === kind)
-            return found.length ? (
-              <section key={kind} className="hh-section">
-                <h2>{title}</h2>
-                <div className="hh-metrics">
-                  {found.map((d) => (
-                    <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />
-                  ))}
-                </div>
-              </section>
-            ) : null
-          })}
-          <PortraitGuide locale={locale} dimensions={dimensions} />
-          <LatestChange locale={locale} results={data.results} />
-        </>
+      {allGroups.length > 0 && (
+        <details className="hh-insights-advanced">
+          <summary>{ru ? 'Дополнительно: общие графики и таблица измерений' : 'Advanced: combined charts and measurements'}</summary>
+          <ProfileOverview profile={profile} locale={locale} results={data.results} />
+          {dimensions.length > 0 && (
+            <div className="hh-insights-advanced-metrics">
+              <h2>{ru ? 'Все измеренные шкалы' : 'All recorded scales'}</h2>
+              <div className="hh-metrics">
+                {dimensions.map(d => <MetricCard key={`${d.sourceDefinitionId}::${d.key}`} dimension={d} locale={locale} onSelect={setSelected} />)}
+              </div>
+              <PortraitGuide locale={locale} dimensions={dimensions} />
+              <LatestChange locale={locale} results={data.results} />
+            </div>
+          )}
+          {selected && (
+            <div className="hh-panel hh-detail">
+              <button type="button" onClick={() => setSelected(null)}>{ru ? 'Закрыть' : 'Close'}</button>
+              <h2>{readableScaleName(selected, locale)}</h2>
+              <p>{explanationFor(selected.key, locale)}</p>
+              <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{ru ? 'Полный отчёт' : 'Full report'}</Link>
+            </div>
+          )}
+        </details>
       )}
-
-      {selected && (
-        <section className="hh-panel hh-detail" aria-live="polite">
-          <button className="hh-close" onClick={() => setSelected(null)}>
-            {c.close}
-          </button>
-          <h2>{labelFor(selected.key, locale)}</h2>
-          <p>{explanationFor(selected.key, locale)}</p>
-          <p>{c.measured}: {dateLabel(selected.measurementAt, locale)}</p>
-          <p>
-            {c.source}: {getDefinitionById(selected.sourceDefinitionId).key} ·{' '}
-            {getDefinitionById(selected.sourceDefinitionId).version} · {selected.instrumentLocale}
-          </p>
-          <div className="hh-actions">
-            <Link href={`/${locale}/app/results/${selected.sourceResultId}`} prefetch={false}>{c.view}</Link>
-            <Link href={`/${locale}/app/history`} prefetch={false}>{c.history}</Link>
-          </div>
-        </section>
-      )}
+        </div>}
     </section>
   )
 }
 
-function ProfileOverview({ profile, locale }) {
+function ProfileOverview({ profile, locale, results = [] }) {
   const ru = locale === 'ru'
   const axisCopy = {
     state: ru ? 'Состояние' : 'State',
@@ -1733,7 +2816,7 @@ function ProfileOverview({ profile, locale }) {
     trait: ru ? 'Личностные особенности' : 'Personality',
   }
   const axisOrder = new Map(Object.keys(axisCopy).map((key, index) => [key, index]))
-  const rows = [...profile.rows].sort(
+  const rows = profile.rows.map(row => ({ ...row, screening: profileScreeningPresentation(row, results, locale) })).sort(
     (a, b) =>
       (axisOrder.get(a.dimensionClass) ?? 99) - (axisOrder.get(b.dimensionClass) ?? 99) ||
       String(a.sourceConstruct || a.key).localeCompare(String(b.sourceConstruct || b.key)),
@@ -1771,26 +2854,28 @@ function ProfileOverview({ profile, locale }) {
           </div>
           <p>
             {ru
-              ? 'Каждая шкала показана на собственной позиции 0–100 для удобства графика. Это не общий балл здоровья: у разных шкал разный смысл направления.'
-              : 'Each scale is mapped to its own 0–100 position for visualization only. This is not a combined health score; different scales have different directions.'}
+              ? 'Непрерывные шкалы показаны на собственной позиции 0–100 только для графика. Скрининговый подсчёт ASRS показан отдельным числом без процентной полосы. Это не общий балл здоровья.'
+              : 'Continuous scales are mapped to their own 0–100 position for visualization only. The ASRS screening count is shown separately without a percentage bar. This is not a combined health score.'}
           </p>
         </div>
         {rows.length ? (
           <div className="hh-profile-chart-list">
             {rows.map((row) => (
-              <div className="hh-profile-chart-row" key={row.key}>
+              <div className="hh-profile-chart-row" key={`${row.sourceDefinitionId}::${row.key}`}>
                 <div className="hh-profile-chart-label">
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                  <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                  <strong>{readableScaleName(row, locale)}</strong>
                 </div>
-                <div
+                {row.screening ? (
+                  <span data-screening-count data-screening-verified={row.screening.verified}>{row.screening.label}</span>
+                ) : Number.isFinite(row.currentPercent) ? <div
                   className="hh-profile-chart-track"
                   role="img"
                   aria-label={
-                    `${row.sourceConstruct || labelFor(row.key, locale)}: ${profileNumber(row.value)} / ${row.max}`
+                    `${readableScaleName(row, locale)}: ${profileNumber(row.value)} / ${row.max}`
                   }
                 >
-                  <i style={{ width: `${row.currentPercent || 0}%` }} />
+                  <i style={{ width: `${row.currentPercent}%` }} />
                   {Number.isFinite(row.priorPercent) && (
                     <b
                       style={{ left: `${row.priorPercent}%` }}
@@ -1801,7 +2886,7 @@ function ProfileOverview({ profile, locale }) {
                       }
                     />
                   )}
-                </div>
+                </div> : <span>{ru ? 'Позиция недоступна' : 'Position unavailable'}</span>}
                 <div className="hh-profile-chart-values">
                   <strong>{profileNumber(row.value)} / {row.max}</strong>
                   <span>
@@ -1850,10 +2935,10 @@ function ProfileOverview({ profile, locale }) {
                 {rows.map((row) => {
                   const definition = getDefinitionById(row.sourceDefinitionId)
                   return (
-                    <tr key={row.key}>
+                    <tr key={`${row.sourceDefinitionId}::${row.key}`}>
                       <th scope="row">
                         <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                        <strong>{row.sourceConstruct || labelFor(row.key, locale)}</strong>
+                        <strong>{readableScaleName(row, locale)}</strong>
                         <span>{definition.title || definition.key}</span>
                       </th>
                       <td><strong>{profileNumber(row.value)}</strong><small>{row.min}–{row.max}</small></td>
@@ -1946,18 +3031,20 @@ function MetricCard({ dimension, locale, onSelect }) {
     def = getDefinitionById(dimension.sourceDefinitionId)
   return (
     <button className="hh-metric" onClick={() => onSelect(dimension)}>
-      <span>{dimension.sourceConstruct || labelFor(dimension.key, locale)}</span>
+      <span>{readableScaleName(dimension, locale)}</span>
       <strong>
         {dimension.value}
         <small> / {dimension.max}</small>
       </strong>
-      <span className="hh-meter" aria-hidden="true">
+      {dimension.displayKind === 'screening-count' || dimension.key === 'symptoms.asrs6.shaded_count' ? (
+        <span data-screening-count>{locale === 'ru' ? 'Скрининговый подсчёт; порог 4. Не шкала тяжести.' : 'Screening count; threshold 4. Not a severity scale.'}</span>
+      ) : <span className="hh-meter" aria-hidden="true">
         <i
           style={{
             width: `${(100 * (dimension.value - dimension.min)) / (dimension.max - dimension.min)}%`,
           }}
         />
-      </span>
+      </span>}
       <small>
         {dateLabel(dimension.measurementAt, locale)} · {def.instrumentLocale.toUpperCase()}
       </small>
@@ -1968,6 +3055,8 @@ function MetricCard({ dimension, locale, onSelect }) {
 }
 function Portrait({ data, locale }) {
   const c = COPY[locale]
+  const router = useRouter()
+  const root = '/' + locale + '/app'
   const dimensions = data.snapshot?.dimensions || []
   const nextStep = getPortraitNextStep({
     ...data,
@@ -1980,56 +3069,44 @@ function Portrait({ data, locale }) {
   })
   const profile = profileCompletionRecommendations({ snapshot: data.snapshot, results: data.results, locale })
 
+  async function beginSelectedTest(item) {
+    const run = item.runId ? { id: item.runId } : await appFetch('runs', {
+      definitionKey: item.definitionKey,
+      definitionVersion: item.definitionVersion,
+      instrumentLocale: item.instrumentLocale,
+      operationId: crypto.randomUUID(),
+    })
+    const active = data.activeTestPlan
+    const planSuffix = active?.definitionIds?.includes(item.id)
+      ? '?plan=' + encodeURIComponent(active.id) : ''
+    router.push(root + '/runs/' + encodeURIComponent(run.id) + planSuffix)
+  }
+
   return (
-    <section>
+    <section data-profile-page>
       <div className="hh-heading hh-profile-heading">
         <p className="hh-kicker">
           {data.account.displayName
-            ? `${locale === 'ru' ? 'Здравствуйте' : 'Hello'}, ${data.account.displayName}`
+            ? (locale === 'ru' ? 'Здравствуйте, ' : 'Hello, ') + data.account.displayName
             : 'Holistic House'}
         </p>
         <h1>{c.portrait}</h1>
-        <p>
-          {locale === 'ru'
-            ? 'Здесь не нужно разбираться в таблицах. Выберите следующий шаг: проверить состояние, посмотреть результаты, получить рекомендации или дополнить профиль.'
-            : 'You do not need to interpret a dashboard full of tables. Choose your next step: check in, review results, get recommendations or build your profile.'}
-        </p>
+        <p>{locale === 'ru'
+          ? 'Ваш психологический портрет: измеренные шкалы, ожидающие тесты и понятные следующие шаги.'
+          : 'Your psychological portrait: measured scales, selected tests still to complete and clear next steps.'}</p>
         <p className="hh-fine">{c.private}</p>
       </div>
 
-      <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-
-      <div className="hh-profile-mood">
-        <MoodCheckIn
-          locale={locale}
-          compact
-          latestMood={data.moodCheckins?.[0] || null}
-          onMoodChange={(payload) =>
-            appFetch('mood', {
-              ...payload,
-              timezone: localZone(),
-              sourceSurface: 'portrait',
-            })
-          }
-          onQuickCheckin={async () => {
-            try {
-              const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
-              const run = await appFetch('runs', {
-                definitionKey: def.key,
-                definitionVersion: def.version,
-                instrumentLocale: def.instrumentLocale,
-                operationId: crypto.randomUUID(),
-              })
-              window.location.assign('/' + locale + '/app/runs/' + run.id)
-            } catch {
-              window.location.assign('/' + locale + '/app/monitoring/hh-current-state')
-            }
-          }}
-        />
-      </div>
-
-      {data.practitioner && <OwnerTools locale={locale} />}
-      <ReportsFromAndy data={data} locale={locale} />
+      <UnifiedProfileLayers data={data} locale={locale} />
+      <details className="hh-domain-psych-details" data-profile-deep-dive>
+        <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
+      <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>
+        <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
+        {data.practitioner && <OwnerTools locale={locale} />}
+        <ReportsFromAndy data={data} locale={locale} />
+        <ClientMaterialsFromAndy locale={locale} />
+      </ProfileAssessmentOverview>
+      </details>
     </section>
   )
 }
@@ -2104,6 +3181,23 @@ function LatestChange({ locale, results }) {
   if (!changes.length) return null
   return <section className="hh-section hh-panel"><h2>{locale === 'ru' ? 'Последнее изменение' : 'Latest change'}</h2><p className="hh-fine">{locale === 'ru' ? 'Последний совместимый замер рядом с предыдущим; это не объяснение причин или тренд.' : 'Latest compatible measurement beside the previous one; this does not state a cause or trend.'}</p><ul className="hh-change-list">{changes.map((change) => <li key={change.key}>{labelFor(change.key, locale)} <strong>{change.previous} → {change.value}</strong></li>)}</ul></section>
 }
+function ClientMaterialsFromAndy({ locale }) {
+  const [materials, setMaterials] = useState([])
+  useEffect(() => {
+    let active = true
+    appFetch('shared-materials')
+      .then(value => { if (active) setMaterials(Array.isArray(value.materials) ? value.materials : []) })
+      .catch(() => { if (active) setMaterials([]) })
+    return () => { active = false }
+  }, [])
+  if (!materials.length) return null
+  return <section className="hh-section hh-client-shared-materials" aria-label={locale === 'ru' ? 'Материалы от специалиста' : 'Materials from practitioner'}>
+    <p className="hh-kicker">{locale === 'ru' ? 'От Andy' : 'From Andy'}</p>
+    <h2>{locale === 'ru' ? 'Материалы для вас' : 'Your study materials'}</h2>
+    <p>{locale === 'ru' ? 'Ссылки от вашего специалиста. Сохранённые рецепты и счета находятся в истории кабинета.' : 'Links shared by your practitioner. Documents you explicitly saved are in your account history.'}</p>
+    <div className="hh-client-shared-materials-grid">{materials.map(material => <a key={material.id} href={material.url} target="_blank" rel="noopener noreferrer"><span>{material.title}</span><span aria-hidden="true">↗</span></a>)}</div>
+  </section>
+}
 function ReportsFromAndy({ data, locale }) {
   const reports = reportTimeline(data.savedReports).filter((report) => report.available !== false).slice(0, 3)
   const ru = locale === 'ru'
@@ -2114,41 +3208,63 @@ function ResultConsultationCta({ locale }) {
   const copy =
     locale === 'ru'
       ? {
-          kicker: 'Если хочется обсудить результат',
+          kicker: 'Личная поддержка',
           title: 'Заказать консультацию специалиста',
-          text: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+          text: 'Разберите показатели и возможные следующие шаги вместе с практиком.',
+          privacy: 'Результаты приватны и не передаются автоматически.',
           action: 'Выбрать специалиста',
         }
       : {
-          kicker: 'If you would like to discuss your result',
+          kicker: 'Personal guidance',
           title: 'Book a consultation with a specialist',
-          text: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+          text: 'Talk through your scores and possible next steps with a practitioner.',
+          privacy: 'Your result stays private and is not shared automatically.',
           action: 'Choose a specialist',
         }
 
   return (
     <aside className="hh-result-consultation" aria-label={copy.title}>
-      <div>
+      <span className="hh-result-consultation-icon" aria-hidden="true">
+        <Sparkles size={21} strokeWidth={1.9} />
+      </span>
+      <div className="hh-result-consultation-copy">
         <p className="hh-kicker">{copy.kicker}</p>
         <h2>{copy.title}</h2>
-        <p>{copy.text}</p>
+        <p className="hh-result-consultation-description">{copy.text}</p>
+        <p className="hh-result-consultation-privacy">
+          <ShieldCheck size={15} aria-hidden="true" />
+          <span>{copy.privacy}</span>
+        </p>
       </div>
-      <Link className="hh-primary hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
-        {copy.action}
+      <Link className="hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+        <span>{copy.action}</span>
+        <span aria-hidden="true">→</span>
       </Link>
     </aside>
   )
 }
 
 function ResultPage({ id, locale, data }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const focusScaleKey = searchParams?.get('scale') || null
+  const [retaking, setRetaking] = useState(false)
+  const [retakeError, setRetakeError] = useState(null)
+  // Only initialize the personal conversation after an owner-scoped GET for
+  // this exact saved result, never from an unconfirmed bootstrap snapshot.
+  const [discussionLoadedId, setDiscussionLoadedId] = useState(null)
   const c = COPY[locale],
     [result, setResult] = useState(data.results.find((r) => r.id === id) || null),
     [error, setError] = useState(null)
   useEffect(() => {
     let live = true
+    setDiscussionLoadedId(null)
     appFetch('results/' + id)
       .then((r) => {
-        if (live) setResult(r)
+        if (live) {
+          setResult(r)
+          setDiscussionLoadedId(r?.id === id ? id : null)
+        }
       })
       .catch((e) => {
         if (live) setError(e)
@@ -2159,6 +3275,10 @@ function ResultPage({ id, locale, data }) {
   }, [id])
   if (error) return <p role="alert">{message(error, c)}</p>
   if (!result) return <p>{c.loading}</p>
+  const changeSummary = resultChangeSummary(result, data.results, locale)
+  const sourceReport = buildAssessmentResultReport(result, locale)
+  const allowOptionalConsultation = sourceReport.verified !== false &&
+    !sourceReport.sections?.some(section => section.recommendedReview === true)
   const series = seriesFor(data.results, result),
     previous = series
       .filter(
@@ -2171,26 +3291,59 @@ function ResultPage({ id, locale, data }) {
       monitoringCatalogItem(result.definitionKey)?.title?.[locale] ||
       monitoringCatalogItem(result.definitionKey)?.title?.en ||
       result.definitionKey
+  const repeatDefinition = getDefinitionById(result.definitionId)
+  const canRepeat = Boolean(repeatDefinition && MONITORING_CATALOG.some(item =>
+    item.startable && item.key === result.definitionKey && item.version === result.definitionVersion))
+  async function repeatTest() {
+    if (retaking || !canRepeat) return
+    setRetaking(true)
+    setRetakeError(null)
+    try {
+      const draft = (data.runs || []).find(run =>
+        run.definitionId === result.definitionId && ['draft', 'in_progress'].includes(run.status))
+      const run = draft || await appFetch('runs', {
+        definitionKey: repeatDefinition.key,
+        definitionVersion: repeatDefinition.version,
+        instrumentLocale: repeatDefinition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick')
+    } catch (cause) {
+      setRetakeError(cause)
+      setRetaking(false)
+    }
+  }
   return (
     <article className="hh-result-page">
       <header className="hh-result-hero">
         <div>
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
-          <p className="hh-result-intro">
-            {locale === 'ru'
-              ? 'Ваш личный замер состояния — спокойно, без ярлыков и автоматических выводов.'
-              : 'Your personal measurement — calm, private and without automatic labels.'}
-          </p>
         </div>
         <div className="hh-result-meta">
           <span>{dateLabel(result.measurementAt, locale)}</span>
-          <span>{result.instrumentLocale.toUpperCase()}</span>
         </div>
       </header>
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
+      {discussionLoadedId === result.id && <TestResultDiscussion key={result.id + ':' + locale} result={result} locale={locale}
+        history={data.results || []} initiallyOpen={searchParams?.get('discuss') === '1'} />}
+      <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
+      <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
+      <div className="hh-result-repeat">
+        {canRepeat
+          ? <button type="button" onClick={repeatTest} disabled={retaking}>
+              {retaking ? (locale === 'ru' ? 'Открываем тест…' : 'Opening test…')
+                : (locale === 'ru' ? '↻ Пройти тест ещё раз' : '↻ Retake this test')}
+            </button>
+          : <Link href={'/' + locale + '/app/tests'} prefetch={false}>
+              {locale === 'ru' ? 'Подобрать доступный тест →' : 'Choose an available assessment →'}
+            </Link>}
+        {retakeError && <p role="alert">{message(retakeError, c)}</p>}
+      </div>
+      <details className="hh-result-raw-details">
+        <summary>{locale === 'ru' ? 'Посмотреть все исходные баллы и шкалы' : 'View all recorded scores and scales'}</summary>
       <section className="hh-result-section" aria-labelledby="result-values-title">
         <div className="hh-result-section-heading">
           <div>
@@ -2214,7 +3367,7 @@ function ResultPage({ id, locale, data }) {
             return (
               <section className="hh-result-metric" key={d.key}>
                 <div className="hh-result-metric-copy">
-                  <h3>{d.sourceConstruct || labelFor(d.key, locale)}</h3>
+                  <h3>{readableScaleName(d, locale)}</h3>
                   {explanationFor(d.key, locale) && <p>{explanationFor(d.key, locale)}</p>}
                 </div>
                 <div className="hh-result-score">
@@ -2233,6 +3386,26 @@ function ResultPage({ id, locale, data }) {
         </div>
       </section>
 
+      </details>
+      <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История и повторные измерения' : 'Progress and previous assessments'}>
+        <span className="hh-result-comparison-icon" aria-hidden="true">
+          <BarChart3 size={21} strokeWidth={1.9} />
+        </span>
+        <div className="hh-result-comparison-copy">
+          <h2>{locale === 'ru' ? 'Динамика результата' : 'Your result over time'}</h2>
+          {changeSummary.previous
+            ? <p>{locale === 'ru' ? 'Предыдущий совместимый замер' : 'Previous comparable assessment'}: {dateLabel(changeSummary.previous.measurementAt, locale)}</p>
+            : <p>{locale === 'ru' ? 'Это первый совместимый замер. Повторите ту же версию теста позже, чтобы увидеть изменения.' : 'Your first baseline is recorded. Repeat this version later to see changes.'}</p>}
+          {changeSummary.changes.length > 0 && <ul>{changeSummary.changes.map(change => (
+            <li key={change.key}>{readableScaleName({key:change.key,sourceConstruct:change.label},locale)}: {change.from} → {change.to}</li>
+          ))}</ul>}
+          <small>{locale === 'ru' ? 'Баллы описывают ответы на тест, а не медицинский диагноз.' : 'Scores reflect questionnaire answers, not a medical diagnosis.'}</small>
+        </div>
+        <Link className="hh-result-comparison-action" href={`/${locale}/app/portfolio`} prefetch={false}>
+          <span>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'}</span>
+          <span aria-hidden="true">→</span>
+        </Link>
+      </section>
       {Object.entries(result.context || {}).length > 0 && (
         <aside className="hh-context-at-checkin hh-result-context">
           <p className="hh-kicker">{locale === 'ru' ? 'Ваш контекст' : 'Your context'}</p>
@@ -2256,7 +3429,7 @@ function ResultPage({ id, locale, data }) {
         </aside>
       )}
 
-      <ResultConsultationCta locale={locale} />
+      {allowOptionalConsultation && <ResultConsultationCta locale={locale} />}
 
       <footer className="hh-result-footer">
         <p className="hh-result-source">
@@ -2274,132 +3447,6 @@ function ResultPage({ id, locale, data }) {
     </article>
   )
 }
-function SavedPaymentDocument({ document, locale }) {
-  const ru = locale === 'ru'
-  const received = document.paymentStatus === 'received'
-  const amount = (Number(document.amount || 0) / 100)
-    .toFixed(2)
-    .replace('.', ru ? ',' : '.')
-  return (
-    <article className="hh-panel hh-saved-client-document">
-      <p className="hh-kicker">Holistic House</p>
-      <h1>{received ? (ru ? 'Квитанция' : 'Receipt') : (ru ? 'Счёт' : 'Invoice')}</h1>
-      <dl className="hh-saved-document-details">
-        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
-        <div><dt>{ru ? 'Дата документа' : 'Date issued'}</dt><dd>{document.dateIssued}</dd></div>
-        <div><dt>{ru ? 'Услуга' : 'Service'}</dt><dd>{document.service}</dd></div>
-        {document.consultations && <div><dt>{ru ? 'Количество консультаций' : 'Consultations'}</dt><dd>{document.consultations}</dd></div>}
-        <div><dt>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}</dt><dd>{document.currency} {amount}</dd></div>
-        {document.dateOfService && <div><dt>{ru ? 'Дата услуги' : 'Date of service'}</dt><dd>{document.dateOfService}</dd></div>}
-        {document.paymentMethod && <div><dt>{ru ? 'Способ оплаты' : 'Payment method'}</dt><dd>{document.paymentMethod}</dd></div>}
-        {document.documentNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.documentNumber}</dd></div>}
-      </dl>
-    </article>
-  )
-}
-
-function SavedRecommendationDocument({ document, locale }) {
-  const ru = locale === 'ru'
-  return (
-    <article className="hh-panel hh-saved-client-document">
-      <p className="hh-kicker">Holistic House</p>
-      <h1>{ru ? 'Рекомендация' : 'Recommendation'}</h1>
-      <dl className="hh-saved-document-details">
-        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
-        <div><dt>{ru ? 'Дата' : 'Date'}</dt><dd>{document.dateIssued}</dd></div>
-        {document.patientDob && <div><dt>{ru ? 'Дата рождения' : 'Date of birth'}</dt><dd>{document.patientDob}</dd></div>}
-        {document.recommendationNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.recommendationNumber}</dd></div>}
-        {document.practitionerName && <div><dt>{ru ? 'Специалист' : 'Practitioner'}</dt><dd>{document.practitionerName}{document.practitionerRole ? ' · ' + document.practitionerRole : ''}</dd></div>}
-        {document.practitionerContact && <div><dt>{ru ? 'Контакт' : 'Contact'}</dt><dd>{document.practitionerContact}</dd></div>}
-      </dl>
-      <div className="hh-saved-recommendation-list">
-        {(document.items || []).map((item, index) => (
-          <section key={index}>
-            <h2>{index + 1}. {item.displayName}</h2>
-            <dl className="hh-saved-document-details">
-              {item.potency && <div><dt>{ru ? 'Потенция' : 'Potency'}</dt><dd>{item.potency}</dd></div>}
-              {item.granules && <div><dt>{ru ? 'Гранулы' : 'Granules'}</dt><dd>{item.granules}</dd></div>}
-              {item.timesPerDay && <div><dt>{ru ? 'Раз в день' : 'Times per day'}</dt><dd>{item.timesPerDay}</dd></div>}
-              {item.dosage && <div><dt>{ru ? 'Дозировка' : 'Dosage'}</dt><dd>{item.dosage}</dd></div>}
-              {item.frequency && <div><dt>{ru ? 'Частота' : 'Frequency'}</dt><dd>{item.frequency}</dd></div>}
-              {item.duration && <div><dt>{ru ? 'Длительность' : 'Duration'}</dt><dd>{item.duration}</dd></div>}
-              {item.sequence && <div><dt>{ru ? 'Последовательность' : 'Sequence'}</dt><dd>{item.sequence}</dd></div>}
-              {item.instructions && <div><dt>{ru ? 'Инструкция' : 'Instructions'}</dt><dd>{item.instructions}</dd></div>}
-              {item.purpose && <div><dt>{ru ? 'Назначение' : 'Purpose'}</dt><dd>{item.purpose}</dd></div>}
-            </dl>
-          </section>
-        ))}
-      </div>
-      {document.generalInstructions && <section className="hh-saved-document-note"><h2>{ru ? 'Общие рекомендации' : 'General guidance'}</h2><p>{document.generalInstructions}</p></section>}
-      {document.followUp && <p className="hh-fine">{ru ? 'Контроль' : 'Follow-up'}: {document.followUp}</p>}
-    </article>
-  )
-}
-
-function SavedDocumentPage({ id, locale, reload }) {
-  const router = useRouter()
-  const [value, setValue] = useState(null)
-  const [error, setError] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const ru = locale === 'ru'
-  useEffect(() => {
-    let live = true
-    appFetch('documents/' + id + '?locale=' + locale)
-      .then((result) => {
-        if (live) setValue(result)
-      })
-      .catch((e) => {
-        if (live) setError(e)
-      })
-    return () => {
-      live = false
-    }
-  }, [id, locale])
-  async function remove() {
-    setBusy(true)
-    setError(null)
-    try {
-      await appFetch('documents/' + id + '/remove', {})
-      await reload()
-      router.replace('/' + locale + '/app/history')
-    } catch (e) {
-      setError(e)
-      setBusy(false)
-    }
-  }
-  if (error?.code === 'DOCUMENT_UNAVAILABLE' || error?.code === 'NOT_FOUND')
-    return (
-      <section className="hh-panel">
-        <h1>{ru ? 'Документ больше недоступен' : 'Document no longer available'}</h1>
-        <p>{ru ? 'Запись может оставаться в истории, но исходный документ был отозван или больше недоступен.' : 'The history reference may remain, but the source document was revoked or is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'Вернуться в историю' : 'Back to History'}
-        </Link>
-      </section>
-    )
-  if (error) return <p role="alert">{ru ? 'Не удалось открыть документ.' : 'The document could not be opened.'}</p>
-  if (!value) return <p>{ru ? 'Загружаем документ…' : 'Loading document…'}</p>
-  return (
-    <section>
-      <div className="hh-panel">
-        <p className="hh-kicker">{ru ? 'Сохранённый документ' : 'Saved document'}</p>
-        <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
-      </div>
-      {value.kind === 'receipt' || value.kind === 'invoice'
-        ? <SavedPaymentDocument document={value.document} locale={locale} />
-        : <SavedRecommendationDocument document={value.document} locale={locale} />}
-      <div className="hh-panel hh-actions">
-        <Link href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'История' : 'History'}
-        </Link>
-        <button type="button" disabled={busy} onClick={remove}>
-          {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
-        </button>
-      </div>
-    </section>
-  )
-}
-
 function SavedReportPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -2425,7 +3472,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/history')
+      router.replace('/' + locale + '/app/portrait?space=reports#personal-reports')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -2436,29 +3483,37 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'Вернуться в историю' : 'Back to History'}
+        <Link className="hh-primary" href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
+          {ru ? 'К моим отчётам' : 'Back to My Reports'}
         </Link>
       </section>
     )
   if (error) return <p role="alert">{ru ? 'Не удалось открыть отчёт.' : 'The report could not be opened.'}</p>
   if (!value) return <p>{ru ? 'Загружаем отчёт…' : 'Loading report…'}</p>
   return (
-    <section className="hh-panel">
-      <p className="hh-kicker">{ru ? 'Сохранённый отчёт' : 'Saved report'}</p>
-      <AssessmentReading record={value.report} locale={locale} />
-      <p className="hh-fine">
-        {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
-      </p>
-      <div className="hh-actions">
-        <Link href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'История' : 'History'}
+    <article className="hh-saved-document-reader" data-canonical-saved-report>
+      <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
+        <Link href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
+          {ru ? '← Мои отчёты' : '← My reports'}
         </Link>
+        <Link href={'/' + (ru ? 'en' : 'ru') + '/app/reports/' + encodeURIComponent(id)} prefetch={false}>
+          {ru ? 'EN' : 'RU'}
+        </Link>
+      </nav>
+      <div className="hh-saved-document-reader__assessment">
+        <AssessmentReading record={value.report} locale={locale} />
+        <div className="hh-analysis-detail-download">
+          <DownloadPractitionerReport reportId={id} locale={locale} />
+        </div>
+      </div>
+      <details className="hh-saved-document-reader__management">
+        <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
+        <p>{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
         <button type="button" disabled={busy} onClick={remove}>
           {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
         </button>
-      </div>
-    </section>
+      </details>
+    </article>
   )
 }
 
@@ -2502,7 +3557,7 @@ function HistoryView({ data, locale, reload }) {
     [error, setError] = useState(null)
   const latest = results.find((r) => r.id === latestId) || results.at(-1),
     series = latest ? seriesFor(results, latest) : [],
-    prior = series.find((r) => r.id === priorId) || series.filter((r) => r.id !== latest?.id)[0]
+    prior = series.find((r) => r.id === priorId) || series.filter((r) => r.id !== latest?.id && Date.parse(r.measurementAt) <= Date.parse(latest.measurementAt)).at(-1)
   const dimension = latest?.dimensions.find((d) => d.key === dimensionKey) || latest?.dimensions[0],
     delta = latest && prior && latest.id !== prior.id ? compareResults(latest, prior) : []
   const points = dimension
@@ -2517,11 +3572,13 @@ function HistoryView({ data, locale, reload }) {
     (580 * (Date.parse(p.date) - Date.parse(points[0].date))) /
       Math.max(1, Date.parse(points.at(-1).date) - Date.parse(points[0].date))
   const y = (p) => 170 - (140 * (p.value - dimension.min)) / (dimension.max - dimension.min)
+  const testGroups = assessmentHistoryGroups(data.results, data.runs, locale)
+  const personalNext = nextPersonalRecommendation({ results: data.results, snapshot: data.snapshot, locale })
   const timeline = [
     ...results.map((r) => ({
       id: r.id,
       date: r.measurementAt,
-      title: r.definitionKey === 'hh-current-state' ? c.state : r.definitionKey === 'hh-weekly-pulse' ? c.weekly : c.personality,
+      title: assessmentHistoryTitle(r, locale),
       href: `/${locale}/app/results/${r.id}`,
     })),
     ...(data.moodCheckins || []).map((mood) => ({
@@ -2541,6 +3598,12 @@ function HistoryView({ data, locale, reload }) {
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
     })),
+    ...(data.savedSessions || []).map(session=>({
+      id:session.id,date:session.occurredOn+'T00:00:00.000Z',
+      title:locale==='ru'?'Сохранённая консультация':'Saved consultation',
+      href:'/'+locale+'/app/sessions/'+session.id,
+      note:(locale==='ru'?'Сохранено: ':'Saved: ')+dateLabel(session.savedAt,locale)
+    })),
     ...(data.savedDocuments || []).map((document) => ({
       id: document.id,
       date: `${document.occurredOn}T00:00:00.000Z`,
@@ -2550,7 +3613,7 @@ function HistoryView({ data, locale, reload }) {
           : document.kind === 'invoice'
             ? (locale === 'ru' ? 'Счёт от Andy' : 'Invoice from Andy')
             : (locale === 'ru' ? 'Рекомендация от Andy' : 'Recommendation from Andy'),
-      href: `/${locale}/app/documents/${document.id}`,
+      href: `/${locale}/app/document-view/${document.id}`,
       note: `${c.saved}: ${dateLabel(document.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
@@ -2582,6 +3645,28 @@ function HistoryView({ data, locale, reload }) {
         <p>{c.historyIntro}</p>
         <p className="hh-fine">{c.versionBoundary}</p>
       </div>
+      <section className="hh-assessment-history" aria-labelledby="hh-past-tests-title">
+        <div className="hh-assessment-history-heading">
+          <div><p className="hh-kicker">{locale === 'ru' ? 'Мои сохранённые замеры' : 'My saved measurements'}</p>
+          <h2 id="hh-past-tests-title">{locale === 'ru' ? 'Результаты прошлых тестов' : 'Past test results'}</h2>
+          <p>{locale === 'ru' ? 'Вся история сохраняется по датам. Каждый тест можно открыть, сравнить с совместимым предыдущим результатом или пройти повторно.' : 'Your results are kept by date. Open any result, compare compatible measurements, or take the test again.'}</p></div>
+          <Link className="hh-primary" href={`/${locale}/app/tests`}>{locale === 'ru' ? 'Подобрать тесты' : 'Find tests'}</Link>
+        </div>
+        {testGroups.length ? <div className="hh-assessment-history-list">{testGroups.map((group) => (
+          <article className="hh-assessment-history-item" key={group.key}>
+            <div className="hh-assessment-history-item-head"><div><h3>{group.title}</h3>
+              <p>{locale === 'ru' ? 'Прохождений' : 'Completed'}: <strong>{group.count}</strong>{group.latest && <> · {locale === 'ru' ? 'Последний' : 'Most recent'}: <time>{dateLabel(group.latest.measurementAt, locale)}</time></>}</p></div>
+              {group.latest && <Link href={`/${locale}/app/results/${group.latest.id}`}>{locale === 'ru' ? 'Последний результат →' : 'Latest result →'}</Link>}</div>
+            {group.latest && <div className="hh-assessment-history-dimensions">{group.latest.dimensions.map((d) => (
+              <div key={d.key}><span>{readableScaleName(d, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
+            ))}</div>}
+            {group.count > 1 && <details className="hh-assessment-history-previous"><summary>{locale === 'ru' ? `Все прохождения (${group.count})` : `All attempts (${group.count})`}</summary><ul>{group.history.map((result) => <li key={result.id}><time>{dateLabel(result.measurementAt, locale)}</time> <Link href={`/${locale}/app/results/${result.id}`}>{locale === 'ru' ? 'Открыть результат' : 'Open result'}</Link></li>)}</ul></details>}
+            <div className="hh-actions">{group.draft && <Link href={`/${locale}/app/runs/${group.draft.id}`}>{locale === 'ru' ? 'Продолжить начатый тест' : 'Resume unfinished test'}</Link>}
+              <Link href={`/${locale}/app/tests?suggest=${encodeURIComponent(group.key)}`}>{group.count ? (locale === 'ru' ? 'Пройти ещё раз' : 'Retake test') : (locale === 'ru' ? 'Начать тест' : 'Start test')}</Link></div>
+          </article>
+        ))}</div> : <p className="hh-panel">{locale === 'ru' ? 'Пока нет завершённых тестов. Начните с короткого замера: он станет вашей личной точкой отсчёта.' : 'No completed tests yet. Start with a short check-in to create your personal baseline.'}</p>}
+        <aside className="hh-assessment-history-next"><div><p className="hh-kicker">{locale === 'ru' ? 'Персональная подсказка' : 'Personal next step'}</p><h3>{personalNext.title}</h3><p>{personalNext.reason}</p>{personalNext.observation && <p className="hh-fine">{personalNext.observation}</p>}{personalNext.reflection && <p><strong>{locale === 'ru' ? 'Практическая подсказка: ' : 'Something to try: '}</strong>{personalNext.reflection}</p>}<small>{locale === 'ru' ? 'Это навигация по самонаблюдению, а не медицинская оценка. Ваши результаты не отправляются специалисту автоматически.' : 'Guidance for self-monitoring, not a medical judgement. Your results are not automatically sent to a practitioner.'}</small></div><Link href={personalNext.key ? `/${locale}/app/tests?suggest=${encodeURIComponent(personalNext.key)}` : `/${locale}/app/history`}>{personalNext.key ? (locale === 'ru' ? 'Выбрать тест' : 'Choose test') : (locale === 'ru' ? 'Моя история' : 'My history')}</Link></aside>
+      </section>
       {latest ? (
         <article className="hh-panel">
           <h2>{c.compare}</h2>
@@ -2811,15 +3896,46 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '' }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    [error, setError] = useState(null)
+// Only first-party decorative imagery: never display Andrey as another practitioner's portrait.
+function consultationPhotoFor(service) {
+  if (service.slug === 'free-intro-availability-request') return '/images/holistic-house/andy-about.png'
+  const topic = [service.slug, service.areaKey, service.offeringType].filter(Boolean).join(' ').toLowerCase()
+  if (/reiki|energy|healing|massage/.test(topic)) return '/images/holistic-house/reiki-practitioner-sunrise.webp'
+  if (/business|career|consulting/.test(topic)) return '/images/holistic-house/books-library.webp'
+  if (/stress|imagery|hypno|dream/.test(topic)) return '/images/holistic-house/course-focus-mountain-boy.webp'
+  return '/images/holistic-house/hero-olive-incense.webp'
+}
+function consultationPriceFor(service, locale, fallback) {
+  if (service.pricingMode === 'free') return locale === 'ru' ? 'Бесплатно · запрос' : 'Free · enquiry'
+  if (service.pricingMode !== 'contact' && service.confirmedPrice != null && Number.isFinite(Number(service.confirmedPrice))) {
+    return (service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : '') +
+      (service.currency || '') + ' ' + String(service.confirmedPrice)
+  }
+  return fallback
+}
+function Consultations({ data, locale, reload, initialServiceId = '', source = '', requestedMessageId = '' }) {
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const [requestSent, setRequestSent] = useState(false)
+  const [error, setError] = useState(null)
+  const handledDeepLink = useRef('')
+  const requestRef = useRef(null)
+  const services = [...(data.services || [])].sort((a, b) => {
+    const rank = item => item.id === initialServiceId ? 0 : item.slug === 'free-intro-availability-request' ? 1 : 2
+    return rank(a) - rank(b)
+  })
+  // Apply a link from Your Path once, not again after the user closes the form.
   useEffect(() => {
-    if (!initialServiceId || selected) return
-    const service = (data.services || []).find((item) => item.id === initialServiceId)
-    if (service) setSelected(service)
-  }, [data.services, initialServiceId, selected])
+    if (!initialServiceId || handledDeepLink.current === initialServiceId) return
+    const service = (data.services || []).find(item => item.id === initialServiceId)
+    if (!service) return
+    handledDeepLink.current = initialServiceId
+    setSelected(service)
+  }, [data.services, initialServiceId])
+  // Deep links and card CTAs land at the actual request form, never below a long catalog.
+  useEffect(() => {
+    if (selected?.id) requestRef.current?.scrollIntoView?.({ block: 'start', behavior: 'auto' })
+  }, [selected?.id])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
@@ -2829,44 +3945,115 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
     }
   }
   return (
-    <section>
-      <div className="hh-heading">
+    <section className={consultationStyles.root} data-consultation-requests>
+      <div className={consultationStyles.heading}>
+        <p className={consultationStyles.eyebrow}>{locale === 'ru' ? 'HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА' : 'HOLISTIC HOUSE · PERSONAL GUIDANCE'}</p>
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        <p className={consultationStyles.notification}>{locale === 'ru' ? 'Ответы на телефон:' : 'Phone alerts for replies:'}{' '}
+          <Link href={'/' + locale + '/app/settings#hh-phone-notifications'} prefetch={false}>
+            {locale === 'ru' ? 'Настроить уведомления' : 'Notification settings'}
+          </Link>
+        </p>
+        {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
+          <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
+          <p>{locale === 'ru'
+            ? 'Выберите специалиста и отправьте запрос на обсуждение результатов. Данные тестов не передаются автоматически — вы сами решаете, чем поделиться.'
+            : 'Choose a specialist and request a personal review. Your private test scores are not shared automatically; you decide what to share.'}</p>
+          <Link className="hh-primary" href={'/' + locale + '/services/free-situation-review?topic=test-results'} prefetch={false}>
+            {locale === 'ru' ? 'Запросить личную консультацию' : 'Request a personal consultation'} →
+          </Link>
+        </aside>}
       </div>
-      <div className="hh-grid hh-services">
-        {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
-        {(data.services || []).map((service) => (
-          <article className="hh-panel" key={service.id}>
-            <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
-            <h2>{service.copy[locale].title}</h2>
-            <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
-            <button className="hh-primary" onClick={() => setSelected(service)}>
-              {c.request}
-            </button>
-          </article>
-        ))}
-      </div>
+      {requestSent && <p className={consultationStyles.notice} role="status">
+        {locale === 'ru'
+          ? 'Заявка отправлена и появилась в «Моих заявках». Время встречи ещё не подтверждено.'
+          : 'Your request was sent and appears in My requests. No appointment is confirmed yet.'}
+      </p>}
       {selected && (
-        <RequestForm
-          key={selected.id}
-          service={selected}
-          locale={locale}
-          data={data}
-          close={() => setSelected(null)}
-          onDone={async () => {
-            setSelected(null)
-            await reload()
-          }}
-        />
+        <div ref={requestRef} className={consultationStyles.formSlot} id="hh-consultation-request">
+          <p className={consultationStyles.formEyebrow}>{locale === 'ru' ? 'ВАШ ВЫБОР · ОТПРАВИТЬ ЗАЯВКУ' : 'YOUR SELECTION · SEND AN ENQUIRY'}</p>
+          <RequestForm
+            key={selected.id}
+            service={selected}
+            locale={locale}
+            data={data}
+            close={() => setSelected(null)}
+            onDone={async () => {
+              setSelected(null)
+              await reload()
+              setRequestSent(true)
+            }}
+          />
+        </div>
       )}
+      <div className={consultationStyles.sectionLabel}>
+        <h2>{locale === 'ru' ? 'Выберите услугу' : 'Explore personal services'}</h2>
+        <p>{locale === 'ru' ? 'Заявка ≠ подтверждённая запись' : 'Enquiry ≠ confirmed appointment'}</p>
+      </div>
+      <div className={consultationStyles.grid} data-consultation-photo-cards>
+        {!services.length && <p>{c.emptyServices || c.emptyRequests}</p>}
+        {services.map((service) => {
+          const offer = service.copy?.[locale] || service.copy?.en || service.copy?.ru || {}
+          const intro = service.slug === 'free-intro-availability-request'
+          const chosen = selected?.id === service.id
+          return (
+            <article className={consultationStyles.card + (chosen ? ' ' + consultationStyles.chosen : '')}
+              key={service.id} data-consultation-photo-card={service.slug || service.id}>
+              <div className={consultationStyles.photo} aria-hidden="true">
+                <Image src={consultationPhotoFor(service)} alt="" fill sizes="(max-width: 480px) 100px, (max-width: 1080px) 150px, 180px" />
+              </div>
+              <div className={consultationStyles.cardBody}>
+                <p className={consultationStyles.practitioner}>
+                  {service.practitionerName}{service.professionalTitle ? ' · ' + service.professionalTitle : ''}
+                </p>
+                <h3>{offer.title}</h3>
+                <p className={consultationStyles.description}>{offer.shortDescription || offer.description}</p>
+                <p className={consultationStyles.pricing}>
+                  {consultationPriceFor(service, locale, c.price)}
+                  {service.durationMinutes ? ' · ' + service.durationMinutes + (locale === 'ru' ? ' мин' : ' min') : ''}
+                </p>
+                {service.slug === 'remote-energy-support'
+                  ? <Link className={consultationStyles.action}
+                      href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+                      prefetch={false}>
+                      {locale === 'ru' ? 'Выбрать время' : locale === 'es' ? 'Elegir horario' : 'Choose a time'}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  : <button type="button" className={consultationStyles.action}
+                      onClick={() => { setRequestSent(false); setSelected(service) }}>
+                      {chosen
+                        ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
+                        : intro
+                          ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
+                          : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </button>}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      <InstallHolisticHouse locale={locale} />
       <section className="hh-section">
         <h2>{c.requests}</h2>
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
-          <article className="hh-panel" key={request.id}>
-            <span className="hh-badge">{c[request.status]}</span>
+          <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
+            <span className="hh-badge">{request.remoteBooking
+              ? (({requested:locale==='ru'?'Ожидает мастера':'Waiting for practitioner',
+                   confirmed:locale==='ru'?'Подтверждено':'Confirmed',
+                   declined:locale==='ru'?'Отклонено':'Declined',
+                   reschedule_proposed:locale==='ru'?'Предложен перенос':'Reschedule proposed',
+                   in_progress:locale==='ru'?'Проводится':'In progress',
+                   completed:locale==='ru'?'Выполнено':'Completed',
+                   cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
+              : (c[request.status] || request.status)}</span>
+            {Number(request.newMessageCount)>0&&
+              <span className="hh-badge" role="status">
+                {locale==='ru'?'Новых сообщений: ':locale==='es'?'Mensajes nuevos: ':'New messages: '}
+                {request.newMessageCount}
+              </span>}
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -2874,14 +4061,48 @@ function Consultations({ data, locale, reload, initialServiceId = '' }) {
             <p>
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
+            {request.remoteBooking?.proposed&&<div className="hh-panel">
+              <p><strong>{locale==='ru'?'Мастер предложил другое время':'Practitioner suggested another time'}:</strong>
+                {' '}{request.remoteBooking.proposed.date} {request.remoteBooking.proposed.time}
+                {' '}({request.remoteBooking.proposed.timezone})
+              </p>
+              <p className="hh-fine">{locale==='ru'
+                ? 'После согласия вы вернётесь в ожидание окончательного подтверждения мастером.'
+                : 'Accepting returns this request to awaiting practitioner confirmation.'}</p>
+              <div className="hh-actions">
+                <button type="button" onClick={()=>updateRequest(request,'accept_time')}>
+                  {locale==='ru'?'Принять время':'Accept time'}
+                </button>
+                <button type="button" onClick={()=>updateRequest(request,'decline_time')}>
+                  {locale==='ru'?'Отклонить перенос':'Decline change'}
+                </button>
+              </div>
+            </div>}
+            {request.remoteBooking && <p className="hh-fine">
+              {request.remoteBooking.duration} min · {request.remoteBooking.date} {request.remoteBooking.time}
+              {' · '}{request.remoteBooking.timezone} · {request.remoteBooking.price} {request.remoteBooking.currency}
+              {' · '}{locale==='ru'?'Оплата пока не подключена':'Payment not yet enabled'}
+            </p>}
             {request.message && <p>{request.message}</p>}
+            {request.remoteBooking &&
+              <RemoteGoalPhoto key={request.id} requestId={request.id} role="client"
+                hasPhoto={Boolean(request.remoteBooking.photoPath)} status={request.status}
+                locale={locale} onChanged={reload}/>}
+            {request.remoteBooking && request.status==='completed' &&
+              <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
+            <PracticeRequestConversation key={request.id} requestId={request.id}
+              autoOpen={requestedMessageId === request.id || Number(request.newMessageCount)>0}
+              accountId={data.account.id} locale={locale}
+              initialMessage={typeof request.message==='string'?request.message:''}
+              createdAt={request.createdAt} onViewed={reload} onSaved={reload}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>
                 <button onClick={() => updateRequest(request, 'unshare')}>{c.unshare}</button>
               </>
             )}
-            {['requested', 'contacted'].includes(request.status) && (
+            {(['requested','contacted'].includes(request.status) ||
+              (request.remoteBooking && ['confirmed','reschedule_proposed'].includes(request.status))) && (
               <button onClick={() => updateRequest(request, 'cancel')}>{c.withdraw}</button>
             )}
             <p className="hh-fine">{c.requestNote}</p>
@@ -2900,7 +4121,33 @@ function RequestForm({ service, locale, data, close, onDone }) {
     [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
-    operation = useRef(null)
+    operation = useRef(null),
+    [energyPrefill, setEnergyPrefill] = useState(false),
+    [remoteDraft, setRemoteDraft] = useState(null),
+    [talismanDraft, setTalismanDraft] = useState(null)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const talisman = readTalismanRequestDraft(window.sessionStorage, service.id)
+    if (talisman && service.slug === 'remote-energy-support') {
+      const privateIntention = takeRemoteSupportPrivateIntention(service.id)
+      const prefill = formatTalismanRequestDraft(talisman, locale) +
+        (privateIntention ? '\n\n' + (locale === 'ru' ? 'Мои пожелания: ' : 'My preferences: ') + privateIntention : '')
+      setNote(current => current || prefill)
+      setTalismanDraft(talisman)
+      setEnergyPrefill(true)
+      return
+    }
+    const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
+    if (!draft) return
+    // User-entered free text travels only in client memory during same-tab
+    // navigation; no sensitive intention is written to sessionStorage or URLs.
+    const privateIntention = takeRemoteSupportPrivateIntention(service.id)
+    const prefilling = formatRemoteSupportDraft(draft) +
+      (privateIntention ? '\n\n' + (locale === 'ru' ? 'Мой запрос: ' : locale === 'es' ? 'Mi intención: ' : 'My intention: ') + privateIntention : '')
+    setNote((current) => current || prefilling)
+    setEnergyPrefill(true)
+    if (draft.version === 2) setRemoteDraft(draft)
+  }, [service.id])
   const shared = data.results.find((r) => r.id === shareId)
   async function submit(e) {
     e.preventDefault()
@@ -2909,14 +4156,28 @@ function RequestForm({ service, locale, data, close, onDone }) {
     const body = operation.current || {
       serviceId: service.id,
       operationId: crypto.randomUUID(),
-      contact,
+      contact: (remoteDraft || talismanDraft) ? 'Via Holistic House portal' : contact,
       message: note,
-      shareResultId: shareId || null,
+      remoteBooking: remoteDraft ? {
+        version:2, goal:remoteDraft.goal, method:remoteDraft.method, format:remoteDraft.format,
+        duration:remoteDraft.duration, date:remoteDraft.date, time:remoteDraft.time,
+        timezone:remoteDraft.timezone, startsAt:remoteDraft.startsAt,
+        expectedPrice:remoteDraft.expectedPrice, expectedCurrency:remoteDraft.expectedCurrency,
+      } : undefined,
+      talismanRequest: talismanDraft ? { version:1, goal:talismanDraft.goal,
+          ...(talismanDraft.catalogId ? {catalogId:talismanDraft.catalogId} : {}) } : undefined,
+      shareResultId: (remoteDraft || talismanDraft) ? null : (shareId || null),
       shareConfirmed: confirmed,
     }
     operation.current = body
     try {
       await appFetch('requests', body)
+      if (energyPrefill && typeof window !== 'undefined') {
+        if (readRemoteSupportDraft(window.sessionStorage, service.id))
+          window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)
+        if (readTalismanRequestDraft(window.sessionStorage, service.id))
+          window.sessionStorage.removeItem(TALISMAN_REQUEST_DRAFT_KEY)
+      }
       operation.current = null
       await onDone()
     } catch (e) {
@@ -2932,9 +4193,24 @@ function RequestForm({ service, locale, data, close, onDone }) {
         {c.close}
       </button>
       <h2>{service.copy[locale].title}</h2>
+      {energyPrefill && <p className="hh-fine">{talismanDraft
+        ? (locale === 'ru'
+          ? 'Это запрос на обсуждение талисмана. Мастер отдельно подтверждает возможность изготовления и цену; заказа и оплаты ещё нет.'
+          : 'This is a talisman enquiry. The practitioner must confirm availability and price; no order or payment has been made.')
+        : (locale === 'ru'
+          ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
+          : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.')}</p>}
       <p>{c.requestNote}</p>
-      <form className="hh-form" onSubmit={submit}>
-        <label>
+      {service.slug === 'remote-energy-support' && !remoteDraft && !talismanDraft
+        ? <p><Link className="hh-primary"
+            href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+            prefetch={false}>
+            {locale === 'ru' ? 'Сначала выберите длительность и время' :
+             locale === 'es' ? 'Primero elige la duración y el horario' :
+             'Choose your duration and preferred time first'} →
+          </Link></p>
+        : <form className="hh-form" onSubmit={submit}>
+        {!remoteDraft && !talismanDraft && <label>
           {c.contact}
           <input
             required
@@ -2943,7 +4219,10 @@ function RequestForm({ service, locale, data, close, onDone }) {
             disabled={busy || Boolean(operation.current)}
             onChange={(e) => setContact(e.target.value)}
           />
-        </label>
+        </label>}
+        {(remoteDraft || talismanDraft) && <p className="hh-fine">{locale==='ru'
+          ? 'Общение через защищённый кабинет Holistic House. Контакты сторон не передаются напрямую.'
+          : 'Messages stay in Holistic House. Personal contact details are not shared with the practitioner.'}</p>}
         <label>
           {c.message}
           <textarea
@@ -2953,7 +4232,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
-        <label>
+        {!remoteDraft && !talismanDraft && <label>
           {c.share}
           <select
             value={shareId}
@@ -2970,8 +4249,8 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </option>
             ))}
           </select>
-        </label>
-        {shared && (
+        </label>}
+        {!remoteDraft && !talismanDraft && shared && (
           <>
             <div className="hh-notice">
               <p>
@@ -2996,12 +4275,12 @@ function RequestForm({ service, locale, data, close, onDone }) {
             </label>
           </>
         )}
-        <p className="hh-fine">{c.sharingNote}</p>
+        {!remoteDraft && !talismanDraft && <p className="hh-fine">{c.sharingNote}</p>}
         <button className="hh-primary" disabled={busy}>
           {busy ? c.saving : c.submitRequest}
         </button>
         {error && <p role="alert">{message(error, c)}</p>}
-      </form>
+      </form>}
     </section>
   )
 }

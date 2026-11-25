@@ -1,0 +1,1007 @@
+{
+  "status": "local-only-not-approved-for-write",
+  "activate": false,
+  "rows": [
+    {
+      "id": "c835a434-d165-52a2-931e-bcd307f55c71",
+      "definition_key": "pcl-5",
+      "definition_version": "v1",
+      "instrument_locale": "en",
+      "translation_version": "original-en-2026-source-pin",
+      "definition": {
+        "id": "c835a434-d165-52a2-931e-bcd307f55c71",
+        "key": "pcl-5",
+        "version": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "original-en-2026-source-pin",
+        "timeframe": "past-month",
+        "scoringKey": "pcl5-trauma",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "title": "PTSD Checklist for DSM-5 (PCL-5) with Criterion A",
+        "source": {
+          "title": "PCL-5",
+          "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/PCL5_criterionA_form.PDF",
+          "permissionUrl": "https://www.ptsd.va.gov/professional/assessment/adult-sr/ptsd-checklist.asp",
+          "permission": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+          "minimumAge": 18,
+          "nonDiagnostic": true,
+          "reviewedAt": "2026-10-14",
+          "missingResponsePolicy": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule.",
+          "masterSha256": "9615bb0198a06dde3cb2016a8736e8f0c657cf454ac8d823cfda758262b26dde"
+        },
+        "answerScale": {
+          "min": 0,
+          "max": 4
+        },
+        "responseAnchors": [
+          "Not at all",
+          "A little bit",
+          "Moderately",
+          "Quite a bit",
+          "Extremely"
+        ],
+        "optionalContext": [],
+        "suggestedRepeatDays": null,
+        "safetyText": "This adult questionnaire is for professionally supported assessment. It is not a diagnosis, an emergency service or a safety assessment, and responses are not monitored in real time. You may stop at any time. If you are in immediate danger, contact your local emergency services. Discuss concerning symptoms with a qualified health professional.",
+        "instructions": "Second, below is a list of problems that people sometimes have in response to a very stressful experience. Keeping your worst event in mind, please read each problem carefully and then select one of the numbers to the right to indicate how much you have been bothered by that problem in the past month.",
+        "questions": [
+          {
+            "id": "PCL1",
+            "text": "Repeated, disturbing, and unwanted memories of the stressful experience?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL2",
+            "text": "Repeated, disturbing dreams of the stressful experience?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL3",
+            "text": "Suddenly feeling or acting as if the stressful experience were actually happening again (as if you were actually back there reliving it)?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL4",
+            "text": "Feeling very upset when something reminded you of the stressful experience?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL5",
+            "text": "Having strong physical reactions when something reminded you of the stressful experience (for example, heart pounding, trouble breathing, sweating)?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL6",
+            "text": "Avoiding memories, thoughts, or feelings related to the stressful experience?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL7",
+            "text": "Avoiding external reminders of the stressful experience (for example, people, places, conversations, activities, objects, or situations)?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL8",
+            "text": "Trouble remembering important parts of the stressful experience?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL9",
+            "text": "Having strong negative beliefs about yourself, other people, or the world (for example, having thoughts such as: I am bad, there is something seriously wrong with me, no one can be trusted, the world is completely dangerous)?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL10",
+            "text": "Blaming yourself or someone else for the stressful experience or what happened after it?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL11",
+            "text": "Having strong negative feelings such as fear, horror, anger, guilt, or shame?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL12",
+            "text": "Loss of interest in activities that you used to enjoy?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL13",
+            "text": "Feeling distant or cut off from other people?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL14",
+            "text": "Trouble experiencing positive feelings (for example, being unable to feel happiness or have loving feelings for people close to you)?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL15",
+            "text": "Irritable behavior, angry outbursts, or acting aggressively?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL16",
+            "text": "Taking too many risks or doing things that could cause you harm?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL17",
+            "text": "Being “superalert” or watchful or on guard?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL18",
+            "text": "Feeling jumpy or easily startled?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL19",
+            "text": "Having difficulty concentrating?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          },
+          {
+            "id": "PCL20",
+            "text": "Trouble falling or staying asleep?",
+            "required": true,
+            "sectionInstructions": "In the past month, how much were you bothered by:"
+          }
+        ],
+        "administration": {
+          "kind": "trauma-front-matter-v1",
+          "intro": [
+            "This questionnaire asks about problems you may have had after a very stressful experience involving actual or threatened death, serious injury, or sexual violence. It could be something that happened to you directly, something you witnessed, or something you learned happened to a close family member or close friend. Some examples are a serious accident; fire; disaster such as a hurricane, tornado, or earthquake; physical or sexual attack or abuse; war; homicide; or suicide.",
+            "First, please answer a few questions about your worst event, which for this questionnaire means the event that currently bothers you the most. This could be one of the examples above or some other very stressful experience. Also, it could be a single event (for example, a car crash) or multiple similar events (for example, multiple stressful events in a war-zone or repeated sexual abuse)."
+          ],
+          "fields": [
+            {
+              "id": "event_description",
+              "label": "Briefly identify the worst event (if you feel comfortable doing so):",
+              "kind": "text",
+              "required": false
+            },
+            {
+              "id": "event_timing",
+              "label": "How long ago did it happen? (please estimate if you are not sure)",
+              "kind": "text",
+              "required": true
+            },
+            {
+              "id": "criterion_a",
+              "label": "Did it involve actual or threatened death, serious injury, or sexual violence?",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Yes",
+                "No"
+              ]
+            },
+            {
+              "id": "exposure_modes",
+              "label": "How did you experience it?",
+              "kind": "multiple",
+              "required": true,
+              "options": [
+                "It happened to me directly",
+                "I witnessed it",
+                "I learned about it happening to a close family member or close friend",
+                "I was repeatedly exposed to details about it as part of my job (for example, paramedic, police, military, or other first responder)",
+                "Other, please describe"
+              ]
+            },
+            {
+              "id": "exposure_other",
+              "label": "Other, please describe",
+              "kind": "text",
+              "required": false
+            },
+            {
+              "id": "death_type",
+              "label": "If the event involved the death of a close family member or close friend, was it due to some kind of accident or violence, or was it due to natural causes?",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Accident or violence",
+                "Natural causes",
+                "Not applicable (the event did not involve the death of a close family member or close friend)"
+              ]
+            }
+          ],
+          "acknowledgements": [
+            {
+              "id": "adult_confirmed",
+              "label": "I am 18 years or older.",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Yes"
+              ]
+            },
+            {
+              "id": "event_anchored",
+              "label": "I have identified the experience in mind and will answer in relation to it. I do not need to type a personal description.",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Yes"
+              ]
+            }
+          ]
+        },
+        "scoring": {
+          "dimensions": [
+            {
+              "key": "symptoms.pcl5.total",
+              "min": 0,
+              "max": 80,
+              "items": [
+                "PCL1",
+                "PCL2",
+                "PCL3",
+                "PCL4",
+                "PCL5",
+                "PCL6",
+                "PCL7",
+                "PCL8",
+                "PCL9",
+                "PCL10",
+                "PCL11",
+                "PCL12",
+                "PCL13",
+                "PCL14",
+                "PCL15",
+                "PCL16",
+                "PCL17",
+                "PCL18",
+                "PCL19",
+                "PCL20"
+              ],
+              "sourceConstruct": "PCL-5 symptom total",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.pcl5.b",
+              "min": 0,
+              "max": 20,
+              "items": [
+                "PCL1",
+                "PCL2",
+                "PCL3",
+                "PCL4",
+                "PCL5"
+              ],
+              "sourceConstruct": "PCL-5 cluster B",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.pcl5.c",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "PCL6",
+                "PCL7"
+              ],
+              "sourceConstruct": "PCL-5 cluster C",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.pcl5.d",
+              "min": 0,
+              "max": 28,
+              "items": [
+                "PCL8",
+                "PCL9",
+                "PCL10",
+                "PCL11",
+                "PCL12",
+                "PCL13",
+                "PCL14"
+              ],
+              "sourceConstruct": "PCL-5 cluster D",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.pcl5.e",
+              "min": 0,
+              "max": 24,
+              "items": [
+                "PCL15",
+                "PCL16",
+                "PCL17",
+                "PCL18",
+                "PCL19",
+                "PCL20"
+              ],
+              "sourceConstruct": "PCL-5 cluster E",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            }
+          ]
+        },
+        "contentHash": "sha256:a1102890605de94f0ecccee0a68e02535d37c4601d04089d75d108c5fa286c12"
+      },
+      "questions": [
+        {
+          "id": "PCL1",
+          "text": "Repeated, disturbing, and unwanted memories of the stressful experience?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL2",
+          "text": "Repeated, disturbing dreams of the stressful experience?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL3",
+          "text": "Suddenly feeling or acting as if the stressful experience were actually happening again (as if you were actually back there reliving it)?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL4",
+          "text": "Feeling very upset when something reminded you of the stressful experience?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL5",
+          "text": "Having strong physical reactions when something reminded you of the stressful experience (for example, heart pounding, trouble breathing, sweating)?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL6",
+          "text": "Avoiding memories, thoughts, or feelings related to the stressful experience?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL7",
+          "text": "Avoiding external reminders of the stressful experience (for example, people, places, conversations, activities, objects, or situations)?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL8",
+          "text": "Trouble remembering important parts of the stressful experience?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL9",
+          "text": "Having strong negative beliefs about yourself, other people, or the world (for example, having thoughts such as: I am bad, there is something seriously wrong with me, no one can be trusted, the world is completely dangerous)?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL10",
+          "text": "Blaming yourself or someone else for the stressful experience or what happened after it?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL11",
+          "text": "Having strong negative feelings such as fear, horror, anger, guilt, or shame?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL12",
+          "text": "Loss of interest in activities that you used to enjoy?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL13",
+          "text": "Feeling distant or cut off from other people?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL14",
+          "text": "Trouble experiencing positive feelings (for example, being unable to feel happiness or have loving feelings for people close to you)?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL15",
+          "text": "Irritable behavior, angry outbursts, or acting aggressively?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL16",
+          "text": "Taking too many risks or doing things that could cause you harm?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL17",
+          "text": "Being “superalert” or watchful or on guard?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL18",
+          "text": "Feeling jumpy or easily startled?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL19",
+          "text": "Having difficulty concentrating?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        },
+        {
+          "id": "PCL20",
+          "text": "Trouble falling or staying asleep?",
+          "required": true,
+          "sectionInstructions": "In the past month, how much were you bothered by:"
+        }
+      ],
+      "answer_schema": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4
+      },
+      "scoring_key": "pcl5-trauma",
+      "scoring_version": "v1",
+      "result_schema": {
+        "version": "v1"
+      },
+      "timeframe": "past-month",
+      "source_metadata": {
+        "title": "PCL-5",
+        "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/PCL5_criterionA_form.PDF",
+        "permissionUrl": "https://www.ptsd.va.gov/professional/assessment/adult-sr/ptsd-checklist.asp",
+        "permission": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+        "minimumAge": 18,
+        "nonDiagnostic": true,
+        "reviewedAt": "2026-10-14",
+        "missingResponsePolicy": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule.",
+        "masterSha256": "9615bb0198a06dde3cb2016a8736e8f0c657cf454ac8d823cfda758262b26dde"
+      },
+      "content_hash": "sha256:a1102890605de94f0ecccee0a68e02535d37c4601d04089d75d108c5fa286c12",
+      "status": "published"
+    },
+    {
+      "id": "f2cfbc16-58ea-59fb-806c-530c098a9de8",
+      "definition_key": "itq-adult",
+      "definition_version": "v1",
+      "instrument_locale": "en",
+      "translation_version": "original-en-2026-source-pin",
+      "definition": {
+        "id": "f2cfbc16-58ea-59fb-806c-530c098a9de8",
+        "key": "itq-adult",
+        "version": "v1",
+        "instrumentLocale": "en",
+        "translationVersion": "original-en-2026-source-pin",
+        "timeframe": "section-specific",
+        "scoringKey": "itq-adult-trauma",
+        "scoringVersion": "v1",
+        "resultVersion": "v1",
+        "title": "International Trauma Questionnaire (ITQ), adult",
+        "source": {
+          "title": "ITQ",
+          "url": "https://cdn.prod.website-files.com/686e835a5683f56bbfc4c3a4/68b0694afb8eccbc37bb76c0_ITQ_English.docx",
+          "permissionUrl": "https://www.traumameasuresglobal.com/ptsd",
+          "permission": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+          "minimumAge": 18,
+          "nonDiagnostic": true,
+          "reviewedAt": "2026-10-14",
+          "missingResponsePolicy": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule.",
+          "masterSha256": "c056fcf2a438787f145242e2009c2d8d4806fd0f7fd15e6d9093f243c79886cf"
+        },
+        "answerScale": {
+          "min": 0,
+          "max": 4
+        },
+        "responseAnchors": [
+          "Not at all",
+          "A little bit",
+          "Moderately",
+          "Quite a bit",
+          "Extremely"
+        ],
+        "optionalContext": [],
+        "suggestedRepeatDays": null,
+        "safetyText": "This adult questionnaire is for professionally supported assessment. It is not a diagnosis, an emergency service or a safety assessment, and responses are not monitored in real time. You may stop at any time. If you are in immediate danger, contact your local emergency services. Discuss concerning symptoms with a qualified health professional.",
+        "instructions": "",
+        "administration": {
+          "kind": "trauma-front-matter-v1",
+          "intro": [
+            "Please identify the experience that troubles you most and answer the questions in relation to this experience."
+          ],
+          "fields": [
+            {
+              "id": "event_description",
+              "label": "Brief description of the experience",
+              "kind": "text",
+              "required": false
+            },
+            {
+              "id": "event_timing",
+              "label": "When did the experience occur? (circle one)",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "less than 6 months ago",
+                "6 to 12 months ago",
+                "1 to 5 years ago",
+                "5 to 10 years ago",
+                "10 to 20 years ago",
+                "more than 20 years ago"
+              ]
+            }
+          ],
+          "acknowledgements": [
+            {
+              "id": "adult_confirmed",
+              "label": "I am 18 years or older.",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Yes"
+              ]
+            },
+            {
+              "id": "event_anchored",
+              "label": "I have identified the experience in mind and will answer in relation to it. I do not need to type a personal description.",
+              "kind": "select",
+              "required": true,
+              "options": [
+                "Yes"
+              ]
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "P1",
+            "text": "Having upsetting dreams that replay part of the experience or are clearly related to the experience?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P2",
+            "text": "Having powerful images or memories that sometimes come into your mind in which you feel the experience is happening again in the here and now?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P3",
+            "text": "Avoiding internal reminders of the experience (for example, thoughts, feelings, or physical sensations)?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P4",
+            "text": "Avoiding external reminders of the experience (for example, people, places, conversations, objects, activities, or situations)?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P5",
+            "text": "Being “super-alert”, watchful, or on guard?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P6",
+            "text": "Feeling jumpy or easily startled?",
+            "required": true,
+            "section": "P1-P6",
+            "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+          },
+          {
+            "id": "P7",
+            "text": "Affected your relationships or social life?",
+            "required": true,
+            "section": "P7-P9",
+            "sectionInstructions": "In the past month have the above problems:"
+          },
+          {
+            "id": "P8",
+            "text": "Affected your work or ability to work?",
+            "required": true,
+            "section": "P7-P9",
+            "sectionInstructions": "In the past month have the above problems:"
+          },
+          {
+            "id": "P9",
+            "text": "Affected any other important part of your life such as parenting, or school or college work, or other important activities?",
+            "required": true,
+            "section": "P7-P9",
+            "sectionInstructions": "In the past month have the above problems:"
+          },
+          {
+            "id": "C1",
+            "text": "When I am upset, it takes me a long time to calm down.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C2",
+            "text": "I feel numb or emotionally shut down.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C3",
+            "text": "I feel like a failure.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C4",
+            "text": "I feel worthless.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C5",
+            "text": "I feel distant or cut off from people.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C6",
+            "text": "I find it hard to stay emotionally close to people.",
+            "required": true,
+            "section": "C1-C6",
+            "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+          },
+          {
+            "id": "C7",
+            "text": "Created concern or distress about your relationships or social life?",
+            "required": true,
+            "section": "C7-C9",
+            "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+          },
+          {
+            "id": "C8",
+            "text": "Affected your work or ability to work?",
+            "required": true,
+            "section": "C7-C9",
+            "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+          },
+          {
+            "id": "C9",
+            "text": "Affected any other important parts of your life such as parenting, or school or college work, or other important activities?",
+            "required": true,
+            "section": "C7-C9",
+            "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+          }
+        ],
+        "scoring": {
+          "dimensions": [
+            {
+              "key": "symptoms.itq.ptsd",
+              "min": 0,
+              "max": 24,
+              "items": [
+                "P1",
+                "P2",
+                "P3",
+                "P4",
+                "P5",
+                "P6"
+              ],
+              "sourceConstruct": "ITQ PTSD symptom total",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.itq.dso",
+              "min": 0,
+              "max": 24,
+              "items": [
+                "C1",
+                "C2",
+                "C3",
+                "C4",
+                "C5",
+                "C6"
+              ],
+              "sourceConstruct": "ITQ DSO symptom total",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "typical-patterns"
+            },
+            {
+              "key": "symptoms.itq.re_experiencing",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "P1",
+                "P2"
+              ],
+              "sourceConstruct": "ITQ re experiencing",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.itq.avoidance",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "P3",
+                "P4"
+              ],
+              "sourceConstruct": "ITQ avoidance",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.itq.current_threat",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "P5",
+                "P6"
+              ],
+              "sourceConstruct": "ITQ current threat",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "past-month"
+            },
+            {
+              "key": "symptoms.itq.affective_dysregulation",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "C1",
+                "C2"
+              ],
+              "sourceConstruct": "ITQ affective dysregulation",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "typical-patterns"
+            },
+            {
+              "key": "symptoms.itq.negative_self_concept",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "C3",
+                "C4"
+              ],
+              "sourceConstruct": "ITQ negative self concept",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "typical-patterns"
+            },
+            {
+              "key": "symptoms.itq.disturbed_relationships",
+              "min": 0,
+              "max": 8,
+              "items": [
+                "C5",
+                "C6"
+              ],
+              "sourceConstruct": "ITQ disturbed relationships",
+              "method": "sum",
+              "direction": "non-normative",
+              "dimensionClass": "symptoms",
+              "timeframe": "typical-patterns"
+            }
+          ]
+        },
+        "contentHash": "sha256:edd79b107e8d17568534c1226df5dd6cf4360c25ba9749f763ae7605f20840e9"
+      },
+      "questions": [
+        {
+          "id": "P1",
+          "text": "Having upsetting dreams that replay part of the experience or are clearly related to the experience?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P2",
+          "text": "Having powerful images or memories that sometimes come into your mind in which you feel the experience is happening again in the here and now?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P3",
+          "text": "Avoiding internal reminders of the experience (for example, thoughts, feelings, or physical sensations)?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P4",
+          "text": "Avoiding external reminders of the experience (for example, people, places, conversations, objects, activities, or situations)?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P5",
+          "text": "Being “super-alert”, watchful, or on guard?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P6",
+          "text": "Feeling jumpy or easily startled?",
+          "required": true,
+          "section": "P1-P6",
+          "sectionInstructions": "Below are a number of problems that people sometimes report in response to traumatic or stressful life events. Please read each item carefully, then circle one of the numbers to the right to indicate how much you have been bothered by that problem in the past month."
+        },
+        {
+          "id": "P7",
+          "text": "Affected your relationships or social life?",
+          "required": true,
+          "section": "P7-P9",
+          "sectionInstructions": "In the past month have the above problems:"
+        },
+        {
+          "id": "P8",
+          "text": "Affected your work or ability to work?",
+          "required": true,
+          "section": "P7-P9",
+          "sectionInstructions": "In the past month have the above problems:"
+        },
+        {
+          "id": "P9",
+          "text": "Affected any other important part of your life such as parenting, or school or college work, or other important activities?",
+          "required": true,
+          "section": "P7-P9",
+          "sectionInstructions": "In the past month have the above problems:"
+        },
+        {
+          "id": "C1",
+          "text": "When I am upset, it takes me a long time to calm down.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C2",
+          "text": "I feel numb or emotionally shut down.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C3",
+          "text": "I feel like a failure.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C4",
+          "text": "I feel worthless.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C5",
+          "text": "I feel distant or cut off from people.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C6",
+          "text": "I find it hard to stay emotionally close to people.",
+          "required": true,
+          "section": "C1-C6",
+          "sectionInstructions": "Below are problems that people who have had stressful or traumatic events sometimes experience. The questions refer to ways you typically feel, ways you typically think about yourself and ways you typically relate to others. Answer the following thinking about how true each statement is of you."
+        },
+        {
+          "id": "C7",
+          "text": "Created concern or distress about your relationships or social life?",
+          "required": true,
+          "section": "C7-C9",
+          "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+        },
+        {
+          "id": "C8",
+          "text": "Affected your work or ability to work?",
+          "required": true,
+          "section": "C7-C9",
+          "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+        },
+        {
+          "id": "C9",
+          "text": "Affected any other important parts of your life such as parenting, or school or college work, or other important activities?",
+          "required": true,
+          "section": "C7-C9",
+          "sectionInstructions": "In the past month, have the above problems in emotions, in beliefs about yourself and in relationships:"
+        }
+      ],
+      "answer_schema": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4
+      },
+      "scoring_key": "itq-adult-trauma",
+      "scoring_version": "v1",
+      "result_schema": {
+        "version": "v1"
+      },
+      "timeframe": "section-specific",
+      "source_metadata": {
+        "title": "ITQ",
+        "url": "https://cdn.prod.website-files.com/686e835a5683f56bbfc4c3a4/68b0694afb8eccbc37bb76c0_ITQ_English.docx",
+        "permissionUrl": "https://www.traumameasuresglobal.com/ptsd",
+        "permission": "Explicit public-domain declaration; no noncommercial-only restriction in cited official declaration. Commercial electronic reproduction is an inference from public-domain status, not endorsement of HH.",
+        "minimumAge": 18,
+        "nonDiagnostic": true,
+        "reviewedAt": "2026-10-14",
+        "missingResponsePolicy": "null is unanswered, never zero; require complete applicable inputs; no imputation/prorating. Incomplete result is unavailable, not a negative screen. This is product handling, not a claimed validated manual missingness rule.",
+        "masterSha256": "c056fcf2a438787f145242e2009c2d8d4806fd0f7fd15e6d9093f243c79886cf"
+      },
+      "content_hash": "sha256:edd79b107e8d17568534c1226df5dd6cf4360c25ba9749f763ae7605f20840e9",
+      "status": "published"
+    }
+  ],
+  "conflictPolicy": "Stop on any existing id, semantic version identity or content hash; no update or upsert. Recheck all technical fields after any subsequently approved insertion.",
+  "excluded": [
+    "pc-ptsd-5"
+  ]
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "c7a00001-7e2d-4a00-8d11-202610110001",
+    "key": "hh-love-affection",
+    "locale": "en",
+    "hash": "sha256:e9395e60762e7d06904f65157dfc3e3a67423051704b45077c359e91d796dbf0"
+  },
+  {
+    "id": "c7a00001-7e2d-4a00-8d11-202610110002",
+    "key": "hh-love-affection",
+    "locale": "ru",
+    "hash": "sha256:5385756d5beeed83d1030626561b5eb686f6404c53a65627a94f66cdcc51193a"
+  },
+  {
+    "id": "c7a00002-7e2d-4a00-8d11-202610110001",
+    "key": "hh-trust-dialogue",
+    "locale": "en",
+    "hash": "sha256:797a7700a5fdcc65c79c2f08278662922f462f61133fb78196e68aa87cd20124"
+  },
+  {
+    "id": "c7a00002-7e2d-4a00-8d11-202610110002",
+    "key": "hh-trust-dialogue",
+    "locale": "ru",
+    "hash": "sha256:ab97a313e7cea20bdf91b26eafa0fe539d7b68c1ef185e9bf41b1b486c92fd66"
+  },
+  {
+    "id": "c7a00003-7e2d-4a00-8d11-202610110001",
+    "key": "hh-emotional-intimacy",
+    "locale": "en",
+    "hash": "sha256:85d23c3876b9e38249bf32cbf196134a31966077ad372ac9d68d2cbc32071e25"
+  },
+  {
+    "id": "c7a00003-7e2d-4a00-8d11-202610110002",
+    "key": "hh-emotional-intimacy",
+    "locale": "ru",
+    "hash": "sha256:b834bd190b1c50e1f6e1f303adb0c2d287f945c9bb0a3026919e180dffff0952"
+  },
+  {
+    "id": "c7a00004-7e2d-4a00-8d11-202610110001",
+    "key": "hh-intimacy-consent",
+    "locale": "en",
+    "hash": "sha256:8c010dfda8e74a6fa53a1fe7b765c813c67a1678e097abd5e499f27eb44c67d1"
+  },
+  {
+    "id": "c7a00004-7e2d-4a00-8d11-202610110002",
+    "key": "hh-intimacy-consent",
+    "locale": "ru",
+    "hash": "sha256:7c84e8c87751088863466fd70bc1de04da339e84ec7536df45445820ffd20fc7"
+  },
+  {
+    "id": "c7a00005-7e2d-4a00-8d11-202610110001",
+    "key": "hh-desire-dialogue",
+    "locale": "en",
+    "hash": "sha256:0dea33394838c2835912e4aa1feacbd4be9c5fc308a4ef2ed950714305950a5a"
+  },
+  {
+    "id": "c7a00005-7e2d-4a00-8d11-202610110002",
+    "key": "hh-desire-dialogue",
+    "locale": "ru",
+    "hash": "sha256:54abf10bbf8723e2a7e341cb3b7787979882006962a0410c9cbfc672080b1c56"
+  },
+  {
+    "id": "c7a00006-7e2d-4a00-8d11-202610110001",
+    "key": "hh-sexual-self-kindness",
+    "locale": "en",
+    "hash": "sha256:bcd817a3fc97aa8092fcebdfdc357f8ae310875517b63f5d914e4d5ba3f261a7"
+  },
+  {
+    "id": "c7a00006-7e2d-4a00-8d11-202610110002",
+    "key": "hh-sexual-self-kindness",
+    "locale": "ru",
+    "hash": "sha256:db3d416d33751cb4c75039c0908abf5c510a37f5bb172a8949a70be9bc219881"
+  },
+  {
+    "id": "c7a00007-7e2d-4a00-8d11-202610110001",
+    "key": "hh-tantra-presence",
+    "locale": "en",
+    "hash": "sha256:401bbd8d8f929d46a2841ed63c8db571064b05b992ef23590ae6a06787395550"
+  },
+  {
+    "id": "c7a00007-7e2d-4a00-8d11-202610110002",
+    "key": "hh-tantra-presence",
+    "locale": "ru",
+    "hash": "sha256:c5b85b2d8c6aaca917a8a8f009472c2b0033821daf857b0d1771fa66fd62ecd6"
+  },
+  {
+    "id": "c7a00008-7e2d-4a00-8d11-202610110001",
+    "key": "hh-sensual-joy",
+    "locale": "en",
+    "hash": "sha256:b9cc026b3fea14ad361f41e946a922aa61abc0f3c614944311b1fd273c74cece"
+  },
+  {
+    "id": "c7a00008-7e2d-4a00-8d11-202610110002",
+    "key": "hh-sensual-joy",
+    "locale": "ru",
+    "hash": "sha256:df4019f5dc712d028d03c6b9ee4cd6900def4de8c69d4c94f910dc6a72684ca3"
+  }
+]

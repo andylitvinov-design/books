@@ -146,6 +146,12 @@ The forest wakes up.
 
 And with this, the movement of life appears.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: A sense of heaviness arises before a task even begins: you want to put off the first step, and interest feels out of reach.
+
+After (desired state): An inner readiness to take the first step and gradually engage with the task with clarity and interest.
+
 ## RITUAL
 
 • take 2–5 drops of HORNBEAM under the tongue

@@ -1,0 +1,13 @@
+id,feature,area,priority,original,clone,source,notes
+PUB-01,Quick text composer,composer,must,yes,partial,https://publer.com/help/en/article/how-to-set-up-a-posting-schedule-cxg8y2,HH PR2111 tests pass but owner browser Save and Reload not yet proven
+PUB-02,Select multiple social networks,composer,must,yes,partial,https://publer.com/help/en/article/what-social-networks-are-supported-npoun1,HH selects draft targets; provider rights not connected
+PUB-03,Independent post type constraints,validation,must,yes,partial,https://publer.com/help/en/article/what-post-types-are-supported-and-what-are-their-limitations-1687rte,HH advisory constraints only; provider account validation unavailable
+PUB-04,Durable drafts,editorial,must,yes,partial,https://publer.com/help/en/article/what-is-included-in-publer-free-dliovh,HH Redis CAS unit tests pass; signed-in production reload not proven
+PUB-05,Real provider scheduled post,scheduling,must,yes,no,https://publer.com/help/en/article/how-to-set-up-a-posting-schedule-cxg8y2,HH manual editorial calendar does not schedule social posts
+PUB-06,Per-account automatic posting queue,scheduling,must,yes,no,https://publer.com/help/en/article/how-to-set-up-a-posting-schedule-cxg8y2,No unattended provider job or provider-scheduled ID
+PUB-07,Recurring and recycled publishing,evergreen,should,yes,partial,https://publer.com/help/en/article/whats-the-difference-between-recycling-and-recurring-posts-y542y7,HH creates review-only repeat drafts without automatic posting
+PUB-08,Bulk authoring and export,bulk,should,yes,partial,https://publer.com/help/en/article/what-are-publers-plans-and-pricing-15h4yqh,HH bulk and CSV Node tests pass; browser owner E2E pending
+PUB-09,Owned media library,media,should,yes,partial,https://publer.com/help/en/article/what-post-types-are-supported-and-what-are-their-limitations-1687rte,HH stores public media URL references; no upload/resize proof
+PUB-10,Authorized social account mapping,accounts,must,yes,no,https://publer.com/help/en/article/what-social-networks-are-supported-npoun1,No verified HH website OAuth for Meta and other networks
+PUB-11,Provider confirmed delivery,publishing,must,yes,partial,https://publer.com/help/en/article/how-to-set-up-a-posting-schedule-cxg8y2,Only optional owner-confirmed Telegram adapter; real delivery proof pending
+PUB-12,Post performance analytics,analytics,should,yes,no,https://publer.com/help/en/article/what-social-networks-are-supported-npoun1,No provider engagement receipts tied to HH CRM; privacy hold unchanged

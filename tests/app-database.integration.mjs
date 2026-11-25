@@ -1,4 +1,7 @@
+import { BACH_V2_DEFINITIONS } from '../data/assessments/bach-flower-v2.js'
+import { HH_SPLIT_V2_DEFINITIONS } from '../data/assessments/hh-split-reflections-v2.js'
 import test, { before, after } from 'node:test'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
@@ -10,6 +13,7 @@ import {
   commitReportSaveIntent,
   exchangeReportViewer,
   issueReportGrant,
+  listPersonalAnalysisReports,
   readSavedReport,
   rotateReportGrant,
 } from '../lib/app/report-flow.js'
@@ -18,15 +22,19 @@ const { appHousekeepingStatus, runAppHousekeeping } = maintenance
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
+import { verifySnapshotDimensionIdentity } from './helpers/snapshot-dimension-identity-db.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { createArticleRepository } from '../lib/practitioners/article-repository.js'
 import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
 import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
+import { seal } from '../lib/app/crypto.js'
+import { createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession } from '../lib/app/client-session-save-flow.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -79,6 +87,24 @@ test('Current State v2 is seeded as a new immutable definition and retains encry
     desired_change: 'Synthetic desired change',
   })
 })
+test('My Practice bootstrap keeps verified account but excludes unrelated assessments', async () => {
+  const full = await repo.bootstrap(v2Actor)
+  assert.ok(full.results.length > 0, 'fixture has private result data')
+  const lite = await repo.bootstrap(v2Actor, { view: 'practice' })
+  assert.equal(lite.account.id, v2Actor.id)
+  assert.equal(lite.account.onboardingState, 'active')
+  assert.deepEqual(lite.results, [])
+  assert.deepEqual(lite.runs, [])
+  assert.deepEqual(lite.requests, [])
+  assert.deepEqual(lite.services, [])
+  assert.deepEqual(lite.savedReports, [])
+  assert.equal(lite.snapshot, null)
+  assert.deepEqual(Object.keys(lite).sort(), Object.keys(full).sort())
+  const another = await repo.bootstrap(b, { view: 'practice' })
+  assert.equal(another.account.id, b.id)
+  assert.deepEqual(another.results, [])
+})
+
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,
@@ -115,6 +141,266 @@ before(async () => {
   }
 })
 after(closeDatabase)
+test('coaching report storage enforces owner RLS, immutable versions and deletion tombstones',async()=>{
+  const db=await adminClient()
+  const reportId='30000000-0000-4000-8000-000000000001',sessionId='30000000-0000-4000-8000-000000000002'
+  const versionId='30000000-0000-4000-8000-000000000003',operationId='30000000-0000-4000-8000-000000000004'
+  try{
+    const roles=(await db.query("select relname,relrowsecurity,relforcerowsecurity from pg_class join pg_namespace n on n.oid=relnamespace where n.nspname='app_private' and relname=any($1::text[])",[['coaching_reports','coaching_report_versions','coaching_report_receipts']])).rows
+    assert.equal(roles.length,3)
+    assert.ok(roles.every(row=>row.relrowsecurity))
+    assert.equal(roles.find(row=>row.relname==='coaching_report_receipts').relforcerowsecurity,true)
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts']){
+      const grants=(await db.query("select has_table_privilege('authenticated',$1,'SELECT') as can_read",['app_private.'+name])).rows[0]
+      assert.equal(grants.can_read,false)
+    }
+    await rawAs(a,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','unknown','unknown','unknown',$1,now())",[sessionId,A])
+    })
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_events(session_id,account_id,revision,event_type,actor_type) values($1,$2,1,'session_started','client')",[sessionId,A])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,A,sessionId,'x'.repeat(128),'a'.repeat(64)])),err=>err.code==='42501')
+    await rawAs(a,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'session_persistence',true,'test','synthetic session persistence'),($1,$2,'message_archive',true,'test','synthetic message archive')",[sessionId,A])
+      await client.query("insert into app_private.coaching_session_events(session_id,account_id,revision,event_type,actor_type) values($1,$2,1,'session_started','client')",[sessionId,A])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'report_storage',true,'test','synthetic report storage')",[sessionId,A])
+      await client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,A,sessionId,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,1,$4,$4,$5,'client_confirmation','client')",[versionId,reportId,A,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[A,operationId,reportId,'a'.repeat(64)])
+    })
+    const olderVoice='30000000-0000-4000-8000-000000000010',currentVoice='30000000-0000-4000-8000-000000000011'
+    await rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(id,session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$3,$4,'voice_transcript_storage',true,'test','synthetic transcript',now()-interval '1 second'),($2,$3,$4,'voice_transcript_storage',true,'test','synthetic transcript',now())",[olderVoice,currentVoice,sessionId,A]))
+    const insertTranscript=(client,consentId)=>client.query("insert into app_private.coaching_session_messages(session_id,account_id,sequence_no,turn_id,speaker,content_kind,content_ciphertext,content_hash,input_mode,locale,consent_event_id) values($1,$2,1,$3,'client','consented_transcript',$4,$5,'voice','en',$6)",[sessionId,A,'30000000-0000-4000-8000-000000000012','x'.repeat(128),'a'.repeat(64),consentId])
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>insertTranscript(client,olderVoice)),err=>err.code==='42501')
+    await rawAs(a,'hh_app_backend',client=>insertTranscript(client,currentVoice))
+    await rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'voice_transcript_storage',false,'test','synthetic revocation',now()+interval '1 second')",[sessionId,A]))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_messages(session_id,account_id,sequence_no,turn_id,speaker,content_kind,content_ciphertext,content_hash,input_mode,locale,consent_event_id) values($1,$2,2,$3,'client','consented_transcript',$4,$5,'voice','en',$6)",[sessionId,A,'30000000-0000-4000-8000-000000000013','x'.repeat(128),'a'.repeat(64),currentVoice])),err=>err.code==='42501')
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts'])
+      assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('select * from app_private.'+name))).rowCount,0)
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,2,$4,$4,$5,'client_confirmation','client')",['30000000-0000-4000-8000-000000000006',reportId,B,'x'.repeat(128),'a'.repeat(64)])))
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",['30000000-0000-4000-8000-000000000005',A,sessionId,'x'.repeat(128),'a'.repeat(64)])))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query('update app_private.coaching_report_versions set report_ciphertext=$1 where id=$2',['y'.repeat(128),versionId])))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query('update app_private.coaching_reports set account_id=$1 where id=$2',[B,reportId])))
+    assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[reportId]))).rowCount,0)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[reportId]))).rowCount,1)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('select * from app_private.coaching_report_versions where report_id=$1',[reportId]))).rowCount,0)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('select state from app_private.coaching_report_receipts where operation_id=$1',[operationId]))).rows[0].state,'deleted')
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[A,operationId,reportId,'a'.repeat(64)])),err=>err.code==='23505')
+    const C='30000000-0000-4000-8000-000000000007',SC='30000000-0000-4000-8000-000000000008'
+    const c=actor(C,SC)
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-storage@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),randomUUID(),C])),err=>err.code==='23503')
+    let ownedAreaId,ownedGoalId
+    await rawAs(c,'hh_app_backend',async client=>{
+      const cSession='30000000-0000-4000-8000-000000000009'
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','unknown','unknown','unknown',$1,now())",[cSession,C])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'report_storage',true,'test','synthetic report storage')",[cSession,C])
+      await client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,C,cSession,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,1,$4,$4,$5,'client_confirmation','client')",[versionId,reportId,C,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[C,operationId,reportId,'a'.repeat(64)])
+      const planId=randomUUID(),areaId=randomUUID(),goalId=randomUUID(),actionId=randomUUID()
+      ownedAreaId=areaId;ownedGoalId=goalId
+      await client.query('insert into app_private.coaching_life_plans(id,account_id) values($1,$2)',[planId,C])
+      await client.query("insert into app_private.coaching_life_plan_areas(id,plan_id,account_id,area_key,source_report_id) values($1,$2,$3,'body_health',$4)",[areaId,planId,C,reportId])
+      await client.query("insert into app_private.coaching_goals(id,area_id,account_id,source_session_id,source_report_id,title_ciphertext,idempotency_key) values($1,$2,$3,$4,$5,'synthetic-cipher',$1)",[goalId,areaId,C,cSession,reportId])
+      await client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,source_session_id,source_report_id,description_ciphertext) values($1,$2,$3,$4,$5,'synthetic-cipher')",[actionId,goalId,C,cSession,reportId])
+    })
+    // Privileged writes still cannot commit child references owned by another account.
+    for(const [sql,params] of [
+      ["insert into app_private.coaching_goals(id,area_id,account_id,title_ciphertext,idempotency_key) values($1,$2,$3,'synthetic-cipher',$1)",[randomUUID(),ownedAreaId,A]],
+      ["insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),ownedGoalId,A]],
+    ]){
+      await db.query('begin')
+      try{
+        await db.query(sql,params)
+        await assert.rejects(db.query('commit'),err=>err.code==='23503')
+      }finally{await db.query('rollback')}
+    }
+    await db.query('delete from auth.users where id=$1',[C])
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts','coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items'])
+      assert.equal((await db.query('select * from app_private.'+name+' where account_id=$1',[C])).rowCount,0)
+  }finally{await db.end()}
+})
+test('cross-session permission remains revocable without a plan and is owner scoped',async()=>{
+  const db=await adminClient()
+  const C=randomUUID(),SC=randomUUID(),session=randomUUID(),c=actor(C,SC)
+  try{
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'context-consent@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await rawAs(c,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','test','test','test',$1,now())",[session,C])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',true,'test','synthetic permission',clock_timestamp()+interval '1 minute')",[session,C])
+    })
+    const {readCoachingLifePlan,revokeCoachingPlanContext}=await import('../lib/app/coaching-life-plan.js')
+    const before=await readCoachingLifePlan(config,c)
+    assert.equal(before.plan,null)
+    assert.equal(before.contextPermissions[0].sessionId,session)
+    await assert.rejects(()=>revokeCoachingPlanContext(config,b,{sessionId:session,confirmed:true}),err=>err.code==='COACHING_PLAN_SESSION_NOT_FOUND')
+    await assert.rejects(()=>revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:false}),err=>err.code==='COACHING_PLAN_CONFIRMATION_REQUIRED')
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await readCoachingLifePlan(config,c)).contextPermissions.length,0)
+    const ledger=(await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at,id",[C,session])).rows
+    assert.deepEqual(ledger.map(row=>row.accepted),[true,false])
+  }finally{await db.query('delete from auth.users where id=$1',[C]);await db.end()}
+})
+test('coaching report preview reads only the authenticated owner session without writing',async()=>{
+  const db=await adminClient()
+  try{
+    const {readFile}=await import('node:fs/promises')
+    await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    const {savePersonalCoaching}=await import('../lib/app/personal-coaching.js')
+    const {readCoachingReportDraft}=await import('../lib/app/coaching-report-v2.js')
+    let state=await savePersonalCoaching(config,a,{action:'start',revision:0})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'topic',answer:'Make room for rest'})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'first_step',answer:'Take a short walk'})
+    state=await savePersonalCoaching(config,a,{action:'complete',revision:state.revision})
+    const request={sessionId:state.course.current.id,revision:state.revision,locale:'en'}
+    const before=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    const preview=await readCoachingReportDraft(config,a,request)
+    assert.equal(preview.report.sessionId,request.sessionId)
+    assert.equal(preview.report.generation.sourceRevision,state.revision)
+    assert.ok(preview.report.evidence.some(item=>item.value==='Make room for rest'))
+    assert.equal(preview.report.actionCandidates[0].status,'draft')
+    await assert.rejects(()=>readCoachingReportDraft(config,b,{...request,revision:0}),err=>err.code==='COACHING_REPORT_SESSION_NOT_FOUND')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,revision:state.revision-1}),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,answers:{topic:'forged'}}),err=>err.code==='UNKNOWN_FIELD')
+    const {saveCoachingReport}=await import('../lib/app/coaching-report-store.js')
+    await assert.rejects(()=>saveCoachingReport(config,a,{...request,operationId:randomUUID(),saveConsent:true,decisions:preview.report.actionCandidates.map(candidate=>({candidateId:candidate.candidateId,status:'accepted'}))}),err=>err.code==='COACHING_REPORT_SOURCE_UNVERSIONED')
+    const after=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    assert.deepEqual(after,before)
+    assert.equal(after.payload_ciphertext.includes('Make room for rest'),false)
+  }finally{await db.end()}
+})
+test('coaching report save requires consent, binds the owner source and survives retries without resurrection',async()=>{
+  const db=await adminClient(),C=randomUUID(),SC=randomUUID(),c=actor(C,SC)
+  try{
+    const {readFile}=await import('node:fs/promises')
+    if(!(await db.query("select to_regclass('app_private.personal_coaching_sessions') as table")).rows[0].table)
+      await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    if(!(await db.query("select to_regclass('app_private.coaching_reports') as table")).rows[0].table)
+      await db.query(await readFile(new URL('../supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql',import.meta.url),'utf8'))
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-report-save@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await repo.ensureAccount(c)
+    await repo.onboarding(c,{adult:true,necessary:true,marketing:false,displayName:'Synthetic',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    const {savePersonalCoaching}=await import('../lib/app/personal-coaching.js')
+    const {readCoachingReportDraft}=await import('../lib/app/coaching-report-v2.js')
+    const {saveCoachingReport,listCoachingReports,exportCoachingReports,readCoachingReport,deleteCoachingReport}=await import('../lib/app/coaching-report-store.js')
+    const {loadSchemeQuestions}=await import('../lib/app/personal-coaching-catalog.js')
+    const scheme=await loadSchemeQuestions(db,'grow_quick_v1',{publishedOnly:true})
+    let state=await savePersonalCoaching(config,c,{action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I make room for rest?'})
+    for(const question of scheme.questions){
+      const answer=question.stepKey==='will'?'Take a short walk':'Make room for rest'
+      state=await savePersonalCoaching(config,c,{action:'answer',revision:state.revision,questionId:question.id,answer})
+    }
+    state=await savePersonalCoaching(config,c,{action:'complete',revision:state.revision})
+    const preview=await readCoachingReportDraft(config,c,{sessionId:state.course.current.id,revision:state.revision,locale:'en'})
+    const request={sessionId:state.course.current.id,revision:state.revision,locale:'en',operationId:randomUUID(),saveConsent:true,decisions:[{candidateId:preview.report.actionCandidates[0].candidateId,status:'accepted'}]}
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,saveConsent:false}),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,report:{status:'reviewed'}}),err=>err.code==='UNKNOWN_FIELD')
+    const [one,two]=await Promise.all([saveCoachingReport(config,c,request),saveCoachingReport(config,c,request)])
+    assert.equal(one.id,two.id);assert.equal(one.revision,1);assert.equal(two.revision,1)
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,decisions:[{candidateId:request.decisions[0].candidateId,status:'declined'}]}),err=>err.code==='COACHING_REPORT_OPERATION_REUSED')
+    const saved=(await readCoachingReport(config,c,one.id)).report
+    assert.equal(saved.report.review.status,'confirmed')
+    assert.equal(saved.report.actionCandidates[0].status,'accepted')
+    assert.equal((await listCoachingReports(config,c)).reports.length,1)
+    await assert.rejects(()=>readCoachingReport(config,b,one.id),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    const {importCoachingReportActions,updateCoachingLifePlanArea,exportCoachingLifePlan,revokeCoachingPlanContext,deleteCoachingPlanAction}=await import('../lib/app/coaching-life-plan.js')
+    const planRequest={reportId:one.id,reportRevision:1,areaKey:'body_health',candidateIds:[request.decisions[0].candidateId],planConsent:true}
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',false,'test','synthetic revocation',now()+interval '1 second')",[request.sessionId,C]))
+    await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
+    for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items','coaching_life_plan_changes'])assert.equal((await db.query('select count(*)::int as n from app_private.'+table+' where account_id=$1',[C])).rows[0].n,0)
+    assert.equal((await db.query("select count(*)::int as n from app_private.coaching_session_consents where account_id=$1 and consent_type='cross_session_context'",[C])).rows[0].n,0)
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',true,'test','synthetic renewed consent',now()+interval '2 seconds')",[request.sessionId,C]))
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',false,'test','synthetic past withdrawal',clock_timestamp()+interval '1 minute')",[request.sessionId,C]))
+    await assert.rejects(()=>importCoachingReportActions(config,b,planRequest),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    const imported=await importCoachingReportActions(config,c,planRequest)
+    assert.equal(imported.imported,1)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,true)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,1)
+    await revokeCoachingPlanContext(config,c,{sessionId:request.sessionId,confirmed:true})
+    assert.equal((await importCoachingReportActions(config,c,planRequest)).imported,0)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,false)
+    await updateCoachingLifePlanArea(config,c,{areaKey:'body_health',revision:1,currentState:'Synthetic current state',desiredState:'Synthetic desired state',obstacles:'Synthetic obstacle',selfRating:4})
+    const exportedPlan=await exportCoachingLifePlan(config,c)
+    assert.equal(exportedPlan.areas[0].currentState,'Synthetic current state')
+    assert.equal(exportedPlan.actions.length,1)
+    assert.ok(exportedPlan.changes.some(change=>change.snapshot.currentState==='Synthetic current state'))
+    assert.ok(exportedPlan.consents.some(event=>event.consent_type==='cross_session_context'))
+    assert.doesNotMatch(JSON.stringify(exportedPlan),/ciphertext/)
+    assert.equal((await exportCoachingLifePlan(config,b)).plans.some(plan=>plan.account_id===C),false)
+    const actionRow=(await db.query('select id,description_ciphertext from app_private.coaching_action_items where account_id=$1',[C])).rows[0]
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query('select app_private.erase_own_coaching_action($1)',[actionRow.id])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query("delete from app_private.coaching_life_plan_changes where entity_kind='action' and entity_id=$1",[actionRow.id])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query('insert into app_private.coaching_erased_action_receipts(account_id,source_key) values($1,$2)',[C,'a'.repeat(64)])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',async client=>{await client.query('select app_private.erase_own_coaching_action($1)',[actionRow.id]);throw new Error('synthetic rollback')}),/synthetic rollback/)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where id=$1',[actionRow.id])).rows[0].n,1)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_erased_action_receipts where account_id=$1',[C])).rows[0].n,0)
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',['unknown',actionRow.id])
+    await assert.rejects(()=>exportCoachingLifePlan(config,c),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',[actionRow.description_ciphertext,actionRow.id])
+    await assert.rejects(()=>deleteCoachingPlanAction(config,b,actionRow.id,{confirmed:true}),err=>err.code==='COACHING_PLAN_ACTION_NOT_FOUND')
+    await assert.rejects(()=>deleteCoachingPlanAction(config,c,actionRow.id,{confirmed:false}),err=>err.code==='COACHING_PLAN_CONFIRMATION_REQUIRED')
+    assert.equal((await deleteCoachingPlanAction(config,c,actionRow.id,{confirmed:true})).deleted,true)
+    assert.equal((await db.query("select count(*)::int as n from app_private.coaching_life_plan_changes where account_id=$1 and entity_kind='action' and entity_id=$2",[C,actionRow.id])).rows[0].n,0)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,0)
+    assert.match((await db.query('select source_key from app_private.coaching_erased_action_receipts where account_id=$1',[C])).rows[0].source_key,/^[a-f0-9]{64}$/)
+    assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('select * from app_private.coaching_erased_action_receipts'))).rowCount,0)
+    assert.equal((await readCoachingReport(config,c,one.id)).report.id,one.id)
+    await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_PLAN_ACTION_DELETED')
+    await assert.rejects(()=>importCoachingReportActions(config,c,{...planRequest,reportId:one.id.toUpperCase()}),err=>err.code==='COACHING_PLAN_ACTION_DELETED')
+    await db.query('delete from app_private.coaching_life_plans where account_id=$1',[C])
+    const cipher=(await db.query('select report_ciphertext from app_private.coaching_report_versions where account_id=$1',[C])).rows[0].report_ciphertext
+    assert.equal(cipher.includes('Make room for rest'),false)
+    const consent=(await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='report_storage'",[C,request.sessionId])).rows
+    assert.equal(consent.length,3);assert.equal(consent.filter(event=>event.accepted).length,2)
+    assert.equal((await exportCoachingReports(config,c)).reports.length,1)
+    const otherReport=randomUUID()
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,report_kind,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'human_specialist','human','other','en','confirmed',$4,$4,$5,1,now())",[otherReport,C,request.sessionId,'x'.repeat(128),'a'.repeat(64)]))
+    await assert.rejects(()=>exportCoachingReports(config,c),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+    await assert.rejects(()=>deleteCoachingReport(config,c,otherReport,{confirmed:true}),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    assert.equal((await rawAs(c,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[otherReport]))).rowCount,1)
+    await assert.rejects(()=>deleteCoachingReport(config,c,one.id,{confirmed:false}),err=>err.code==='COACHING_REPORT_CONFIRMATION_REQUIRED')
+    assert.equal((await deleteCoachingReport(config,c,one.id,{confirmed:true})).deleted,true)
+    assert.equal((await listCoachingReports(config,c)).reports.length,0)
+    await assert.rejects(()=>saveCoachingReport(config,c,request),err=>err.code==='COACHING_REPORT_DELETED')
+    // Recreate the source row with the same revision while another save waits.
+    // A pre-lock read would save the old session despite its replacement.
+    const replacement=structuredClone(state.course)
+    replacement.current.id=randomUUID()
+    const replacementCipher=seal(replacement,{accountId:C,recordId:C,field:'personal.coaching'},config)
+    const observer=await adminClient()
+    try{
+      await db.query('begin')
+      await db.query('delete from app_private.personal_coaching_sessions where account_id=$1',[C])
+      await db.query('insert into app_private.personal_coaching_sessions(account_id,payload_ciphertext,revision) values($1,$2,$3)',[C,replacementCipher,state.revision])
+      const waiting=saveCoachingReport(config,c,{...request,operationId:randomUUID()}).then(value=>({value}),error=>({error}))
+      let blocked=false
+      for(let attempt=0;attempt<100&&!blocked;attempt++){
+        const result=await observer.query("select exists(select 1 from pg_stat_activity where application_name='holistic-house-app' and cardinality(pg_blocking_pids(pid))>0) as blocked")
+        blocked=result.rows[0].blocked
+        if(!blocked)await new Promise(resolve=>setTimeout(resolve,20))
+      }
+      assert.equal(blocked,true,'save must be waiting on the replacing transaction')
+      await db.query('commit')
+      const outcome=await waiting
+      assert.equal(outcome.error?.code,'COACHING_REPORT_SESSION_NOT_FOUND')
+      assert.equal((await db.query('select count(*)::int as count from app_private.coaching_reports where account_id=$1',[C])).rows[0].count,0)
+    }finally{await db.query('rollback').catch(()=>{});await observer.end()}
+  }finally{await db.query('delete from auth.users where id=$1',[C]);await db.end()}
+})
+test('snapshot SQL uses exact definition-scale identity and retains source security', async t => {
+  const db = await adminClient()
+  try {
+    await verifySnapshotDimensionIdentity(db, t)
+  } finally {
+    await db.end()
+  }
+})
 test('actual grants: own reads allowed; account status and identity updates denied', async () => {
   assert.equal(
     (await rawAs(a, 'authenticated', (db) => db.query('select id from app.accounts'))).rows.length,
@@ -626,6 +912,154 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('selected public master alias: real owner transaction, collision, RLS and old URL permanence',async()=>{
+  const before=await practiceRepo.getMyPractice(a)
+  const originalSlug=before.practitioner.slug
+  const first='qa-master-a'
+  const second='qa-master-a-renamed'
+  assert.deepEqual(await practiceRepo.checkPublicAlias(a,first),{
+    alias:first,available:true,mine:false,
+  })
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:first}),{
+    alias:first,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,first)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+  await assert.rejects(()=>practiceRepo.savePublicAlias(b,{alias:first}),e=>e?.code==='ALIAS_TAKEN')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'admin'}),e=>e?.code==='ALIAS_RESERVED')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'bad--alias'}),e=>e?.code==='INVALID_ALIAS')
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query(
+    'select alias from app.practitioner_profile_aliases'
+  )),e=>e?.code==='42501')
+  const unauthorized=await rawAs(b,'hh_app_backend',db=>db.query(
+    'update app.practitioner_profile_aliases set is_primary=false where alias=$1',[first],
+  ))
+  assert.equal(unauthorized.rowCount,0,'Other masters cannot change this URL even with the backend SQL role')
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:second}),{
+    alias:second,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,second)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug,
+    'Previously shared/printed link must keep working')
+  assert.equal(await practiceRepo.resolvePublicAlias(second),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(a,first)).mine,true)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+})
+
+test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
+ const articleRepo=createArticleRepository(config)
+ const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})
+ assert.equal(folder.name,'Synthetic QA Remedy Cards')
+ await assert.rejects(()=>articleRepo.createFolder(a,{name:' synthetic qa remedy cards '}),{code:'FOLDER_EXISTS'})
+ const article=await articleRepo.save(a,null,{
+  draft:{
+   locale:'ru',title:'Synthetic QA article',
+   excerpt:'Synthetic article for checking owner-only folders and private publication.',
+   body:'## Описание\n\n'+('Тестовый безопасный материал для проверки структуры. ').repeat(7),
+   coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:['Тест','Test'],
+  },
+  folderId:folder.id,
+ })
+ assert.equal(article.folderId,folder.id)
+ assert.deepEqual(article.draft.tags,['Тест','Test'])
+ const mine=await articleRepo.library(a)
+ assert.ok(mine.folders.some(x=>x.id===folder.id))
+ assert.ok(mine.items.some(x=>x.id===article.id))
+ const others=await articleRepo.library(b)
+ assert.equal(others.items.some(x=>x.id===article.id),false)
+ assert.equal(others.folders.some(x=>x.id===folder.id),false)
+ await assert.rejects(()=>articleRepo.renameFolder(b,folder.id,{name:'Not yours',expectedRevision:0}),
+   e=>['REVISION_CONFLICT','PRACTITIONER_REQUIRED'].includes(e.code))
+ const renamed=await articleRepo.renameFolder(a,folder.id,{name:'Renamed QA folder',expectedRevision:folder.revision})
+ assert.equal(renamed.name,'Renamed QA folder')
+ assert.equal(renamed.revision,1)
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ await articleRepo.removeFolder(a,renamed.id)
+ const after=(await articleRepo.library(a)).items.find(x=>x.id===article.id)
+ assert.equal(after.folderId,null,'folder deletion must keep its linked article in Unfiled')
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ const submitted=await articleRepo.submit(a,article.id,{expectedRevision:after.revision})
+ assert.equal(submitted.status,'submitted')
+ const approved=await articleRepo.moderate(article.id,{action:'approve'})
+ assert.equal(approved.status,'published')
+ const publicArticle=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publicArticle.published.title,'Synthetic QA article')
+ assert.equal(Object.hasOwn(publicArticle,'draft'),false)
+ assert.equal(Object.hasOwn(publicArticle,'folderId'),false)
+ assert.equal(Object.hasOwn(publicArticle,'reviewNote'),false)
+ const publicList=(await articleRepo.publicList('ru')).find(x=>x.id===article.id)
+ assert.ok(publicList)
+ assert.equal(Object.hasOwn(publicList,'draft'),false)
+ const changed=await articleRepo.save(a,article.id,{
+  expectedRevision:approved.revision,
+  folderId:null,
+  draft:{...approved.draft,body:approved.draft.body+'\n\nPRIVATE_PENDING_CHANGES'},
+ })
+ assert.notEqual(changed.draft.body,approved.published.body)
+ const publishedAgain=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publishedAgain.published.body,approved.published.body)
+ assert.equal(Object.hasOwn(publishedAgain,'draft'),false)
+ await articleRepo.archive(a,article.id,{expectedRevision:changed.revision})
+ await assert.rejects(()=>articleRepo.publicArticle('ru',article.slug),{code:'NOT_FOUND'})
+})
+
+test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
+  const owned=(await practiceRepo.getMyPractice(a)).services.find(s=>s.status==='published')
+  assert.ok(owned,'Fixture must contain published service for Practitioner A')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'impression')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'order')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'whatsapp')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'telegram')
+  await assert.rejects(
+    () => practiceRepo.recordPublicServiceEvent(randomUUID(),'order'),
+    error => error?.code === 'NOT_FOUND',
+  )
+
+  const admin=await adminClient()
+  try {
+    await admin.query(`
+      insert into app_private.service_funnel_daily (service_id,day,impressions,order_clicks,whatsapp_clicks,telegram_clicks)
+      values ($1,(now() at time zone 'America/Toronto')::date-1,9,4,2,1)
+    `,[owned.id])
+  } finally { await admin.end() }
+  const own=(await practiceRepo.getMyPractice(a)).serviceAnalytics
+  const item=own.services.find(s=>s.id===owned.id)
+  assert.deepEqual(item.yesterday,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.deepEqual(item.week,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.equal((await practiceRepo.getMyPractice(b)).serviceAnalytics.services.some(s=>s.id===owned.id),false)
+  await assert.rejects(
+    () => rawAs(a,'authenticated',db=>db.query('select * from app_private.service_funnel_daily')),
+    error => error?.code === '42501',
+  )
+})
+
+test('isolated service photos fixture matches the observed existing JSON-array contract', async () => {
+  const owned = (await practiceRepo.getMyPractice(a)).services.find(service => service.status === 'published')
+  assert.ok(owned, 'Use the existing synthetic published-service fixture')
+  assert.deepEqual(owned.photos, [], 'The existing column defaults to an empty JSON array')
+  const db = await adminClient()
+  try {
+    await db.query('begin')
+    const photos = Array.from({ length: 5 }, (_, index) => `https://example.invalid/synthetic-photo-${index}.jpg`)
+    const result = await db.query('update app.service_offerings set photos=$1::jsonb where id=$2 returning photos', [JSON.stringify(photos), owned.id])
+    assert.deepEqual(result.rows[0].photos, photos)
+    for (const [invalid, code] of [[{}, '23514'], [Array(6).fill('synthetic'), '23514'], [null, '23502']]) {
+      await db.query('savepoint invalid_photos')
+      await assert.rejects(
+        db.query('update app.service_offerings set photos=$1::jsonb where id=$2', [invalid === null ? null : JSON.stringify(invalid), owned.id]),
+        error => error.code === code,
+      )
+      await db.query('rollback to savepoint invalid_photos')
+      assert.deepEqual((await db.query('select photos from app.service_offerings where id=$1', [owned.id])).rows[0].photos, photos)
+    }
+  } finally {
+    await db.query('rollback')
+    await db.end()
+  }
+  assert.deepEqual((await practiceRepo.getMyPractice(a)).services.find(service => service.id === owned.id).photos, [])
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
@@ -997,9 +1431,18 @@ test('report save race binds one account, stays idempotent and rotation does not
   const replay = await commitReportSaveIntent(config, store, winner, winnerIntent.id, winnerProof)
   assert.equal(replay.id, saved.id)
   assert.equal(replay.report.title, 'Synthetic delivered report')
+  const winnerList = await listPersonalAnalysisReports(config, store, winner)
+  const pinned = winnerList.reports.find((item) => item.id === saved.id)
+  assert.deepEqual({ title: pinned.title, kind: pinned.kind, unread: pinned.unread, available: pinned.available }, {
+    title: 'Synthetic delivered report', kind: 'research_result', unread: true, available: true,
+  })
+  const loserList = await listPersonalAnalysisReports(config, store, winnerIndex === 0 ? b : a)
+  assert.equal(loserList.reports.some((item) => item.id === saved.id), false, 'cross-account report title must not leak')
   const opened = await readSavedReport(config, store, winner, saved.id)
   assert.equal(opened.report.id, sourceAssessmentId)
   assert.equal(opened.report.relatedDocumentIds, undefined)
+  const openedList = await listPersonalAnalysisReports(config, store, winner)
+  assert.equal(openedList.reports.find((item) => item.id === saved.id)?.unread, false, 'listing does not mark reports as read')
 
   await assert.rejects(
     () => authorizeReportViewer(config, store, issued.selector, {
@@ -1043,6 +1486,13 @@ test('report save race binds one account, stays idempotent and rotation does not
     ).rows[0]
     assert.equal(grant.status, 'revoked')
     assert.equal(grant.bound_account_id, winner.id)
+    // Unsharing a report invalidates the live source. Existing archive entry remains
+    // visible but offers neither content nor a false promise of a downloadable PDF.
+    reportRecord.status = 'draft'
+    const unavailable = await listPersonalAnalysisReports(config, store, winner)
+    const entry = unavailable.reports.find((item) => item.id === saved.id)
+    assert.equal(entry.available, false)
+    assert.equal(entry.title, undefined)
   } finally {
     await adminAfter.end()
   }
@@ -1074,7 +1524,33 @@ function minimumMonitoringAnswers(definition) {
 
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(items.length, 42)
+  assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {
@@ -1086,11 +1562,31 @@ test('every published monitoring test completes through the repository and retur
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
     })
+    const context = syntheticTraumaContext(definition)
+    let ready = run
+    if (Object.keys(context).length) {
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context: {},
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context,
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      ready = await repo.saveRun(a, run.id, {
+        answers: {}, context, progress: 0, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      })
+      assert.deepEqual(ready.context, context)
+      assert.deepEqual(ready.answers, {})
+    }
     const saved = await repo.saveRun(a, run.id, {
       answers: minimumMonitoringAnswers(definition),
-      context: {},
+      context,
       progress: definition.questions.length,
-      expectedRevision: run.revision,
+      expectedRevision: ready.revision,
       operationId: randomUUID(),
     })
     const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
@@ -1118,6 +1614,15 @@ test('durable guest and account assessment plans enforce ordered private sequent
     timezone: 'UTC',
   })))
 
+  await assert.rejects(
+    guestRepo.startRun(credential, {
+      definitionKey: 'phq-8',
+      definitionVersion: 'v1',
+      instrumentLocale: 'en',
+      operationId: randomUUID(),
+    }),
+    (error) => error.code === 'GUEST_TEST_UNAVAILABLE',
+  )
   const guestPlanInput = {
     items: [enV2, weekly].map((definition) => ({ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale })),
     operationId: randomUUID(),
@@ -1168,4 +1673,948 @@ test('durable guest and account assessment plans enforce ordered private sequent
     () => rawAs(a, 'authenticated', (db) => db.query('select * from app_private.assessment_plans')),
     (error) => error.code === '42501',
   )
+})
+
+
+test('a fresh selection appends to existing saved tests and keeps draft/completed progress', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [enV2, weekly].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const draft = await start(v2Actor, weekly)
+  const run = await start(v2Actor, enV2)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const progressed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(progressed.status, 'active')
+  const added = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(),
+    appendActive: true, selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.equal(added.id, original.id, 'preserves the active plan identity')
+  assert.deepEqual(added.definitionIds, [enV2.id, weekly.id, mini.id])
+  assert.deepEqual(added.completedRunIds, [result.runId])
+  assert.equal(added.currentIndex, progressed.currentIndex)
+  const retry = await repo.createTestPlan(v2Actor, {
+    items: [mini, weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+    selectionPreferences: { focus: ['anxiety'] },
+  })
+  assert.deepEqual(retry.definitionIds, added.definitionIds, 'retry adds no duplicates')
+  assert.equal(retry.revision, added.revision, 'unchanged append is idempotent')
+  const after = await repo.bootstrap(v2Actor)
+  assert.equal(after.activeTestPlan.id, original.id)
+  assert.ok(after.runs.some((row) => row.id === draft.id), 'unfinished answers are not removed')
+  assert.ok(after.results.some((row) => row.id === result.id), 'completed result is not removed')
+  await assert.rejects(
+    () => repo.getTestPlan(a, original.id),
+    (error) => error.code === 'NOT_FOUND',
+  )
+})
+
+test('new tests reactivate an already completed selection, preserving its recorded result', async () => {
+  const toItem = (def) => ({
+    definitionKey: def.key, definitionVersion: def.version,
+    instrumentLocale: def.instrumentLocale,
+  })
+  const original = await repo.createTestPlan(v2Actor, {
+    items: [mini].map(toItem), operationId: randomUUID(), replaceActive: true,
+  })
+  const run = await start(v2Actor, mini)
+  const saved = await save(run, v2Actor)
+  const result = await repo.submitRun(v2Actor, run.id, { expectedRevision: saved.revision })
+  const completed = await repo.advanceTestPlan(v2Actor, original.id, {
+    completedRunId: result.runId, expectedRevision: original.revision,
+  })
+  assert.equal(completed.status, 'completed')
+  const reactivated = await repo.createTestPlan(v2Actor, {
+    items: [weekly].map(toItem), operationId: randomUUID(), appendActive: true,
+  })
+  assert.equal(reactivated.id, completed.id)
+  assert.equal(reactivated.status, 'active')
+  assert.deepEqual(reactivated.definitionIds, [mini.id, weekly.id])
+  assert.deepEqual(reactivated.completedRunIds, [result.runId])
+  assert.equal(reactivated.currentIndex, 1)
+  assert.equal((await repo.bootstrap(v2Actor)).activeTestPlan.id, original.id)
+})
+
+test('owner can remove saved selections atomically without erasing answers, results or other plan items', async () => {
+  const chosen=[enV2,weekly,mini]
+  const plan=await repo.createTestPlan(v2Actor,{
+    items:chosen.map(def=>({
+      definitionKey:def.key,definitionVersion:def.version,
+      instrumentLocale:def.instrumentLocale,
+    })),
+    operationId:randomUUID(),replaceActive:true,
+  })
+  assert.equal(plan.definitionIds.length,3)
+  const unfinishedRun=await start(v2Actor,weekly)
+  const started=await start(v2Actor,enV2)
+  const saved=await save(started,v2Actor)
+  const recorded=await repo.submitRun(v2Actor,started.id,{expectedRevision:saved.revision})
+  const inProgressPlan=await repo.advanceTestPlan(v2Actor,plan.id,{
+    completedRunId:recorded.runId,expectedRevision:plan.revision,
+  })
+  assert.equal(inProgressPlan.status,'active')
+  assert.equal(inProgressPlan.completedRunIds.length,1)
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(a,plan.id,{definitionId:weekly.id,expectedRevision:inProgressPlan.revision}),
+    error=>error.code==='NOT_FOUND',
+  )
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{definitionId:weekly.id,expectedRevision:plan.revision}),
+    error=>error.code==='REVISION_CONFLICT',
+  )
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{
+      definitionId:weekly.id,expectedRevision:inProgressPlan.revision,extra:'invalid',
+    }),
+    error=>error.code==='UNKNOWN_FIELD',
+  )
+  const removed=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:weekly.id,expectedRevision:inProgressPlan.revision,
+  })
+  assert.deepEqual(removed.definitionIds,[enV2.id,mini.id])
+  assert.deepEqual(removed.completedRunIds,[recorded.runId])
+  assert.equal(removed.currentIndex,1)
+  assert.equal(removed.status,'active')
+  const after=await repo.bootstrap(v2Actor)
+  assert.equal(after.activeTestPlan.id,plan.id)
+  assert.ok(after.results.some(x=>x.id===recorded.id))
+  assert.ok(after.runs.some(x=>x.id===unfinishedRun.id),'unfinished draft must survive removing its test from the plan')
+  // Removing a completed test detaches its *plan credit*, not its private report.
+  const reduced=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:enV2.id,expectedRevision:removed.revision,
+  })
+  assert.deepEqual(reduced.definitionIds,[mini.id])
+  assert.deepEqual(reduced.completedRunIds,[])
+  assert.equal(reduced.currentIndex,0)
+  assert.ok((await repo.getResult(v2Actor,recorded.id)).dimensions.length)
+  const empty=await repo.removeTestPlanItem(v2Actor,plan.id,{
+    definitionId:mini.id,expectedRevision:reduced.revision,
+  })
+  assert.equal(empty.status,'cancelled')
+  assert.equal((await repo.bootstrap(v2Actor)).activeTestPlan,null)
+  assert.ok((await repo.getResult(v2Actor,recorded.id)).dimensions.length)
+  await assert.rejects(
+    ()=>repo.removeTestPlanItem(v2Actor,plan.id,{definitionId:mini.id,expectedRevision:empty.revision}),
+    error=>error.code==='REVISION_CONFLICT',
+  )
+})
+
+// Bach profile: real private account persistence, all 38 dimensions, and cross-account isolation.
+test('Bach Flower Emotional Profile saves 115 answers in the authorized Google account', async () => {
+  const definition = getAssessmentDefinition('hh-bach-flower-profile','v1','en')
+  const run = await start(a, definition)
+  const answers = Object.fromEntries(definition.questions.map(question => [question.id, 0]))
+  answers['bach.situation.21'] = 4
+  answers['bach.character.04'] = 3
+  answers['bach.control.04'] = 5
+  const saved = await repo.saveRun(a, run.id, {
+    answers, context: {}, progress: definition.questions.length,
+    expectedRevision: run.revision, operationId: randomUUID(),
+  })
+  const submitted = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
+  assert.equal(submitted.definitionKey, 'hh-bach-flower-profile')
+  assert.equal(submitted.dimensions.length, 38)
+  assert.equal(submitted.dimensions.find(d => d.sourceConstruct === 'Olive').value, 23)
+  const stored = await repo.getResult(a, submitted.id)
+  assert.equal(stored.dimensions.find(d => d.key === 'bach.olive').value, 23)
+  // Earlier integration cases intentionally put account B into deletion state.
+  // Verify true cross-client privacy using a fresh, fully active synthetic account.
+  const outsider = actor('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004')
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [outsider.id, 'bach-outsider@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [outsider.claims.session_id, outsider.id])
+  } finally { await db.end() }
+  await repo.ensureAccount(outsider)
+  await repo.onboarding(outsider, { adult:true, necessary:true, marketing:false,
+    displayName:'Bach isolation test', uiLocale:'en', timezone:'America/Toronto', goal:'explore' })
+  await assert.rejects(() => repo.getResult(outsider, submitted.id), error =>
+    error.code === 'NOT_FOUND')
+})
+
+test('compassion registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { COMPASSION_DEFINITIONS } = await import('../data/assessments/compassion-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012033100_hh_compassion_research_measures.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of COMPASSION_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = COMPASSION_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('HOW I TYPICALLY', 'CHANGED I TYPICALLY')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+test('both compassion instruments preserve source means in private guest saves and reports', async () => {
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential(), other = createGuestCredential()
+  for (const who of [credential, other]) await guestRepo.createSession(who, {adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for (const [key,expected] of [['scs-sf',[3]],['compassion-scale',[2,1,1,1,5]]]) {
+    const d = getAssessmentDefinition(key,'v1','en')
+    let run = await guestRepo.startRun(credential,{definitionKey:key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+    run = await guestRepo.saveRun(credential,run.id,{answers:answer(d,1),context:{},progress:d.questions.length,expectedRevision:run.revision,operationId:randomUUID()})
+    const result = await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+    assert.deepEqual(result.dimensions.map(s=>s.value),expected)
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+    for (const locale of ['en','ru']) {
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.sections.length,expected.length)
+      assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl))
+    }
+  }
+})
+
+
+test('existing relationship registration is exact and idempotent for all sixteen published forms', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011211746_hh_love_intimacy_assessments.sql', import.meta.url),'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for(const d of defs){
+      const rows=(await db.query('select id,definition,content_hash,status from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3',[d.key,d.version,d.instrumentLocale])).rows
+      assert.equal(rows.length,1)
+      assert.equal(rows[0].id,d.id)
+      assert.equal(rows[0].status,'published')
+      assert.equal(rows[0].content_hash,d.contentHash)
+      assert.deepEqual(rows[0].definition,d)
+    }
+    await assert.rejects(()=>db.query(sql.replace(defs[0].contentHash,'sha256:'+'0'.repeat(64))),/Refusing to overwrite published intimacy questionnaire/)
+    await db.query('rollback')
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[defs[0].id])).rows[0].definition,defs[0])
+  } finally { await db.end() }
+})
+
+test('all relationship forms save independent means privately and reject another guest', async () => {
+  const { RELATIONSHIPS_INTIMACY_DEFINITIONS: defs } = await import('../data/assessments/relationships-intimacy-v1.js')
+  const guestRepo=createGuestRepository(config)
+  const owner=createGuestCredential(),other=createGuestCredential()
+  for(const who of [owner,other])await guestRepo.createSession(who,{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  for(const d of defs){
+    let run=await guestRepo.startRun(owner,{definitionKey:d.key,definitionVersion:d.version,instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
+    run=await guestRepo.saveRun(owner,run.id,{answers:Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,1,4,4,2,0][i]])),context:{},progress:6,expectedRevision:run.revision,operationId:randomUUID()})
+    const result=await guestRepo.submitRun(owner,run.id,{expectedRevision:run.revision})
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual(result.dimensions.map(s=>s.value),[1.67,2])
+    assert.deepEqual((await guestRepo.getResult(owner,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+  }
+})
+
+test('original typology registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { PERSONALITY_TYPE_DEFINITIONS } = await import('../data/assessments/personality-types-original-2026.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261011230000_hh_personality_types_original.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of PERSONALITY_TYPE_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = PERSONALITY_TYPE_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('Exchanging ideas with others', 'CHANGED original question')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting immutable assessment version|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+test('MHC-SF registration is identical, idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { MHC_SF_DEFINITIONS } = await import('../data/assessments/mhc-sf-adult-dec2011.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012041529_hh_mhc_sf_adult_dec2011.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const d of MHC_SF_DEFINITIONS) {
+      const rows = (await db.query('select id, definition, content_hash from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3', [d.key, d.version, d.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      assert.equal(rows[0].id, d.id)
+      assert.equal(rows[0].content_hash, d.contentHash)
+      assert.deepEqual(rows[0].definition, d)
+    }
+    const first = MHC_SF_DEFINITIONS[0]
+    for (const broken of [sql.replace(first.id, randomUUID()), sql.replace(first.contentHash, 'sha256:'+'0'.repeat(64)), sql.replace('Adult MHC-SF', 'CHANGED MHC-SF')]) {
+      await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+      await db.query('rollback')
+    }
+    assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1',[first.id])).rows[0].definition, first)
+  } finally { await db.end() }
+})
+
+
+test('MHC-SF guest persistence retains zero, source sums and private bilingual reports', async () => {
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const guestRepo = createGuestRepository(config)
+  const credential = createGuestCredential(), other = createGuestCredential()
+  for (const who of [credential, other]) await guestRepo.createSession(who, {adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+  const d = getAssessmentDefinition('mhc-sf','v1','en')
+  for (const [value,expected] of [[0,[0,0,0,0]],[5,[70,15,25,30]]]) {
+    let run = await guestRepo.startRun(credential,{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
+    run = await guestRepo.saveRun(credential,run.id,{answers:answer(d,value),context:{},progress:14,expectedRevision:run.revision,operationId:randomUUID()})
+    assert.deepEqual((await guestRepo.getRun(credential,run.id)).answers,answer(d,value))
+    const result = await guestRepo.submitRun(credential,run.id,{expectedRevision:run.revision})
+    assert.deepEqual(result.dimensions.map(s=>s.value),expected)
+    assert.equal(result.contentHash,d.contentHash)
+    assert.deepEqual((await guestRepo.getResult(credential,result.id)).dimensions,result.dimensions)
+    await assert.rejects(()=>guestRepo.getResult(other,result.id),/NOT_FOUND/)
+    for (const locale of ['en','ru']) {
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.sections.length,4)
+      assert.ok(report.sections.every(s=>s.source===d.source.scoringUrl && s.bandBasis==='descriptive'))
+    }
+  }
+})
+
+// Synthetic V4 regression: exercise the real restricted-role repository read and
+// session insert for the non-primary selected scale. This suite is loopback-only.
+test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
+  const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { buildCourseSlides } = await import('../lib/inner-growth/course-slide-sequence.js')
+  const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
+  const dailyRepo = createDailyCourseRepository(config)
+  for (const locale of ['en','ru']) {
+    const who = actor(randomUUID(),randomUUID()), courseId = randomUUID()
+    const db = await adminClient()
+    try {
+      await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-course-'+locale+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+      await repo.ensureAccount(who)
+      await repo.onboarding(who,{adult:true,necessary:true,marketing:false,displayName:'Synthetic R3 course',uiLocale:locale,timezone:'UTC',goal:'explore'})
+      await db.query(`insert into app_private.growth_courses
+        (id,account_id,stage,goals,scale_keys,consented_at,chosen_at,started_at)
+        values($1,$2,4,$3,$4,now(),now(),now())`,[courseId,who.id,
+        ['calm_regulation','attention_clarity','connection_boundaries'],
+        ['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.clarity','hh-weekly-pulse::weekly.connection']])
+      let value = await dailyRepo.command(who,'activate',{problemLabel:'Synthetic everyday concern',timeZone:'UTC'},locale)
+      await db.query("update app_private.growth_cycles set start_local_date=(now() at time zone 'UTC')::date-1 where id=$1",[value.cycle.id])
+      value = await dailyRepo.command(who,'preferences',{expectedRevision:value.cycle.revision,length:'quick',imagery:'optional',checkinFrequency:'daily'},locale)
+      // Advancing the original calendar start must not skip an unfinished first lesson.
+      assert.equal(value.cycle.day,1)
+      assert.equal(value.cycle.activeGoal,'calm_regulation')
+      assert.equal(value.cycle.contentVersion,COURSE_CONTENT_V4)
+      assert.ok(value.lesson.practiceV4?.symbol)
+      assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
+      assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
+      const originalLessonId = value.lesson.id
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
+      await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID(),visitedSlideKeys:[]},locale),{code:'COURSE_SLIDES_INCOMPLETE'})
+      const firstSaved = await dailyRepo.command(who,'session',first,locale)
+      assert.equal(firstSaved.cycle.day,1)
+      assert.ok(firstSaved.currentSession.completedAt)
+      await dailyRepo.command(who,'session',first,locale)
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID()},locale),{code:'COURSE_NEXT_DAY_ONLY'})
+      // Simulate a local date rollover on synthetic private data without waiting
+      // until tomorrow; the next lesson must now open from the saved day number.
+      await db.query("update app_private.growth_sessions set local_date=(now() at time zone 'UTC')::date-1 where account_id=$1 and cycle_id=$2 and day_number=1",
+        [who.id,value.cycle.id])
+      value = await dailyRepo.read(who,locale)
+      assert.equal(value.cycle.day,2)
+      assert.equal(value.cycle.activeGoal,'calm_regulation')
+      assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
+      assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
+      await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
+      const secondSaved = await dailyRepo.command(who,'session',second,locale)
+      assert.equal(secondSaved.cycle.day,2)
+      assert.ok(secondSaved.currentSession.completedAt)
+      await dailyRepo.command(who,'session',second,locale)
+      const rows = (await db.query('select day_number,lesson_id,content_version from app_private.growth_sessions where account_id=$1 and cycle_id=$2 order by day_number',[who.id,value.cycle.id])).rows
+      assert.equal(rows.length,2)
+      assert.deepEqual(rows.map(row=>row.day_number),[1,2])
+      assert.equal(rows[0].lesson_id,originalLessonId)
+      assert.equal(rows[1].lesson_id,value.lesson.id)
+      assert.ok(rows.every(row=>row.content_version===COURSE_CONTENT_V4))
+      assert.equal((await dailyRepo.read(who,locale)).lesson.id,value.lesson.id)
+    } finally { await db.end() }
+  }
+})
+
+// ASRS6 coverage is intentionally append-only. This suite's existing setup guard
+// permits only the empty synthetic loopback database; no production data is used.
+test('ASRS6 EN/RU registration is exact and idempotent and rejects ID/hash/content collisions', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const sql = await readFile(new URL('../supabase/migrations/20261012202000_hh_asrs6_nyu_classic.sql', import.meta.url), 'utf8')
+  const db = await adminClient()
+  try {
+    await db.query(sql)
+    await db.query(sql)
+    for (const definition of definitions) {
+      const rows = (await db.query(`select id, definition, questions, answer_schema,
+        translation_version, scoring_key, scoring_version, result_schema,
+        timeframe, source_metadata, content_hash, status
+        from app.assessment_versions where definition_key=$1 and definition_version=$2 and instrument_locale=$3`,
+      [definition.key, definition.version, definition.instrumentLocale])).rows
+      assert.equal(rows.length, 1)
+      const row = rows[0]
+      assert.equal(row.id, definition.id)
+      assert.equal(row.status, 'published')
+      assert.equal(row.content_hash, definition.contentHash)
+      assert.deepEqual(row.definition, definition)
+      assert.deepEqual(row.questions, definition.questions)
+      assert.deepEqual(row.answer_schema, { type: 'integer', minimum: 0, maximum: 4 })
+      assert.equal(row.translation_version, definition.translationVersion)
+      assert.equal(row.scoring_key, definition.scoringKey)
+      assert.equal(row.scoring_version, definition.scoringVersion)
+      assert.deepEqual(row.result_schema, { version: definition.resultVersion })
+      assert.equal(row.timeframe, 'past-6-months')
+      assert.deepEqual(row.source_metadata, definition.source)
+      for (const broken of [
+        sql.replace(definition.id, randomUUID()),
+        sql.replace(definition.contentHash, 'sha256:' + '0'.repeat(64)),
+        sql.replace(definition.questions[0].text, 'Synthetic changed ASRS6 source item'),
+      ]) {
+        await assert.rejects(() => db.query(broken), /Conflicting professional assessment ID|Different content already published/)
+        await db.query('rollback')
+      }
+      assert.deepEqual((await db.query('select definition from app.assessment_versions where id=$1', [definition.id])).rows[0].definition, definition)
+    }
+    assert.equal((await db.query("select id from app.assessment_versions where definition_key in ('asrs-v1-18','asrs-5')")).rowCount, 0)
+  } finally { await db.end() }
+})
+
+test('ASRS6 EN/RU guest zero and mixed saves retain exact report provenance and reject cross-guest access', async () => {
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const { provenance } = await import('../lib/assessments/definitions.js')
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const { exactAsrs6DefinitionForResult } = await import('../lib/assessments/interpretation-registry.js')
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'ru', timezone: 'UTC' })
+  for (const definition of definitions) for (const [values, expected] of [[Array(6).fill(0), 0], [[2, 2, 2, 3, 0, 0], 4]]) {
+    const answers = Object.fromEntries(definition.questions.map((question, index) => [question.id, values[index]]))
+    let run = await guestRepo.startRun(owner, { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: definition.instrumentLocale, operationId: randomUUID() })
+    // Persist zero before the rest; missing entries must not silently become Never.
+    run = await guestRepo.saveRun(owner, run.id, { answers: { [definition.questions[0].id]: 0 }, context: {}, progress: 1, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await guestRepo.getRun(owner, run.id)).answers, { [definition.questions[0].id]: 0 })
+    await assert.rejects(() => guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision }), /REQUIRED_ANSWER/)
+    run = await guestRepo.saveRun(owner, run.id, { answers, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await guestRepo.getRun(owner, run.id)).answers, answers)
+    const submitted = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    const stored = await guestRepo.getResult(owner, submitted.id)
+    assert.deepEqual(stored.dimensions, submitted.dimensions)
+    assert.deepEqual(stored.dimensions.map(dimension => dimension.value), [expected])
+    for (const [key, value] of Object.entries(provenance(definition))) assert.equal(stored[key], value, key)
+    assert.equal(exactAsrs6DefinitionForResult(stored), definition)
+    await assert.rejects(() => guestRepo.getResult(outsider, submitted.id), /NOT_FOUND/)
+    for (const locale of ['en', 'ru']) {
+      const report = buildAssessmentResultReport(stored, locale)
+      assert.equal(report.sections.length, 1)
+      assert.equal(report.sections[0].value, expected)
+      assert.equal(report.sections[0].bandBasis, 'screening')
+      assert.equal(report.sections[0].recommendedReview, expected >= 4)
+      assert.equal(report.sections[0].source, definition.source.scoringUrl)
+      assert.equal(report.instrumentText.instrumentLocale, definition.instrumentLocale)
+      assert.equal(report.instrumentText.safetyText, definition.safetyText)
+      assert.equal(report.instrumentText.printedScoringText, definition.printedScoringText)
+      assert.equal(report.instrumentText.requiredSiteAttribution, definition.requiredSiteAttribution)
+      assert.equal(report.instrumentText.formCopyright, definition.formCopyright)
+      assert.equal(report.personalityType, null)
+      if (definition.instrumentLocale === 'ru') assert.match(report.contextNote, locale === 'ru' ? /не подтверждена/ : /has not been established/)
+    }
+  }
+})
+
+test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and all stored provenance fields', async () => {
+  const { ASRS6_DEFINITIONS: definitions } = await import('../data/assessments/asrs-v1-6-nyu.js')
+  const { provenance } = await import('../lib/assessments/definitions.js')
+  const { buildAssessmentResultReport } = await import('../lib/assessments/result-report.js')
+  const { exactAsrs6DefinitionForResult } = await import('../lib/assessments/interpretation-registry.js')
+  const owner = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)', [owner.id, 'synthetic-asrs6@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [owner.claims.session_id, owner.id])
+  } finally { await db.end() }
+  await repo.ensureAccount(owner)
+  await repo.onboarding(owner, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic ASRS6', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  for (const definition of definitions) for (const [values, expected] of [[Array(6).fill(0), 0], [[2, 2, 2, 3, 0, 0], 4]]) {
+    const answers = Object.fromEntries(definition.questions.map((question, index) => [question.id, values[index]]))
+    const run = await start(owner, definition)
+    const saved = await repo.saveRun(owner, run.id, { answers, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, answers)
+    const submitted = await repo.submitRun(owner, run.id, { expectedRevision: saved.revision })
+    const stored = await repo.getResult(owner, submitted.id)
+    for (const [key, value] of Object.entries(provenance(definition))) assert.equal(stored[key], value, key)
+    assert.equal(exactAsrs6DefinitionForResult(stored), definition)
+    assert.equal(stored.dimensions.length, 1)
+    assert.equal(stored.dimensions[0].value, expected)
+    assert.equal(stored.dimensions[0].unit, 'qualifying-responses')
+    assert.equal(stored.dimensions[0].displayKind, 'screening-count')
+    for (const locale of ['en', 'ru']) {
+      const report = buildAssessmentResultReport(stored, locale)
+      assert.equal(report.sections[0].value, expected)
+      assert.equal(report.sections[0].bandBasis, 'screening')
+      assert.equal(report.sections[0].recommendedReview, expected >= 4)
+      assert.equal(report.instrumentText.instrumentLocale, definition.instrumentLocale)
+      assert.equal(report.instrumentText.safetyText, definition.safetyText)
+      assert.equal(report.instrumentText.requiredSiteAttribution, definition.requiredSiteAttribution)
+      if (definition.instrumentLocale === 'ru') assert.match(report.contextNote, locale === 'ru' ? /не подтверждена/ : /has not been established/)
+    }
+  }
+})
+
+
+test('push subscriptions and preferences are account-owned, RLS-protected and removable', async () => {
+  const {createECDH,randomBytes} = await import('node:crypto')
+  const {createNotificationRepository} = await import('../lib/app/notification-repository.js')
+  const {pushConfig} = await import('../lib/app/web-push.js')
+  // OpenSSL may omit leading zero bytes from a valid synthetic scalar.
+  const fixedPrivateKey = key => {
+    const scalar=key.getPrivateKey(),padded=Buffer.alloc(32)
+    scalar.copy(padded,padded.length-scalar.length)
+    return padded.toString('base64url')
+  }
+  const short=createECDH('prime256v1');short.setPrivateKey(Buffer.from([1]))
+  const shortEnv={HH_PUSH_PUBLIC_KEY:short.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:short.getPrivateKey().toString('base64url'),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  assert.equal(short.getPrivateKey().length,1,'deterministic leading-zero regression fixture')
+  assert.equal(pushConfig(shortEnv).supported,false,'production still rejects non-32-byte encoding')
+  assert.equal(pushConfig({...shortEnv,HH_PUSH_PRIVATE_KEY:fixedPrivateKey(short)}).supported,true)
+  const vapid=createECDH('prime256v1');vapid.generateKeys()
+  const env={HH_PUSH_PUBLIC_KEY:vapid.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:fixedPrivateKey(vapid),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  const push=createNotificationRepository(config,env)
+  const key=createECDH('prime256v1');key.generateKeys()
+  const subscription={endpoint:'https://web.push.apple.com/synthetic-test-'+randomUUID(),keys:{
+    p256dh:key.getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}}
+  const initial=await push.state(a)
+  assert.equal(initial.ready,true,'synthetic VAPID fixture must be valid')
+  assert.equal(initial.enabled,false)
+  const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
+  assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
+  const changed=await push.preferences(a,{enabled:true,courseReminders:false,
+    reminderHour:20,timeZone:'America/Toronto',locale:'ru'})
+  assert.equal(changed.reminderHour,20);assert.equal(changed.courseReminders,false)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select id from app_private.push_subscriptions'))).rows.length,0)
+  assert.equal((await transaction(config,v2Actor,db=>db.query('select account_id from app_private.notification_preferences'))).rows.length,0)
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query('select * from app_private.push_subscriptions')),
+    error=>error.code==='42501')
+  await assert.rejects(()=>push.subscribe(v2Actor,{subscription,locale:'ru',timeZone:'America/Toronto'}),
+    error=>error.code==='DEVICE_ALREADY_REGISTERED')
+  const removed=await push.unsubscribe(a,{endpoint:null})
+  assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
+})
+
+
+// End-to-end restricted-role OPORA handoff: a real synthetic Weekly Pulse
+// result, encrypted module choice, growth-course transaction and Day 1 read.
+// This runs only against the isolated Postgres CI fixture, never production.
+test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved testing', async () => {
+  const {createGrowthCourseRepository} = await import('../lib/app/growth-course.js')
+  const {createDailyCourseRepository} = await import('../lib/app/growth-daily.js')
+  const {courseMeasuredProfile} = await import('../lib/inner-growth/course-strategy.js')
+  const {ANTISTRESS_MODULE_FINDER_ITEMS} = await import('../lib/inner-growth/antistress-module-router.js')
+  const who=actor(randomUUID(),randomUUID())
+  const growth=createGrowthCourseRepository(config)
+  const daily=createDailyCourseRepository(config)
+  const db=await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-opora@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+    await repo.ensureAccount(who)
+    await repo.onboarding(who,{
+      adult:true,necessary:true,marketing:false,displayName:'Synthetic OPORA learner',
+      uiLocale:'en',timezone:'UTC',goal:'explore',
+    })
+    let course=await growth.command(who,{action:'start',consent:true})
+    course=await growth.command(who,{
+      action:'intake',expectedRevision:course.course.revision,
+      concerns:'Synthetic stress during ordinary activities',
+      focusTags:['stress','mood','energy'],
+    })
+    assert.equal(course.course.stage,2)
+    const run=await repo.startRun(who,{
+      definitionKey:weekly.key,definitionVersion:weekly.version,
+      instrumentLocale:weekly.instrumentLocale,operationId:randomUUID(),
+    })
+    const saved=await repo.saveRun(who,run.id,{
+      answers:answer(weekly,5),context:{},progress:weekly.questions.length,
+      expectedRevision:run.revision,operationId:randomUUID(),
+    })
+    const completed=await repo.submitRun(who,run.id,{expectedRevision:saved.revision})
+    const profile=courseMeasuredProfile({
+      results:[completed],testKeys:['hh-weekly-pulse'],locale:'en',
+    })
+    const selected=profile.eligible.slice(0,Math.min(3,profile.eligible.length)).map(x=>x.id)
+    assert.ok(selected.length>0,'Synthetic Weekly Pulse has current measured practice scales')
+    // Earlier stages are exercised by the existing plan tests; advance the
+    // synthetic course to the real module decision with its completed test.
+    await db.query(`update app_private.growth_courses
+      set stage=3,test_keys=ARRAY['hh-weekly-pulse']::text[],revision=revision+1,updated_at=now()
+      where account_id=$1`,[who.id])
+    course=await growth.read(who)
+    assert.equal(course.course.stage,3)
+    assert.equal(course.assessments.selectedTests[0].completed,true)
+    const request={
+      action:'choose-goals',expectedRevision:course.course.revision,
+      scaleKeys:selected,consent:true,durationDays:14,
+      moduleId:'AS5',moduleGoal:'undecided',
+      moduleAnswers:Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>[x.id,null])),
+      problemLabel:'Synthetic daily stress observation',intention:'',timeZone:'UTC',
+    }
+    const started=await growth.command(who,request)
+    assert.equal(started.course.stage,4)
+    assert.equal(started.course.moduleChoice.id,'AS5')
+    assert.equal(started.assessments.selectedTests[0].completed,true)
+    const today=await daily.read(who,'en')
+    assert.equal(today.cycle.moduleId,'AS5')
+    assert.equal(today.cycle.day,1)
+    assert.equal(today.cycle.preferences.length,'standard')
+    assert.equal(today.cycle.preferences.imagery,'optional')
+    assert.equal(today.cycle.preferences.checkinFrequency,'daily')
+    assert.equal(today.roadmap.length,14)
+    assert.ok(today.lesson?.id)
+    await assert.rejects(growth.command(who,request),{code:'REVISION_CONFLICT'})
+    const cycleCount=await db.query('select count(*)::int as n from app_private.growth_cycles where account_id=$1',[who.id])
+    const resultCount=await db.query('select count(*)::int as n from app.assessment_results where account_id=$1',[who.id])
+    assert.equal(cycleCount.rows[0].n,1)
+    assert.equal(resultCount.rows[0].n,1)
+  } finally {
+    await db.end()
+  }
+})
+
+
+test('private session share grants enforce per-consultation ownership under real Postgres roles', async()=>{
+  // Synthetic A/B test uses the exact deployed migration; never a production DB.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    await db.query('create schema if not exists storage')
+    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
+    // The private PDF extension is additive and does not grant browser DB access.
+    const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
+    await db.query(pdfExtension)
+    const permittedMime=(await db.query("select allowed_mime_types from storage.buckets where id='hh-client-private-media'")).rows[0].allowed_mime_types
+    assert.ok(permittedMime.includes('application/pdf'))
+    const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]
+    assert.ok(bucket)
+    assert.equal(bucket.public,false)
+    assert.equal(Number(bucket.file_size_limit),50_000_000)
+    const clientA=randomUUID(),clientB=randomUUID(),sessionA=randomUUID(),sessionB=randomUUID()
+    const pdfConstraint=(await db.query("select pg_get_constraintdef(c.oid) as definition from pg_constraint c where c.conname='client_delivery_assets_asset_kind_check'")).rows[0].definition
+    assert.match(pdfConstraint,/pdf/)
+
+    for(const [id,clientId] of [[sessionA,clientA],[sessionB,clientB]]){
+      await db.query("insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic-encrypted-fixture','draft')",[id,clientId])
+    }
+    const grant=randomUUID()
+    await db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[grant,sessionA,clientA,'aaaaaaaaaaaaaaaaaaaaaa','a'.repeat(64)])
+    // A grant for Session B cannot be spoofed as Client A, even with Session B's UUID.
+    await assert.rejects(db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[randomUUID(),sessionB,clientA,'bbbbbbbbbbbbbbbbbbbbbb','b'.repeat(64)]),e=>e.code==='23503')
+    await assert.rejects(db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status) values($1,$2,$3,'audio','practitioner','synthetic-path','audio/mp4',1024,'pending')",[randomUUID(),clientB,sessionA]),e=>e.code==='23503')
+    for(const table of ['client_delivery_sessions','client_delivery_assets','client_session_share_grants','client_session_viewer_sessions']){
+      await assert.rejects(rawAs(a,'authenticated',database=>database.query('select * from app_private.'+table)),e=>e.code==='42501')
+      assert.equal((await db.query('select relrowsecurity from pg_class where oid=$1::regclass',['app_private.'+table])).rows[0].relrowsecurity,true)
+    }
+    const permitted=await rawAs(a,'hh_app_backend',database=>database.query('select count(*)::int as total from app_private.client_delivery_sessions'))
+    assert.equal(permitted.rows[0].total,2)
+    // Two isolated connections exercise both winners of finalization vs cleanup.
+    // Only pending, never-ready rows may be claimed; published/ready keys survive.
+    const finishing=await adminClient(),cleaning=await adminClient()
+    const assetA=randomUUID(),assetB=randomUUID()
+    const claim="update app_private.client_delivery_assets set status='removed' where id in (select id from app_private.client_delivery_assets where legacy_client_id=$1 and session_id=$2 and ready_at is null and status in ('pending','removed') and created_at < now()-interval '24 hours' order by created_at limit 30 for update skip locked) and ready_at is null and status in ('pending','removed') returning object_key"
+    try {
+      for(const id of [assetA,assetB])await db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status,created_at) values($1,$2,$3,'audio','client',$4,'audio/mp4',512,'pending',now()-interval '2 days')",[id,clientA,sessionA,'synthetic-race-'+id])
+      await finishing.query('begin');await finishing.query('set local role hh_app_backend')
+      await finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending'",[assetA])
+      await cleaning.query('begin');await cleaning.query('set local role hh_app_backend')
+      await cleaning.query("set local statement_timeout='2s'")
+      const claimed=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(claimed.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      // A concurrent finalizer can no longer turn the claimed row ready.
+      const rejectedFinish=finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending' returning id",[assetB])
+      await cleaning.query('commit')
+      assert.equal((await rejectedFinish).rowCount,0)
+      await finishing.query('commit')
+      const retryClaim=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(retryClaim.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      assert.equal((await db.query('select status from app_private.client_delivery_assets where id=$1',[assetA])).rows[0].status,'ready')
+    } finally {
+      await cleaning.query('rollback');await finishing.query('rollback')
+      await finishing.end();await cleaning.end()
+    }
+
+  }finally{await db.end()}
+})
+
+
+
+test('an explicitly selected Session is saved to exactly one Google Account, with pinned version and no Client binding', async()=>{
+  const {readFile}=await import('node:fs/promises')
+  const admin=await adminClient()
+  const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
+  const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
+  try{
+    const accountB=actor(randomUUID(),randomUUID())
+    await admin.query('insert into auth.users(id,email) values($1,$2)',[accountB.id,'test-'+randomUUID()+'@example.invalid'])
+    await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[accountB.claims.session_id,accountB.id])
+    await repo.ensureAccount(accountB)
+    await repo.onboarding(accountB,{adult:true,necessary:true,marketing:false,displayName:'Second Account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
+    await admin.query(sql)
+    const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
+      reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
+    await admin.query(
+      "insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,published_payload,status,draft_revision,published_revision) values($1,$2,'2026-10-15','synthetic-owner-draft',$3,'published',1,1)",
+      [sessionId,clientId,payload(1)]
+    )
+    await admin.query(
+      "insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,access_version,expires_at) values($1,$2,$3,$4,$5,1,now()+interval '30 days')",
+      [grantId,sessionId,clientId,selector,'a'.repeat(64)]
+    )
+    const intent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    assert.equal(intent.sourceKind,'client_session')
+    const proof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[intent.id])).rows[0].browser_secret_hash
+    // The user explicitly confirms the destination Account after sign-in.
+    const resource=await commitSessionSaveIntent(config,store,a,intent.id,proof)
+    assert.ok(resource.id)
+    assert.equal((await commitSessionSaveIntent(config,store,a,intent.id,proof)).id,resource.id)
+    const saved=await readSavedSession(config,store,a,resource.id)
+    assert.equal(saved.session.title,'Private session v1')
+    assert.equal(saved.session.clientId,undefined)
+    await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+    const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
+    assert.equal(bind.length,0)
+    const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
+      [sessionId,payload(2)])
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
+    const newIntent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const newProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[newIntent.id])).rows[0].browser_secret_hash
+    assert.equal((await commitSessionSaveIntent(config,store,a,newIntent.id,newProof)).id,resource.id)
+    assert.equal((await readSavedSession(config,store,a,resource.id)).session.title,'Private session v2')
+    const oldFlag=process.env.HH_CLIENT_DELIVERY_ENABLED
+    try{
+      process.env.HH_CLIENT_DELIVERY_ENABLED='true'
+      assert.equal((await repo.bootstrap(a)).savedSessions.filter(row=>row.id===resource.id).length,1)
+    }finally{if(oldFlag===undefined)delete process.env.HH_CLIENT_DELIVERY_ENABLED
+      else process.env.HH_CLIENT_DELIVERY_ENABLED=oldFlag}
+    await removeSavedSession(config,a,resource.id)
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+  }finally{await admin.end()}
+})
+
+test('saved session table is account-scoped and the raw recipient cannot write',async()=>{
+  const rows=await rawAs(a,'authenticated',db=>db.query('select id from app.saved_sessions'))
+  assert.ok(Array.isArray(rows.rows))
+  await assert.rejects(rawAs(b,'authenticated',db=>db.query('insert into app.saved_sessions(account_id,source_session_id,legacy_client_id,source_revision,source_hash,occurred_on) values($1,$2,$3,1,$4,current_date)',
+    [B,randomUUID(),randomUUID(),'sha256:'+'a'.repeat(64)])),e=>e.code==='42501')
+})
+
+// Six immutable EN/RU split editions: synthetic loopback DB only.
+test('split and Bach v2 fixtures retain exact technical fields and all eight historical v1 definitions', async () => {
+  const db = await adminClient()
+  try {
+    for (const definition of [...HH_SPLIT_V2_DEFINITIONS, ...BACH_V2_DEFINITIONS]) {
+      for (const def of [definition, getAssessmentDefinition(definition.key, 'v1', definition.instrumentLocale)]) {
+        const row = (await db.query('select * from app.assessment_versions where id=$1', [def.id])).rows[0]
+        assert.ok(row)
+        assert.deepEqual(row.definition, def)
+        assert.deepEqual(row.questions, def.questions)
+        assert.equal(row.definition_key, def.key)
+        assert.equal(row.definition_version, def.version)
+        assert.equal(row.instrument_locale, def.instrumentLocale)
+        assert.equal(row.translation_version, def.translationVersion)
+        assert.equal(row.scoring_key, def.scoringKey)
+        assert.equal(row.scoring_version, def.scoringVersion)
+        assert.deepEqual(row.result_schema, { version: def.resultVersion })
+        assert.equal(row.timeframe, def.timeframe)
+        assert.deepEqual(row.source_metadata, def.source)
+        assert.equal(row.content_hash, def.contentHash)
+        assert.equal(row.status, 'published')
+        if (def.version === 'v2') assert.deepEqual(row.answer_schema, { type: 'integer', minimum: 0, maximum: def.key === 'hh-bach-flower-profile' ? 5 : 4 })
+      }
+    }
+  } finally { await db.end() }
+})
+
+test('account split v2 EN/RU start-save-submit-readback preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Split', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 2)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 1)
+    assert.equal(before.dimensions[0].value, 2)
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    const responses = Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 2 : 4]))
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.equal(run.definitionVersion, 'v2')
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [2, 4])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest split v2 EN/RU start-save-submit-readback retains two dimensions and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    run = await guestRepo.saveRun(owner, run.id, { answers: Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 4 : 0])), context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [4, 0])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
+})
+
+const bachV2SyntheticAnswers = def => Object.fromEntries(def.questions.map(q =>
+  [q.id, q.id === 'bach.situation.36' ? 5 : q.id === 'bach.control.03' ? 4 : 0]))
+function assertBachV2SyntheticDimensions(result) {
+  assert.equal(result.dimensions.length, 38)
+  // Independent legacy arithmetic: situation 5 + peak bonus 2 = 7;
+  // control 4 × 1.5 + peak bonus 1 + control-presence bonus 1.5 = 8.5.
+  assert.equal(result.dimensions.find(d => d.key === 'bach.beech').value, 7)
+  assert.equal(result.dimensions.find(d => d.key === 'bach.agrimony').value, 8.5)
+  assert.ok(result.dimensions.filter(d => !['bach.beech', 'bach.agrimony'].includes(d.key)).every(d => d.value === 0))
+  assert.ok(result.dimensions.every(d => d.direction === 'non-normative'))
+}
+
+test('account Bach v2 EN/RU lifecycle preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Bach', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of BACH_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 0)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 38)
+    assert.ok(before.dimensions.every(d => d.value === 0))
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const responses = bachV2SyntheticAnswers(def)
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of BACH_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    run = await guestRepo.saveRun(owner, run.id, { answers: bachV2SyntheticAnswers(def), context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
+})
+
+// Companion account-memory security acceptance is part of this EXISTING isolated
+// App R1 Postgres suite, not a new runner or unrelated media CI workflow.
+// Execute only after the other fixture tests, using fresh synthetic owners.
+test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
+  await import('../scripts/verify-agent-memory-rls-ci.mjs')
 })

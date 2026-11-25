@@ -213,3 +213,11 @@ worthy of response.
 - Raise your hands, feel your feet, pelvis, chest — say:
 
 "My strength is not in perfection, but in honesty."
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: I take action, yet remain invisible; it seems that my worth depends on recognition.
+
+After (desired state): Self-respect and the right to be seen and to take part in a shared circle while remaining yourself.

@@ -53,14 +53,17 @@ test('client prescription route is dynamic, session-authorized, neutral, and noi
   assert.doesNotMatch(page, /const record = await (?:store\.)?findBy/)
 })
 
-test('PDF route only renders the public projection with a safe attachment header', async () => {
+test('private PDF route serves an inline preview or a named attachment with the same authorization', async () => {
   const route = await readFile(pdfRoutePath, 'utf8')
 
   assert.match(route, /getClientPrescription/)
   assert.match(route, /authorizePrescriptionRequest/)
   assert.match(route, /buildPrescriptionPdf/)
   assert.match(route, /application\/pdf/)
-  assert.match(route, /filename="homeopathic-prescription\.pdf"/)
+  assert.match(route, /reportPdfFilename\(document\)/)
+  assert.match(route, /inlinePreview \? 'inline' : 'attachment'/)
+  assert.match(route, /searchParams\.get\('preview'\) === '1'/)
+  assert.match(route, /filename=/)
   assert.match(route, /Cache-Control': 'private, no-store, max-age=0'/)
   assert.match(route, /X-Robots-Tag': 'noindex, nofollow, noarchive'/)
   assert.match(route, /X-Content-Type-Options': 'nosniff'/)

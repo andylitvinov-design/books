@@ -1,0 +1,51 @@
+/* /masters only: the visual language of Study / Services, without modifying /practice. */
+.directory {
+  --master-ink: var(--hh-light-ink, #143d3a);
+  --master-primary: var(--hh-light-primary, #067a67);
+  --master-border: var(--hh-light-border, #e9dfd1);
+  color: var(--master-ink);
+  padding-bottom: 32px;
+}
+.directory :global([data-master-mode-switch]) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+  margin: 7px 0 12px;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.directory :global([data-master-mode-switch]) a {
+  min-height: 46px;
+  flex-direction: row;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid var(--master-border);
+  border-radius: 14px;
+  background: #fffcf7;
+  box-shadow: none;
+}
+.directory :global([data-master-mode-switch]) a[aria-current="page"] {
+  border: 2px solid var(--master-primary);
+  background: #e6f6f1;
+  color: var(--master-ink);
+  box-shadow: none;
+}
+.directory :global([data-master-mode-switch]) a[aria-current="page"] svg { color: var(--master-primary); }
+.directory :global([data-master-mode-switch]) svg { width: 19px; height: 19px; }
+.directory :global([data-master-mode-switch]) strong { font-size: 13px; letter-spacing: 0; }
+.directory :global([data-master-mode-switch]) small { display: none; }
+.directory :global([data-mentor-community]) { margin-bottom: 18px; }
+.directory :global([data-mentor-filters]) { margin-bottom: 11px; }
+.directory :global([data-mentor-cards]) { gap: 13px; }
+@media (max-width: 430px) {
+  .directory :global([data-master-mode-switch]) { margin-top: 6px; margin-bottom: 10px; }
+  .directory :global([data-master-mode-switch]) a { min-height: 44px; padding: 8px 7px; }
+  .directory :global([data-master-mode-switch]) strong { font-size: 12px; }
+}
+@media (max-width: 355px) {
+  .directory :global([data-master-mode-switch]) strong { font-size: 11.5px; }
+}

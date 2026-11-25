@@ -106,6 +106,12 @@ LESSON (TRANSFORMATION):
 
 - Let your inner strength manifest gently and consciously.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Held-in anger and a sense of being wronged: you want to protect yourself, but are afraid to express your strength or say “no”.
+
+After (desired state): Being able to express feelings and assert boundaries consciously, channeling strength into protection without causing harm.
+
 2. SECOND STAGE: SHADOW
 
 - Fear of vulnerability, need for total control.

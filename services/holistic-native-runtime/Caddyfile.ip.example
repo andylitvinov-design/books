@@ -1,0 +1,21 @@
+# Replace BOTH PUBLIC_ORACLE_IPV4 placeholders with the actual IPv4 address of
+# the Oracle Always Free A1 VM. Do not use literal placeholders in production.
+# Minimum: a sufficiently new Caddy supporting shortlived ACME IP certificates.
+# Let's Encrypt public IP cert lifetime is ~160 hours: verify automatic renewal.
+# Open ONLY ports 80/443 publicly; keep 11434/8787/8788 loopback-only.
+{
+  default_sni PUBLIC_ORACLE_IPV4
+}
+PUBLIC_ORACLE_IPV4 {
+  tls {
+    issuer acme {
+      profile shortlived
+    }
+  }
+  encode zstd gzip
+  header {
+    Cache-Control "no-store"
+    X-Content-Type-Options "nosniff"
+  }
+  reverse_proxy 127.0.0.1:8787
+}

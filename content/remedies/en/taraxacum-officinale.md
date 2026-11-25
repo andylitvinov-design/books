@@ -53,3 +53,11 @@ A gentle remedy, yet deep.
 In my symbolic language, it reaches into hidden childlike places of the heart, washing away the dust of hurt, shame and misunderstanding.
 
 Taraxacum is associated with softness, lightness, acceptance, gentle joy and light.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Hurt, shame and misunderstanding seem to cover the heart in dust.
+
+After (desired state): A gentler attitude toward yourself and the world, with openness to lightness and quiet joy.

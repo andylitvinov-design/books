@@ -39,7 +39,7 @@ async function translateBatch(texts, signal) {
   }
 }
 
-export function TranslatedReaderContent({ html, locale }) {
+export function TranslatedReaderContent({ html, locale, russianHref = '/ru/books' }) {
   // The sanitized Russian source remains readable while translation is pending or unavailable.
   const [content, setContent] = useState(html)
   const [status, setStatus] = useState(locale === 'ru' ? 'ready' : 'idle')
@@ -81,7 +81,7 @@ export function TranslatedReaderContent({ html, locale }) {
     {locale === 'en' && status !== 'ready' && <div className={status === 'error' ? 'reader-translation-error' : 'reader-translation-progress'} role="status" lang="en">
       {status === 'error' ? 'English translation is unavailable. The original Russian text remains available below.' : 'Preparing the English translation. You can read the original Russian text below.'}
       {status === 'error' && <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry English translation</button>}
-      <a href="?lang=ru">Read the Russian original</a>
+      <a href={russianHref}>Read the Russian original</a>
     </div>}
     <div className="reader-content" id="reader-content" lang={translated ? 'en' : 'ru'} dangerouslySetInnerHTML={{ __html: content }} />
   </>

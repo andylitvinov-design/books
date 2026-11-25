@@ -4,6 +4,7 @@ import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { clientAssessmentDetail } from '@/lib/clients/assessments'
 import { assessmentText } from '@/lib/clients/assessment-copy'
 import { AssessmentReading } from '@/components/assessment-reading'
+import { DownloadPractitionerReport } from '@/components/app/personal-analysis-panel'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Private result — Holistic House', robots: { index: false, follow: false } }
 export default async function ClientAssessmentPage({ params }) {
@@ -14,5 +15,5 @@ export default async function ClientAssessmentPage({ params }) {
   const record = await clientAssessmentDetail(access.store, access.client.id, assessmentId)
   if (!record) notFound()
   const t = assessmentText(locale)
-  return <main className="assessment-reading" lang={locale}><p>HOLISTIC HOUSE</p><Link prefetch={false} className="library-back-link" href={`/${locale}/client/${selector}`}>← {t.cabinet}</Link><AssessmentReading record={record} locale={locale} />{record.relatedDocuments.length > 0 && <section><h2>{t.related}</h2>{record.relatedDocuments.map(doc => <p key={doc.id}><Link prefetch={false} href={`/${locale}/client/${selector}/documents/${doc.id}`}>{t.relatedItem}</Link></p>)}</section>}</main>
+  return <main className="assessment-reading" lang={locale}><p>HOLISTIC HOUSE</p><Link prefetch={false} className="library-back-link" href={`/${locale}/client/${selector}?view=analysis`}>← {t.cabinet}</Link><AssessmentReading record={record} locale={locale} /><div className="hh-analysis-detail-download"><DownloadPractitionerReport report={record} locale={locale} /></div>{record.relatedDocuments.length > 0 && <section><h2>{t.related}</h2>{record.relatedDocuments.map(doc => <p key={doc.id}><Link prefetch={false} href={`/${locale}/client/${selector}/documents/${doc.id}`}>{t.relatedItem}</Link></p>)}</section>}</main>
 }

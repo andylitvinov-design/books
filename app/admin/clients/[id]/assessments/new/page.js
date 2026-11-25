@@ -17,7 +17,11 @@ export default async function NewAssessment({ params, searchParams }) {
   const store = getPrescriptionStore(), client = await store?.findClientById(id)
   if (!client || client.status !== 'active' || !store.findClientAssessment) notFound()
   const locale = client.preferredLocale, t = assessmentText(locale)
-  const kind = (await searchParams).kind === 'research_result' ? 'research_result' : 'test'
+  // Existing bookmarks must not reopen the retired research-result editor.
+  // Validate the owner and active client first, then hand off to the studio.
+  if ((await searchParams)?.kind === 'research_result') {
+    redirect(`/admin/consultations/new?clientId=${encodeURIComponent(id)}`)
+  }
   const docs = (await store.listClientDocuments(id)).filter(r => r.clientId === id && r.status === 'active').map(r => ({ id: r.id, label: `${r.dateIssued} · ${r.kind === 'payment' ? (locale === 'ru' ? 'Квитанция' : 'Receipt') : r.kind === 'report' ? (locale === 'ru' ? 'Отчёт' : 'Report') : (locale === 'ru' ? 'Рекомендация' : 'Recommendation')}` }))
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title={kind === 'test' ? t.addTest : t.addResult} description={client.fullName} /><Link prefetch={false} className="library-back-link" href={`/admin/clients/${id}`}>← {t.back}</Link>{store.assessmentStorage === 'memory' && <p className="assessment-notice">{t.memory}</p>}<AssessmentEditor action={saveAssessmentAction.bind(null, id, null)} requestId={randomUUID()} documents={docs} locale={locale} kind={kind} /></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title={t.addTest} description={client.fullName} /><Link prefetch={false} className="library-back-link" href={`/admin/clients/${id}`}>← {t.back}</Link>{store.assessmentStorage === 'memory' && <p className="assessment-notice">{t.memory}</p>}<AssessmentEditor action={saveAssessmentAction.bind(null, id, null)} requestId={randomUUID()} documents={docs} locale={locale} kind="test" /></main>
 }

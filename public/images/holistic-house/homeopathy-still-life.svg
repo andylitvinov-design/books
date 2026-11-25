@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" fill="none" role="img" aria-label="Illustration of an apothecary bottle and botanical leaves">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="600"><stop stop-color="#f3eadf"/><stop offset=".52" stop-color="#e9e3d5"/><stop offset="1" stop-color="#d7d4c5"/></linearGradient>
+    <linearGradient id="wood" x1="90" y1="400" x2="870" y2="550"><stop stop-color="#d6b998"/><stop offset="1" stop-color="#b99670"/></linearGradient>
+    <linearGradient id="amber" x1="300" y1="160" x2="550" y2="480"><stop stop-color="#6f3b25"/><stop offset=".30" stop-color="#a96636"/><stop offset=".65" stop-color="#6c341e"/><stop offset="1" stop-color="#3f231a"/></linearGradient>
+    <linearGradient id="label" x1="0" x2="1"><stop stop-color="#f5edda"/><stop offset=".5" stop-color="#fff9eb"/><stop offset="1" stop-color="#e8dcc8"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="29"/></filter><filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+  <rect width="960" height="600" rx="33" fill="url(#bg)"/>
+  <ellipse cx="739" cy="128" rx="194" ry="88" fill="#fffef0" opacity=".35" filter="url(#blur)"/>
+  <path d="M721 400c61-53 119-117 150-265" stroke="#808c6e" stroke-width="6" stroke-linecap="round"/>
+  <path d="M749 349c41-32 95-29 135-64-23 62-72 83-135 64Zm52-87c-34-41-44-88-23-135 37 37 47 77 23 135Zm27-59c45-20 70-56 72-96-49 8-73 42-72 96Zm-71 144c-65 0-104-33-123-81 65 3 109 34 123 81Z" fill="#899877" opacity=".8"/>
+  <path d="M95 462c-14-107 10-222 96-332" stroke="#899778" stroke-width="5" stroke-linecap="round"/>
+  <path d="M127 317c-50-21-65-70-60-121 51 27 72 68 60 121Zm27-59c40-5 73-31 94-85-63 6-100 38-94 85ZM95 424c-45-15-70-53-74-91 51 10 76 39 74 91Zm89-262c-11-39-1-76 36-116 22 55 6 91-36 116Z" fill="#9ea985" opacity=".84"/>
+  <ellipse cx="483" cy="512" rx="354" ry="52" fill="#6c5237" opacity=".19" filter="url(#shadow)"/>
+  <ellipse cx="485" cy="513" rx="355" ry="58" fill="url(#wood)"/>
+  <ellipse cx="485" cy="496" rx="353" ry="53" fill="#e5cfb3"/>
+  <path d="M303 185h249v255c0 43-22 57-60 57H362c-37 0-59-20-59-57V185Z" fill="url(#amber)"/>
+  <path d="M318 197v241c0 31 18 44 40 48" stroke="#f4c083" stroke-width="12" stroke-linecap="round" opacity=".23"/>
+  <rect x="324" y="154" width="211" height="54" rx="13" fill="#563524"/>
+  <rect x="313" y="143" width="230" height="33" rx="9" fill="#6b4730"/>
+  <path d="M327 147h204" stroke="#c19167" stroke-width="5" opacity=".6"/>
+  <rect x="330" y="266" width="194" height="127" rx="12" fill="url(#label)"/>
+  <path d="M353 291h145M370 316h112M374 342h104" stroke="#ad9f88" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  <circle cx="428" cy="367" r="9" stroke="#ad9f88" stroke-width="2.5" opacity=".7"/>
+  <ellipse cx="372" cy="483" rx="23" ry="10" fill="#e7dac0"/><ellipse cx="419" cy="487" rx="22" ry="11" fill="#f0e5ce"/><ellipse cx="465" cy="481" rx="24" ry="10" fill="#e8dcc2"/><ellipse cx="513" cy="490" rx="21" ry="9" fill="#f5e9d0"/>
+  <circle cx="617" cy="496" r="14" fill="#f6e8c9"/><circle cx="647" cy="501" r="12" fill="#f3e4c5"/><circle cx="677" cy="494" r="11" fill="#f8ebd5"/>
+  <g opacity=".78" fill="#f9f3e6"><circle cx="231" cy="193" r="9"/><circle cx="245" cy="180" r="8"/><circle cx="259" cy="196" r="9"/><circle cx="225" cy="212" r="8"/><circle cx="247" cy="216" r="8"/><circle cx="263" cy="221" r="7"/></g>
+  <path d="M704 465c22-31 48-44 78-46M723 460c-5-33 4-54 24-76" stroke="#a7ae93" stroke-width="4" stroke-linecap="round"/><path d="M748 420c22 0 44-14 54-29-32-5-51 3-54 29Zm-21-2c-8-24-28-34-53-35 9 23 28 34 53 35Z" fill="#9da989"/>
+</svg>

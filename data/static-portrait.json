@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "source": "/images/holistic-house/andy-about.png",
+  "sourceSha256": "73ff81be83850f7d725eee318ca1482785a4ff86cec0de75ff2e1966f3c457a7",
+  "sourceBytes": 2076018,
+  "sourceWidth": 1079,
+  "sourceHeight": 1057,
+  "sharpVersion": "0.35.0",
+  "libvipsVersion": "8.18.3",
+  "settings": {
+    "format": "webp",
+    "quality": 85,
+    "alphaQuality": 100,
+    "effort": 6,
+    "kernel": "lanczos3",
+    "withoutEnlargement": true,
+    "crop": false
+  },
+  "variants": [
+    {
+      "width": 96,
+      "height": 94,
+      "path": "/images/holistic-house/portrait-static/andy-96-b9d7800d1448.webp",
+      "sha256": "b9d7800d1448fe7127588c8f1792708b9601e65862af9a262f9dd9d42673ceb1",
+      "bytes": 4012
+    },
+    {
+      "width": 192,
+      "height": 188,
+      "path": "/images/holistic-house/portrait-static/andy-192-86e7f5b9ca61.webp",
+      "sha256": "86e7f5b9ca61e58f2f9534105fcbf5039fcd50ba4abfbd49e0196a7a67c1ac41",
+      "bytes": 13166
+    },
+    {
+      "width": 384,
+      "height": 376,
+      "path": "/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp",
+      "sha256": "37fe593841e341fe45bb69a7ffbde3785a595877b2fc19e0463b71fffed0fa0c",
+      "bytes": 43102
+    },
+    {
+      "width": 640,
+      "height": 627,
+      "path": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp",
+      "sha256": "25ce838f1a6e06cce58f10849dad635ced97602a18abaa5a2f506eab087b17ba",
+      "bytes": 99700
+    },
+    {
+      "width": 828,
+      "height": 811,
+      "path": "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
+      "sha256": "3dcbabded1e9ab7c81cd10e1e4806db061f2696db14fbfdbcccc927721ab89a2",
+      "bytes": 149742
+    },
+    {
+      "width": 1079,
+      "height": 1057,
+      "path": "/images/holistic-house/portrait-static/andy-1079-3caf08652ab4.webp",
+      "sha256": "3caf08652ab4f4a608ac83ce42e388e3b75d097c2c6dd28c8a67e5313c6c70bf",
+      "bytes": 217036
+    }
+  ]
+}

@@ -18,10 +18,10 @@ export const LOCAL_ACQUISITION = deepFreeze({
       servicesLabel: 'Explore services',
     },
     selfCheck: {
-      title: 'Not sure where to start?',
-      text: 'Try a private, non-diagnostic self-check. See your result first, then decide whether you want to save it to your Cabinet.',
-      label: 'Try a free self-check',
-      href: '/en/app',
+      title: 'Free wellbeing & resources monitoring',
+      text: 'Check stress, mood and inner resilience with short self-checks. See your results and guidance; sign in to save and compare them over time. This is not a medical diagnosis.',
+      label: 'Start free monitoring',
+      href: '/en/client#cabinet-tests',
     },
     practitioner: {
       label: 'Meet Andrey',
@@ -43,10 +43,10 @@ export const LOCAL_ACQUISITION = deepFreeze({
       servicesLabel: 'Посмотреть форматы работы',
     },
     selfCheck: {
-      title: 'Не знаете, с чего начать?',
-      text: 'Пройдите приватный недиагностический self-check. Сначала вы увидите результат, а затем сами решите, сохранять ли его в Кабинете.',
-      label: 'Попробовать бесплатный self-check',
-      href: '/ru/app',
+      title: 'Бесплатный мониторинг состояния и ресурсов',
+      text: 'Оцените стресс, настроение и внутреннюю устойчивость с помощью коротких опросников. Получите пояснения и при желании сохраняйте результаты в кабинете, чтобы видеть динамику. Это не медицинский диагноз.',
+      label: 'Начать бесплатный мониторинг',
+      href: '/ru/client#cabinet-tests',
     },
     practitioner: {
       label: 'Познакомиться с Андреем',
