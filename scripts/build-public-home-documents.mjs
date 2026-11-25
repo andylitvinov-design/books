@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import Beasties from 'beasties';
-import { parse } from 'parse5';
+import { parse, serialize } from 'parse5';
 
 const locales = { en: '/', ru: '/ru', es: '/es' };
 const digest = source => 'sha256-' + createHash('sha256').update(source).digest('base64');
@@ -15,6 +15,24 @@ function* descendants(root) {
   yield root;
   for (const child of root.childNodes ?? []) yield* descendants(child);
   if (root.content) yield* descendants(root.content);
+}
+
+// Only the disposable extraction input is narrowed. The actual React HTML,
+// attributes, below-fold sections and complete stylesheets remain untouched.
+// Keep each lower section's outer box for layout/sibling selector matching;
+// do not remove a nested stylesheet or style element from the extraction input.
+function firstScreenCssInput(source) {
+  const document = parse(source);
+  const belowFoldClasses = new Set(['service-home-about', 'service-home-library', 'service-home-footer']);
+  for (const node of [...descendants(document)]) {
+    const attrs = Object.fromEntries((node.attrs ?? []).map(({name, value}) => [name, value]));
+    const isBelowFold = (attrs.class || '').split(/\s+/).some(name => belowFoldClasses.has(name)) ||
+      'data-home-video-below-fold' in attrs || 'data-home-deferred-sections' in attrs;
+    if (!isBelowFold || !node.childNodes?.length) continue;
+    if ([...descendants(node)].some(child => child.tagName === 'style' || child.tagName === 'link')) continue;
+    node.childNodes = [];
+  }
+  return serialize(document);
 }
 
 function localAsset(href, kind, origin) {
@@ -86,10 +104,11 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
     throw new Error('Source is not the public production home document');
   }
   const cssParser = new Beasties({path: buildDir, publicPath: '/_next/', preload: false, pruneSource: false, reduceInlineStyles: false, logLevel: 'silent'});
-  const forCss = applyEdits(source, cssInputEdits);
+  const forCss = firstScreenCssInput(applyEdits(source, cssInputEdits));
   const annotated = await cssParser.process(forCss);
   const css = [...descendants(parse(annotated))].filter(n => n.tagName === 'style').map(n => n.childNodes?.[0]?.value ?? '').join('\n');
   if (!css || /<\/style/i.test(css)) throw new Error('Invalid inline homepage styles');
+  console.info('[home-critical-css] ' + locale + ': ' + Buffer.byteLength(css) + ' decoded bytes');
   const headEnd = source.indexOf('</head>');
   // Put critical rules before every original sheet, so later state changes
   // always obey the full production cascade.
