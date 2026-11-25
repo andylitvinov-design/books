@@ -4,12 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
-  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness, Film,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
-import { REIKI_FREE_COURSE_PATH } from '@/lib/academy/reiki-free-course'
+import { ClarityStartButton, ClarityStartLink } from './clarity-program'
+import { ReikiProfileCourseCard, reikiLandingPath } from '@/components/reiki-practitioner-entry'
 
 const TEXT = {
   en: {
@@ -128,6 +129,7 @@ const BUSINESS = {
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
+  const videoHint = {en:'Create videos for yourself, loved ones and work.',ru:'Создавайте видео для себя, близких и работы.',es:'Crea vídeos para ti, tus seres queridos y el trabajo.'}[selected]
   const [section, setSection] = useState('clarity')
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
@@ -140,7 +142,6 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     setBusinessStage(index)
     if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
   }
-  const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.'] }[selected]
   const navigation = {
     en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
     ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
@@ -169,7 +170,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const profile = '/' + selected + '/my-page'
   const stages = [
     [diagnostics[0], diagnostics[2], diagnostics[3], {title:t.insights,href:profile}, {title:c.allTests,href:root+'/tests'}],
-    [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
+    [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:reikiLandingPath(selected)}, cards[1], cards[3], {title:c.consultation,href:personal}],
     [diagnostics[1], {title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
   const stageIcons = [BarChart3,Leaf,Target]
@@ -194,7 +195,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <h1>{b.title}</h1>
         <p className={styles.businessIntro}>{b.intro}</p>
         <div className={styles.businessActions}>
-          <button type="button" data-business-start onClick={()=>openBusinessStage(0)}>{b.start}<ArrowRight size={19} aria-hidden="true"/></button>
+          <Link href={root+'/daybook/business'} prefetch={false} data-business-start>{b.start}<ArrowRight size={19} aria-hidden="true"/></Link>
           <Link href={businessContact} prefetch={false} data-business-details>{b.details}</Link>
         </div>
       </header>
@@ -224,19 +225,16 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
     </section>}
-    {section === 'goals' && <section className={styles.scenic} aria-label={diary[1]} data-profile-space-scenic>
-      <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{diary[0]}</p>
-      <h1 className={styles.title}>{diary[1]}</h1>
-      <p className={styles.intro}>{diary[2]}</p>
+    {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId}>
       <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
-    </section>}
-    {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId} />}
+    </ProfileGoalConsole>}
     {section === 'clarity' && <section className={styles.clarity} aria-label={c.tab} data-profile-clarity-support>
       <header className={styles.clarityHero}>
         <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{c.start}</p>
         <h1>{c.tab}</h1><p>{c.intro}</p>
         <div className={styles.clarityHeroActions}>
-          <button type="button" onClick={()=>openStage(0)}><Compass size={22} aria-hidden="true"/>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></button>
+          <ClarityStartButton locale={selected}>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></ClarityStartButton>
+          <Link data-clarity-details href={'/'+selected+'/coaching/clarity'} prefetch={false} className={styles.clarityDetailsLink}>{({en:'Details',ru:'Подробнее',es:'Detalles'})[selected]}<ArrowRight size={17} aria-hidden="true"/></Link>
         </div>
       </header>
       <h2 className={styles.clarityHeading}>{c.question}</h2>
@@ -262,9 +260,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           </div>
         </article>
       })}</div>
-      <Link href={personal} className={styles.clarityPersonal} prefetch={false} data-clarity-personal>
+      <ClarityStartLink locale={selected} className={styles.clarityPersonal}>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
-      </Link>
+      </ClarityStartLink>
+      <ReikiProfileCourseCard locale={selected} />
       <p className={styles.clarityNotice}>{c.notice}</p>
       <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
@@ -300,11 +299,16 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <span><strong>{t.settings}</strong><small>{t.settingsDetail}</small></span>
       </Link>
     </nav>
-    <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false}><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
+    <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false} data-profile-space-work><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
       </details>
     </section>}
     {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
       <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
     </Link>}
+    <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
+      <span className={styles.myVideoIcon}><Film size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+      <span className={styles.myVideoCopy}><strong>MyVideo</strong><small>{videoHint}</small></span>
+      <ArrowRight size={20} aria-hidden="true"/>
+    </Link>
   </div>
 }

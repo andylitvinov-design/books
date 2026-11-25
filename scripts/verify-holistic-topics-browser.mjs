@@ -241,6 +241,14 @@ for (const engine of [chromium, webkit]) {
           await page.waitForFunction(() => document.querySelector(
             '#holistic-inline-order [data-support-budget="20"]')
               ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          // A fixed-budget unpriced talisman must be handled locally, even
+          // if the directory cannot return its published practitioners.
+          let talismanRequests = 0;
+          const onTalismanRequest = request => {
+            if (new URL(request.url()).pathname === "/api/public/remote-energy-support-masters")
+              talismanRequests += 1;
+          };
+          page.on("request", onTalismanRequest);
           await finder.locator("[data-support-search]").click();
           const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
           await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
@@ -251,6 +259,8 @@ for (const engine of [chromium, webkit]) {
           }[locale]), label + " unpriced talisman is explained without inventing a cost");
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
+          page.off("request", onTalismanRequest);
+          assert.equal(talismanRequests, 0, label + " no directory request for a known unpriced budget");
 
           const finalGeometry = await page.evaluate(() => ({
             viewport: document.documentElement.clientWidth,

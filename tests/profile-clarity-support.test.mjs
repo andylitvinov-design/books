@@ -24,7 +24,7 @@ test('Profile has three ordered top tabs and one three-step Clarity & Support jo
 })
 test('Clarity retains existing tools and account routes without fabricating saved progress',()=>{
  for(const path of ['/development-vectors','/tests','/course?view=courses','/portrait?space=reports','/portrait?space=sessions','/daybook?start=vector','/settings','/practice','/my-page','?view=consultation','?view=meditation']) assert.ok(source.includes(path),path)
- assert.match(source,/REIKI_FREE_COURSE_PATH/)
+ assert.match(source,/reikiLandingPath\(selected\)/)
  assert.match(source,/accountId=\{accountId\}/)
  assert.doesNotMatch(source,/localStorage|sessionStorage/)
  for(const label of ['Clarity & Support','Ясность и поддержка','Claridad y apoyo'])assert.ok(source.includes(label))
@@ -51,7 +51,10 @@ test('Approved three-step landing uses one static hero action and numbered photo
  assert.match(source,/\{index\+1\}/)
  assert.match(source,/data-stage-photo/)
  const hero=source.slice(source.indexOf('<header className={styles.clarityHero}>'),source.indexOf('</header>',source.indexOf('<header className={styles.clarityHero}>')))
- assert.equal((hero.match(/<button /g)||[]).length,1)
+ assert.equal((hero.match(/<ClarityStartButton /g)||[]).length,1)
+ assert.match(hero,/data-clarity-details/)
+ assert.match(hero,/\/coaching\/clarity/)
+ assert.doesNotMatch(hero,/openStage\(0\)/)
  assert.doesNotMatch(hero,/<video|<iframe/)
  assert.match(css,/CLARITY_LANDING_THREE_20261124/)
  assert.match(css,/\.clarityStagePhoto/)
@@ -60,7 +63,7 @@ test('Approved three-step landing uses one static hero action and numbered photo
 test('Business profile implements the approved four-session mobile landing and real actions',()=>{
  const business=source.slice(source.indexOf("{section === 'business' &&"),source.indexOf("{section === 'goals' &&"))
  for(const attr of ['data-profile-business','data-business-start','data-business-details','data-business-topic','data-business-session'])assert.ok(business.includes(attr),attr)
- assert.match(business,/openBusinessStage\(0\)/)
+ assert.match(business,/<Link href=\{root\+'\/daybook\/business'\} prefetch=\{false\} data-business-start>/)
  assert.match(business,/href=\{businessContact\}/)
  assert.match(business,/b\.sessions\.map/)
  assert.match(business,/aria-expanded=\{expanded\}/)
@@ -70,4 +73,10 @@ test('Business profile implements the approved four-session mobile landing and r
  assert.match(css,/min-height:52px/)
  assert.match(css,/min-height:69px/)
  assert.match(css,/businessTopics\{grid-template-columns:1fr\}/)
+})
+
+test('Both capture CTAs open the same Clarity Google continuation, not the generic consultation',()=>{
+ assert.match(source,/<ClarityStartButton locale=\{selected\}>/)
+ assert.match(source,/<ClarityStartLink locale=\{selected\} className=\{styles\.clarityPersonal\}>[\s\S]*?\{c\.planButton\}[\s\S]*?<\/ClarityStartLink>/)
+ assert.doesNotMatch(source,/<Link href=\{personal\} className=\{styles\.clarityPersonal\}/)
 })

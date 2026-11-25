@@ -109,3 +109,11 @@
   border-radius:.65rem;
   background:rgba(12,23,19,.82);
 }
+
+/* Browse adjacent public coaches without disturbing vertical profile scrolling. */
+.hero[data-coach-greeting-swipe="true"]{touch-action:pan-y pinch-zoom}
+.swipePrevious,.swipeNext{position:absolute;z-index:5;top:49%;transform:translateY(-50%);
+ display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #e6f5e4aa;
+ border-radius:50%;background:#153c31a6;color:#fff;cursor:pointer;touch-action:manipulation}
+.swipePrevious{left:10px}.swipeNext{right:10px}
+.swipePrevious:focus-visible,.swipeNext:focus-visible{outline:3px solid #fbec97;outline-offset:3px}
