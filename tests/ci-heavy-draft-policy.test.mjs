@@ -899,7 +899,21 @@ test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual
     const workflow = read(name);
     const postgres = workflow.split('    services:\n      postgres:\n')[1]?.split('    env:\n')[0];
     assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
-    assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    if (name === 'hh-reiki-all-slides-browser.yml') {
+      // The protected Reiki release retains one owner-approved real browser
+      // acceptance for #5626. Do not generalize it to other pull requests.
+      const reikiGate = "github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 5626";
+      const expectedImage = "image: ${{ (" + reikiGate + ") && 'postgres:17-alpine' || '' }}";
+      assert.equal(postgres.split('\n').filter(line => /^\s*image:/.test(line)).map(line => line.trim()).join('\n'), expectedImage,
+        name + ' PostgreSQL must remain limited to manual QA or exact #5626');
+      for (const step of ['Isolated Chromium/WebKit runtime (manual or one-time Daybook acceptance)',
+        'Initialize synthetic isolated account database', fullQA]) {
+        assert.ok(workflow.includes('- name: ' + step + '\n        if: ' + reikiGate + '\n'),
+          name + ' expensive step must retain the exact owner-approved gate: ' + step);
+      }
+    } else {
+      assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    }
     assert.ok(workflow.includes(sourceContract), name + ' must still run its real PR source contract');
     assert.ok(workflow.includes(fullQA), name + ' must preserve real-browser manual acceptance');
     assert.match(workflow, /workflow_dispatch:/, name + ' manual QA must remain callable');
