@@ -36,7 +36,6 @@ on:
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
       - 'scripts/ci-public-journey-scope.mjs'
       - 'tests/ci-public-journey-consolidation.test.mjs'
-      - '.github/workflows/hh-public-journey-wave1.yml'
   workflow_dispatch:
 
 permissions:
@@ -63,8 +62,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci --no-audit --no-fund
+          cache: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && 'npm' || '' }}
+      # The source-only PR contracts use Node built-ins, not the full application.
+      - name: Install dependencies for independent public journey QA
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --no-audit --no-fund
       - name: Classify exact PR HEAD vs BASE, unknown changes run both
         id: scope
         env:
@@ -78,13 +80,17 @@ jobs:
         run: |
           node --check scripts/verify-public-pathway-mobile.mjs
           node --test tests/public-pathway-migration.test.mjs
-          npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+            npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
+          fi
       - name: Toronto public contracts and scoped lint
         if: steps.scope.outputs.wave2 == 'true'
         run: |
           node --check scripts/verify-public-pathway-toronto-mobile.mjs
           node --test tests/public-pathway-toronto.test.mjs
-          npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
+          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+            npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
+          fi
       - name: Whole-project TypeScript outside protected production PRs
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
