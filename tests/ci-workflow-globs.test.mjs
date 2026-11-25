@@ -411,7 +411,7 @@ test('Mandala restores the same immutable production Core MP3 cache before safe 
   assert.match(mandala,/run: node --test tests\/mandala-scenario-audio\.test\.mjs/);
 });
 
-test('cheap Mandala UI source contracts fail before macOS WebKit without skipping real media',()=>{
+test('cheap Mandala UI source contracts have one required preflight owner before macOS WebKit',()=>{
   const source=workflow('holistic-support-mandala.yml');
   const preflight=source.split('  webkit_preflight:\n')[1]
     ?.split('  voice-webkit-macos:\n')[0]||'';
@@ -425,12 +425,15 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
     'tests/mandala-approved-mobile-studio.test.mjs',
   ]) {
     assert.ok(preflight.includes(file),'fast source preflight missing '+file);
-    assert.ok(focused.includes(file),'full independent source acceptance must remain '+file);
+    assert.ok(!focused.split('      - name: Mandala and mobile support contracts\n')[1]?.split('\n      - name:')[0]?.includes(file),'source-only test must not repeat after dependency/media generation: '+file);
   }
   assert.ok(focused.includes('tests/mandala-workspace-tabs.test.mjs'),
     'TypeScript-dependent workspace test remains in the required full suite');
   assert.ok(!preflight.includes('tests/mandala-workspace-tabs.test.mjs'),
     'a no-install preflight must never import TypeScript-dependent workspace tests');
+  assert.match(preflight,/^    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m,'Ready PRs must run preflight');
+  assert.match(preflight,/test "\$\(git rev-parse HEAD\)" = "\$GITHUB_SHA"/,'same tested candidate is required');
+  assert.match(preflight,/node --test tests\/video-studio-question-registry\.test\.mjs tests\/mandala-video-goal-media-coverage\.test\.mjs tests\/mandala-approved-mobile-studio\.test\.mjs tests\/video-reels-ci-routing\.test\.mjs/);
   assert.ok(preflight.includes('node scripts/ci-pr-readiness.mjs'));
   assert.ok(preflight.includes('git rev-parse HEAD^2'));
   assert.doesNotMatch(preflight,/npm ci|npm run build|actions\/cache\/save/,'preflight must remain a cheap no-install gate');
