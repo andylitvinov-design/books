@@ -1,7 +1,7 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, Compass, HeartHandshake, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, Compass, HeartHandshake, Sparkles, Layers, Leaf, UserRound } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ReikiDaybookStart } from "@/components/reiki-practitioner-entry";
@@ -386,7 +386,14 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
     en: { title: "Reiki Practitioner", subtitle: "5 weeks · 3 Reiki systems · free", intro: "Explore energywork in your personal Daybook.", profile: "My profile", classic: "Classic course", week: "Week", syllabus: "Your five weeks", details: ["Presence and attention practice", "Spring of Life · meditation and symbols", "Explore the tradition and practice", "World Tree · runic tradition", "Preparation and choice of system"] },
     es: { title: "Reiki Practitioner", subtitle: "5 semanas · 3 sistemas Reiki · gratis", intro: "Explora las prácticas energéticas en tu Daybook. Curso en inglés o ruso.", profile: "Mi perfil", classic: "Curso clásico (EN)", week: "Semana", syllabus: "Tus cinco semanas", details: ["Práctica de presencia y atención", "Fuente de Vida · meditación y símbolos", "Conoce la tradición y la práctica", "Árbol del Mundo · tradición rúnica", "Preparación y elección del sistema"] },
   }[locale];
+  const detailsCopy = {
+    en: { heading: "What you will receive", benefits: ["5 weeks of guided practice", "3 Reiki systems", "Personal initiation path", "Meditations, materials and reflection"] },
+    ru: { heading: "Что вы получите", benefits: ["5 недель практики с сопровождением", "3 системы Рейки", "Путь к личной инициации", "Медитации, материалы и рефлексия"] },
+    es: { heading: "Qué recibirás", benefits: ["5 semanas de práctica guiada", "3 sistemas Reiki", "Camino a la iniciación personal", "Meditaciones, materiales y reflexión"] },
+  }[locale];
+  const benefitIcons = [Leaf, Layers, UserRound, BookOpen];
   const weekPhotos = ["/images/holistic-house/reiki-approved-sunrise-v3.webp", "/images/holistic-house/tantra-reiki-yin-yang-cover.svg", "/academy/kundalini-reiki/kundalini-manual-level-2.jpg", "/academy/reiki-yggdrasil/source/basic-program.jpg", "/images/holistic-house/andy-about.png"];
+  const detailPhotos = [weekPhotos[0], "/images/holistic-house/magic-mirror-lotus.webp", "/images/holistic-house/assist-video-meditation.webp", weekPhotos[3], "/images/holistic-house/shamanic-approved-rituals.webp"];
   const personalSessionUrl = whatsappEnquiryUrl({
     locale,
     service: "Personal Reiki teaching & initiation",
@@ -421,20 +428,26 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
           </div>
         </section>
         <MyReikiQuiz locale={locale} />
-        <section className={styles.reikiSyllabus} aria-labelledby="reiki-syllabus-title">
+        <section className={styles.reikiDetailsScreen} id="reiki-course-details" data-reiki-details-screen aria-labelledby="reiki-syllabus-title">
+          <div className={styles.reikiSyllabus}>
           <p className={styles.sectionEyebrow}>DAYBOOK · 05</p><h2 id="reiki-syllabus-title">{daybookCopy.syllabus}</h2>
           <nav className={styles.stepRail} aria-label={t.stepRailLabel} data-energywork-five-steps>
-            {[{ title: v.flightTitle, href: "#energywork-flight-to-sun" }, ...paths.map(system => ({ title: system.title, href: "#energywork-" + system.key })), { title: t.personalTitle, href: "#energywork-how" }].map((item, index) => <a key={item.href} href="#reiki-start" data-reiki-week={index + 1}><span className={styles.reikiWeekPhoto} data-reiki-week-photo={index + 1} aria-hidden="true"><Image src={weekPhotos[index]} alt="" fill sizes="(max-width: 700px) 35vw, 260px" unoptimized /><b>{index + 1}</b></span><div className={styles.reikiWeekCopy}><small>{daybookCopy.week} {index + 1}</small><strong>{item.title}</strong><p>{daybookCopy.details[index]}</p></div><ArrowRight size={19} aria-hidden="true" /></a>)}
+            {[{ title: v.flightTitle, href: "#energywork-flight-to-sun" }, ...paths.map(system => ({ title: system.title, href: "#energywork-" + system.key })), { title: t.personalTitle, href: "#energywork-how" }].map((item, index) => <a key={item.href} href="#reiki-start" data-reiki-week={index + 1}><span className={styles.reikiWeekPhoto} data-reiki-week-photo={index + 1} aria-hidden="true"><Image src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 32vw, 260px" unoptimized /></span><div className={styles.reikiWeekCopy}><small>{daybookCopy.week} {index + 1}</small><strong>{item.title}</strong><p>{daybookCopy.details[index]}</p></div><ArrowRight size={19} aria-hidden="true" /></a>)}
           </nav>
-        </section>
-        <details className={styles.reikiSecondary}>
-          <summary className={styles.reikiMoreSummary}>{locale === "ru" ? "Другие форматы курса" : locale === "es" ? "Otros formatos del curso" : "Other course formats"}</summary>
+          </div>
+          <section className={styles.reikiBenefits} aria-labelledby="reiki-benefits-title">
+            <h2 id="reiki-benefits-title">{detailsCopy.heading}</h2>
+            <div className={styles.reikiBenefitGrid}>{detailsCopy.benefits.map((label,index)=>{ const Icon = benefitIcons[index]; return <div key={index} className={styles.reikiBenefitCard} data-reiki-benefit={index}><Icon size={27} aria-hidden="true" /><strong>{label}</strong></div>; })}</div>
+          </section>
+          <div className={styles.reikiDetailsStart}><ReikiDaybookStart locale={locale} className={styles.primaryButton} /></div>
+        <div className={styles.reikiSecondary} data-reiki-details-formats>
           <div className={styles.heroQuickLinks}>
                 <Link href={learnPath} className={styles.ghostButton} data-energywork-interactive-course>{daybookCopy.classic}<ArrowRight size={16} aria-hidden="true" /></Link>
                 <Link className={styles.ghostButton} href={"/" + (locale === "ru" ? "ru" : "en") + "/academy/principles-of-energywork/daybook"} data-reiki-daybook-entry>{locale === "ru" ? "Посмотреть Daybook" : locale === "es" ? "Ver Daybook (EN)" : "Preview Daybook"}<BookOpen size={17} aria-hidden="true" /></Link>
 
               </div>
-        </details>
+        </div>
+        </section>
 
         <section className={styles.foundations} data-energywork-screen="foundations" aria-labelledby="energywork-foundations">
           <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
