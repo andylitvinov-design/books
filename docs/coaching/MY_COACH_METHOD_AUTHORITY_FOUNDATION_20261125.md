@@ -15,3 +15,6 @@ This narrow, source-only extraction replaces **only the pure foundation** from s
 - Preserve existing #5315 context memory and existing #5475 23 GROW question hints. No revert to old #5221 user interface or private audio exposure.
 
 **Safety: this is DRAFT and NOT LIVE.** See owner progress issue #5473.
+
+## Text and stream integration (draft)
+Authenticated same-origin POST/DELETE `/api/app/my-coach/session` provides an explicit allowlisted method handshake; text and Groq stream accept `methodId` only when the verified account/session cookie agrees. Legacy clients are unchanged. No raw messages in cookie, no model or quota change, no additional database. Keep the existing active-foreground timebox; cookie wall clock is for expiry. This is a partial server integration, not yet wired to method choice in the UI or Gemini Live token/checkpoint. Cookie replay by a user controlling their own jar, multi-tab races, revocation, direct Live reconnection and physical iPhone behavior still need explicit validation; do not declare LIVE or enable auto-merge on this draft.

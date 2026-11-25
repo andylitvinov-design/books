@@ -8,6 +8,8 @@ import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
 import {BUSINESS_SYLLABUS,businessTag,savedBusinessTask,businessProgress} from '@/lib/app/business-daybook.mjs'
+import {ProgramStartLink} from './clarity-program'
+import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './business-daybook.module.css'
 const COPY={
  ru:{title:'Дневник роста бизнеса',intro:'От стратегического выбора к системе исполнения.',back:'В профиль',week:'Сессия',tasks:'3 практики сессии',completed:'Выполнено',open:'Открыть',save:'Сохранить и завершить',retry:'Повторить сохранение',saving:'Сохраняем…',saved:'Сохранено и проверено',loading:'Загружаем личный дневник…',failed:'Не удалось подтвердить сохранение. Повторите попытку; черновик остаётся здесь.',loadError:'Не удалось загрузить записи. Повторите попытку.',login:'Войти в личный кабинет',load:'Повторить',answer:'Мой ответ и результат',progress:'Прогресс самостоятельной работы',next:'Продолжить',done:'Все 12 практик завершены',private:'Записи приватны; они не передаются автоматически. Самостоятельные задания не означают оплаченную или проведённую консультацию.',offer:'Обсудить с бизнес-консультантом',offerHint:'Формат, стоимость и время согласуются отдельно.',discard:'Есть несохранённые ответы. Выйти и удалить черновики?'},
@@ -25,13 +27,14 @@ export default function BusinessDaybook({locale='en'}){
   try{
    const boot=await appFetch('bootstrap?view=portrait')
    if(token!==generation.current)return
+   if(boot.account.onboardingState!=='active'){window.location.replace(programOnboardingPath(lang,'business'));return}
    const id=boot.account.id
    const data=await collectJournalExport(appFetch,id,()=>token===generation.current)
    if(token!==generation.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(data.entries)
    const next=businessProgress(data.entries).next;setWeek(next?.week||4);setStep(null);setPhase('ready')
   }catch(error){if(token===generation.current)setPhase(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED'?'signed-out':'error')}
- },[wipe])
+ },[wipe,lang])
  useEffect(()=>{
   void load();let channel
   try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out')wipe('signed-out')}}catch{}
@@ -80,7 +83,7 @@ export default function BusinessDaybook({locale='en'}){
  return <main className={css.page} data-cabinet-theme="daybook" data-business-daybook>
   <header className={css.brand}><Link href={root+'/app/portrait'}><ArrowLeft size={20} aria-hidden="true"/>{t.back}</Link><span>Holistic House</span></header>
   <section className={css.hero}><span><BriefcaseBusiness size={18} aria-hidden="true"/> BUSINESS · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></section>
-  {phase!=='ready'?<section className={css.canvas} aria-live="polite"><p>{phase==='signed-out'?t.login:phase==='error'||phase==='locked-error'?t.loadError:t.loading}</p>{phase==='signed-out'?<Link className={css.action} href={root+'/app/portrait'}>{t.login}</Link>:phase==='error'||phase==='locked-error'?<button className={css.action} type="button" onClick={()=>void(phase==='locked-error'?guardRef.current?.verify():load())}>{t.load}</button>:null}</section>:<>
+  {phase!=='ready'?<section className={css.canvas} aria-live="polite"><p>{phase==='signed-out'?t.login:phase==='error'||phase==='locked-error'?t.loadError:t.loading}</p>{phase==='signed-out'?<ProgramStartLink locale={lang} program="business" className={css.action}>{t.login}</ProgramStartLink>:phase==='error'||phase==='locked-error'?<button className={css.action} type="button" onClick={()=>void(phase==='locked-error'?guardRef.current?.verify():load())}>{t.load}</button>:null}</section>:<>
    <section className={css.summary}><div><strong>{t.progress}</strong><p>{progress.completed} / 12</p><progress max={12} value={progress.completed} aria-label={t.progress}/></div><div className={css.ring} aria-label={t.progress+': '+progress.percent+'%'} role="img"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#e8d1a8" strokeWidth="7"/>{progress.percent>0&&<circle cx="32" cy="32" r="26" fill="none" stroke="#087652" strokeWidth="7" pathLength="100" strokeDasharray={progress.percent+' 100'} transform="rotate(-90 32 32)"/>}</svg><b>{progress.percent}%</b></div></section>
    <nav className={css.weeks} aria-label={t.week}>{syllabus.map((item,i)=><button key={item[0]} type="button" aria-pressed={week===i+1} disabled={locked} onClick={()=>selectWeek(i+1)}><span>{t.week} {i+1}</span><small>{progress.weeks[i]===3?<CheckCircle2 size={17} aria-label={t.completed}/>:progress.weeks[i]+' / 3'}</small></button>)}</nav>
    <section className={css.canvas}><h2>{syllabus[week-1][0]}</h2><p>{syllabus[week-1][1]}</p>
