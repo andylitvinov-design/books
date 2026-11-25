@@ -75,3 +75,11 @@ test('no false prior session may be claimed without separately authorized contex
  assert.equal(p.prior,null)
  assert.equal(p.answers.continuity.kind,'new')
 })
+
+test('incidental numeric details cannot populate profile; labelled multilingual scores can',()=>{
+ for(const text of ['у меня 2 детей и 5 лет опыта','I have 2 children and 7 years of experience','tengo 3 hijos y 8 años de experiencia','-3 и 8','вчера 3 сегодня 7','3.5 и 8','3 или 8'])assert.equal(coachProfileScorePair(text),null,text)
+ for(const text of ['Сейчас 3, хочу 7','сейчас три балла, хотелось бы семь','now three, desired seven','ahora 3, quiero 7']){
+  const value=coachProfileScorePair(text)
+  assert.equal(value?.current,3,text);assert.equal(value?.desired,7,text)
+ }
+})
