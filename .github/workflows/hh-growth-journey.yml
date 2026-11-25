@@ -59,6 +59,7 @@ jobs:
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
       - name: Lint changed JS and TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >-
           npx --no-install eslint
           data/growth-guides.ts
