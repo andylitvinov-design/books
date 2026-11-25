@@ -14,7 +14,7 @@ test('fixed Daybook path never includes name, private payload or a client suppli
  assert.equal(reportWeekHref('ru',{program:'business',week:4}),'/ru/app/daybook/business')
  for(const locale of ['en','ru','es']) {
   assert.equal(reportWeekHref(locale,{program:'clarity',week:2}),`/${locale}/app/daybook?program=clarity`)
-  assert.equal(reportWeekHref(locale,{program:'goal',week:8}),`/${locale}/app/daybook?start=vector`)
+  assert.equal(reportWeekHref(locale,{program:'goal',week:8}),`/${locale}/app/daybook?tab=goals`)
   assert.equal(reportWeekHref(locale,{program:'business',week:4}),`/${locale}/app/daybook/business`)
  }
  assert.equal(reportWeekHref('en',null),'/en/app/portrait#personal-reports')

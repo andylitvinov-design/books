@@ -60,7 +60,7 @@ export default async function SavedSessionPage({params}){
     <nav className="hh-saved-session-topnav" aria-label={locale==='ru'?'Мой кабинет':'My Cabinet'}>
       {placement&&<div><strong>{reportProgramLabel(placement,locale)}</strong><span> · {locale==='ru'?'Неделя':'Week'} {placement.week}</span></div>}
       <Link prefetch={false} href={reportWeekHref(locale,placement)}>
-        {placement?(locale==='ru'?'← К программе':'← Back to program'):(locale==='ru'?'← Мои отчёты':'← My Reports')}
+        {placement?.program==='goal'?(locale==='ru'?'← К моим целям':'← My goals'):placement?(locale==='ru'?'← К программе':'← Back to program'):(locale==='ru'?'← Мои отчёты':'← My Reports')}
       </Link>
     </nav>
     <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id} audioEmbedded={Boolean(doc&&!payment)}
