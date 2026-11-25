@@ -18,6 +18,7 @@ import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-su
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import {isChatModelStatusQuestion,chatModelStatusReply} from "@/lib/holistic-support/chat-model-status.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
   wavePsychologistQuestion} from "@/lib/assist/wave-psychologist-native.mjs";
@@ -58,7 +59,7 @@ type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | 
 type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
-type Message = { role: "user" | "assistant"; text: string; variant?:"alternative"; localOnly?:boolean; provisional?:boolean };
+type Message = { role: "user" | "assistant"; text: string; variant?:"alternative"; localOnly?:boolean; provisional?:boolean; provider?:"gemini-free" };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
   mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
@@ -710,9 +711,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!compact)return;
     const input=composerRef.current;
     if(!input)return;
-    input.style.height='44px';
-    input.style.height=Math.max(44,Math.min(100,input.scrollHeight))+'px';
-  },[draft,compact]);
+    const ongoing=messengerView&&Boolean(messages.length||homeHandoffPreview);
+    const baseHeight=ongoing?40:44;
+    input.style.height=baseHeight+"px";
+    if(draft.trim())input.style.height=Math.max(baseHeight,Math.min(100,input.scrollHeight))+"px";
+  },[draft,compact,messengerView,messages.length,homeHandoffPreview]);
   const [previewFocus,setPreviewFocus]=useState<PreviewFocus>("");
   const [previewMinutes,setPreviewMinutes]=useState<8|12|20>(12);
   const [previewReady,setPreviewReady]=useState(false);
@@ -1241,6 +1244,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
     }
+    if(messengerView&&judgmentChoice===null&&isChatModelStatusQuestion(text)&&!requiresProtectedReply(text,turnLocale)){
+      // This app-owned disclosure is never a fabricated Gemini answer.
+      // Keep existing journey state and show only verified provenance.
+      const reply=chatModelStatusReply({locale:turnLocale,lastGemini:messages.at(-1)?.provider==="gemini-free",geminiReady:proReady});
+      setMessages(prev=>[...prev,{role:"user" as const,text},{role:"assistant" as const,text:reply}].slice(-30));
+      setDraft("");setStatus("");setSource("");setEntryOpen(false);followTail.current=true;setNewBelow(false);
+      if(authenticated)void privateTranscript.savePair(text,reply);
+      return;
+    }
     if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"&&
       !(projectFlow==="sessions"&&sessionStep)){
       setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
@@ -1534,7 +1546,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(data.browserModelAllowed&&data.decision&&!requiresProtectedReply(text,turnLocale)){
         lastAnswerRef.current={message:text,history:prior,decision:data.decision,locale:turnLocale};
       }
-      setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
+      const verifiedGemini=data.modelUsed===true&&used==="gemini-free-public";
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:reply,...(verifiedGemini?{provider:"gemini-free" as const}:{})}].slice(-30));
       if(authenticated)void privateTranscript.savePair(text,reply);
       // Social replies are already AI-labelled: omit the mechanical
       // "source: algorithm" footer only for this small-talk subset.
@@ -1675,7 +1688,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(!response.ok)throw Error("ALI_GEMINI_ROUTE_UNAVAILABLE");
       const answer=aliGeminiResult(result);
       if(abort.signal.aborted)return;
-      setMessages(prev=>[...prev,{role:"assistant" as const,text:answer.text}].slice(-30));
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:answer.text,...(answer.kind==="gemini"?{provider:"gemini-free" as const}:{})}].slice(-30));
       if(answer.kind==="gemini"){
         proTurns.current=[...proTurns.current,{role:"user" as const,content:text},
           {role:"assistant" as const,content:answer.text.slice(0,900)}].slice(-10);
@@ -1697,6 +1710,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
   }
   function sendSelectedTurn(raw:string){
+    if(messengerView&&isChatModelStatusQuestion(raw)){void sendTurn(raw);return;}
     if(messengerView&&proSelected){void sendProTurn(raw);return;}
     void sendTurn(raw);
   }
@@ -1855,8 +1869,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     </div>
   </article>;
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
-  const composerPlaceholder=messengerView?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder;
-  const animateComposer=messengerView&&!pageHelp&&!busy&&!proBusy&&!draft&&
+  const composerPlaceholder=messengerView?(showLandingComposer?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):(locale==="ru"?"Сообщение":locale==="es"?"Mensaje":"Message")):t.placeholder;
+  const animateComposer=messengerView&&showLandingComposer&&!pageHelp&&!busy&&!proBusy&&!draft&&
     !recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.speaking&&
     !supportQuizOpen&&homeHandoffPhase==="idle";
   useEffect(()=>{
@@ -1868,6 +1882,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const composer=(
     <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}
       data-landing-composer={showLandingComposer||undefined}
+      data-hh-chat-has-draft={Boolean(draft.trim())||undefined}
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
       data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
