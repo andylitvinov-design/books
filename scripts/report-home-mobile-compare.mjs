@@ -71,17 +71,25 @@ export function summarizePair(before, after) {
 async function main() {
   const directory = process.argv[2] ?? "artifacts/home-perf";
   const pages = {};
+  const requireH2 = process.env.HH_HOME_AUDIT_TRANSPORT === "h2";
+  const transport = requireH2 ? "HTTPS/HTTP2" : "HTTP/1.1";
   for (const locale of locales) {
     const results = {};
     for (const stage of stages) {
-      results[stage] = runs.map(run =>
-        summarizeLighthouse(JSON.parse(readFileSync(directory + "/" + stage + "-" + locale + "-" + run + ".json", "utf8"))));
+      results[stage] = runs.map(run => {
+        const lhr = JSON.parse(readFileSync(directory + "/" + stage + "-" + locale + "-" + run + ".json", "utf8"));
+        if (requireH2) {
+          const request = lhr.audits["network-requests"]?.details?.items?.find(x => x.resourceType === "Document" && x.url === lhr.requestedUrl);
+          assert.equal(request?.protocol, "h2", "Expected actual HTTP2 document connection");
+        }
+        return summarizeLighthouse(lhr);
+      });
     }
     pages[locale] = { beforeRuns: results.before, afterRuns: results.after,
       summary: summarizePair(results.before, results.after) };
   }
   const output = {
-    measuredAt: new Date().toISOString(), method: "Lighthouse 13.6 simulated slow-4G mobile, two runs on local Next production builds using identical HTTP/1.1 transport, same runner and Chrome",
+    measuredAt: new Date().toISOString(), method: "Lighthouse 13.6 simulated slow-4G mobile, two runs on local Next production builds using identical " + transport + " transport, same runner and Chrome",
     caveat: "ObservedLoadEventMs is NOT a simulated slow-4G full-page-load metric; full load <5s needs a separate real 4G browser observation.",
     pages,
   };
@@ -97,7 +105,7 @@ async function main() {
     table.push("| " + locale + " | " + text("performance") + " | " + text("fcpMs") + " | " +
       text("lcpMs") + " | " + text("cls") + " | " + target + " |");
   }
-  table.push("", "**Measured with BASE and candidate both local Next production builds over identical HTTP/1.1 on the same GitHub runner using the same Lighthouse mobile simulated 4G configuration.**",
+  table.push("", "**Measured with BASE and candidate both local Next production builds over identical " + transport + " on the same GitHub runner using the same Lighthouse mobile simulated 4G configuration.**",
     "This is not CrUX real-user data. No comparable actual slow-4G window.onload was measured; do not report a made-up full-load value.",
     "No paid Vercel previews, synthetic forms, payments or private routes were used.");
   console.log(table.join("\n"));

@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const out = resolve(process.argv[2] || 'artifacts/home-perf');
-const origins = { before: 'http://127.0.0.1:3398', after: 'http://127.0.0.1:3399' };
+const origins = { before: 'https://127.0.0.1:3498', after: 'https://127.0.0.1:3499' };
 const locales = { en: '/', ru: '/ru', es: '/es' };
 const { chromium } = await import(pathToFileURL(resolve(process.env.HH_PLAYWRIGHT_MODULE)).href);
 assert.ok(process.env.CHROME_PATH, 'Pinned audit browser path required');
@@ -14,7 +14,7 @@ const browser = await chromium.launch({executablePath: process.env.CHROME_PATH, 
 const reports = [], pairs = [];
 const pause = ms => new Promise(r => setTimeout(r, ms));
 async function sample(stage, locale, pass) {
-  const ctx = await browser.newContext({viewport: {width: 390, height: 844}, deviceScaleFactor: 1, isMobile: true, hasTouch: true, locale: locale === 'en' ? 'en-US' : locale});
+  const ctx = await browser.newContext({viewport: {width: 390, height: 844}, deviceScaleFactor: 1, ignoreHTTPSErrors: true, isMobile: true, hasTouch: true, locale: locale === 'en' ? 'en-US' : locale});
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -49,7 +49,20 @@ async function sample(stage, locale, pass) {
       const nav=performance.getEntriesByType('navigation')[0];
       return {...window.__hhPerf, loadMs: nav?.loadEventEnd || null, fcp:performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? null, portrait:document.querySelector('[data-home-ali-persona] > img')?.getAttribute('src')};
     });
-    const image = await page.screenshot({path:join(out,prefix+'.png'),animations:'disabled',caret:'hide',scale:'css'});
+    assert.equal(await page.evaluate(() => performance.getEntriesByType('navigation')[0]?.nextHopProtocol), 'h2');
+    // Keep the natural screenshot as evidence. Then apply exactly the same
+    // reversible viewport redraw to BOTH pages before the reference capture.
+    // This standardizes compositor rasterization without changing CSS or DOM.
+    const options = {animations:'disabled',caret:'hide',scale:'css'};
+    const natural = await page.screenshot({...options,path:join(out,prefix+'-natural.png')});
+    const frame = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.setViewportSize({width:391,height:844});
+    await frame();
+    await page.setViewportSize({width:390,height:844});
+    await frame();
+    await page.evaluate(() => document.fonts.ready);
+    await frame();
+    const image = await page.screenshot({...options,path:join(out,prefix+'.png')});
     // Exercise the already hydrated composer without submitting or contacting any service.
     const input = page.locator('[data-home-dialogue-entry] textarea').first();
     await input.fill('Local CSS audit');
@@ -57,7 +70,7 @@ async function sample(stage, locale, pass) {
     await input.fill('');
     const report = {stage,locale,pass,...metrics,errors:[...errors]};
     reports.push(report);
-    return {image,report};
+    return {image,natural,report};
   } catch (e) {
     reports.push({stage,locale,pass,error:String(e),errors:[...errors]});
     await page.screenshot({path:join(out,prefix+'-failure.png'),timeout:5000}).catch(()=>{});
@@ -70,12 +83,14 @@ try {
     // Exact equality of lossless PNG output establishes pixel parity. Any
     // difference remains a failure requiring review, never silently ignored.
     const identical=Boolean(before.image && after.image && before.image.equals(after.image));
+    const naturalIdentical=Boolean(before.natural && after.natural && before.natural.equals(after.natural));
     const clean=[before.report,after.report].every(r=>!r.error && r.errors.length===0 && r.csp.length===0 && Number.isFinite(r.lcp?.ms));
-    pairs.push({locale,pass,identical,clean});
-    console.log(JSON.stringify({locale,pass,identical,clean,beforeLcp:before.report.lcp?.ms,afterLcp:after.report.lcp?.ms}));
+    const localTargets=clean && after.report.lcp.ms < 2500 && after.report.cls < 0.1;
+    pairs.push({locale,pass,identical,naturalIdentical,clean,localTargets});
+    console.log(JSON.stringify({locale,pass,identical,naturalIdentical,clean,localTargets,beforeLcp:before.report.lcp?.ms,afterLcp:after.report.lcp?.ms}));
   }
 } finally {
   await browser.close();
-  await writeFile(join(out,'applied-slow4g-browser.json'),JSON.stringify({method:'CDP applied 150 ms / 1.6 Mbit/s / 4x CPU; 390x844 mobile; two fresh runs per locale and build',reports,pairs},null,2));
+  await writeFile(join(out,'applied-slow4g-browser.json'),JSON.stringify({method:'CDP applied 150 ms / 1.6 Mbit/s / 4x CPU over HTTPS/HTTP2; 390x844 mobile; two fresh runs per locale and build; natural and exact standardized-redraw captures',reports,pairs},null,2));
 }
-assert.ok(pairs.length===6 && pairs.every(x=>x.identical && x.clean),'Exact visual/hydration/browser evidence has not passed');
+assert.ok(pairs.length===6 && pairs.every(x=>x.identical && x.clean && x.localTargets),'Exact standardized visual/hydration and applied slow-4G targets have not passed');

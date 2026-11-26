@@ -42,6 +42,7 @@ on:
       - 'scripts/report-home-mobile-compare.mjs'
       - 'tests/home-mobile-compare.test.mjs'
       - 'scripts/verify-home-browser-parity.mjs'
+      - 'scripts/home-audit-http2-proxy.mjs'
       - 'scripts/build-public-home-documents.mjs'
       - 'scripts/home-deferred-css.mjs'
       - 'tests/public-home-document-build.test.mjs'
@@ -154,16 +155,16 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/home-perf
-          # Both versions are now Next production builds on the SAME runner,
-          # same http/1.1, same uncompressed response headers, same Chrome.
-          # The previous LIVE-CDN-vs-local comparison mixed HTTP/2 and HTTP/1.1.
+          # Same production-mode builds, runner, TLS/HTTP2 transport and Chrome.
+          # This removes HTTP/1.1 connection scheduling as a local-only confound.
           baseline_dir="$RUNNER_TEMP/hh-home-baseline"
           [[ -d "$baseline_dir/.next" ]] || { echo 'Exact BASE build missing'; exit 1; }
           PORT=3398 HOSTNAME=127.0.0.1 npm start --prefix "$baseline_dir" >/tmp/hh-home-base-server.log 2>&1 &
           baseline_pid=$!
           PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-lh-server.log 2>&1 &
           app_pid=$!
-          trap 'kill "$app_pid" "$baseline_pid" 2>/dev/null || true' EXIT
+          proxy_pid=''
+          trap 'kill "$app_pid" "$baseline_pid" ${proxy_pid:+"$proxy_pid"} 2>/dev/null || true' EXIT
           for target in 3398 3399; do
             ready=false
             for attempt in {1..35}; do
@@ -175,6 +176,19 @@ jobs:
               tail -60 /tmp/hh-home-base-server.log /tmp/hh-home-lh-server.log
               exit 1
             fi
+          done
+          tls_dir="$(mktemp -d)"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=127.0.0.1' \
+            -addext 'subjectAltName=IP:127.0.0.1' -keyout "$tls_dir/key.pem" -out "$tls_dir/cert.pem" >/dev/null 2>&1
+          node scripts/home-audit-http2-proxy.mjs "$tls_dir/key.pem" "$tls_dir/cert.pem" >/tmp/hh-home-h2.log 2>&1 &
+          proxy_pid=$!
+          for target in 3498 3499; do
+            ready=false
+            for attempt in {1..20}; do
+              if [[ "$(curl -kfsS --http2 -o /dev/null -w '%{http_version}' "https://127.0.0.1:$target/")" == 2 ]]; then ready=true; break; fi
+              sleep 1
+            done
+            if [[ "$ready" != true ]]; then cat /tmp/hh-home-h2.log; exit 1; fi
           done
           # Github's system Chrome can exit before chrome-launcher discovers the
           # dynamic debugging port. Validate CDP up front, before 12 audit runs.
@@ -217,17 +231,17 @@ jobs:
               path="/"
               if [[ "$lang" != en ]]; then path="/$lang"; fi
               for candidate in before after; do
-                origin="http://127.0.0.1:3398"
-                if [[ "$candidate" == after ]]; then origin="http://127.0.0.1:3399"; fi
+                origin="https://127.0.0.1:3498"
+                if [[ "$candidate" == after ]]; then origin="https://127.0.0.1:3499"; fi
                 echo "Lighthouse 13.6: $candidate $lang pass=$pass (mobile simulated slow 4G)"
                 timeout 135s npx --yes lighthouse@13.6.0 "$origin$path" \
-                  --quiet --port=9222 --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu" \
+                  --quiet --port=9222 --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --ignore-certificate-errors" \
                   --only-categories=performance --throttling-method=simulate \
                   --output=json --output-path="artifacts/home-perf/$candidate-$lang-$pass.json"
               done
             done
           done
-          node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          HH_HOME_AUDIT_TRANSPORT=h2 node scripts/report-home-mobile-compare.mjs artifacts/home-perf
           # Separate applied network/CPU throttling, not a replacement for PSI.
           npm install --prefix "$RUNNER_TEMP/hh-home-browser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.63.0
           HH_PLAYWRIGHT_MODULE="$RUNNER_TEMP/hh-home-browser/node_modules/playwright/index.mjs" \
