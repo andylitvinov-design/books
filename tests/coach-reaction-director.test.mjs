@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -40,7 +40,7 @@ test('distress and safety take precedence over positive cues in supported langua
  assert.equal(coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'Maybe'}).kind,'speaking')
 })
 test('approved persona blocks only; no synthetic empathy, cross-camera, or repeated greeting',()=>{
- const ids=['HAR-01','HAR-02','HAR-03']
+ const ids=['HAR-01','HAR-02','HAR-03A']
  const smile=coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'I did it',turnKey:4})
  const p=chooseCoachReaction('harry',smile,ids)
  assert.equal(p.id,'HAR-02');assert.equal(p.once,true)
@@ -53,21 +53,21 @@ test('approved persona blocks only; no synthetic empathy, cross-camera, or repea
  assert.equal(chooseCoachReaction('merlin',coachReactionIntent({phase:'listening',micActive:true}),['MER-01']),null)
  assert.equal(chooseCoachReaction('caesar',smile,ids),null)
  assert.equal(chooseCoachReaction('sofia',coachReactionIntent({phase:'thinking'}),['SOF-01','SOF-02']).id,'SOF-01')
- assert.equal(chooseCoachReaction('genie',smile,['SAM-01','SAM-02','SAM-03']).id,'SAM-03')
+ assert.equal(chooseCoachReaction('genie',smile,['SAM-01','SAM-02','SAM-03B']).id,'SAM-03B')
  assert.equal(coachReactionCanStart({playing:true,ready:true,sameAnchor:true}),false)
  assert.equal(coachReactionCanStart({playing:true,atBoundary:true,ready:true,sameAnchor:true}),true)
  assert.equal(coachReactionCanStart({ready:true,sameAnchor:false}),false)
 })
 class FakeVideo{
- constructor(){this.listeners={};this.attrs={};this.videoWidth=0;this.videoHeight=0;this.readyState=0;this.currentSrc='';this._time=0;this.ended=false;this.playCount=0;this.pauseCount=0}
+ constructor(){this.listeners={};this.attrs={};this.videoWidth=0;this.videoHeight=0;this.readyState=0;this.duration=NaN;this.currentSrc='';this._time=0;this.ended=false;this.playCount=0;this.pauseCount=0}
  addEventListener(n,f){(this.listeners[n]??=[]).push(f)}
  removeEventListener(n,f){this.listeners[n]=(this.listeners[n]||[]).filter(x=>x!==f)}
  emit(n){for(const f of [...(this.listeners[n]||[])])f()}
  setAttribute(k,v){this.attrs[k]=v}
  getAttribute(k){return this.attrs[k]||null}
  removeAttribute(k){delete this.attrs[k]}
- load(){this.currentSrc=this.attrs.src||'';this.readyState=0;this.videoWidth=0;this.videoHeight=0;this._time=0;this.ended=false}
- ready(w=1080,h=1890){this.videoWidth=w;this.videoHeight=h;this.readyState=2;this.emit('loadeddata')}
+ load(){this.currentSrc=this.attrs.src||'';this.readyState=0;this.duration=NaN;this.videoWidth=0;this.videoHeight=0;this._time=0;this.ended=false}
+ ready(w=1080,h=1890,duration=5){this.videoWidth=w;this.videoHeight=h;this.duration=duration;this.readyState=2;this.emit('loadeddata')}
  pause(){this.pauseCount++}
  play(){this.playCount++;this.ended=false;this.emit('playing');return Promise.resolve()}
  get currentTime(){return this._time}
@@ -78,7 +78,7 @@ function fixture(){
  const videos=[new FakeVideo(),new FakeVideo()]
  let visible=null
  const media={coach:'harry',width:1080,height:1890,anchorHash:'hash',
-   blocks:['HAR-01','HAR-02','HAR-03'].map(id=>({id,src:'/media/'+id+'.mp4',width:1080,height:1890,anchorHash:'hash'}))}
+   blocks:['HAR-01','HAR-02','HAR-03A'].map(id=>({id,src:'/media/'+id+'.mp4',width:1080,height:1890,anchorHash:'hash',duration:5}))}
  const player=createReactionPlayback({media,videos,onVisible:(_,id)=>{visible=id}})
  return {player,videos,visible:()=>visible}
 }
@@ -117,19 +117,33 @@ test('distress, hidden tab and invalid resolution hold the contact frame without
  assert.equal(z.visible(),null);assert.ok(z.player.snapshot().failed.includes('HAR-01'))
  z.player.dispose()
 })
-test('canonical V4 registry: fifteen blocks in seven independently verified original-camera groups',()=>{
+test('canonical V5 registry: eighteen blocks in seven independently verified original-camera groups',()=>{
  assert.equal(Object.keys(REACTION_V4_ANCHORS).length,7)
- assert.equal(Object.keys(REACTION_V4_BLOCKS).length,15)
+ assert.equal(Object.keys(REACTION_V4_BLOCKS).length,18)
  for(const [id,b] of Object.entries(REACTION_V4_BLOCKS)){
   const a=REACTION_V4_ANCHORS[b.coach]
   assert.equal(b.anchorHash,a.hash);assert.equal(a.width,1080)
   assert.equal(b.sha256.length,64);assert.ok(b.size>0)
-  assert.ok(reactionV4File(id).endsWith('.mp4'))
+  assert.ok(reactionV4File(id).endsWith('.mp4'));assert.ok(Number.isInteger(b.frames)&&b.frames<=MAX_COACH_REACTION_FRAMES);assert.ok(coachReactionDurationAllowed(b.frames/24))
  }
  assert.equal(releasedReactionMedia('harry',[]),null)
  assert.equal(releasedReactionMedia('caesar',['caesar']),null)
  const m=releasedReactionMedia('harry',['harry'])
- assert.equal(m.blocks.length,3);assert.ok(m.blocks.every(b=>b.src.startsWith(REACTION_V4_ROOT)&&b.anchorHash===m.anchorHash))
+ assert.equal(m.blocks.length,5);assert.ok(m.blocks.every(b=>b.src.startsWith(REACTION_V4_ROOT)&&b.anchorHash===m.anchorHash))
+})
+test('10.20-second cap rejects archived or oversized reaction metadata before display',()=>{
+ assert.equal(MAX_COACH_REACTION_FRAMES,244)
+ assert.equal(coachReactionDurationAllowed(244/24),true)
+ assert.equal(coachReactionDurationAllowed(245/24),false)
+ assert.equal(coachReactionDurationAllowed(Infinity),false)
+ assert.equal(reactionV4File('HAR-03'),null)
+ assert.equal(reactionV4File('SAM-03'),null)
+ const z=fixture();z.player.update(listening(),true);z.videos[0].ready(1080,1890,10.21)
+ assert.equal(z.visible(),null);assert.ok(z.player.snapshot().failed.includes('HAR-01'));z.player.dispose()
+ const ids=['HAR-01','HAR-02','HAR-03A','HAR-03B','HAR-03C']
+ const base=coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'I did it'})
+ assert.deepEqual([0,1,2].map(turnKey=>chooseCoachReaction('harry',{...base,turnKey},ids).id),['HAR-02','HAR-03B','HAR-03C'])
+ assert.deepEqual([0,1].map(turnKey=>chooseCoachReaction('genie',{...base,turnKey},['SAM-01','SAM-02','SAM-03A','SAM-03B']).id),['SAM-03B','SAM-03A'])
 })
 test('enabled V4 groups have all byte-verified first-party media and anchors, not provider links',()=>{
  const root=new URL('../public'+REACTION_V4_ROOT,import.meta.url)
