@@ -22,20 +22,20 @@ test('three localized course days and bounded duration',()=>{
  assert.equal(clarityCourseDay('clarity_discover'),null)
  assert.equal(clarityCoachHref('//external.example',1),'//external.example')
 })
-test('saved results and optional homework after timed ending',()=>{
+test('saved results never grant homework from a client-only timed ending',()=>{
  const record={id:'saved-1',courseSessionId:'clarity_day_2',provenance:'client_reviewed_dialogue',savedAt:'2026-11-26T12:00:00Z',turns:[],clientSummary:'Reflection',clientNextStep:'Next'}
  for(const locale of ['en','ru','es']){
   assert.equal(coachCourseProtocolRows(record.courseSessionId,[],null,locale).length,6)
   assert.deepEqual(clarityCourseResult(record,locale).homework,[])
   const result=clarityCourseResult({...record,clarityTimeLimitReached:true},locale)
   assert.equal(result.day,2);assert.equal(result.summary,'Reflection')
-  assert.equal(result.homework.length,6);assert.ok(result.homework.every(r=>r.question))
+  assert.deepEqual(result.homework,[])
  }
  assert.equal(clarityCourseResult({...record,courseSessionId:'clarity_support'}),null)
  assert.equal(clarityCourseResult({...record,savedAt:null}),null)
  assert.equal(clarityCourseResult({...record,provenance:'draft'}),null)
  const rows=['not_explored','needs_confirmation','confirmed','skipped_by_client'].map((status,id)=>({id,status,label:'L',question:'Q'}))
- assert.deepEqual(clarityHomeworkRows({...record,clarityTimeLimitReached:true},rows).map(r=>r.id),[0,1])
+ assert.deepEqual(clarityHomeworkRows({...record,clarityTimeLimitReached:true},rows),[])
  assert.deepEqual(clarityHomeworkRows(record,rows),[])
 })
 test('proposed voice grant is account and day scoped and feature gated',()=>{
