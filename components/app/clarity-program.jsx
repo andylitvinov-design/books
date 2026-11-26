@@ -1,10 +1,16 @@
 'use client'
-import {clarityDay,clarityCoachHref,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
+import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
+import {useSearchParams} from 'next/navigation'
+import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
+import DaybookWeekReports from './daybook-week-reports'
+import CoachingCourseDashboard from './coaching-course-dashboard'
+import ClarityPractice from './clarity-practice'
+import {clarityPracticeProgress} from '@/lib/app/clarity-practice.mjs'
+import {ArrowRight,CheckCircle2,ChevronDown,Compass,NotebookPen} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
@@ -212,32 +218,47 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
 }
 export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
- const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries)
+ const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries),firstProgress=clarityPracticeProgress(entries)
+ const searchParams=useSearchParams()
+ const requestedWeek=searchParams?.getAll('week')
+ const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
  const [selected,setSelected]=useState(()=>clarityDay(initialDay))
  const resultState=useClarityResults(accountId,lang,onSessionLost)
- const day=selected??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
+ const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>n===1?!firstProgress.complete:!recorded.includes(n))||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
  const sheet=useRef(null)
  function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
- return <section className={css.golden} data-clarity-daybook data-clarity-design="golden-one-screen-v3">
-  <div className={css.topbar}>
-   <Link href={root+'/coaching/clarity'} prefetch={false} className={css.courseBack}><ArrowLeft size={18} aria-hidden="true"/>{g.overview}</Link>
-   <button type="button" className={css.help} data-daybook-inline-help aria-label={g.help} aria-haspopup="dialog" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={18} aria-hidden="true"/>iHelp</button>
-  </div>
-  <header className={css.cover}>
-   <h1>{t.title}</h1><p>{g.duration}</p><span className={css.ribbon}><Sparkles size={14} aria-hidden="true"/>CLARITY · DAYBOOK</span>
-  </header>
-  <nav className={css.dayTabs} aria-label={t.details}>{days.map(([title],i)=>{
-   const done=recorded.includes(i+1)
-   return <button key={i} type="button" aria-pressed={day===i+1} aria-controls={'clarity-day-'+(i+1)} onClick={()=>chooseDay(i+1)} title={title+' · '+(done?g.recorded:g.notRecorded)}><span>{t.day}</span><b>{i+1}</b><small>{done?<CheckCircle2 size={13} aria-hidden="true"/>:<BookOpen size={13} aria-hidden="true"/>}{done?'1/1':'0/1'}</small></button>
-  })}</nav>
-  <div className={css.dayBanner} data-clarity-progress>
-   <span>{t.day} {day} / {CLARITY_DAY_COUNT}</span><h2>{days[day-1][0]}</h2>
-   <div className={css.dayProgress}><progress max={CLARITY_DAY_COUNT} value={recorded.length} aria-label={t.progress}/><strong>{recorded.length}/{CLARITY_DAY_COUNT}</strong></div>
-   <small>{g.progress}</small>
-  </div>
-  <div className={css.sheet} ref={sheet} data-clarity-sheet tabIndex={0} aria-label={t.steps}>
+ const counts=days.map((_,i)=>i===0?firstProgress:{done:recorded.includes(i+1)?1:0,total:1})
+ const assigned=resultState.phase==='ready'&&day===1?resultState.data.results.filter(r=>r.day===1&&r.homework.length):[]
+ const homeworkTotal=assigned.reduce((n,r)=>n+r.homework.length,0)
+ const homeworkDone=assigned.reduce((n,r)=>n+r.homework.filter(row=>clarityHomeworkNotes(entries,r.id,row.id).length===1).length,0)
+ return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
+  <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} practiceOnlyReflection={day!==1}
+   practiceFlow={day===1?onClose=><ClarityPractice accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(1);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(2);onClose()}} oldNotes={clarityDayNotes(entries,1)}/>:null}
+   results={<><ClarityCourseResults state={resultState} day={day} locale={lang}/><DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/></>}
+   protocol={<ClarityCourseProtocol key={day} state={resultState} day={day} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/>}
+   sessionAvailable={false}
+   sessionStatus={<ClarityCourseStatus state={resultState} day={day} locale={lang}/>}
+   homeworkStatus={resultState.phase==='ready'&&!hasMore&&homeworkTotal>0?{label:homeworkDone+'/'+homeworkTotal,complete:homeworkDone===homeworkTotal}:null}
+   homework={day===1?<section data-clarity-personal-homework>
+    {resultState.phase==='loading'?<p>{t.working}</p>:resultState.phase!=='ready'?<button type="button" onClick={resultState.reload}>{t.retry}</button>:
+     hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:
+     !assigned.length?<p>{({en:'No agreed homework yet.',ru:'Пока нет согласованного домашнего задания.',es:'Todavía no hay una tarea acordada.'})[lang]}</p>:
+     assigned.map(report=><section key={report.id} data-clarity-homework-practice>
+      <p>{({en:'Personal coach',ru:'Личный коуч',es:'Coach personal'})[lang]}: {report.personaId} · {new Date(report.savedAt).toLocaleDateString(lang)}</p>
+      <p>{({en:'These private reflections are not reviewed session results.',ru:'Это личные ответы, ещё не проверенные коучем.',es:'Son reflexiones privadas, todavía no revisadas por el coach.'})[lang]}</p>
+      {report.homework.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);return <div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{answers.length>1?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={day} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>}</div>})}
+     </section>)}
+   </section>:null}
+   initialPanel={routeWeek===4?'resources':null}
+   resources={<>
+    <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
+    {legacy.length>0&&<details className={css.resources}><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
+    <details className={css.resources} open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
+    {children}<p className={css.notice}>{t.privacy}</p><Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+   </>}>
+  <div ref={sheet} data-clarity-sheet>
    {days.map(([title,description],i)=>{
     const number=i+1,notes=clarityDayNotes(entries,number)
     return <article className={css.dayCard} key={number} id={'clarity-day-'+number} hidden={day!==number} data-clarity-day={number}>
@@ -248,21 +269,6 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
        <summary><span className={css.stepNum}>{index+1}</span><strong>{name}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16} aria-hidden="true"/></Link>}</div>
       </details>)}
-      <details className={css.practice} data-clarity-course-report><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session result',ru:'Результат сессии',es:'Resultado de la sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseResults state={resultState} day={number} locale={lang}/></details>
-      {number===1&&<details className={css.practice} data-clarity-personal-homework><summary><NotebookPen size={19} aria-hidden="true"/><strong>{({en:'Homework from your personal coach',ru:'Домашнее задание от личного коуча',es:'Tarea de tu coach personal'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
-       <div className={css.practiceBody}>
-        {resultState.phase==='loading'?<p>{({en:'Loading homework…',ru:'Загрузка заданий…',es:'Cargando tareas…'})[lang]}</p>:resultState.phase!=='ready'?<button type="button" onClick={resultState.reload}>{t.retry}</button>:
-         hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:
-         !resultState.data.results.some(r=>r.day===1&&r.homework.length)?<p>{({en:'No agreed homework yet.',ru:'Пока нет согласованного домашнего задания.',es:'Todavía no hay una tarea acordada.'})[lang]}</p>:
-         resultState.data.results.filter(r=>r.day===1&&r.homework.length).map(report=>{
-          const completed=report.homework.filter(row=>clarityHomeworkNotes(entries,report.id,row.id).length===1).length
-          return <section key={report.id} data-clarity-homework-practice><p>{({en:'Personal coach',ru:'Личный коуч',es:'Coach personal'})[lang]}: {report.personaId} · {new Date(report.savedAt).toLocaleDateString(lang)}</p><p>{({en:'Saved answers',ru:'Сохранено ответов',es:'Respuestas guardadas'})[lang]}: {completed}/{report.homework.length}</p><progress value={completed} max={report.homework.length}/>
-           <p>{({en:'These private reflections are not yet reviewed session results. You can share them with your coach if you choose.',ru:'Это личные ответы, ещё не проверенные коучем. Вы можете поделиться ими на следующей встрече по желанию.',es:'Son reflexiones privadas, todavía no revisadas por el coach. Puedes compartirlas si quieres.'})[lang]}</p>
-           {report.homework.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);return <div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{answers.length>1?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={number} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>}</div>})}
-          </section>
-         })}
-       </div></details>}
-      <details className={css.practice} data-clarity-protocol><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseProtocol state={resultState} day={number} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/></details>
       <details className={css.practice} data-clarity-reflection>
        <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}>
@@ -273,20 +279,7 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
      </div>
     </article>
    })}
-   <details className={css.resources}>
-    <summary><BookOpen size={16} aria-hidden="true"/><strong>{g.resources}</strong><ChevronDown size={16} aria-hidden="true"/></summary>
-    <div className={css.resourceBody}>
-     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
-     {legacy.length>0&&<details><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
-     {children}
-     <p className={css.notice}>{t.privacy}</p>
-     <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
-    </div>
-   </details>
   </div>
-  <footer className={css.courseFooter}>
-   <Link href={clarityCoachHref(root+'/my-coach',day)} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
-   <ClarityCourseStatus state={resultState} day={day} locale={lang}/>
-  </footer>
+  </CoachingCourseDashboard>
  </section>
 }

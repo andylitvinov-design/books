@@ -70,7 +70,7 @@ test('homework answers are saved separately, scoped to the exact report and fiel
  assert.notEqual(await clarityHomeworkEntryId(account,report,'needs'),id)
  assert.notEqual(await clarityHomeworkEntryId(report,report,'request'),id)
  assert.match(id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
- assert.match(read('components/app/clarity-program.jsx'),/number===1&&<details[^\n]*data-clarity-personal-homework/)
+ assert.match(read('components/app/clarity-program.jsx'),/homework=\{day===1\?<section data-clarity-personal-homework/)
  assert.match(read('components/my-coach-live-dialogue.jsx'),/clarityOpeningReady&&activeSessionSeconds>=CLARITY_COURSE_SECONDS/)
 })
 test('proposed voice grant is account and day scoped and feature gated',()=>{

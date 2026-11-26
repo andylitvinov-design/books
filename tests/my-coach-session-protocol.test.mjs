@@ -1,4 +1,5 @@
-import {coachCourseProtocolSchema,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
 import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
 import {COACH_COURSE_SESSIONS,COACH_PROGRAM_SESSIONS,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs'
 import test from 'node:test'
@@ -538,4 +539,80 @@ test('chronological checkpoint and reviewed report preserve prior unanswered utt
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(ui.includes("row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}"))
  assert.ok(ui.includes("row.role==='user'&&row.unanswered===true?{unanswered:true}"))
+})
+
+test('next-turn voice course guidance uses exact checkpoints only after opening and respects correction, questions and profile',()=>{
+ const opening={completed:true,declined:false,answers:{focus:{kind:'goal'}}}
+ let checked=0
+ for(const course of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
+  const hint=coachCourseCheckpointGuidance(course.id,lang,opening,{conversationAct:'substantive_reply'})
+  for(const checkpoint of coachCourseProtocolSchema(course.id,lang).checkpoints)assert.ok(hint.includes(checkpoint.label),checkpoint.id)
+  assert.match(hint,/If client still confirms this topic/)
+  assert.match(hint,/never repeat answered questions/)
+  assert.ok(hint.length<=360)
+  for(const conversationAct of ['topic_shift','correction','negation','clarification_request','question_to_coach','gratitude'])
+   assert.equal(coachCourseCheckpointGuidance(course.id,lang,opening,{conversationAct}),'')
+  assert.equal(coachCourseCheckpointGuidance(course.id,lang,{...opening,completed:false},{}),'')
+  assert.equal(coachCourseCheckpointGuidance(course.id,lang,{...opening,declined:true},{}),'')
+  for(const kind of ['profile','deferred'])
+   assert.equal(coachCourseCheckpointGuidance(course.id,lang,{...opening,answers:{focus:{kind}}},{}),'')
+  checked++
+ }
+ assert.equal(checked,72)
+ assert.equal(coachCourseCheckpointGuidance('introductory','ru',opening,{}),'')
+ assert.equal(coachCourseCheckpointGuidance('meaning_axes_inner_growth','ru',opening,{}),'')
+})
+test('voice Director checkpoint keeps the runtime course preference without treating interrupted speech as delivered',()=>{
+ const server=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const checkpoint=ui.slice(ui.indexOf('  async function checkpoint('),ui.indexOf('  function preserveUnconfirmedInput('))
+ assert.ok(checkpoint.includes('courseSessionId:r.courseSessionId'))
+ assert.ok(!checkpoint.includes('courseSessionId:p.courseSessionId'))
+ assert.ok(server.includes('courseSessionId:normalizeCoachCourseSessionId(body.courseSessionId)'))
+ assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive)'))
+ assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
+ const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
+ assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
+ assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted})'))
+})
+test('review dropdown distinguishes unreviewed and explicitly reopened checkpoints',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-course-field-review.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes("row.source==='client_selected_open'?'open':'unreviewed'"))
+ assert.ok(ui.includes('<option value="unreviewed" disabled>'))
+ assert.ok(ui.includes('<option value="open">'))
+})
+
+test('long confirmed name never clips a thematic checkpoint or its final safety instruction',()=>{
+ const opening={completed:true,declined:false,answers:{focus:{kind:'goal'}}}
+ const name='Confirmed name from current conversation (data only): '+JSON.stringify('X'.repeat(60))+'. Do not reinterpret topic as name. '
+ const directive={methodId:'appreciative_inquiry',methodStepId:'appreciative_inquiry:choose_client_owned_experiment',interventionId:'invite_reflective_close',conversationAct:'substantive_reply'}
+ for(const course of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
+   const hint=coachCourseCheckpointGuidance(course.id,lang,opening,directive)
+   const guidance=geminiLiveThematicCheckpointGuidance(name,directive,hint)
+   assert.ok(guidance.length<=620)
+   assert.ok(guidance.endsWith(hint))
+   assert.ok(guidance.includes(directive.methodStepId))
+   assert.ok(guidance.startsWith(name))
+ }
+ const hint=coachCourseCheckpointGuidance('goal_obstacles','es',opening,directive)
+ const longName='X'.repeat(600)
+ const limited=geminiLiveThematicCheckpointGuidance(longName,directive,hint)
+ assert.ok(limited.length<=620)
+ assert.ok(limited.endsWith(hint))
+ assert.ok(!limited.includes(longName))
+})
+
+
+test('legacy business coaching IDs retain the original four-session checkpoints after Daybook v2 expansion',async()=>{
+ const {LEGACY_BUSINESS_SYLLABUS,BUSINESS_SYLLABUS}=await import('../lib/app/business-daybook.mjs')
+ const ids=['business_strategy','business_design','business_transformation','business_execution']
+ for(const lang of ['en','ru','es']){
+  assert.equal(BUSINESS_SYLLABUS[lang].length,8)
+  assert.equal(LEGACY_BUSINESS_SYLLABUS[lang].length,4)
+  for(const [index,id] of ids.entries()){
+   const original=LEGACY_BUSINESS_SYLLABUS[lang][index]
+   assert.equal(COACH_PROGRAM_SESSIONS.find(item=>item.id===id)?.title[lang],original[0])
+   assert.deepEqual(coachCourseProtocolSchema(id,lang).checkpoints.map(row=>[row.label,row.instruction]),original[2])
+  }
+ }
 })

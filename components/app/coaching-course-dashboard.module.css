@@ -1,0 +1,71 @@
+/* Approved golden coaching Daybook, shared by Clarity and Achieve My Goal. */
+:global(html):has(.frame[data-coaching-course-active=true]),:global(body):has(.frame[data-coaching-course-active=true]){height:100%;overflow:hidden!important;overscroll-behavior:none;background:#24170e!important}
+:global(body):has(.frame[data-coaching-course-active=true]) :global([data-hh-ihelp-trigger]),:global(body):has(.frame[data-coaching-course-active=true]) :global([data-hh-unified-dock]),:global(body):has(.frame[data-coaching-course-active=true]) :global([data-sitewide-capture]),:global(body):has(.frame[data-coaching-course-active=true]) :global([data-sitewide-capture-retry]),:global(body):has(.frame[data-coaching-course-active=true]) :global([data-sitewide-antistress-banner]){display:none!important}
+.frame[data-coaching-course-active=true]{position:fixed;inset:0;z-index:111;width:100%;height:100dvh;max-height:100dvh;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 80% 8%,#80511e55,transparent 50%),linear-gradient(150deg,#392312,#24170e 75%);color:#fff4df;font:500 15px/1.3 system-ui,sans-serif;color-scheme:light}
+.frame *, .frame{box-sizing:border-box}
+.frame [hidden]{display:none!important}
+.frame :is(button,a):focus-visible,.sheet:focus-visible{outline:3px solid #e2b95f;outline-offset:2px}
+.layout{max-width:620px;margin:auto;height:100%;min-height:0;display:flex;flex-direction:column;gap:clamp(5px,1dvh,9px);padding:max(6px,env(safe-area-inset-top)) clamp(8px,2.5vw,16px) max(8px,env(safe-area-inset-bottom));overflow:hidden}
+.frame .topbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0;padding:0}
+.frame .topbar :is(a,button){display:flex;align-items:center;gap:6px;min-height:44px;font:700 15px/1.15 system-ui,sans-serif;text-decoration:none;color:#fff4df;background:transparent;border:0;padding:0;margin:0}
+.frame .topbar .help{padding:4px 12px;border:1px solid #e1bf81;border-radius:999px;background:#fff3dd;color:#07553d}
+.cover{flex:none;min-width:0;border:1px solid #e8c48a;border-radius:18px;padding:9px 12px;color:#392013;background:linear-gradient(90deg,#fff8e8 2%,#fff2d8e8 48%,#fff1d528 82%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right 34%/cover;box-shadow:0 3px 10px #150c0540}
+.frame .cover>span{display:block;font:750 11px/1.1 Georgia,serif;letter-spacing:.08em;color:#07553d}
+.frame .cover h1{font:700 clamp(24px,6.6vw,38px)/1.03 Georgia,serif;max-width:80%;color:#392013;letter-spacing:-.02em;margin:3px 0 4px}
+.frame .cover p{font-size:13px;font-weight:750;color:#392318;margin:0}
+.cover b{display:inline-flex;align-items:center;gap:5px;margin-top:4px;padding:3px 8px;border-radius:7px;background:#07553d;color:#fff4df;font-size:11px}
+.frame .coach{flex:none;position:relative;display:flex;align-items:center;text-align:left;gap:9px;min-width:0;width:100%;min-height:66px;padding:5px 10px 5px 6px;margin:0;border:2px solid #f5d58e;border-radius:20px;color:#07553d;background:radial-gradient(ellipse at 92% 92%,#9fb868,transparent 60%),linear-gradient(135deg,#fffbea,#f6e6b8);box-shadow:0 0 9px #eab24c66,inset 0 0 10px #fffdf4;cursor:pointer}
+.frame .coach[data-coaching-coach]:not([data-coaching-coach=choose]){color:#fff8e7;background:linear-gradient(135deg,#087453,#004731)}
+.portrait{flex:none;width:66px;height:66px;border-radius:50%;border:3px solid #f7df9e;overflow:hidden;background:#d6bc81;box-shadow:0 1px 8px #b9843770}
+.portrait img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 27%}
+.coachName{min-width:0;flex:1;display:grid;gap:2px}
+.coachName small{font:700 11px/1.1 system-ui,sans-serif;letter-spacing:.025em}
+.coachName strong{font:700 clamp(19px,5.7vw,29px)/1.08 Georgia,serif;overflow-wrap:anywhere}
+.change{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700}
+.frame .tabs{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(84px,1fr);gap:5px;margin:0;padding:1px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#bd9564 transparent}
+.frame .tabs[data-coaching-session-tabs="8"]{grid-auto-columns:minmax(82px,25%)}
+.frame .tabs button{min-width:0;min-height:49px;border:1px solid #e5c58c;border-radius:12px;color:#392013;background:linear-gradient(145deg,#fff8e8,#f5dfb7);display:grid;justify-items:center;align-content:center;gap:3px;padding:5px 4px;margin:0;box-shadow:0 2px 6px #1e100a30;font:700 14px/1.15 system-ui,sans-serif;cursor:pointer}
+.frame .tabs button[aria-pressed=true]{border:2px solid #ffdf98;color:#fff5df;background:linear-gradient(145deg,#087b54,#004830);box-shadow:0 0 7px #e6ac5066}
+.tabs strong{white-space:nowrap}
+.tabs small{display:flex;align-items:center;gap:3px;font-size:12px;font-variant-numeric:tabular-nums}
+.sheet{flex:1 1 0;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#cda157 transparent;display:flex;flex-direction:column;gap:6px}
+.banner{flex:none;border:1px solid #966d3c;border-radius:14px;padding:7px 11px;color:#fff5df;background:linear-gradient(90deg,#392318e8,#493021b3 62%,#39231850),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 55%/cover}
+.banner>span,.panelTitle>span{font-size:12px;font-weight:750;color:#e9c68a}
+.frame .banner h2{font:700 clamp(21px,5.9vw,30px)/1.1 Georgia,serif;color:#fff6e5;margin:2px 0 4px;overflow-wrap:anywhere}
+.progress{display:flex;align-items:center;gap:8px}
+.progress progress{flex:1;width:100%;min-width:0;height:8px;appearance:none;overflow:hidden;border:1px solid #efd39d;border-radius:99px;background:#896744;accent-color:#4bad69}
+.progress progress::-webkit-progress-bar{background:#896744}
+.progress progress::-webkit-progress-value{background:linear-gradient(90deg,#078449,#8ad875);border-radius:99px}
+.progress strong{font-size:13px;font-variant-numeric:tabular-nums}
+.banner>small{display:block;margin-top:2px;font-size:11px;color:#f2d7ac}
+.card,.panelBody,.panelTitle,.coachList{min-width:0;border:1px solid #eec887;border-radius:18px;background:linear-gradient(145deg,#fffaf0,#f8e5c3);color:#392318;padding:9px 10px;box-shadow:0 2px 10px #e6ac5022}
+.frame .card h3{font:700 clamp(21px,5.6vw,29px)/1.05 Georgia,serif;margin:0 0 6px;color:#392013}
+.taskbar{display:flex;align-items:center;gap:6px;padding:4px 9px;margin-bottom:5px;border-radius:999px;background:linear-gradient(110deg,#087d57,#004a34);color:#fff6df;font-size:13px;font-weight:750}
+.frame .task{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(62px,auto) 15px;align-items:center;gap:6px;text-align:left;min-height:54px;width:100%;padding:6px 8px;margin:0 0 5px;border:1px solid #fffdf6;border-radius:999px;background:linear-gradient(145deg,#fffaf1,#f8e4bf);box-shadow:0 3px 7px #ad7c3655,inset 0 0 0 1px #e1c391;color:#392318;cursor:pointer}
+.task>svg,.materials button>svg,.materialHeading>svg{color:#07553d;flex:none}
+.task strong{font:700 clamp(16px,4.5vw,22px)/1.1 Georgia,serif;overflow-wrap:anywhere}
+.task span{border-radius:999px;padding:4px 6px;font-size:11px;font-weight:750;text-align:center;max-width:112px;overflow-wrap:anywhere}
+.neutral{background:#f5dfb6;color:#67451d}.done{background:#d5e9c6;color:#07553d}
+.frame .card .materialHeading{display:flex;align-items:center;gap:7px;margin:8px 0 6px;font-size:clamp(19px,5.1vw,26px)}
+.materialHeading::after{content:"";height:1px;background:linear-gradient(90deg,#bd8c39,transparent);flex:1}
+.materials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.frame .materials button{display:grid;grid-template-columns:30px minmax(0,1fr);align-items:center;text-align:left;column-gap:7px;row-gap:2px;min-height:76px;width:100%;padding:8px 7px;border:1px solid #e0ba7b;border-radius:13px;background:linear-gradient(145deg,#fffaf0,#f8e4bc);color:#392013;box-shadow:0 3px 6px #ad7c3633;cursor:pointer;margin:0}
+.materials strong{font:700 clamp(16px,4.3vw,22px)/1.04 Georgia,serif;overflow-wrap:anywhere}
+.materials small{grid-column:2;font-size:11px;line-height:1.15;color:#775429}
+.frame .more{display:flex;align-items:center;gap:5px;min-height:44px;background:none;border:0;color:#07553d;font:650 13px/1.2 system-ui,sans-serif;padding:0 2px;margin:0;cursor:pointer}
+.footer{flex:none;display:grid;gap:2px;padding:0;margin:0;text-align:center}
+.frame .cta{display:flex;align-items:center;justify-content:center;gap:8px;min-height:74px;width:100%;margin:0;padding:10px 13px;border:2px solid #f8d68b;border-radius:999px;text-decoration:none;background:linear-gradient(135deg,#0b895a,#004731);color:#fff8e5;box-shadow:0 0 12px #e8bb5f88,inset 0 0 9px #72bd6577;font:750 clamp(17px,5vw,23px)/1.15 system-ui,sans-serif;cursor:pointer}
+.cta svg{flex:none}.cta strong{flex:1}
+.footer small,.choiceNote{font-size:11px;color:#f3d9ad;margin:0}
+.panelTitle{flex:none;padding:12px}.panelTitle>span{color:#846129}
+.frame .panelTitle h2{font:700 26px/1.1 Georgia,serif;color:#392013;margin:3px 0}.panelTitle p{margin:4px 0;font-size:14px}
+.panelBody{overflow-wrap:anywhere;flex:none}.panelBody>p{margin:4px 0 10px}.panelBody>a{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#07553d;font-weight:700}
+.coachList{display:grid;gap:7px}.frame .coachList button{display:flex;align-items:center;gap:10px;text-align:left;min-height:66px;width:100%;background:#fffaf0;border:1px solid #ddb981;border-radius:14px;color:#392013;padding:6px;margin:0;cursor:pointer}
+.coachList button[aria-pressed=true]{background:#e2f0d9;border-color:#07553d}.coachList img{flex:none;border-radius:50%;object-fit:cover}.coachList span{display:grid;gap:4px;min-width:0;flex:1}.coachList strong{font-size:17px}.coachList small{font-size:13px}
+.frame button:disabled{opacity:.6;cursor:default}
+@media(max-width:360px){.change{font-size:11px}.portrait{width:56px;height:56px}.frame .coach{gap:6px}.frame .task{grid-template-columns:26px minmax(0,1fr) minmax(58px,auto) 13px;gap:4px}.task span{max-width:89px}.frame .materials button{grid-template-columns:25px minmax(0,1fr);gap:4px}.materials button>svg{width:25px}}
+@media(max-height:650px){.layout{gap:5px}.cover{padding:6px 10px}.frame .cover h1{font-size:25px}.cover b{display:none}.frame .coach{min-height:57px}.portrait{width:57px;height:57px}.frame .tabs button{min-height:44px}.frame .cta{min-height:66px}.card{padding:7px 8px}.frame .task{min-height:48px}.frame .materials button{min-height:67px}}
+@media(max-height:480px){.cover{display:none}.frame .coach{min-height:50px}.portrait{width:49px;height:49px}.frame .cta{min-height:56px}}
+
+.frame .topbar .tools{margin-left:auto;width:44px;justify-content:center;border:1px solid #e1bf81;border-radius:50%;color:#fff4df}
+@media(max-height:720px){.layout{gap:5px}.cover{padding:7px 10px}.frame .cover h1{font-size:clamp(24px,6.2vw,29px);max-width:90%}.cover b{display:none}.frame .coach{min-height:58px}.portrait{width:58px;height:58px}.frame .tabs button{min-height:46px}.banner{padding:6px 9px}.frame .banner h2{font-size:21px}.card{padding:7px 8px}.frame .task{min-height:49px}.frame .materials button{min-height:68px}.frame .cta{min-height:68px}}
