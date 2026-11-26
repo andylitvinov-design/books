@@ -6,7 +6,8 @@ const ENDPOINT='https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-comm
 const REPO='andylitvinov-design/books',BASE='codex/public-book-library';
 const SHA=/^[a-f0-9]{40}$/i,UUID=/^[a-f0-9-]{36}$/i;
 const VALID_STATES=new Set(['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED']);
-const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed']);
+// Human/security holds are durable. An existing writer's claim is transient.
+const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual']);
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 // The default-branch Watchdog already wakes on these completed worker runs.
@@ -56,6 +57,12 @@ function readback(pr,number,{terminalReadbackOnly=false}={}){
  const labels=new Set((pr.labels||[]).map(l=>l.name).filter(Boolean));
  for(const hold of HOLDS)if(labels.has(hold))
   return {status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE',headSha:pr.head.sha};
+ // The signed global worker owns this PR until its claim is released.
+ // Do not poison the owner's durable blockedRecheckOnly fence merely
+ // because the existing worker is active. Keep monitoring this intent.
+ if(labels.has('hh:worker-claimed'))
+  return {status:'WATCHING',reasonCode:'OWNER_REPAIR_DIRECT_WORKER_BUSY',
+   headSha:pr.head.sha,eligibleForFirstRepair:false};
  if(pr.mergeable===false&&pr.mergeable_state==='dirty')
   return {status:'BLOCKED',reasonCode:'MERGE_CONFLICT_REQUIRES_SEMANTIC_REPAIR',headSha:pr.head.sha};
  return {status:'WATCHING',reasonCode:'AWAIT_EXISTING_CORE_AND_AUTO_MERGE',

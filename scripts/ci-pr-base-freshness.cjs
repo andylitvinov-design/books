@@ -164,10 +164,14 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       approved('safeScopedDisjointProductionAdvance');
     const mixedIndependent=pr.mergeable===true&&
       approved('safeMixedProtectedAdvance');
+    // Mirror the exact current protected Specialist's ordinary-product loose-base rule.
+    // No fallback to PR-authored or default-branch-defined acceptance policy.
+    const nonOverlappingProduct=pr.mergeable===true&&
+      approved('safeNonOverlappingProductAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
        !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
        !independentQaAdvance&&!independentDomainTest&&!composedIndependent&&
-       !scopedIndependent&&!mixedIndependent)
+       !scopedIndependent&&!mixedIndependent&&!nonOverlappingProduct)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -287,6 +291,11 @@ async function loadTrustedClassifier(workspace){
    names.push('safeScopedDisjointProductionAdvance');
  if(typeof impact.safeMixedProtectedAdvance==='function')
    names.push('safeMixedProtectedAdvance');
+ // Roll out after production ships the reviewed helper; older production
+ // remains fail-closed. The existing mixed-revalidated reason preserves the
+ // final native protected-ref pin for both event and hourly coordinators.
+ if(typeof impact.safeNonOverlappingProductAdvance==='function')
+   names.push('safeNonOverlappingProductAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }

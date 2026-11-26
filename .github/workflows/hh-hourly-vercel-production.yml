@@ -117,9 +117,11 @@ jobs:
                  ((.filename | test("^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$")) or
                   (.status == "modified" and (.filename == "tests/ci-workflow-globs.test.mjs" or
                     .filename == "tests/ci-heavy-impact.test.mjs" or
-                    .filename == "tests/pr-fast-lane.test.mjs")))))
+                    .filename == "tests/pr-fast-lane.test.mjs" or
+                    .filename == "scripts/ci-specialist-aggregate.mjs" or
+                    .filename == "tests/ci-specialist-wait.test.mjs")))))
              ' <<< "$compare_json" >/dev/null 2>&1; then
-            echo 'Skip routine Vercel build: only GitHub workflow YAML and explicitly reviewed CI contract tests changed from current LIVE.'
+            echo 'Skip routine Vercel build: only GitHub workflow YAML and explicitly reviewed CI control/test files changed from current LIVE.'
             exit 0
           fi
           # Unavailable, ambiguous or mixed delta: fall through to existing release.

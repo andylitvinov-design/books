@@ -57,7 +57,7 @@ function world(options={}){
    },
    pulls:{
     get:async()=>({data:(reads++,options.prAfter&&reads>=2?options.prAfter:pr)}),
-    listCommits:async()=>({data:options.commitList??[]})
+    listCommits:async({page})=>({data:options.commitPages?.[page]??options.commitList??[]})
    },
    repos:{
     getBranch:async()=>({data:{protected:true,commit:{sha:LIVE},...options.branch}}),
@@ -548,4 +548,45 @@ test('macOS hold reads only trusted exact-source PR workflow evidence',async()=>
   listWorkflowRuns:async()=>{throw Error('unavailable');}
  }}},args),'MEDIA_SPECIALIST_INDEX_UNAVAILABLE');
  assert.equal(await holdPendingExactMedia(gh,{...args,head:'malformed'}),'MEDIA_ASSOCIATION_UNVERIFIED');
+});
+
+test('owner source sync subjects from #5606, #5609 and #5599 count toward the same existing hold',()=>{
+ const now=Date.parse('2026-11-04T21:02:00Z');
+ const item=(sha,message,parents=2)=>({sha,parents:Array.from({length:parents},()=>({sha:OLD})),
+  commit:{message,committer:{date:'2026-11-04T21:01:00Z'}}});
+ const rows=[
+  item('d'.repeat(40),'Merge current protected production after Reiki release into CI reduction #5606'),
+  item('e'.repeat(40),'Sync protected BASE after verified BASE_ADVANCED (#5609)\n\nPreserve exact two blobs.'),
+  item(HEAD,'Merge protected production after verified BASE_ADVANCED (#5599)')
+ ];
+ const result=classifyRecentBaseSyncs(rows,HEAD,now);
+ assert.equal(result.verified,true);assert.equal(result.count,3);assert.equal(result.hold,true);
+ assert.equal(classifyRecentBaseSyncs([item(HEAD,rows[2].commit.message,1)],HEAD,now).count,0);
+ assert.equal(classifyRecentBaseSyncs([item(HEAD,'fix: repair source after BASE_ADVANCED')],HEAD,now).count,0);
+ assert.equal(classifyRecentBaseSyncs([rows[0],rows[0],rows[2]],HEAD,now).verified,false);
+});
+test('complete bounded PR history detects repeat sync across a 100-commit page boundary',async()=>{
+ const item=(sha,message,parents=1)=>({sha,parents:Array.from({length:parents},()=>({sha:OLD})),
+  commit:{message,committer:{date:'2026-11-04T21:01:00Z'}}});
+ const page1=Array.from({length:99},(_,i)=>item((i+1).toString(16).padStart(40,'0'),'source'));
+ page1.push(item('d'.repeat(40),'Sync protected BASE after verified BASE_ADVANCED (#5609)',2));
+ const page2=[item(HEAD,'Merge protected production after verified BASE_ADVANCED (#5599)',2)];
+ const w=world({pr:{commits:101},commitPages:{1:page1,2:page2}});
+ const res=await run(w);
+ assert.equal(res.reason,'BASE_SYNC_REPEAT_BURST_HOLD');assert.equal(res.recentSyncs,2);
+ assert.equal(w.updated(),0);
+ for(const opts of [
+  {pr:{commits:101},commitPages:{1:page1.slice(1),2:page2}},
+  {pr:{commits:251},commitPages:{1:page1,2:page2}}
+ ]){
+  const bad=world(opts),result=await run(bad);
+  assert.match(result.reason,/BASE_SYNC_HISTORY/);assert.equal(bad.updated(),0);
+ }
+});
+test('two commits can already consume the repeat synchronization budget',async()=>{
+ const item=(sha)=>({sha,parents:[{sha:OLD},{sha:LIVE}],
+  commit:{message:'Sync protected BASE after verified BASE_ADVANCED (#5609)',committer:{date:'2026-11-04T21:01:00Z'}}});
+ const w=world({pr:{commits:2},commitList:[item('d'.repeat(40)),item(HEAD)]});
+ const result=await run(w);
+ assert.equal(result.reason,'BASE_SYNC_REPEAT_BURST_HOLD');assert.equal(w.updated(),0);
 });

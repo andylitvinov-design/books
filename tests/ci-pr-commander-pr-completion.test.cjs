@@ -535,3 +535,43 @@ test('only verified conflict history can reopen; stale second read, security hol
  const blocked=await run({...unrelated,context,dispatch:async()=>{throw Error('UNSAFE_WRITE')}});
  assert.equal(blocked.status,'BLOCKED');assert.equal(read,1);
 });
+
+
+test('an existing worker claim is temporary WATCHING, never an additional source-write grant',async()=>{
+ const busy={...base,labels:[{name:'hh:worker-claimed'},{name:'hh:repair-needed'}]};
+ const observed=readback(busy,4770);
+ assert.equal(observed.status,'WATCHING');
+ assert.equal(observed.reasonCode,'OWNER_REPAIR_DIRECT_WORKER_BUSY');
+ assert.equal(observed.eligibleForFirstRepair,false);
+ const f=mock(task,busy);
+ let invokes=0;
+ const result=await run({...f,context,dispatch:async()=>{invokes++;throw Error('DUPLICATE_WRITER')}});
+ assert.equal(result.status,'WATCHING');
+ assert.equal(result.dispatchAccepted,false);
+ assert.equal(invokes,0);
+ assert.equal(f.calls.filter(x=>x.action==='arm_dispatch').length,0);
+ const receipt=f.calls.find(x=>x.action==='finish');
+ assert.equal(receipt.status,'WATCHING');
+ assert.equal(receipt.blockedRecheckOnly,false);
+ // A genuinely released claim permits a subsequent independently verified
+ // first source dispatch. A previously consumed intent still cannot rearm.
+ const released={...base,labels:[{name:'hh:repair-needed'}]};
+ const f2=mock(task,released);
+ const r2=await run({...f2,context,dispatch:async()=>{invokes++;return {dispatched:true}}});
+ assert.equal(r2.dispatchAccepted,true);
+ assert.equal(invokes,1);
+ const f3=mock({...task,dispatchEligibleOnce:false},released);
+ await run({...f3,context,dispatch:async()=>{throw Error('DUPLICATE_WRITER')}});
+ assert.equal(f3.calls.filter(x=>x.action==='arm_dispatch').length,0);
+});
+test('manual and security holds take precedence over a worker claim',()=>{
+ for(const label of ['hh:hold','hh:blocked','hh:repair-manual']){
+  const p={...base,labels:[{name:'hh:worker-claimed'},{name:label},{name:'hh:repair-needed'}]};
+  const decision=readback(p,4770);
+  assert.equal(decision.status,'BLOCKED',label);
+  assert.equal(decision.reasonCode,'EXISTING_HOLD_NO_OVERRIDE',label);
+  assert.notEqual(decision.eligibleForFirstRepair,true);
+ }
+ const historical=readback({...base,labels:[{name:'hh:worker-claimed'}]},4770);
+ assert.equal(historical.status,'WATCHING');
+});
