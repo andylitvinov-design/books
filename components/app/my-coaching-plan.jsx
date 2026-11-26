@@ -6,6 +6,7 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
+import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import DaybookDailySettings from './daybook-daily-settings'
 import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
@@ -164,6 +165,7 @@ function SavedProtocolCheckin({protocol,locale}){
    {words.focuses[opening.focus]&&<p>{words.focus}: {words.focuses[opening.focus]}</p>}
    {opening.feelings&&<p>{words.feelings}: {opening.feelings}</p>}
   </div>}
+  <MyCoachSavedProfileV3 protocol={protocol} locale={locale}/>
   {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
    <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
    <p>{words.current} / {words.desired}</p>
