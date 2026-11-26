@@ -52,7 +52,7 @@ import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
 import MyCoachCourseFieldReview from './my-coach-course-field-review'
 import MyCoachResultPreview from './my-coach-result-preview'
-import {coachCourseProtocolRows} from '@/lib/coaching/coach-course-protocol-schema.mjs'
+import {appendClaritySpokenReview,coachCourseProtocolRows} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
 import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
 import {coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
@@ -1172,6 +1172,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const next=[...turnsRef.current,entry]
     turnsRef.current=next
     setTurns(next)
+    if(clarityCourseDay(selectedCourseId)&&role==='user'){
+      const review=appendClaritySpokenReview(courseReviewRef.current,selectedCourseId,next,conversationLang)
+      if(review!==courseReviewRef.current){courseReviewRef.current=review;setCourseFieldReview(review)}
+    }
     queuePrivateDraft(next)
     if(!clarityCourseDay(selectedCourseId))setSessionClockStarted(true)
     setIntroComplete(true)
@@ -2322,7 +2326,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
-        {openingProgress.completed&&!profileSelected&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang}/>}
+        {(openingProgress.completed||clarityCourseDay(selectedCourseId))&&!profileSelected&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang}/>}
+        {clarityCourseDay(selectedCourseId)&&<MyCoachCourseFieldReview courseSessionId={selectedCourseId} turns={turns} locale={lang} value={courseFieldReview} onChange={value=>{courseReviewRef.current=value;setCourseFieldReview(value);queuePrivateDraft(turnsRef.current)}} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>}
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}

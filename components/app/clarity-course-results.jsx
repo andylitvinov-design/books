@@ -31,14 +31,20 @@ export function ClarityCourseStatus({state,day,locale}){
  const t=words[locale]||words.en
  if(state.phase==='loading')return <small role="status">{t.loading}</small>
  if(state.phase!=='ready')return <small role="alert">{t.failed}</small>
- const g=state.data.grant
- return <small role="status">{!g.enabled?t.off:g.usedDays.includes(day)?t.used:g.busyDays.includes(day)?t.busy:t.ready}</small>
+ const g=state.data.grant,p=g.progress?.find(r=>r.day===day)
+ const status=({ru:{review:'20 минут завершены · сохраните результат',done:'Сессия завершена',ready:'Продолжение в пределах оставшихся минут'},en:{review:'20 minutes completed · save your result',done:'Session completed',ready:'Continue within remaining minutes'},es:{review:'20 minutos completados · guarda el resultado',done:'Sesión completada',ready:'Continúa con los minutos restantes'}})[locale]||{review:'Review result',done:'Completed',ready:'Continue'}
+ return <small role="status">{!g.enabled?t.off:p?.reviewed?status.done:p?.reviewPending?status.review:g.busyDays.includes(day)?t.busy:status.ready}</small>
 }
 export function ClarityCourseResults({state,day,locale}){
  const t=words[locale]||words.en
  const reports=state.phase==='ready'?state.data.results.filter(r=>r.day===day):[]
+ const draft=state.phase==='ready'?state.data.drafts?.find(r=>r.day===day):null
+ const progress=state.phase==='ready'?state.data.grant.progress?.find(r=>r.day===day):null
+ const labels=({ru:{title:'Накопительный протокол',confirmed:'Подтверждено',needs_confirmation:'Требует уточнения',not_explored:'Не рассмотрено',skipped_by_client:'Пропущено'},en:{title:'Cumulative protocol',confirmed:'Confirmed',needs_confirmation:'Needs confirmation',not_explored:'Not explored',skipped_by_client:'Skipped'},es:{title:'Protocolo acumulado',confirmed:'Confirmado',needs_confirmation:'Por confirmar',not_explored:'Sin explorar',skipped_by_client:'Omitido'}})[locale]||{title:'Cumulative protocol'}
  return <div className={css.practiceBody} data-clarity-session-results>
   {state.phase==='loading'?<p>{t.loading}</p>:state.phase==='error'?<><p role="alert">{t.failed}</p><button onClick={state.reload}>{t.retry}</button></>:<>
+   {progress&&<p data-clarity-active-seconds>{Math.floor(progress.activeSeconds/60)}:{String(progress.activeSeconds%60).padStart(2,'0')} / 20:00</p>}
+   {draft&&<details data-clarity-draft-protocol open><summary>{labels.title}</summary><dl>{draft.rows.map(row=><div key={row.id}><dt>{row.label} · {labels[row.status]}</dt><dd>{row.quote||'—'}{row.coachId&&<small> · {row.coachId==='genie'?'Samir':row.coachId}</small>}</dd></div>)}</dl></details>}
    {!reports.length&&<p>{t.empty}</p>}
    {reports.map(r=><article key={r.id} data-clarity-saved-result>
     <strong>{t.saved} · {new Date(r.savedAt).toLocaleDateString(locale)}</strong>

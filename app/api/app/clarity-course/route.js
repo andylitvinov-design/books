@@ -7,7 +7,7 @@ import {listMyCoachProtocols} from '@/lib/app/personal-coaching'
 import {clarityGrantStatus,clarityCourseClock} from '@/lib/app/clarity-course-access.js'
 import {readClarityDraft} from '@/lib/app/my-coach-protocol-drafts'
 import {consumeRate} from '@/lib/app/database'
-import {clarityCourseResult} from '@/lib/coaching/clarity-course-results.mjs'
+import {clarityCourseResult,clarityDraftResult} from '@/lib/coaching/clarity-course-results.mjs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -32,7 +32,14 @@ export async function GET(request){
    if(!page.nextCursor)break
    cursor=page.nextCursor
   }
-  return auth.apply(NextResponse.json({grant,results,complete},{headers:PRIVATE_HEADERS}))
+  const drafts=[]
+  for(const progress of grant.progress||[]){
+   if(progress.reviewed||results.some(r=>r.id===progress.protocolId))continue
+   const draft=await readClarityDraft(config,actor,progress.protocolId).catch(error=>{if(error?.status===409)return null;throw error})
+   const projected=clarityDraftResult(draft,progress,locale)
+   if(projected)drafts.push(projected)
+  }
+  return auth.apply(NextResponse.json({grant,results,drafts,complete},{headers:PRIVATE_HEADERS}))
  }catch(error){
   const safe=safeError(error),response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
   return auth?auth.apply(response):response

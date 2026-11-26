@@ -119,3 +119,24 @@ test('invitation and affirmative consent are separate from connecting',()=>{
  assert.match(access,/Boolean\(row.clock_confirmed_at\)/)
  assert.match(access,/row.state==='issued'&&fresh\(row.lease_until,now\)/)
 })
+
+import {appendClaritySpokenReview,coachCourseProtocolSchema,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {clarityDraftResult} from '../lib/coaching/clarity-course-results.mjs'
+test('Clarity spoken field review is literal, question-bound and same-visit',()=>{
+ const visitId='6c2b0e55-90ee-4c31-9b32-64c3860b5f28',id='clarity_day_1'
+ for(const [locale,quote,readback,yes] of [['en','I want to find a new job','Did I record this correctly: “I want to find a new job”?','Yes'],['ru','Я хочу найти новую работу','Правильно ли я записал: «Я хочу найти новую работу»?','Да'],['es','Quiero encontrar un nuevo trabajo','¿Lo registré correctamente: «Quiero encontrar un nuevo trabajo»?','Sí']]){
+  const q=coachCourseProtocolSchema(id,locale).checkpoints[0].question
+  const turns=[['assistant',q],['user',quote],['assistant',readback],['user',yes]].map(([role,content])=>({role,content,coachId:'mira',visitId}))
+  const review=appendClaritySpokenReview(null,id,turns,locale)
+  assert.equal(review.events[0].confirmationTurnIndex,3)
+  assert.equal(review.events[0].quote,quote)
+  assert.equal(coachCourseProtocolRows(id,turns,review,locale)[0].coachId,'mira')
+  assert.equal(appendClaritySpokenReview(null,id,[...turns.slice(0,3),{...turns[3],content:'No'}],locale),null)
+  assert.equal(appendClaritySpokenReview(null,id,[...turns.slice(0,3),{...turns[3],coachId:'caesar'}],locale),null)
+  assert.throws(()=>normalizeCoachCourseFieldReview(review,id,[turns[0],turns[1],{...turns[2],interrupted:true},turns[3]]))
+  const protocol={id:'p1',courseSessionId:id,provenance:'client_autosaved_unreviewed_draft',turns,courseFieldReview:review}
+  const progress={protocolId:'p1',day:1,courseSessionId:id,activeSeconds:480}
+  assert.equal(clarityDraftResult({protocol},progress,locale).rows[0].quote,quote)
+  assert.equal(clarityDraftResult({protocol},{...progress,protocolId:'other'},locale),null)
+ }
+})
