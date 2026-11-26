@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
-import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X} from "lucide-react";
+import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X, Video} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {MessengerDictationButton} from "@/components/app/messenger-dictation-button";
@@ -321,6 +321,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // Only the existing device speech controller handles the AI chat's spoken replies.
   const voice=useVoiceCompanion(locale,voiceEnabled);
   const lukasRef=useRef<AliLukasVideoHandle|null>(null);
+  const [lukasPanelOpen,setLukasPanelOpen]=useState(false);
+  const openLukasPanel=()=>{setAudioCallOpen(false);voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);setLukasPanelOpen(true);};
+  const closeLukasPanel=()=>{lukasRef.current?.stop();setLukasPanelOpen(false);};
   useEffect(()=>{
     if(!messengerView||!voiceEnabled)return;
     if(voice.speechLocale!==locale&&!voice.conversing&&!voice.paused)voice.setSpeechLocale(locale);
@@ -1957,7 +1960,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setAudioCallOpen(false);lukasRef.current?.stop();setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setJourneyPath(null);setJourneyAction(null);journeyPrefsRef.current={noAdvice:false,noQuestions:false};setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setAudioCallOpen(false);closeLukasPanel();setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setJourneyPath(null);setJourneyAction(null);journeyPrefsRef.current={noAdvice:false,noQuestions:false};setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -2017,7 +2020,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // A phone call owns the microphone and output exclusively. End video
     // first, so the same reply cannot be routed to Lukas and device speech.
     lukasRef.current?.stop();voice.stopDialogue();
-    setVoicePermissionOpen(false);
+    setLukasPanelOpen(false);setVoicePermissionOpen(false);
     setNativeDictationRevision(value=>value+1);
     setDictationRevision(value=>value+1);
     setVoiceNoteRevision(value=>value+1);
@@ -2153,7 +2156,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>
     </div>
   </article>;
-  const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
+  const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen&&!lukasPanelOpen;
   const composerPlaceholder=messengerView?(showLandingComposer?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):(locale==="ru"?"Сообщение":locale==="es"?"Mensaje":"Message")):t.placeholder;
   const animateComposer=messengerView&&showLandingComposer&&!pageHelp&&!busy&&!proBusy&&!draft&&
     !recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.paused&&!voice.speaking&&
@@ -2370,7 +2373,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={Boolean(messages.length>0||homeHandoffPreview)||undefined}
     data-chat-skin={messengerView?"messenger":undefined}
-    data-hh-immersive-dialogue={compact&&messengerView&&!pageHelp&&!supportQuizOpen&&Boolean(messages.length||homeHandoffPreview)||undefined}
+    data-hh-lukas-open={lukasPanelOpen||undefined}
+    data-hh-immersive-dialogue={compact&&messengerView&&!pageHelp&&!supportQuizOpen&&Boolean(messages.length||homeHandoffPreview||lukasPanelOpen)||undefined}
     data-hh-ai-provider={messengerView?(proSelected?"pro":"free"):undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
@@ -2382,9 +2386,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
     {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact} companionVoice={voiceEnabled?voice:undefined}/>}
-    {(process.env.NEXT_PUBLIC_HH_LUKAS_VIDEO_CHECK==="true"||process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==="true")&&messengerView&&authenticated&&!pageHelp&&
-      <div className={styles.lukasVideoHeader}>
-        <AliLukasVideo ref={lukasRef} locale={locale} personaId={persona.id}
+    {messengerView&&!pageHelp&&lukasPanelOpen&&
+      <div className={styles.lukasVideoHeader} data-hh-lukas-panel>
+        <div className={styles.lukasPanelBar}><strong>Lukas · Ali</strong><button type="button" onClick={closeLukasPanel} aria-label={locale==="ru"?"Закрыть видео":locale==="es"?"Cerrar vídeo":"Close video"}><X size={20} aria-hidden="true"/></button></div>
+        {!authenticated?<div className={styles.lukasAccessNotice}>
+          <p>{locale==="ru"?"Для проверки видео войдите через Google. Публичное видео пока недоступно.":locale==="es"?"Accede con Google para comprobar el vídeo. El vídeo público aún no está disponible.":"Sign in with Google to check video. Public video is not available yet."}</p>
+          <MessengerSignIn locale={locale} googleOnly/>
+        </div>:<AliLukasVideo ref={lukasRef} locale={locale} personaId={persona.id}
           blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected}
           checkBlocked={busy||proBusy||recorderOpen||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
           audioAvailable={voiceEnabled} audioActive={voice.conversing} audioPaused={voice.paused}
@@ -2393,8 +2401,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           onSpeaking={()=>voice.markExternalSpeaking()}
           onSpeechEnd={()=>voice.resumeAfterExternalReply()}
           onStop={()=>voice.stopDialogue()}
-          onSpeakInput={()=>{if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();else setVoicePermissionOpen(true);}}/>
+          onSpeakInput={()=>{if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();else setVoicePermissionOpen(true);}}/>}
       </div>}
+    {messengerView&&!pageHelp&&!lukasPanelOpen&&!supportQuizOpen&&Boolean(messages.length||homeHandoffPreview)&&
+      <button type="button" className={styles.lukasThreadEntry} data-hh-lukas-entry onClick={openLukasPanel}><Video size={18} aria-hidden="true"/>{locale==="ru"?"Видео · Lukas":locale==="es"?"Vídeo · Lukas":"Video · Lukas"}</button>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         if(programmaticScrollTop.current!==null){
@@ -2405,11 +2415,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&<>
+      {compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&(!lukasPanelOpen||supportQuizOpen)&&<>
         {supportQuizOpen?<MessengerSupportQuiz locale={locale}
           onCancel={()=>setSupportQuizOpen(false)} onFinish={completeSupportQuiz}/>:
           <>
-            <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
+            <MessengerAiLanding locale={locale} composer={composer} onOpenLukasVideo={openLukasPanel} onCreateVideo={()=>startContent()}
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}

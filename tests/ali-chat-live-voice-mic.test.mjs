@@ -129,3 +129,13 @@ test('phone action opens an exclusive call, not the audio-message composer',()=>
  assert.match(voice,/if\(idleTimer\.current!==null\)\{clearTimeout\(idleTimer\.current\);idleTimer\.current=null;\}/)
  assert.match(chat,/sendSelectedTurn\(resolveSpokenMenuChoice\(text,choices\)\)/)
 })
+
+
+test('Ali video and phone call share one mutually exclusive media entry',()=>{
+ const chat=read('components/holistic-agent-chat.tsx')
+ assert.ok(chat.includes('const openLukasPanel=()=>{setAudioCallOpen(false);voice.stopDialogue();'))
+ assert.ok(chat.includes('lukasRef.current?.stop();voice.stopDialogue();\n    setLukasPanelOpen(false);'))
+ assert.ok(chat.includes('function resetConversation(){setAudioCallOpen(false);closeLukasPanel();'))
+ assert.ok(chat.includes('onOpenLukasVideo={openLukasPanel}'))
+ assert.ok(chat.includes('onAudioMode={()=>toggleMessengerVoice()}'))
+})
