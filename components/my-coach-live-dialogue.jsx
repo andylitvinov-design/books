@@ -2247,7 +2247,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {summaryPreviewOpen&&<section className={callStyles.summary} data-coach-summary-current aria-label={sessionPanelCopy.summary}>
         <strong>{({ru:'Текущий итог · предварительно',en:'Current summary · provisional',es:'Resumen actual · provisional'})[lang]}</strong>
         <p>{ui.step} {visibleProgressStep} {ui.of} {visibleProgressTotal} · {visibleProgressName}</p>
-        <MyCoachSessionStateCard locale={lang} turns={turns} progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription} stageNames={stageChecklistTitles} stageIndex={visibleStageIndex} stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
+        <p>{visibleProgressDescription}</p>
+        <button type="button" onClick={()=>showSessionPanel('insights')}>{sessionPanelCopy.insights}</button>
         <button type="button" onClick={endWithProtocol} disabled={protocolOpen}>{hangupLabel}</button>
       </section>}
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>

@@ -328,21 +328,25 @@ test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES ov
       'the route/manual selection wins over device language and old text')
 })
 
-test('approved one-row mobile voice: manual language in header, real volume, Text and End only',()=>{
+test('approved call dock: header language, real microphone, video, speaker and end',()=>{
  const ui=source('components/my-coach-live-dialogue.jsx')
  const css=source('components/my-coach-live-dialogue.module.css')
  const speech=source('components/my-coach-speech-loop.jsx')
  const recorded=source('lib/personal-coaching/coach-recorded-turn.mjs')
  const header=ui.slice(ui.indexOf('<header className={styles.sessionTopbar}>'),ui.indexOf('</header>'))
- const row=ui.slice(ui.indexOf('<div className={styles.voiceControls} data-coach-inline-voice>'),
+ const row=ui.slice(ui.indexOf('data-coach-inline-voice data-coach-call-dock'),
    ui.indexOf('<p className={styles.voicePlayNotice}',ui.indexOf('data-coach-inline-voice')))
  assert.match(header,/data-coach-language-control/)
  assert.match(header,/value=\{speechLocale\}/)
  assert.doesNotMatch(header,/<option value="auto">/)
  assert.match(row,/data-coach-live-wave/)
  assert.match(row,/onMicLevel=\{level=>\{/)
- assert.match(row,/className=\{styles.keyboardControl\}/)
- assert.match(row,/className=\{styles.endControl\}/)
+ assert.match(row,/data-coach-dock-video/)
+ assert.match(row,/data-coach-dock-speaker/)
+ assert.match(row,/<PhoneOff size=\{24\}/)
+ assert.match(row,/onClick=\{endWithProtocol\}/)
+ assert.match(row,/\['left','right'\]\.map/)
+ assert.doesNotMatch(row,/data-coach-basic-pro-toggle/)
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
  assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
  assert.match(css,/\.voicePlayNotice\{display:none\}/)
@@ -354,8 +358,8 @@ test('approved one-row mobile voice: manual language in header, real volume, Tex
 
 test('Gemini Free retry preserves Basic audio until readiness and prefers duplex Live over separate text TTS',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
-  const toggle=ui.slice(ui.indexOf('data-coach-basic-pro-toggle'),
-    ui.indexOf('data-coach-pro-same-tap-disclosure'))
+  const toggleStart=ui.indexOf('data-coach-basic-pro-toggle')
+  const toggle=ui.slice(toggleStart,ui.indexOf('</button>',toggleStart))
   assert.match(ui,/async function readGeminiEngineStatus\(signal\)/)
   assert.match(ui,/if\(response\.status===401\)return \{kind:'login'\}/)
   assert.match(toggle,/onClick=\{async \(\)=>\{/)

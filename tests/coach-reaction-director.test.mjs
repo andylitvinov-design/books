@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -277,13 +277,13 @@ test('presentation contexts use a stable source independent of greeting audio an
  assert.ok(gate.includes('phase="greeting" context="greeting"'))
  assert.ok(catalog.includes('phase="greeting" context="hero"'))
  assert.ok(catalog.includes('phase="greeting" context="avatar" presentationLoop'))
- assert.ok(motion.includes('const src=presentationActive?(presentation?.src||null):legacySrc'))
+ assert.ok(motion.includes('const src=presentationActive?(activePresentation?.src||null):legacySrc'))
  assert.ok(motion.includes('[presentationActive,personaId]'))
- assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop playsInline autoPlay'))
- assert.ok(motion.includes('presentationActive?(shouldPlay&&<video'))
+ assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop={!openingActive} playsInline autoPlay={shouldPlay}'))
+ assert.ok(motion.includes('presentationActive?((shouldPlay||keepHarryVideo)&&<video'))
  assert.ok(motion.includes('onLoadedMetadata={event=>validatePresentation(event.currentTarget)}'))
  assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
- assert.ok(motion.includes('presentation?.poster||framePoster'))
+ assert.ok(motion.includes('activePresentation?.poster||framePoster'))
  assert.ok(motion.includes('},[shouldPlay,src])'))
 })
 
@@ -296,4 +296,23 @@ test('shared personality empathy veto prevents cheerful reaction to explicit sha
  }
  for(const text of ["If I did it?","Maybe I did it.","She said I did it.","I never said I did it.","Я думал, что у меня получилось.","Может быть, я справился.","Она сказала: «Я справилась».","Quizá lo logré.","Si yo lo logré.","Dijo que lo logré."])assert.notEqual(classifyClientReactionText(text),'progress',text)
  for(const text of ["I did it","Я справился","Lo logré","У меня получилось","I made it"])assert.equal(classifyClientReactionText(text),'progress',text)
+})
+
+
+test('Harry plays only the exact original greeting once then the calm primary loop',()=>{
+ const loop=releasedCoachPresentationLoop('harry',['primary:harry'])
+ assert.equal(loop.id,'HAR-01')
+ const opening=coachPresentationOpening('harry',loop)
+ assert.equal(opening,HARRY_PRESENTATION_OPENING)
+ assert.match(opening.src,/harry-greeting-real-v2\.mp4$/)
+ assert.ok(coachPresentationMetadataMatches(opening,{videoWidth:768,videoHeight:1344,duration:124/24}))
+ assert.equal(coachPresentationOpening('harry',null),null)
+ assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),null)
+ assert.equal(coachPresentationOpening('mira',loop),null)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('openingActive?opening:presentation'))
+ assert.ok(source.includes('onEnded={finishPresentationOpening}'))
+ assert.ok(source.includes('loop={!openingActive}'))
+ assert.ok(source.includes('keepHarryVideo'))
+ assert.ok(source.includes('[personaId,presentationActive]'))
 })
