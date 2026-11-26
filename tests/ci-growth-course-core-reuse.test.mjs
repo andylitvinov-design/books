@@ -375,3 +375,43 @@ test('IA Core proof accepts only exact existing Messenger UI source changes and 
   assert.equal(accepted([ui],{pkg:{...pkg,scripts:{...pkg.scripts,postbuild:'node new-hook.js'}}}),false);
   assert.equal(accepted([ui],{pkg:{scripts:{...pkg.scripts,prebuild:prebuild+' && node new-test.js'}}}),false);
 });
+
+test('remaining source specialists avoid redundant production PR installs and lint without removing contracts',()=>{
+  for(const [file,steps] of [
+    ['practitioner-presentations.yml',['Load original checksum-verified FFmpeg for npm ci','Install dependencies for standalone practitioner compile','Install SHA-verified FFmpeg into package after npm ci']],
+    ['hh-public-test-collections.yml',['Lint modified application code']],
+    ['hh-energywork-ai.yml',['Targeted ESLint']],
+    ['library-public-feed.yml',['Lint changed TypeScript and JavaScript sources']],
+  ]){
+    const s=read(file);
+    for(const name of steps) assert.ok(s.includes('- name: '+name+'\n        '+gate+'\n'),file+' missing production-only scope '+name);
+    assert.match(s,/node (?:--conditions=react-server )?--test/);
+    assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+  const practitioner=read('practitioner-presentations.yml');
+  for(const f of ['practitioner-presentation-video','practitioner-video-materials','practitioner-articles-v4','practitioner-articles-folders','master-network-r2','master-showcase-landing','practice-public-alias'])
+    assert.ok(practitioner.includes('tests/'+f+'.test.mjs'),f+' must still run');
+  assert.match(practitioner,/^  push:/m);
+  assert.ok(practitioner.includes('run: npm run build'));
+  const journey=read('hh-public-journey-wave1.yml');
+  assert.ok(journey.includes('name: Verify dependency-free journey inputs'));
+  assert.ok(journey.includes('git hash-object -- "$file"'));
+  assert.ok(journey.includes("name: Install full journey dependencies\n        if: steps.deps.outputs.minimal != 'true'"));
+  assert.equal((journey.match(/if \[\[ "\$HH_JOURNEY_MINIMAL" != true \]\]; then npx --no-install eslint /g)||[]).length,2);
+  for(const f of ['tests/public-pathway-migration.test.mjs','tests/public-pathway-toronto.test.mjs','tests/ci-public-journey-consolidation.test.mjs','node scripts/verify-public-pathway-mobile.mjs','node scripts/verify-public-pathway-toronto-mobile.mjs'])
+    assert.ok(journey.includes(f),f+' retained');
+  assert.ok(journey.split(/^  push:/m)[0].includes("      - '.github/workflows/hh-public-journey-wave1.yml'"));
+  assert.ok(!journey.split(/^  push:/m)[1].includes("      - '.github/workflows/hh-public-journey-wave1.yml'"));
+  assert.match(journey,/^  workflow_dispatch:/m);
+  assert.match(journey,/run: npm run build/);
+  const library=read('library-public-feed.yml');
+  assert.ok(library.includes('run: npm run build -- --no-lint'));
+  assert.ok(library.includes('node scripts/verify-ideas-mobile-browser.mjs'));
+  assert.ok(library.includes('node scripts/verify-unified-six-dock-browser.mjs'));
+  for(const [file,job] of [['hh-business-coaching.yml','business-coaching-contract'],['hh-public-test-collections.yml','collections-unit-build']]){
+    const s=read(file);
+    assert.ok(s.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]'));
+    assert.ok(s.includes('  '+job+':\n    if: ${{ github.event_name != \'pull_request\' || github.event.pull_request.draft == false }}'));
+    assert.ok(s.includes("      - '.github/workflows/"+file+"'"));
+  }
+});

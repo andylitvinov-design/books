@@ -66,7 +66,8 @@ test("My Reiki matches Profile chrome, starts with a functional four-choice quiz
  const css=read("components/principles-of-energywork.module.css");
  const dock=read("app/unified-mobile-dock.css");
  assert.ok(landing.indexOf("<MyReikiHeader") < landing.indexOf("<ReikiProgramNavigation"));
- assert.ok(landing.indexOf("<MyReikiQuiz") < landing.indexOf('aria-labelledby="reiki-syllabus-title"'));
+ assert.ok(landing.indexOf('aria-labelledby="reiki-benefits-title"') < landing.indexOf('aria-labelledby="reiki-syllabus-title"'));
+ assert.ok(landing.indexOf("<MyReikiQuiz") > landing.indexOf('data-energywork-five-steps'));
  assert.ok(chrome.includes("profile-hub-tabs.module.css") && chrome.includes("<SiteNavigation locale={locale} compact"));
  assert.ok(quiz.includes("setSelected") && quiz.includes("aria-pressed={selected === index}") && quiz.includes("<ReikiDaybookStart"));
  assert.equal((quiz.match(/\/images\/holistic-house\//g)||[]).length,4);
@@ -76,17 +77,21 @@ test("My Reiki matches Profile chrome, starts with a functional four-choice quiz
  assert.ok(dock.includes("body:has([data-reiki-practitioner-landing]) [data-hh-unified-dock]"));
 });
 
-test("Approved second screen follows quiz without duplicate header and offers five photo weeks, four benefits and course entry",()=>{
+test("Benefits follow hero; second screen offers five photo weeks, interactive quiz and course entry",()=>{
  const landing=read("components/principles-of-energywork.tsx");
  const css=read("components/principles-of-energywork.module.css");
  const start=landing.indexOf('data-reiki-details-screen');
  const end=landing.indexOf('data-reiki-system-overview',start);
  const details=landing.slice(start,end);
- assert.ok(landing.indexOf("<MyReikiQuiz")<start && start<end);
+ assert.ok(landing.indexOf('data-energywork-screen="intro"') < landing.indexOf('aria-labelledby="reiki-benefits-title"'));
+ assert.ok(landing.indexOf('aria-labelledby="reiki-benefits-title"') < start && start < end);
+ assert.equal((landing.match(/data-reiki-benefit=\{index\}/g)||[]).length,1);
+ assert.equal((landing.match(/<MyReikiQuiz /g)||[]).length,1);
  assert.ok(!details.includes("<MyReikiHeader") && !details.includes("<ReikiProgramNavigation"));
  assert.ok(details.includes("src={detailPhotos[index]}") && details.includes("data-reiki-week={index + 1}"));
- assert.ok(details.includes("data-reiki-benefit={index}") && details.includes("<ReikiDaybookStart locale={locale}"));
- assert.ok(details.indexOf("data-reiki-benefit")<details.indexOf("<ReikiDaybookStart"));
+ assert.ok(!details.includes("data-reiki-benefit={index}") && details.includes("<ReikiDaybookStart locale={locale}"));
+ assert.ok(details.indexOf("data-energywork-five-steps") < details.indexOf("<MyReikiQuiz"));
+ assert.ok(details.indexOf("<MyReikiQuiz") < details.indexOf("<ReikiDaybookStart"));
  assert.ok(details.includes("data-reiki-details-formats") && details.includes("data-reiki-daybook-entry"));
  assert.ok(!details.includes("<details") && !details.includes("<AcademyVideoPlayer"));
  assert.ok(css.includes("MY_REIKI_SECOND_SCREEN_20261125") && css.includes(".reikiBenefitGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));

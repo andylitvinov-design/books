@@ -84,6 +84,7 @@ const reviewCopy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 /** Restore the original top navy/burgundy bar independently of the compact course offers. */
 const isDistractionSensitivePage = (pathname: string) =>
+  /^\/(?:ru|en|es)\/install\/?$/.test(pathname) ||
   // My Space replaces the public homepage header and review ribbon on all locales.
   pathname === "/" || /^\/(?:ru|en|es)\/?$/.test(pathname) ||
   // Shamanic and its business page have their own compact hero and guided quiz.
