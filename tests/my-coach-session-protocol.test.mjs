@@ -103,7 +103,21 @@ test('the main voice session ends in a review dialog with PDF actions, not navig
   assert.match(ui,/data-my-coach-protocol/)
   assert.match(ui,/downloadCoachingSessionPdf/)
   assert.match(ui,/openCoachingSessionPdf/)
-  assert.match(ui,/protocolConsent/)
+  // Starting the session after the first-party storage notice is the owner action;
+  // external provider consent and the verified account boundary remain separate.
+  assert.doesNotMatch(ui,/protocolConsent|data-coach-autosave-consent/)
+  assert.match(ui,/const saveToAccount=Boolean\(protocolOwnerRef\.current\)/)
+  assert.match(ui,/autoSaveRef\.current=saveToAccount/)
+  assert.match(ui,/setAutoSaveEnabled\(saveToAccount\)/)
+  const save=ui.slice(ui.indexOf('  async function saveProtocol(){'),ui.indexOf('  async function closeProtocolToRating(){'))
+  assert.match(save,/const owner=protocolOwnerRef\.current/)
+  assert.match(save,/if\(!owner\)\{setProtocolError/)
+  assert.match(save,/'X-HH-Account-ID':owner/)
+  assert.match(save,/action:'save',consent:true,protocol/)
+  assert.match(save,/if\(draftRevision===null\|\|draftRevision===undefined\)throw Error\('DRAFT_NOT_SYNCED'\)/)
+  const close=ui.slice(ui.indexOf('  async function closeProtocolToRating(){'),ui.indexOf('  async function submitSessionRating(){'))
+  assert.match(close,/if\(!await saveProtocol\(\)\)return[\s\S]*setProtocolOpen\(false\)/)
+  assert.match(ui,/checked=\{geminiConsent\}/)
   assert.match(ui,/protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)/)
   assert.match(ui,/onClick=\{interceptSessionExit\}/)
   assert.match(archive,/data-my-coach-saved-protocol/)
@@ -142,7 +156,7 @@ test('a client topic correction resets old checkmarks and partial evidence is no
   assert.equal(rows.situation.status,'missing')
   assert.ok(!JSON.stringify(rows).includes('change jobs'))
 })
-test('owner mobile design keeps voice controls, back and end-call summary while overlaying the transcript',()=>{
+test('owner mobile design keeps voice controls, back and explicit Insight while overlaying the transcript',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   assert.match(ui,/data-coach-progress-accordion/)
@@ -150,8 +164,8 @@ test('owner mobile design keeps voice controls, back and end-call summary while 
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
   assert.match(ui,/onClick=\{endWithProtocol\}/)
-  assert.match(ui,/<PhoneOff size=\{19\}/)
-  assert.match(ui,/Summary/)
+  assert.match(ui,/<FileText size=\{19\}/)
+  assert.match(ui,/Session Insight/)
   assert.match(ui,/<ArrowLeft size=\{16\}/)
   assert.match(ui,/data-coach-live-wave/)
   assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
@@ -229,11 +243,11 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   const brand=ui.split('<Link className={styles.sessionBrand} ')[1]?.split('>')[0]
   assert.ok(brand)
   assert.ok(brand.includes("href={'/'+lang}"))
-  assert.ok(brand.includes('onClick={interceptSessionExit}'))
+  assert.ok(brand.includes('{...browseProps}'))
   assert.ok(!brand.includes('/coaching/sessions'))
   const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
   assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
-  assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
+  assert.match(ui,/if\(!protocolSaved&&\(turnsRef\.current\.length>0\|\|speechRef\.current\?\.hasLiveSession\?\.\(\)\)\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
 
 test('chronological live voice report preserves greeting, consecutive utterances and trailing client words',()=>{
@@ -321,4 +335,33 @@ test('speech repair and process instructions never become working goals, semanti
     const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
     assert.match(source,/COACH_PROTOCOL_VERIFICATION_INSTRUCTION,/)
   }
+})
+
+test('active coach browsing preserves original tab; coach profile pauses voice',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/const browseProps=keepCoachTab\?\{target:'_blank',rel:'noopener noreferrer'/)
+  const nav=ui.slice(ui.indexOf('  function pauseForNavigation('),ui.indexOf('  function interceptSessionExit('))
+  assert.match(nav,/speechRef\.current\?\.pauseSession\?\.\(\)/)
+  assert.doesNotMatch(nav,/endWithProtocol|\.stop\?\./)
+  const profile=ui.slice(ui.indexOf('  function openCoachProfile('),ui.indexOf('  function toggleComposer('))
+  assert.match(profile,/const kept=speechRef\.current\?\.pauseSession\?\.\(\)===true/)
+  assert.match(profile,/if\(!kept&&!speechRef\.current\?\.hasLiveSession/)
+  assert.match(ui,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState/)
+})
+
+
+test('introductory protocol uses seven canonical report blocks without fabricating outer ratings',()=>{
+ const obj={...sample(),courseSessionId:'introductory'}
+ const report=myCoachProtocolPdfOptions(obj,{locale:'en'})
+ for(const label of ['Personal Information','Current Situation','Emotional State','Personal Profile','Goals & Motivation','Obstacles & Resources','Conclusions & Next Steps']){
+  assert.ok(report.protocolOverview.includes(label),label)
+ }
+ assert.match(report.protocolOverview,/no verified outer ratings/)
+ assert.match(report.protocolOverview,/Needs confirmation/)
+ assert.doesNotMatch(report.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+})
+test('saved protocol displays the shared normalized PDF overview',()=>{
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/myCoachProtocolPdfOptions\(protocol,\{locale\}\)\.protocolOverview/)
+ assert.match(ui,/data-coach-saved-protocol-overview/)
 })

@@ -1,4 +1,5 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {ArrowLeft, BellRing, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
@@ -6,6 +7,7 @@ import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
 import CrmSalesbotAssist from './crm-salesbot-assist'
 import {TELEGRAM_SERVICE_OPTIONS} from '@/lib/assist/telegram-service-options.mjs'
+const ReikiCourseEvent=dynamic(()=>import('./crm-reiki-course-event'))
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -130,12 +132,18 @@ function mergeThreadPages(older=[],fresh=[]){
     return dates||b.id.localeCompare(a.id)
   })
 }
+function postgresMicroseconds(stamp){
+  const fraction=String(stamp).match(/\.(\d+)/)?.[1]
+  return fraction?Number(fraction.padEnd(6,'0')):0
+}
 function mergeMessagePages(older=[],fresh=[]){
   const index=new Map(older.map(message=>[message.id,message]))
   for(const message of fresh)index.set(message.id,message)
   return [...index.values()].sort((a,b)=>{
     const dates=Date.parse(a.createdAt)-Date.parse(b.createdAt)
-    return dates||a.id.localeCompare(b.id)
+    // The DB cursor keeps PostgreSQL microseconds. A batch of course
+    // events can share one JS millisecond but still has an exact order.
+    return dates||postgresMicroseconds(a.createdAt)-postgresMicroseconds(b.createdAt)||a.id.localeCompare(b.id)
   })
 }
 
@@ -348,16 +356,20 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     try {
       const result=await load(id)
       if(id===activeRef.current){
-        setData(previous=>({
-          ...result,
-          threads:mergeThreadPages(previous?.threads,result.threads),
-          // Retain the pagination position and already-viewed older messages.
-          nextThreadsCursor:previous?.nextThreadsCursor===undefined
-            ?result.nextThreadsCursor:previous.nextThreadsCursor,
-          messages:id?mergeMessagePages(previous?.messages,result.messages):result.messages,
-          nextMessagesCursor:id&&previous?.messages?.length>result.messages.length
-            ?previous.nextMessagesCursor:result.nextMessagesCursor,
-        }))
+        setData(previous=>{
+          if(previous?.historyRevision>result.historyRevision)return previous
+          const keepHistory=id&&previous?.historyRevision===result.historyRevision
+          return {
+            ...result,
+            threads:mergeThreadPages(previous?.threads,result.threads),
+            nextThreadsCursor:previous?.nextThreadsCursor===undefined
+              ?result.nextThreadsCursor:previous.nextThreadsCursor,
+            // An erasure invalidates previous pages of this conversation.
+            messages:keepHistory?mergeMessagePages(previous?.messages,result.messages):result.messages,
+            nextMessagesCursor:keepHistory&&previous?.messages?.length>result.messages.length
+              ?previous.nextMessagesCursor:result.nextMessagesCursor,
+          }
+        })
         setError('')
       }
     }catch{if(id===activeRef.current)setError('unavailable')}
@@ -417,7 +429,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     try{
       const page=await load(threadId,undefined,{messagesBefore:cursor})
       if(threadId!==activeRef.current)return
-      setData(previous=>previous?{
+      setData(previous=>previous&&previous.historyRevision===page.historyRevision?{
         ...previous,
         threads:mergeThreadPages(previous.threads,page.threads),
         messages:mergeMessagePages(page.messages,previous.messages),
@@ -798,13 +810,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               onClick={loadOlderMessages}>{messagesBusy?t.loading:t.loadMessages}</button>}
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
-              {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
+              {m.direction==='note'&&!m.courseEvent&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
               {m.sender==='bot'&&<small>{lang==='ru'?'Ответ бота':lang==='es'?'Respuesta del bot':'Bot reply'}</small>}
-              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
+              {m.courseEvent&&<ReikiCourseEvent event={m.courseEvent} locale={lang}/>}
+              {!m.courseEvent&&(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
               {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
-              <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
+              <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.courseEvent?.occurredAt||m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
               {m.failure?.code&&<small>{replyReason(m.failure.code,lang)||t.sendError}</small>}
             </div>)}

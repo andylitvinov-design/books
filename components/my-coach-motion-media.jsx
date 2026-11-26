@@ -31,7 +31,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=personaId==='harry'?coachVisualClip(state,visualScene):coachNaturalTake(state,visualScene)
   const samirTake=isGenie?samirMotionTake(state,visualScene):null
-  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-calm-loop-poster.webp':MEDIA_ROOT+personaId+'-still.webp'):null
+  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':MEDIA_ROOT+personaId+'-still.webp'):null
   const harryClip=state==='listening'?'attentive':'calm'
   const greetingSrc=state==='greeting'&&(personaId==='merlin'||personaId==='harry')
     ?MEDIA_ROOT+personaId+'-greeting-real-v2.mp4':null
@@ -89,7 +89,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     data-coach-natural-performance={isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
-    <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async"
+    <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={isGenie&&context==='greeting'?'high':undefined}
       onError={poster===framePoster?()=>setMissingPoster(framePoster):undefined} />
     {shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={state==='idle'||state==='greeting'} onReady={setVideoReady} />

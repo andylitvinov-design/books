@@ -6,6 +6,8 @@ import * as React from 'react'
 import * as jsxRuntime from 'react/jsx-runtime'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
+import { programFromContinuation, programDaybookPath } from '../lib/app/program-daybook-entry.mjs'
+import { clarityDaybookPath } from '../lib/app/clarity-program.mjs'
 
 // Actual page/component SSR with installed ReactDOM; only fixture collaborators.
 // Effects do not run on the server. No application/auth/provider module is loaded.
@@ -140,7 +142,8 @@ const failedPracticeExpression = failedPracticeDeclarations[0].initializer.getTe
 const redirect = (change = {}) => vm.runInNewContext(destinationExpression, {
   origin: 'https://synthetic-site.invalid', locale: 'en', intentId: null, serviceId: null,
   continueTo: 'coaching-intake', requestId: null, returnPath: null, program: null,
-  coachingMode: null, coachingLang: null, profi: null, ...change,
+  coachingMode: null, coachingLang: null, profi: null,
+  programFromContinuation, programDaybookPath, clarityDaybookPath, ...change,
 }, { timeout: 1000 })
 const authQueryFunctions = findAll(route, node => ts.isArrowFunction(node)
   && node.getText(route).includes("url.searchParams.set('auth', value)"))
@@ -165,6 +168,12 @@ test('actual callback destination stays same-origin/same-path with only constant
   }
   assert.equal(redirect({ continueTo: 'tests' }), 'https://synthetic-site.invalid/en/app/tests?selection=pending')
   assert.equal(redirect({ continueTo: 'business' }), 'https://synthetic-site.invalid/en/app/business')
+  for (const locale of locales) {
+    for (const [continuation, suffix] of [['clarity-daybook','?program=clarity'], ['goal-daybook','?start=vector'], ['business-daybook','/business']]) {
+      assert.equal(redirect({ locale, continueTo: continuation }), `https://synthetic-site.invalid/${locale}/app/daybook${suffix}`)
+    }
+  }
+  assert.equal(programFromContinuation('https://evil.invalid'), null)
   assert.equal(redirect({ continueTo: 'enquiry', returnPath: '/en/coaching/intake' }), 'https://synthetic-site.invalid/en/coaching/intake?hh_enquiry=google')
 })
 

@@ -6,6 +6,7 @@ import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {threeJourneyLabel} from "@/lib/holistic-support/three-journeys.mjs";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -147,9 +148,10 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onGoalChoice,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onJourneySelect,composer}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
-  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;onGoalChoice:(text:string)=>void;composer:ReactNode
+  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;
+  onJourneySelect:(path:'therapy'|'consultation'|'goal')=>void;composer:ReactNode
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
@@ -271,20 +273,24 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
       </div>
     </div>
     <div className={css.goalButtons} role="group" data-hh-genie-goal-choices
-      aria-label={locale==="ru"?"С чего начнём":locale==="es"?"Cómo empezamos":"Where shall we begin"}>
-      <button type="button" data-hh-genie-goal-choice="discover"
-        onClick={()=>onGoalChoice(locale==="ru"?"Помоги мне найти мою цель. Я пока ищу направление и хочу разобраться, чего действительно хочу.":
-          locale==="es"?"Ayúdame a descubrir mi meta. Todavía estoy buscando una dirección.":"Help me find my goal. I'm still looking for direction.")}>
-        <Compass size={23} aria-hidden="true"/>
-        <span>{locale==="ru"?"Помоги найти цель":locale==="es"?"Ayúdame a encontrar mi meta":"Help me find my goal"}</span>
-        <ArrowRight size={21} aria-hidden="true"/>
+      aria-label={locale==="ru"?"Как начнём":locale==="es"?"Cómo empezamos":"How shall we begin"}>
+      <button type="button" data-hh-genie-path-choice="therapy"
+        onClick={()=>onJourneySelect('therapy')}>
+        <HandHeart size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("therapy",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
       </button>
-      <button type="button" data-hh-genie-goal-choice="defined"
-        onClick={()=>onGoalChoice(locale==="ru"?"У меня уже есть цель. Помоги уточнить её и найти лучший следующий шаг.":
-          locale==="es"?"Ya tengo una meta. Ayúdame a aclararla y elegir el próximo paso.":"I already have a goal. Help me clarify it and choose the next step.")}>
-        <Flag size={23} aria-hidden="true"/>
-        <span>{locale==="ru"?"У меня уже есть цель":locale==="es"?"Ya tengo una meta":"I already have a goal"}</span>
-        <ArrowRight size={21} aria-hidden="true"/>
+      <button type="button" data-hh-genie-path-choice="consultation"
+        onClick={()=>onJourneySelect('consultation')}>
+        <Compass size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("consultation",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hh-genie-path-choice="goal"
+        onClick={()=>onJourneySelect('goal')}>
+        <Flag size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("goal",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
       </button>
     </div>
     <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>

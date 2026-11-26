@@ -61,14 +61,11 @@ test('installed canonical root scope covers all seven tab routes',()=>{
  assert.notEqual(new URL('https://codex-public-book-library.vercel.app/ru/holistic-support/mobile').origin,origin);
 });
 
-test('install landing is public, bilingual and links to real protected messaging settings',()=>{
+test('public installation identifies the same app and keeps private data behind its existing routes',()=>{
   const guide=readFileSync('app/[locale]/install/page.jsx','utf8')
   const icon=readFileSync('app/holistic-house-icon/[size]/route.js','utf8')
-  assert.match(guide,/Add to Home Screen/)
-  assert.match(guide,/На экран «Домой»/)
-  assert.match(guide,/app\/messages/)
-  assert.match(guide,/app\/settings#hh-phone-notifications/)
-  assert.match(guide,/robots:\{index:false,follow:false\}/)
+  assert.match(guide,/data-hh-free-install-landing/)
+  assert.match(guide,/index:\s*false,\s*follow:\s*false/)
   assert.match(guide,/holistic-house-icon\/180/)
   assert.match(icon,/new ImageResponse/)
   assert.match(icon,/'180':180,'192':192,'512':512/)

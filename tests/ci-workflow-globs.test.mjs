@@ -37,6 +37,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
 });
 
 
+test('actionlint checks every tracked workflow without checking out public media', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const checkout = lint.split('      - uses: actions/checkout@v4')[1]
+    ?.split('      - name: Pin exact PR event base')[0];
+  assert.ok(checkout, 'exact shallow checkout must remain');
+  assert.match(checkout, /fetch-depth: 2/);
+  const sparse = checkout.split('sparse-checkout: |')[1]?.trim().split('\n').map(line => line.trim());
+  assert.deepEqual(sparse, ['.github', 'scripts', 'tests', 'lib/ci', 'lib/youtube', 'app/qa/youtube-phone']);
+  assert.match(lint, /git ls-tree -r --name-only -z HEAD -- \.github\/workflows\//);
+  assert.match(lint, /Missing tracked workflow:/);
+  assert.match(lint, /Workflow inventory mismatch/);
+  assert.match(lint, /git diff --name-only -z "\$BASE_SHA" HEAD -- '\.github\/workflows\/'/);
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+});
+
 test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
   const lint = workflow('hh-actionlint.yml');
   const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]
@@ -411,7 +427,7 @@ test('Mandala restores the same immutable production Core MP3 cache before safe 
   assert.match(mandala,/run: node --test tests\/mandala-scenario-audio\.test\.mjs/);
 });
 
-test('cheap Mandala UI source contracts fail before macOS WebKit without skipping real media',()=>{
+test('cheap Mandala UI source contracts have one required preflight owner before macOS WebKit',()=>{
   const source=workflow('holistic-support-mandala.yml');
   const preflight=source.split('  webkit_preflight:\n')[1]
     ?.split('  voice-webkit-macos:\n')[0]||'';
@@ -425,12 +441,15 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
     'tests/mandala-approved-mobile-studio.test.mjs',
   ]) {
     assert.ok(preflight.includes(file),'fast source preflight missing '+file);
-    assert.ok(focused.includes(file),'full independent source acceptance must remain '+file);
+    assert.ok(!focused.split('      - name: Mandala and mobile support contracts\n')[1]?.split('\n      - name:')[0]?.includes(file),'source-only test must not repeat after dependency/media generation: '+file);
   }
   assert.ok(focused.includes('tests/mandala-workspace-tabs.test.mjs'),
     'TypeScript-dependent workspace test remains in the required full suite');
   assert.ok(!preflight.includes('tests/mandala-workspace-tabs.test.mjs'),
     'a no-install preflight must never import TypeScript-dependent workspace tests');
+  assert.match(preflight,/^    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m,'Ready PRs must run preflight');
+  assert.match(preflight,/test "\$\(git rev-parse HEAD\)" = "\$GITHUB_SHA"/,'same tested candidate is required');
+  assert.match(preflight,/node --test tests\/video-studio-question-registry\.test\.mjs tests\/mandala-video-goal-media-coverage\.test\.mjs tests\/mandala-approved-mobile-studio\.test\.mjs tests\/video-reels-ci-routing\.test\.mjs/);
   assert.ok(preflight.includes('node scripts/ci-pr-readiness.mjs'));
   assert.ok(preflight.includes('git rev-parse HEAD^2'));
   assert.doesNotMatch(preflight,/npm ci|npm run build|actions\/cache\/save/,'preflight must remain a cheap no-install gate');
@@ -753,5 +772,40 @@ test('duplicate specialist lint is removed only on protected production PRs; rea
     assert.ok(s.includes('else\n            npm run build\n          fi'));
     assert.ok(s.includes('npx eslint'));
     assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+});
+
+
+test('CI reduction phase 2: duplicate payment and Messenger suites execute once; specialist safety is retained',()=>{
+  const billing=workflow('hh-billing-isolated.yml');
+  assert.equal((billing.match(/(?:^| )tests\/service-square-api-cart\.test\.mjs(?=\s|$)/gm)||[]).length,1);
+  for(const name of ['tests/video-credits-postgres.integration.mjs','tests/video-paid-orders-postgres.integration.mjs','tests/square-ledger-isolated.integration.mjs','npm run test:billing:db','postgres:17-alpine']) assert.ok(billing.includes(name),name);
+  const ia=workflow('ia-v2.yml');
+  assert.ok(ia.includes('operatorOnly=operatorOnly&&messengerOnly'));
+  assert.ok(ia.includes('tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs'));
+  assert.ok(ia.includes('run: node --test tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs'));
+  assert.ok(ia.includes('npm run test:app'));
+});
+
+test('CI reduction phase 2: defer only Draft expensive jobs and duplicate production-PR setup/lint',()=>{
+  const gate= "        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const jobGate= "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  for(const [file,job] of [['hh-billing-isolated.yml','billing-database'],['release-reaudit.yml','browser']]) {
+    const y=workflow(file);
+    assert.ok(y.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n"));
+    assert.ok(y.includes('  '+job+':\n'+jobGate));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
+  }
+  const install=workflow('holistic-house-mobile-install.yml');
+  assert.ok(install.includes('run: npm ci --no-audit --no-fund\n'+gate));
+  assert.ok(install.includes('name: Lint signed-in install prompt, global PWA registration and onboarding\n'+gate));
+  assert.ok(install.includes('node --test tests/holistic-house-pwa.test.mjs'));
+  const youtube=workflow('youtube-phone-uploader.yml');
+  for(const name of ['Install locked dependencies','Lint practitioner YouTube implementation','Lint owner Telegram-to-phone handoff']) assert.ok(youtube.includes('name: '+name+'\n'+gate));
+  assert.ok(youtube.includes('node --test tests/youtube-phone-upload.test.mjs'));
+  for(const y of [install,youtube]) {
+    assert.ok(y.includes('npm run build'));
+    assert.ok(y.includes('if: github.event_name != \'pull_request\''));
+    assert.doesNotMatch(y,/continue-on-error:\s*true/);
   }
 });

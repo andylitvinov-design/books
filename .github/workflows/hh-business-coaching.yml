@@ -1,6 +1,7 @@
 name: HH Business Coaching 90-day validation
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches:
       - codex/public-book-library
     paths:
@@ -8,6 +9,7 @@ on:
       - 'lib/app/business-coaching.js'
       - 'components/app/business-coaching*'
       - 'tests/business-coaching-90-days.test.mjs'
+      - '.github/workflows/hh-business-coaching.yml'
   workflow_dispatch:
 concurrency:
   group: hh-business-coaching-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
@@ -15,11 +17,13 @@ concurrency:
 
 jobs:
   business-coaching-contract:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with: {persist-credentials: false}
       - name: Node 22
         uses: actions/setup-node@v4
         with:

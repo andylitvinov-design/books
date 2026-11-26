@@ -1014,6 +1014,13 @@
  }
 }
 
+/* The three help intents and seven goal steps use real keyboard/touch controls. */
+.dialogueMenu{display:grid;gap:12px;min-width:0}
+.dialogueChoices{display:grid;gap:8px;min-width:0}
+.dialogueChoice{display:flex;align-items:center;min-height:44px;width:100%;padding:10px 12px;text-align:start;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--hh-light-border,#E9DFD1);border-radius:12px;background:var(--hh-light-surface-soft,#F5ECDC);color:var(--hh-light-text,#143D3A);font:inherit;font-weight:600;cursor:pointer}
+.dialogueChoice:focus-visible{outline:3px solid var(--hh-light-focus,#176E6E);outline-offset:3px}
+.dialogueChoice:disabled{opacity:.6;cursor:default}
+
 /* 23 Nov full-screen Samir first turn: single horizontal message bar.
    Tier selector remains available from the + attachment menu. */
 @media(max-width:760px){
@@ -1104,6 +1111,11 @@
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
 .root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}
 
+/* Modern Safari native top layer: preserve inline details and the legacy
+   fallback without letting a rounded/overflowing composer clip the menu. */
+.composerMenu[popover]:not(:popover-open){display:none!important}
+.composerMenu:popover-open{position:fixed!important;margin:0!important;inset:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;display:grid!important;max-width:none!important}
+
 
 /* Established AI conversation — compact WhatsApp/Telegram-style composer.
    Scoped to the actual in-thread form, never the opening card or recording UI.
@@ -1147,3 +1159,15 @@
  :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .actions>button:focus-visible,
  :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .composerMore>summary:focus-visible{outline:2px solid #087b61;outline-offset:1px}
 }
+
+/* Lukas stays above the independently scrolling chat; the composer stays usable. */
+.lukasVideoHeader{order:0;flex:none;min-width:0;width:100%;margin:0 auto;max-width:800px}
+.lukasVideoHeader:empty{display:none}
+@media(max-width:760px){:global(.hh-messages-page) .root[data-compact]>.lukasVideoHeader{order:0;flex:none;margin:0;max-width:none}}
+:global(.hh-messages-page) [data-keyboard-open="true"] .lukasVideoHeader [data-lukas-portrait]{--hh-lukas-height:clamp(48px,10dvh,88px)}
+
+/* Free audio call: same attachment slot, no extra composer width. */
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus{flex-wrap:wrap;justify-content:flex-start;gap:6px}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus>span{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus button{min-height:44px;flex:0 1 auto}
+.root[data-compact][data-chat-skin="messenger"] [data-hh-ai-audio-call][aria-pressed="true"]{background:#ddf4e6;color:#075641}

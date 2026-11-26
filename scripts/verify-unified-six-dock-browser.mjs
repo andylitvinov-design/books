@@ -298,6 +298,7 @@ async function inspect(browserType,locale,width){
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["development-vectors",prefix+"/development-vectors","profile"],
       ["services",prefix+"/services","services"],
       ["services-review",prefix+"/services/free-situation-review","services"],
     ];
@@ -312,7 +313,7 @@ async function inspect(browserType,locale,width){
         await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
         await expect(page.locator("[data-hh-unified-dock]")).toBeHidden();
         await expect(landing.locator("[data-hh-genie-persona-shortcut]")).toBeVisible();
-        await expect(landing.locator("[data-hh-genie-goal-choice]")).toHaveCount(2);
+        await expect(landing.locator("[data-hh-genie-path-choice]")).toHaveCount(3);
         const extra=landing.locator("[data-hh-genie-extra-directions]");
         if(!await extra.evaluate(el=>el.open))await extra.locator("summary").click();
         for(const section of ["ai","page","orders","clients"]){
@@ -322,6 +323,16 @@ async function inspect(browserType,locale,width){
         results.push({id:marker,immersive:true,dockHidden:true,route:path,authenticated:false});
       }else{
         await assertPinnedSixDock(page,marker,active);
+        if(caseName==="development-vectors"){
+          const root=page.locator("main[data-daybook-vectors]");
+          await expect(root).toHaveAttribute("data-cabinet-theme","daybook");
+          const stage=root.locator('a[href*="/app/daybook?start=vector"]');
+          await expect(stage).toBeVisible();
+          const geometry=await stage.evaluate(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,display:getComputedStyle(el).display,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}));
+          assert.equal(geometry.display,"flex",marker+" stage action is a real wrapping block");
+          assert.ok(geometry.height>=44&&geometry.width<=geometry.clientWidth,marker+" stage action fits");
+          assert.ok(geometry.scrollWidth<=geometry.clientWidth+1,marker+" no document overflow");
+        }
         results.push({id:marker,pinned:true,route:path,authenticated:false});
       }
       if(browserType===webkit && locale==="ru" && width===390)
@@ -344,6 +355,10 @@ async function inspect(browserType,locale,width){
     await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
       waitUntil:"domcontentloaded",timeout:75000,
     });
+    // SSR can paint the audience buttons before React binds their handlers.
+    // Wait for the real Studio hydration contract, then perform one user click.
+    await expect(page.locator('[data-video-studio-hydrated]'))
+      .toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
     // Follow the same visible Magic Mirror path as the existing voice E2E.
     // Selecting the format does not generate a video or spend credits.
@@ -635,6 +650,8 @@ try{
  // Video Studio route, not a static mock. No media render or external AI call.
  const helpMirror=page.locator('[data-hh-mirror-goals]');
  const headerHelp=page.locator('[data-video-ihelp-header-trigger]');
+ await expect(page.locator('[data-video-studio-hydrated]'))
+   .toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
  await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','landing');
  await expect(headerHelp).toHaveCount(1);
  await expect(headerHelp).toBeHidden();
@@ -727,6 +744,11 @@ try{
    "obsolete five-button rail must not consume transcript space");
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
+ const journeyLabels=["Поговорить и снять напряжение","Понять, что происходит","Найти и достичь цель"];
+ const journeyChoices=chat.locator('[data-hh-genie-path-choice]');
+ assert.deepEqual(await journeyChoices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-genie-path-choice"))),
+   ["therapy","consultation","goal"],"the first choice is the person's need");
+ for(let i=0;i<3;i++)await expect(journeyChoices.nth(i)).toHaveText(journeyLabels[i]);
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
@@ -884,6 +906,11 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("aria-label")==="Что сейчас для вас важно?",null,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
+ // The exact owner screenshot phrase must open the real menu, not just appear in the transcript.
+ const moneyWishMenu=chat.locator('[data-hh-wave-goal-menu]');
+ await expect(moneyWishMenu).toBeVisible();
+ await expect(moneyWishMenu.locator('[data-hh-wave-goal-step]')).toHaveCount(7);
+ await expect(moneyWishMenu.locator('[data-hh-wave-goal-closing]')).toHaveText("Можем начать с 1 пункта.");
  await bilingualInput.fill("I want to discuss my income");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
@@ -918,6 +945,52 @@ try{
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
+ // Owner screenshot regression, on this isolated guest WebKit session only.
+ const assistantReplies=log.locator('[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]');
+ const sendDialogue=async(text)=>{
+   const before=await assistantReplies.count();
+   await chat.locator('[data-hh-ai-chat-composer] textarea').fill(text);
+   await chat.locator('[data-hh-ai-chat-composer] button[type="submit"]').click();
+   await expect.poll(()=>assistantReplies.count()).toBeGreaterThan(before);
+ };
+ for(const path of ["therapy","consultation","goal"]){
+   await resetViaMore();
+   await chat.locator('[data-hh-genie-path-choice="'+path+'"]').click();
+   if(path==="goal")await expect(chat.locator('[data-hh-wave-goal-menu]')).toBeVisible();
+   else{
+     await expect(assistantReplies.last()).toContainText(path==="therapy"?"выслушать":"разберёмся");
+     await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(0);
+   }
+ }
+ await resetViaMore();
+ await sendDialogue("Привет");
+ const entryMenu=chat.locator('[data-hh-wave-entry-menu]');
+ await expect(entryMenu).toBeVisible();
+ assert.deepEqual(await entryMenu.locator('[data-hh-wave-journey]').allTextContents(),journeyLabels);
+ await entryMenu.locator('[data-hh-wave-journey="consultation"]').click();
+ await expect(assistantReplies.last()).toContainText("разберёмся");
+ for(let step=1;step<=7;step++){
+   await resetViaMore();
+   await sendDialogue(step%2===1?"Хочу денег":"Дай денег");
+   const menu=chat.locator('[data-hh-wave-goal-menu]');
+   await expect(menu).toBeVisible();
+   await expect(menu.locator('[data-hh-wave-goal-step]')).toHaveCount(7);
+   await expect(menu.locator('[data-hh-wave-goal-closing]')).toHaveText("Можем начать с 1 пункта.");
+   const choice=menu.locator('[data-hh-wave-goal-step="'+step+'"]');
+   const rect=await choice.boundingBox();
+   assert.ok(rect&&rect.height>=44,"goal step "+step+" remains touch accessible");
+   await choice.click();
+   await expect(assistantReplies.last()).toContainText(/финанс/iu);
+   await expect(choice).toBeDisabled();
+ }
+ await resetViaMore();
+ await sendDialogue("Хочу денег");
+ await sendDialogue("Да");
+ await expect(assistantReplies.last()).toContainText("Понять, что происходит, и выбрать цель");
+ await sendDialogue("Доход");
+ await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(1);
+ results.push({journey:"Three needs → money → seven real clickable stages and Yes → retained financial conversation",passed:true});
+ await resetViaMore();
  const openProject=async(id)=>{
    await resetViaMore();
    // The six legacy projects are intentionally inside a collapsed accessible
@@ -982,7 +1055,9 @@ try{
  // actual assistant's response, keep the whole reply visible above the composer.
  const fullAssistantReply=chat.locator('[data-hh-ai-assistant-message]').last();
  await fullAssistantReply.waitFor({state:"visible",timeout:15000});
+ await expect(sessionComposer).toBeEnabled({timeout:15000});
  await sessionComposer.focus();
+ await expect(sessionComposer).toBeFocused({timeout:10000});
  await page.setViewportSize({width:390,height:360});
  await page.waitForFunction(()=>{
    const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
@@ -998,7 +1073,9 @@ try{
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");
+ await sessionComposer.blur();
  await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='false');
  results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
  // After the goal-first Sessions exchange, Ali's mobile sections remain
