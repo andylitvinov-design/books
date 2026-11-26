@@ -224,7 +224,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
-    'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
+    'sessionBottomNav','goalRow','onVoiceStateChange={handleVoiceStateChange}']) assert.ok(ui.includes(token),token)
   for(const token of ['data-coach-stage-index={visibleProgressStep}','replayCoachReply(result.reply)',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'progressValid?lastRecordedProgress.index:provisionalIndex',
@@ -410,7 +410,8 @@ test('iOS Safari naturally ending with interim-only speech commits another user 
   assert.ok(onend.includes("if(hasCoachSpokenAnswer(recovered)){"))
   assert.ok(onend.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
   assert.ok(!onend.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
-  const stopped=loop.slice(loop.indexOf('  function stopVoice(){'),loop.indexOf('  stopRef.current=stopVoice'))
+  const stopped=loop.slice(loop.indexOf('  function stopVoice({pause=false}={}){'),loop.indexOf('  function pauseSession(){'))
+  assert.ok(stopped.length>0,'inspect actual stop controller')
   assert.ok(stopped.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))"))
   assert.ok(!stopped.includes('void deliver('), 'explicit Stop keeps the words editable but does not send')
 })
@@ -641,7 +642,7 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  assert.ok(start>0)
  const toggle=ui.slice(start,ui.indexOf('data-coach-pro-same-tap-disclosure',start))
  assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
- assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|protocolOpen\}/)
+ assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|voicePaused\|\|protocolOpen\}/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
  assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
  assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
@@ -675,7 +676,8 @@ test('iOS 27 output routing yields the receiver to the speaker, restores mic, an
  assert.equal(desktop.audioSession.type,'auto')
  assert.equal(setCoachIos27AudioSession(ios,'invalid'),false)
  const loop=source('components/my-coach-speech-loop.jsx')
- assert.match(loop,/ios27NeedsSpeechRecovery\(window\.navigator\)\|\|/)
+ assert.match(loop,/if\(!setCoachIos27DuplexRoute\(window\.navigator\)\)/)
+ assert.match(loop,/result\?\.mode!=='intro'&&!recordedTurnRef\.current/)
  assert.match(loop,/if\(!ios27NeedsSpeechRecovery\(window\.navigator\)\)primeMicrophonePermission\(\)/)
  assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'playback'\)/)
  assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'auto'\)/)
