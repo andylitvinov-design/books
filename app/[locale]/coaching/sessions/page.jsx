@@ -3,6 +3,7 @@ import { PublicSiteHeader } from '@/components/public-site-header'
 import PublicCoachingDiscovery from '@/components/public-coaching-discovery'
 import { getPublicCoachingCatalog } from '@/lib/coaching/public-coaching-catalog'
 import { resolveCoachSelection } from '@/lib/coaching/persona-registry.mjs'
+import { COACH_PROGRAM_GROUPS } from '@/lib/coaching/coach-program-topics.mjs'
 import styles from './page.module.css'
 import { metadataBaseFor } from '@/data/site-metadata'
 
@@ -29,7 +30,9 @@ export async function generateMetadata({params}){
 export default async function PublicCoachingPage({params,searchParams}){
  const {locale}=await params
  if(!locales.includes(locale))notFound()
- const personaSelection=resolveCoachSelection(await searchParams)
+ const query=await searchParams
+ const personaSelection=resolveCoachSelection(query)
+ const goalCourseId=typeof query.goalCourse==='string'&&COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===query.goalCourse)?query.goalCourse:null
  let catalog=null
  try{
    // Read exactly the same published, reviewed Supabase reference catalog used
@@ -40,6 +43,6 @@ export default async function PublicCoachingPage({params,searchParams}){
  }
  return <div className={styles.fullWidth} lang={locale} data-coaching-full-width>
    {!personaSelection&&<div className={styles.header}><PublicSiteHeader locale={locale}/></div>}
-   <PublicCoachingDiscovery locale={locale} catalog={catalog} personaSelection={personaSelection}/>
+   <PublicCoachingDiscovery locale={locale} catalog={catalog} personaSelection={personaSelection} goalCourseId={goalCourseId}/>
  </div>
 }

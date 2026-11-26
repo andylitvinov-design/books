@@ -504,7 +504,7 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,5)
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
@@ -689,4 +689,16 @@ test('course gate voice ignores stale/partial/failed recognition and never auto-
  assert.equal(courseGateVoiceDecision({...base,final:false}).action,'ignore')
  assert.equal(courseGateVoiceDecision({...base,failed:true}).action,'ignore')
  assert.equal(courseGateVoiceDecision({...base,text:'github_pat_secret'}).action,'ignore')
+})
+
+import {coachCourseGateHandoffRequired} from '../lib/coaching/coach-course-protocol-schema.mjs'
+test('thematic gate handoff is restricted to enabled consented authenticated core sessions',()=>{
+ const base={enabled:true,autosave:true,courseSessionId:'goal_result',locale:'ru',opening:{completed:true,declined:false,answers:{focus:{kind:'goal'}}}}
+ assert.equal(coachCourseGateHandoffRequired(base),true)
+ for(const patch of [{enabled:false},{autosave:false},{courseSessionId:'introductory'},{opening:{...base.opening,completed:false}},{opening:{...base.opening,declined:true}},{opening:{...base.opening,answers:{focus:{kind:'profile'}}}}])assert.equal(coachCourseGateHandoffRequired({...base,...patch}),false)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
+ assert.match(native,/if\(propsRef.current.onInputFinal\?\.\(value\)===true\)\{stop\(\);return true\}/)
+ assert.equal((native.match(/if\(r.inputText&&commitInput\(r\)\)return/g)||[]).length,3)
 })
