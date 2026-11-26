@@ -9,7 +9,9 @@ import { parse, serialize } from 'parse5';
 
 const locales = { en: '/', ru: '/ru', es: '/es' };
 const digest = source => 'sha256-' + createHash('sha256').update(source).digest('base64');
-const restoreStyles = "addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('link[data-home-full-style]').forEach(link=>{if(link.sheet)link.media='all';else{link.addEventListener('load',()=>link.media='all',{once:true});if(link.sheet)link.media='all'}}))),{once:true});";
+// Apply the full cascade in one frame, not once per arriving stylesheet.
+// A failed sheet must not strand the remaining styles in print mode.
+const restoreStyles = "addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const links=[...document.querySelectorAll('link[data-home-full-style]')];const activate=()=>links.forEach(link=>{link.media='all'});Promise.all(links.map(link=>new Promise(resolve=>{if(link.sheet){resolve();return}link.addEventListener('load',resolve,{once:true});link.addEventListener('error',resolve,{once:true});if(link.sheet)resolve()}))).then(activate);setTimeout(activate,2500)})),{once:true});";
 
 function* descendants(root) {
   yield root;
@@ -23,6 +25,14 @@ function* descendants(root) {
 // do not remove a nested stylesheet or style element from the extraction input.
 function firstScreenCssInput(source) {
   const document = parse(source);
+  // Keep original inline styles in the real response only. The extractor is
+  // for external sheets: copying existing style elements would duplicate CSS
+  // and potentially move their cascade position. They are not DOM targets.
+  for (const node of [...descendants(document)]) {
+    if (node.tagName === 'style' && node.parentNode) {
+      node.parentNode.childNodes = node.parentNode.childNodes.filter(child => child !== node);
+    }
+  }
   const belowFoldClasses = new Set(['service-home-about', 'service-home-library', 'service-home-footer']);
   for (const node of [...descendants(document)]) {
     const attrs = Object.fromEntries((node.attrs ?? []).map(({name, value}) => [name, value]));
@@ -118,7 +128,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   const annotated = await cssParser.process(forCss);
   const css = [...descendants(parse(annotated))].filter(n => n.tagName === 'style').map(n => n.childNodes?.[0]?.value ?? '').join('\n');
   if (!css || /<\/style/i.test(css)) throw new Error('Invalid inline homepage styles');
-  console.info('[home-critical-css] ' + locale + ': ' + Buffer.byteLength(css) + ' decoded bytes');
+  console.info('[home-critical-css] ' + locale + ': ' + Buffer.byteLength(css) + ' decoded bytes; ' + gzipSync(css, {level: 9}).length + ' gzip bytes');
   const headEnd = source.indexOf('</head>');
   // Put critical rules before every original sheet, so later state changes
   // always obey the full production cascade.

@@ -10,6 +10,7 @@ import { compilePublicDocument } from '../scripts/build-public-home-documents.mj
 const nonce = 'a'.repeat(32);
 const csp = "default-src 'self'; script-src 'self' 'nonce-" + nonce + "' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const source = '<!DOCTYPE html><html lang="en"><head>' +
+  '<style>.original-inline-fixture{color:teal}</style>' +
   '<link rel="preload" as="image" fetchpriority="high" href="/images/holistic-house/hero.webp">' +
   '<link rel="stylesheet" href="/_next/static/css/home.css?dpl=fixture">' +
   '<script src="/_next/static/chunks/app.js" nonce="' + nonce + '" async></script>' +
@@ -41,6 +42,9 @@ test('the build pins only authorized scripts, preserves the public React documen
     assert.match(await readFile(join(dir, 'static/css/home.css'), 'utf8'), /\.below-fold-copy\{color:purple\}/);
     assert.match(result.html, /<noscript><link rel="stylesheet"/);
     assert.match(result.html, /data-home-full-style/);
+    assert.equal(result.html.split('.original-inline-fixture{color:teal}').length - 1, 1, 'original inline styles must not be copied into critical CSS');
+    assert.match(result.html, /Promise\.all\(links\.map/);
+    assert.match(result.html, /setTimeout\(activate,2500\)/);
     assert.match(result.html, /<link media="print" fetchpriority="low" data-home-full-style/);
     assert.match(result.html, /<style>[^<]*\.visible-summary\{/);
     assert.doesNotMatch(result.html, /\.closed-menu\{|\.hidden-stream\{/);
