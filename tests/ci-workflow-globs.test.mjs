@@ -37,6 +37,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
 });
 
 
+test('actionlint checks every tracked workflow without checking out public media', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const checkout = lint.split('      - uses: actions/checkout@v4')[1]
+    ?.split('      - name: Pin exact PR event base')[0];
+  assert.ok(checkout, 'exact shallow checkout must remain');
+  assert.match(checkout, /fetch-depth: 2/);
+  const sparse = checkout.split('sparse-checkout: |')[1]?.trim().split('\n').map(line => line.trim());
+  assert.deepEqual(sparse, ['.github', 'scripts', 'tests', 'lib/ci', 'lib/youtube', 'app/qa/youtube-phone']);
+  assert.match(lint, /git ls-tree -r --name-only -z HEAD -- \.github\/workflows\//);
+  assert.match(lint, /Missing tracked workflow:/);
+  assert.match(lint, /Workflow inventory mismatch/);
+  assert.match(lint, /git diff --name-only -z "\$BASE_SHA" HEAD -- '\.github\/workflows\/'/);
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+});
+
 test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
   const lint = workflow('hh-actionlint.yml');
   const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]

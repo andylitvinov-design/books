@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
 import { verifyHumanSpecialistMobile } from "./verify-my-coach-human-specialist-browser.mjs";
+import { verifyLiveAudioBrowser } from "./verify-my-coach-live-audio-browser.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -21,6 +22,8 @@ const touchTargets = [
   ["growth", "clarity", "all"],
 ];
 async function verify(browserType, browser, locale, width) {
+  // Exactly once per existing engine, using its already launched browser.
+  if(locale === "en" && width === 390) await verifyLiveAudioBrowser(browserType,browser);
   const context = await browser.newContext({
     viewport: { width, height: 844 }, deviceScaleFactor: 1,
     hasTouch: true, isMobile: true, reducedMotion: "reduce",
