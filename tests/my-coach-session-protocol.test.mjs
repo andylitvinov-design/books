@@ -394,3 +394,32 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  const save=ui.slice(ui.indexOf('async function saveProtocol'),ui.indexOf('async function closeProtocolToRating'))
  assert.match(save,/if\(!queuePrivateDraft\(turnsRef.current\)\)throw Error\('DRAFT_NOT_SYNCED'\)/)
 })
+
+
+// A failed request followed by a later successful exchange must not turn the
+// earlier unanswered client utterance into a confirmed answer after reload.
+test('chronological checkpoint and reviewed report preserve prior unanswered utterances',async()=>{
+ const {normalizeMyCoachDraft,draftTranscriptPrefix}=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const obj=sample();obj.turnLayout='chronological'
+ obj.turns=[
+  {role:'user',content:'Первое сообщение без ответа.',unanswered:true},
+  {role:'user',content:'Следующий вопрос.'},
+  {role:'assistant',content:'Ответ на следующий вопрос.'},
+ ]
+ const normalized=normalizeMyCoachProtocol(obj)
+ assert.equal(normalized.turns[0].unanswered,true)
+ assert.equal(normalized.turns[1].unanswered,undefined)
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:obj})
+ assert.deepEqual(draft.protocol.turns,normalized.turns)
+ assert.match(myCoachProtocolPdfOptions(normalized,{locale:'ru'}).entries[0].answer,/Ответ ИИ отсутствует/)
+ const stripped={...normalized,turns:normalized.turns.map(({unanswered,...row})=>row)}
+ assert.equal(draftTranscriptPrefix(normalized,stripped),false)
+ const pending={...normalized,turns:[normalized.turns[0]]}
+ const answered={...pending,turns:[{role:'user',content:pending.turns[0].content},{role:'assistant',content:'A reply'}]}
+ assert.equal(draftTranscriptPrefix(pending,answered),true)
+ const legacy=sample();legacy.turns[0].unanswered=true
+ assert.throws(()=>normalizeMyCoachProtocol(legacy),/MY_COACH_PROTOCOL_INVALID/)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes("row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}"))
+ assert.ok(ui.includes("row.role==='user'&&row.unanswered===true?{unanswered:true}"))
+})

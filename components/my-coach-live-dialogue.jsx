@@ -1015,7 +1015,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
         opening,turns:rows.map((row,index)=>({role:row.role,content:row.content,
-          ...(row.role==='user'&&index===rows.length-1?{unanswered:true}:{}),
+          ...(row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}:{}),
           ...(row.role==='assistant'&&row.interrupted===true?{interrupted:true}:{}),
           ...(row.role==='assistant'&&['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
         }))
@@ -1464,7 +1464,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
-      ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
+      ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
       ...(restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
@@ -1473,7 +1473,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
       turns:turns.map((row,index)=>({
         role:row.role,content:row.content,
-        ...(row.role==='user'&&row.unanswered===true&&index===turns.length-1?{unanswered:true}:{}),
+        ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
         ...(row.role==='assistant'?{
           ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
           ...(typeof row.stage==='string'?{stage:row.stage.slice(0,64)}:{}),
