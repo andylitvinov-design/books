@@ -74,8 +74,8 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
     await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
     await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
-    await expect(page.locator('[data-home-intent-option]')).toHaveCount(3);
-    for (const intent of ['clarity', 'goal', 'business']) {
+    await expect(page.locator('[data-home-intent-option]')).toHaveCount(4);
+    for (const intent of ['clarity', 'goal', 'business', 'reiki']) {
       await expect(page.locator(`[data-home-intent-option="${intent}"]`)).toBeVisible();
     }
     await expect(page.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
