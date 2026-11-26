@@ -5,7 +5,7 @@ import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
-import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2,PhoneOff,VolumeX,Plus} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -24,6 +24,7 @@ import {coachOpeningTurn} from '@/lib/coaching/coach-opening-entry.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
+import callStyles from './my-coach-call-dock.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
@@ -357,6 +358,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
   const [voiceState,setVoiceState]=useState({phase:'idle',beat:0})
+  const [outputMuted,setOutputMuted]=useState(false)
+  const outputMutedRef=useRef(false)
+  outputMutedRef.current=outputMuted
+  const [summaryPreviewOpen,setSummaryPreviewOpen]=useState(false)
+  const [moreOptionsOpen,setMoreOptionsOpen]=useState(false)
   const reactionActivity=useCoachReactionActivity(voiceState.phase,personaId)
   const voicePaused=voiceState.phase==='paused'
   const [editablePlan,setEditablePlan]=useState('')
@@ -424,6 +430,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       protocolStartedRef.current=new Date().toISOString()
     if(voiceState.phase==='listening')setIntroComplete(true)
   },[voiceState.phase])
+  useEffect(()=>{replayPlayerRef.current?.setMuted?.(outputMuted)},[outputMuted])
   useEffect(()=>{
     // The iOS software keyboard resizes the visual viewport but not always
     // CSS 100dvh. Keep the composer anchored to actual visible pixels.
@@ -514,7 +521,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
-    if(voiceState.phase!=='listening'){
+    if(['idle','paused','ready'].includes(voiceState.phase)){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
       if(micWaveRef.current)micWaveRef.current.dataset.voiceDetected='false'
     }
@@ -811,7 +818,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayAudioContextRef.current=unlockCoachingAudioContext()
   }
   async function previewGeminiCoachVoice(){
-    if(!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle')return
+    if(outputMutedRef.current||!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle')return
     ensureReplayAudioOutput()
     const controller=new AbortController()
     replayControllerRef.current?.abort()
@@ -837,7 +844,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })
       if(!response.ok||!response.body||controller.signal.aborted)throw Error('PREVIEW_UNAVAILABLE')
       replayPlayerRef.current=startCoachingMp3Playback(response,{
-        audioContext:replayAudioContextRef.current,
+        audioContext:replayAudioContextRef.current,muted:outputMutedRef.current,
         onStart:()=>{if(!controller.signal.aborted)setVoiceState({phase:'speaking',beat:0})},
         onEnd:()=>done(false),onBlocked:()=>done(true),onError:()=>done(true),
       })
@@ -845,7 +852,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    if(privateTextOnly)return
+    if(privateTextOnly||outputMutedRef.current)return
     // Dynamic replies preserve their consented remote provider. Fixed public
     // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
@@ -882,7 +889,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!introUrl){fail();return}
       try{
         replayPlayerRef.current=startDirectCoachIntroAudio(introUrl,{
-          fallbackText:spokenText,locale:conversationLang,
+          fallbackText:spokenText,locale:conversationLang,muted:outputMutedRef.current,
           onStart:()=>{
             if(controller.signal.aborted||replayControllerRef.current!==controller)return
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
@@ -914,7 +921,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!response.ok||!response.body)throw Error('NATURAL_TTS_UNAVAILABLE')
       if(controller.signal.aborted||replayControllerRef.current!==controller)return
       replayPlayerRef.current=startCoachingMp3Playback(response,{
-        audioContext:replayAudioContextRef.current,
+        audioContext:replayAudioContextRef.current,muted:outputMutedRef.current,
         onStart:()=>{
           if(!controller.signal.aborted&&replayControllerRef.current===controller){
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
@@ -1893,10 +1900,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     turnKey:turns.filter(turn=>turn.role==='user').length+(inFlightClientRef.current?1:0)
   })
   const visualScene=reactionIntent.scene
-  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Progress',summary:'Insight'},ru:{transcript:'Диалог',insights:'Прогресс',summary:'Инсайт'},es:{transcript:'Diálogo',insights:'Progreso',summary:'Insight'}}[lang]
+  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Key Insights',summary:'Summary'},ru:{transcript:'Диалог',insights:'Инсайты',summary:'Итог'},es:{transcript:'Diálogo',insights:'Claves',summary:'Resumen'}}[lang]
+  const speakerLabel=outputMuted?({ru:'Включить звук коуча',en:'Unmute coach audio',es:'Activar sonido del coach'})[lang]:({ru:'Выключить звук коуча',en:'Mute coach audio',es:'Silenciar al coach'})[lang]
+  const hangupLabel=({ru:'Завершить диалог',en:'End conversation',es:'Finalizar conversación'})[lang]
   function showSessionPanel(panel){
     const root=sessionRootRef.current
     const progress=root?.querySelector('[data-coach-progress-accordion]')
+    setSummaryPreviewOpen(panel==='summary')
+    if(panel==='summary'){
+      if(progress)progress.open=false
+      return
+    }
     if(panel==='insights'&&progress){
       progress.open=true
       progress.querySelector('summary')?.focus({preventScroll:true})
@@ -1909,7 +1923,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
+  return <section ref={sessionRootRef} className={`${styles.root} ${callStyles.rootV6}`} lang={lang} data-coach-dock-v6 data-coach-dialogue-active={sessionHasStarted?'true':'false'} data-coach-summary-preview={summaryPreviewOpen?'true':'false'} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} onClick={keepCoachTab?pauseForNavigation:navigateBackToCoaches} aria-label="Holistic House">
@@ -2005,7 +2019,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>}
     </section>
     </div>
-    <section className={styles.voiceWorkspace} aria-label={ui.voice}>
+    <section className={`${styles.voiceWorkspace} ${callStyles.workspace}`} aria-label={ui.voice}>
       {sessionClockStarted&&sessionTimebox.offerWrapUp&&turns.length>0&&
         <div className={styles.sessionTimeboxNotice} role="status" data-coach-timebox-phase={sessionTimebox.phase}>
           <span>{sessionTimebox.targetReached?
@@ -2020,9 +2034,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             toggleComposer()
           }}>{({ru:'Подвести итог',en:'Reflect & close',es:'Resumir y cerrar'}[lang])}</button>
         </div>}
-      <div className={styles.voiceControls} data-coach-inline-voice>
-        <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
-          {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
+      <div className={`${styles.voiceControls} ${callStyles.dock}`} data-coach-inline-voice data-coach-call-dock>
+        <div className={`${styles.voiceCenter} ${callStyles.center}`} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
+          {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
@@ -2039,8 +2053,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))
-              wave.style.setProperty('--coach-mic-level',String(rms))
-              wave.dataset.voiceDetected=rms>0.15?'true':'false'
+              // Display-only gain: do not modify STT/VAD or reaction activity.
+              wave.style.setProperty('--coach-mic-level',String(Math.min(1,rms*3)))
+              wave.dataset.voiceDetected=rms>0.025?'true':'false'
             }}
             onInputInterim={setSpeechPreview}
             onInputFinal={text=>{
@@ -2067,7 +2082,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onInterrupted={()=>{setStreamingPreview('');setPlaybackNotice('')}}
             onDirectorProgress={setLiveDirectorProgress}
             onNotice={setPlaybackNotice}
-          />:<MyCoachSpeechLoop ref={speechRef} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
+          />:<MyCoachSpeechLoop ref={speechRef} outputMuted={outputMuted} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
@@ -2079,118 +2094,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))
-              wave.style.setProperty('--coach-mic-level',String(rms))
-              wave.dataset.voiceDetected=rms>0.15?'true':'false'
+              // Display-only gain: do not modify STT/VAD or reaction activity.
+              wave.style.setProperty('--coach-mic-level',String(Math.min(1,rms*3)))
+              wave.dataset.voiceDetected=rms>0.025?'true':'false'
             }}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>}
         </div>
-        <div className={styles.microphoneWave} ref={micWaveRef} data-coach-live-wave
+        <div className={`${styles.microphoneWave} ${callStyles.wave}`} ref={micWaveRef} data-coach-live-wave
           data-mic-phase={voiceState.phase}
           aria-label={{ru:'Индикатор громкости микрофона',en:'Live microphone volume',es:'Volumen del micrófono'}[lang]}
           role="img">
-          <span className={styles.waveBars} aria-hidden="true">
-            {microphoneWaveGains.map((gain,index)=><i key={index}
+          {['left','right'].map(side=><span key={side} className={`${styles.waveBars} ${callStyles.bars}`} data-coach-wave-side={side} aria-hidden="true">
+            {microphoneWaveGains.slice(side==='left'?0:12,side==='left'?13:25).map((gain,index)=><i key={index}
               style={{'--wave-gain':String(gain)}}/>)}
-          </span>
+          </span>)}
         </div>
-        <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
-          aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <button type="button" className={styles.experienceModeControl} data-coach-basic-pro-toggle
-          aria-label={(selectedGeminiEngine||liveVoiceSelected)?(
-            {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
-            {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
-          aria-pressed={selectedGeminiEngine||liveVoiceSelected}
-          disabled={privateTextOnly||replaying||paused||protocolOpen}
-          onClick={async ()=>{
-            // Leaving Pro immediately cancels its in-flight model/audio, but
-            // simply opening Pro must NEVER silence a healthy Basic microphone.
-            if(selectedGeminiEngine){
-              engineManuallySelectedRef.current=true
-              if(voiceState.phase==='speaking'&&latestCoachText)
-                markCoachSpeechInterrupted(latestCoachText)
-              speechRef.current?.stop?.()
-              cancelPendingCoachTurn()
-              setGeminiLiveConsent(false)
-              setLiveDirectorProgress(null)
-              setCoachEngine('groq_stream')
-              setGeminiConsent(false)
-              setGeminiVoiceTier('existing')
-              setGeminiVoiceConsent(false)
-              
-              setPlaybackNotice('')
-              return
-            }
-            if(liveVoiceSelected){
-              engineManuallySelectedRef.current=true
-              speechRef.current?.stop?.()
-              cancelPendingCoachTurn()
-              setGeminiLiveConsent(false)
-              setLiveDirectorProgress(null)
-              setCoachEngine('groq_stream')
-              setGeminiConsent(false)
-              setGeminiVoiceTier('existing')
-              setGeminiVoiceConsent(false)
-              
-              setPlaybackNotice('')
-              return
-            }
-            if(geminiAvailabilityInFlightRef.current)return
-            geminiAvailabilityInFlightRef.current=true
-            setPlaybackNotice(({ru:'Проверяю Gemini Free…',en:'Checking Gemini Free…',es:'Verificando Gemini gratuito…'})[lang])
-            const checkController=new AbortController()
-            const deadline=setTimeout(()=>checkController.abort(),8000)
-            let status
-            try{status=await readGeminiEngineStatus(checkController.signal)}
-            catch{status={kind:'unavailable'}}
-            finally{
-              clearTimeout(deadline)
-              geminiAvailabilityInFlightRef.current=false
-            }
-            if(status.kind==='login'){
-              setAuthRequired(true)
-              setPlaybackNotice(({ru:'Для Gemini Free сначала войдите в Holistic House.',en:'Sign in to Holistic House to use Gemini Free.',es:'Inicia sesión para usar Gemini gratuito.'})[lang])
-              return
-            }
-            if(status.kind!=='ok'){
-              setPlaybackNotice(({ru:'Не удалось проверить Gemini Free. Нажмите Pro ещё раз — Basic работает.',en:'Could not check Gemini Free. Tap Pro to retry; Basic still works.',es:'No se pudo verificar Gemini. Reintenta Pro; Basic sigue activo.'})[lang])
-              return
-            }
-            setGeminiCapabilities(status.capabilities)
-            if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free){
-              setPlaybackNotice(({ru:'Gemini Free не готов на сервере. Basic продолжает работать.',en:'Gemini Free is not ready on the server. Basic still works.',es:'Gemini gratuito no está listo en el servidor. Basic sigue activo.'})[lang])
-              return
-            }
-            // Prefer true duplex audio over separate text/TTS when Pro is tapped.
-            engineManuallySelectedRef.current=true
-            const chooseLive=status.capabilities.gemini_live_free===true
-            if(voiceState.phase==='speaking'&&latestCoachText)
-              markCoachSpeechInterrupted(latestCoachText)
-            const continued=!chooseLive&&speechRef.current?.pauseForTypedTurn?.()===true
-            if(!continued)speechRef.current?.stop?.()
-            cancelPendingCoachTurn()
-            const freeTtsReady=!chooseLive&&status.capabilities.gemini_tts_free===true
-            setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')
-            setGeminiConsent(!chooseLive)
-            setGeminiVoiceTier(freeTtsReady?'gemini_tts_free':'existing')
-            setGeminiVoiceConsent(freeTtsReady)
-            setGeminiLiveConsent(false)
-            if(continued)speechRef.current?.resumeAfterTypedFailure?.()
-            setPlaybackNotice(chooseLive?({
-              ru:'Gemini Live выбран. Нажмите Play, чтобы начать двусторонний разговор.',
-              en:'Gemini Live selected. Tap Play to begin the two-way conversation.',
-              es:'Gemini Live elegido. Pulsa Play para iniciar la conversación en vivo.',
-            })[lang]:freeTtsReady?'':({
-              ru:'Gemini Free включён; голос Gemini недоступен. Можно выбрать текущий голос.',
-              en:'Gemini Free is on; Gemini voice is unavailable. You can choose the existing voice.',
-              es:'Gemini gratuito activado; su voz no está disponible. Puedes usar la voz anterior.',
-            })[lang])
-          }}>
-          <Zap size={17} aria-hidden="true"/>
-          <span>{privateTextOnly?'Private':selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
-          <small>{privateTextOnly?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
+        <button type="button" className={`${styles.keyboardControl} ${callStyles.video}`} data-coach-dock-video
+          onClick={()=>{composerRef.current?.blur();setViewExpanded(value=>!value)}} aria-label={videoViewLabel} title={videoViewLabel} aria-pressed={viewExpanded}>
+          <Video size={22} aria-hidden="true"/>
         </button>
-        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
-          <FileText size={19} aria-hidden="true"/><span>{lang==='ru'?'Инсайт':lang==='es'?'Insight':'Insight'}</span>
+        <button type="button" className={callStyles.speaker} data-coach-dock-speaker
+          disabled={privateTextOnly||protocolOpen} aria-pressed={!outputMuted} aria-label={speakerLabel} title={speakerLabel}
+          onClick={()=>setOutputMuted(value=>!value)}>
+          {outputMuted?<VolumeX size={24} aria-hidden="true"/>:<Volume2 size={24} aria-hidden="true"/>}
+        </button>
+        <button type="button" className={`${styles.endControl} ${callStyles.hangup}`} onClick={endWithProtocol} aria-label={hangupLabel} title={hangupLabel} disabled={protocolOpen} data-coach-finish-with-protocol>
+          <PhoneOff size={24} aria-hidden="true"/><span>{hangupLabel}</span>
         </button>
       </div>
       {!privateTextOnly&&!selectedGeminiEngine&&!liveVoiceSelected&&
@@ -2309,18 +2238,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         })[lang]:geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
-      <div className={styles.conversationPanel}>
-      <nav className={styles.sessionPanelNav} aria-label={lang==='ru'?'Разделы сессии':lang==='es'?'Secciones de la sesión':'Session sections'}>
+      <div className={`${styles.conversationPanel} ${callStyles.conversation}`}>
+      <nav className={`${styles.sessionPanelNav} ${callStyles.tabs}`} aria-label={lang==='ru'?'Разделы сессии':lang==='es'?'Secciones de la sesión':'Session sections'}>
         <button type="button" data-coach-panel="transcript" onClick={()=>showSessionPanel('transcript')}><MessageCircle size={17} aria-hidden="true"/><span>{sessionPanelCopy.transcript}</span></button>
         <button type="button" data-coach-panel="insights" disabled={!sessionHasStarted} onClick={()=>showSessionPanel('insights')}><Sparkles size={17} aria-hidden="true"/><span>{sessionPanelCopy.insights}</span></button>
-        <button type="button" data-coach-panel="summary" disabled={protocolOpen} onClick={endWithProtocol} title={keyInfoUi.finish} aria-label={keyInfoUi.finish}><FileText size={17} aria-hidden="true"/><span>{sessionPanelCopy.summary}</span></button>
+        <button type="button" data-coach-panel="summary" disabled={protocolOpen||!sessionHasStarted} aria-pressed={summaryPreviewOpen} onClick={()=>showSessionPanel('summary')}><FileText size={17} aria-hidden="true"/><span>{sessionPanelCopy.summary}</span></button>
       </nav>
+      {summaryPreviewOpen&&<section className={callStyles.summary} data-coach-summary-current aria-label={sessionPanelCopy.summary}>
+        <strong>{({ru:'Текущий итог · предварительно',en:'Current summary · provisional',es:'Resumen actual · provisional'})[lang]}</strong>
+        <p>{ui.step} {visibleProgressStep} {ui.of} {visibleProgressTotal} · {visibleProgressName}</p>
+        <MyCoachSessionStateCard locale={lang} turns={turns} progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription} stageNames={stageChecklistTitles} stageIndex={visibleStageIndex} stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
+        <button type="button" onClick={endWithProtocol} disabled={protocolOpen}>{hangupLabel}</button>
+      </section>}
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
           {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
         </div>
-        <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
+        <div className={`${styles.transcriptFeed} ${callStyles.feed}`} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{introduction}</p></div>}
           {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
@@ -2404,9 +2339,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               <button key={row.id} type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-correct',{fieldId:row.id})}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}: {row.label}</button>)}
           </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}
         </section>}
-        {!courseGateRequired&&!courseGate&&!courseGateBusy&&!courseGateAttemptRef.current&&!paused&&!freshProfileAwaiting&&!profileV3Active&&!profileV3Busy&&!profileV3Fault&&<form className={styles.composer} onSubmit={send}>
+        {!courseGateRequired&&!courseGate&&!courseGateBusy&&!courseGateAttemptRef.current&&!paused&&!freshProfileAwaiting&&!profileV3Active&&!profileV3Busy&&!profileV3Fault&&<form className={`${styles.composer} ${callStyles.composer}`} onSubmit={send}>
+          <button type="button" className={callStyles.moreButton} aria-controls="hh-coach-more-options" aria-expanded={moreOptionsOpen} aria-label={({ru:'Дополнительные настройки',en:'More options',es:'Más opciones'})[lang]} onClick={()=>setMoreOptionsOpen(value=>!value)}><Plus size={23} aria-hidden="true"/></button>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
-          <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
+          <textarea ref={composerRef} id="hh-my-coach-live-input" data-coach-composer-field value={draft} maxLength={1200} rows={2}
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
@@ -2415,7 +2351,103 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
-        <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+        <details className={styles.sessionMore} id="hh-coach-more-options" open={moreOptionsOpen} onToggle={event=>setMoreOptionsOpen(event.currentTarget.open)}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+          <div className={callStyles.providerRow}>
+        <button type="button" className={styles.experienceModeControl} data-coach-basic-pro-toggle
+          aria-label={(selectedGeminiEngine||liveVoiceSelected)?(
+            {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
+            {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
+          aria-pressed={selectedGeminiEngine||liveVoiceSelected}
+          disabled={privateTextOnly||replaying||paused||protocolOpen}
+          onClick={async ()=>{
+            // Leaving Pro immediately cancels its in-flight model/audio, but
+            // simply opening Pro must NEVER silence a healthy Basic microphone.
+            if(selectedGeminiEngine){
+              engineManuallySelectedRef.current=true
+              if(voiceState.phase==='speaking'&&latestCoachText)
+                markCoachSpeechInterrupted(latestCoachText)
+              speechRef.current?.stop?.()
+              cancelPendingCoachTurn()
+              setGeminiLiveConsent(false)
+              setLiveDirectorProgress(null)
+              setCoachEngine('groq_stream')
+              setGeminiConsent(false)
+              setGeminiVoiceTier('existing')
+              setGeminiVoiceConsent(false)
+              
+              setPlaybackNotice('')
+              return
+            }
+            if(liveVoiceSelected){
+              engineManuallySelectedRef.current=true
+              speechRef.current?.stop?.()
+              cancelPendingCoachTurn()
+              setGeminiLiveConsent(false)
+              setLiveDirectorProgress(null)
+              setCoachEngine('groq_stream')
+              setGeminiConsent(false)
+              setGeminiVoiceTier('existing')
+              setGeminiVoiceConsent(false)
+              
+              setPlaybackNotice('')
+              return
+            }
+            if(geminiAvailabilityInFlightRef.current)return
+            geminiAvailabilityInFlightRef.current=true
+            setPlaybackNotice(({ru:'Проверяю Gemini Free…',en:'Checking Gemini Free…',es:'Verificando Gemini gratuito…'})[lang])
+            const checkController=new AbortController()
+            const deadline=setTimeout(()=>checkController.abort(),8000)
+            let status
+            try{status=await readGeminiEngineStatus(checkController.signal)}
+            catch{status={kind:'unavailable'}}
+            finally{
+              clearTimeout(deadline)
+              geminiAvailabilityInFlightRef.current=false
+            }
+            if(status.kind==='login'){
+              setAuthRequired(true)
+              setPlaybackNotice(({ru:'Для Gemini Free сначала войдите в Holistic House.',en:'Sign in to Holistic House to use Gemini Free.',es:'Inicia sesión para usar Gemini gratuito.'})[lang])
+              return
+            }
+            if(status.kind!=='ok'){
+              setPlaybackNotice(({ru:'Не удалось проверить Gemini Free. Нажмите Pro ещё раз — Basic работает.',en:'Could not check Gemini Free. Tap Pro to retry; Basic still works.',es:'No se pudo verificar Gemini. Reintenta Pro; Basic sigue activo.'})[lang])
+              return
+            }
+            setGeminiCapabilities(status.capabilities)
+            if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free){
+              setPlaybackNotice(({ru:'Gemini Free не готов на сервере. Basic продолжает работать.',en:'Gemini Free is not ready on the server. Basic still works.',es:'Gemini gratuito no está listo en el servidor. Basic sigue activo.'})[lang])
+              return
+            }
+            // Prefer true duplex audio over separate text/TTS when Pro is tapped.
+            engineManuallySelectedRef.current=true
+            const chooseLive=status.capabilities.gemini_live_free===true
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            const continued=!chooseLive&&speechRef.current?.pauseForTypedTurn?.()===true
+            if(!continued)speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
+            const freeTtsReady=!chooseLive&&status.capabilities.gemini_tts_free===true
+            setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')
+            setGeminiConsent(!chooseLive)
+            setGeminiVoiceTier(freeTtsReady?'gemini_tts_free':'existing')
+            setGeminiVoiceConsent(freeTtsReady)
+            setGeminiLiveConsent(false)
+            if(continued)speechRef.current?.resumeAfterTypedFailure?.()
+            setPlaybackNotice(chooseLive?({
+              ru:'Gemini Live выбран. Нажмите Play, чтобы начать двусторонний разговор.',
+              en:'Gemini Live selected. Tap Play to begin the two-way conversation.',
+              es:'Gemini Live elegido. Pulsa Play para iniciar la conversación en vivo.',
+            })[lang]:freeTtsReady?'':({
+              ru:'Gemini Free включён; голос Gemini недоступен. Можно выбрать текущий голос.',
+              en:'Gemini Free is on; Gemini voice is unavailable. You can choose the existing voice.',
+              es:'Gemini gratuito activado; su voz no está disponible. Puedes usar la voz anterior.',
+            })[lang])
+          }}>
+          <Zap size={17} aria-hidden="true"/>
+          <span>{privateTextOnly?'Private':selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
+          <small>{privateTextOnly?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
+        </button>
+          </div>
           <label className={styles.contextTopic}>
             {lang==='ru'?'Сохранённый контекст для беседы':lang==='es'?'Contexto guardado para esta conversación':'Saved context for this conversation'}
             <select value={contextTopic} onChange={event=>{

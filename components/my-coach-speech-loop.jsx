@@ -42,7 +42,7 @@ const words={
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo · esperando tu voz.',audioNoSignal:'Sin señal de audio. Reintenta con Mic o escribe.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.',sttCooling:'Cuota gratuita agotada. Reintentaré en un minuto; puedes escribir.',sttQuotaStopped:'Cuota aún agotada. Reintenta con Mic más tarde o escribe.',sttRecovering:'Restableciendo el reconocimiento… Repite lo último.',sttSignIn:'Inicia sesión de nuevo para recuperar el reconocimiento.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,voiceName=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,voiceName=null,personaId='mira',introduction='',outputMuted=false,onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -88,6 +88,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),interruptedRef=useRef(onCoachInterrupted),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
   const micLevelRef=useRef(onMicLevel)
+  const outputMutedRef=useRef(outputMuted)
+  outputMutedRef.current=outputMuted
   const beatRef=useRef(0)
   const heardRef=useRef('')
   const lastHeardRef=useRef('')
@@ -105,10 +107,21 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   levelRef.current=onVoiceLevel
   micLevelRef.current=onMicLevel
 
+  useEffect(()=>{
+    cloudPlayerRef.current?.setMuted?.(outputMuted)
+    introPlayerRef.current?.setMuted?.(outputMuted)
+    if(outputMuted&&utteranceRef.current){
+      const voice=utteranceRef.current,finish=voice.onend
+      voice.onend=null;voice.onerror=null
+      try{window.speechSynthesis?.cancel()}catch{}
+      finish?.()
+    }
+  },[outputMuted])
+
   function changePhase(next){
     phaseRef.current=next
     if(next!=='speaking'){beatRef.current=0;levelRef.current?.(null)}
-    if(next!=='listening')micLevelRef.current?.(0)
+    if(['idle','paused','ready'].includes(next))micLevelRef.current?.(0)
     setPhase(next)
     voiceStateRef.current?.({phase:next,beat:beatRef.current})
   }
@@ -1013,7 +1026,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       startListening()
     }
 
+    // A user-muted speaker is not a muted microphone. Keep the dialogue moving.
+    if(outputMutedRef.current){afterSpeech();return}
+
     function playDeviceFallback(){
+      if(outputMutedRef.current){afterSpeech();return true}
       // Only after the consented natural voice fails. No second provider request.
       const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
       if(!synth?.speak||!Utterance)return false
@@ -1116,6 +1133,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         // Safari streams audio progressively instead of waiting for a
         // complete MP3 Blob and WebAudio decode.
         introPlayerRef.current=startDirectCoachIntroAudio(url,{
+          muted:outputMutedRef.current,
           onStart:()=>{
             if(live()&&!controller.signal.aborted){setNotice('');changePhase('speaking')}
           },
@@ -1166,6 +1184,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           try{performance.measure?.('hh-coach-tts-headers',{start:synthesisStartedAt,end:performance.now()})}
           catch{/* Unsupported Performance API: keep audio playing. */}
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
+          muted:outputMutedRef.current,
           audioElement:primedAudioRef.current,
           audioContext:audioContextRef.current,
           onLevel:level=>{if(live())levelRef.current?.(level)},
