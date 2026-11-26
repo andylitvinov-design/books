@@ -27,7 +27,7 @@ export async function GET(request){
   let cursor=null,complete=false
   for(let i=0;i<8;i++){
    const page=await listMyCoachProtocols(config,actor,cursor||{})
-   for(const protocol of page.protocols){const result=clarityCourseResult(protocol,locale);if(result)results.push(result)}
+   for(const protocol of page.protocols){const receipt=grant.progress.find(row=>row.protocolId===protocol.id);const result=clarityCourseResult(protocol,locale,receipt);if(result)results.push(result)}
    if(!page.hasMore){complete=true;break}
    if(!page.nextCursor)break
    cursor=page.nextCursor
