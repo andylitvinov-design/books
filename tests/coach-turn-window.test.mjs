@@ -227,7 +227,9 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
   assert.match(ui,/sessionContext:coachEphemeralContext\(providerHistory,providerWindow,responseLocale,message\)/)
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
-  assert.equal((ui.match(/return updated\.slice\(-160\)/g)||[]).length,2)
+  assert.equal((ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol')).match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,5)
+  assert.doesNotMatch(ui,/return updated\.slice\(-160\)/)
+  assert.match(ui,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
   // The report retains up to 80 complete exchanges; inference still sees at most ten context turns.
   assert.doesNotMatch(ui,/sessionStorage|localStorage|sendBeacon/)
 })
