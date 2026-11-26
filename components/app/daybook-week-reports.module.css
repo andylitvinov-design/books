@@ -1,0 +1,5 @@
+.box{margin:1rem 0;padding:1rem;border:1px solid rgba(100,125,110,.3);border-radius:14px;background:rgba(255,255,255,.5)}
+.box h3{margin:0 0 .75rem;font-size:1rem}
+.box a{display:block;padding:.7rem 0;color:inherit;text-decoration:underline;text-underline-offset:3px}
+.box p{margin:.25rem 0;font-size:.875rem}
+.box button{min-height:44px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;padding:0 .75rem}

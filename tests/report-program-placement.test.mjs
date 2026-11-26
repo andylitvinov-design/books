@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {parseReportProgram,normalizeReportPlacement,reportWeekHref,reportDaybookWeek} from '../lib/consultations/report-program.mjs'
+import {parseReportProgram,normalizeReportPlacement,reportWeekHref,reportDaybookWeek,reportWeekIndexItem} from '../lib/consultations/report-program.mjs'
 test('program placement validates exact boundaries; standalone has no week',()=>{
  assert.deepEqual(parseReportProgram('clarity','4'),{program:'clarity',week:4})
  assert.deepEqual(parseReportProgram('goal',8),{program:'goal',week:8})
@@ -26,4 +26,15 @@ test('week view accepts a single canonical bounded number, never a goal or acces
   for(const value of [null,undefined,1,'0','5','01','1.0',['1','2'],'1&paid=true'])assert.equal(reportDaybookWeek(program,value),null)
  }
  assert.equal(reportDaybookWeek('goal','1'),null)
+})
+
+test('weekly index projects only approved report navigation metadata, not unbound goals or report content',()=>{
+ const id='12345678-1234-4123-8123-123456789abc',reference={id,occurredOn:'2026-11-25',accountId:'private'},record={kind:'prescription',status:'active',programPlacement:{program:'clarity',week:2},analysis:'private'}
+ assert.deepEqual(reportWeekIndexItem('clarity',reference,record),{id,occurredOn:'2026-11-25',week:2})
+ assert.equal(reportWeekIndexItem('business',reference,record),null)
+ assert.equal(reportWeekIndexItem('goal',reference,{...record,programPlacement:{program:'goal',week:2}}),null)
+ assert.equal(reportWeekIndexItem('clarity',reference,{...record,status:'archived'}),null)
+ assert.equal(reportWeekIndexItem('clarity',reference,{...record,kind:'payment'}),null)
+ assert.equal(reportWeekIndexItem('clarity',reference,{...record,programPlacement:{program:'clarity',week:5}}),null)
+ assert.equal(reportWeekIndexItem('clarity',{...reference,id:'invalid'},record),null)
 })

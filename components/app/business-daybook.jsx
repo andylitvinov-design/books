@@ -11,6 +11,7 @@ import {BUSINESS_SYLLABUS,businessTag,savedBusinessTask,businessProgress} from '
 import {ProgramStartLink} from './clarity-program'
 import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './business-daybook.module.css'
+import DaybookWeekReports from './daybook-week-reports'
 const COPY={
  ru:{title:'Дневник роста бизнеса',intro:'От стратегического выбора к системе исполнения.',back:'В профиль',week:'Сессия',tasks:'3 практики сессии',completed:'Выполнено',open:'Открыть',save:'Сохранить и завершить',retry:'Повторить сохранение',saving:'Сохраняем…',saved:'Сохранено и проверено',loading:'Загружаем личный дневник…',failed:'Не удалось подтвердить сохранение. Повторите попытку; черновик остаётся здесь.',loadError:'Не удалось загрузить записи. Повторите попытку.',login:'Войти в личный кабинет',load:'Повторить',answer:'Мой ответ и результат',progress:'Прогресс самостоятельной работы',next:'Продолжить',done:'Все 12 практик завершены',private:'Записи приватны; они не передаются автоматически. Самостоятельные задания не означают оплаченную или проведённую консультацию.',offer:'Обсудить с бизнес-консультантом',offerHint:'Формат, стоимость и время согласуются отдельно.',discard:'Есть несохранённые ответы. Выйти и удалить черновики?'},
  en:{title:'Business Growth Daybook',intro:'From strategic choice to a system of execution.',back:'Back to profile',week:'Session',tasks:'3 session practices',completed:'Completed',open:'Open',save:'Save and complete',retry:'Retry save',saving:'Saving…',saved:'Saved and verified',loading:'Loading your private daybook…',failed:'Save not confirmed. Retry; your draft remains here.',loadError:'Could not load your entries. Try again.',login:'Sign in to your cabinet',load:'Retry',answer:'My answer and result',progress:'Self-guided progress',next:'Continue',done:'All 12 practices completed',private:'Entries stay private and are not shared automatically. Self-guided tasks do not mean a paid or delivered consultation.',offer:'Discuss with a business consultant',offerHint:'Format, price and time are agreed separately.',discard:'Unsaved answers remain. Leave and discard drafts?'},
@@ -99,6 +100,7 @@ export default function BusinessDaybook({locale='en',initialWeek=null}){
      </article>
     })}
     {progress.next?<button className={css.action} type="button" disabled={locked} onClick={()=>{setWeek(progress.next.week);setStep(progress.next.step);setSaved('')}}>{t.next} — {t.week} {progress.next.week}<ArrowRight size={19} aria-hidden="true"/></button>:<p className={css.finished}><CheckCircle2 size={21}/>{t.done}</p>}
+    <DaybookWeekReports key={account+':business'} locale={lang} accountId={account} program="business" week={week}/>
     <p className={css.privacy}><LockKeyhole size={16} aria-hidden="true"/>{t.private}</p>
    </section>
   </>}
