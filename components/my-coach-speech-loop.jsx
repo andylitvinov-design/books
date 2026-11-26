@@ -616,6 +616,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
   function holdRecognizedDraft(value){
     const candidate=appendSpokenAnswer(draftAtStartRef.current,value,1200)
+    // Never silently append an unchanged unverified fragment or backchannel
+    // to a later substantive turn. Explicit typed review/send still works.
+    uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}
     currentDraftRef.current=candidate;draftRef.current?.(candidate)
     transcriptRef.current?.('');heardRef.current=''
     startListening();setNotice(t.review)

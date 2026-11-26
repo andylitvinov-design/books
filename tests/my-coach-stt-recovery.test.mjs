@@ -159,4 +159,6 @@ test('Basic implementation fences output and uses same-mic handoff and reviewed 
  assert.ok(ui.includes('endpointMs:endpointForTurn,onPause:observeSpeechPause'))
  assert.ok(ui.includes('if(audioStarted)'))
  assert.ok(ui.includes('holdRecognizedDraft(value)'))
+ const held=ui.slice(ui.indexOf('function holdRecognizedDraft(value)'),ui.indexOf('function startListening(){'))
+ assert.ok(held.includes('uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}'))
 })
