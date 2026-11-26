@@ -47,3 +47,12 @@ test('home program controls open public detail pages, composer and real Daybook 
  const page=read('app/[locale]/programs/[program]/page.jsx')
  assert.match(page,/if\(!p\)notFound\(\)/)
 })
+
+
+test('public Business renders an icon for all eight sessions with a defensive fallback',()=>{
+ const ui=read('components/public-program-overview.jsx')
+ const match=ui.match(/business:\[([^\]]+)\]/)
+ assert.ok(match)
+ assert.equal(match[1].split(',').length,BUSINESS_SESSION_COUNT)
+ assert.match(ui,/const RowIcon=icons\[p\.id\]\?\.\[index\]\?\?programIcons\[p\.id\]/)
+})
