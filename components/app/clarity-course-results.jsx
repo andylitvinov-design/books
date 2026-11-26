@@ -44,7 +44,7 @@ export function ClarityCourseResults({state,day,locale}){
     <strong>{t.saved} · {new Date(r.savedAt).toLocaleDateString(locale)}</strong>
     {r.summary&&<p>{r.summary}</p>}{r.nextStep&&<p>{r.nextStep}</p>}
     {r.rows.length>0&&<dl>{r.rows.map(row=><div key={row.id}><dt>{row.label}</dt><dd>{row.quote||'—'}</dd></div>)}</dl>}
-    {r.homework.length>0&&<div data-clarity-homework><strong>{t.homework}</strong><ul>{r.homework.map(row=><li key={row.id}>{row.question}</li>)}</ul></div>}
+
    </article>)}
    {!state.data.complete&&<p>{t.partial}</p>}
   </>}
