@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
 import DaybookWeekReports from './daybook-week-reports'
+import CoachingCourseDashboard from './coaching-course-dashboard'
 import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
@@ -222,24 +223,18 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
  const sheet=useRef(null)
  function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
- return <section className={css.golden} data-clarity-daybook data-clarity-design="golden-one-screen-v3">
-  <div className={css.topbar}>
-   <Link href={root+'/coaching/clarity'} prefetch={false} className={css.courseBack}><ArrowLeft size={18} aria-hidden="true"/>{g.overview}</Link>
-   <button type="button" className={css.help} data-daybook-inline-help aria-label={g.help} aria-haspopup="dialog" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={18} aria-hidden="true"/>iHelp</button>
-  </div>
-  <header className={css.cover}>
-   <h1>{t.title}</h1><p>{g.duration}</p><span className={css.ribbon}><Sparkles size={14} aria-hidden="true"/>CLARITY · DAYBOOK</span>
-  </header>
-  <nav className={css.dayTabs} aria-label={t.details}>{days.map(([title],i)=>{
-   const done=recorded.includes(i+1)
-   return <button key={i} type="button" aria-pressed={day===i+1} aria-controls={'clarity-day-'+(i+1)} onClick={()=>chooseDay(i+1)} title={title+' · '+(done?g.recorded:g.notRecorded)}><span>{t.day}</span><b>{i+1}</b><small>{done?<CheckCircle2 size={13} aria-hidden="true"/>:<BookOpen size={13} aria-hidden="true"/>}{done?'1/1':'0/1'}</small></button>
-  })}</nav>
-  <div className={css.dayBanner} data-clarity-progress>
-   <span>{t.day} {day} / {CLARITY_DAY_COUNT}</span><h2>{days[day-1][0]}</h2>
-   <div className={css.dayProgress}><progress max={CLARITY_DAY_COUNT} value={recorded.length} aria-label={t.progress}/><strong>{recorded.length}/{CLARITY_DAY_COUNT}</strong></div>
-   <small>{g.progress}</small>
-  </div>
-  <div className={css.sheet} ref={sheet} data-clarity-sheet tabIndex={0} aria-label={t.steps}>
+ const counts=days.map((_,i)=>({done:recorded.includes(i+1)?1:0,total:1}))
+ return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
+  <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} practiceOnlyReflection
+   results={<DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/>}
+   initialPanel={routeWeek===4?'resources':null}
+   resources={<>
+    <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
+    {legacy.length>0&&<details className={css.resources}><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
+    <details className={css.resources} open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
+    {children}<p className={css.notice}>{t.privacy}</p><Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+   </>}>
+  <div ref={sheet} data-clarity-sheet>
    {days.map(([title,description],i)=>{
     const number=i+1,notes=clarityDayNotes(entries,number)
     return <article className={css.dayCard} key={number} id={'clarity-day-'+number} hidden={day!==number} data-clarity-day={number}>
@@ -260,22 +255,7 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
      </div>
     </article>
    })}
-   <DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day}/>
-   <details className={css.resources} open={routeWeek===4?true:undefined}>
-    <summary><BookOpen size={16} aria-hidden="true"/><strong>{g.resources}</strong><ChevronDown size={16} aria-hidden="true"/></summary>
-    <div className={css.resourceBody}>
-     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
-     {legacy.length>0&&<details><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
-     <details open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
-     {children}
-     <p className={css.notice}>{t.privacy}</p>
-     <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
-    </div>
-   </details>
   </div>
-  <footer className={css.courseFooter}>
-   <Link href={root+'/my-coach'} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
-   <small>{g.availability}</small>
-  </footer>
+  </CoachingCourseDashboard>
  </section>
 }
