@@ -1,3 +1,4 @@
+import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
 import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -104,4 +105,20 @@ test('new private profile entry is capability gated and never starts a voice pro
  assert.match(gate,/chooseSession\(MEANING_AXES_COACH_SESSION_ID,\{privateProfile:true\}\)/)
  assert.match(route,/params.get\('view'\)==='capabilities'/)
  assert.match(route,/profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'/)
+})
+
+
+test('private profile entry preference survives checkpoint/resume without enabling a new provider or changing course',()=>{
+ const raw=fixture(),value={...raw,protocol:{...raw.protocol,methodId:'grow'}}
+ const normalized=normalizeMyCoachDraft({...value,privateProfileV3Requested:true})
+ assert.equal(normalized.privateProfileV3Requested,true)
+ assert.equal(normalizeMyCoachDraft(normalized).privateProfileV3Requested,true)
+ assert.equal(normalizeMyCoachDraft(value).privateProfileV3Requested,undefined)
+ assert.throws(()=>normalizeMyCoachDraft({...value,privateProfileV3Requested:'true'}),/MY_COACH_DRAFT_INVALID/)
+ const other={...value,courseSessionId:'life_direction',protocol:{...value.protocol,courseSessionId:'life_direction'}}
+ assert.throws(()=>normalizeMyCoachDraft({...other,privateProfileV3Requested:true}),/MY_COACH_DRAFT_INVALID/)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(ui,/setFreshPrivateProfile\(recovered.privateProfileV3Requested===true\)/)
+ assert.match(store,/Boolean\(old.privateProfileV3Requested\)!==Boolean\(value.privateProfileV3Requested\)/)
 })

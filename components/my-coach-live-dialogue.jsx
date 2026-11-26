@@ -689,7 +689,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       newProfileProgress)
   const profileV3Active=Boolean(profileV3&&!profileV3.step.closed)
   const freshProfileAwaiting=Boolean(freshPrivateProfile&&profileSelected&&!profileV3&&!profileV3Fault)
-  const structuredProfileCanStart=restoredDraft?profileV3CanStart:Boolean(freshProfileAwaiting&&autoSaveEnabled&&profileV3Enabled&&coachProfileTrackForCourse(selectedCourseId))
+  const structuredProfileCanStart=freshPrivateProfile?Boolean(freshProfileAwaiting&&autoSaveEnabled&&profileV3Enabled&&coachProfileTrackForCourse(selectedCourseId)):restoredDraft&&profileV3CanStart
   const profileActive=Boolean(profileSelected&&profileProgress&&!profileV3&&!restoredProfileProof.current)
   const continuityChoice=openingProgress.answers.continuity?.kind||''
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
@@ -1043,7 +1043,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }))
     let value
     try{
-      value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,protocol:{
+      value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,...(freshPrivateProfile?{privateProfileV3Requested:true}:{}),protocol:{
         id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
@@ -1724,7 +1724,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       restoredProfileCheckin.current=p.profileCheckin?.version===COACH_PROFILE_REVIEW_VERSION?p.profileCheckin:null
       autoSaveRef.current=true;engineManuallySelectedRef.current=true;turnsRef.current=p.turns
       flushSync(()=>{
-        setRestoredDraft(true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
+        setRestoredDraft(true);setFreshPrivateProfile(recovered.privateProfileV3Requested===true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
         setTurns(p.turns);setSelectedCourseId(recovered.courseSessionId);setSpeechLocale(p.locale)
         setSelectedGoal('')
         if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
@@ -2221,6 +2221,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {privateTextOnly&&(profileV3Active||profileV3Fault||freshProfileAwaiting||(profileV3Enabled&&structuredProfileCanStart&&profileSelected&&!profileProgress?.ratings?.length))&&
           <section className={styles.protocolReview} data-coach-private-profile-v3>
             <strong>{({ru:'Приватное исследование профиля',en:'Private profile check-in',es:'Revisión privada del perfil'})[lang]}</strong>
+            {freshProfileAwaiting&&(!profileV3Enabled||!autoSaveEnabled)&&<p role="status">{({ru:'Приватное исследование сейчас недоступно. Можно сохранить или завершить текущий разговор.',en:'Private check-in is not available right now. You can save or finish the current conversation.',es:'La revisión privada no está disponible ahora. Puedes guardar o terminar la conversación.'})[lang]}</p>}
             <p>{({ru:'Ответы сохраняются в этой сессии и не отправляются внешнему ИИ. Можно пропустить вопрос или завершить исследование.',en:'Answers stay in this session and are not sent to an external AI. You can skip a question or finish.',es:'Las respuestas quedan en esta sesión y no se envían a una IA externa. Puedes omitir una pregunta o terminar.'})[lang]}</p>
             {profileV3Fault?<><p role="alert">{({ru:'Не удалось подтвердить ревизию. Откройте сохранённую сессию заново.',en:'The saved revision could not be confirmed. Reopen the saved session.',es:'No se pudo confirmar la revisión. Vuelve a abrir la sesión guardada.'})[lang]}</p>
               <button type="button" onClick={()=>window.location.reload()}>{({ru:'Открыть заново',en:'Reopen',es:'Volver a abrir'})[lang]}</button></>:
