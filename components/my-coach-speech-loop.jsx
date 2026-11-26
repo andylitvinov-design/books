@@ -47,7 +47,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
   const [supported,setSupported]=useState(null)
-  const phaseRef=useRef('idle'),introStartedRef=useRef(false)
+  const phaseRef=useRef('idle'),introStartedRef=useRef(false),pauseRef=useRef(null)
   const activeRef=useRef(false)
   const recognitionRef=useRef(null),recordedTurnRef=useRef(null)
   const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
@@ -191,7 +191,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       try{window.speechSynthesis?.cancel()}catch{}
     }
   }
-  function stopVoice(){
+  function stopVoice({pause=false}={}){
     const cancelTurn=phaseRef.current==='thinking'||Boolean(earlySpeechRef.current)
     if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
       draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
@@ -201,9 +201,33 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     transcriptRef.current?.('')
     silence()
     if(cancelTurn)cancelRef.current?.()
-    changePhase('idle')
+    changePhase(pause?'paused':'idle')
+  }
+  function pauseSession(){
+    if(phaseRef.current==='paused')return true
+    if(!activeRef.current)return false
+    if(phaseRef.current==='speaking'&&lastSpokenCoachRef.current)
+      interruptedRef.current?.(lastSpokenCoachRef.current)
+    stopVoice({pause:true})
+    return true
+  }
+  function resumePausedSession(){
+    if(phaseRef.current!=='paused'||!enabled||!canStart||document.visibilityState==='hidden')return false
+    if(supported===false){setNotice(t.unsupported);return false}
+    // Retain the parent's transcript and duration; do not replay the introduction.
+    activeRef.current=true
+    introStartedRef.current=true
+    generationRef.current+=1
+    refreshCoachIos27PlaybackRoute(window.navigator)
+    audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
+    primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
+    primeMicrophonePermission()
+    setNotice('')
+    startListening()
+    return true
   }
   stopRef.current=stopVoice
+  pauseRef.current=pauseSession
 
   function restoreCoachVolume(){
     try{cloudPlayerRef.current?.setVolume?.(1)}catch{}
@@ -405,7 +429,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
   useImperativeHandle(ref,()=>({
     startSession(introduction,{naturalVoice=false}={}){
-      if(activeRef.current||!enabled||!canStart)return false
+      if(phaseRef.current==='paused')return resumePausedSession()
+      if(activeRef.current||!enabled||!canStart||document.visibilityState==='hidden')return false
       // The hero Play must grant the same voice consent as the toolbar Play.
       sessionStartRef.current?.()
       activeRef.current=true
@@ -424,6 +449,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       return true
     },
     startWithConsent(){
+      if(phaseRef.current==='paused')return resumePausedSession()
       if(activeRef.current||!canStart)return false
       activeRef.current=true
       generationRef.current+=1
@@ -489,6 +515,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // Replay is an explicit user gesture: resume Safari-blocked device or MP3 audio
     // without re-synthesizing the same paid/free-quota-limited coach question.
     stop(){stopVoice()},
+    pauseSession,
+    hasLiveSession:()=>activeRef.current||phaseRef.current==='paused',
     resumeVoice(){
       if(phaseRef.current!=='ready'||!blockedResumeRef.current)return false
       blockedResumeRef.current()
@@ -498,15 +526,18 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   useEffect(()=>{
     setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition||
       (ios27NeedsSpeechRecovery(window.navigator)&&coachRecordedSupported(window))))
-    const onHidden=()=>{if(document.visibilityState==='hidden')stopRef.current?.()}
+    const onHidden=()=>{if(document.visibilityState==='hidden')pauseRef.current?.()}
+    const onPageHide=()=>pauseRef.current?.()
     document.addEventListener('visibilitychange',onHidden)
+    window.addEventListener('pagehide',onPageHide)
     return ()=>{
       document.removeEventListener('visibilitychange',onHidden)
+      window.removeEventListener('pagehide',onPageHide)
       stopRef.current?.()
     }
   },[])
   useEffect(()=>{
-    if(!enabled&&activeRef.current)stopRef.current?.()
+    if(!enabled&&(activeRef.current||phaseRef.current==='paused'))stopRef.current?.()
   },[enabled])
   useEffect(()=>{
     // A provider outage/revoked consent interrupts only outbound audio.
@@ -1208,6 +1239,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function toggle(){
+    if(phaseRef.current==='paused'){resumePausedSession();return}
     if(phaseRef.current==='ready'&&blockedResumeRef.current){
       blockedResumeRef.current()
       return
@@ -1223,7 +1255,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       interruptCoachToListen()
       return
     }
-    if(activeRef.current){stopVoice();return}
+    if(activeRef.current){pauseSession();return}
     if(!canStart)return
     if(!enabled){onRequestConsent?.();return}
     // A natural prerecorded greeting must work even if this browser lacks STT.
@@ -1249,20 +1281,23 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     startListening()
   }
 
-  const active=phase!=='idle',ready=phase==='ready'
+  const isPaused=phase==='paused',active=phase!=='idle'&&!isPaused,ready=phase==='ready'
+  const pauseLabel=({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]
+  const continueLabel=({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]
   const interrupting=['speaking','loading','thinking'].includes(phase)
   const interruptLabel={ru:'Перебить коуча',en:'Interrupt coach',es:'Interrumpir al coach'}[lang]
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
-      aria-pressed={active&&!ready} aria-label={ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?t.stop:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
-      {!active&&!introStartedRef.current?
+      aria-pressed={active&&!ready} aria-label={isPaused?continueLabel:ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?pauseLabel:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
+      {isPaused||(!active&&!introStartedRef.current)?
         <Play size={19} fill="currentColor" aria-hidden="true"/>:
         <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}
-      <span>{ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?t.stop:t.start}</span>
+      <span>{isPaused?continueLabel:ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?pauseLabel:t.start}</span>
       {phase==='speaking'&&<Volume2 size={15} aria-hidden="true" data-coach-speaker-indicator/>}
     </button>
     {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
+    {isPaused&&<span className={styles.status} role="status">{({ru:'Разговор на паузе',en:'Conversation paused',es:'Conversación en pausa'})[lang]}</span>}
     {active&&!notice&&<span className={styles.status} role="status" data-coach-voice-status>
       {ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}

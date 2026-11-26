@@ -5,10 +5,11 @@ import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
-import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2,Pause} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
+import {createCoachActiveClock} from '@/lib/coaching/coach-active-clock.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
@@ -355,6 +356,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[geminiLiveConsent,sessionClockStarted,personaId])
   const [introComplete,setIntroComplete]=useState(false)
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
+  const activeClockRef=useRef(null)
+  if(!activeClockRef.current)activeClockRef.current=createCoachActiveClock()
+  const voicePauseRef=useRef(false),pauseActionRef=useRef(null)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const [authRequired,setAuthRequired]=useState(false)
@@ -402,24 +406,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const micWaveRef=useRef(null)
   const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
-  // The 20-minute format counts active foreground seconds, not wall-clock
-  // time while Safari is backgrounded. No stored state or forced cutoff.
+  // Preserve the partial interval on pause; the server controls actual quotas.
+  function freezeActiveClock(){
+    const seconds=activeClockRef.current.setRunning(window.performance.now(),false)
+    setActiveSessionSeconds(seconds)
+    return seconds
+  }
   useEffect(()=>{
-    if(!sessionClockStarted)return
-    let last=window.performance.now()
-    const tick=()=>{
-      const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef.current){
-        const delta=Math.min(15,Math.max(0,(now-last)/1000))
-        setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
-      }
-      last=now
-    }
-    const onVisibility=()=>{last=window.performance.now()}
-    const timer=window.setInterval(tick,15000)
+    const clock=activeClockRef.current
+    const tick=()=>setActiveSessionSeconds(clock.sample(window.performance.now()))
+    const onVisibility=()=>setActiveSessionSeconds(clock.setRunning(window.performance.now(),
+      sessionClockStarted&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current))
+    onVisibility()
+    const timer=window.setInterval(tick,1000)
     document.addEventListener('visibilitychange',onVisibility)
-    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted,paused,voicePaused])
+    return()=>{
+      clock.setRunning(window.performance.now(),false)
+      window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
+    }
+  },[sessionClockStarted,paused,voicePaused,coachProfileOpen])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -895,7 +900,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    if(privateTextOnly)return
+    if(privateTextOnly||voicePauseRef.current||paused)return
     // Dynamic replies preserve their consented remote provider. Fixed public
     // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
@@ -997,13 +1002,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!document.hidden)return
       stopReplay()
       // Gemini owns its phase; never overwrite a synchronous pause with idle.
+      pauseActionRef.current?.()
       if(!speechRef.current?.hasLiveSession?.())setVoiceState({phase:'idle',beat:0})
     }
+    const onOffline=()=>pauseActionRef.current?.({disconnect:true})
+    const onPageHide=()=>{stopReplay();pauseActionRef.current?.({disconnect:true})}
     document.addEventListener('visibilitychange',onHidden)
-    window.addEventListener('pagehide',stopReplay)
+    window.addEventListener('offline',onOffline)
+    window.addEventListener('pagehide',onPageHide)
     return()=>{
       document.removeEventListener('visibilitychange',onHidden)
-      window.removeEventListener('pagehide',stopReplay)
+      window.removeEventListener('offline',onOffline)
+      window.removeEventListener('pagehide',onPageHide)
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
       if(replayAudioContextRef.current)
@@ -1014,7 +1024,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   function openCoachProfile(){
     coachProfileOpenRef.current=true
-    // Profile is not End. Pause Gemini; legacy speech releases resources.
+    // Profile is not End. Both transports preserve the current logical session.
     const kept=speechRef.current?.pauseSession?.()===true
     if(!kept&&!speechRef.current?.hasLiveSession?.())speechRef.current?.stop?.()
     cancelPendingCoachTurn()
@@ -1039,6 +1049,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function send(event){
     event.preventDefault()
     if(courseGateRequired||courseGateRef.current||courseGateBusyRef.current)return null
+    if(voicePauseRef.current){
+      if(liveVoiceSelected&&speechRef.current?.isResumeUnavailable?.()){
+        if(!draft.trim())return null
+        // Explicit local text continuation; never mint a second voice grant.
+        speechRef.current.stop?.();voicePauseRef.current=false
+        setVoiceState({phase:'idle',beat:0})
+        return await sendMessage(draft.trim(),{forceLocal:true})
+      }
+      setError(({ru:'Нажмите Play, чтобы продолжить прежний разговор.',en:'Tap Play to resume the previous conversation.',es:'Pulsa Play para continuar la conversación anterior.'})[lang])
+      return null
+    }
     if(privateTextOnly)return await sendMessage(draft.trim(),{forceLocal:true})
     if(liveVoiceSelected){
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
@@ -1118,7 +1139,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
-        durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
+        durationSeconds:Math.floor(activeClockRef.current.sample(window.performance.now())),turnLayout:'chronological',
         opening,...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:{}),
         turns:rows.map((row,index)=>({role:row.role,content:row.content,
           ...(row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}:{}),
@@ -1251,6 +1272,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
+  function handleVoiceStateChange(next){
+    const wasPaused=voicePauseRef.current
+    voicePauseRef.current=next.phase==='paused'
+    setVoiceState(next)
+    if(!voicePauseRef.current||wasPaused)return
+    freezeActiveClock()
+    cancelPendingCoachTurn()
+    retainPendingClient()
+    replayControllerRef.current?.abort();replayPlayerRef.current?.cancel()
+    setReplaying(false)
+    // Existing consented owner-only checkpoint, not a finished report.
+    queuePrivateDraft(turnsRef.current)
+    void autoSaveQueueRef.current?.flush()
+  }
+  function pauseVoiceConversation(options){
+    return speechRef.current?.pauseSession?.(options)===true
+  }
+  pauseActionRef.current=pauseVoiceConversation
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
     const history=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32).map(row=>String(row.content||'').slice(0,160))
@@ -1272,7 +1311,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ?speechLocale:detectedSpeechLocale(message,lang)
     // Tapping the mic affirms the inline disclosure. Typed turns keep their
     // separate checkbox. Never contact a model if consent is absent.
-    if(!message||paused||protocolOpen||(!voiceTurn&&busy))return null
+    if(!message||paused||voicePauseRef.current||protocolOpen||(!voiceTurn&&busy))return null
     if(voiceTurn&&pending.current)cancelPendingCoachTurn()
     // Never replace a submitted client utterance just because the previous reply failed.
     if(inFlightClientRef.current&&!retainPendingClient())return null
@@ -1444,7 +1483,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
-          elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
+          elapsedSeconds:sessionClockStarted?Math.floor(activeClockRef.current.sample(window.performance.now())):0,
           openingHistory,
           ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
@@ -1521,6 +1560,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // download a complete local PDF, independently of optional account retention.
   function endWithProtocol(){
     if(profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return
+    freezeActiveClock()
     speechRef.current?.stop?.()
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
@@ -1561,6 +1601,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
+      freezeActiveClock()
       speechRef.current?.stop?.()
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
@@ -1880,7 +1921,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         setTurns(p.turns);setSelectedCourseId(recovered.courseSessionId);setSpeechLocale(p.locale)
         setSelectedGoal('')
         if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
-        setActiveSessionSeconds(p.durationSeconds||0);setSessionClockStarted(true)
+        setActiveSessionSeconds(activeClockRef.current.restore(p.durationSeconds||0));setSessionClockStarted(true)
         setGreetingAccepted(true);setIntroComplete(true);setPaused(false)
         setAllowOpeningPrior(false);setStagedMemory(null);setContextTopic('');setContextPaused(true)
         setGeminiLiveConsent(false);setGeminiConsent(false);setCoachEngine('groq_stream');setDraft('')
@@ -1889,7 +1930,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{resumeInFlight.current=false;if(draftMountedRef.current)setResumeBusy(false)}
   }
-  const keepCoachTab=liveVoiceSelected&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
+  const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
@@ -2083,7 +2124,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             localRecoveryTurns={turns}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
-            onVoiceStateChange={setVoiceState}
+            onVoiceStateChange={handleVoiceStateChange}
             onMicLevel={level=>{
               reactionActivity.observe(level)
               const wave=micWaveRef.current
@@ -2123,7 +2164,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} enabled={true}
             canStart={!courseGateRequired&&!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
-            onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
+            onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={handleVoiceStateChange}
             onMicLevel={level=>{
               reactionActivity.observe(level)
               const wave=micWaveRef.current
@@ -2143,6 +2184,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               style={{'--wave-gain':String(gain)}}/>)}
           </span>
         </div>
+        {!privateTextOnly&&!paused&&!voicePaused&&voiceState.phase!=='idle'&&<button type="button"
+          className={styles.keyboardControl} data-coach-pause-control onClick={()=>pauseVoiceConversation()}
+          aria-label={({ru:'Поставить разговор на паузу',en:'Pause conversation',es:'Pausar conversación'})[lang]}>
+          <Pause size={17} aria-hidden="true"/><span>{({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]}</span>
+        </button>}
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <button type="button" className={styles.experienceModeControl} data-coach-basic-pro-toggle
@@ -2150,7 +2196,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
           aria-pressed={selectedGeminiEngine||liveVoiceSelected}
-          disabled={privateTextOnly||replaying||paused||protocolOpen}
+          disabled={privateTextOnly||replaying||paused||voicePaused||protocolOpen}
           onClick={async ()=>{
             // Leaving Pro immediately cancels its in-flight model/audio, but
             // simply opening Pro must NEVER silence a healthy Basic microphone.
@@ -2488,7 +2534,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
-          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired} onChange={event=>{
+          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired||voicePaused||paused} onChange={event=>{
             engineManuallySelectedRef.current=true
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)
