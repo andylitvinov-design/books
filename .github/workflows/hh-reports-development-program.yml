@@ -107,7 +107,7 @@ jobs:
       # Security proposal preflight: isolated loopback DB, no production secrets.
       # The existing App R1 database gate remains mandatory when Ready.
       - name: Draft report CRM claim isolated Postgres preflight
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/report-google-identity-gate-5564' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["codex/report-google-identity-gate-5564","codex/pdf-report-format-20261124"]'), github.event.pull_request.head.ref) }}
         env:
           CI: 'true'
           NODE_ENV: test
