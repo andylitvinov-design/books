@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
@@ -608,16 +608,21 @@ export async function verify(api,ctx,files,options={}) {
         changedRows.every(row => !row.previous_filename &&
           ['M','A','modified','added'].includes(row.status)) &&
         safeUnrelatedPublicLeafAdvance(diff, ctx.base, liveBaseSha, changed);
+      // One general loose-base rule for complete non-overlapping ordinary product changes.
+      // Preserve the actual tested HEAD and all required specialist outcomes.
+      const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
+        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves && !nonOverlappingProduct) {
         // Retry only an existing positive-only compatibility proof, not actual
         // overlap or an unproven compare. Null never authorizes reuse.
         const positiveOnlyProof = allowMergeabilityRetry && live.mergeable === null &&
           typeof api.target === 'function' && maxWait > 0 &&
           (safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed) ||
            safeDetachedCiSourceAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed) ||
            safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, true) ||
            (changedRows.every(row => !row.previous_filename &&
              ['M','A','modified','added'].includes(row.status)) &&
@@ -642,6 +647,10 @@ export async function verify(api,ctx,files,options={}) {
           proof:'NOT_ACCEPTED',
         }));
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (nonOverlappingProduct) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: ordinary non-overlapping protected product delta; retain exact-HEAD CI without a new build');
       }
       if (unrelatedPublicLeaves) {
         approvedDisjointBases.add(liveBaseSha);
@@ -1125,7 +1134,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
 export function diagnoseAggregateError(error) {
   const message = String(error?.message || error || 'unknown');
   const rules = [
-    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED','BASE_ADVANCED','Rebase/update the sensitive PR against current production, then validate exact HEAD.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED','BASE_ADVANCED','Inspect actual overlap, critical/shared changes or incomplete ancestry proof before requesting a new CI wave. Ordinary verified non-overlapping production advances do not require rebasing.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Discard stale results and run checks on the new PR HEAD.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT','MERGE_CONFLICT','Resolve the real merge conflict; do not bypass the gate.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
