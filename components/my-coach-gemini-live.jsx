@@ -1307,7 +1307,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(runtime.current)stop()
   },[personaId,lang,voiceName,enabled])
   const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
-    phase==='loading'?t.connecting:phase==='thinking'?t.thinking:t.stop
+    phase==='loading'?t.connecting:phase==='thinking'?t.thinking:({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]
   return <div className={styles.root} data-my-coach-voice={phase}
     data-gemini-free-live-audio="true" data-coach-audio-recovering={audioNeedsGesture?'true':undefined}>
     <button type="button" className={styles.button}
@@ -1317,7 +1317,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       onClick={()=>{
         if(phase==='idle'||phase==='paused'){startSession();return}
         if(phase==='speaking'){interrupt();return}
-        stop()
+        pauseSession()
       }}>
       {phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
         phase==='speaking'?<Mic size={19} aria-hidden="true"/>:
