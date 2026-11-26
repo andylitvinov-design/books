@@ -38,3 +38,15 @@ test('weekly index projects only approved report navigation metadata, not unboun
  assert.equal(reportWeekIndexItem('clarity',reference,{...record,programPlacement:{program:'clarity',week:5}}),null)
  assert.equal(reportWeekIndexItem('clarity',{...reference,id:'invalid'},record),null)
 })
+
+test('goal placement requires explicit valid goal and verified account ownership for navigation or indexing',()=>{
+ const goalId='12345678-1234-4123-8123-123456789abc',other='22345678-1234-4123-8123-123456789abc',p=parseReportProgram('goal',3,goalId),ref={id:other,occurredOn:'2026-11-25'},record={status:'active',kind:'prescription',programPlacement:p}
+ assert.deepEqual(p,{program:'goal',week:3,goalId})
+ assert.throws(()=>parseReportProgram('clarity',2,goalId))
+ assert.throws(()=>parseReportProgram('goal',3,'wrong'))
+ assert.equal(reportWeekHref('en',p),'/en/app/daybook?tab=goals')
+ assert.equal(reportWeekHref('en',p,other),'/en/app/daybook?tab=goals')
+ assert.equal(reportWeekHref('en',p,goalId),'/en/app/daybook?tab=stages&stage=3&goal='+goalId)
+ assert.equal(reportWeekIndexItem('goal',ref,record,other),null)
+ assert.deepEqual(reportWeekIndexItem('goal',ref,record,goalId),{id:other,occurredOn:ref.occurredOn,week:3})
+})

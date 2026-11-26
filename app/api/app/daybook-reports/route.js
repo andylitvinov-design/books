@@ -19,11 +19,11 @@ export async function GET(request){
     auth=createRequestAuth(request,config)
     const actor=await auth.verified()
     if(request.headers.get('x-hh-account-id')!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-    const query=new URL(request.url).searchParams,program=query.get('program')
-    if(query.getAll('program').length!==1||[...query.keys()].some(key=>key!=='program')||!['clarity','business'].includes(program))
+    const query=new URL(request.url).searchParams,program=query.get('program'),goalId=query.get('goal')
+    if(query.getAll('program').length!==1||query.getAll('goal').length>1||[...query.keys()].some(key=>!['program','goal'].includes(key))||!['clarity','business','goal'].includes(program)||(program==='goal'?!goalId:goalId!==null))
       throw new AppError('INVALID_REPORT_PROGRAM',400)
     await consumeRate(config,{op:'daybook-report-index',accountId:actor.id},20,60)
-    const payload=deliveryEnabled()?await listSavedProgramReports(config,getPrescriptionStore(),actor,program):{reports:[],limited:false}
+    const payload=deliveryEnabled()?await listSavedProgramReports(config,getPrescriptionStore(),actor,program,goalId):{reports:[],limited:false}
     return auth.apply(NextResponse.json(payload,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)

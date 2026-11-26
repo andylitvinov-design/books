@@ -8,19 +8,19 @@ const COPY={
   ru:{heading:'Отчёты этой недели',report:'Отчёт консультации',failed:'Не удалось загрузить отчёты.',retry:'Повторить',more:'Более ранние отчёты доступны в разделе «Мои отчёты».',all:'Мои отчёты'},
   es:{heading:'Informes de esta semana',report:'Informe de consulta',failed:'No se pudieron cargar los informes.',retry:'Reintentar',more:'Los informes anteriores están en Mis informes.',all:'Mis informes'},
 }
-export default function DaybookWeekReports({locale='en',accountId,program,week}){
+export default function DaybookWeekReports({locale='en',accountId,program,week,goalId=null}){
   const lang=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[lang],savedLocale=lang==='ru'?'ru':'en'
-  const key=accountId+':'+program
+  const key=accountId+':'+program+':'+(goalId||'')
   const [result,setResult]=useState(null),[retry,setRetry]=useState(0)
   useEffect(()=>{
-    if(!accountId)return
+    if(!accountId||(program==='goal'&&!goalId))return
     const controller=new AbortController()
     let active=true
-    appFetch('daybook-reports?program='+encodeURIComponent(program),undefined,'GET',{accountId,signal:controller.signal})
+    appFetch('daybook-reports?program='+encodeURIComponent(program)+(program==='goal'?'&goal='+encodeURIComponent(goalId):''),undefined,'GET',{accountId,signal:controller.signal})
       .then(data=>{if(active)setResult({key,reports:Array.isArray(data?.reports)?data.reports:[],limited:data?.limited===true})})
       .catch(()=>{if(active&&!controller.signal.aborted)setResult({key,error:true})})
     return()=>{active=false;controller.abort()}
-  },[accountId,program,key,retry])
+  },[accountId,program,goalId,key,retry])
   if(!accountId||result?.key!==key)return null
   if(result.error)return <section className={css.box} data-daybook-week-reports role="status">
     <p>{t.failed}</p><button type="button" onClick={()=>{setResult(null);setRetry(n=>n+1)}}>{t.retry}</button>

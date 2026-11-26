@@ -34,3 +34,12 @@ test('saved session and generated PDF must use the exact authorized publication 
  for(const path of ['app/[locale]/app/sessions/[id]/page.jsx','app/api/app/saved-sessions/[id]/pdf/route.js'])
    assert.match(read(path),/\{expectedSource:saved\.expectedSource\}/)
 })
+
+test('goal report listing verifies goal belongs to authenticated account before reading report references',()=>{
+ const index=read('lib/app/daybook-report-index.js')
+ assert.match(index,/coaching_goals where id=\$1 and account_id=\$2/)
+ assert.match(index,/program==='goal'&&!verifiedGoalId/)
+ assert.match(index,/reportWeekIndexItem\(program,\{id:row.id,occurredOn\},record,verifiedGoalId\)/)
+ assert.match(read('components/app/daybook-stages.jsx'),/<DaybookWeekReports[^>]*program="goal"/)
+ assert.match(read('app/[locale]/app/sessions/[id]/page.jsx'),/verifyReportGoal\(config,actor,assigned.goalId\)/)
+})

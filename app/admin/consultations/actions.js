@@ -21,7 +21,7 @@ function input(formData) {
   if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
   if(formData.has('reportProgram')||formData.has('reportWeek'))
-    data.programPlacement=parseReportProgram(formData.get('reportProgram'),formData.get('reportWeek'))
+    data.programPlacement=parseReportProgram(formData.get('reportProgram'),formData.get('reportWeek'),formData.get('reportGoalId'))
   data.includeInvoice = formData.get('includeInvoice') === 'on'
   data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
