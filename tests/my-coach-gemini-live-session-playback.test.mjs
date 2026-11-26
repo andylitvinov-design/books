@@ -106,8 +106,8 @@ function session(sampleRate=48000){
     onInterrupted:text=>events.interruptions.push(text),
   }}
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
-    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer})',{
-    GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,
+    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState})',{
+    GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,
     geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,
     Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
     propsRef,runtime,
@@ -116,7 +116,7 @@ function session(sampleRate=48000){
     setNotice:notice=>events.notices.push(notice),
     setAudioNeedsGesture:value=>events.gestures.push(value),
     t:{failure:'unavailable',audioRoute:'paused',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting',
-      resumedEarlier:'resumed from previous checkpoint'},
+      resumedEarlier:'resumed from previous checkpoint',noReplyAudio:'missing audio'},
     checkpoint:()=>{},flushSideband:()=>{},
     stop:()=>{stops++;r.ended=true;track.stop();socket.close();r.player?.stop()},
     setTimeout:()=>1,clearTimeout:()=>{},
@@ -754,4 +754,40 @@ test('page lifecycle routes visibility and pagehide to pause, retaining explicit
   assert.match(lifecycle,/onPageHide=\(\)=>pauseSession\(\{disconnect:true\}\)/)
   assert.match(lifecycle,/removeEventListener\('pagehide',onPageHide\)[\s\S]*stop\(\)/)
   assert.match(component,/if\(runtime\.current\?\.paused\)\{[\s\S]*?void resumePausedSession\(runtime\.current\)/)
+})
+
+test('expired parked credential remains paused and enables explicit text fallback',async()=>{
+  const notices=[]
+  const r={paused:true,ended:false,resumePending:true,resumeHandle:'checkpoint',reconnects:0,
+    liveToken:{expiresAt:'2000-01-01T00:00:00Z'}}
+  const resume=runInNewContext(section('  async function resumePausedSession(','  function interrupt(){')+
+    '\nresumePausedSession',{
+    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},Date,
+    notify:text=>notices.push(text),t:{resumeUnavailable:'unavailable'}
+  })
+  assert.equal(await resume(r),false)
+  assert.equal(r.resumeUnavailable,true)
+  assert.equal(r.paused,true)
+  assert.equal(notices.at(-1),'unavailable')
+})
+
+
+test('text-only completed live reply is not silently treated as spoken',()=>{
+  const h=session()
+  h.receive({output:'This reply has no PCM',turnComplete:true})
+  assert.equal(h.events.final.at(-1).interrupted,true)
+  assert.equal(h.events.notices.at(-1),'missing audio')
+  h.assertLive()
+  h.receive({audio:[pcm(.5)],output:'Next reply',turnComplete:true})
+  h.clock.advanceTo(h.clock.context.currentTime+1)
+  assert.equal(h.events.final.at(-1).interrupted,false)
+  h.assertLive()
+})
+test('standard MIME whitespace does not discard 24 kHz PCM',()=>{
+  const data=pcm(.1)
+  const read=mimeType=>readGeminiLiveServerMessage(JSON.stringify({serverContent:{modelTurn:{parts:[{inlineData:{mimeType,data}}]}}})).audio
+  assert.deepEqual(read('audio/pcm; rate=24000'),[data])
+  assert.deepEqual(read('audio/pcm; rate = 24000'),[data])
+  assert.deepEqual(read('audio/pcm; rate=16000'),[])
+  assert.deepEqual(read('audio/mp3'),[])
 })

@@ -11,32 +11,32 @@ import styles from './my-coach-session-state-card.module.css'
 const copy={
   ru:{
     subtitle:'По вашим словам · предварительно',stages:'Этапы коучинга',information:'Ключевая информация',
-    done:'Пройдено',current:'Сейчас',waiting:'Впереди',mentioned:'Упомянуто',missing:'Не уточнено',
+    done:'Пройдено',current:'Сейчас',waiting:'Впереди',mentioned:'Требует уточнения',confirmed:'Подтверждено',missing:'Не исследовано',
     topic:'Рабочая тема',outcome:'Желаемый результат',facts:'Значимые факты',
     tensions:'Возможные противоречия',resources:'Ваши ресурсы',
     method:'Коучинговая методика',stage:'Текущий этап',
     unknown:'Пока не уточнено',methodUnknown:'Не подтверждена алгоритмом',stageProvisional:'Предварительно',
-    notice:'Галочки этапов ставит только алгоритм по подтверждённым данным. Галочки сведений означают лишь, что эта информация прозвучала от вас.',
+    notice:'Галочки этапов ставит алгоритм. Предварительные сведения без проверки не отмечаются как подтверждённые.',
     privacy:'Данные остаются в текущей вкладке. Для долгосрочного сохранения нужно отдельное согласие.'
   },
   en:{
     subtitle:'Your words · provisional',stages:'Coaching stages',information:'Key information',
-    done:'Completed',current:'Current',waiting:'Next',mentioned:'Mentioned',missing:'Not clarified',
+    done:'Completed',current:'Current',waiting:'Next',mentioned:'Needs confirmation',confirmed:'Verified',missing:'Not explored',
     topic:'Working topic',outcome:'Desired result',facts:'Significant facts',
     tensions:'Possible tensions',resources:'Your resources',
     method:'Coaching method',stage:'Current stage',
     unknown:'Not yet clarified',methodUnknown:'Not confirmed by Director',stageProvisional:'Provisional',
-    notice:'Stage checkmarks require Director-confirmed evidence. Information checkmarks only mean that you mentioned this topic.',
+    notice:'Stage checkmarks require Director evidence. Mentioned information is not marked as a verified fact.',
     privacy:'This stays in the current tab. Long-term saving requires separate consent.'
   },
   es:{
     subtitle:'Tus palabras · provisional',stages:'Etapas del coaching',information:'Información esencial',
-    done:'Completado',current:'Actual',waiting:'Siguiente',mentioned:'Mencionado',missing:'Sin aclarar',
+    done:'Completado',current:'Actual',waiting:'Siguiente',mentioned:'Requiere confirmación',confirmed:'Verificado',missing:'Sin explorar',
     topic:'Tema de trabajo',outcome:'Resultado deseado',facts:'Hechos importantes',
     tensions:'Posibles contradicciones',resources:'Tus recursos',
     method:'Método de coaching',stage:'Etapa actual',
     unknown:'Aún sin aclarar',methodUnknown:'No confirmado por Director',stageProvisional:'Provisional',
-    notice:'Las etapas solo se marcan con evidencia confirmada por Director. Las casillas de datos indican únicamente que los mencionaste.',
+    notice:'Las etapas requieren evidencia del Director. Una mención no se marca como un hecho confirmado.',
     privacy:'Esta ficha sigue en la pestaña. Guardarla a largo plazo requiere consentimiento aparte.'
   }
 }
@@ -216,16 +216,20 @@ export default function MyCoachSessionStateCard({
     <section className={styles.informationSection} aria-label={t.information}>
       <h3 className={styles.sectionTitle}><BookOpenCheck size={18} aria-hidden="true"/>{t.information}</h3>
       <dl className={styles.fieldList}>
-        {fields.map(({id,label,Icon,mentioned,value})=><div key={id} className={styles.fieldRow}
-            data-client-evidence={mentioned?'mentioned':'missing'}>
+        {fields.map(({id,label,Icon,mentioned,value})=>{
+          const authoritative=id==='method'||id==='stage'
+          const factStatus=authoritative?(mentioned?'confirmed':'not_explored'):card.factStatus[id]
+          const checked=factStatus==='confirmed'
+          return <div key={id} className={styles.fieldRow}
+            data-client-evidence={mentioned?'mentioned':'missing'} data-fact-status={factStatus}>
           <dt>
             <Icon className={styles.fieldIcon} size={19} aria-hidden="true"/>
             <span className={styles.fieldName}>{label}</span>
-            <span className={styles.fieldStatus}>{mentioned?t.mentioned:t.missing}</span>
-            <ReadOnlyCheckbox checked={mentioned}/>
+            <span className={styles.fieldStatus}>{checked?t.confirmed:factStatus==='needs_confirmation'?t.mentioned:t.missing}</span>
+            <ReadOnlyCheckbox checked={checked}/>
           </dt>
           <dd>{value}</dd>
-        </div>)}
+        </div>})}
       </dl>
     </section>
     <p className={styles.note}><BookOpenCheck size={15} aria-hidden="true"/>{t.notice}</p>

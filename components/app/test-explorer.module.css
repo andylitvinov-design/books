@@ -1580,3 +1580,19 @@
   background: var(--hh-cabinet-selected, #e3f0df);
   color: var(--hh-cabinet-primary-hover, #00513d);
 }
+
+/* Same catalogue in public Client Tests and My Space; no alternate test engine. */
+:global(.client-entry-shell) .explorer{
+ --ink:var(--hh-cabinet-ink);--paper:var(--hh-cabinet-surface);--line:var(--hh-cabinet-border);--teal:var(--hh-cabinet-primary);
+ background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line);box-sizing:border-box;min-width:0
+}
+:global(.client-entry-shell) .explorer :is(.visual,.quickDiscovery,.quickFilters,.filterStatus,.moreFilters,.quickStart){background:var(--hh-cabinet-card);color:var(--ink);border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.header h1,.visual h2,.catalogHeading){font-family:var(--hh-cabinet-heading-font);color:var(--ink)}
+:global(.client-entry-shell) .explorer :is(.quickPrimary,.primary,.pdfResourcePrimary){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary);min-height:44px}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button{min-height:44px;max-width:100%;white-space:normal;border-color:var(--line)}
+:global(.client-entry-shell) .explorer :is(.kindFilters,.quickFilterChips,.availability,.filter,.toolbar) button:is([aria-selected=true],[aria-pressed=true]){background:var(--hh-cabinet-primary);color:#fff9e7;border-color:var(--hh-cabinet-primary)}
+:global(.client-entry-shell) .explorer .row{background:var(--hh-cabinet-surface);border-color:var(--line);border-radius:13px;margin:5px 0;min-width:0}
+:global(.client-entry-shell) .explorer .rowSelected{background:var(--hh-cabinet-selected)}
+:global(.client-entry-shell) .explorer .battery{background:var(--hh-cabinet-canvas);border:1px solid var(--hh-cabinet-border);color:#fff1d4}
+:global(.client-entry-shell) .explorer .search{min-width:0;max-width:100%;font-size:16px}
+@media(max-width:760px){:global(.client-entry-shell) .embedded{width:calc(100% - 22px);margin:10px auto 18px;padding:14px 11px;border-radius:18px}}

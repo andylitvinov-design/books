@@ -42,7 +42,11 @@ test('Enrollment lead only after explicit teacher consent; learner can keep priv
   assert.match(leads,/on conflict\(account_id,stage\) do nothing/)
   assert.match(leads,/reiki-teacher-sharing-v1/)
   assert.match(leads,/if \(!start\) return/)
-  assert.match(learner,/teacherConsent: shareConsented/)
+  assert.match(learner,/teacherConsent: messengerOptIn, messengerConsent: messengerOptIn/)
+  assert.match(learner,/!withdraw && !\(messenger \? messengerOptIn : shareConsented\)/)
+  assert.match(learner,/teacherConsent = false/)
+  assert.match(learner,/action: "share", consent: true, teacherConsent: true/)
+  assert.match(learner,/academy-energywork\/verify-sharing/)
   assert.match(learner,/teacherShareConsent/)
   assert.match(learner,/checked=\{shareConsented\}/)
   assert.match(learner,/sharingWithTeacher/)
@@ -73,10 +77,10 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 68 steps, private meditation reports and course progress remain intact',()=>{
+test('All 69 steps, private meditation reports and course progress remain intact',()=>{
   const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
   // Tantra Reiki now has five question screens; historical retired IDs remain private.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,68)
+  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,69)
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)

@@ -1,6 +1,8 @@
 'use client'
 import {useCallback,useEffect,useState} from 'react'
 import Link from 'next/link'
+import {Sparkles} from 'lucide-react'
+import {SiteNavigation} from '@/components/site-navigation'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import {INNER_VECTOR_ITEMS,OUTER_VECTOR_ITEMS,emptyDevelopmentVectors,
  normalizeDevelopmentVectors,toVectorDraft,fromVectorDraft,ratingsFromCoachProtocol,coachVectorSummary
@@ -187,9 +189,10 @@ export default function DevelopmentVectors({locale='en'}){
    {goal?.desiredState&&<p className={styles.linked}>{t.linked}: {goal.desiredState}</p>}
   </article>
  }
- return <main className={styles.root} data-daybook-vectors>
+ return <main className={styles.root} data-daybook-vectors data-cabinet-theme="daybook">
+  <header className={styles.masthead}><Link className={styles.brand} href={lang==='es'?'/es':'/'}><Sparkles size={23} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={lang} compact/></header>
   <header className={styles.hero}><small>DAYBOOK · 8 + 8</small><h1>{t.title}</h1><p>{t.lead}</p></header>
-  <Link className={styles.save} href={'/'+lang+'/app/daybook?start=vector'} prefetch={false}>
+  <Link className={styles.stageLink} href={'/'+lang+'/app/daybook?start=vector'} prefetch={false}>
    {({en:'Stage 0 · Choose a direction and create a goal (4 + 8)',ru:'Этап 0 · Выбрать направление и создать цель (4 + 8)',es:'Etapa 0 · Elegir una dirección y crear una meta (4 + 8)'})[lang]}
   </Link>
   {state==='ready'?<>

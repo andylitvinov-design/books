@@ -26,6 +26,7 @@ const ui={
     resumedEarlier:'Разговор восстановлен. Если связь прервалась посреди фразы, повторите её последние слова.',
     resumeAudio:'Включить звук',networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
     playbackInterrupted:'Ответ прервался (G-L11). Можно продолжать говорить.',
+    noReplyAudio:'Ответ получен без звука (G-L12). Повторите последние слова или продолжите текстом.',
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
     login:'Для голосовой сессии снова войдите в Holistic House.',
     greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
@@ -52,6 +53,7 @@ const ui={
     resumedEarlier:'The conversation has resumed. If the connection cut out mid-sentence, repeat the last few words.',
     resumeAudio:'Enable audio',networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
     playbackInterrupted:'Reply interrupted (G-L11). You can keep talking.',
+    noReplyAudio:'The reply arrived without audio (G-L12). Repeat your last words or continue by text.',
     rateLimit:'Free live voice limit reached. You can continue by text.',
     login:'Sign in to Holistic House again to use live voice.',
     greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
@@ -78,6 +80,7 @@ const ui={
     resumedEarlier:'Se ha retomado la conversación. Si se cortó la conexión a mitad de una frase, repite las últimas palabras.',
     resumeAudio:'Activar audio',networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
     playbackInterrupted:'Respuesta interrumpida (G-L11). Puedes seguir hablando.',
+    noReplyAudio:'La respuesta llegó sin audio (G-L12). Repite tus últimas palabras o continúa por texto.',
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
     login:'Inicia sesión de nuevo en Holistic House para usar la voz.',
     greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
@@ -182,7 +185,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     restoreCoachIos27LiveDuplex(navigator)
     r.pendingMic=[]
     silence(r)
-    try{void r.context?.close?.().catch?.(()=>{})}catch{}
+    try{if(r.context)r.context.onstatechange=null;void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
     if(r.reconnectTimer)clearTimeout(r.reconnectTimer)
     if(r.greetingTimer)clearTimeout(r.greetingTimer)
@@ -282,6 +285,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
        document.visibilityState==='hidden')return false
     if(r.resumeUnavailable||(r.resumePending&&(!r.resumeHandle||r.reconnects>=3||
        !(Date.parse(r.liveToken?.expiresAt)>Date.now())))){
+      r.resumeUnavailable=true
       notify(t.resumeUnavailable);return false
     }
     const epoch=r.pauseEpoch
@@ -584,7 +588,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // The provider turn boundary has arrived. A late local playback failure
     // must not keep the next reply behind the interrupted turn's audio gate.
     r.audioGate?.accept({turnComplete:true})
-    if(r.hadAudio||r.outputWithoutAudio)r.replyWatch?.clear()
+    const missingAudio=Boolean(r.outputText&&!r.hadAudio&&!r.outputWithoutAudio&&!r.interrupted)
+    if(r.hadAudio||r.outputWithoutAudio||missingAudio)r.replyWatch?.clear()
     if(r.outputText){
       if(!r.hadAudio||r.outputWithoutAudio)r.interrupted=true
       commitOutput(r)
@@ -595,6 +600,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.lastAssistantTurnFinished=true
     r.player?.setVolume?.(1)
     if(r.resumeAfterDrain){r.resumeAfterDrain=false;scheduleReconnect(r)}
+    else if(missingAudio&&!r.paused)recoverStalledReply(r,t.noReplyAudio)
     else if(r.reconnectSoon)maybeReconnectOnGoAway(r)
     else{phaseChange('listening');flushSideband(r)}
   }
@@ -611,7 +617,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   // same-session recovery is allowed; do not mint credentials, replay private
   // speech, or silently start another conversation. The last checkpoint may
   // precede the missing utterance, so disclose that possible gap on resume.
-  function recoverStalledReply(r){
+  function recoverStalledReply(r,missingNotice=t.replyStalled){
     if(r.ended||r.paused||runtime.current!==r||!r.ready||r.socket?.readyState!==1)return
     if(geminiLiveCanResumeStalledReply(r)){
       r.stallRecoveryUsed=true
@@ -620,7 +626,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       try{r.socket.close(1000,'session-resume');return}catch{}
     }
     r.playbackNoticeShown=true
-    notify(t.replyStalled)
+    notify(missingNotice)
     phaseChange('listening')
   }
   // A local playback fault only retires the current reply. Preserve the live
@@ -690,6 +696,20 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       })
     }catch{r.audioResuming=false;setAudioNeedsGesture(true)}
   }
+  // Safari can interrupt an already scheduled reply without delivering another
+  // PCM packet. Observe the output context itself, not only incoming frames.
+  function handleAudioContextState(r){
+    if(r.ended||r.paused||runtime.current!==r||!r.ready)return
+    if(r.context.state==='running'){
+      if(r.pendingAudio.length||r.player?.playing)flushPendingAudio(r)
+      else if(r.audioNoticeShown){r.audioNoticeShown=false;setAudioNeedsGesture(false);notify('')}
+      return
+    }
+    if(r.context.state==='closed')return
+    if(!r.audioNoticeShown){r.audioNoticeShown=true;notify(t.audioRoute)}
+    setAudioNeedsGesture(true)
+    requestAudioResume(r)
+  }
   function holdAudioPart(r,part){
     if(r.pendingAudio.length>=MAX_PENDING_AUDIO_CHUNKS||
        r.pendingAudioChars+part.length>MAX_PENDING_AUDIO_CHARS){
@@ -757,6 +777,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         r.pendingDirectorHint=r.latestDirectorHint||''
         flushSideband(r)
       }
+      if(r.context.state!=='running')handleAudioContextState(r)
       if(propsRef.current.liveContextAccess)void loadApprovedContext(r)
       return
     }
@@ -1155,6 +1176,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       onLevel:level=>{if(level!==null)propsRef.current.onMicLevel?.(level)},
     })
     runtime.current=r
+    context.onstatechange=()=>handleAudioContextState(r)
     generation.current++
     starting.current=true
     setNotice('')
@@ -1197,7 +1219,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }).catch(()=>{if(!r.ended)notify(t.audioRoute)})
     }catch{notify(t.audioRoute)}
   }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+    hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
