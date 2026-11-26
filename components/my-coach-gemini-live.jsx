@@ -349,8 +349,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         }
       }
       flushPendingAudio(r)
-      if(r.ready&&!r.player?.playing&&!r.pendingAudio?.length&&r.pausedPhase==='thinking')
-        r.replyWatch?.touch()
+      if(r.ready&&!r.player?.playing&&!r.pendingAudio?.length&&(r.pausedPhase==='thinking'||r.awaitingBargeReply))
+        r.replyWatch?.touch(r.awaitingBargeReply?5000:undefined)
       if(r.reconnectSoon)maybeReconnectOnGoAway(r)
       flushSideband(r)
       return true
@@ -373,6 +373,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.player?.playing||r.speaking||r.pendingAudio?.length){
       const partial=r.outputText
       r.interrupted=true
+      r.postBarge=true
+      r.lastAssistantTurnFinished=false
       // Stop the audio graph on detected user speech, not when the coach's
       // network turn ends. A partial transcript is always marked interrupted.
       r.player.stop()
@@ -488,7 +490,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function canSendSideband(r){
     return !r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
       r.lastAssistantTurnFinished&&!r.speaking&&!r.player?.playing&&
-      !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&
+      !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&!r.postBarge&&
       !r.bargeDetector.userActive&&!r.reconnectSoon&&
       Date.now()-(r.lastHumanAudioAt||0)>350
   }
@@ -609,6 +611,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // The provider turn boundary has arrived. A late local playback failure
     // must not keep the next reply behind the interrupted turn's audio gate.
     r.audioGate?.accept({turnComplete:true})
+    // An empty boundary after a cut is not an audible answer to the human.
+    if(r.awaitingBargeReply&&!r.hadAudio&&!r.outputText&&!r.outputWithoutAudio){
+      r.modelTurnComplete=false
+      r.lastAssistantTurnFinished=false
+      return
+    }
     const missingAudio=Boolean(r.outputText&&!r.hadAudio&&!r.outputWithoutAudio&&!r.interrupted)
     if(r.hadAudio||r.outputWithoutAudio||missingAudio)r.replyWatch?.clear()
     if(r.outputText){
@@ -645,6 +653,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.checkpointCurrent=false
       notify(t.reconnecting)
       try{r.socket.close(1000,'session-resume');return}catch{}
+    }
+    // Without a resumable checkpoint, do not leave a recognized utterance
+    // trapped behind the old turn. Preserve it as an editable unconfirmed
+    // draft, not client consent, evidence, or a silent model replay.
+    if(r.awaitingBargeReply){
+      r.awaitingBargeReply=false
+      if(r.inputText)preserveUnconfirmedInput(r)
     }
     r.playbackNoticeShown=true
     notify(missingNotice)
@@ -840,11 +855,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.input||frame.interim){
       const value=frame.input||frame.interim
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
-      r.replyWatch?.touch()
+      if(r.postBarge){
+        if(!r.awaitingBargeReply)r.replyWatch?.touch(5000)
+        r.awaitingBargeReply=true
+        r.lastAssistantTurnFinished=false
+      }else r.replyWatch?.touch()
       propsRef.current.onInputInterim?.(r.inputText)
     }
+    if(frame.goAway)r.reconnectSoon=true
     if(frame.interrupted){
       interrupt()
+      r.postBarge=true
+      r.lastAssistantTurnFinished=false
+      if(r.inputText||r.bargeDetector.userActive){
+        if(!r.awaitingBargeReply)r.replyWatch?.touch(5000)
+        r.awaitingBargeReply=true
+      }
       r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
       if(r.outputText){r.interrupted=true;commitOutput(r)}
       r.modelTurnComplete=false
@@ -859,6 +885,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Output transcription may arrive before PCM. If the human is already
     // speaking, suppress both so discarded words cannot become a new reply.
     if((frame.audio?.length||frame.output)&&r.bargeDetector.userActive){
+      r.postBarge=true
+      r.lastAssistantTurnFinished=false
+      if(!r.awaitingBargeReply)r.replyWatch?.touch(5000)
+      r.awaitingBargeReply=true
       if(r.speaking||r.player?.playing)interrupt()
       else{
         r.audioGate.interrupt()
@@ -867,6 +897,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }
     }
     const allowAudio=r.audioGate.accept(frame)
+    // The blocked old turn can acknowledge the cut, but must not commit the
+    // new input, mark the assistant idle, flush Director hints or reset the
+    // short reply deadline. Its PCM and captions remain discarded.
+    if(!allowAudio&&r.postBarge)return
     if(frame.output&&allowAudio){
       if(r.inputText&&commitInput(r))return
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
@@ -875,13 +909,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.audio?.length){
       if(r.inputText&&commitInput(r))return
       if(allowAudio){
-        r.replyWatch?.touch()
         let outcome='dropped'
         for(const part of frame.audio){
           const status=queueLivePart(r,part)
           if(status==='dropped'){outcome='dropped';break}
           if(status==='queued')outcome='queued'
           else if(status==='held'&&outcome!=='queued')outcome='held'
+        }
+        if(outcome==='queued'||outcome==='held'){
+          // Fresh accepted audio, not late ASR or a cancelled turn boundary,
+          // ends the post-barge deadline. Normal playback recovery takes over.
+          r.postBarge=false;r.awaitingBargeReply=false
+          r.replyWatch?.touch()
         }
         if(outcome==='queued'){
           r.firstAudio=true
@@ -892,11 +931,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }
     }
     if(frame.turnComplete){
+      if(r.awaitingBargeReply&&!r.hadAudio&&!r.outputText&&!r.outputWithoutAudio)return
       if(r.inputText&&commitInput(r))return
       r.modelTurnComplete=true
       finishAudibleTurn(r)
     }
-    if(frame.goAway)r.reconnectSoon=true
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
   function capture(r,chunk){
@@ -927,7 +966,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       return
     }
     r.backpressureChunks=0
-    if(event==='active'||event==='interrupt')r.replyWatch?.touch()
+    if(event==='active'||event==='interrupt'){
+      if(r.postBarge){
+        r.awaitingBargeReply=true
+        r.lastAssistantTurnFinished=false
+      }
+      // Each real speech frame extends the deadline; stale provider packets
+      // cannot extend it. No timeout while the human is still talking.
+      r.replyWatch?.touch(r.awaitingBargeReply?5000:undefined)
+    }
+    if(r.awaitingBargeReply&&r.currentPhase==='listening'&&
+       !r.bargeDetector.userActive&&Date.now()-(r.lastHumanAudioAt||0)>900)
+      phaseChange('thinking')
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
     if(pcm.length){
@@ -1066,6 +1116,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.player?.setVolume(1)
     r.modelTurnComplete=false;r.hadAudio=false;r.outputWithoutAudio=false
     r.lastAssistantTurnFinished=true
+    r.postBarge=false;r.awaitingBargeReply=false
     notify(t.reconnecting)
     phaseChange('loading')
     r.reconnectTimer=setTimeout(()=>{
@@ -1200,7 +1251,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
       continuing:recovery.continuing,inputText:'',outputText:'',
-      speaking:false,interrupted:false,resumeHandle:null,checkpointCurrent:false,
+      speaking:false,interrupted:false,postBarge:false,awaitingBargeReply:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
@@ -1257,7 +1308,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r||r.ended||r.paused||!r.ready||!body||body.length>1200)return false
     interrupt()
     if(!sendSocket(r,geminiLiveTextMessage(body)))return false
-    r.replyWatch?.touch()
+    if(r.postBarge)r.awaitingBargeReply=true
+    r.replyWatch?.touch(r.awaitingBargeReply?5000:undefined)
     r.inputText=''
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
