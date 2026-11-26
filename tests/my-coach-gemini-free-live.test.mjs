@@ -506,7 +506,10 @@ test('the worklet delivers complete ordered microphone blocks around 32 ms at ea
 
 test('iPhone audio resume and bounded network backpressure are wired',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
- assert.match(live,/data-coach-live-resume-audio/)
+ assert.doesNotMatch(live,/data-coach-live-resume-audio|resumeAudioByTap/)
+ assert.match(live,/function refreshLiveAudioRoute\(r,force=false\)/)
+ assert.match(live,/function requestAudioResume\(r\)\{[\s\S]*?refreshLiveAudioRoute\(r,true\)/)
+ assert.doesNotMatch(load('components/my-coach-live-dialogue.jsx'),/data-coach-restore-sound|Restore sound/)
  assert.match(live,/r\.context\.resume\?\.\(\)/)
  assert.match(live,/r\.pendingAudio\.length>=MAX_PENDING_AUDIO_CHUNKS/)
  assert.match(live,/r\.pendingAudioChars\+part\.length>MAX_PENDING_AUDIO_CHARS/)
