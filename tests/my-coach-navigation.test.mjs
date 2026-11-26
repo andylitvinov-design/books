@@ -87,7 +87,10 @@ test('header Back checkpoints consented draft without opening the Insight review
 
 test('Insight foregrounds the normalized overview and collapses the transcript', () => {
   const source=read('components/my-coach-live-dialogue.jsx')
-  assert.match(source,/myCoachProtocolPdfOptions\(protocolSaveSnapshotRef\.current\|\|currentProtocol\(\),\{locale:conversationLang\}\)\.protocolOverview/)
+  // The result preview and PDF projection share the same immutable reviewed snapshot.
+  assert.match(source,/insightResult=protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)\s*\n\s*insightOverview=myCoachProtocolPdfOptions\(insightResult,\{locale:conversationLang\}\)\.protocolOverview/)
+  assert.match(source,/insightRows=coachCourseProtocolRows\(insightResult\.courseSessionId,insightResult\.turns,insightResult\.courseFieldReview,lang\)/)
+  assert.match(source,/insightProfile=coachSavedProfileV3\(insightResult,lang\)/)
   const view=source.slice(source.indexOf('data-my-coach-protocol>'))
   assert.ok(view.indexOf('data-coach-insight-overview')>=0)
   assert.ok(view.indexOf('data-coach-insight-overview')<view.indexOf('data-coach-insight-transcript'))

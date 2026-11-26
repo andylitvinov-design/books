@@ -1,3 +1,6 @@
+import {coachCourseProtocolSchema,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
+import {COACH_COURSE_SESSIONS,COACH_PROGRAM_SESSIONS,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -116,7 +119,14 @@ test('the main voice session ends in a review dialog with PDF actions, not navig
   assert.match(save,/action:'save',consent:true,protocol/)
   assert.match(save,/if\(draftRevision===null\|\|draftRevision===undefined\)throw Error\('DRAFT_NOT_SYNCED'\)/)
   const close=ui.slice(ui.indexOf('  async function closeProtocolToRating(){'),ui.indexOf('  async function submitSessionRating(){'))
-  assert.match(close,/if\(!await saveProtocol\(\)\)return[\s\S]*setProtocolOpen\(false\)/)
+  // Explicit owner override: Cancel must never publish a final report.
+  assert.doesNotMatch(close,/await saveProtocol\(/)
+  assert.match(close,/if\(!protocolSaved\)\{[\s\S]*resumeFromProtocol\(\)/)
+  const primary=ui.slice(ui.indexOf('data-coach-result-actions'),ui.indexOf('data-coach-result-actions')+1800)
+  assert.match(primary,/onClick=\{saveProtocol\}/)
+  assert.match(primary,/data-coach-edit-result/)
+  assert.match(primary,/onClick=\{closeProtocolToRating\}/)
+  assert.match(ui,/MyCoachResultPreview/)
   assert.match(ui,/checked=\{geminiConsent\}/)
   assert.match(ui,/protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)/)
   assert.match(ui,/onClick=\{interceptSessionExit\}/)
@@ -364,4 +374,168 @@ test('saved protocol displays the shared normalized PDF overview',()=>{
  const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
  assert.match(ui,/myCoachProtocolPdfOptions\(protocol,\{locale\}\)\.protocolOverview/)
  assert.match(ui,/data-coach-saved-protocol-overview/)
+})
+
+
+test('session protocol and transcript are separate exports, retaining legacy combined caller compatibility',()=>{
+ const obj={...sample(),courseSessionId:'business_design'}
+ const p=myCoachProtocolPdfOptions(obj,{locale:'en',documentKind:'protocol'})
+ assert.equal(p.entryKind,'protocol')
+ assert.deepEqual(p.entries,[])
+ assert.match(p.protocolOverview,/Business function map/)
+ assert.match(p.protocolOverview,/Target structure/)
+ assert.match(p.protocolOverview,/Leadership validation/)
+ assert.doesNotMatch(p.protocolOverview,/Strategic options/)
+ assert.doesNotMatch(p.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+ assert.match(p.protocolOverview,/No question-bound answer verified/)
+ const t=myCoachProtocolPdfOptions(obj,{locale:'en',documentKind:'transcript'})
+ assert.equal(t.protocolOverview,'')
+ assert.equal(t.clientReflection,'')
+ assert.equal(t.clientNextStep,'')
+ assert.equal(t.topic,'')
+ assert.equal(t.entries.length,2)
+ assert.notEqual(t.slug,p.slug)
+ assert.equal(myCoachProtocolPdfOptions(obj).entries.length,2)
+ assert.throws(()=>myCoachProtocolPdfOptions(obj,{documentKind:'unknown'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('both live and saved protocol use separate explicit transcript export',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/function exportProtocol\(print=false,documentKind='protocol'\)/)
+ assert.match(ui,/exportProtocol\(false,'transcript'\)/)
+ assert.match(archive,/function exportProtocol\(protocol,print=false,documentKind='protocol'\)/)
+ assert.match(archive,/exportProtocol\(protocol,false,'transcript'\)/)
+})
+
+test('every thematic course has distinct versioned multilingual checkpoints shared with the model instruction',()=>{
+ for(const item of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
+   const schema=coachCourseProtocolSchema(item.id,lang)
+   assert.equal(schema.courseSessionId,item.id)
+   assert.equal(schema.version,'hh-coach-course-report-v1')
+   assert.ok(schema.checkpoints.length>=3)
+   assert.equal(new Set(schema.checkpoints.map(row=>row.id)).size,schema.checkpoints.length)
+   const instruction=coachCourseLiveInstruction(item.id,lang)
+   for(const row of schema.checkpoints)assert.ok(instruction.includes(row.label),row.id)
+ }
+ assert.equal(coachCourseProtocolSchema('introductory'),null)
+ assert.equal(coachCourseProtocolSchema('meaning_axes_inner_growth'),null)
+ assert.equal(coachCourseProtocolSchema('constructor'),null)
+ assert.equal(coachCourseProtocolGuidance('unknown','ru'),'')
+})
+
+test('thematic checkpoint captures a visible question candidate without automatic confirmation',()=>{
+ const course='goal_result',q=coachCourseProtocolSchema(course,'en').checkpoints.find(x=>x.id==='goal').question
+ const turns=[{role:'assistant',content:q},{role:'user',content:'I want to open a new studio.'}]
+ const row=coachCourseProtocolRows(course,turns,null,'en').find(x=>x.id==='goal')
+ assert.equal(row.status,'needs_confirmation')
+ assert.equal(row.turnIndex,1)
+ assert.equal(row.questionTurnIndex,0)
+ const interrupted=coachCourseProtocolRows(course,[{...turns[0],interrupted:true},turns[1]],null,'en').find(x=>x.id==='goal')
+ assert.notEqual(interrupted.source,'visible_prompt_candidate')
+ assert.equal(interrupted.status,'needs_confirmation')
+ const repair=coachCourseProtocolRows(course,[turns[0],{role:'user',content:'Please repeat it'}],null,'en').find(x=>x.id==='goal')
+ assert.equal(repair.status,'not_explored')
+})
+test('explicit course review binds exact client quote, retains correction history and skip, rejects forged or foreign source',()=>{
+ const course='goal_result',obj={...sample(),courseSessionId:course}
+ let review=appendCoachCourseFieldReview(null,course,obj.turns,'goal','turn:0')
+ review=appendCoachCourseFieldReview(review,course,obj.turns,'goal','turn:2')
+ review=appendCoachCourseFieldReview(review,course,obj.turns,'success','skip')
+ const record=normalizeMyCoachProtocol({...obj,courseFieldReview:review})
+ assert.equal(record.courseFieldReview.events.length,3)
+ assert.equal(record.courseFieldReview.events[0].quote,obj.turns[0].content)
+ assert.equal(record.courseFieldReview.events[1].revision,2)
+ const rows=coachCourseProtocolRows(course,record.turns,record.courseFieldReview,'ru')
+ assert.equal(rows.find(x=>x.id==='goal').quote,obj.turns[2].content)
+ assert.equal(rows.find(x=>x.id==='goal').source,'client_reviewed_quote')
+ assert.equal(rows.find(x=>x.id==='success').status,'skipped_by_client')
+ assert.deepEqual(normalizeMyCoachProtocol(record),record)
+ assert.throws(()=>appendCoachCourseFieldReview(review,course,obj.turns,'goal','turn:1'),/MY_COACH_PROTOCOL_INVALID/)
+ assert.throws(()=>normalizeCoachCourseFieldReview(review,'business_design',obj.turns),/MY_COACH_PROTOCOL_INVALID/)
+ const tampered=structuredClone(review);tampered.events[0].quote='Invented quote'
+ assert.throws(()=>normalizeMyCoachProtocol({...obj,courseFieldReview:tampered}),/MY_COACH_PROTOCOL_INVALID/)
+ assert.equal(normalizeMyCoachDraft({courseSessionId:course,protocol:record}).protocol.courseFieldReview,undefined)
+ const report=myCoachProtocolPdfOptions(record,{locale:'en',documentKind:'protocol'})
+ assert.match(report.protocolOverview,/Client-reviewed quote \(not server-issued question proof\)/)
+ assert.match(report.protocolOverview,/Skipped by client/)
+ assert.ok(report.protocolOverview.includes(obj.turns[2].content))
+ assert.equal(myCoachProtocolPdfOptions(record,{documentKind:'transcript'}).protocolOverview,'')
+})
+
+test('explicitly reopening a reviewed checkpoint suppresses stale candidates without deleting the evidence history',()=>{
+ const course='goal_result',q=coachCourseProtocolSchema(course,'en').checkpoints.find(x=>x.id==='goal').question
+ const turns=[{role:'assistant',content:q},{role:'user',content:'I want to open a new studio.'}]
+ const getRow=review=>coachCourseProtocolRows(course,turns,review,'en').find(x=>x.id==='goal')
+ assert.equal(getRow(null).status,'needs_confirmation')
+ let review=appendCoachCourseFieldReview(null,course,turns,'goal','turn:1')
+ assert.equal(getRow(review).status,'confirmed')
+ review=appendCoachCourseFieldReview(review,course,turns,'goal','open')
+ assert.equal(getRow(review).status,'not_explored')
+ assert.equal(getRow(review).quote,'')
+ assert.equal(getRow(review).turnIndex,null)
+ assert.equal(getRow(review).source,'client_selected_open')
+ assert.equal(review.events.length,2)
+ assert.equal(review.events[0].quote,turns[1].content)
+ review=appendCoachCourseFieldReview(review,course,turns,'goal','turn:1')
+ assert.equal(getRow(review).status,'confirmed')
+ assert.equal(review.events.length,3)
+})
+
+
+import {coachProtocolCanAppend,coachProtocolRoomForExchange} from '../lib/personal-coaching/protocol-capture.mjs'
+test('private protocol never rotates its first turns or accepts an exchange without reply capacity',()=>{
+ const history=Array.from({length:158},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
+ assert.equal(coachProtocolRoomForExchange(history,'last question'),true)
+ assert.equal(coachProtocolRoomForExchange([...history,{role:'user',content:'pending'}],'another question'),false)
+ assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'}]),true)
+ assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'},{role:'user',content:'overflow'}]),false)
+ assert.equal(history[0].content,'turn 0')
+ const large=Array.from({length:57},()=>({role:'user',content:'x'.repeat(1200)}))
+ assert.equal(coachProtocolRoomForExchange(large,'x'.repeat(1200)),false)
+ assert.equal(coachProtocolRoomForExchange(large,'short'),true)
+ assert.equal(coachProtocolCanAppend(large,[{role:'assistant',content:'x'.repeat(1200),suggestion:'x'.repeat(300)}]),true)
+ assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(1201)),false)
+})
+test('all typed reply paths synchronously commit transcript and checkpoint before releasing the request',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const commit=ui.slice(ui.indexOf('function commitCompletedClientTurn'),ui.indexOf('async function discardPrivateDraft'))
+ assert.match(commit,/turnRequestRef.current!==requestId/)
+ assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
+ assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
+ const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,5)
+ assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
+ assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
+ assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
+ const save=ui.slice(ui.indexOf('async function saveProtocol'),ui.indexOf('async function closeProtocolToRating'))
+ assert.match(save,/if\(!queuePrivateDraft\(turnsRef.current\)\)throw Error\('DRAFT_NOT_SYNCED'\)/)
+})
+
+
+// A failed request followed by a later successful exchange must not turn the
+// earlier unanswered client utterance into a confirmed answer after reload.
+test('chronological checkpoint and reviewed report preserve prior unanswered utterances',async()=>{
+ const {normalizeMyCoachDraft,draftTranscriptPrefix}=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const obj=sample();obj.turnLayout='chronological'
+ obj.turns=[
+  {role:'user',content:'Первое сообщение без ответа.',unanswered:true},
+  {role:'user',content:'Следующий вопрос.'},
+  {role:'assistant',content:'Ответ на следующий вопрос.'},
+ ]
+ const normalized=normalizeMyCoachProtocol(obj)
+ assert.equal(normalized.turns[0].unanswered,true)
+ assert.equal(normalized.turns[1].unanswered,undefined)
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:obj})
+ assert.deepEqual(draft.protocol.turns,normalized.turns)
+ assert.match(myCoachProtocolPdfOptions(normalized,{locale:'ru'}).entries[0].answer,/Ответ ИИ отсутствует/)
+ const stripped={...normalized,turns:normalized.turns.map(({unanswered,...row})=>row)}
+ assert.equal(draftTranscriptPrefix(normalized,stripped),false)
+ const pending={...normalized,turns:[normalized.turns[0]]}
+ const answered={...pending,turns:[{role:'user',content:pending.turns[0].content},{role:'assistant',content:'A reply'}]}
+ assert.equal(draftTranscriptPrefix(pending,answered),true)
+ const legacy=sample();legacy.turns[0].unanswered=true
+ assert.throws(()=>normalizeMyCoachProtocol(legacy),/MY_COACH_PROTOCOL_INVALID/)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes("row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}"))
+ assert.ok(ui.includes("row.role==='user'&&row.unanswered===true?{unanswered:true}"))
 })

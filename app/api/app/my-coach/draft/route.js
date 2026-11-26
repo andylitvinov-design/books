@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {listCoachDrafts,saveCoachDraft,discardCoachDraft,resumeCoachDraft} from '@/lib/app/my-coach-protocol-drafts'
+import {listCoachDrafts,saveCoachDraft,discardCoachDraft,resumeCoachDraft,stepCoachProfileDraft} from '@/lib/app/my-coach-protocol-drafts'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -26,10 +26,16 @@ async function handle(request,write){
     result=await saveCoachDraft(config,actor,input)
    }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
-    result=await resumeCoachDraft(config,actor,input)
+    result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'}
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-discard',actor:actor.id},30,3600)
     result=await discardCoachDraft(config,actor,input)
+   }else if(['profile-start','profile-answer','profile-priority','profile-correct','profile-close'].includes(input.action)){
+    // Do not expose a partially connected profile workflow to production.
+    // Transport activation is a separate reviewed decision, not a new provider grant.
+    if(process.env.HH_MY_COACH_PROFILE_V3_ENABLED!=='true')throw new AppError('NOT_FOUND',404)
+    await consumeRate(config,{op:'my-coach-profile-step',actor:actor.id},120,3600)
+    result=await stepCoachProfileDraft(config,actor,input)
    }else throw new AppError('MY_COACH_DRAFT_INVALID',400)
   }else{
    const params=new URL(request.url).searchParams

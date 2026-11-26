@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs'
 import {PUBLIC_COACH_PERSONA_IDS} from '../lib/coaching/persona-registry.mjs'
 import {getCoachCompactProfile} from '../lib/coaching/coach-compact-profiles.mjs'
 
-test('one concise localized profile for each of the seven public coaches',()=>{
-  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry','genie'])
+test('one concise localized profile for each of the eight public coaches',()=>{
+  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry','genie','caesar'])
   for(const locale of ['ru','en','es']){
     for(const id of PUBLIC_COACH_PERSONA_IDS){
       const profile=getCoachCompactProfile(id,locale)

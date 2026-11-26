@@ -292,8 +292,9 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
     'editing the IA workflow itself must retain the full specialist path');
   assert.match(s, /uses: actions\/cache\/restore@v4/);
   assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}"));
-  assert.ok(s.includes("key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
-  assert.match(s, /path: \.next\/cache/);
+  assert.ok(s.includes("key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
+  assert.match(s, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+  assert.ok(s.includes('npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs'));
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
 });
@@ -759,13 +760,28 @@ test('CI latency: keep all Public Services cases, balance two lanes and fail clo
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
+test('all three browser specialists restore the exact production-owned Next v2 cache',()=>{
+  const producer=workflow('hh-static-image-cost-guard.yml');
+  const key=producer.split('\n').find(line=>line.includes('key: hh-core-next-v2-'))?.trim();
+  assert.ok(key);
+  for(const file of ['ia-v2.yml','release-reaudit.yml','site-video-browser.yml']){
+    const block=workflow(file).split('      - name: Restore trusted production Next compiler cache\n')[1]?.split('\n      - name:')[0];
+    assert.ok(block,file);
+    assert.ok(block.includes(key),file+' must use the producer key');
+    assert.match(block,/path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+    assert.match(block,/actions\/cache\/restore@v4/);
+    assert.doesNotMatch(block,/restore-keys:|actions\/cache\/save@v4/);
+  }
+});
+
 test('duplicate specialist lint is removed only on protected production PRs; real build, browser and read-only caches remain',()=>{
   for (const file of ['release-reaudit.yml','site-video-browser.yml']) {
     const s=workflow(file);
     assert.ok(s.includes('Restore trusted production Next compiler cache'));
     assert.ok(s.includes('Restore trusted production-owned scenario media cache'));
-    assert.ok(s.includes('hh-core-next-v1-')&&s.includes('hh-core-media-v1-'));
-    assert.ok(s.includes('path: .next/cache')&&s.includes('uses: actions/cache/restore@v4'));
+    assert.ok(s.includes('hh-core-next-v2-')&&s.includes('hh-core-media-v1-'));
+    assert.match(s, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+    assert.ok(s.includes('uses: actions/cache/restore@v4'));
     assert.doesNotMatch(s,/actions\/cache\/save@v4/);
     assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then'));
     assert.ok(s.includes('npm run build -- --no-lint'));

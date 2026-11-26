@@ -2,6 +2,7 @@ name: Reiki Practitioner — 64-screen Chromium and Safari save gate QA
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/energywork-ai-learner.tsx'
@@ -30,14 +31,22 @@ on:
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'data/academy/energywork-ai-schema.js'
       - 'scripts/verify-reiki-all-slides-browser.mjs'
+      - 'data/academy/reiki-initiation-request.js'
+      - 'tests/tantra-reiki-photographic-landing.test.mjs'
+      - 'tests/tantra-reiki-level-one-focus.test.mjs'
+      - 'tests/tantra-reiki-mobile-chapters.test.mjs'
+      - '.github/workflows/hh-reiki-all-slides-browser.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+concurrency:
+  group: hh-reiki-course-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   course-and-save-gate:
-    # Routine PRs remain source-only. One-time viewport acceptance for the approved Daybook fixes.
+    # Routine PRs remain source-only. Full manual acceptance is unchanged.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
     runs-on: ubuntu-24.04
@@ -45,11 +54,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: ${{ fromJSON((github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')) && '["chromium","webkit"]' || '["chromium"]') }}
+        browser: ${{ fromJSON((github.event_name == 'workflow_dispatch') && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
-        # Only manual deep QA and the one explicitly approved Daybook release use PostgreSQL.
-        image: ${{ (github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')) && 'postgres:17-alpine' || '' }}
+        # Completed Daybook acceptance exceptions retired; full manual QA keeps PostgreSQL.
+        image: ${{ (github.event_name == 'workflow_dispatch') && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
@@ -59,7 +68,6 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
-      HH_REIKI_DAYBOOK_ONLY: ${{ github.event_name == 'pull_request' && (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125') && '1' || '0' }}
       CI: 'true'
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: '1'
@@ -80,11 +88,39 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      # Only the reviewed tests and their executable import closure need Node.
+      # Any changed or missing input falls back to the original full install.
+      - name: Plan reviewed dependency-free Reiki source contracts
+        id: reiki-deps
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'
+        shell: bash
+        run: |
+          set -euo pipefail
+          minimal=true
+          while read -r expected file; do
+            actual="$(git hash-object -- "$file" 2>/dev/null || true)"
+            if [[ "$actual" != "$expected" ]]; then minimal=false; fi
+          done <<'HH_REIKI_REVIEWED'
+          728bf992df153a72251f457ce3ede965f61a05fa tests/reiki-daybook-alternative.test.mjs
+          fb40a629f03f85e7c8010719ce1f8714f8257c12 tests/reiki-referral-landing.test.mjs
+          e1873f82069e7425b0849954b5848f35d8f22f27 tests/tantra-reiki-compact-fullwidth.test.mjs
+          1d0d0974ad08ec279f715535ad02334d55a45a0e tests/tantra-reiki-photographic-landing.test.mjs
+          e928ff380fd855c654750fc56113d5237479e6d7 tests/tantra-reiki-level-one-focus.test.mjs
+          e805a9f02c91407723be7fd1834f425a0e908efb tests/tantra-reiki-mobile-chapters.test.mjs
+          db1ac8022898ca4dce031580a7b0074ec3e551dd tests/tantra-reiki-teacher-compact.test.mjs
+          42f761aff2a64cb96a36b8b533d30076dd016bae data/academy/energywork-ai-schema.js
+          ccc3d92c8cd710522160825ae543a0c361b2a924 data/academy/reiki-initiation-request.js
+          91b5adedc5ee6fcb766caf8ca97d9a88ffae8848 package.json
+          1ccb123b37ee9f74052a421babd2b41945075917 package-lock.json
+          HH_REIKI_REVIEWED
+          printf 'minimal=%s\n' "$minimal" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
+          cache: ${{ steps.reiki-deps.outputs.minimal != 'true' && 'npm' || '' }}
+      - name: Install full dependencies for manual QA or changed test inputs
+        if: steps.reiki-deps.outputs.minimal != 'true'
+        run: npm ci --no-audit --no-fund
       - name: Fast Reiki referral and protected lesson-source contracts on PR
         if: github.event_name == 'pull_request'
         run: |
@@ -98,19 +134,21 @@ jobs:
         run: |
           node --check tests/tantra-reiki-photo-levels.browser.mjs
           node --test tests/tantra-reiki-compact-fullwidth.test.mjs tests/tantra-reiki-photographic-landing.test.mjs tests/tantra-reiki-level-one-focus.test.mjs tests/tantra-reiki-mobile-chapters.test.mjs tests/tantra-reiki-teacher-compact.test.mjs
-          npx --no-install eslint components/tantra-reiki-journey.tsx
-      - name: Isolated Chromium/WebKit runtime (manual or one-time Daybook acceptance)
-        if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')
+      - name: Standalone scoped lint when full dependencies are installed
+        if: github.event_name == 'pull_request' && steps.reiki-deps.outputs.minimal != 'true'
+        run: npx --no-install eslint components/tantra-reiki-journey.tsx
+      - name: Isolated Chromium/WebKit runtime (manual full acceptance)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p /tmp/hh-reiki-playwright
           npm install --prefix /tmp/hh-reiki-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-reiki-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-reiki-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize synthetic isolated account database
-        if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')
+        if: github.event_name == 'workflow_dispatch'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Verify Chromium full 64 screens and Safari guest save-only checkpoint
-        if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p artifacts/reiki-all-slides
           node tests/helpers/app-auth-double.mjs > /tmp/hh-reiki-provider.log 2>&1 & PROVIDER_PID=$!
@@ -122,12 +160,10 @@ jobs:
             sleep 2
           done
           node scripts/verify-reiki-all-slides-browser.mjs
-          if [ "$HH_REIKI_DAYBOOK_ONLY" != '1' ]; then
-            node --test tests/reiki-referral-landing.test.mjs
-            node scripts/verify-reiki-referral-browser.mjs
-          fi
+          node --test tests/reiki-referral-landing.test.mjs
+          node scripts/verify-reiki-referral-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always() && (github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125'))
+        if: always() && (github.event_name == 'workflow_dispatch')
         with:
           name: reiki-64-screens-${{ matrix.browser }}
           path: |
