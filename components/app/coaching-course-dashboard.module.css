@@ -66,3 +66,6 @@
 @media(max-width:360px){.change{font-size:11px}.portrait{width:56px;height:56px}.frame .coach{gap:6px}.frame .task{grid-template-columns:26px minmax(0,1fr) minmax(58px,auto) 13px;gap:4px}.task span{max-width:89px}.frame .materials button{grid-template-columns:25px minmax(0,1fr);gap:4px}.materials button>svg{width:25px}}
 @media(max-height:650px){.layout{gap:5px}.cover{padding:6px 10px}.frame .cover h1{font-size:25px}.cover b{display:none}.frame .coach{min-height:57px}.portrait{width:57px;height:57px}.frame .tabs button{min-height:44px}.frame .cta{min-height:66px}.card{padding:7px 8px}.frame .task{min-height:48px}.frame .materials button{min-height:67px}}
 @media(max-height:480px){.cover{display:none}.frame .coach{min-height:50px}.portrait{width:49px;height:49px}.frame .cta{min-height:56px}}
+
+.frame .topbar .tools{margin-left:auto;width:44px;justify-content:center;border:1px solid #e1bf81;border-radius:50%;color:#fff4df}
+@media(max-height:720px){.layout{gap:5px}.cover{padding:7px 10px}.frame .cover h1{font-size:clamp(24px,6.2vw,29px);max-width:90%}.cover b{display:none}.frame .coach{min-height:58px}.portrait{width:58px;height:58px}.frame .tabs button{min-height:46px}.banner{padding:6px 9px}.frame .banner h2{font-size:21px}.card{padding:7px 8px}.frame .task{min-height:49px}.frame .materials button{min-height:68px}.frame .cta{min-height:68px}}

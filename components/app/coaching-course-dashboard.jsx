@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,BarChart3,BookOpen,CheckCircle2,ChevronRight,ClipboardCheck,FileText,Flower2,Layers,MessageCircle,Sparkles,Video} from 'lucide-react'
+import {ArrowLeft,ArrowRight,BarChart3,CheckCircle2,ChevronRight,ClipboardCheck,FileText,Flower2,Layers,MessageCircle,Sparkles,Video} from 'lucide-react'
 import {PUBLIC_COACH_PERSONAS,coachSessionHref,localCoachText} from '@/lib/coaching/persona-registry.mjs'
 import {COACH_PROGRAM_GROUPS} from '@/lib/coaching/coach-program-topics.mjs'
 import css from './coaching-course-dashboard.module.css'
@@ -41,6 +41,7 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
   <div className={css.layout}>
    <header className={css.topbar}>
     {panel?<button type="button" onClick={()=>{setPanel(null);setStartAfterChoice(false)}} disabled={locked&&panel==='practice'}><ArrowLeft size={19}/>{t.close}</button>:<Link href={root+'/coaching/'+program} prefetch={false} onClick={onLeave}><ArrowLeft size={19}/>{t.back}</Link>}
+    {!panel&&<button type="button" className={css.tools} aria-label={t.resources} title={t.resources} onClick={()=>open('resources')} disabled={locked}><Layers size={19}/></button>}
     <button type="button" className={css.help} aria-label={t.help} aria-haspopup="dialog" data-daybook-inline-help onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={18}/>iHelp</button>
    </header>
    <div className={css.cover}><span> {program==='clarity'?'CLARITY':'MY GOAL'} · DAYBOOK</span><h1>{title}</h1><p>{sessions.length} {t.sessions} · {program==='clarity'?t.free:t.course}</p><b><Sparkles size={14}/>DAYBOOK</b></div>
@@ -62,7 +63,6 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
        <button type="button" data-coaching-material="results" onClick={()=>open('results')} disabled={locked}><BarChart3 size={32}/><strong>{t.results}</strong><small>{t.report}</small></button>
        <button type="button" data-coaching-material="protocol" onClick={()=>open('protocol')} disabled={locked}><FileText size={32}/><strong>{t.protocol}</strong><small>{t.document}</small></button>
       </div>
-      <button type="button" className={css.more} onClick={()=>open('resources')} disabled={locked}><BookOpen size={16}/>{t.resources}<ChevronRight size={17}/></button>
      </div>
     </>}
     {panel&&<div className={css.panelTitle}><span>{t.session} {selected} / {sessions.length}</span><h2>{panelTitle}</h2><p>{sessionTitle}</p></div>}
