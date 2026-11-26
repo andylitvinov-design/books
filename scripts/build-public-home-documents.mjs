@@ -9,7 +9,7 @@ import { parse, serialize } from 'parse5';
 
 const locales = { en: '/', ru: '/ru', es: '/es' };
 const digest = source => 'sha256-' + createHash('sha256').update(source).digest('base64');
-const restoreStyles = "addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('link[data-home-full-style]').forEach(link=>link.media='all'))),{once:true});";
+const restoreStyles = "addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('link[data-home-full-style]').forEach(link=>{if(link.sheet)link.media='all';else{link.addEventListener('load',()=>link.media='all',{once:true});if(link.sheet)link.media='all'}}))),{once:true});";
 
 function* descendants(root) {
   yield root;
@@ -28,7 +28,17 @@ function firstScreenCssInput(source) {
     const attrs = Object.fromEntries((node.attrs ?? []).map(({name, value}) => [name, value]));
     const isBelowFold = (attrs.class || '').split(/\s+/).some(name => belowFoldClasses.has(name)) ||
       'data-home-video-below-fold' in attrs || 'data-home-deferred-sections' in attrs;
-    if (!isBelowFold || !node.childNodes?.length) continue;
+    // Hidden React stream containers, inert templates and closed disclosure
+    // contents are not part of the initial paint. Keep the visible summary
+    // and outer container, and leave their real markup and full CSS intact.
+    const isHidden = 'hidden' in attrs || node.tagName === 'template';
+    if (node.tagName === 'details' && !('open' in attrs)) {
+      const children = node.childNodes ?? [];
+      if (!children.some(child => [...descendants(child)].some(n => n.tagName === 'link' || n.tagName === 'style'))) {
+        node.childNodes = children.filter(child => child.tagName === 'summary');
+      }
+    }
+    if ((!isBelowFold && !isHidden) || !node.childNodes?.length) continue;
     if ([...descendants(node)].some(child => child.tagName === 'style' || child.tagName === 'link')) continue;
     node.childNodes = [];
   }
@@ -95,7 +105,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
     await access(resolve(buildDir, path.slice('/_next/'.length)));
     const originalTag = source.slice(loc.startOffset, loc.endOffset);
     // Preserve cascade order and offer the full stylesheet without JavaScript.
-    edits.push([loc.startOffset, loc.endOffset, originalTag.replace('<link ', '<link media="print" data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
+    edits.push([loc.startOffset, loc.endOffset, originalTag.replace('<link ', '<link media="print" fetchpriority="low" data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
     const href = loc.attrs.href;
     cssInputEdits.push([href.startOffset, href.endOffset, 'href="' + path + '"']);
     styles++;
