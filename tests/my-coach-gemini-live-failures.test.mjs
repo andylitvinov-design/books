@@ -432,5 +432,5 @@ test('greeting navigation cancels old audio before switching and never starts Li
  assert.doesNotMatch(navigation,/onStart\?\.|startSession\(|playGreeting\(|fetch\(/)
  assert.ok(gate.includes('onTouchCancel')&&gate.includes('onTouchEnd')&&gate.includes('onClickCapture'))
  assert.ok(load('components/my-coach-greeting-gate.module.css').includes('touch-action:pan-y pinch-zoom'))
- assert.ok(load('components/public-coaching-discovery.jsx').includes('MyCoachLiveDialogue key={selectedPersona.id}'))
+ assert.ok(load('components/public-coaching-discovery.jsx').includes("MyCoachLiveDialogue key={selectedPersona.id+':'+(personaSelection?.methodId||'standard')}"))
 })
