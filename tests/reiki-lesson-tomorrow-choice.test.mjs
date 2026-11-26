@@ -33,10 +33,10 @@ test("inline consent gates guest Google authentication and existing-account priv
   assert.match(learner, /data-reiki-first-lesson-google-save/);
   assert.match(learner, /slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent/);
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
-  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(true\)/);
   assert.match(learner, /firstLesson: \{ answers: handoff\.answers \}/);
   assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed/);
-  assert.match(learner, /if \(handoff\.afterSave === "courses"\) window\.location\.assign/);
+  assert.match(learner, /if \(handoff\?\.afterSave === "courses"\) window\.location\.assign/);
   assert.doesNotMatch(learner, /showInstallOffer|data-reiki-save-dock|installOfferPage/);
   assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
 });

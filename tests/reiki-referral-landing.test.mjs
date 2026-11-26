@@ -117,6 +117,6 @@ test("the published referral promise matches the learner's actual private-save c
   assert.match(learner, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\)/);
   assert.match(learner, /if \(slide\.id === "flight-done" && sync !== "ready"\)/);
   assert.match(learner, /energyworkCreateFirstLessonHandoff\(answersRef\.current, locale, Date\.now\(\), afterSave\)/);
-  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(true\);/);
   assert.match(landing, /Your reflections are not sent to Andrey automatically/);
 });
