@@ -1,5 +1,5 @@
 'use client'
-import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityHomeworkRows} from '@/lib/coaching/clarity-course.mjs'
+import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityHomeworkCandidates} from '@/lib/coaching/clarity-course.mjs'
 import {clarityRecap} from '@/lib/coaching/clarity-continuity.mjs'
 
 import {useEffect,useRef,useState} from 'react'
@@ -358,6 +358,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [selectedGoal,setSelectedGoal]=useState('')
   const [selectedCourseId,setSelectedCourseId]=useState(clarityCourseId(clarityDay)||DEFAULT_COACH_COURSE_SESSION_ID)
   const clarityTimeLimit=useRef(false)
+  const [clarityHomeworkAccepted,setClarityHomeworkAccepted]=useState(false)
   const lastSharedGoalRef=useRef('')
   const modelProbeRef=useRef({lastAttempt:0,inFlight:false})
   const semanticHintsRef=useRef([]) // short-lived in-tab hints only; not persisted or exported
@@ -938,6 +939,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   function openCoachProfile(){
     coachProfileOpenRef.current=true
+    if(clarityCourseDay(selectedCourseId)){speechRef.current?.stop?.();void pauseClarityClock()}
     // Profile is not End. Pause Gemini; legacy speech releases resources.
     const kept=speechRef.current?.pauseSession?.()===true
     if(!kept&&!speechRef.current?.hasLiveSession?.())speechRef.current?.stop?.()
@@ -1073,7 +1075,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function retainPendingClient(){
     const pendingClient=inFlightClientRef.current
     if(!pendingClient)return true
-    const rows=turnsRef.current,entry={role:'user',content:pendingClient.message,unanswered:true,...(clarityCourseDay(selectedCourseId)&&courseVisitRef.current?{coachId:personaId,visitId:courseVisitRef.current}:{})}
+    const rows=turnsRef.current,entry={role:'user',content:pendingClient.message,unanswered:true,...pendingClient.attribution}
     if(!coachProtocolCanAppend(rows,[entry])){setError(protocolCopy[lang].limit);return false}
     inFlightClientRef.current=null
     const next=[...rows,entry]
@@ -1084,7 +1086,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // commits a render. Do not rotate the archive or discard its first turns.
   function commitCompletedClientTurn(requestId,message,reply){
     if(turnRequestRef.current!==requestId||inFlightClientRef.current?.requestId!==requestId)return false
-    const attribution=clarityCourseDay(selectedCourseId)&&courseVisitRef.current?{coachId:personaId,visitId:courseVisitRef.current}:{}
+    const attribution=inFlightClientRef.current?.attribution||{}
     const rows=turnsRef.current,entries=[{role:'user',content:message,...attribution},{...reply,...attribution}]
     if(!coachProtocolCanAppend(rows,entries)){
       retainPendingClient();setError(protocolCopy[lang].limit);return false
@@ -1118,7 +1120,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     if(!autoSaveEnabled||protocolSaved)return
     const pendingClient=inFlightClientRef.current
-    const rows=pendingClient?[...turns,{role:'user',content:pendingClient.message,unanswered:true}]:turns
+    const rows=pendingClient?[...turns,{role:'user',content:pendingClient.message,unanswered:true,...pendingClient.attribution}]:turns
     queuePrivateDraft(rows)
   },[turns,autoSaveEnabled,protocolSaved])
   useEffect(()=>{
@@ -1167,7 +1169,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(next===turnsRef.current)return
     turnsRef.current=next;setTurns(next)
     const waiting=inFlightClientRef.current
-    queuePrivateDraft(waiting?[...next,{role:'user',content:waiting.message,unanswered:true}]:next)
+    queuePrivateDraft(waiting?[...next,{role:'user',content:waiting.message,unanswered:true,...waiting.attribution}]:next)
   }
   function cancelPendingCoachTurn(){
     setStreamingPreview('')
@@ -1212,8 +1214,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const goalEligible=openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
     if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
-    inFlightClientRef.current={requestId,message}
-    queuePrivateDraft([...turnsRef.current,{role:'user',content:message,unanswered:true}])
+    const attribution=clarityCourseDay(selectedCourseId)&&courseVisitRef.current?{coachId:personaId,visitId:courseVisitRef.current}:{}
+    inFlightClientRef.current={requestId,message,attribution}
+    queuePrivateDraft([...turnsRef.current,{role:'user',content:message,unanswered:true,...attribution}])
     // A new focus requires the client to choose which saved topic to use again.
     const contextFocusChanged=['correction','topic_shift'].includes(
       understandCoachingTurn({locale:responseLocale,message}).act)
@@ -1452,7 +1455,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     speechRef.current?.pauseSession?.()
     if(clarityCourseDay(selectedCourseId))void pauseClarityClock()
     const waiting=inFlightClientRef.current
-    queuePrivateDraft(waiting?[...turnsRef.current,{role:'user',content:waiting.message,unanswered:true}]:turnsRef.current)
+    queuePrivateDraft(waiting?[...turnsRef.current,{role:'user',content:waiting.message,unanswered:true,...waiting.attribution}]:turnsRef.current)
     void autoSaveQueueRef.current?.flush()
   }
   function interceptSessionExit(event){
@@ -1467,11 +1470,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
     event.preventDefault()
     if(headerBackPendingRef.current||profileV3BusyRef.current)return
-    if(clarityCourseDay(selectedCourseId))await pauseClarityClock()
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
       speechRef.current?.stop?.()
+      if(clarityCourseDay(selectedCourseId))await pauseClarityClock()
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
       cancelPendingCoachTurn()
@@ -1498,7 +1501,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(recovered)
       setDraft(previous=>previous.trim()?previous:last.content)
     }
-    if(!clarityCourseDay(selectedCourseId))setCourseFieldReview(null) // course review history is append-only
+    if(!clarityCourseDay(selectedCourseId)){clarityTimeLimit.current=false;setClarityHomeworkAccepted(false);setCourseFieldReview(null)} // course review history is append-only
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setPaused(false)
@@ -1510,7 +1513,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:clarityCourseDay(selectedCourseId)?courseSecondsRef.current:Math.floor(activeSessionSeconds),
-      ...(clarityTimeLimit.current&&clarityCourseDay(selectedCourseId)?{clarityTimeLimitReached:true}:{}),
+      ...(clarityTimeLimit.current&&clarityCourseDay(selectedCourseId)?{clarityTimeLimitReached:true,clarityHomeworkAccepted}:{}),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
       ...(courseFieldReview?.courseSessionId===selectedCourseId?{courseFieldReview}:{}),
       ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
@@ -1838,7 +1841,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const beat=async()=>{
       const leaseId=courseLeaseRef.current,p=courseClockState.current
       if(stopped||!leaseId||!p||courseClockInFlight.current)return
-      const active=document.visibilityState==='visible'&&!p.paused&&['listening','speaking','thinking'].includes(p.phase)
+      const active=speechRef.current?.isConnected?.()===true&&document.visibilityState==='visible'&&!p.paused&&!coachProfileOpenRef.current&&['listening','speaking','thinking'].includes(p.phase)
       if(active)seenConnected=true
       if(document.visibilityState==='hidden'||p.paused||(seenConnected&&['paused','idle'].includes(p.phase))){speechRef.current?.stop?.();void pauseClarityClock();return}
       courseClockInFlight.current=true
@@ -2545,7 +2548,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
         <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>
         {insightResult&&<MyCoachResultPreview locale={lang} courseSessionId={insightResult.courseSessionId} title={coachCourseFocusLabel(selectedCourseId,lang)} rows={insightRows} profile={insightProfile} summary={insightResult.clientSummary} nextStep={insightResult.clientNextStep}/>}
-        {insightResult&&clarityHomeworkRows(insightResult,insightRows).length>0&&<details open data-clarity-homework-preview><summary>{({en:'Optional homework · open topics',ru:'Домашнее задание · открытые темы',es:'Tarea opcional · temas pendientes'})[lang]}</summary><p>{({en:'Review these optional questions before saving; skipped topics are excluded.',ru:'Проверьте эти необязательные вопросы перед сохранением; пропущенные темы исключены.',es:'Revisa estas preguntas opcionales antes de guardar; se excluyen los temas omitidos.'})[lang]}</p><ul>{clarityHomeworkRows(insightResult,insightRows).map(row=><li key={row.id}>{row.question}</li>)}</ul></details>}
+        {insightResult&&clarityHomeworkCandidates(insightResult,insightRows).length>0&&<details open data-clarity-homework-preview><summary>{({en:'Homework from your personal coach',ru:'Домашнее задание от личного коуча',es:'Tarea de tu coach personal'})[lang]}</summary><p>{({en:'Would you like to explore these remaining topics at your own pace in Daybook?',ru:'Хотите исследовать оставшиеся темы самостоятельно в своём Daybook?',es:'¿Quieres explorar estos temas pendientes a tu ritmo en Daybook?'})[lang]}</p><ul>{clarityHomeworkCandidates(insightResult,insightRows).map(row=><li key={row.id}>{row.question}</li>)}</ul><label><input type="checkbox" checked={clarityHomeworkAccepted} onChange={event=>setClarityHomeworkAccepted(event.target.checked)} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>{({en:'Add this optional practice to day 1',ru:'Добавить эту практику в первый день',es:'Añadir esta práctica opcional al día 1'})[lang]}</label></details>}
         {insightOverview?<details><summary>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</summary><section className={styles.protocolReview} data-coach-insight-overview>
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
         </section></details>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}

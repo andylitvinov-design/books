@@ -1,5 +1,5 @@
 'use client'
-import {clarityDay,clarityCoachHref} from '@/lib/coaching/clarity-course.mjs'
+import {clarityDay,clarityCoachHref,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
@@ -180,7 +180,7 @@ export function ClarityDetails({locale='en'}){
   <p className={css.notice}>{t.privacy}</p>
  </main>
 }
-function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
+function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homework}){
  const t=COPY[locale]
  const [text,setText]=useState(entry?.text||''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
  const saver=useRef(null),draft=useRef(null),alive=useRef(true),inFlight=useRef(false)
@@ -191,7 +191,7 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
   try{
    if(!draft.current){
     const timezone=entry?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone
-    draft.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||[clarityDayTag(day)],kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
+    draft.current={id:entry?.id||(homework?await clarityHomeworkEntryId(accountId,homework.reportId,homework.row.id):crypto.randomUUID()),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||(homework?clarityHomeworkTags(homework.reportId,homework.row.id):[clarityDayTag(day)]),kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
    }
    const saved=await saver.current.save(draft.current)
    if(!alive.current)return
@@ -203,7 +203,7 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  <label>{t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
+  <label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
   {entry&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
   {failed&&<p role="alert">{t.error}</p>}
   <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
@@ -247,7 +247,20 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
        <summary><span className={css.stepNum}>{index+1}</span><strong>{name}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16} aria-hidden="true"/></Link>}</div>
       </details>)}
-      <details className={css.practice} data-clarity-course-report><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session result & homework',ru:'Результат сессии и домашнее задание',es:'Resultado y tarea de la sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseResults state={resultState} day={number} locale={lang}/></details>
+      <details className={css.practice} data-clarity-course-report><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session result',ru:'Результат сессии',es:'Resultado de la sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseResults state={resultState} day={number} locale={lang}/></details>
+      {number===1&&<details className={css.practice} data-clarity-personal-homework><summary><NotebookPen size={19} aria-hidden="true"/><strong>{({en:'Homework from your personal coach',ru:'Домашнее задание от личного коуча',es:'Tarea de tu coach personal'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
+       <div className={css.practiceBody}>
+        {resultState.phase==='loading'?<p>{({en:'Loading homework…',ru:'Загрузка заданий…',es:'Cargando tareas…'})[lang]}</p>:resultState.phase!=='ready'?<button type="button" onClick={resultState.reload}>{t.retry}</button>:
+         hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:
+         !resultState.data.results.some(r=>r.day===1&&r.homework.length)?<p>{({en:'No agreed homework yet.',ru:'Пока нет согласованного домашнего задания.',es:'Todavía no hay una tarea acordada.'})[lang]}</p>:
+         resultState.data.results.filter(r=>r.day===1&&r.homework.length).map(report=>{
+          const completed=report.homework.filter(row=>clarityHomeworkNotes(entries,report.id,row.id).length===1).length
+          return <section key={report.id} data-clarity-homework-practice><p>{({en:'Personal coach',ru:'Личный коуч',es:'Coach personal'})[lang]}: {report.personaId} · {new Date(report.savedAt).toLocaleDateString(lang)}</p><p>{({en:'Saved answers',ru:'Сохранено ответов',es:'Respuestas guardadas'})[lang]}: {completed}/{report.homework.length}</p><progress value={completed} max={report.homework.length}/>
+           <p>{({en:'These private reflections are not yet reviewed session results. You can share them with your coach if you choose.',ru:'Это личные ответы, ещё не проверенные коучем. Вы можете поделиться ими на следующей встрече по желанию.',es:'Son reflexiones privadas, todavía no revisadas por el coach. Puedes compartirlas si quieres.'})[lang]}</p>
+           {report.homework.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);return <div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{answers.length>1?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={number} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>}</div>})}
+          </section>
+         })}
+       </div></details>}
       <details className={css.practice} data-clarity-reflection>
        <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}>
