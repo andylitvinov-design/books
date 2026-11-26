@@ -21,7 +21,7 @@ export async function GET(request,{params}){
     const store=getPrescriptionStore()
     const saved=await readSavedSession(config,store,actor,id,{markOpened:false})
     if(!saved.session.report)throw Error('unavailable')
-    const record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId)
+    const record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId,{expectedSource:saved.expectedSource})
     if(!record||record.clientId!==saved.source.clientId||record.status!=='active')throw Error('unavailable')
     const pay=record.kind==='payment',doc=pay?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
     if(!doc)throw Error('unavailable')

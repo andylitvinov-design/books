@@ -192,7 +192,7 @@ for(const engine of [chromium,webkit]){
      evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
      if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
      if(width===390){
-      for(const [id,count] of [["clarity",3],["goal",8],["business",4],["reiki",5]]){
+      for(const [id,count] of [["clarity",3],["goal",8],["business",8],["reiki",5]]){
        await root.locator('[data-home-intent-option="'+id+'"]').click();
        await page.waitForURL(origin+"/"+locale+"/programs/"+id);
        const overview=page.locator('[data-public-program="'+id+'"]');

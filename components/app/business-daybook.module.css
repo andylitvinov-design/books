@@ -9,3 +9,9 @@
 .practice{border:1px solid #e1c99e;background:#fffcf3;border-radius:15px;margin:8px 0;overflow:hidden}.practice>button{display:grid;grid-template-columns:30px minmax(0,1fr) 24px;align-items:center;gap:10px;width:100%;min-height:62px;border:0;background:transparent;color:#3c291c;text-align:left;padding:10px}.practice>button>svg{color:#006b4e}.number{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#f0dfb8;color:#4c331e;font-weight:750}.form{border-top:1px solid #e1c99e;padding:12px}.form p{font-size:14px;margin:0 0 12px}.form label{display:grid;gap:6px;font-size:14px;font-weight:600}.form textarea{width:100%;min-height:95px;border:1px solid #d7b576;border-radius:12px;background:white;padding:10px;color:#3c291c;font:16px/1.4 system-ui,sans-serif;resize:vertical}
 .action{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:48px;border:1px solid #d7b576;border-radius:14px;background:linear-gradient(120deg,#087652,#00513d);color:#fff8e8;padding:10px;font-size:15px;font-weight:700;margin:12px 0 0;text-align:center}.privacy,.finished{display:flex;align-items:flex-start;gap:7px;margin:14px 0 0!important;font-size:12px!important}.privacy svg,.finished svg{flex:none}
 @media(max-width:360px){.page{padding-inline:10px}.canvas{padding:11px}.weeks{gap:4px;padding:6px}.weeks button{font-size:11px}.brand span{font-size:17px}}
+
+.weekTitle{font-size:11px;line-height:1.2;overflow-wrap:anywhere;text-align:center}
+.archive{padding:14px;border:1px solid #e5cf9e;border-radius:16px;background:#fff9ea;color:#23483c;min-width:0}
+.archive summary{cursor:pointer;font-weight:700;padding:8px 0}
+.archive article{margin-top:10px;padding-top:10px;border-top:1px solid #e8cf9e}
+.archive p{white-space:pre-wrap;overflow-wrap:anywhere}
