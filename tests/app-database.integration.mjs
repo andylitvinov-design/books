@@ -28,7 +28,7 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 import { createArticleRepository } from '../lib/practitioners/article-repository.js'
-import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
+import { bindLegacyClientToAccount,listLegacyClientIdsForAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
@@ -2438,6 +2438,7 @@ test('verified Google report claim atomically links one client/CRM contact and p
     await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
     const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
     assert.deepEqual(bind,[{account_id:recipient.id}])
+    assert.ok(!(await listLegacyClientIdsForAccount(config,recipient)).includes(clientId),'single report claim must not unlock unrelated study links')
     const links=(await admin.query('select account_id,owner_id,contact_id from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows
     assert.equal(links.length,1)
     assert.equal(links[0].account_id,recipient.id)
