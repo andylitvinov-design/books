@@ -8,8 +8,8 @@ import {coachOpeningIntro,coachOpeningProgress,COACH_OPENING_QUESTION_BANK} from
 import {approvedGeminiVoice,allowedGeminiCoachVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Samir is a seventh visible coach with full localized profile and formal opening',()=>{
-  assert.equal(PUBLIC_COACH_PERSONA_IDS.length,7)
-  assert.equal(PUBLIC_COACH_PERSONA_IDS.at(-1),'genie')
+  assert.equal(PUBLIC_COACH_PERSONA_IDS.length,8)
+  assert.equal(PUBLIC_COACH_PERSONA_IDS[6],'genie')
   const p=getCoachPersona('genie')
   assert.deepEqual(p.methods,['WOOP','Appreciative inquiry'])
   for(const lang of ['en','ru','es']){

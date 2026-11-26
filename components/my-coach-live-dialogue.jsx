@@ -46,6 +46,7 @@ import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-pro
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
+import MyCoachCourseFieldReview from './my-coach-course-field-review'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
 import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
 import {coachProfileTrackForCourse} from '@/lib/coaching/coach-profile-session-v3.mjs'
@@ -104,7 +105,7 @@ const copy={
 // Speech services receive only their minimum necessary data after a real
 // Play gesture. Keep full disclosures in the optional Privacy details.
 const avatarVisuals={
-  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',caesar:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
@@ -313,6 +314,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const autoSaveRef=useRef(false),autoSaveQueueRef=useRef(null),draftMountedRef=useRef(true)
   const headerBackPendingRef=useRef(false)
   useEffect(()=>{draftMountedRef.current=true;return()=>{draftMountedRef.current=false}},[])
+  const [courseFieldReview,setCourseFieldReview]=useState(null)
   const [protocolSummary,setProtocolSummary]=useState('')
   const [protocolNextStep,setProtocolNextStep]=useState('')
   const [protocolSaving,setProtocolSaving]=useState(false)
@@ -1320,6 +1322,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json',...(methodSession?{'X-HH-Account-ID':methodSession.accountId}:{})},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          courseSessionId:selectedCourseId,
           ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
           ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
           ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
@@ -1475,6 +1478,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(recovered)
       setDraft(previous=>previous.trim()?previous:last.content)
     }
+    setCourseFieldReview(null) // a continued dialogue requires a fresh review
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setPaused(false)
@@ -1487,6 +1491,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
+      ...(courseFieldReview?.courseSessionId===selectedCourseId?{courseFieldReview}:{}),
       ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
@@ -1507,9 +1512,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })),
     })
   }
-  function exportProtocol(print=false){
+  function exportProtocol(print=false,documentKind='protocol'){
     try{
-      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang})
+      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang,documentKind})
       if(print)openCoachingSessionPdf(options)
       else downloadCoachingSessionPdf(options)
       setProtocolError('')
@@ -2390,9 +2395,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {insightOverview?<section className={styles.protocolReview} data-coach-insight-overview>
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
         </section>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
+        <MyCoachCourseFieldReview courseSessionId={selectedCourseId} turns={turns} locale={lang} value={courseFieldReview} onChange={setCourseFieldReview} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>
         {turns.length===0?<p>{protocolUi.empty}</p>:
           <details data-coach-insight-transcript>
           <summary>{({en:'View conversation history',ru:'История разговора',es:'Ver historial de conversación'})[lang]}</summary>
+          <div className={styles.protocolActions}><button type="button" disabled={protocolSaving} onClick={()=>exportProtocol(false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button></div>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
@@ -2410,9 +2417,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <label className={styles.protocolTextLabel}>{{ru:'Мой следующий шаг (необязательно)',en:'My next step (optional)',es:'Mi siguiente paso (opcional)'}[lang]}
           <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
         </label>
-        <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
+        <small className={styles.protocolPrivacy}>{({en:'The protocol PDF contains checkpoints and client statements; the full transcript is a separate export. AI suggestions are not confirmed decisions. Audio is not stored.',ru:'PDF протокола содержит контрольные пункты и слова клиента; полная стенограмма скачивается отдельно. Предложения ИИ не являются подтверждёнными решениями. Аудио не хранится.',es:'El PDF contiene puntos de sesión y palabras del cliente; la transcripción completa se descarga por separado. Las sugerencias de IA no son decisiones confirmadas. No se guarda audio.'})[lang]}</small>
         <div className={styles.protocolActions}>
-          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{protocolUi.download}</button>
+          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{({en:'Download protocol PDF',ru:'Скачать протокол PDF',es:'Descargar protocolo PDF'})[lang]}</button>
           <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(true)}><Printer size={16}/>{protocolUi.print}</button>
         </div>
         <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolOwnerReady||protocolSaved||protocolSaving}
@@ -2431,7 +2438,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.ratingCard}>
         <div className={styles.ratingCoachHeader}>
           <img className={styles.ratingCoachPortrait}
-            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
+            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId==='caesar'?'caesar-emblem.svg':personaId+'-still.webp')}
             alt="" width={78} height={78}/>
           <div><h2>{ratingUi.title}</h2><strong>{name}</strong><p>{ratingUi.subtitle}</p></div>
         </div>
