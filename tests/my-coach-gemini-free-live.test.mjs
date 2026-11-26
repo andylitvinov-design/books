@@ -620,8 +620,9 @@ test('Director guidance and consented references never interrupt human speech; r
 
 test('catalog session entries load a new document with the session voice policy',()=>{
  const catalog=load('components/my-coach-catalog.jsx')
- const entryTags=[...catalog.matchAll(/<(a|Link)\b[^<>]*href=\{(?:startHref|coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\))\}[^<>]*>/g)]
+ const entryTags=[...catalog.matchAll(/<(a|Link)\b[^<>]*href=\{(?:startHref|clarityCoachHref\(coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\),clarityDay\))\}[^<>]*>/g)]
  assert.equal(entryTags.length,4,'hero Talk, plan, persona card and legacy Start are session links')
+ assert.ok(catalog.includes('const startHref = clarityCoachHref(coachSessionHref(lang, selected.id, safeSettings, safeMethod),clarityDay)'), 'shared session anchor must preserve selected course day')
  for(const [tag,name] of entryTags){
   assert.equal(name,'a','Next Link retains the catalog microphone/CSP policy')
   assert.doesNotMatch(tag,/onClick|prefetch/)
