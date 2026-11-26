@@ -981,3 +981,74 @@ test('a completed reply drains after the old socket closes and before resumption
   assert.equal(reconnects.length,1)
   assert.equal(reconnects[0],h.r)
 })
+
+
+test('post-barge reply deadline preempts an existing 18-second timer and follows real speech',()=>{
+  let now=0,serial=0,stalls=0
+  const timers=new Map()
+  const watch=new GeminiLiveReplyWatchdog({
+    now:()=>now,schedule:(fn,ms)=>{const id=++serial;timers.set(id,{fn,at:now+ms});return id},
+    cancel:id=>timers.delete(id),canFire:()=>true,onStall:()=>stalls++,
+  })
+  function advance(to){
+    while(true){
+      const next=[...timers].filter(([,v])=>v.at<=to).sort((a,b)=>a[1].at-b[1].at)[0]
+      if(!next)break
+      now=next[1].at;timers.delete(next[0]);next[1].fn()
+    }
+    now=to
+  }
+  watch.touch();advance(1000);watch.touch(5000)
+  advance(3000);watch.touch(5000)
+  advance(7999);assert.equal(stalls,0)
+  advance(8000);assert.equal(stalls,1,'five seconds from last real speech, not 18 seconds from the old reply')
+  advance(60000);assert.equal(stalls,1,'never loop a provider recovery')
+  watch.touch(5000);watch.clear();advance(70000);assert.equal(stalls,1)
+})
+
+test('old post-barge PCM and empty turn boundaries cannot commit the human turn or return to idle',()=>{
+  const h=session(),watch=[]
+  h.r.replyWatch={touch:ms=>watch.push(ms??18000),clear:()=>watch.push('clear')}
+  h.receive({audio:[pcm(2)],output:'Old reply'})
+  h.interrupt()
+  h.receive({input:'I meant next week.'})
+  assert.equal(watch.at(-1),5000)
+  const before=watch.length
+  h.receive({audio:[pcm(.5)],output:'Old tail',turnComplete:true})
+  h.receive({turnComplete:true})
+  assert.equal(watch.length,before,'old audio/boundaries cannot postpone recovery')
+  assert.equal(h.r.lastAssistantTurnFinished,false)
+  assert.equal(h.r.awaitingBargeReply,true)
+  assert.equal(h.r.inputText,'I meant next week.')
+  assert.deepEqual(h.events.input,[])
+  assert.equal(h.r.player.playing,false)
+  h.receive({audio:[pcm(.5)],output:'Understood, next week.',turnComplete:true})
+  assert.equal(h.r.awaitingBargeReply,false)
+  assert.equal(h.r.postBarge,false)
+  h.clock.advanceTo(3)
+  assert.deepEqual(h.events.input,['I meant next week.'])
+  assert.deepEqual(h.events.final,[
+    {text:'Old reply',interrupted:true},
+    {text:'Understood, next week.',interrupted:false},
+  ])
+  assert.equal(watch.at(-1),'clear')
+  h.assertLive()
+})
+
+test('provider acknowledgement without PCM retains the short deadline; delayed ASR cannot extend it',()=>{
+  const h=session(),watch=[]
+  h.r.replyWatch={touch:ms=>watch.push(ms??18000),clear:()=>watch.push('clear')}
+  h.receive({audio:[pcm(2)],output:'Old reply'})
+  h.interrupt()
+  h.receive({interrupted:true,input:'No,'})
+  assert.equal(watch.at(-1),5000)
+  const before=watch.length
+  h.receive({input:'next week'})
+  h.receive({turnComplete:true})
+  assert.equal(watch.length,before)
+  assert.equal(h.r.awaitingBargeReply,true)
+  assert.equal(h.r.inputText,'No, next week')
+  assert.equal(h.r.lastAssistantTurnFinished,false)
+  assert.deepEqual(h.events.input,[])
+  h.assertLive()
+})
