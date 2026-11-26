@@ -84,7 +84,7 @@ function OwnerReview({accountId,locale,protocols,hasMore,plan}){
     {goalId&&!goal&&<option value={goalId} disabled>{t.missing}</option>}
     {goals.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}
    </select></label>
-   {saved&&!changed&&!failed&&<p role="status">{t.saved}</p>}
+   {saved&&output&&!changed&&!failed&&<p role="status">{t.saved}</p>}
    {failed&&<p role="alert">{t.error}</p>}{pdfError&&<p role="alert">{t.pdfError}</p>}
    <div className={styles.importPanel}>
     <button type="button" className={styles.saveButton} disabled={busy||(!failed&&(!output||!changed||(goalId&&!goal)))} onClick={()=>void save()}>{busy?t.working:failed?t.retry:saved?t.edit:t.save}</button>

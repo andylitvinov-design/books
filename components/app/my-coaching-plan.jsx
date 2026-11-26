@@ -7,6 +7,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
 import CourseArchiveReview from './course-archive-review'
+import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import DaybookDailySettings from './daybook-daily-settings'
 import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
@@ -165,6 +166,7 @@ function SavedProtocolCheckin({protocol,locale}){
    {words.focuses[opening.focus]&&<p>{words.focus}: {words.focuses[opening.focus]}</p>}
    {opening.feelings&&<p>{words.feelings}: {opening.feelings}</p>}
   </div>}
+  <MyCoachSavedProfileV3 protocol={protocol} locale={locale}/>
   {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
    <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
    <p>{words.current} / {words.desired}</p>
@@ -290,9 +292,9 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   }catch{setContextError(t.contextError)}
   finally{setRevoking('')}
  }
- function exportProtocol(protocol,print=false){
+ function exportProtocol(protocol,print=false,documentKind='protocol'){
   try{
-   const options=myCoachProtocolPdfOptions(protocol,{locale:lang})
+   const options=myCoachProtocolPdfOptions(protocol,{locale:lang,documentKind})
    if(print)openCoachingSessionPdf(options)
    else downloadCoachingSessionPdf(options)
    setProtocolError('')
@@ -471,7 +473,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
-   {protocolPage.accountId===accountId&&!loading&&!protocolError&&<CourseArchiveReview key={'course-review:'+accountId} accountId={accountId} locale={lang} protocols={visibleProtocols} hasMore={protocolPage.hasMore} plan={plan}/>}
+   {protocolPage.accountId===accountId&&!loading&&(!protocolError||visibleProtocols.length>0)&&<CourseArchiveReview key={'course-review:'+accountId} accountId={accountId} locale={lang} protocols={visibleProtocols} hasMore={protocolPage.hasMore} plan={plan}/>}
    <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
@@ -482,6 +484,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
+     <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
       <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
@@ -490,7 +493,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     </details>
     <div className={styles.importPanel}>
      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false)}><Download size={16}/>{protocolCopy[lang].download}</button>
+      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false)}><Download size={16}/>{({en:'Download protocol PDF',ru:'Скачать протокол PDF',es:'Descargar protocolo PDF'})[lang]}</button>
       <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,true)}><Printer size={16}/>{protocolCopy[lang].print}</button>
       <button type="button" className={styles.primaryButton} disabled={!!protocolDeleting} onClick={()=>deleteProtocol(protocol)}><Trash2 size={16}/>{protocolCopy[lang].delete}</button>
      </div>
