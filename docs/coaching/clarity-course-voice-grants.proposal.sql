@@ -14,8 +14,13 @@ create table app_private.clarity_course_voice_grants (
  clock_until timestamptz,
  clock_at timestamptz,
  clock_confirmed_at timestamptz,
+ last_consent_day date,
+ timed_end_at timestamptz,
+ reviewed_at timestamptz,
  primary key(account_id,course_day),
  unique(account_id,protocol_id),
+ check((active_ms=1200000)=(timed_end_at is not null)),
+ check(reviewed_at is null or (timed_end_at is not null and reviewed_at>=timed_end_at)),
  check((state='idle' and lease_id is null and lease_until is null and issued_at is null) or
        (state='pending' and lease_id is not null and lease_until is not null and issued_at is null) or
        (state='issued' and lease_id is not null and lease_until is not null and issued_at is not null)),
@@ -26,7 +31,7 @@ alter table app_private.clarity_course_voice_grants enable row level security;
 alter table app_private.clarity_course_voice_grants force row level security;
 revoke all on app_private.clarity_course_voice_grants from public,anon,authenticated;
 grant select,insert on app_private.clarity_course_voice_grants to hh_app_backend;
-grant update(lease_id,state,lease_until,issued_at,active_ms,clock_lease_id,clock_coach,clock_until,clock_at,clock_confirmed_at) on app_private.clarity_course_voice_grants to hh_app_backend;
+grant update(lease_id,state,lease_until,issued_at,active_ms,clock_lease_id,clock_coach,clock_until,clock_at,clock_confirmed_at,last_consent_day,timed_end_at,reviewed_at) on app_private.clarity_course_voice_grants to hh_app_backend;
 create policy clarity_grant_select on app_private.clarity_course_voice_grants for select to hh_app_backend
  using(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy clarity_grant_insert on app_private.clarity_course_voice_grants for insert to hh_app_backend

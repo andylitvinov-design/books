@@ -1149,7 +1149,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           teardown(r);r.resumeUnavailable=true
           phaseChange('paused');notify(t.resumeUnavailable)
         }else{const completedWindow=r.ready&&r.socket?.readyState===WebSocket.OPEN;notify(t.ended);stop();if(completedWindow&&!clarityCourseDay(r.courseSessionId))propsRef.current.onTimeLimit?.()}
-      },clarityCourseDay(r.courseSessionId)?Math.max(0,Math.min(MAX_SESSION_MS,Date.parse(token.expiresAt)-Date.now())):MAX_SESSION_MS)
+      },clarityCourseDay(r.courseSessionId)?Math.max(0,Math.min(MAX_SESSION_MS+60000,Date.parse(token.expiresAt)-Date.now())):MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){
         // Only the finite stage is disclosed, never a provider URL, key,

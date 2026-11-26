@@ -1,6 +1,7 @@
 'use client'
 import {clarityDay,clarityCoachHref,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
+import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
@@ -261,6 +262,7 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
           </section>
          })}
        </div></details>}
+      <details className={css.practice} data-clarity-protocol><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseProtocol state={resultState} day={number} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/></details>
       <details className={css.practice} data-clarity-reflection>
        <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}>

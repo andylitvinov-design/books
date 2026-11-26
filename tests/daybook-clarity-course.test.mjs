@@ -62,6 +62,9 @@ test('homework answers are saved separately, scoped to the exact report and fiel
  assert.match(id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
  assert.match(read('components/app/clarity-program.jsx'),/number===1&&<details[^\n]*data-clarity-personal-homework/)
  assert.match(read('components/my-coach-live-dialogue.jsx'),/isConnected\?\.\(\)===true/)
+ assert.match(read('lib/app/personal-coaching.js'),/await markClarityReviewSaved\(db,actor,protocol\)/)
+ assert.match(read('lib/app/clarity-course-access.js'),/last_consent_day/)
+ assert.match(read('lib/app/clarity-course-access.js'),/timed_end_at is not null and active_ms=1200000/)
 })
 test('proposed voice grant is account and day scoped and feature gated',()=>{
  const sql=read('docs/coaching/clarity-course-voice-grants.proposal.sql')
@@ -83,8 +86,9 @@ test('course clock excludes first heartbeat, inactivity and lost connection; adv
  assert.equal(clarityClockAdvance({active_ms:1199000,clock_at:new Date(time)},time+5000,true).complete,true)
  assert.equal(clarityNextDay([]),1)
  assert.equal(clarityNextDay([{course_day:1,active_ms:1199999},{course_day:2,active_ms:1200000}]),1)
- assert.equal(clarityNextDay([{course_day:1,active_ms:1200000}]),2)
- assert.equal(clarityNextDay([1,2,3].map(course_day=>({course_day,active_ms:1200000}))),null)
+ assert.equal(clarityNextDay([{course_day:1,active_ms:1200000}]),1)
+ assert.equal(clarityNextDay([{course_day:1,active_ms:1200000,reviewed_at:'2026-11-26T00:00:00Z'}]),2)
+ assert.equal(clarityNextDay([1,2,3].map(course_day=>({course_day,active_ms:1200000,reviewed_at:'2026-11-26T00:00:00Z'}))),null)
 })
 test('course preserves previous reviewed events and author attribution; recap never asserts candidates',()=>{
  const visitId='6c2b0e55-90ee-4c31-9b32-64c3860b5f28'

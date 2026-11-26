@@ -1596,6 +1596,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(protocolSaving||(protocolSaveLocked&&!protocolSaved))return
     setProtocolEditing(false)
     if(!protocolSaved){
+      if(clarityCourseDay(selectedCourseId)&&courseSecondsRef.current>=1200){setProtocolOpen(false);setPaused(true);return}
       resumeFromProtocol()
       setPaused(true)
       return // retain separately consented draft; never finalize or publish
@@ -1792,6 +1793,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const restored=p.draft?normalizeMyCoachDraft(p.draft):null
       if(restored&&(restored.protocol.id!==p.protocolId||restored.courseSessionId!==p.courseSessionId))throw Error('CLARITY_INVALID')
       const old=restored?.protocol
+      if(p.reviewPending&&!old?.turns?.some(t=>t.role==='user'))throw Error('CLARITY_REVIEW_DRAFT_REQUIRED')
       courseClockState.current=p;courseRootRef.current=old?{personaId:old.personaId,methodId:old.methodId}:null
       protocolIdRef.current=p.protocolId;protocolStartedRef.current=old?.startedAt||null
       initialDraftRevision.current=p.draft?.revision||0;courseReviewRef.current=old?.courseFieldReview||null
@@ -1806,6 +1808,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        setPaused(false);setIntroComplete(false);setRestoredDraft(false)
       })
       refreshClarityRecap(p.activeSeconds)
+      if(p.reviewPending){clarityTimeLimit.current=true;setProtocolFinishedAt(new Date().toISOString());setPaused(true);setProtocolEditing(false);setProtocolOpen(true)}
     }catch{setCourseGate({error:clarityError})}
     finally{courseGateBusyRef.current=false;setCourseGateBusy(false)}
   }
@@ -1828,7 +1831,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function confirmClarityClock(){
     const leaseId=courseLeaseRef.current,p=courseClockState.current
-    if(!leaseId||!p||courseConfirmedRef.current||courseConfirmBusyRef.current||speechRef.current?.isConnected?.()!==true)return
+    if(!leaseId||!p||!courseInvitationRef.current||courseConfirmedRef.current||courseConfirmBusyRef.current||speechRef.current?.isConnected?.()!==true)return
     courseConfirmBusyRef.current=true
     try{
       await requestClarity('confirm',{courseSessionId:p.courseSessionId,leaseId,confirmed:true})
