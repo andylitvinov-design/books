@@ -95,7 +95,7 @@ test('real PCM WAV becomes a decodable MP3 with non-silent samples and full dura
   await assert.rejects(encodeCoachGreetingMp3(wavFixture().subarray(0,200)),/INVALID_WAV/)
 })
 
-test('all seven public coaches record their selected RU/EN voice and replay identical saved bytes',async()=>{
+test('all eight public coaches record their selected RU/EN voice and replay identical saved bytes',async()=>{
   const h=harness()
   for(const locale of ['ru','en'])for(const id of COACH_OPENING_PUBLIC_IDS){
     const canonical=new Request('https://holistichouse.vercel.app'+coachIntroAudioPath(id,locale))
@@ -115,9 +115,9 @@ test('all seven public coaches record their selected RU/EN voice and replay iden
     assert.equal(input.voiceName,approvedGeminiVoice(id,locale))
     assert.equal(input.text,getCoachPresentation(id,locale).text,'audio matches the visible greeting')
   }
-  assert.equal(h.objects.size,14)
-  assert.equal(h.syntheses.length,14)
-  assert.equal(h.encodings.length,14)
+  assert.equal(h.objects.size,16)
+  assert.equal(h.syntheses.length,16)
+  assert.equal(h.encodings.length,16)
   assert.equal(h.fishCalls,0)
   assert.ok(h.rates.filter(x=>x.bucket.op==='my-coach-gemini_tts_free-global-day')
     .every(x=>x.limit===24&&x.seconds===86400),'private and public TTS share the unchanged daily cap')
