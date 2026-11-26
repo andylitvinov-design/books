@@ -616,3 +616,23 @@ test('legacy business coaching IDs retain the original four-session checkpoints 
   }
  }
 })
+
+
+// Trusted-adapter contract: no progression until the matching durable receipt.
+import {createCoachProtocolGate,transitionCoachProtocolGate,coachProtocolGateNext,protocolAnswerClass} from '../lib/coaching/coach-protocol-validation-gate.mjs'
+test('protocol validation gate: ambiguous confirmation, interrupted echo, exact save ACK, correction and 0 rating',()=>{
+ let s=createCoachProtocolGate({sessionId:'s1',courseSessionId:'course1',fields:[{id:'goal',kind:'text'},{id:'rating',kind:'rating',min:0,max:10}]});let n=0
+ const ev=(type,fieldId,extra={})=>({id:'e'+(++n),type,sessionId:'s1',courseSessionId:'course1',coachId:'mira',fieldId,expectedRevision:s.revision,...extra})
+ const go=(type,fieldId,extra)=>{s=transitionCoachProtocolGate(s,ev(type,fieldId,extra))}
+ for(const a of ['да, но не сейчас','yes but not that','может быть','нет','sí, pero no'])assert.notEqual(protocolAnswerClass(a),'affirm')
+ assert.throws(()=>transitionCoachProtocolGate(s,ev('issue','rating',{questionId:'q0'})))
+ go('issue','goal',{questionId:'q1'});go('delivery','goal',{questionId:'q1',deliveryId:'d1',final:true});go('answer','goal',{questionId:'q1',deliveryId:'d1',turnId:'t1',text:'Я хочу сменить работу',final:true});assert.equal(s.pending.phase,'awaiting_echo');assert.equal(s.accepted.goal,undefined)
+ go('echo_delivery','goal',{questionId:'q1',deliveryId:'d2',quote:'Я хочу сменить работу',final:true,interrupted:true});assert.equal(s.pending.phase,'awaiting_echo')
+ go('echo_delivery','goal',{questionId:'q1',deliveryId:'d3',quote:'Я хочу сменить работу',final:true});go('confirmation','goal',{questionId:'q1',deliveryId:'d3',turnId:'t2',text:'Да, верно',final:true});assert.equal(s.pending.phase,'awaiting_save');assert.equal(s.accepted.goal,undefined)
+ assert.throws(()=>transitionCoachProtocolGate(s,ev('issue','rating',{questionId:'q2'})));assert.throws(()=>transitionCoachProtocolGate(s,ev('save_ack','goal',{questionId:'q1',receipt:'wrong',durableRevision:1})))
+ go('save_ack','goal',{questionId:'q1',receipt:s.pending.candidate.receipt,durableRevision:1});assert.equal(s.accepted.goal.quote,'Я хочу сменить работу');assert.equal(coachProtocolGateNext(s).fieldId,'rating')
+ go('issue','rating',{questionId:'q2'});go('delivery','rating',{questionId:'q2',deliveryId:'d4',final:true});go('answer','rating',{questionId:'q2',deliveryId:'d4',turnId:'t3',text:'11',final:true});assert.equal(s.pending.phase,'clarify')
+ go('issue','rating',{questionId:'q3'});go('delivery','rating',{questionId:'q3',deliveryId:'d5',final:true});go('answer','rating',{questionId:'q3',deliveryId:'d5',turnId:'t4',text:'0',final:true});assert.equal(s.pending.candidate.value,0)
+ const ack=ev('save_ack','rating',{questionId:'q3',receipt:s.pending.candidate.receipt,durableRevision:2});s=transitionCoachProtocolGate(s,ack);assert.equal(transitionCoachProtocolGate(s,ack),s);assert.equal(coachProtocolGateNext(s),null)
+ go('reopen','goal',{turnId:'t5',explicitCorrection:true,coachId:'caesar'});assert.equal(s.accepted.goal,undefined);assert.equal(s.accepted.rating.value,0);assert.equal(coachProtocolGateNext(s).fieldId,'goal')
+})
