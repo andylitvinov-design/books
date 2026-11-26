@@ -6,6 +6,7 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
+import CourseArchiveReview from './course-archive-review'
 import DaybookDailySettings from './daybook-daily-settings'
 import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
@@ -470,6 +471,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
+   {protocolPage.accountId===accountId&&!loading&&!protocolError&&<CourseArchiveReview key={'course-review:'+accountId} accountId={accountId} locale={lang} protocols={visibleProtocols} hasMore={protocolPage.hasMore} plan={plan}/>}
    <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
