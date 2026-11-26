@@ -1,6 +1,7 @@
 'use client'
 import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
+import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
 import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
@@ -231,27 +232,28 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
  const sheet=useRef(null)
  function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
  const counts=days.map((_,i)=>gameProgress(entries,i+1))
- const assigned=resultState.phase==='ready'&&day===1?resultState.data.results.filter(r=>r.day===1&&r.homework.length):[]
- const homeworkTotal=assigned.reduce((n,r)=>n+r.homework.length,0)
- const homeworkDone=assigned.reduce((n,r)=>n+r.homework.filter(row=>clarityHomeworkNotes(entries,r.id,row.id).length===1).length,0)
+ const assigned=resultState.phase==='ready'?resultState.data.results.filter(r=>r.day===day&&r.homework.length).map(report=>({...report,projection:clarityResultProjection(report,entries,{journalComplete:!hasMore})})):[]
+ const homeworkTotal=assigned.reduce((n,r)=>n+r.projection.homeworkTotal,0)
+ const homeworkDone=assigned.reduce((n,r)=>n+r.projection.homeworkDone,0)
  return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
   <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} 
    practiceFlow={onClose=><DaybookGames day={day} accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(day);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(Math.min(day+1,3));onClose()}}/>}
-   results={<><ClarityCourseResults state={resultState} day={day} locale={lang}/><DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/></>}
+   results={<><ClarityCourseResults state={resultState} day={day} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} onLoadAll={onLoadAll} loadError={loadError}/><DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/></>}
    protocol={<ClarityCourseProtocol key={day} state={resultState} day={day} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/>}
    sessionAvailable={false}
    sessionStatus={<ClarityCourseStatus state={resultState} day={day} locale={lang}/>}
    homeworkStatus={resultState.phase==='ready'&&!hasMore&&homeworkTotal>0?{label:homeworkDone+'/'+homeworkTotal,complete:homeworkDone===homeworkTotal}:null}
-   homework={day===1?<section data-clarity-personal-homework>
+   homework={<section data-clarity-personal-homework>
     {resultState.phase==='loading'?<p>{t.working}</p>:resultState.phase!=='ready'?<button type="button" onClick={resultState.reload}>{t.retry}</button>:
      hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:
      !assigned.length?<p>{({en:'No agreed homework yet.',ru:'Пока нет согласованного домашнего задания.',es:'Todavía no hay una tarea acordada.'})[lang]}</p>:
      assigned.map(report=><section key={report.id} data-clarity-homework-practice>
       <p>{({en:'Personal coach',ru:'Личный коуч',es:'Coach personal'})[lang]}: {report.personaId} · {new Date(report.savedAt).toLocaleDateString(lang)}</p>
-      <p>{({en:'These private reflections are not reviewed session results.',ru:'Это личные ответы, ещё не проверенные коучем.',es:'Son reflexiones privadas, todavía no revisadas por el coach.'})[lang]}</p>
-      {report.homework.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);return <div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{answers.length>1?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={day} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>}</div>})}
+      <p>{({en:'Your saved answers update the session result as independent reflections, not coach confirmations.',ru:'Сохранённые ответы дополняют итоги сессии как самостоятельная работа, а не как подтверждение коучем.',es:'Tus respuestas guardadas actualizan el resultado como reflexiones autónomas, no como confirmaciones del coach.'})[lang]}</p>
+      <p role="status">{report.projection.homeworkDone}/{report.projection.homeworkTotal}</p>
+      {report.projection.assigned.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);const form=row.homeworkState==='conflict'?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={day} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>;return row.homeworkState==='done'?<details key={row.id} data-clarity-homework-done><summary>✓ {row.label}</summary>{form}</details>:<div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{form}</div>})}
      </section>)}
-   </section>:null}
+   </section>}
    initialPanel={routeWeek===4?'resources':null}
    resources={<>
     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>

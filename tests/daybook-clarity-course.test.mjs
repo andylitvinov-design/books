@@ -3,7 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {CLARITY_COURSE_IDS,CLARITY_COURSE_SECONDS,CLARITY_COURSE_GROUP,clarityDay,clarityCourseDay,clarityCourseId,clarityCoachHref,clarityReturnHref,clarityHomeworkRows,clarityHomeworkCandidates,clarityHomeworkTags,clarityHomeworkNotes,clarityHomeworkEntryId} from '../lib/coaching/clarity-course.mjs'
-import {clarityCourseResult} from '../lib/coaching/clarity-course-results.mjs'
+import {clarityCourseResult,clarityResultProjection} from '../lib/coaching/clarity-course-results.mjs'
 import {coachCourseProtocolRows} from '../lib/coaching/coach-course-protocol-schema.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('three localized course days and bounded duration',()=>{
@@ -23,7 +23,7 @@ test('three localized course days and bounded duration',()=>{
  assert.equal(clarityCourseDay('clarity_discover'),null)
  assert.equal(clarityCoachHref('//external.example',1),'//external.example')
 })
-test('first-day homework requires a matching server clock, reviewed ending and separate acceptance',()=>{
+test('homework requires a matching server clock, reviewed ending and separate acceptance',()=>{
  const protocolId='00000000-0000-4000-8000-000000000001',segmentId='00000000-0000-4000-8000-000000000011',connectionId='00000000-0000-4000-8000-000000000021'
  let clock=createClarityCourseClock()
  const event={day:1,protocolId,segmentId,connectionId}
@@ -50,7 +50,7 @@ test('first-day homework requires a matching server clock, reviewed ending and s
   assert.deepEqual(clarityCourseResult({...accepted,...bad},'en',{clock}).homework,[])
  }
  const rows=[['request','not_explored'],['life_balance','needs_confirmation'],['needs','confirmed'],['strengths','skipped_by_client'],['symptoms','not_explored']].map(([id,status])=>({id,status,label:'L',question:'Q'}))
- assert.deepEqual(clarityHomeworkRows(accepted,rows,clock).map(r=>r.id),['request'])
+ assert.deepEqual(clarityHomeworkRows(accepted,rows,clock).map(r=>r.id),['request','life_balance'])
  assert.deepEqual(clarityHomeworkRows(accepted,rows),[])
  assert.deepEqual(clarityHomeworkRows({...accepted,id:'00000000-0000-4000-8000-000000000009'},rows,clock),[])
  assert.deepEqual(clarityHomeworkRows({...accepted,clarityHomeworkAccepted:false},rows,clock),[])
@@ -61,7 +61,8 @@ test('homework answers are saved separately, scoped to the exact report and fiel
  const tags=clarityHomeworkTags(report,'request')
  assert.deepEqual(tags,['hw:'+report,'hw-field:request'])
  assert.ok(tags.every(t=>t.length<=40))
- assert.equal(clarityHomeworkTags(report,'symptoms'),null)
+ assert.equal(clarityHomeworkTags(report,'unknown'),null)
+ assert.ok(clarityHomeworkTags(report,'symptoms'))
  const note={kind:'note',goalId:null,revision:1,tags,text:'My reflection'}
  assert.deepEqual(clarityHomeworkNotes([note,{...note,revision:0},{...note,text:' '},{...note,goalId:account}],report,'request'),[note])
  assert.deepEqual(clarityHomeworkNotes([note],report,'needs'),[])
@@ -70,7 +71,7 @@ test('homework answers are saved separately, scoped to the exact report and fiel
  assert.notEqual(await clarityHomeworkEntryId(account,report,'needs'),id)
  assert.notEqual(await clarityHomeworkEntryId(report,report,'request'),id)
  assert.match(id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
- assert.match(read('components/app/clarity-program.jsx'),/homework=\{day===1\?<section data-clarity-personal-homework/)
+ assert.match(read('components/app/clarity-program.jsx'),/homework=\{<section data-clarity-personal-homework/)
  assert.match(read('components/my-coach-live-dialogue.jsx'),/clarityOpeningReady&&activeSessionSeconds>=CLARITY_COURSE_SECONDS/)
 })
 test('proposed voice grant is account and day scoped and feature gated',()=>{
@@ -81,4 +82,50 @@ test('proposed voice grant is account and day scoped and feature gated',()=>{
  assert.match(sql,/account_id=\(select auth.uid\(\)\)/)
  assert.match(sql,/revoke all .* from public,anon,authenticated/)
  assert.match(read('lib/app/clarity-course-access.js'),/HH_CLARITY_FREE_COURSE_ENABLED/)
+})
+
+test('a single projection updates both the remaining homework and result without changing coach evidence',()=>{
+ const id='00000000-0000-4000-8000-000000000001'
+ const rows=[['request','confirmed','My request'],['life_balance','needs_confirmation',''],['meaning_axes','not_explored',''],['needs','skipped_by_client',''],['strengths','not_explored','']].map(([id,status,quote])=>({id,status,quote,label:id,question:'Question '+id,source:status==='confirmed'?'client_reviewed_quote':null}))
+ const result={id,rows,homework:rows.filter(r=>['not_explored','needs_confirmation'].includes(r.status))}
+ const note=(field,text='My answer')=>({kind:'note',goalId:null,revision:1,tags:clarityHomeworkTags(id,field),text})
+ const project=entries=>clarityResultProjection(result,entries,{journalComplete:true})
+ assert.equal(project([]).homeworkTotal,3);assert.equal(project([]).answered,1)
+ assert.equal(project([note('request'),note('needs')]).answered,1)
+ const saved=project([note('life_balance','My score')])
+ assert.equal(saved.answered,2);assert.equal(saved.homeworkRemaining,2)
+ assert.equal(saved.rows[1].source,'daybook');assert.equal(saved.rows[1].quote,'My score')
+ assert.equal(saved.rows[0].quote,'My request');assert.equal(saved.rows[3].status,'skipped_by_client')
+ assert.equal(project([note('life_balance'),note('life_balance')]).rows[1].homeworkState,'conflict')
+ assert.equal(project([{...note('life_balance'),revision:0}]).homeworkDone,0)
+ assert.equal(project([{...note('life_balance'),tags:clarityHomeworkTags('00000000-0000-4000-8000-000000000009','life_balance')}]).homeworkDone,0)
+ assert.equal(project([{...note('life_balance'),tags:[...note('life_balance').tags,'hw-field:strengths']}]).homeworkDone,0)
+ assert.equal(clarityResultProjection(result,[note('life_balance')],{journalComplete:false}).homeworkDone,0)
+ const all=project([note('life_balance'),note('meaning_axes'),note('strengths')])
+ assert.equal(all.homeworkRemaining,0);assert.equal(all.answered,4);assert.equal(all.skipped,1);assert.equal(all.complete,false)
+ assert.equal(project([note('life_balance','Edited answer')]).rows[1].quote,'Edited answer')
+ assert.equal(project([]).rows[1].status,'needs_confirmation')
+ const ui=read('components/app/clarity-program.jsx'),view=read('components/app/clarity-course-results.jsx')
+ assert.match(ui,/clarityResultProjection\(report,entries,\{journalComplete:!hasMore\}\)/)
+ assert.match(view,/clarityResultProjection\(r,entries,\{journalComplete:!hasMore\}\)/)
+ assert.match(view,/data-clarity-result-diagram/)
+ assert.match(ui,/data-clarity-homework-done/)
+})
+test('every Clarity day uses the exact schema and matching trusted time-limit proof',()=>{
+ let clock=createClarityCourseClock()
+ const opening={completed:true,declined:false,checkmarks:{confirmation:true},confirmedQuote:'Yes'}
+ for(const day of [1,2,3]){
+  const protocolId='00000000-0000-4000-8000-00000000000'+day,segmentId='00000000-0000-4000-8000-00000000001'+day,connectionId='00000000-0000-4000-8000-00000000002'+day
+  const event={day,protocolId,segmentId,connectionId},start=(day-1)*86400000
+  const record={id:protocolId,courseSessionId:clarityCourseId(day),provenance:'client_reviewed_dialogue',savedAt:'2026-11-26T12:00:00Z',turns:[],durationSeconds:1200,opening,clarityTimeLimitReached:true,clarityHomeworkAccepted:true}
+  assert.deepEqual(clarityCourseResult(record,'en',{clock}).homework,[])
+  clock=advanceClarityCourseClock(clock,{...event,type:'begin',expectedRevision:clock.revision,atMs:start,coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId,connectionId,coachId:'mira',atMs:start,turnId:'consent:'+day}})
+  for(let dt=10000;dt<=1200000;dt+=10000)clock=advanceClarityCourseClock(clock,{...event,type:'observe',expectedRevision:clock.revision,atMs:start+dt,evidence:'server_observed_connected'})
+  for(const locale of ['en','ru','es']){
+   const result=clarityCourseResult(record,locale,{clock})
+   assert.equal(result.rows.length,day===1?5:6)
+   assert.deepEqual(result.homework.map(x=>x.id),result.rows.map(x=>x.id))
+   assert.ok(result.homework.every(x=>x.question&&clarityHomeworkTags(protocolId,x.id)))
+  }
+ }
 })
