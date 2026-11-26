@@ -65,3 +65,11 @@ test('route preserves owner authentication, origin, rate, CAS and hides private 
  for(const marker of ['auth.verified()','requireSameOrigin(request,config)','x-hh-account-id','HH_MY_COACH_PROFILE_V3_ENABLED','my-coach-profile-step','stepCoachProfileDraft(config,actor,input)'])assert.ok(route.includes(marker),marker)
  for(const marker of ['pg_advisory_xact_lock','row.revision!==input.revision','state=\'active\' and revision=$5','coachProfileDraftActiveV3(old))throw conflict()','issueCoachProfileArchiveProof(config,actor,step.serverLedger)','const {profileDirectorV3,...visible}=value','selected.map(item=>publicDraft(item))'])assert.ok(store.includes(marker),marker)
 })
+
+
+test('private resume UI keeps typed profile actions and normal checkpoints mutually exclusive',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ for(const marker of ['data-coach-private-profile-v3','setProfileV3Enabled(result.profileV3Enabled===true)','profileV3Ref.current=structured','profileV3FaultRef.current=true','if(structured&&!structured.step.closed)draftRevision=structured.revision','if(restoredDraft)forceLocal=true','profileV3Ref.current&&!profileV3Ref.current.step.closed','questionTurnId:q.turnId','restoredProfileProof.current=coachProfileArchiveEnvelope(p)'])assert.ok(ui.includes(marker),marker)
+ assert.ok(route.includes("profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'"))
+})
