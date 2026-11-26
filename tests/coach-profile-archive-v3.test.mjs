@@ -100,10 +100,15 @@ test('private resume retains the same signed track envelope in checkpoints and f
 
 
 import {startCoachProfileDirectorV3,answerCoachProfileDirectorV3,prioritizeCoachProfileDirectorV3,
- correctCoachProfileDirectorV3,closeCoachProfileDirectorV3,coachProfileDirectorArchiveV3} from '../lib/coaching/coach-profile-director-v3.mjs'
+ correctCoachProfileDirectorV3,closeCoachProfileDirectorV3,coachProfileDirectorArchiveV3,confirmCoachProfilePromptV3} from '../lib/coaching/coach-profile-director-v3.mjs'
+const deliverProfilePrompt=state=>confirmCoachProfilePromptV3(state,{expectedRevision:state.pending.question.revision,
+ questionTurnId:state.pending.questionTurnId,content:state.pending.question.text},recordedAt)
 test('server step adapter issues actual prompt, rejects stale answer and preserves authoritative source order',()=>{
  let state=startCoachProfileDirectorV3({sessionId,courseSessionId:'introductory',locale:'ru'},recordedAt)
  const first=state.pending.question
+ assert.equal(state.transcript.length,0)
+ assert.throws(()=>answerCoachProfileDirectorV3(state,{expectedRevision:0,questionId:first.id,content:'9'},recordedAt),/COACH_PROFILE_DIRECTOR_INVALID/)
+ state=deliverProfilePrompt(state)
  assert.equal(state.transcript[0].content,first.text)
  assert.throws(()=>answerCoachProfileDirectorV3(state,{expectedRevision:0,questionId:'invented',content:'9'},recordedAt),/COACH_PROFILE_DIRECTOR_INVALID/)
  state=answerCoachProfileDirectorV3(state,{expectedRevision:0,questionId:first.id,content:'0'},recordedAt)
@@ -112,9 +117,12 @@ test('server step adapter issues actual prompt, rejects stale answer and preserv
  assert.equal(state.transcript[1].role,'user')
  assert.equal(state.transcript[1].recordedAt,recordedAt)
  state=prioritizeCoachProfileDirectorV3(state,1,recordedAt)
+ state=deliverProfilePrompt(state)
  state=answerCoachProfileDirectorV3(state,{expectedRevision:2,questionId:state.pending.question.id,content:'Тело и здоровье'},recordedAt)
+ state=deliverProfilePrompt(state)
  state=answerCoachProfileDirectorV3(state,{expectedRevision:3,questionId:state.pending.question.id,content:'8'},recordedAt)
  state=correctCoachProfileDirectorV3(state,4,'body_health','current',recordedAt)
+ state=deliverProfilePrompt(state)
  state=answerCoachProfileDirectorV3(state,{expectedRevision:5,questionId:state.pending.question.id,content:'3'},recordedAt)
  state=closeCoachProfileDirectorV3(state,6)
  const b=coachProfileDirectorArchiveV3(state)
@@ -132,8 +140,27 @@ test('interrupted or nonfactual prompt evidence is never promoted',()=>{
  let state=startCoachProfileDirectorV3({sessionId,courseSessionId:'introductory',locale:'en'},recordedAt)
  for(const message of ['My mother said 7','Please repeat','8?']){
   const question=state.pending.question
+  state=deliverProfilePrompt(state)
   state=answerCoachProfileDirectorV3(state,{expectedRevision:question.revision,questionId:question.id,content:message},recordedAt)
   assert.equal(coachProfileDirectorArchiveV3(state).snapshot.ratings[0].current.value,null)
  }
  assert.equal(state.pending.question.axis,'body_health')
+})
+
+
+test('question issuance does not certify delivery; interrupted attempts cannot bind later answers',()=>{
+ let state=startCoachProfileDirectorV3({sessionId,courseSessionId:'introductory',locale:'en'},recordedAt)
+ const first=state.pending
+ assert.throws(()=>confirmCoachProfilePromptV3(state,{expectedRevision:0,questionTurnId:first.questionTurnId,content:'Wrong question'},recordedAt),/COACH_PROFILE_DIRECTOR_INVALID/)
+ state=confirmCoachProfilePromptV3(state,{expectedRevision:0,questionTurnId:first.questionTurnId,content:'Body and health',interrupted:true},recordedAt)
+ assert.equal(state.transcript[0].interrupted,true)
+ assert.ok(state.pending.questionTurnId!==first.questionTurnId)
+ assert.throws(()=>confirmCoachProfilePromptV3(state,{expectedRevision:0,questionTurnId:first.questionTurnId,content:first.question.text},recordedAt),/COACH_PROFILE_DIRECTOR_INVALID/)
+ assert.throws(()=>answerCoachProfileDirectorV3(state,{expectedRevision:0,questionId:first.question.id,content:'8'},recordedAt),/COACH_PROFILE_DIRECTOR_INVALID/)
+ state=deliverProfilePrompt(state)
+ state=answerCoachProfileDirectorV3(state,{expectedRevision:0,questionId:first.question.id,content:'0'},recordedAt)
+ const block=coachProfileDirectorArchiveV3(state)
+ assert.equal(block.bindings[0].questionTurnIndex,1)
+ assert.equal(block.snapshot.ratings[0].current.value,0)
+ assert.equal(block.transcriptLength,3)
 })
