@@ -504,7 +504,7 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,5)
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
@@ -569,7 +569,7 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(checkpoint.includes('courseSessionId:r.courseSessionId'))
  assert.ok(!checkpoint.includes('courseSessionId:p.courseSessionId'))
  assert.ok(server.includes('courseSessionId:normalizeCoachCourseSessionId(body.courseSessionId)'))
- assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive)'))
+ assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
  assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
@@ -615,4 +615,90 @@ test('legacy business coaching IDs retain the original four-session checkpoints 
    assert.deepEqual(coachCourseProtocolSchema(id,lang).checkpoints.map(row=>[row.label,row.instruction]),original[2])
   }
  }
+})
+
+
+// Trusted-adapter contract: no progression until the matching durable receipt.
+import {createCoachProtocolGate,transitionCoachProtocolGate,coachProtocolGateNext,protocolAnswerClass} from '../lib/coaching/coach-protocol-validation-gate.mjs'
+test('protocol validation gate: ambiguous confirmation, interrupted echo, exact save ACK, correction and 0 rating',()=>{
+ let s=createCoachProtocolGate({sessionId:'s1',courseSessionId:'course1',fields:[{id:'goal',kind:'text'},{id:'rating',kind:'rating',min:0,max:10}]});let n=0
+ const ev=(type,fieldId,extra={})=>({id:'e'+(++n),type,sessionId:'s1',courseSessionId:'course1',coachId:'mira',fieldId,expectedRevision:s.revision,...extra})
+ const go=(type,fieldId,extra)=>{s=transitionCoachProtocolGate(s,ev(type,fieldId,extra))}
+ for(const a of ['да, но не сейчас','yes but not that','может быть','нет','sí, pero no'])assert.notEqual(protocolAnswerClass(a),'affirm')
+ assert.throws(()=>transitionCoachProtocolGate(s,ev('issue','rating',{questionId:'q0'})))
+ go('issue','goal',{questionId:'q1'});go('delivery','goal',{questionId:'q1',deliveryId:'d1',final:true});go('answer','goal',{questionId:'q1',deliveryId:'d1',turnId:'t1',text:'Я хочу сменить работу',final:true});assert.equal(s.pending.phase,'awaiting_echo');assert.equal(s.accepted.goal,undefined)
+ go('echo_delivery','goal',{questionId:'q1',deliveryId:'d2',quote:'Я хочу сменить работу',final:true,interrupted:true});assert.equal(s.pending.phase,'awaiting_echo')
+ go('echo_delivery','goal',{questionId:'q1',deliveryId:'d3',quote:'Я хочу сменить работу',final:true});go('confirmation','goal',{questionId:'q1',deliveryId:'d3',turnId:'t2',text:'Да, верно',final:true});assert.equal(s.pending.phase,'awaiting_save');assert.equal(s.accepted.goal,undefined)
+ assert.throws(()=>transitionCoachProtocolGate(s,ev('issue','rating',{questionId:'q2'})));assert.throws(()=>transitionCoachProtocolGate(s,ev('save_ack','goal',{questionId:'q1',receipt:'wrong',durableRevision:1})))
+ go('save_ack','goal',{questionId:'q1',receipt:s.pending.candidate.receipt,durableRevision:1});assert.equal(s.accepted.goal.quote,'Я хочу сменить работу');assert.equal(coachProtocolGateNext(s).fieldId,'rating')
+ go('issue','rating',{questionId:'q2'});go('delivery','rating',{questionId:'q2',deliveryId:'d4',final:true});go('answer','rating',{questionId:'q2',deliveryId:'d4',turnId:'t3',text:'11',final:true});assert.equal(s.pending.phase,'clarify')
+ go('issue','rating',{questionId:'q3'});go('delivery','rating',{questionId:'q3',deliveryId:'d5',final:true});go('answer','rating',{questionId:'q3',deliveryId:'d5',turnId:'t4',text:'0',final:true});assert.equal(s.pending.candidate.value,0)
+ const ack=ev('save_ack','rating',{questionId:'q3',receipt:s.pending.candidate.receipt,durableRevision:2});s=transitionCoachProtocolGate(s,ack);assert.equal(transitionCoachProtocolGate(s,ack),s);assert.equal(coachProtocolGateNext(s),null)
+ go('reopen','goal',{turnId:'t5',explicitCorrection:true,coachId:'caesar'});assert.equal(s.accepted.goal,undefined);assert.equal(s.accepted.rating.value,0);assert.equal(coachProtocolGateNext(s).fieldId,'goal')
+})
+
+import {coachCourseGateTransition,coachCourseGateView,coachCourseGateRetry,coachCourseGateArchiveMatches} from '../lib/coaching/coach-course-gate-draft.mjs'
+test('server thematic draft adapter binds typed prompts, retains reviewed quote and rejects stale/foreign actions',()=>{
+ const protocol={...sample(),courseSessionId:'goal_result',turnLayout:'chronological'}
+ assert.equal(typeof coachCourseGateTransition,'function')
+ const g=createCoachProtocolGate({sessionId:protocol.id,courseSessionId:'goal_result',fields:[{id:'baseline',kind:'text'}]})
+ const previous={protocol,revision:1,courseSessionId:'goal_result',courseGate:{gate:g,prompt:null,review:null,paused:false}}
+ assert.equal(coachCourseGateView(previous).completed,false)
+ assert.equal(coachCourseGateArchiveMatches(previous,{...protocol,courseFieldReview:{events:[]}}),false)
+ assert.equal(coachCourseGateRetry(previous,{revision:0}),false)
+ assert.throws(()=>coachCourseGateTransition(previous,{action:'course-gate-answer',id:protocol.id,revision:1,consent:true,requestId:'bad',promptId:'other',content:'да'},new Date().toISOString()))
+})
+
+import {coachOpeningProgress,coachOpeningProtocolSnapshot} from '../lib/coaching/coach-opening-protocol.mjs'
+import {courseGateVoiceDecision} from '../lib/coaching/coach-course-gate-voice.mjs'
+test('all eight coaches and three languages: real opening, server-issued field, explicit confirmation, durable revision, skip and correction',()=>{
+ const fixtures={ru:{history:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],answer:'работа',yes:'да',ambiguous:'да, но нет',skip:'пропустить вопрос'},
+  en:{history:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],answer:'work',yes:'yes',ambiguous:'yes, but no',skip:'skip this question'},
+  es:{history:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí'],answer:'trabajo',yes:'sí',ambiguous:'sí, pero no',skip:'omitir la pregunta'}}
+ for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const [locale,f] of Object.entries(fixtures)){
+  const opening=coachOpeningProgress({turns:f.history,locale,personaId})
+  assert.equal(opening.completed,true)
+  const course='goal_result'
+  let value={courseSessionId:course,revision:1,protocol:{...sample(),personaId,locale,courseSessionId:course,turnLayout:'chronological',
+   opening:coachOpeningProtocolSnapshot(opening),turns:f.history.map(content=>({role:'user',content}))}}
+  let n=0
+  const request=(action,extra={})=>({action,id:value.protocol.id,revision:value.revision,consent:true,requestId:'00000000-0000-4000-8000-'+String(++n).padStart(12,'0'),...extra})
+  const step=(action,extra={})=>{const input=request(action,extra);const old=value;
+   const next=coachCourseGateTransition(value,input,'2026-11-26T18:12:00.000Z');
+   value={...value,...next,revision:value.revision+1};assert.equal(coachCourseGateRetry(value,input),true);assert.equal(coachCourseGateRetry(old,input),false);return coachCourseGateView(value)}
+  let view=step('course-gate-start'),first=view.prompt.fieldId
+  const answer=content=>step('course-gate-answer',{promptId:view.prompt.id,content})
+  assert.equal(view.acceptedCount,0)
+  assert.throws(()=>coachCourseGateTransition(value,request('course-gate-answer',{promptId:'stale',content:f.yes}),'2026-11-26T18:12:00.000Z'))
+  view=answer(f.answer);assert.equal(view.prompt.kind,'confirm');assert.equal(view.review,null)
+  view=answer(f.ambiguous);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0)
+  view=answer(f.answer);view=answer(f.yes)
+  assert.notEqual(view.prompt.fieldId,first);assert.equal(view.acceptedCount,1);assert.equal(view.review.events[0].quote,f.answer)
+  assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}),true)
+  assert.equal(coachCourseGateArchiveMatches(value,value.protocol),false)
+  view=answer(f.skip);assert.equal(view.acceptedCount,2);assert.equal(view.review.events.at(-1).status,'skipped_by_client')
+  view=step('course-gate-correct',{fieldId:first});assert.equal(view.prompt.fieldId,first);assert.equal(view.review.events.at(-1).status,'not_explored');assert.equal(view.acceptedCount,1)
+ }
+})
+test('course gate voice ignores stale/partial/failed recognition and never auto-submits low confidence',()=>{
+ const base={promptId:'p1',currentPromptId:'p1',final:true,text:'да',confidence:.98}
+ assert.deepEqual(courseGateVoiceDecision(base),{action:'submit',text:'да'})
+ assert.equal(courseGateVoiceDecision({...base,confidence:.4}).action,'review')
+ assert.equal(courseGateVoiceDecision({...base,confidence:undefined}).action,'review')
+ assert.equal(courseGateVoiceDecision({...base,currentPromptId:'p2'}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,final:false}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,failed:true}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,text:'github_pat_secret'}).action,'ignore')
+})
+
+import {coachCourseGateHandoffRequired} from '../lib/coaching/coach-course-protocol-schema.mjs'
+test('thematic gate handoff is restricted to enabled consented authenticated core sessions',()=>{
+ const base={enabled:true,autosave:true,courseSessionId:'goal_result',locale:'ru',opening:{completed:true,declined:false,answers:{focus:{kind:'goal'}}}}
+ assert.equal(coachCourseGateHandoffRequired(base),true)
+ for(const patch of [{enabled:false},{autosave:false},{courseSessionId:'introductory'},{opening:{...base.opening,completed:false}},{opening:{...base.opening,declined:true}},{opening:{...base.opening,answers:{focus:{kind:'profile'}}}}])assert.equal(coachCourseGateHandoffRequired({...base,...patch}),false)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
+ assert.match(native,/if\(propsRef.current.onInputFinal\?\.\(value\)===true\)\{stop\(\);return true\}/)
+ assert.equal((native.match(/if\(r.inputText&&commitInput\(r\)\)return/g)||[]).length,3)
 })
