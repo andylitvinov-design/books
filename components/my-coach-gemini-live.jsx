@@ -1213,17 +1213,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r=runtime.current
     if(!r||r.ended)return
     if(r.paused){void resumePausedSession(r);return}
+    if(document.visibilityState==='hidden')return
     try{
-      // The resume is initiated in the real browser user-activation tap.
+      // A running WebAudio context can still be routed to the wrong iOS output.
+      // Reassert duplex routing inside a genuine gesture, without reopening mic.
+      activateCoachIos27LiveDuplex(navigator)
       const recovery=r.context.resume?.()
       void Promise.resolve(recovery).then(()=>{
-        if(r.ended)return
-        if(r.context.state==='running')flushPendingAudio(r)
-        else notify(t.audioRoute)
-      }).catch(()=>{if(!r.ended)notify(t.audioRoute)})
+        if(r.ended||r.paused||runtime.current!==r||document.visibilityState==='hidden')return
+        if(r.context.state==='running'){
+          activateCoachIos27LiveDuplex(navigator)
+          flushPendingAudio(r)
+        }else notify(t.audioRoute)
+      }).catch(()=>{if(!r.ended&&!r.paused)notify(t.audioRoute)})
     }catch{notify(t.audioRoute)}
   }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,resumeAudioByTap,
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
@@ -1260,32 +1265,33 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
   },[personaId,lang,voiceName,enabled])
-  const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
+  const recoverAudio=audioNeedsGesture&&phase!=='idle'&&phase!=='paused'
+  const label=recoverAudio?t.resumeAudio:phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:t.stop
   return <div className={styles.root} data-my-coach-voice={phase}
     data-gemini-free-live-audio="true">
     <button type="button" className={styles.button}
       disabled={(phase==='idle'||phase==='paused')&&!canStart}
       aria-pressed={phase!=='idle'&&phase!=='paused'} aria-label={label}
+      data-coach-live-resume-audio={recoverAudio?'true':undefined}
+      title={label}
       onClick={()=>{
+        if(recoverAudio){resumeAudioByTap();return}
         if(phase==='idle'||phase==='paused'){startSession();return}
         if(phase==='speaking'){interrupt();return}
         stop()
       }}>
-      {phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
+      {recoverAudio?<Volume2 size={24} aria-hidden="true"/>:phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
         phase==='speaking'?<Mic size={19} aria-hidden="true"/>:
         <Square size={18} aria-hidden="true"/>}
       <span>{label}</span>
-      {phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
+      {!recoverAudio&&phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
     </button>
     {phase!=='idle'&&!notice&&
       <span className={styles.status} role="status">
         {phase==='paused'?t.paused:phase==='loading'?t.connecting:
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
-    {audioNeedsGesture&&phase!=='idle'&&phase!=='paused'&&
-      <button type="button" className={styles.button}
-        data-coach-live-resume-audio onClick={resumeAudioByTap}>{t.resumeAudio}</button>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
     {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
       phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}

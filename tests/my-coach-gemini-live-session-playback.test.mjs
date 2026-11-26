@@ -791,3 +791,17 @@ test('standard MIME whitespace does not discard 24 kHz PCM',()=>{
   assert.deepEqual(read('audio/pcm; rate=16000'),[])
   assert.deepEqual(read('audio/mp3'),[])
 })
+
+
+test('sound recovery tap reasserts duplex route even when WebAudio is already running',async()=>{
+  const calls=[]
+  const r={context:{state:'running',resume(){calls.push('resume');return Promise.resolve()}},paused:false,ended:false}
+  const runtime={current:r},document={visibilityState:'visible'}
+  const restore=runInNewContext(section('  function resumeAudioByTap(){','  useImperativeHandle(')+'\nresumeAudioByTap',{
+    runtime,document,navigator:{},activateCoachIos27LiveDuplex:()=>calls.push('route'),
+    flushPendingAudio:()=>calls.push('flush'),notify:()=>calls.push('notice'),t:{audioRoute:'paused'}
+  })
+  restore();await Promise.resolve();await Promise.resolve()
+  assert.deepEqual(calls,['route','resume','route','flush'])
+  document.visibilityState='hidden';restore();assert.equal(calls.length,4)
+})
