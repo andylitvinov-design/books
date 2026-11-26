@@ -5,6 +5,7 @@ import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {rehearsalCatalog,createCoachRehearsal,coachRehearsalView,advanceCoachRehearsal,coachRehearsalFeedback} from '@/lib/coaching/coach-rehearsal.mjs'
 import DaybookGoalContext from './daybook-goal-context'
+import DaybookCoachLink from './daybook-coach-link'
 import css from './coach-rehearsal.module.css'
 const COPY={
  en:{title:'Rehearse a difficult conversation',intro:'A scripted, fictional text rehearsal with no external AI. Use invented names or no names. Not a real conversation or professional evaluation.',scenario:'Scenario',role:'Your role',difficulty:'Difficulty',standard:'Standard · 3 exchanges',challenge:'Challenge · 4 exchanges',goal:'Your desired outcome',start:'Start rehearsal',reply:'Your reply',next:'Send reply',stop:'Stop and discard rehearsal',review:'Feedback on your actual words',quote:'Your reply',strength:'Observable strength',example:'One possible alternative phrasing',takeaway:'Write only the learning point you want to keep (optional)',save:'Save only my learning point',saved:'Your learning point was saved and verified.',retry:'Retry the same save',failed:'Saving was not confirmed. Your learning point remains here.',reset:'Try again',skip:'Finish without saving',confirm:'Discard this unsaved rehearsal?',saving:'Saving…',session:'Sign-in expired. No new save is confirmed.',private:'The transcript and your selected scenario goal are not saved. Only your explicitly approved learning point and optional linked goal go to the private journal.'},
@@ -14,23 +15,23 @@ const COPY={
 export default function CoachRehearsal({accountId,locale='en'}){
  const lang=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[lang],catalog=rehearsalCatalog(lang)
  const [scenarioId,setScenario]=useState('boundaries'),[difficulty,setDifficulty]=useState('standard'),[goal,setGoal]=useState('')
- const [state,setState]=useState(null),[reply,setReply]=useState(''),[takeaway,setTakeaway]=useState(''),[goalId,setGoalId]=useState(null),[status,setStatus]=useState('')
+ const [state,setState]=useState(null),[reply,setReply]=useState(''),[takeaway,setTakeaway]=useState(''),[goalId,setGoalId]=useState(null),[status,setStatus]=useState(''),[savedEntry,setSavedEntry]=useState(null)
  const lifecycle=useRef(0),saver=useRef(null),pending=useRef(null),busy=useRef(false)
  useEffect(()=>{lifecycle.current++;saver.current=createJournalSaver(appFetch,accountId);return()=>{lifecycle.current++;saver.current?.discard();pending.current=null;busy.current=false}},[accountId])
- const sessionLost=useCallback(()=>{lifecycle.current++;saver.current?.discard();pending.current=null;busy.current=false;setState(null);setGoal('');setReply('');setTakeaway('');setGoalId(null);setStatus('session')},[])
+ const sessionLost=useCallback(()=>{lifecycle.current++;saver.current?.discard();pending.current=null;busy.current=false;setState(null);setGoal('');setReply('');setTakeaway('');setGoalId(null);setSavedEntry(null);setStatus('session')},[])
  const view=state?coachRehearsalView(state):null,feedback=view?.done?coachRehearsalFeedback(state):null
  const setup=catalog.find(s=>s.id===scenarioId)
  const locked=status==='saving'||status==='failed'
- function clear(){setState(null);setReply('');setTakeaway('');setGoalId(null);setGoal('');setStatus('')}
+ function clear(){setState(null);setReply('');setTakeaway('');setGoalId(null);setGoal('');setSavedEntry(null);setStatus('')}
  function stop(){if(locked)return;if(window.confirm(t.confirm))clear()}
- function start(){if(!goal.trim()||!saver.current||status==='session')return;setState(createCoachRehearsal({scenarioId,locale:lang,difficulty,goal}));setReply('');setTakeaway('');setStatus('')}
- function answer(){if(!reply.trim()||!view||view.done)return;setState(old=>advanceCoachRehearsal(old,reply));setReply('')}
+ function start(){if(!goal.trim()||!saver.current||status==='session')return;setState(createCoachRehearsal({scenarioId,locale:lang,difficulty,goal}));setReply('');setTakeaway('');setSavedEntry(null);setStatus('')}
+ function answer(){if(!reply.trim()||!view||view.done)return;setState(old=>old===state?advanceCoachRehearsal(old,reply):old);setReply('')}
  async function save(){
   if(!feedback||!takeaway.trim()||busy.current||status==='saved'||status==='session'||!saver.current)return
   const token=lifecycle.current
   if(!pending.current){const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;pending.current={id:crypto.randomUUID(),revision:0,text:takeaway.trim(),tags:['hh-coach-rehearsal-v1'],kind:'note',locale:lang,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId}}
   busy.current=true;setStatus('saving')
-  try{await saver.current.save(pending.current);if(token!==lifecycle.current)return;pending.current=null;setState(null);setGoal('');setReply('');setTakeaway('');setGoalId(null);setStatus('saved')}
+  try{const entry=await saver.current.save(pending.current);if(token!==lifecycle.current)return;setSavedEntry({id:entry.id,revision:entry.revision});pending.current=null;setState(null);setGoal('');setReply('');setTakeaway('');setGoalId(null);setStatus('saved')}
   catch(e){if(token!==lifecycle.current)return;if(e.status===401||e.code==='ACCOUNT_CHANGED'){sessionLost();return}setStatus('failed')}
   finally{if(token===lifecycle.current)busy.current=false}
  }
@@ -46,6 +47,6 @@ export default function CoachRehearsal({accountId,locale='en'}){
    <button type="button" disabled={!takeaway.trim()||status==='saving'} onClick={()=>void save()}>{status==='failed'?t.retry:status==='saving'?t.saving:t.save}</button>
    <button type="button" disabled={locked} onClick={()=>{setState(createCoachRehearsal({scenarioId,locale:lang,difficulty,goal}));setReply('');setTakeaway('');setGoalId(null)}}>{t.reset}</button>
    <button type="button" disabled={locked} onClick={clear}>{t.skip}</button></>}
-  {status==='saved'&&<p role="status">{t.saved}</p>}{status==='failed'&&<p role="alert">{t.failed}</p>}{status==='session'&&<p role="alert">{t.session}</p>}
+  {status==='saved'&&<><p role="status">{t.saved}</p>{savedEntry&&<DaybookCoachLink accountId={accountId} kind="journal" itemId={savedEntry.id} revision={savedEntry.revision} locale={lang} onSessionLost={sessionLost}/>}</>}{status==='failed'&&<p role="alert">{t.failed}</p>}{status==='session'&&<p role="alert">{t.session}</p>}
  </details>
 }
