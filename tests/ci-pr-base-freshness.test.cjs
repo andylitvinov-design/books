@@ -650,3 +650,41 @@ test('native base revalidation source accepts only helpers pinned to verified pr
  assert.ok(src.includes("approved('safeMixedProtectedAdvance')"));
  assert.ok(src.includes("approved('safeScopedDisjointProductionAdvance')"));
 });
+
+test('native freshness mirrors the production-owned ordinary-product loose-base proof',async()=>{
+ const old='a'.repeat(40),live='b'.repeat(40),candidate='components/ali-audio-call.tsx';
+ const valid={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+  base_commit:{sha:old},merge_base_commit:{sha:old},commits:[{sha:live}],
+  files:[{filename:'lib/holistic-support/natural-dialogue.mjs',status:'modified'},
+    {filename:'components/mandala-auto-video-director.tsx',status:'modified'}]};
+ let delta=valid, helperCalls=0;
+ const github={rest:{
+  repos:{getBranch:async()=>({data:{commit:{sha:live},protected:true}}),
+    compareCommits:async()=>({data:delta})},
+  pulls:{listFiles:async()=>({data:[{filename:candidate,status:'modified'}]})},
+ }};
+ const policy={safeDocumentationAdvance:()=>false,
+  safeIndependentCiMaintenanceAdvance:()=>false,
+  verifiedIndependentPublicRasterAdvance:()=>false,
+  safeNonOverlappingProductAdvance:(comparison,from,to,paths)=>{
+   helperCalls++;
+   assert.equal(from,old);assert.equal(to,live);assert.deepEqual(paths,[candidate]);
+   return comparison===valid;
+  }};
+ const args={github,owner:'andylitvinov-design',repo:'books',
+  pr:{number:5682,changed_files:1,mergeable:true,base:{sha:old}},
+  verifiedRunBase:old,classifierBase:live,decideRoute:()=> 'FULL',baseAdvancePolicy:policy};
+ assert.deepEqual(await assess(args),{ok:true,reason:'MIXED_INDEPENDENT_BASE_REVALIDATED',base:live});
+ assert.equal(helperCalls,1);
+ for(const state of [null,false]){
+  assert.equal((await assess({...args,pr:{...args.pr,mergeable:state}})).ok,false);
+ }
+ assert.equal(helperCalls,1,'unknown or conflicting mergeability cannot authorize reuse');
+ assert.equal((await assess({...args,baseAdvancePolicy:{...policy,safeNonOverlappingProductAdvance:undefined}})).ok,false);
+ assert.equal((await assess({...args,verifiedRunBase:null})).ok,false);
+ delta={...valid,status:'diverged'};
+ assert.equal((await assess(args)).ok,false);
+ const source=require('node:fs').readFileSync('scripts/ci-pr-base-freshness.cjs','utf8');
+ assert.ok(source.includes("names.push('safeNonOverlappingProductAdvance')"));
+ assert.ok(source.includes("approved('safeNonOverlappingProductAdvance')"));
+});
