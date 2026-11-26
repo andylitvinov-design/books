@@ -19,7 +19,7 @@ export function dashboardSessionHref(locale,program,number,id){
  const topic=program==='goal'?COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions[number-1]:null
  return topic?href+'&goalCourse='+encodeURIComponent(topic.id):href
 }
-export default function CoachingCourseDashboard({locale='en',program,title,sessions,selected,onSelect,practiceCounts,loaded=true,ready=true,locked=false,initialPanel=null,practiceOnlyReflection=false,results,children,resources,onLeave,accountId}){
+export default function CoachingCourseDashboard({locale='en',program,title,sessions,selected,onSelect,practiceCounts,loaded=true,ready=true,locked=false,initialPanel=null,practiceOnlyReflection=false,practiceFlow=null,results,children,resources,onLeave,accountId}){
  const lang=Object.hasOwn(copy,locale)?locale:'en',t=copy[lang]
  const [coachId,setCoachId]=useState(''),[panel,setPanel]=useState(initialPanel),[startAfterChoice,setStartAfterChoice]=useState(false)
  const rail=useRef(null),sheet=useRef(null),previousOwner=useRef(accountId)
@@ -37,6 +37,7 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
  const panelTitle=panel==='coach'?t.choose:panel==='homework'?t.homework:panel==='practice'?t.practice:panel==='results'?t.results:panel==='protocol'?t.protocol:t.resources
  const open=p=>{if(!locked||p==='practice'){setStartAfterChoice(false);setPanel(p)}}
  function pick(id){if(locked)return;setCoachId(id);setPanel(null);setStartAfterChoice(false)}
+ if(panel==='practice'&&practiceFlow)return <div className={css.frame} data-coaching-course-dashboard={program} data-coaching-course-active={ready?true:undefined}><div className={css.layout}>{practiceFlow(()=>{setPanel(null);setStartAfterChoice(false)})}</div></div>
  return <div className={css.frame} data-coaching-course-dashboard={program} data-coaching-course-active={ready?true:undefined}>
   <div className={css.layout}>
    <header className={css.topbar}>
