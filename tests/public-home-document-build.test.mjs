@@ -13,11 +13,12 @@ const nonce = 'a'.repeat(32);
 const csp = "default-src 'self'; script-src 'self' 'nonce-" + nonce + "' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 const source = '<!DOCTYPE html><html lang="en"><head>' +
   '<style>.original-inline-fixture{color:teal}</style>' +
+  '<link rel="preload" as="image" fetchpriority="high" href="/images/holistic-house/scenic.webp">' +
   '<link rel="preload" as="image" fetchpriority="high" href="/images/holistic-house/hero.webp">' +
   '<link rel="preload" as="style" href="/_next/static/css/home.css?dpl=fixture">' +
   '<link rel="stylesheet" href="/_next/static/css/home.css?dpl=fixture" data-precedence="next">' +
   '<script src="/_next/static/chunks/app.js" nonce="' + nonce + '" async></script>' +
-  '</head><body><section data-home-dialogue-entry><h1 class="mast">Home</h1><details><summary class="visible-summary">Menu</summary><p class="closed-menu">Menu content</p></details><div hidden><p class="hidden-stream">Hidden content</p></div></section><section class="service-home-about"><p class="below-fold-copy">Below the fold</p></section>' +
+  '</head><body><main><h1>Loading</h1></main><div hidden id="S:0"><section data-home-dialogue-entry><h1 class="mast">Home</h1><div data-home-ali-persona="alex"><img src="/images/holistic-house/hero.webp" loading="eager" fetchpriority="high"></div><details><summary class="visible-summary">Menu</summary><p class="closed-menu">Menu content</p></details><div hidden><p class="hidden-stream">Hidden content</p></div></section></div><section class="service-home-about"><p class="below-fold-copy">Below the fold</p></section>' +
   '<script nonce="' + nonce + '">self.initial="' + nonce + '"</script></body></html>';
 const hash = bytes => 'sha256-' + createHash('sha256').update(bytes).digest('base64');
 

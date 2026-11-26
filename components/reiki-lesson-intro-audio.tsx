@@ -7,32 +7,38 @@ type Locale = "en" | "ru";
 type Lesson = "flight" | "tantra" | "kundalini" | "yggdrasil" | "initiation";
 type PublishedAudio = { src: string; publishedAt: string };
 
-export function ReikiLessonIntroAudio({ lesson, locale, showEmpty = false }: {
-  lesson: Lesson; locale: Locale; showEmpty?: boolean
+export function ReikiLessonIntroAudio({ lesson, locale, showEmpty = false, onUnpublished }: {
+  lesson: Lesson; locale: Locale; showEmpty?: boolean; onUnpublished?: (lesson: Lesson) => void
 }) {
   const [audio, setAudio] = useState<PublishedAudio | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
     setAudio(null);
+    setLoading(true);
     fetch("/api/reiki-intro-audio?lesson=" + lesson + "&locale=" + locale, {
       credentials: "omit", cache: "no-store", signal: controller.signal,
     })
-      .then((response) => response.ok ? response.json() : { audio: null })
-      .then((data) => {
+      .then(async (response) => ({ ok: response.ok, data: response.ok ? await response.json() : null }))
+      .then(({ ok, data }) => {
         if (!controller.signal.aborted) {
-          setAudio(data.audio?.src?.startsWith("https://") ? data.audio : null);
+          const published = data?.audio?.src?.startsWith("https://") ? data.audio : null;
+          setAudio(published);
+          setLoading(false);
+          if (ok && !published) onUnpublished?.(lesson);
         }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setAudio(null);
+        if (!controller.signal.aborted) { setAudio(null); setLoading(false); }
       });
     return () => controller.abort();
-  }, [lesson, locale]);
+  }, [lesson, locale, onUnpublished]);
 
   // Do not advertise an unpublished recording or show a placeholder on the opening slide.
   // Publishing audio in the existing owner workflow reveals the player automatically.
   const ru = locale === "ru";
+  if (loading) return showEmpty ? <p role="status">{ru ? "Проверяем аудио…" : "Checking for audio…"}</p> : null;
   if (!audio) return showEmpty ? (
     <div className="reiki-intro-audio" data-reiki-lesson-intro-audio={lesson}
       data-reiki-audio-unpublished role="note">

@@ -38,8 +38,8 @@ test('Free Live cannot use Paid key or be enabled without all the privacy gates'
  assert.equal(geminiFreeLiveConfig(free).model,GEMINI_FREE_LIVE_MODEL)
  assert.equal(GEMINI_FREE_LIVE_MAX_SECONDS,1200)
 })
-test('all eleven personas, four locked voices, RU/EN/ES and separate audio-training consent',()=>{
- assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,11)
+test('all twelve personas, locked voice candidates, RU/EN/ES and separate audio-training consent',()=>{
+ assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,12)
  for(const personaId of Object.keys(GEMINI_COACH_VOICE_OPTIONS))
  for(const locale of ['ru','en','es'])
  for(const voiceName of GEMINI_COACH_VOICE_OPTIONS[personaId]){
@@ -415,7 +415,7 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
  const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
-  socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
+  context:{state:'running'},socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:phase=>phases.push(phase),
   finishAudibleTurn:state=>{
@@ -457,12 +457,14 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
  const body=client.slice(client.indexOf('  function finishAudibleTurn('),
    client.indexOf('  function maybeReconnectOnGoAway('))
  assert.ok(body.includes('r.player?.playing'))
- const committed=[]
+ const committed=[],recoveries=[]
  const finish=runInNewContext(body+'\nfinishAudibleTurn',{
    commitOutput:state=>{committed.push({text:state.outputText,interrupted:state.interrupted});state.outputText=''},
    phaseChange:()=>{},
    flushSideband:()=>{},
    maybeReconnectOnGoAway:()=>{throw Error('unexpected reconnect')},
+   t:{noReplyAudio:'missing audio'},
+   recoverStalledReply:(state,notice)=>recoveries.push({state,notice}),
  },{timeout:1000})
  const state={ended:false,modelTurnComplete:true,pendingAudio:[],hadAudio:true,
    outputWithoutAudio:false,outputText:'Words scheduled but not heard yet',
@@ -479,6 +481,9 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
   hadAudio:false,interrupted:false,player:{playing:false}}
  finish(neverHeard)
  assert.equal(committed.at(-1).interrupted,true)
+ assert.equal(recoveries.length,1)
+ assert.equal(recoveries[0].state,neverHeard)
+ assert.equal(recoveries[0].notice,'missing audio')
 })
 test('the worklet delivers complete ordered microphone blocks around 32 ms at each device rate',()=>{
  const source=load('public/audio/my-coach-gemini-live-worklet.js')
@@ -501,7 +506,10 @@ test('the worklet delivers complete ordered microphone blocks around 32 ms at ea
 
 test('iPhone audio resume and bounded network backpressure are wired',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
- assert.match(live,/data-coach-live-resume-audio/)
+ assert.doesNotMatch(live,/data-coach-live-resume-audio|resumeAudioByTap/)
+ assert.match(live,/function refreshLiveAudioRoute\(r,force=false\)/)
+ assert.match(live,/function requestAudioResume\(r\)\{[\s\S]*?refreshLiveAudioRoute\(r,true\)/)
+ assert.doesNotMatch(load('components/my-coach-live-dialogue.jsx'),/data-coach-restore-sound|Restore sound/)
  assert.match(live,/r\.context\.resume\?\.\(\)/)
  assert.match(live,/r\.pendingAudio\.length>=MAX_PENDING_AUDIO_CHUNKS/)
  assert.match(live,/r\.pendingAudioChars\+part\.length>MAX_PENDING_AUDIO_CHARS/)

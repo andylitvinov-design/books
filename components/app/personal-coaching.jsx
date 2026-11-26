@@ -9,6 +9,7 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
+import CoachRehearsal from './coach-rehearsal'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual, reconcileFollowupDraft } from '@/lib/personal-coaching/reconnect.mjs'
@@ -933,6 +934,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           </footer>
         </div>}
       </section>
+      {!loading&&!entry&&accountId&&(!course||newSelection||finished)&&<CoachRehearsal key={accountId} accountId={accountId} locale={lang}/>}
       {!loading&&!entry&&(!course||newSelection||finished)&&<CoachingReportPreview accountId={accountId} archiveOnly locale={lang}/>}
     </div>
   </main>

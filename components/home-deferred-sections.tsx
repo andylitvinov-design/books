@@ -26,7 +26,8 @@ export function HomeDeferredSections({locale}:{locale:PublicLocale}){
     return()=>observer.disconnect();
   },[]);
   return <div id="home-discover" ref={anchor} data-home-deferred-sections
-    data-home-deferred-ready={visible?"true":"false"}>
+    data-home-deferred-ready={visible?"true":"false"}
+    style={{minHeight:visible?undefined:140,contentVisibility:"auto",containIntrinsicSize:"auto 600px"}}>
     {visible?<Suspense fallback={null}><HomeDeferredContent locale={locale}/></Suspense>:null}
     <noscript><a href={"/"+locale+"/academy"}>Courses</a> · <a href={"/"+locale+"/services"}>Services</a></noscript>
   </div>;

@@ -57,12 +57,15 @@ async function scenario(t, progress, handle, handoff) {
 
 const slide = (page, id) => page.locator('[data-energywork-slide-id="' + id + '"]').waitFor()
 async function step(page, offset) {
-  const list = page.locator('details').filter({ has: page.locator('ol button[aria-current="step"]') })
-  if (!await list.evaluate(element => element.open)) await list.locator('summary').click()
+  const tools = page.locator('[data-daybook-tools]')
+  if (!await tools.evaluate(element => element.open)) await tools.locator(':scope > summary').click()
+  const list = page.locator('[data-daybook-outline]')
+  const journey = tools.locator('button[aria-controls="reiki-journey-help"]')
+  if (await journey.getAttribute('aria-expanded') !== 'true') await journey.click()
   await list.locator('ol button').nth(offset).click()
 }
 
-test('cancelled sign-in preserves reached steps and the guest draft across both formats', async t => {
+test('cancelled sign-in preserves reached steps and the guest draft in the compact Daybook', async t => {
   const pending = energyworkCreateFirstLessonHandoff(preview, 'en')
   const { page, writes } = await scenario(t, null, undefined, pending)
   await page.goto(courseUrl + '?auth=cancelled')
@@ -77,11 +80,12 @@ test('cancelled sign-in preserves reached steps and the guest draft across both 
   assert.equal(await page.locator('#energywork-slide-title').evaluate(el => el === document.activeElement), true)
   const edited = review + ' I added this private sentence.'
   await page.locator('textarea').fill(edited)
-  await page.getByRole('button', { name: 'Classic format' }).click()
-  await page.locator('main[data-energywork-ai-learner]').waitFor()
-  assert.equal(await page.locator('textarea').inputValue(), edited)
-  await page.getByRole('button', { name: 'Back to Daybook' }).click()
-  await page.locator('main[data-reiki-daybook]').waitFor()
+  await page.locator('[data-daybook-tools] > summary').click()
+  const tools = page.locator('[data-daybook-tools]')
+  assert.equal(await tools.getByRole('button', { name: 'Classic format' }).count(), 0)
+  const contact = tools.locator('[data-reiki-master-question]')
+  assert.equal(await contact.isVisible(), true)
+  assert.match(await contact.getAttribute('href'), /question/i)
   assert.equal(await page.locator('textarea').inputValue(), edited)
   await step(page, sequence.indexOf('flight-done'))
   await slide(page, 'flight-done')

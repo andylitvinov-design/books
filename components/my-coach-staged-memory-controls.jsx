@@ -23,7 +23,7 @@ const copy={
    tests:'Подключить отдельно разрешённые результаты тестов',topic:'Тема сохранённого контекста',
    choose:'Выберите тему',details:'Цели и профиль · после знакомства',approved:'Разрешённые записи',
    empty:'Разрешённых записей по выбранной теме пока нет',share:'Передать только отдельно разрешённые записи, не весь профиль',
-   sharePrior:'Отдельно разрешаю передать моё имя и выбранный прошлый итог этому AI-коучу',
+   sharePrior:'Отдельно разрешаю передать этому AI-коучу моё имя, краткий итог первой сохранённой сессии и до двух последних',
    shareAxes:'Отдельно разрешаю передать подтверждённые оценки восьми смысловых осей (0–10) выбранному AI. Google Gemini Free может использовать их для обучения.'},
  en:{title:'Coach memory · only with your permission',prior:'Check for previous coaching sessions and recall my preferred name and brief conclusions',
    extra:'Google Gemini Free may use submitted content to improve its models. This permission covers only the chosen details, not your entire account.',
@@ -34,7 +34,7 @@ const copy={
    tests:'Use separately approved test results',topic:'Saved context topic',
    choose:'Choose a topic',details:'Goals and profile · after introductions',approved:'Approved items',
    empty:'No approved items for this topic yet',share:'Share individually approved items, not the full profile',
-   sharePrior:'Separately allow this AI coach to receive my name and selected prior-session summary',
+   sharePrior:'Separately allow this AI coach to receive my name, first saved session recap and up to two recent recaps',
    shareAxes:'Separately allow the selected AI to receive my reviewed 0–10 meaning-axis ratings. Google Gemini Free may use them for training.'},
  es:{title:'Memoria del coach · solo con tu permiso',prior:'Buscar sesiones anteriores y recordar mi nombre y sus conclusiones breves',
    extra:'Gemini Free puede usar los datos enviados para mejorar modelos. Este permiso solo cubre la información elegida, no toda tu cuenta.',
@@ -45,7 +45,7 @@ const copy={
    tests:'Usar resultados de pruebas aprobados por separado',topic:'Tema del contexto guardado',
    choose:'Selecciona un tema',details:'Metas y perfil · después de conocernos',approved:'Datos aprobados',
    empty:'Todavía no hay datos aprobados para este tema',share:'Compartir solo elementos aprobados, no todo el perfil',
-   sharePrior:'Autorizo por separado al coach IA a recibir mi nombre y el resumen anterior elegido',
+   sharePrior:'Autorizo al coach IA a recibir mi nombre, el primer resumen guardado y hasta dos resúmenes recientes',
    shareAxes:'Autorizo por separado a la IA a recibir mis puntuaciones revisadas de los ocho ejes (0–10). Gemini Free puede usarlas para entrenar modelos.'},
 }
 
@@ -142,6 +142,11 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
        {identity.preferredName?' · '+t.name+': '+identity.preferredName:''}</p>
      {identity.hasPreviousSession&&<p>{identity.previous?.[0]?.date||''} · {identity.previous?.[0]?.topic||''}</p>}
      {identityConfirmed&&identity.hasPreviousSession&&<div>
+       {identity.foundation&&<p>{(identity.foundationKind==='introductory'?
+       (identity.foundationSearchComplete?{ru:'Вводная сессия',en:'Introductory session',es:'Sesión introductoria'}:
+       {ru:'Найдена вводная сессия (самая ранняя ещё не проверена)',en:'Introductory session found (earliest not yet verified)',es:'Sesión introductoria encontrada (la primera aún no está verificada)'}):
+       {ru:'Самая ранняя сохранённая сессия (не подтверждена как вводная)',en:'Earliest saved session (not verified as introductory)',es:'Primera sesión guardada (no verificada como introductoria)'})[lang]}: {[identity.foundation.date,identity.foundation.topic,identity.foundation.clientConclusions,identity.foundation.clientNextStep].filter(Boolean).join(' · ')}</p>}
+       {identity.previous?.[1]&&<p>{[identity.previous[1].date,identity.previous[1].topic,identity.previous[1].clientConclusions,identity.previous[1].clientNextStep].filter(Boolean).join(' · ')}</p>}
        {identity.previous?.[0]?.clientConclusions&&<p>{t.recap}: {identity.previous[0].clientConclusions}</p>}
        {identity.previous?.[0]?.clientNextStep&&<p>{t.step}: {identity.previous[0].clientNextStep}</p>}
      </div>}

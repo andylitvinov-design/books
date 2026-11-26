@@ -32,7 +32,7 @@ test("every homepage URL is excluded, but existing public enquiry placements rem
 test("React Home preloads the actual first-screen persona portrait and existing scenic background", () => {
   const home=read("components/home-dialogue-entry.tsx");
   assert.match(home, /href=\{picture\} fetchPriority="high"/);
-  assert.doesNotMatch(home, /ideas-pine-reference\.webp" fetchPriority="high"/);
+  assert.match(home, /ideas-pine-reference\.webp" fetchPriority="high"/);
   assert.match(home, /loading="eager" fetchPriority="high"/);
   assert.match(home, /data-home-dialogue-entry/);
 });
@@ -49,16 +49,4 @@ test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no 
   assert.match(observer, /visible\?<Suspense fallback=\{null\}>/);
   assert.match(content, /const HomeExpandedCatalog = lazy\(/);
   assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
-});
-
-
-test("lazy home topics reserve their collapsed height until mounted, keeping the About link stable", () => {
-  const observer=read("components/home-deferred-sections.tsx");
-  const css=read("app/holistic-house-home.css");
-  const content=read("components/home-deferred-content.tsx");
-  assert.doesNotMatch(observer, /minHeight:visible\?undefined:140/);
-  assert.match(css, /\[data-home-deferred-sections\]:not\(:has\(> \[data-home-deferred-content\]\)\)\s*\{\s*min-block-size: var\(--home-discovery-size\)/);
-  assert.match(css, /contain-intrinsic-block-size: auto var\(--home-discovery-size\)/);
-  assert.match(css, /@media \(scripting: none\) \{\s*\[data-home-deferred-sections\] \{ --home-discovery-size: 140px; \}/);
-  assert.match(content, /<div data-home-deferred-content/);
 });

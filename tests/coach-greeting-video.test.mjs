@@ -42,3 +42,23 @@ test('greeting animation is available on hero and session for all six coaches', 
   assert.match(motion, /muted loop playsInline autoPlay/)
   assert.match(catalog, /phase="greeting" context="hero"/)
 })
+
+test('verified-account coaching archives automatically from the existing start action', () => {
+  const gate = code('components/my-coach-greeting-gate.jsx')
+  const session = code('components/my-coach-live-dialogue.jsx')
+  assert.doesNotMatch(gate, /privateAutosaveControl/)
+  assert.doesNotMatch(session, /data-coach-autosave-consent/)
+  assert.match(gate, /accountSaving/)
+  assert.match(session, /const saveToAccount=Boolean\(protocolOwnerRef.current\)/)
+  assert.match(session, /autoSaveRef.current=saveToAccount/)
+  assert.match(session, /setAutoSaveEnabled\(saveToAccount\)/)
+  // Private draft checkpointing starts automatically, but the final report
+  // is promoted only by explicit Save; Cancel must not finalize it.
+  assert.match(session, /onClick=\{saveProtocol\}/)
+  const cancel=session.slice(session.indexOf('async function closeProtocolToRating()'),session.indexOf('async function submitSessionRating()'))
+  assert.match(cancel,/if\(protocolSaving\|\|\(protocolSaveLocked&&!protocolSaved\)\)return/)
+  assert.match(cancel,/if\(!protocolSaved\)\{[\s\S]*?resumeFromProtocol\(\)[\s\S]*?return/)
+  assert.doesNotMatch(cancel,/\bsaveProtocol\s*\(/)
+  assert.match(session, /X-HH-Account-ID/)
+  assert.match(session, /setGeminiLiveConsent\(false\);setGeminiConsent\(false\)/)
+})

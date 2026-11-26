@@ -4,7 +4,7 @@ import test from "node:test";
 
 const source = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
 
-test("the public homepage paints its own content directly and private redirects stay unwrapped", async () => {
+test("only public homepage routes show branded loading; private admin/auth routes never get global streaming boundaries", async () => {
   const [en, ru, es, scene] = await Promise.all([
     source("app/page.tsx"),
     source("app/[locale]/page.tsx"),
@@ -12,8 +12,8 @@ test("the public homepage paints its own content directly and private redirects 
     source("components/holistic-house-loading-scene.tsx"),
   ]);
   for (const page of [en, ru, es]) {
-    assert.doesNotMatch(page, /HolisticHouseLoadingScene/);
-    assert.match(page, /<(?:HolisticHouseHome|HomeDialogueEntry) locale=/);
+    assert.match(page, /Suspense fallback=\{<HolisticHouseLoadingScene \/>\}/);
+    assert.match(page, /HolisticHouseLoadingScene/);
   }
   // Global loading.tsx can prematurely stream private redirects as HTTP 200.
   // It must not turn the authenticated practitioner bridge into a public shell.
@@ -38,7 +38,7 @@ test("loading scene uses an existing small first-party photo and reduced-motion 
   assert.ok((await stat(photo)).size <= 100_000, "loading image must remain under 100 KB");
 });
 
-test("the public home keeps its published dialogue before the deferred sections",async()=>{
+test("loading fallback is scoped to the public home routes and preserves the published Ali-first home",async()=>{
  const home=await source("components/holistic-house-home.tsx");
  const spanish=await source("app/es/page.tsx");
  assert.match(home,/HomeDialogueEntry/);

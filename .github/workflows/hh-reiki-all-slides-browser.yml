@@ -2,6 +2,7 @@ name: Reiki Practitioner — 64-screen Chromium and Safari save gate QA
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/energywork-ai-learner.tsx'
@@ -24,17 +25,28 @@ on:
       - 'scripts/verify-reiki-referral-browser.mjs'
       - 'tests/reiki-referral-landing.test.mjs'
       - 'components/energywork-ai-learner.module.css'
+      - 'components/reiki-daybook.module.css'
+      - 'components/reiki-lesson-intro-audio.tsx'
+      - 'tests/reiki-daybook-alternative.test.mjs'
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'data/academy/energywork-ai-schema.js'
       - 'scripts/verify-reiki-all-slides-browser.mjs'
+      - 'data/academy/reiki-initiation-request.js'
+      - 'tests/tantra-reiki-photographic-landing.test.mjs'
+      - 'tests/tantra-reiki-level-one-focus.test.mjs'
+      - 'tests/tantra-reiki-mobile-chapters.test.mjs'
+      - '.github/workflows/hh-reiki-all-slides-browser.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+concurrency:
+  group: hh-reiki-course-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   course-and-save-gate:
-    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.
+    # Routine PRs remain source-only. Full manual acceptance is unchanged.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
     runs-on: ubuntu-24.04
@@ -42,11 +54,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
+        browser: ${{ fromJSON((github.event_name == 'workflow_dispatch') && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
-        # PR source contracts need no DB; keep PostgreSQL for manual full-browser QA.
-        image: ${{ github.event_name != 'pull_request' && 'postgres:17-alpine' || '' }}
+        # Completed Daybook acceptance exceptions retired; full manual QA keeps PostgreSQL.
+        image: ${{ (github.event_name == 'workflow_dispatch') && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
@@ -76,17 +88,45 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      # Only the reviewed tests and their executable import closure need Node.
+      # Any changed or missing input falls back to the original full install.
+      - name: Plan reviewed dependency-free Reiki source contracts
+        id: reiki-deps
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'
+        shell: bash
+        run: |
+          set -euo pipefail
+          minimal=true
+          while read -r expected file; do
+            actual="$(git hash-object -- "$file" 2>/dev/null || true)"
+            if [[ "$actual" != "$expected" ]]; then minimal=false; fi
+          done <<'HH_REIKI_REVIEWED'
+          728bf992df153a72251f457ce3ede965f61a05fa tests/reiki-daybook-alternative.test.mjs
+          fb40a629f03f85e7c8010719ce1f8714f8257c12 tests/reiki-referral-landing.test.mjs
+          e1873f82069e7425b0849954b5848f35d8f22f27 tests/tantra-reiki-compact-fullwidth.test.mjs
+          1d0d0974ad08ec279f715535ad02334d55a45a0e tests/tantra-reiki-photographic-landing.test.mjs
+          e928ff380fd855c654750fc56113d5237479e6d7 tests/tantra-reiki-level-one-focus.test.mjs
+          e805a9f02c91407723be7fd1834f425a0e908efb tests/tantra-reiki-mobile-chapters.test.mjs
+          db1ac8022898ca4dce031580a7b0074ec3e551dd tests/tantra-reiki-teacher-compact.test.mjs
+          42f761aff2a64cb96a36b8b533d30076dd016bae data/academy/energywork-ai-schema.js
+          ccc3d92c8cd710522160825ae543a0c361b2a924 data/academy/reiki-initiation-request.js
+          91b5adedc5ee6fcb766caf8ca97d9a88ffae8848 package.json
+          1ccb123b37ee9f74052a421babd2b41945075917 package-lock.json
+          HH_REIKI_REVIEWED
+          printf 'minimal=%s\n' "$minimal" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
+          cache: ${{ steps.reiki-deps.outputs.minimal != 'true' && 'npm' || '' }}
+      - name: Install full dependencies for manual QA or changed test inputs
+        if: steps.reiki-deps.outputs.minimal != 'true'
+        run: npm ci --no-audit --no-fund
       - name: Fast Reiki referral and protected lesson-source contracts on PR
         if: github.event_name == 'pull_request'
         run: |
           node --check scripts/verify-reiki-all-slides-browser.mjs
           node --check scripts/verify-reiki-referral-browser.mjs
-          node --test tests/reiki-referral-landing.test.mjs
+          node --test tests/reiki-referral-landing.test.mjs tests/reiki-daybook-alternative.test.mjs
       # Original photo-card source contracts now run in this shared job.
       # No extra runner, Next build or Playwright installation on the PR path.
       - name: Original Tantra Reiki photo-card source and accessible layout contracts
@@ -94,8 +134,10 @@ jobs:
         run: |
           node --check tests/tantra-reiki-photo-levels.browser.mjs
           node --test tests/tantra-reiki-compact-fullwidth.test.mjs tests/tantra-reiki-photographic-landing.test.mjs tests/tantra-reiki-level-one-focus.test.mjs tests/tantra-reiki-mobile-chapters.test.mjs tests/tantra-reiki-teacher-compact.test.mjs
-          npx --no-install eslint components/tantra-reiki-journey.tsx
-      - name: Isolated Chromium/WebKit runtime (manual deep QA only)
+      - name: Standalone scoped lint when full dependencies are installed
+        if: github.event_name == 'pull_request' && steps.reiki-deps.outputs.minimal != 'true'
+        run: npx --no-install eslint components/tantra-reiki-journey.tsx
+      - name: Isolated Chromium/WebKit runtime (manual full acceptance)
         if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p /tmp/hh-reiki-playwright
@@ -121,7 +163,7 @@ jobs:
           node --test tests/reiki-referral-landing.test.mjs
           node scripts/verify-reiki-referral-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && (github.event_name == 'workflow_dispatch')
         with:
           name: reiki-64-screens-${{ matrix.browser }}
           path: |

@@ -33,7 +33,7 @@ export async function GET(_request, { params }) {
           snapshot.html.startsWith('<!DOCTYPE html>') && typeof snapshot.policy === 'string' &&
           snapshot.policy.includes("'strict-dynamic'") && snapshot.policy.includes("'sha256-")) {
         const portrait = typeof snapshot.portrait === 'string' &&
-          /^\/images\/holistic-house\/[A-Za-z0-9._-]+\.(?:webp|avif|png|jpg)$/.test(snapshot.portrait)
+          /^\/images\/holistic-house\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9._-]+\.(?:webp|avif|png|jpg)$/.test(snapshot.portrait)
           ? snapshot.portrait : null
         const compressed = gzip && typeof snapshot.gzip === 'string' && snapshot.gzip.length > 0
         const body = compressed ? Buffer.from(snapshot.gzip, 'base64') : snapshot.html

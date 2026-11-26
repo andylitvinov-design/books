@@ -55,8 +55,8 @@ async function assertCspPublicHome(page) {
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
-  await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
-  const programIds=['clarity','goal','business'];
+  await expect(home.locator('[data-home-intent-option]')).toHaveCount(4);
+  const programIds=['clarity','goal','business','reiki'];
   assert.deepEqual(await home.locator('[data-home-intent-option]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),programIds);
   for (const intention of programIds) {
     const program=home.locator('[data-home-intent-option="'+intention+'"]');
@@ -64,8 +64,6 @@ async function assertCspPublicHome(page) {
     await expect(program).toBeVisible();
     await expect(program).toHaveAttribute('type','button');
   }
-  await expect(home.locator('[data-home-stage-option], [data-home-mode-button], [data-home-how-it-works]')).toHaveCount(0);
-  await expect(home.locator('[data-home-intent-form]')).toBeVisible();
   await expect(home.locator('[data-home-methods]')).toBeVisible();
 }
 

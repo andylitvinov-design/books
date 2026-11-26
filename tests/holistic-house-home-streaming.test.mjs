@@ -58,7 +58,7 @@ test("EN/RU/ES first screen presents seven visible steps and genuine free/paid r
   }
   for (const route of ["/services/free-situation-review","/client/tests","/services#consultation"])
     assert.ok(stage.includes(route), "Missing conversion route "+route);
-  assert.match(stage, /<h2 id="hh-home-features-title">/);
+  assert.match(stage, /<h1 id="hh-home-features-title">/);
   assert.match(seo, /Personal Sessions in Toronto & Online/);
   assert.match(read("app/es/services/page.tsx"), /<PublicConsultationCta locale="es" id="consultation"/);
 });

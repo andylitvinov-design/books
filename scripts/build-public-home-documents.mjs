@@ -17,6 +17,8 @@ function* descendants(root) {
   if (root.content) yield* descendants(root.content);
 }
 
+const isHomeEntry = node => node.tagName === 'section' && (node.attrs ?? []).some(attr => attr.name === 'data-home-dialogue-entry');
+
 // Only the disposable extraction input is narrowed. The actual React HTML,
 // attributes, below-fold sections and complete stylesheets remain untouched.
 // Keep each lower section's outer box for layout/sibling selector matching;
@@ -47,7 +49,7 @@ function firstScreenCssInput(source) {
       }
     }
     if ((!isBelowFold && !isHidden) || !node.childNodes?.length) continue;
-    if ([...descendants(node)].some(child => child.tagName === 'style' || child.tagName === 'link')) continue;
+    if ([...descendants(node)].some(child => child.tagName === 'style' || child.tagName === 'link' || isHomeEntry(child))) continue;
     node.childNodes = [];
   }
   return serialize(document);
@@ -78,6 +80,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   let styles = 0;
   let firstStylesheet;
   let portrait;
+  const highPriorityImages = new Set();
   let documentLocale;
   let foundHome = false;
   let foundHeading = false;
@@ -86,11 +89,13 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
     const loc = node.sourceCodeLocation;
     if (node.tagName === 'html') documentLocale = attrs.lang;
     if (node.tagName === 'template' && 'data-dgst' in attrs) throw new Error('The renderer returned a failed React boundary');
-    if (node.tagName === 'section' && 'data-home-dialogue-entry' in attrs) foundHome = true;
-    if (node.tagName === 'h1') {
-      if (foundHeading) throw new Error('Expected the public homepage heading');
-      foundHeading = true;
+    if (isHomeEntry(node)) {
+      foundHome = true;
+      foundHeading = [...descendants(node)].some(child => child.tagName === 'h1');
     }
+    // Keep the original streaming fallback and all live headings unchanged.
+    if (node.tagName === 'img' && (node.parentNode?.attrs ?? []).some(attr => attr.name === 'data-home-ali-persona') &&
+        attrs.loading === 'eager' && attrs.fetchpriority === 'high') portrait = attrs.src;
     if (node.tagName === 'script') {
       if (attrs.nonce !== nonce) throw new Error('Unexpected script outside the server nonce policy');
       if (attrs.src) {
@@ -103,8 +108,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
       }
     }
     if (node.tagName !== 'link') continue;
-    if (attrs.rel === 'preload' && attrs.as === 'image' && attrs.fetchpriority === 'high' &&
-        /^\/images\/holistic-house\/[\w.-]+\.(?:webp|avif|png|jpg)$/.test(attrs.href)) portrait ??= attrs.href;
+    if (attrs.rel === 'preload' && attrs.as === 'image' && attrs.fetchpriority === 'high') highPriorityImages.add(attrs.href);
     if (attrs.rel === 'preload' && attrs.as === 'script') {
       // The same script is already in this head with its integrity attribute.
       edits.push([loc.startOffset, loc.endOffset, '']);
@@ -129,6 +133,9 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   }
   if (!Object.hasOwn(locales, locale) || documentLocale !== locale || !foundHome || !foundHeading || !styles || !source.includes('</head>') || normalized.includes(origin)) {
     throw new Error('Source is not the public production home document');
+  }
+  if (!portrait || !highPriorityImages.has(portrait) || !/^\/images\/holistic-house\/(?:[\w-]+\/)*[\w.-]+\.(?:webp|avif|png|jpg)$/.test(portrait)) {
+    throw new Error('Expected the original eager, preloaded homepage portrait');
   }
   const cssParser = new Beasties({path: buildDir, publicPath: '/_next/', preload: false, pruneSource: false, reduceInlineStyles: false, logLevel: 'silent'});
   const forCss = firstScreenCssInput(applyEdits(source, cssInputEdits));

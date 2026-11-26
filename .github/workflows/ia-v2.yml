@@ -357,8 +357,10 @@ jobs:
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         uses: actions/cache/restore@v4
         with:
-          path: .next/cache
-          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Real IA browser build with verified Core prebuild reuse
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         env:
@@ -403,7 +405,7 @@ jobs:
             echo 'Exact Messenger UI diff: Core owns duplicate prebuild tests and lint.' >> "$GITHUB_STEP_SUMMARY"
             node scripts/ensure-owner-video-renderer.mjs
             node scripts/cache-ancient-coaching-photos.mjs
-            node scripts/generate-soft-ocean-melody.mjs
+            npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs
             node scripts/build-public-card-artwork.mjs
             node scripts/build-report-pdf-art.mjs
             node scripts/prepare-my-coach-natural-mp4.mjs

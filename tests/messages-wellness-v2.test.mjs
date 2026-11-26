@@ -254,7 +254,7 @@ test('owner Messenger preserves one chat, Get Support plus six choices and local
  assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
  assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>[\s\S]*?<MessengerAiLanding/)
  assert.match(chat,/homeHandoffPreview&&messages\.length===0&&[\s\S]*?data-home-handoff-user-preview/)
- assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
+ assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={id=>{closeComposerMenu();startProject(id);}}/>'))
  assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
  assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
