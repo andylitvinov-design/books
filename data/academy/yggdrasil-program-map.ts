@@ -163,7 +163,7 @@ export const yggdrasilAcademyStorySourcePage = "https://psitrends.com/studies/ad
 export const yggdrasilAcademyStoryImages = {
   founder: "https://psitrends.com/images/photo_2023-01-20_22-10-58.jpg",
   history: "https://psitrends.com/images/photo_2023-01-20_22-19-43.jpg",
-  initiations: "https://psitrends.com/images/Screenshot_9.png",
+  initiations: null, // Text only until a verified static photo is available.
   teacher: "https://psitrends.com/images/Screenshot_11.png",
 } as const;
 
