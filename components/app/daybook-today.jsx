@@ -52,7 +52,7 @@ export default function DaybookToday({accountId,locale,initialDay,memory,onSessi
   <button disabled={view.busy} onClick={reload}>{c.reload}</button>
   {draft.revision>0&&<button disabled={view.busy||view.status==='failed'} onClick={()=>{if(view.status==='delete-failed'||window.confirm(c.confirm))void session.remove()}}>{c.clear}</button>}
   <p role="status">{c[view.status]||''}</p><Link href={'/'+locale+'/app/my-coaching-plan'}>{c.plan}</Link>
-  <DaybookMicroCoaching key={accountId+':'+day} accountId={accountId} locale={locale} day={day} goals={goals} onSessionLost={onSessionLost}/>
+  <DaybookMicroCoaching key={accountId+':'+day} accountId={accountId} locale={locale} day={day} goals={goals} preferredGoalId={draft.weeklyGoalId} onSessionLost={onSessionLost}/>
   <DaybookDailyExport accountId={accountId} locale={locale} disabled={view.busy} onSessionLost={onSessionLost}/>
  </section>
 }
