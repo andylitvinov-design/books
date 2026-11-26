@@ -1269,6 +1269,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     return true
   }
   useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+    isConnected:()=>Boolean(runtime.current?.ready&&!runtime.current.paused&&!runtime.current.ended&&runtime.current.socket?.readyState===WebSocket.OPEN),
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
