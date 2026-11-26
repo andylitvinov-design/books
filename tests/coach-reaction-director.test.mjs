@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -170,7 +170,9 @@ test('canonical session wires both voice engines to the same local director, wit
  const player=read('components/coach-reaction-director-media.jsx')
  assert.equal((session.match(/reactionActivity\.observe\(level\)/g)||[]).length,2)
  assert.ok(session.includes('reactionIntent={reactionIntent}'))
- assert.ok(session.includes('onVoiceStateChange={setVoiceState}'))
+ assert.equal((session.match(/onVoiceStateChange=\{handleVoiceStateChange\}/g)||[]).length,2)
+ assert.match(session,/function handleVoiceStateChange\(next\)\{[\s\S]*?setVoiceState\(next\)/)
+ assert.match(session,/function handleVoiceStateChange\(next\)\{[\s\S]*?freezeActiveClock\(\)/)
  assert.ok(session.includes('turnKey:turns.filter(turn=>turn.role==='))
  assert.ok(motion.includes('releasedReactionMedia(personaId,REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS'))
  assert.ok(motion.includes('data-coach-reaction-mode'))
@@ -237,4 +239,114 @@ test('hard safety hold overrides a queued celebration immediately',()=>{
  const {player,videos,visible}=fixture();player.update(listening(),true);videos[0].ready();player.update(smile(),true)
  player.update(coachReactionIntent({phase:'speaking',stage:'safety'}),true)
  assert.equal(visible(),null);assert.equal(player.snapshot().queued,null);player.dispose()
+})
+
+test('every public presentation uses one released, short, contact-sealed MP4 with matching poster',()=>{
+ const coaches=['mira','alex','sofia','max','merlin','harry','genie']
+ for(const group of ['primary','alternate']){
+  assert.equal(Object.keys(COACH_PRESENTATION_LOOPS[group]).length,7)
+  for(const coach of coaches){
+   const released=[group+':'+coach]
+   const m=releasedCoachPresentationLoop(coach,released,group)
+   const b=REACTION_V5_ALL_BLOCKS[m.id]
+   assert.equal(b.coach,coach)
+   assert.equal(m.anchorHash,b.anchorHash)
+   assert.equal(m.anchorHash,reactionCameraGroup(coach,group).anchor.hash)
+   assert.equal(m.poster,REACTION_V4_ROOT+reactionV4Poster(coach,group))
+   assert.ok(m.src.startsWith(REACTION_V4_ROOT)&&m.src.endsWith('.mp4'))
+   assert.ok(coachReactionDurationAllowed(m.duration))
+   assert.ok(coachPresentationMetadataMatches(m,{videoWidth:m.width,videoHeight:m.height,duration:m.duration+.001}))
+   assert.equal(coachPresentationMetadataMatches(m,{videoWidth:480,videoHeight:672,duration:m.duration}),false)
+   assert.equal(coachPresentationMetadataMatches(m,{videoWidth:m.width,videoHeight:m.height,duration:10.21}),false)
+   assert.equal(releasedCoachPresentationLoop(coach,[],group),null)
+  }
+ }
+ assert.equal(releasedCoachPresentationLoop('merlin',['primary:merlin']).id,'MER-01')
+ assert.equal(releasedCoachPresentationLoop('caesar',['primary:caesar']),null)
+ assert.equal(releasedCoachPresentationLoop('merlin',['alternate:merlin'],'primary'),null)
+})
+test('presentation contexts use a stable source independent of greeting audio and fail closed',()=>{
+ assert.ok(isCoachPresentationContext('greeting'))
+ assert.ok(isCoachPresentationContext('hero'))
+ assert.ok(isCoachPresentationContext('avatar',true))
+ assert.equal(isCoachPresentationContext('avatar'),false)
+ assert.equal(isCoachPresentationContext('card'),false)
+ assert.equal(isCoachPresentationContext('session',true),false)
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const motion=read('components/my-coach-motion-media.jsx')
+ const gate=read('components/my-coach-greeting-gate.jsx')
+ const catalog=read('components/my-coach-catalog.jsx')
+ assert.ok(gate.includes('phase="greeting" context="greeting"'))
+ assert.ok(catalog.includes('phase="greeting" context="hero"'))
+ assert.ok(catalog.includes('phase="greeting" context="avatar" presentationLoop'))
+ assert.ok(motion.includes('const src=presentationActive?(activePresentation?.src||null):legacySrc'))
+ assert.ok(motion.includes('[presentationActive,personaId]'))
+ assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop={!openingActive} playsInline autoPlay={shouldPlay}'))
+ assert.ok(motion.includes('presentationActive?((shouldPlay||keepOriginalVideo)&&<video'))
+ assert.ok(motion.includes('onLoadedMetadata={event=>validatePresentation(event.currentTarget)}'))
+ assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
+ assert.ok(motion.includes('activePresentation?.poster||(presentationActive?opening?.poster:null)||framePoster'))
+ assert.ok(motion.includes('},[shouldPlay,src])'))
+})
+
+test('shared personality empathy veto prevents cheerful reaction to explicit shame, anger, exhaustion or mixed progress',()=>{
+ for(const text of ["I feel ashamed.","I am furious.","I feel drained.","Мне стыдно.","Я злюсь.","Я выжат.","Me da vergüenza.","Estoy enojado.","Me siento agotado.","I did it, but I feel ashamed.","Я справился, но мне стыдно.","Lo logré, pero estoy enojado."]){
+  assert.equal(classifyClientReactionText(text),'distress',text)
+  const intent=coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:text})
+  assert.equal(intent.kind,'empathy',text)
+  assert.equal(chooseCoachReaction('harry',intent,['HAR-02','HAR-01']),null)
+ }
+ for(const text of ["If I did it?","Maybe I did it.","She said I did it.","I never said I did it.","Я думал, что у меня получилось.","Может быть, я справился.","Она сказала: «Я справилась».","Quizá lo logré.","Si yo lo logré.","Dijo que lo logré."])assert.notEqual(classifyClientReactionText(text),'progress',text)
+ for(const text of ["I did it","Я справился","Lo logré","У меня получилось","I made it"])assert.equal(classifyClientReactionText(text),'progress',text)
+})
+
+
+test('Harry plays only the exact original greeting once then the calm primary loop',()=>{
+ const loop=releasedCoachPresentationLoop('harry',['primary:harry'])
+ assert.equal(loop.id,'HAR-01')
+ const opening=coachPresentationOpening('harry',loop)
+ assert.equal(opening,HARRY_PRESENTATION_OPENING)
+ assert.match(opening.src,/harry-greeting-real-v2\.mp4$/)
+ assert.ok(coachPresentationMetadataMatches(opening,{videoWidth:768,videoHeight:1344,duration:5.25}))
+ assert.equal(coachPresentationOpening('harry',null),opening)
+ assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),opening)
+ assert.equal(coachPresentationOpening('mira',loop),COACH_ORIGINAL_OPENINGS.mira)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('openingActive?opening:presentation'))
+ assert.ok(source.includes('onEnded={finishPresentationOpening}'))
+ assert.ok(source.includes('loop={!openingActive}'))
+ assert.ok(source.includes('keepOriginalVideo'))
+ assert.ok(source.includes('[personaId,presentationActive]'))
+})
+
+
+test('all public personas have protected original or explicit neutral-only/still policy; immutable original bytes',()=>{
+ const coaches=['mira','max','sofia','alex','merlin','harry','genie','caesar']
+ const pinned=['mira','max','sofia','alex','merlin','harry']
+ assert.deepEqual(Object.keys(COACH_ORIGINAL_OPENINGS),pinned)
+ const blob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ for(const coach of coaches){
+  const original=coachPresentationOpening(coach)
+  const presence=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  if(pinned.includes(coach)){
+   assert.ok(Object.isFrozen(original))
+   for(const [path,hash] of [[original.src,original.videoBlob],[original.poster,original.posterBlob]]){
+    const bytes=readFileSync(new URL('../public'+path,import.meta.url))
+    assert.equal(blob(bytes),hash,coach+' protected original replaced')
+   }
+   assert.ok(coachPresentationMetadataMatches(original,{videoWidth:original.width,videoHeight:original.height,duration:5.25}))
+  }else assert.equal(original,null)
+  if(coach==='caesar'){assert.equal(presence,null);continue}
+  assert.equal(presence.id,COACH_PROTECTED_PRESENCE[coach].id)
+  assert.equal(protectedCoachPresence(coach,[]),null)
+  assert.doesNotMatch(presence.id,/HAR-02|HAR-03|MER-01|SAM-03/)
+ }
+ assert.equal(protectedCoachPresence('merlin',['primary:merlin']),null)
+ assert.equal(protectedCoachPresence('harry',['alternate:harry']),null)
+ assert.equal(coachPresentationOpening('unknown'),null)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
+ assert.ok(source.includes('presentationActive?coachPresentationOpening(personaId):null'))
+ assert.ok(source.includes('openingDone!==personaId'))
+ assert.ok(source.includes('setOpeningDone(personaId)'))
 })

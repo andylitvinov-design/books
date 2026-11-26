@@ -9,3 +9,5 @@ export type VoiceRouteOptions={channel?:'web'|'telegram'|'local';
   cloudConsent?:boolean;piperLocalReady?:boolean};
 export function chooseVoiceRoute(options?:VoiceRouteOptions):VoiceRoute;
 export function createRecognitionGate(isCurrent:()=>boolean):Readonly<{isActive:()=>boolean;accept:(value:unknown)=>string|null}>;
+
+export function resolveSpokenMenuChoice(text:string,choices?:string[]):string;

@@ -71,7 +71,7 @@
 .sessionProgressText strong{font-size:13px;white-space:nowrap;color:#143d3a}.sessionProgressText span{font-size:12px;color:#5d6a71;line-height:1.25}
 .sessionProgressSegments{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex:1;min-width:90px}
 .sessionProgressSegments span{display:block;flex:1;min-width:7px;height:8px;border-radius:99px;background:#e7e3dc}
-.sessionProgressSegments span[data-complete=true]{background:#68b99b}.sessionProgressSegments span[data-current=true]{background:#078365}
+.sessionProgressSegments span[data-complete=true]{background:#68b99b}.sessionProgressSegments span[data-stage-status=skipped]{background:#b9b4a9}.sessionProgressSegments span[data-stage-status=needs_confirmation]{background:#dcb877}.sessionProgressSegments span[data-current=true]{background:#078365}
 .sessionDialogue{width:min(calc(100% - 24px),900px);margin:0 auto;display:flex;flex-direction:column;gap:11px}
 .currentCoachPrompt{position:relative;isolation:isolate;overflow:hidden;min-height:105px;display:flex;align-items:center;gap:11px;padding:14px 12px;border:1px solid #d5e8dc;border-radius:22px;background:linear-gradient(100deg,#eaf7ef,#e1f2e7 58%,#d9eee4);box-shadow:0 5px 17px #27573e12}
 .currentCoachPrompt:after{content:"";position:absolute;z-index:-1;right:0;top:0;bottom:0;width:33%;background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center/cover no-repeat;opacity:.36;mask-image:linear-gradient(90deg,transparent,black 38%)}
@@ -2184,3 +2184,10 @@
 @media(max-height:650px) and (max-width:699px){
   .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)):not([data-coach-view-expanded='true']) .sessionHero .sessionHeroCopy>small{-webkit-line-clamp:2}
 }
+
+/* Group fill is based on member fields, not active index or elapsed time.
+   Dark = verified, light = captured, neutral tail = skipped. */
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress]{
+ background:linear-gradient(to right,#32846b 0 var(--verified),#a7cfbe var(--verified) var(--recorded),#e7e3dc var(--recorded) calc(100% - var(--skipped)),#b9b4a9 calc(100% - var(--skipped)) 100%);
+}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-current=true]{outline:1px solid #32846b;outline-offset:2px}
