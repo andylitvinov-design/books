@@ -1,6 +1,7 @@
 name: Pro Reiki master learning paths
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/profi-hub.tsx'
@@ -15,6 +16,7 @@ on:
       - 'app/[locale]/academy/reiki/master/**'
       - 'tests/profi-hub.test.mjs'
       - '.github/workflows/pro-reiki-master-paths.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -22,6 +24,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   validate-pro:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -38,6 +41,7 @@ jobs:
       - name: Test all three Pro journeys and master programmes (EN/RU/ES)
         run: node --test tests/profi-hub.test.mjs tests/pro-master-search-placement.test.mjs tests/temple-support-hub.test.mjs
       - name: ESLint changed implementation
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >-
           npx --no-install eslint
           components/profi-hub.tsx

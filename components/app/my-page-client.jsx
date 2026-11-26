@@ -47,7 +47,7 @@ export default function MyPageClient({locale='en'}){
  const page=data?.page
  const link=page?'/' + locale + '/u/' + page.handle:''
  const tags=[['tests',t.tests],['practices',t.practices],['videos',t.videos]]
- return <main className={css.page} data-universal-my-page>
+ return <main className={css.page} data-universal-my-page data-cabinet-theme="daybook">
   <nav className={css.socialModes} data-profile-mode-switch data-profile-mode-active="live" aria-label={locale==='ru'?'Страницы профиля':locale==='es'?'Páginas del perfil':'Profile pages'}>
     <Link href={'/'+locale+'/my-page'} data-profile-mode="live" prefetch={false} aria-current="page">{locale==='ru'?'Моя страничка':locale==='es'?'Mi página':'My Page'}</Link>
     <Link href={'/'+locale+'/practice'} data-profile-mode="work" prefetch={false}>{locale==='ru'?'Профиль мастера':locale==='es'?'Perfil profesional':'Practitioner profile'}</Link>
@@ -61,6 +61,13 @@ export default function MyPageClient({locale='en'}){
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
        onEdit={()=>setEditingProfile(true)}
        onAddVideo={video=>void perform({action:'addVideo',videoId:video.id,title:video.theme+' · '+video.duration_seconds+'s'})}/>
+   <p data-my-page-media-library style={{margin:'12px 0'}}>
+     <Link href={'/'+locale+'/app/videos?tab=avatars'} className={css.secondary} prefetch={false}>
+       {locale==='ru'?'Мои материалы · AI-аватары, видео, фотографии':
+         locale==='es'?'Mis materiales · Avatares IA, vídeos, fotos':
+           'My Materials · AI Avatars, Videos, Photos'}
+     </Link>
+   </p>
    {editingProfile?<>
    <section className={css.card} aria-label={t.title}>
     <div className={css.row}><h2>{t.title}</h2>

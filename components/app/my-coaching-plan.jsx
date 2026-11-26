@@ -5,12 +5,17 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
+import MyCoachDraftArchive from './my-coach-draft-archive'
+import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
+import DaybookDailySettings from './daybook-daily-settings'
+import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
 import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
+import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 
 const protocolCopy={
  en:{title:'My Coach · Session protocol',transcript:'Conversation transcript',print:'Print / open PDF',download:'Download PDF',delete:'Delete protocol',confirm:'Delete this private conversation protocol permanently?',error:'Could not load or delete the saved protocols.',pdfError:'Could not prepare the protocol PDF.',coach:'AI coach'},
@@ -126,6 +131,52 @@ const areaSubtitles={
   personal_growth:'Aprendizaje y crecimiento',lifestyle:'Hábitos y equilibrio vital'},
 }
 
+const savedCheckinCopy={
+ en:{opening:'Opening steps recorded',name:'Preferred name',feelings:'Feelings · client words',focus:'Recorded focus',profile:'Meaning axes · saved self-ratings',updates:'Meaning axes · saved updates in this session',current:'Now',desired:'Desired',notCaptured:'Not recorded here',skipped:'Skipped',partial:'Partial',rated:'Recorded',unknown:'Session type not recorded',focuses:{profile:'Personal profile',goal:'Goal',challenge:'Problem',self_exploration:'Self-exploration',deferred:'Deferred'}},
+ ru:{opening:'Зафиксированные шаги вступления',name:'Предпочитаемое имя',feelings:'Состояние · слова клиента',focus:'Зафиксированный фокус',profile:'Оси смысла · сохранённые самооценки',updates:'Оси смысла · уточнения этой сессии',current:'Сейчас',desired:'Желаемое',notCaptured:'Не зафиксировано здесь',skipped:'Пропущено',partial:'Частично',rated:'Зафиксировано',unknown:'Тип сессии не зафиксирован',focuses:{profile:'Личный профиль',goal:'Цель',challenge:'Проблема',self_exploration:'Самопознание',deferred:'Отложено'}},
+ es:{opening:'Pasos de inicio registrados',name:'Nombre preferido',feelings:'Emociones · palabras del cliente',focus:'Enfoque registrado',profile:'Ejes de sentido · autoevaluaciones guardadas',updates:'Ejes de sentido · cambios guardados en esta sesión',current:'Ahora',desired:'Deseado',notCaptured:'No registrado aquí',skipped:'Omitido',partial:'Parcial',rated:'Registrado',unknown:'Tipo de sesión no registrado',focuses:{profile:'Perfil personal',goal:'Meta',challenge:'Problema',self_exploration:'Autoconocimiento',deferred:'Aplazado'}}
+}
+function savedMeaningRows(checkin,locale){
+ if(!['hh-coach-profile-intake-v1','hh-coach-profile-intake-v2'].includes(checkin?.version)||!Array.isArray(checkin.ratings))return []
+ const valid=n=>Number.isInteger(n)&&n>=0&&n<=10
+ return COACH_PROFILE_AXES.map(axis=>{
+  const item=checkin.ratings.find(row=>row?.axis===axis.id)
+  const current=valid(item?.current)?item.current:null,desired=valid(item?.desired)?item.desired:null
+  const status=item?.kind==='skipped'?'skipped':current!==null&&desired!==null?'rated':
+   current!==null||desired!==null?'partial':'notCaptured'
+  return {id:axis.id,label:axis.name[locale]||axis.name.en,status,
+   current:status==='skipped'?null:current,desired:status==='skipped'?null:desired}
+ })
+}
+function SavedProtocolOverview({protocol,locale}){
+ let overview
+ try{overview=myCoachProtocolPdfOptions(protocol,{locale}).protocolOverview}catch{return null}
+ return overview?<div data-coach-saved-protocol-overview><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{overview}</p></div>:null
+}
+function SavedProtocolCheckin({protocol,locale}){
+ const words=savedCheckinCopy[locale]||savedCheckinCopy.en
+ const opening=protocol.opening,rows=savedMeaningRows(protocol.profileCheckin,locale)
+ const steps=['invitation','name','continuity','focus','feelings','confirmation']
+ const recorded=steps.filter(step=>opening?.checkmarks?.[step]===true).length
+ return <>
+  {opening&&<div className={styles.reportSection} data-my-coach-saved-opening>
+   <b>{words.opening} · {recorded}/6</b>
+   {opening.name&&<p>{words.name}: {opening.name}</p>}
+   {words.focuses[opening.focus]&&<p>{words.focus}: {words.focuses[opening.focus]}</p>}
+   {opening.feelings&&<p>{words.feelings}: {opening.feelings}</p>}
+  </div>}
+  <MyCoachSavedProfileV3 protocol={protocol} locale={locale}/>
+  {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
+   <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
+   <p>{words.current} / {words.desired}</p>
+   {rows.map(row=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
+    {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
+     <>{row.current??'—'} / {row.desired??'—'}{row.status==='partial'?' · '+words.partial:''}</>}
+   </p>)}
+  </div>}
+ </>
+}
+
 function formatDate(value,locale){
  if(!value||!Number.isFinite(Date.parse(value)))return ''
  try{return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{day:'numeric',month:'short',year:'numeric'}).format(new Date(value))}catch{return ''}
@@ -162,27 +213,42 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   setProtocols([]);setProtocolPage({accountId:'',hasMore:false,nextCursor:null});setProtocolPageLoading(false)
   try{
    const [life,reportsResult,protocolResult]=await Promise.all([
-    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
+    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}).catch(()=>null),
     appFetch('personal-coaching-reports',undefined,'GET',{accountId}).catch(()=>null),
     fetch('/api/app/my-coach/protocol',{method:'GET',credentials:'same-origin',cache:'no-store',headers:{'x-hh-account-id':accountId}})
       .then(async response=>response.ok?response.json():null).catch(()=>null),
    ])
    if(activeAccountRef.current!==accountId||loadRevision.current!==revision)return
-   if(!Array.isArray(life?.domains)||life.domains.length!==8)throw new Error('COACHING_PLAN_RESPONSE_INVALID')
-   setPlan(life)
+   // The independently authorized archive must stay visible even when the Life Plan fails.
+   const validLife=Array.isArray(life?.domains)&&life.domains.length===8
+   setPlan(validLife?life:null)
+   if(!validLife)setError('load')
    setReports(Array.isArray(reportsResult?.reports)?reportsResult.reports:[])
    setProtocols(Array.isArray(protocolResult?.protocols)?protocolResult.protocols:[])
    setProtocolPage({accountId,hasMore:protocolResult?.hasMore===true,
      nextCursor:protocolResult?.nextCursor||null})
    if(!protocolResult)setProtocolError(protocolCopy[lang].error)
    if(!reportsResult)setReportError('load')
-   setDrafts(Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])))
+   setDrafts(validLife?Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])):{})
   }catch(e){if(activeAccountRef.current===accountId&&loadRevision.current===revision){
     setError(e?.code||'load');setReportError(e?.code||'load')
   }}
   finally{if(activeAccountRef.current===accountId&&loadRevision.current===revision)setLoading(false)}
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!plan?.domains)return
+  const area=plan.domains.find(item=>item.goals?.some(goal=>goal.id===wanted))
+  if(!area)return
+  setTab('plan');setExpandedArea(area.areaKey)
+  if(!PRIMARY_GOAL_AREAS.includes(area.areaKey))setShowAllAreas(true)
+ },[searchParams,plan])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!expandedArea)return
+  document.getElementById('goal-'+wanted)?.scrollIntoView({block:'center',behavior:'smooth'})
+ },[searchParams,expandedArea,plan])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
@@ -225,9 +291,9 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   }catch{setContextError(t.contextError)}
   finally{setRevoking('')}
  }
- function exportProtocol(protocol,print=false){
+ function exportProtocol(protocol,print=false,documentKind='protocol'){
   try{
-   const options=myCoachProtocolPdfOptions(protocol,{locale:lang})
+   const options=myCoachProtocolPdfOptions(protocol,{locale:lang,documentKind})
    if(print)openCoachingSessionPdf(options)
    else downloadCoachingSessionPdf(options)
    setProtocolError('')
@@ -314,6 +380,8 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
   {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
+   <DaybookDailySettings accountId={accountId} locale={lang} goals={plan?.goals||[]}/>
+   <ReikiHintsSettings key={accountId} accountId={accountId} locale={lang}/>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
      onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
@@ -376,7 +444,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
         {busy?<LoaderCircle className={styles.spin} size={17}/>:<Save size={17}/>} {busy?t.saving:t.save}</button>
        <div className={styles.goalList}><strong>{t.goals} · {count}</strong>
         {count===0&&<p>{t.noGoals}</p>}
-        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
+        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id} id={'goal-'+goal.id}>
          <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
          <span>{goal.status}</span>
          {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}>
@@ -404,13 +472,17 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
+   <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    <SavedProtocolOverview protocol={protocol} locale={lang}/>
+   <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
+     <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
       <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
@@ -419,7 +491,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     </details>
     <div className={styles.importPanel}>
      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false)}><Download size={16}/>{protocolCopy[lang].download}</button>
+      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false)}><Download size={16}/>{({en:'Download protocol PDF',ru:'Скачать протокол PDF',es:'Descargar protocolo PDF'})[lang]}</button>
       <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,true)}><Printer size={16}/>{protocolCopy[lang].print}</button>
       <button type="button" className={styles.primaryButton} disabled={!!protocolDeleting} onClick={()=>deleteProtocol(protocol)}><Trash2 size={16}/>{protocolCopy[lang].delete}</button>
      </div>

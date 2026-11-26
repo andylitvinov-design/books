@@ -1,165 +1,225 @@
-// Production-build first-screen acceptance for the dialogue-first public Home.
-// No form is submitted to a provider, no account is created or charged.
+// Real production-build first-screen acceptance for the owner-approved Samir homepage.
+// Only synthetic text; no external chat providers, bookings or payments.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdir, writeFile } from "node:fs/promises";
-
-const require = createRequire(import.meta.url);
-const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
-const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
-if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
-  throw new Error("First-screen QA accepts only the isolated local production server");
-const output = "artifacts/home-first-screen";
-await mkdir(output, {recursive:true});
-
-const evidence = [];
-for (const engine of [chromium,webkit]){
-  const browser=await engine.launch();
-  try {
-    for(const [locale,path,labels] of [
-      ["en","/",["For myself","For business"]],
-      ["ru","/ru",["Для себя","Для бизнеса"]],
-      ["es","/es",["Para mí","Para mi negocio"]],
-    ]){
-      for(const width of [320,390,430]){
-        const page=await browser.newPage({
-          viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,
-          hasTouch:true,reducedMotion:"reduce",
-        });
-        const label=engine.name()+":"+locale+":"+width;
-        const scriptEvents=[];
-        page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
-        page.on("console",message=>{
-          if(message.type()==="error")scriptEvents.push("console:"+message.text().slice(0,360));
-        });
-        page.on("requestfailed",request=>{
-          if(request.url().includes("/instant-home/fast.js"))
-            scriptEvents.push("script-request-failed:"+String(request.failure()?.errorText).slice(0,160));
-        });
-        page.on("response",response=>{
-          if(response.url().includes("/instant-home/fast.js"))
-            scriptEvents.push("script-status:"+response.status());
-        });
-        try {
-          const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
-          assert.equal(response?.status(),200,label+": Home HTTP 200");
-          // Canonical EN/RU/ES must show the owner-approved React Home.
-          // The legacy CDN shell is opt-in only and must never pass this default-route QA.
-          assert.equal(await page.locator('body[data-fast-home]').count(),0,
-            label+": approved React Home is the default on all locales");
-          const root=page.locator("[data-home-dialogue-entry]");
-          await root.waitFor({state:"visible",timeout:30000});
-          // React must be hydrated before exercising the actual mode click.
-          await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]')
-            .waitFor({state:"visible",timeout:15000});
-          const header=root.locator("[data-home-dialogue-header]");
-          await header.locator("h1").waitFor({state:"visible"});
-          assert.equal((await header.locator("h1").innerText()).trim(),"Holistic House",
-            label+": one-line identity");
-          assert.equal(await page.locator("header.house-header--services").count(),0,
-            label+": no old Holistic House top header");
-          assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
-            label+": no generic promo ribbon");
-          assert.equal(await page.locator("[data-profile-hub-tabs]").count(),0,
-            label+": no second profile heading");
-          const language=header.locator("[data-home-language-switch]");
-          assert.equal(await language.locator('a[aria-current="page"]').getAttribute("lang"),locale,
-            label+": language stays localized");
-          assert.equal(await language.locator("a[lang]").count(),3,label+": three languages");
-          const headerRect=await header.boundingBox();
-          const titleRect=await header.locator("h1").boundingBox();
-          const actionRect=await header.locator(".site-navigation").boundingBox();
-          assert.ok(headerRect&&titleRect&&actionRect&&titleRect.y<headerRect.y+headerRect.height&&
-            titleRect.x+titleRect.width<=actionRect.x+1,
-            label+": header keeps Holistic House and search/menu on the same row");
-          const personal=root.locator('[data-home-mode-button="self"]');
-          const business=root.locator('[data-home-mode-button="business"]');
-          assert.equal(await personal.innerText(),labels[0],label+": personal label");
-          assert.equal(await business.innerText(),labels[1],label+": business label");
-          assert.equal(await personal.getAttribute("aria-pressed"),"true");
-          await business.click();
-          assert.equal(await root.getAttribute("data-home-mode"),"business",
-            label+": switch updates composer context without leaving Home");
-          assert.equal(await root.locator("[data-home-intent-option]").count(),4,
-            label+": four needs including business support");
-          const review=root.locator("[data-home-free-review]");
-          assert.equal(await review.count(),1,label+": one primary free review entry");
-          assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
-            label+": real localized business review route");
-          // The approved 2026 Home is dialogue-first: Ali composer first,
-          // then four directions, three steps, Get Ideas and Get Support.
-          // Measure every block together before mobile keyboard auto-scroll.
-          const layout=await root.evaluate(element=>{
-            const selectors=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-how-it-works]','[data-home-free-review]',
-              '[data-home-request-session]'];
-            const nodes=selectors.map(selector=>element.querySelector(selector));
-            if(nodes.some(node=>!node))return null;
-            return nodes.map(node=>{const {top,bottom}=node.getBoundingClientRect();return {top,bottom}});
-          });
-          assert.ok(layout&&layout.length===5&&
-            layout[0].bottom<=layout[1].top+1&&
-            layout[1].bottom<=layout[2].top+1&&
-            layout[2].bottom<=layout[3].top+1&&
-            layout[2].bottom<=layout[4].top+1,
-            label+": Ali composer → four directions → three steps → Get Ideas / Get Support "+
-              JSON.stringify(layout));
-          assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
-          await personal.click();
-          assert.equal(await root.getAttribute("data-home-mode"),"self");
-          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
-            label+": personal mode restores real free review route");
-          const hero=root.locator("[data-home-dialogue-hero]");
-          const heroRect=await hero.boundingBox();
-          assert.ok(heroRect&&heroRect.y<600,label+": dialogue takes the first viewport");
-          const input=root.locator("[data-home-intent-composer]");
-          const send=root.locator("[data-home-send-to-ali]");
-          await input.waitFor({state:"visible"});
-          assert.equal(await send.isEnabled(),true,label+": free Ali chat starts without a typed goal");
-          await input.fill(locale==="ru"?"Хочу создать курс":locale==="es"?"Quiero crear un curso":"I want to create a course");
-          assert.equal(await send.isEnabled(),true,label+": real editable composer");
-          await input.fill("");
-          assert.equal(await send.isEnabled(),true,label+": free Ali chat remains open after clearing goal");
-          const search=header.locator("[data-site-search-trigger]");
-          await search.click();
-          await header.locator("[data-site-search-panel]").waitFor({state:"visible"});
-          await page.keyboard.press("Escape");
-          assert.equal(await header.locator("[data-site-search-panel]").count(),0,
-            label+": site search closes on Escape");
-          const menu=header.locator("details.site-main-menu");
-          await menu.locator("summary").click();
-          assert.equal(await menu.getAttribute("open"),"",label+": menu opens");
-          await menu.locator('.site-main-menu-panel [data-nav-item="services"]').waitFor({state:"visible"});
-          await page.keyboard.press("Escape");
-          assert.equal(await menu.getAttribute("open"),null,label+": menu closes");
-          const dock=page.locator("[data-hh-unified-dock]");
-          await dock.waitFor({state:"visible",timeout:30000});
-          const tabs=dock.locator("[data-unified-dock-item]");
-          assert.deepEqual(await tabs.evaluateAll(items=>items.map(x=>x.getAttribute("data-unified-dock-item"))),
-            ["mytube","video","coach","ai","services","practice","profile"],
-            label+": exactly seven existing mobile destinations, unchanged");
-          assert.equal(await page.locator("[data-home-deferred-sections]").count(),1,
-            label+": below-the-fold catalogue is deferred");
-          assert.equal(await page.locator("iframe").count(),0,
-            label+": no external video frame on first paint");
-          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
-          assert.ok(overflow<=1,label+": no iPhone horizontal overflow: "+overflow);
-          const box=await root.boundingBox();
-          assert.ok(box&&box.x>=-1&&box.x+box.width<=width+1,label+": Home inside viewport");
-          const renderResources=await page.evaluate(()=>({
-             stylesheets:document.querySelectorAll('link[rel="stylesheet"]').length,
-             cssRequests:performance.getEntriesByType('resource').filter(item=>new URL(item.name).pathname.endsWith('.css')).length,
-             heroFetchPriority:document.querySelector('[data-home-dialogue-hero] img')?.getAttribute('fetchpriority')||null,
-           }));
-           evidence.push({engine:engine.name(),locale,width,mode:"dialogue-first",sevenButtons:7,
-             ...renderResources,
-            firstScreenStart:Math.round(heroRect.y),heroHeight:Math.round(heroRect.height)});
-          if(engine===webkit&&width===390)
-            await page.screenshot({path:output+"/home-"+locale+"-webkit-390.png",fullPage:false});
-        } finally { await page.close(); }
-      }
-    }
-  } finally { await browser.close(); }
+import { mkdir,writeFile } from "node:fs/promises";
+const require=createRequire(import.meta.url);
+const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
+const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
+if(!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error("Local-only Samir QA");
+const output="artifacts/home-first-screen";await mkdir(output,{recursive:true});
+const evidence=[];
+// Real React interactions, synthetic MediaRecorder and intercepted transcription.
+// These tests never open a real microphone or call a speech provider.
+async function installDictationMock(page){
+ await page.addInitScript(()=>{
+  const stats={opened:0,closed:0,started:0,stopped:0};
+  window.__hhDictationQA=stats;
+  Object.defineProperty(navigator,"mediaDevices",{configurable:true,value:{getUserMedia:async()=>{
+   stats.opened++;
+   let stopped=false;
+   const stream=new MediaStream();
+   Object.defineProperty(stream,"getTracks",{value:()=>[{stop(){if(!stopped){stopped=true;stats.closed++;}}}]});
+   return stream;
+  }}});
+  class FakeRecorder{
+   static isTypeSupported(type){return type==="audio/mp4";}
+   constructor(){this.state="inactive";this.mimeType="audio/mp4";}
+   start(){stats.started++;this.state="recording";}
+   stop(){
+    stats.stopped++;this.state="inactive";
+    setTimeout(()=>{
+     this.ondataavailable?.({data:new Blob(["synthetic-local-qa-audio"],{type:"audio/mp4"})});
+     this.onstop?.();
+    },30);
+   }
+  }
+  Object.defineProperty(window,"MediaRecorder",{configurable:true,value:FakeRecorder});
+ });
+ const calls={count:0};
+ await page.route("**/api/holistic-support/audio-storyboard",async route=>{
+  calls.count++;
+  assert.equal(route.request().method(),"POST");
+  assert.match(route.request().headers()["content-type"]||"",/multipart\/form-data/);
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({version:"hh-audio-dictation-v1",text:"Я хочу больше денег",charged:false,locallyStored:false})});
+ });
+ return calls;
 }
-await writeFile(output+"/first-screen-results.json",JSON.stringify(evidence,null,2));
-console.log("Dialogue-first Home first-screen QA passed in Chromium/WebKit, EN/RU/ES, 320/390/430px:",evidence.length);
+async function verifyDictation(page,form,marker,calls,baseText,instant=false){
+ const input=form.locator("textarea");
+ const mic=form.locator(marker);
+ const panel=form.locator("[data-hh-dictation-active]");
+ const phase=form.locator('[data-hh-dictation-phase="recording"]');
+ await mic.waitFor({state:"visible",timeout:30000});
+ await form.locator(marker+'[data-hh-dictation-ready="true"]:not([disabled])').waitFor({state:"visible",timeout:30000});
+ await page.bringToFront();
+ await input.fill(baseText);
+ await input.blur();
+ await page.evaluate(()=>window.scrollTo(0,0));
+ const initialCalls=calls.count;
+ await mic.click();
+ try{await phase.waitFor({state:"visible",timeout:10000});}catch(error){
+  console.error("dictation first click diagnostic",await page.evaluate(()=>({fixture:window.__hhDictationQA,hidden:document.hidden,phase:document.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:document.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent,button:document.querySelector("[data-hh-composer-dictation-mic]")?.outerHTML})));
+  throw error;
+ }
+ assert.equal(await input.isVisible(),false,"dictation replaces composer input");
+ assert.equal(calls.count,initialCalls,"no speech upload before confirm");
+ await panel.getByRole("button",{name:"Отменить",exact:true}).click();
+ await mic.waitFor({state:"visible"});
+ assert.equal(calls.count,initialCalls,"cancel never transmits audio");
+ assert.equal(await input.inputValue(),baseText,"cancel preserves draft");
+ await mic.click();
+ await phase.waitFor({state:"visible",timeout:10000});
+ const sendLabel=instant?"Отправить голосовое сообщение":"Распознать запись";
+ assert.equal(await panel.getByRole("button",{name:sendLabel,exact:true}).isEnabled(),true);
+ if(instant){
+  await page.route("**/api/holistic-agent/turn",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({reply:"Тестовый ответ без внешней модели.",recommendations:[]})}));
+  await panel.getByRole("button",{name:"Остановить запись",exact:true}).click();
+  await form.locator('[data-hh-dictation-phase="ready"]').waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls,"stop alone does not upload");
+ }
+ await panel.getByRole("button",{name:sendLabel,exact:true}).click();
+ try{await mic.waitFor({state:"visible",timeout:15000});}catch(error){
+  console.error("dictation confirm diagnostic",JSON.stringify({requests:calls.count-initialCalls,...await form.evaluate(root=>({phase:root.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:root.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent,fixture:window.__hhDictationQA,hidden:document.hidden}))}));
+  throw error;
+ }
+ assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
+ if(instant){
+  await page.getByText(baseText+" Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","speech is sent to chat, not staged in composer");
+  const readyMic=form.locator(marker+'[data-hh-dictation-ready="true"]:not([disabled])');
+  async function holdMic(){
+   await readyMic.waitFor({state:"visible",timeout:15000});
+   await readyMic.scrollIntoViewIfNeeded();
+   const box=await readyMic.boundingBox();
+   assert.ok(box,"microphone has a real pointer target");
+   const x=box.x+box.width/2,y=box.y+box.height/2;
+   await page.mouse.move(x,y);
+   await page.mouse.down();
+   await phase.waitFor({state:"visible",timeout:10000});
+   await page.getByText("Отпустите для отправки",{exact:true}).waitFor({state:"visible"});
+   // Keep the pointer down long enough to cross the explicit hold threshold.
+   await page.waitForTimeout(400);
+   return {x,y};
+  }
+  const p=await holdMic();
+  await page.mouse.move(p.x-100,p.y,{steps:5});
+  await page.getByText("Отпустите для отмены",{exact:true}).waitFor({state:"visible"});
+  await page.mouse.up();
+  await readyMic.waitFor({state:"visible"});
+  assert.equal(calls.count,initialCalls+1,"slide-to-cancel sends nothing");
+  await holdMic();
+  await page.mouse.up();
+  await mic.waitFor({state:"visible",timeout:15000});
+  assert.equal(calls.count,initialCalls+2,"hold release uploads exactly once");
+  await page.getByText("Я хочу больше денег",{exact:true}).waitFor({state:"visible",timeout:15000});
+  assert.equal(await input.inputValue(),"","hold release auto-sends without confirmation");
+ }else assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","home transcription remains editable");
+ const stats=await page.evaluate(()=>window.__hhDictationQA);
+ assert.equal(stats.opened,stats.closed,"all synthetic microphone tracks released");
+ assert.ok(stats.opened>=2,"cancel and confirm each acquired microphone");
+ assert.equal(stats.started,stats.opened,"recorder really started after each successful acquisition");
+}
+
+for(const engine of [chromium,webkit]){
+ const browser=await engine.launch();
+ try{
+  for(const [locale,path,labels] of [
+   ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support","Reiki Practic"]],
+   ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса","Reiki Practic"]],
+   ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"]]
+  ]){
+   for(const width of [320,354,390,430]){
+    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
+    const name=engine.name()+":"+locale+":"+width;const errors=[];
+    page.on("pageerror",e=>errors.push(e.message.slice(0,200)));
+    page.on("console",m=>{if(m.type()==="error")errors.push(m.text().slice(0,200))});
+    try{
+     const dictationCalls=locale==="ru"&&width===390?await installDictationMock(page):null;
+     const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+     assert.equal(response?.status(),200,name);
+     const root=page.locator("[data-home-dialogue-entry]");
+     await root.waitFor({state:"visible",timeout:30000});
+     await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]').waitFor({state:"visible",timeout:20000});
+     const head=root.locator("[data-home-dialogue-header]");
+     assert.equal((await head.locator("h1").innerText()).trim(),"Holistic House",name);
+     assert.equal(await root.locator('[data-home-mode-button]').count(),0,name+": no audience tabs");
+     assert.equal(await root.locator("[data-home-intent-form]").count(),1,name+": one composer");
+     assert.equal(await root.locator("[data-home-stage-option]").count(),0,name+": no homepage seven-step panel");
+     assert.equal(await root.locator("[data-home-intent-option]").count(),4,name+": four program entries");
+     for(const [i,id] of ["clarity","goal","business","reiki"].entries()){
+       const card=root.locator('[data-home-intent-option="'+id+'"]');
+       assert.equal(await card.count(),1,name+": "+id);
+       assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
+     }
+     assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
+     const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
+     assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
+     const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
+     await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
+     assert.equal(await send.isEnabled(),true,name+": editable send");
+     await input.blur();
+     await page.evaluate(()=>window.scrollTo(0,0));
+     const layout=await root.evaluate(element=>{
+      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-methods]"];
+      return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
+     assert.ok(layout.every(Boolean),name+": all graphic sections rendered");
+     assert.ok(layout[0].top<layout[1].top&&layout[1].top<layout[2].top&&layout[2].top<layout[3].top,name+": hierarchy");
+
+     assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
+     const cards=await root.locator('[data-home-intent-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}}));
+     assert.equal(cards.length,4,name+": four rows");
+     assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
+     const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
+     assert.ok(copyFits,name+": no clipped copy");
+     const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
+     assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
+     assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
+     const dock=page.locator("[data-hh-unified-dock]");
+     await dock.waitFor({state:"visible",timeout:30000});
+     assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
+       ["mytube","reiki","coach","ai","services","practice","profile"],name+": seven dock targets");
+     await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
+     const fold=await page.evaluate(()=>{
+       const methods=document.querySelector('[data-home-methods]');
+       const nav=document.querySelector('[data-hh-unified-dock]');
+       const orb=nav?.querySelector('[data-unified-dock-item="ai"] svg');
+       return {methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top,orbTop:orb?.getBoundingClientRect().top};
+     });
+     assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons reachable above existing dock "+JSON.stringify(fold));
+     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
+     assert.deepEqual(errors,[],name+": no script errors");
+     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
+     if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
+     if(width===390){
+      for(const [id,count] of [["clarity",3],["goal",8],["business",4],["reiki",5]]){
+       await root.locator('[data-home-intent-option="'+id+'"]').click();
+       await page.waitForURL(origin+"/"+locale+"/programs/"+id);
+       const overview=page.locator('[data-public-program="'+id+'"]');
+       await overview.waitFor({state:"visible"});
+       assert.equal(await overview.locator("[data-program-session]").count(),count,name+": "+id+" sessions");
+       const start=overview.locator(id==="reiki"?"[data-reiki-start-free]":"[data-program-start]");
+       assert.equal(await start.count(),1,name+": "+id+" primary start");
+       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": "+id+" no overflow");
+       if(engine===webkit)await page.screenshot({path:output+"/program-"+id+"-"+locale+"-webkit-390.png",fullPage:true});
+       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+       await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]').waitFor({state:"visible",timeout:20000});
+      }
+     }
+     if(dictationCalls){
+      await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
+      assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
+      await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
+      const form=page.locator("[data-hh-ai-chat-composer]");
+      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель",true);
+      assert.equal(new URL(page.url()).pathname,"/ru/app/messages","dictation alone stays in chat");
+      assert.equal(await form.locator("[data-hh-ai-voice-consent]").count(),0,"no old continuous-mode consent gate");
+      evidence.push({engine:engine.name(),locale,width,manualDictation:true,cancel:true,confirmed:true,requests:dictationCalls.count});
+     }
+    }finally{await page.close()}
+   }
+  }
+ }finally{await browser.close()}
+}
+await writeFile(output+"/samir-first-screen-results.json",JSON.stringify(evidence,null,2));
+console.log("Samir Home Chromium/WebKit first-screen PASS",evidence.length);

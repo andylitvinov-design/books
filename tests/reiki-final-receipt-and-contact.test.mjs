@@ -31,7 +31,7 @@ test("application receipt is displayed only for a server-confirmed CRM lead", ()
 
 test("sharing and application remain explicit private opt-ins, never automatic", () => {
   assert.match(learner, /data-reiki-final-share-consent/);
-  assert.match(learner, /checked=\{shareConsented\}[\s\S]*?onClick=\{shareWithTeacher\}/);
+  assert.match(learner, /checked=\{shareConsented\}[\s\S]*?onClick=\{\(\) => shareWithTeacher\(\)\}/);
   assert.match(learner, /disabled=\{busy \|\| !applicationConsented\} onClick=\{applyForInitiation\}/);
   assert.match(learner, /\{t\.initiationConfirm\}/);
   assert.doesNotMatch(learner, /useEffect\(\(\) => applyForInitiation\(\)/);

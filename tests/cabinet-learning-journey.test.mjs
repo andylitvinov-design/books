@@ -93,7 +93,7 @@ test('journey is confined to the verified My Path view, not Today, Reports or gu
   assert.match(profileSection, /searchParams\.get\('space'\) === 'path'[\s\S]*?<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}/)
   // Today's private dashboard is excluded from Path, Reports AND Sessions.
   assert.match(profileSection, /!\['path','reports','sessions'\]\.includes\(searchParams\.get\('space'\)\)[\s\S]*?<CabinetToday/)
-  assert.match(profileSection, /searchParams\.get\('space'\) === 'sessions'[\s\S]*?<SavedSessionsPanel\b/)
+  assert.match(profileSection, /searchParams\.get\('space'\) === 'sessions'[\s\S]*?<ProfileSessionsDashboard\b/)
   assert.match(profileSection, /searchParams\.get\('space'\) === 'reports'[\s\S]*?<ProfileDomains/)
   assert.doesNotMatch(profile, /CabinetJourney/)
   assert.match(workspace, /data\.account\.onboardingState !== 'active'/)

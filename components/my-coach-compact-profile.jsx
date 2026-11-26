@@ -41,7 +41,7 @@ function CoachProfileSections({profile,personaId,t}){
           <p>{profile.workStyle}</p>
         </div>
       </section>
-      {personaId==='genie'&&<>
+      {(personaId==='genie'||personaId==='caesar')&&<>
         <section className={[styles.card,styles.workCard].join(' ')}><div className={styles.cardBody}><h2>{t.mission}</h2><p>{profile.mission}</p></div></section>
         <section className={[styles.card,styles.workCard].join(' ')}><div className={styles.cardBody}><h2>{t.signature}</h2><p>{profile.signatureQuestion}</p></div></section>
       </>}
@@ -52,7 +52,7 @@ function CoachProfileSections({profile,personaId,t}){
         <h2>{t.model}</h2>
         <strong className={styles.model}>{profile.model}</strong>
         <p className={styles.steps}>{profile.steps.map((step,index)=><span key={index}>{index>0&&<b aria-hidden="true">·</b>}{step}</span>)}</p>
-        {profile.specialty&&<div data-genie-compass-profile><strong className={styles.model}>{profile.specialty}</strong>
+        {profile.specialty&&<div data-genie-compass-profile={personaId==='genie'?true:undefined} data-caesar-compass-profile={personaId==='caesar'?true:undefined}><strong className={styles.model}>{profile.specialty}</strong>
           <p className={styles.steps}>{profile.specialtySteps.map((step,index)=><span key={index}>{index>0&&<b aria-hidden="true">·</b>}{step}</span>)}</p></div>}
       </div>
       <ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
@@ -132,7 +132,7 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
         </button>
       </header>
       <section className={styles.hero} aria-label={profile.name}>
-        <img src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
+        <img src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-natural-opening-v2.webp':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
           alt="" loading="eager" decoding="async"/>
         <div className={styles.heroShade} aria-hidden="true"/>
         <div className={styles.heroCopy}>

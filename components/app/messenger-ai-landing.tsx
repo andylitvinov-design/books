@@ -1,11 +1,12 @@
 "use client";
 
-import {useEffect,useRef,useState,type ReactNode} from "react";
+import {useEffect,useRef,useState,type ReactNode,type CSSProperties} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {threeJourneyLabel} from "@/lib/holistic-support/three-journeys.mjs";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -71,10 +72,10 @@ const COPY={
 
 /* Conversation-first welcome: topics are editable starters, not diagnostic labels. */
 const TOPICS=[
- {id:"stress",icon:Flower2,art:"/images/holistic-house/assessment-lotus.svg"},
- {id:"relationships",icon:Heart,art:"/images/holistic-house/ideas-zen-landscape.svg"},
- {id:"money",icon:BriefcaseBusiness,art:"/images/holistic-house/ideas-pine-reference.webp"},
- {id:"energy",icon:Sprout,art:"/images/holistic-house/messenger-zen-stones.svg"},
+ {id:"stress",icon:Leaf,art:"/images/video-goal-art/stress.webp"},
+ {id:"relationships",icon:Heart,art:"/images/video-goal-art/love.webp"},
+ {id:"money",icon:TrendingUp,art:"/images/video-goal-art/growth.webp"},
+ {id:"energy",icon:Leaf,art:"/images/video-goal-art/energy.webp"},
  {id:"confidence",icon:Sun,art:"/images/holistic-house/ideas-zen-landscape.svg"},
  {id:"direction",icon:Compass,art:"/images/holistic-house/ideas-pine-reference.webp"},
  {id:"business",icon:Lightbulb,art:"/images/holistic-house/books-library.webp"},
@@ -83,7 +84,7 @@ const TOPICS=[
 const INNER_COPY={
  en:{
   greeting:"Hi! I'm Ali.",
-  promise:"Let's understand your situation, find what matters most, and choose a helpful next step together.",
+  promise:"Let's understand your situation and find the next step together.",
   question:"What would you like to begin with today?",
   help:"Tell me about your situation, your goal, or what you would like to change.",
   steps:["Tell us your goal","Get a personal next step","Choose support or action"],
@@ -101,7 +102,7 @@ const INNER_COPY={
  },
  ru:{
   greeting:"Привет! Я Ali.",
-  promise:"Давай разберёмся, что происходит в твоей ситуации, что действительно важно, и вместе найдём подходящий следующий шаг.",
+  promise:"Давай разберёмся в твоей ситуации и вместе найдём следующий шаг.",
   question:"С чего тебе хотелось бы начать сегодня?",
   help:"Расскажи о своей ситуации, проблеме, цели или о том, чего хотелось бы достичь.",
   steps:["Расскажите о цели","Получите личную рекомендацию","Выберите действие"],
@@ -119,7 +120,7 @@ const INNER_COPY={
  },
  es:{
   greeting:"¡Hola! Soy Ali.",
-  promise:"Exploremos juntos tu situación, lo que más importa y un siguiente paso que pueda ayudarte.",
+  promise:"Exploremos juntos tu situación y encontremos el próximo paso.",
   question:"¿Por dónde te gustaría empezar hoy?",
   help:"Cuéntame tu situación, un problema, una meta o lo que te gustaría cambiar.",
   steps:["Cuéntanos tu meta","Recibe un paso personal","Elige cómo avanzar"],
@@ -147,16 +148,17 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onJourneySelect,composer}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
-  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;composer:ReactNode
+  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;
+  onJourneySelect:(path:'therapy'|'consultation'|'goal')=>void;composer:ReactNode
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
   const {persona}=useAliPersona();
   const [speaking,setSpeaking]=useState(false);
   const [moreTopics,setMoreTopics]=useState(false);
-  useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
+  useEffect(()=>{void prepareAliNaturalVoice(persona.id,locale);return ()=>stopAliPersonaAudio();},[persona.id,locale]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
     playAliPersonaAudio(persona.id,locale,(isPlaying:boolean)=>setSpeaking(isPlaying));
@@ -225,83 +227,114 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
-    <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
-      aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
-        href={`/${locale}/app/messages?section=ai`}>
-        <Sparkles size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
-        href={`/${locale}/app/portrait`}>
-        <UserRound size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
-        href={`/${locale}/app/messages?section=orders`}>
-        <ShoppingBag size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
-        href={`/${locale}/app/messages?section=clients`}>
-        <UsersRound size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span>
-      </Link>
-    </nav>
-    <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
-      <img className={css.welcomePortrait} src={persona.image} alt="" width={330} height={250}
-        loading="eager" fetchPriority="high"/>
-      <article className={css.welcomeBubble} data-hh-ai-landing-question>
-        <span className={css.heroLabel}><Sparkles size={16} aria-hidden="true"/>
-          {locale==="ru"?"ИИ-помощник":locale==="es"?"Asistente de IA":"AI Assistant"}
-        </span>
-        <h2>{welcomeTitle} <span>{guideRole}</span></h2>
-        <p>{inner.promise}</p>
-        <div className={css.welcomeMeta}>
-          <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
-            aria-pressed={speaking} onClick={playGreeting}
-            aria-label={locale==="ru"?(speaking?"Остановить приветствие":"Послушать приветствие"):
-              locale==="es"?(speaking?"Detener saludo":"Escuchar saludo"):
-              (speaking?"Stop greeting":"Listen to greeting")}>
-            {speaking?<X size={17} aria-hidden="true"/>:<Play size={17} fill="currentColor" aria-hidden="true"/>}
-            {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
-              locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
-          </button>
+    <div className={css.genieScene} data-hh-genie-scene
+      style={{'--hh-ai-persona-image':`url("${persona.image}")`} as CSSProperties}>
+      <div className={css.dialogueProfile}>
+        <Link href={"/"+locale} className={css.backToHome}
+          aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
+          <ArrowLeft size={26} aria-hidden="true"/>
+        </Link>
+        <img className={css.profilePortrait} src={persona.image} alt="" width={48} height={48} loading="eager"/>
+        <div className={css.profileIdentity}>
+          <strong>Holistic House · {guideName}</strong>
+          <span><i aria-hidden="true"/>{locale==="ru"?"На связи":locale==="es"?"En línea":"Online"}</span>
         </div>
-      </article>
+        <button type="button" className={css.personaShortcut}
+          data-hh-genie-persona-shortcut
+          onClick={()=>window.dispatchEvent(new Event("hh:messenger-open-persona"))}
+          aria-label={locale==="ru"?"Выбрать голос и персонажа":locale==="es"?"Elegir guía":"Choose your guide"}>
+          <UsersRound size={22} aria-hidden="true"/>
+        </button>
+      </div>
+      <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
+        <article className={css.welcomeBubble} data-hh-ai-landing-question>
+          <h2>{locale==="ru"?<>Привет! Я {guideName} — {persona.id==="alex"?"твой ИИ-джин и проводник":"твой ИИ-проводник"} к мечте. ✨</>:
+            locale==="es"?<>¡Hola! Soy {guideName}, {persona.id==="alex"?"tu genio de IA y guía":"tu guía de IA"} hacia tus sueños. ✨</>:
+              <>Hi! I&apos;m {guideName} — {persona.id==="alex"?"your AI genie and guide":"your AI guide"} to your dreams. ✨</>}</h2>
+          <p>{locale==="ru"?"У тебя есть желание, мечта или цель? А может, ты пока ищешь своё направление?":
+            locale==="es"?"¿Tienes un deseo, un sueño o una meta? ¿O todavía buscas tu camino?":
+              "Do you have a wish, a dream, or a goal? Or are you still finding your direction?"}</p>
+          <p><strong>{locale==="ru"?"Давай найдём путь к ней,":locale==="es"?"Encontremos tu camino,":"Let's find your way,"}</strong>{" "}
+            {locale==="ru"?"раскроем твои силы и сделаем следующий шаг.":
+              locale==="es"?"descubramos tus fortalezas y demos el siguiente paso.":
+                "discover your strengths, and take the next step."}</p>
+          <div className={css.welcomeMeta}>
+            <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
+              aria-pressed={speaking} onClick={playGreeting}
+              aria-label={locale==="ru"?(speaking?"Остановить голос ведущего":"Послушать голос ведущего"):
+                locale==="es"?(speaking?"Detener voz del guía":"Escuchar voz del guía"):
+                  (speaking?"Stop guide voice":"Listen to guide voice")}>
+              {speaking?<X size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
+              {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
+                locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
+            </button>
+          </div>
+        </article>
+      </div>
     </div>
-    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
-    <div className={css.topicTitleRow}>
-      <h3 className={css.topicHeading}>
-        {locale==="ru"?"Выберите направление":locale==="es"?"Elige una dirección":"Choose a direction"}
-      </h3>
-      <button type="button" className={css.moreTopics} data-hh-alchemist-more-topics
-        aria-expanded={moreTopics} onClick={()=>{
-          if(moreTopics){videoRef.current?.pause();setPlaying(false);}
-          setMoreTopics(value=>!value);
-        }}>
-        {moreTopics?(locale==="ru"?"Меньше тем":locale==="es"?"Menos temas":"Fewer topics"):
-          (locale==="ru"?"Все темы":locale==="es"?"Todos los temas":"All topics")}
-        <ArrowRight size={17} aria-hidden="true"/>
+    <div className={css.goalButtons} role="group" data-hh-genie-goal-choices
+      aria-label={locale==="ru"?"Как начнём":locale==="es"?"Cómo empezamos":"How shall we begin"}>
+      <button type="button" data-hh-genie-path-choice="therapy"
+        onClick={()=>onJourneySelect('therapy')}>
+        <HandHeart size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("therapy",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hh-genie-path-choice="consultation"
+        onClick={()=>onJourneySelect('consultation')}>
+        <Compass size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("consultation",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hh-genie-path-choice="goal"
+        onClick={()=>onJourneySelect('goal')}>
+        <Flag size={22} aria-hidden="true"/>
+        <span>{threeJourneyLabel("goal",locale)}</span>
+        <ArrowRight size={19} aria-hidden="true"/>
       </button>
     </div>
-    <div className={css.topics} role="group"
-      aria-label={locale==="ru"?"Выберите тему для разговора":locale==="es"?"Elige un tema":"Choose a conversation topic"}
-      data-hh-alchemist-topics data-hh-alchemist-visible-topics={moreTopics?8:4}>
-      {(moreTopics?TOPICS:TOPICS.slice(0,4)).map(item=>{
-        const Icon=item.icon;
-        const topic=inner.topics[item.id];
-        return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
-          onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
-          <span className={css.topicIllustration}>
-            <img src={item.art} alt="" loading="lazy" width={80} height={80}/>
-          </span>
-          <span className={css.topicLabel}><Icon size={17} strokeWidth={1.8} aria-hidden="true"/>
-            {topic.label}</span>
-          <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
-        </button>;
-      })}
-    </div>
+    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    <details className={css.extraDirections} data-hh-genie-extra-directions>
+      <summary>{locale==="ru"?"Другие направления и разделы":locale==="es"?"Más temas y secciones":"More topics and sections"} <ChevronDown size={16} aria-hidden="true"/></summary>
+      <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
+        aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
+          href={"/"+locale+"/app/messages?section=ai"}><Sparkles size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
+          href={"/"+locale+"/app/portrait"}><UserRound size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
+          href={"/"+locale+"/app/messages?section=orders"}><ShoppingBag size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
+          href={"/"+locale+"/app/messages?section=clients"}><UsersRound size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span></Link>
+      </nav>
+      <div className={css.topicTitleRow}>
+        <h3 className={css.topicHeading}>{locale==="ru"?"Выбери направление":locale==="es"?"Elige una dirección":"Choose a direction"}</h3>
+        <button type="button" className={css.moreTopics} data-hh-alchemist-more-topics
+          aria-expanded={moreTopics} onClick={()=>setMoreTopics(value=>!value)}>
+          {moreTopics?(locale==="ru"?"Меньше":locale==="es"?"Menos":"Fewer"):
+            locale==="ru"?"Все темы":locale==="es"?"Todos los temas":"All topics"}
+          <ArrowRight size={17} aria-hidden="true"/>
+        </button>
+      </div>
+      <div className={css.topics} role="group"
+        aria-label={locale==="ru"?"Темы для разговора":locale==="es"?"Temas de conversación":"Conversation topics"}
+        data-hh-alchemist-topics data-hh-alchemist-visible-topics={moreTopics?8:4}>
+        {(moreTopics?TOPICS:TOPICS.slice(0,4)).map(item=>{
+          const Icon=item.icon;
+          const topic=inner.topics[item.id];
+          return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
+            onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
+            <span className={css.topicIllustration}><img src={item.art} alt="" loading="lazy" width={80} height={80}/></span>
+            <span className={css.topicLabel}><Icon size={17} strokeWidth={1.8} aria-hidden="true"/>{topic.label}</span>
+            <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
+          </button>;
+        })}
+      </div>
+    </details>
     {moreTopics&&<div className={css.expandedContent} data-hh-ali-more-options>
       <button type="button" className={css.analysisButton} data-hh-alchemist-start-analysis
         onClick={onStartAnalysis}>

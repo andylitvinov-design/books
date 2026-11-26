@@ -86,12 +86,12 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}')));
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}')));
   assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage opens Ready before encoding");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
-  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
-    "Audio Add returns to the existing affirmations editor");
+  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("promo"\)/,
+    "Audio Add enters Extra where the user chooses text or Personal");
   assert.doesNotMatch(addEffects,/createQuickVideo|videoCreditRequest|startFromHero/,
     "Add cannot generate or charge");
   for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])

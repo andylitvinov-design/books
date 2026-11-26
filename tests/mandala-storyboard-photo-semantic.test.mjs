@@ -1,12 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,STORY_DIRECTOR_PHOTOS}
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,STORY_DIRECTOR_PHOTOS,
+ MYTUBE_SCENARIO_PHOTO_COVERAGE}
  from "../lib/mandala/story-photo-library.mjs";
-import {storyboardPhotoReferences}
+import {storyboardPhotoReferences,illustrativeStoryboardPhotoReferences,
+ STORYBOARD_ILLUSTRATION_STATUS}
  from "../lib/mandala/storyboard-photo-references.mjs";
 import {sceneVisualCues,scoreScenePhoto}
  from "../lib/mandala/storyboard-visual-matcher.mjs";
+import {suggestVideoConcept} from "../lib/mandala/auto-video-concept.mjs";
+import {getVideoCreativeDirections,applyVideoCreativeDirection}
+ from "../lib/mandala/video-creative-directions.mjs";
+import {buildAlignedStorySceneGuides} from "../lib/mandala/storyboard-content-alignment.mjs";
 const crossing=[
  {visual:"A solitary traveller follows a misty woodland path at dawn.",
   keywords:["person","path","forest"]},
@@ -116,4 +122,72 @@ test("Russian distance is not a station; bridge behind final path is context",()
   keywords:[]}).includes("station"),"genuine station must still match");
  assert.ok(sceneVisualCues({visual:"Человек ступает на мост.",
   keywords:[]}).includes("bridge"),"genuine bridge action stays strict");
+});
+
+test("the owner's new-skill story offers six work photos in EN/RU/ES without claiming filmed actions",()=>{
+ for(const locale of ["en","ru","es"])for(const aspect of ["portrait","landscape"]){
+  const base=suggestVideoConcept({locale,theme:"money",selectedTopicId:"income-growth"});
+  const direction=getVideoCreativeDirections(base,locale)
+   .find(item=>item.scenarioId==="income-growth-s2");
+  assert.ok(direction);
+  const film=applyVideoCreativeDirection(base,direction);
+  const guides=buildAlignedStorySceneGuides({locale,goal:film.goal,concept:film});
+  const options={scenarioId:film.scenarioId,categoryId:film.categoryId,aspect,
+   shotCount:guides.scenes.length,avoidImagery:film.avoidImagery,
+   userEditedFields:film.userEditedFields};
+  // This was the production dead end. Do not fake exact action evidence.
+  const exact=storyboardPhotoReferences({...options,sceneGuides:guides.scenes});
+  assert.ok(exact.some(photo=>!photo));
+  const photos=illustrativeStoryboardPhotoReferences(options);
+  assert.equal(photos.length,6,locale+"/"+aspect);
+  assert.equal(new Set(photos.map(photo=>photo.upstreamSrc)).size,6);
+  assert.ok(photos.every(photo=>isTrustedStoryPhoto(photo)&&
+   photo.id.startsWith("story-photo-office-")&&photo.labels[locale]));
+  assert.ok(photos.every(photo=>!photo.tags.some(tag=>["money","finance","budget"].includes(tag))),
+   "a work/learning story must not consist of six cash-counting photos");
+ }
+ assert.equal(STORYBOARD_ILLUSTRATION_STATUS,"illustrative_topic_photos_not_action_verified");
+});
+
+test("illustrative photo stories reuse only the selected canonical binding, never arbitrary category filler",()=>{
+ for(const [scenarioId,binding] of Object.entries(MYTUBE_SCENARIO_PHOTO_COVERAGE)){
+  const photos=illustrativeStoryboardPhotoReferences({scenarioId,categoryId:binding.categoryId});
+  assert.equal(photos.length,6,scenarioId);
+  assert.ok(photos.every(isTrustedStoryPhoto),scenarioId);
+  assert.equal(new Set(photos.map(photo=>photo.upstreamSrc)).size,6,scenarioId);
+  if(scenarioId!=="income-growth-s2")assert.deepEqual(photos.map(photo=>photo.id),binding.photoIds);
+ }
+ const options={scenarioId:"income-growth-s2",categoryId:"goals-money"};
+ for(const change of [{scenarioId:"unknown"},{categoryId:"love-relationships"},
+   {shotCount:5},{aspect:"square"},{avoidImagery:["no people"]},
+   {avoidImagery:["без людей"]},{avoidImagery:["sin personas"]},{avoidImagery:["no forest"]},
+   ...["mainMessage","conceptText","storyboard"].map(field=>({userEditedFields:[field]}))]){
+  assert.deepEqual(illustrativeStoryboardPhotoReferences({...options,...change}),[],JSON.stringify(change));
+ }
+});
+
+test("illustrative stills require visible review, actual decode and explicit application",()=>{
+ const tab=readFileSync(new URL("../components/mandala-automatic-storyboard.tsx",import.meta.url),"utf8");
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ assert.match(tab,/data-storyboard-reference-match=\{illustrativePhotos\?"illustrative":"scene"\}/);
+ assert.match(tab,/data-storyboard-reference-title>\{reference\.labels\[locale\]\}/);
+ assert.match(tab,/disabled=\{disabled\|\|!referencesDecoded\}/);
+ assert.match(tab,/depictedEventVerified:false as const/);
+ assert.match(tab,/loading="eager" decoding="async"/);
+ assert.match(tab,/data-storyboard-retry-photos/);
+ assert.match(tab,/references\.map\(photo=>photo\?\.id\|\|null\)/,
+  "the accepted story signature must identify the actual ordered photos");
+ assert.match(studio,/onSourceIssueChange=\{issue=>\{\s*storySourceIssueRef\.current=issue;/);
+ assert.match(studio,/if\(storyRecoveryPendingRef\.current\)\{\s*storyRecoveryPendingRef\.current=false;\s*if\(storySourcePendingRef\.current\)revealPendingStoryApproval\(issue\);/);
+ assert.match(studio,/const issue=reportedIssue\|\|storySourceIssueRef\.current/);
+ assert.match(studio,/data-storyboard-choose-another-story/);
+ assert.match(studio,/!storyChoicePendingRef\.current&&usingFreeFilmCompilation/,
+  "a user-requested Story may not silently fall back to an old independent film");
+ for(const kind of ["DraftChange","Approve"]){
+  const start=studio.indexOf("on"+kind+"={",studio.indexOf("<MandalaVideoConcept"));
+  assert.ok(start>0);
+  const handler=studio.slice(start,start+400);
+  assert.match(handler,/storyChoicePendingRef\.current=true;storySourcePendingRef\.current=true/,
+   "a new explicit Story must block the previous movie even before Story mounts");
+ }
 });

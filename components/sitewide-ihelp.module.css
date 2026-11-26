@@ -227,3 +227,6 @@
 
 /* Top business audience tab provides this same help action, so avoid a floating duplicate. */
 .launcher[hidden]{display:none!important}
+
+/* Daybook has an explicit in-header action for the same iHelp dialog. */
+:global(body:has([data-daybook-inline-help])) .launcher{display:none!important}

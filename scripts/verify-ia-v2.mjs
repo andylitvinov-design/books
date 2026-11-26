@@ -301,56 +301,69 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          const self=entry.locator('[data-home-mode-button="self"]')
-          const business=entry.locator('[data-home-mode-button="business"]')
-          await expect(self).toHaveAttribute('aria-pressed','true')
-          await expect(business).toHaveAttribute('aria-pressed','false')
-          await business.click()
-          await expect(entry).toHaveAttribute('data-home-mode','business')
-          await expect(business).toHaveAttribute('aria-pressed','true')
-          await self.click()
+          // Approved Home: four program cards with three benefits each.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
-          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
-          // Measure both rectangles in ONE animation frame, BEFORE focusing the
-          // lower textarea. Separate boundingBox calls during mobile keyboard
-          // auto-scroll can use different scroll offsets and produce a false
-          // overlap even when layout order and spacing are correct.
+          const choices=entry.locator('[data-home-intent-option]')
+          const programs={
+            en:['Clarity & Stress Relief','Achieving My Goal','Business Support','Reiki Practic'],
+            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса','Reiki Practic'],
+            es:["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"],
+          }
+          await expect(choices).toHaveCount(4)
+          const ids=['clarity','goal','business','reiki']
+          assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),ids,label+': approved program order')
+          for(const [index,intention] of ids.entries()){
+            const button=entry.locator('[data-home-intent-option="'+intention+'"]')
+            await expect(button).toHaveCount(1)
+            await expect(button).toHaveAttribute('type','button')
+            await expect(button).toHaveAttribute('aria-label',programs[locale][index])
+            await expect(button).toHaveAccessibleName(programs[locale][index])
+            await expect(button).toBeVisible()
+            await expect(button.locator('img')).toHaveCount(1)
+            await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
+            const box=await button.boundingBox()
+            assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
+          }
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
+          await expect(entry.locator('[data-home-methods]')).toBeVisible()
+          await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
+          const journeyLink=entry.locator('[data-home-continue-path]')
+          await expect(journeyLink).toHaveCount(1)
+          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
+          await expect(journeyLink).toBeHidden()
+          // Same-frame geometry: keep hero, composer, four programs and
+          // methods in order; cards never overlap or overflow at any viewport.
           const homeLayout=await entry.evaluate(root=>{
-            const topics=root.querySelector('[data-home-focus-grid]')
-            const how=root.querySelector('[data-home-how-it-works]')
-            const review=root.querySelector('[data-home-free-review]')
-            const support=root.querySelector('[data-home-request-session]')
-            if(!topics||!how||!review||!support)return null
-            const topicsBox=topics.getBoundingClientRect()
-            const howBox=how.getBoundingClientRect()
-            const reviewBox=review.getBoundingClientRect()
+            const nodes=['[data-home-dialogue-hero]','[data-home-intent-form]',
+              '[data-home-focus-grid]','[data-home-methods]'].map(selector=>root.querySelector(selector))
+            if(nodes.some(node=>!node))return null
+            const boxes=nodes.map(node=>node.getBoundingClientRect())
+            const cards=[...root.querySelectorAll('[data-home-intent-option]')].map(node=>node.getBoundingClientRect())
             return {
-              topicsBeforeHow:Boolean(topics.compareDocumentPosition(how)&Node.DOCUMENT_POSITION_FOLLOWING),
-              howBeforeReview:Boolean(how.compareDocumentPosition(review)&Node.DOCUMENT_POSITION_FOLLOWING),
-              reviewBeforeSupport:Boolean(review.compareDocumentPosition(support)&Node.DOCUMENT_POSITION_FOLLOWING),
-              topicsBottom:topicsBox.bottom,howTop:howBox.top,
-              howBottom:howBox.bottom,reviewTop:reviewBox.top,
+              ordered:nodes.every((node,i)=>i===0||Boolean(
+                nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
+              noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
+              inWidth:[...boxes,...cards].every(box=>box.left>=-1&&box.right<=innerWidth+1),
+              cardsSeparate:cards.length===4&&cards.every((a,i)=>cards.slice(i+1).every(b=>
+                a.right<=b.left+1||b.right<=a.left+1||a.bottom<=b.top+1||b.bottom<=a.top+1)),
             }
           })
-          // Owner-approved dialogue-first Home order: four directions, 3 steps,
-          // then Get Ideas / Get Support side by side. Do not restore the old
-          // free-review-before-topics marketing order or weaken geometry checks.
-          assert.ok(homeLayout?.topicsBeforeHow&&homeLayout.howBeforeReview&&homeLayout.reviewBeforeSupport&&
-            homeLayout.topicsBottom<=homeLayout.howTop+1&&homeLayout.howBottom<=homeLayout.reviewTop+1,
-            label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
-          await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
+          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth&&homeLayout.cardsSeparate,
+            label+': hero → composer → four programs → methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeVisible()
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()
-          await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
+          await expect(entry.locator('[data-home-intent-mic]')).toBeVisible()
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()
           assert.ok(rect&&rect.y<700,label+': hero visible in first mobile viewport')

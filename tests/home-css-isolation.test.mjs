@@ -10,8 +10,13 @@ test("root defers CSS-heavy sitewide enquiry controls and preserves the original
   const wrapper = read("components/sitewide-lead-capture-deferred.tsx");
   assert.match(layout, /<SitewideLeadCaptureDeferred \/>/);
   assert.doesNotMatch(layout, /<SitewideLeadCapture \/>/);
-  assert.match(wrapper, /dynamic\(/);
-  assert.match(wrapper, /ssr: false/);
+  // The import remains deferred until an eligible route mounts on the client.
+  // Its rejection must be handled instead of escaping React.lazy on WebKit.
+  assert.match(wrapper, /useEffect\(\(\) => \{/);
+  assert.match(wrapper, /if \(!classifyPublicLead\(pathname\) \|\| Capture\) return/);
+  assert.match(wrapper, /loadOptionalLeadCapture\(/);
+  assert.match(wrapper, /if \(!route\) return null/);
+  assert.doesNotMatch(wrapper, /import\s+[^;\n]+\s+from\s+["\']\.\/sitewide-lead-capture["\']/);
   assert.match(wrapper, /classifyPublicLead\(pathname\)/);
   assert.match(wrapper, /import\("\.\/sitewide-lead-capture"\)/);
   assert.match(read("components/sitewide-lead-capture.tsx"), /const route = clientPath \? classifyPublicLead\(clientPath\) : null/);
@@ -46,12 +51,17 @@ test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no 
   assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
 });
 
+// Full controls must not be pulled into the compact Home graph. A full caller
+// must provide both controls, or use the synchronous full-header wrapper.
 test("compact Home navigation excludes full-header cart and credit dependencies", () => {
   const core = read("components/site-navigation.tsx");
   const full = read("components/site-navigation-full.tsx");
   assert.doesNotMatch(core, /from ['"](?:@\/components\/commerce\/cart-nav-link|\.\/header-credit-profile)['"]/);
+  assert.match(core, /compact: true; fullHeaderComponents\?: never/);
+  assert.match(core, /compact\?: false; fullHeaderComponents: FullHeaderComponents/);
   assert.match(full, /from ['"]@\/components\/commerce\/cart-nav-link['"]/);
   assert.match(full, /from ['"]\.\/header-credit-profile['"]/);
-  assert.match(read("components/home-dialogue-entry.tsx"), /from ['"]@\/components\/site-navigation['"]/);
+  assert.match(full, /fullHeaderComponents=\{fullHeaderComponents\}/);
+  assert.match(read("components/home-dialogue-entry.tsx"), /<SiteNavigation locale=\{locale\} compact \/>/);
   assert.match(read("components/public-site-header.tsx"), /SiteNavigationFull as SiteNavigation/);
 });

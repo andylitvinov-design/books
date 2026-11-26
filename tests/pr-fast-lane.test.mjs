@@ -154,6 +154,27 @@ test('single required check co-locates Core proof and real specialist; failed Co
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
+test('CORE merge gate may await slow mandatory WebKit without an early ubuntu-slim termination', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  assert.ok(gate, 'the real protected merge gate must exist');
+  const runner=gate.match(/^    runs-on: ([^\n]+)$/m)?.[1] ?? '';
+  const budget=gate.match(/^    timeout-minutes: ([^\n]+)$/m)?.[1] ?? '';
+  for (const line of [runner,budget]) {
+    assert.match(line, /needs\.scope\.outputs\.route == 'ASSETS'/);
+    assert.match(line, /needs\.scope\.outputs\.route == 'TEXT'/);
+    assert.doesNotMatch(line, /needs\.scope\.outputs\.route == 'CORE'/,
+      'CORE must never inherit a 12-minute timeout or the 15-minute ubuntu-slim hard limit');
+  }
+  assert.match(runner,/ubuntu-slim.*ubuntu-24\.04/);
+  assert.match(budget,/&& 12 \|\| 45/,
+    'ASSETS/TEXT retain short budget, while CORE/DOCK/FULL keep 45 minutes');
+  assert.match(gate,/^    needs: \[scope\]$/m);
+  assert.match(gate,/Fail closed if mandatory Core failed/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true|timeout-minutes:\s*0/);
+});
+
 test('PR automation policy and agent entry point require specialist safety gates', () => {
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
@@ -504,7 +525,17 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
     assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
   }
   assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
-  assert.match(ia, /run: npm run build/);
+  // IA must always perform real compilation before its isolated browser run.
+  // The reviewed exact Messenger UI lane reuses only Core prebuild tests/lint;
+  // all unproven candidates must still execute the original complete build.
+  const build=ia.split('- name: Real IA browser build with verified Core prebuild reuse')[1]
+    ?.split('- name: Full TypeScript outside production PR')[0];
+  assert.ok(build, 'IA real build step must remain');
+  assert.match(build, /steps\.dock-scope\.outputs\.dock_only != 'true'/);
+  assert.match(build, /if node --input-type=commonjs - <<'HH_IA_CORE_PROOF'/);
+  assert.match(build, /then\s+echo[^\n]*\n[\s\S]*?\.\/node_modules\/\.bin\/next build --no-lint\s+else\s+npm run build\s+fi/);
+  assert.match(build, /HEAD\^1/);
+  assert.match(build, /HEAD\^2/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
 
@@ -1800,4 +1831,32 @@ test('four high-traffic specialist workflows cancel obsolete PR HEADs only',()=>
       'only new source SHA may cancel old PR HEAD; manual and push remain independent');
     assert.doesNotMatch(s,/^  cancel-in-progress: true$/m, 'unconditional cancellation is forbidden');
   }
+});
+
+
+test('Public Services reuses exact production compiler and scenario caches without bypassing candidate build or ancestry',()=>{
+  const s=workflow('hh-public-services-production.yml');
+  const p=workflow('hh-static-image-cost-guard.yml');
+  const local=s.indexOf('name: Restore PR-isolated Next.js compiler cache');
+  const shared=s.indexOf('name: Restore protected production compiler cache on PR-local miss');
+  const media=s.indexOf('name: Restore protected production scenario music for browser build');
+  const build=s.indexOf('name: Production build and public browser acceptance');
+  assert.ok(local>=0 && local<shared && shared<media && media<build);
+  const sharedBlock=s.slice(shared,media);
+  assert.ok(sharedBlock.includes("steps.next_cache.outputs.cache-matched-key == ''"));
+  assert.ok(sharedBlock.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  assert.match(sharedBlock,/path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+  for(const [prefix,section] of [['hh-core-next-v2-',sharedBlock],['hh-core-media-v1-',s.slice(media,build)]]){
+    const key=p.split('\n').find(line=>line.includes('key: '+prefix))?.trim();
+    assert.ok(key&&section.includes(key),'identical protected cache key '+prefix);
+    assert.match(section,/actions\/cache\/restore@v4/);
+    assert.doesNotMatch(section,/actions\/cache\/save@v4|restore-keys:/);
+  }
+  assert.ok(s.includes('npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs &&'));
+  assert.ok(s.includes('!s.preprebuild && !s.postprebuild && !s.postbuild'));
+  assert.ok(s.includes('./node_modules/.bin/next build --no-lint'));
+  assert.ok(s.includes('else\n              npm run build\n            fi'));
+  assert.ok(s.includes('if [[ "$EVENT_BASE_SHA" == "$tested_base" ]]; then\n            relation=identical\n          else'));
+  assert.ok(s.includes('x.behind_by!==0||x.base_commit?.sha!==process.env.EVENT_BASE_SHA||x.merge_base_commit?.sha!==process.env.EVENT_BASE_SHA'));
+  assert.ok(s.includes('mapfile -t tested_parents'));
 });

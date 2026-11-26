@@ -125,3 +125,33 @@
   display:none!important
  }
 }
+
+/* Full-screen Samir opening, matching the approved messenger reference.
+   Other conversations/Orders retain their existing navigation and layout. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]){overflow:hidden!important}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) [data-hh-unified-dock],
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) .hh-mobile-app-nav{
+   display:none!important}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) .hh-app.hh-messages-page{
+   position:fixed;inset:0;z-index:1100;width:100%;max-width:none;
+   height:100dvh;min-height:0;margin:0;padding:0!important;overflow:hidden;
+   background:#102d27}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) .hh-app.hh-messages-page .hh-header{
+   display:none!important}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) [data-hh-compact-ai-workspace],
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) [data-hh-compact-ai-workspace] > div{
+   height:100%;min-height:0;padding:0;border:0;border-radius:0;background:#102d27}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-ai-landing]) [data-hh-agent-preview]>.thread{
+   flex:1;min-height:0;max-height:none;margin:0;padding:0;
+   border:0;border-radius:0;overflow:hidden;background:#102d27}
+}
+
+/* The approved immersive design continues after the first turn. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"]){overflow:hidden!important}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"]) :is([data-hh-unified-dock],.hh-mobile-app-nav,.hh-header){display:none!important}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"]) .hh-app.hh-messages-page{background:#102d27}
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"]) [data-hh-compact-ai-workspace],
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"] [data-hh-immersive-dialogue="true"]) [data-hh-compact-ai-workspace]>div{height:100%;min-height:0;padding:0;border:0;border-radius:0;background:transparent}
+}

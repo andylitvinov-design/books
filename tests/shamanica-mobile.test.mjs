@@ -44,7 +44,7 @@ test("Owner-approved mobile cabinet keeps quiz, video and six authentic shelf ob
  assert.match(client,/new URLSearchParams\(\{goal,method,start:startChoice\}\)/);
 });
 
-test("Six approved readable real links replace nine old shelf items",()=>{
+test("Six approved real category buttons reveal subcategories before services",()=>{
  const client=read("components/shamanica-mobile.tsx");
  const css=read("components/shamanica-mobile.module.css");
  assert.match(client,/shelfCatalog\.map\(/);
@@ -58,7 +58,7 @@ test("Six approved readable real links replace nine old shelf items",()=>{
  assert.match(client,/data-shamanica-cabinet-shelves/);
  assert.doesNotMatch(client,/shelfExtras/);
  assert.match(client,/academy\/mysteries/);
- assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/shamanicaCategoryHref\(locale,/);
  assert.match(css,/\.serviceBody strong/);
  assert.match(client,/data-shamanica-audience=\{business\?"business":"self"\}/);
  assert.equal(shamanicaCategoryHref("en","guidance"),"/en/shamanica/results?category=guidance");
@@ -84,7 +84,7 @@ test("Shamanic branding and navigation are consistent without changing shared ro
  assert.match(dockCss,/font-size:clamp\(10px,3\.05vw,12px\)/);
 });
 
-test("Every Shamanic category entrance opens three priced service cards without the quiz",()=>{
+test("Every Shamanic category retains its existing three priced service cards after the new subcategory step",()=>{
  const client=read("components/shamanica-mobile.tsx");
  const results=read("app/[locale]/shamanica/results/page.tsx");
  const css=read("components/shamanica-results-services.module.css");
@@ -93,7 +93,7 @@ test("Every Shamanic category entrance opens three priced service cards without 
   assert.equal(shamanicaCategoryHref(locale,category),`/${locale}/shamanica/results?category=${category}`);
  }
  assert.equal(shamanicaCategoryHref("ru","invalid"),"/ru/shamanica");
- assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/shamanicaCategoryHref\(locale,/);
  assert.match(client,/academy\/mysteries/);
  assert.match(results,/data-shamanica-category-offers=\{selectedCategory\}/);
  assert.match(results,/data-shamanica-category-nav/);
@@ -131,7 +131,7 @@ test("Get Guidance is the real three-offer symbolic reading catalogue",()=>{
  assert.deepEqual(SHAMANICA_SERVICES,["remedies","artifacts","energy","rituals","learning"]);
 });
 
-test("Approved Shamanic lounge is six correctly ordered, distinct photo actions with existing routes",()=>{
+test("Approved Shamanic lounge is six correctly ordered, distinct photo buttons with existing routes",()=>{
  const client=read("components/shamanica-mobile.tsx");
  const css=read("components/shamanica-mobile.module.css");
  const dock=read("app/unified-mobile-dock.css");
@@ -141,18 +141,18 @@ test("Approved Shamanic lounge is six correctly ordered, distinct photo actions 
  assert.deepEqual([...markers].sort((a,b)=>a-b),markers,"row-major visual order matches approved screen");
  assert.match(client,/Get Hints & Ideas/);
  assert.match(client,/Remedies for Heart & Mind/);
- for(const [i,id] of expected.entries()){
-  const imageName=i===4?"reiki":id==="guidance"?"hints":id;
-  assert.match(client,new RegExp("shamanic-approved-"+imageName+"\\.webp"),id);
-  assert.match(client,new RegExp('data-shamanica-service=\\{id\\}'));
- }
- for(const file of ["shamanic-approved-sun.webp","shamanic-approved-room.webp"])assert.match(client+css,new RegExp(file.replace(".","\\.")));
+ for(const id of expected)assert.match(client,new RegExp('id:"'+id+'"'));
+ assert.match(client,/data-shamanica-subcategories=\{selectedShelf\}/);
+ assert.match(client,/setSelectedShelf\(id\)/);
+ assert.match(client,/shamanic-sun-hd\.avif/);
+ assert.match(css,/shamanic-lounge-hd\.avif/);
+ assert.match(css,/shamanic-cards-personal-hd\.avif/);
  assert.match(css,/SHAMANIC_LUXURY_LOUNGE_APPROVED_20261121/);
  assert.match(css,/grid-auto-rows:101px/);
  assert.match(css,/\.serviceBody svg/);
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(dock,/SHAMANIC_LUXURY_LOUNGE_DOCK_20261121/);
  assert.match(dock,/data-unified-dock-item="practice"/);
- assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/shamanicaCategoryHref\(locale,/);
  assert.match(client,/data-shamanica-extras/);
 });

@@ -55,3 +55,20 @@ test('successor preserves both original real browsers with one local build and o
   }
   assert.match(source, /workflow_dispatch:/, 'Manual full matrix remains available');
 });
+
+
+test('protected PRs use the reviewed dependency-free journey fixtures, never waive manual or push QA',()=>{
+  const planner=source.slice(source.indexOf('name: Verify dependency-free journey inputs'),source.indexOf('name: Install full journey dependencies'));
+  assert.ok(planner.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  assert.ok(planner.includes('git hash-object -- "$file"'));
+  assert.ok(planner.includes('minimal=false'));
+  for(const file of ['tests/public-pathway-migration.test.mjs','tests/public-pathway-toronto.test.mjs','tests/ci-public-journey-consolidation.test.mjs','scripts/ci-public-journey-scope.mjs','package.json','package-lock.json'])
+    assert.ok(planner.includes(file),'reviewed closure: '+file);
+  assert.ok(source.includes("name: Install full journey dependencies\n        if: steps.deps.outputs.minimal != 'true'\n        run: npm ci --no-audit --no-fund"));
+  assert.equal((source.match(/if \[\[ "\$HH_JOURNEY_MINIMAL" != true \]\]; then npx --no-install eslint /g)||[]).length,2);
+  assert.ok(source.includes("github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'"));
+  assert.match(source,/node --test tests\/public-pathway-migration\.test\.mjs/);
+  assert.match(source,/node --test tests\/public-pathway-toronto\.test\.mjs/);
+  assert.match(source,/playwright install --with-deps chromium webkit/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

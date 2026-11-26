@@ -199,7 +199,7 @@
 .dashboard .recommendArrow svg{
   width:29px;height:29px;padding:5px;border-radius:50%;background:#e2f4e4
 }
-.bonusSection{min-width:0}
+.bonusSection{display:grid;gap:8px;min-width:0}
 .bonusCard{
   display:grid;grid-template-columns:clamp(90px,19vw,138px) minmax(0,1fr) 46px;
   align-items:stretch;min-height:110px;overflow:hidden;
@@ -216,6 +216,10 @@
   width:38px;height:38px;border-radius:50%;background:#d0eddd;color:#08775e}
 .bonusCard:hover{border-color:#5dbb9a;background:#edf9ef}
 .bonusCard:focus-visible{outline:3px solid #087a67;outline-offset:3px}
+.bonusCard[data-reiki-practitioner-daybook-bonus]{border-color:#d9cdb8;background:#faf5ea}
+.bonusCard[data-reiki-practitioner-daybook-bonus]:hover{border-color:#a38c61;background:#f4ead6}
+.bonusCard[data-reiki-practitioner-daybook-bonus] .bonusEyebrow{color:#755e31}
+.bonusCard[data-reiki-practitioner-daybook-bonus] .bonusArrow{background:#ede2cb;color:#564d35}
 @media(max-width:600px){
   .dashboard{gap:10px}
   .dashboard .startedCourses,.dashboard .startedList{gap:7px}

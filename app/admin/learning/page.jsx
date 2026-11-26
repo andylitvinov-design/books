@@ -4,6 +4,7 @@ import {getAppConfig} from '@/lib/app/config';
 import {closeDatabase} from '@/lib/app/database';
 import {readHiLearningOwnerSnapshot} from '@/lib/holistic-support/hi-learning-store';
 import styles from './learning.module.css';
+import {ALI_DIALOGUE_QUALITY_VERSION,ALI_LEARNING_RULES} from '@/lib/holistic-support/ali-dialogue-quality.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -43,7 +44,7 @@ export default async function LearningObservatoryPage(){
   return <main className={styles.page}>
     <header className={styles.hero}>
       <p className={styles.eyebrow}>HOLISTIC INTELLIGENCE · OWNER ONLY</p>
-      <h1>Learning Observatory</h1>
+      <h1>Ali Learning Studio</h1>
       <p>Анонимные добровольные сигналы качества, RU / EN / ES. Без переписок,
         имён, клиентских профилей и автоматического обучения.</p>
       <div className={styles.meta}><span>30-day view + current day</span>
@@ -53,6 +54,11 @@ export default async function LearningObservatoryPage(){
     {unavailable?<p className={styles.warning} role="status">
       Нет подтверждённого доступа к схеме Learning Observatory. Данные неизвестны, а не равны нулю.
     </p>:null}
+    <section className={styles.section}>
+      <h2>Dialogue rules · versioned library</h2>
+      <p className={styles.note}>Source-controlled rules: {ALI_DIALOGUE_QUALITY_VERSION}. Read-only first release; changes require review and protected tests. No customer transcript or model training is accessed here.</p>
+      <div className={styles.tableScroll}><table><thead><tr><th>Rule</th><th>Standard</th><th>Purpose</th></tr></thead><tbody>{ALI_LEARNING_RULES.map(rule=><tr key={rule.id}><td>{rule.id}</td><td>{rule.title}</td><td>{rule.description}</td></tr>)}</tbody></table></div>
+    </section>
     <section className={styles.section}>
       <h2>Quality by channel, language and algorithm</h2>
       {!grouped.length?<p className={styles.empty}>Подтверждённых агрегатов пока нет. Отсутствие
@@ -75,6 +81,32 @@ export default async function LearningObservatoryPage(){
             <span>{day}</span><meter min="0" max={Math.max(...daily.values(),1)} value={count}/>
             <strong>{count}</strong>
           </div>)}</div>}
+    </section>
+    <section className={styles.section}>
+      <h2>Message delivery and archive coverage</h2>
+      <p className={styles.note}>Только события из существующей CRM-переписки,
+        отдельно сохранённой с согласием истории Ali на сайте и
+        разрешённой записи сессий коуча. Личные Telegram Business чаты,
+        несохранённые обращения и сообщения внешних каналов сюда не попадают.
+        Принято провайдером не означает доставлено или прочитано.</p>
+      {snapshot?.receiptSummary===null||!snapshot?.receiptSummary?
+        <p className={styles.empty}>Схема единого индекса ещё не подтверждена:
+          SCHEMA_NOT_DEPLOYED / UNKNOWN. Ноль событий не доказан.</p>:
+        !snapshot.receiptSummary.length?
+          <p className={styles.empty}>NO_DATA за последние 31 день в охваченных
+            архивных источниках. Остальные каналы могут иметь обращения.</p>:
+          <div className={styles.tableScroll}><table><thead><tr>
+            <th>Day</th><th>Stored source</th><th>Channel</th>
+            <th>Direction</th><th>Last state</th><th>Events</th>
+          </tr></thead><tbody>{snapshot.receiptSummary.map((r,i)=><tr
+            key={r.source+':'+r.channel+':'+r.direction+':'+r.delivery+':'+localDay(r.day)+':'+i}>
+            <td>{localDay(r.day)}</td><td>{text(r.source)}</td>
+            <td>{text(r.channel)}</td><td>{text(r.direction)}</td>
+            <td>{text(r.delivery)}</td><td>{r.events}</td>
+          </tr>)}</tbody></table></div>}
+      <p className={styles.note}>Статус покрытия: {snapshot?.receiptStatus??'UNKNOWN'}.
+        Модель, ответившая на конкретное сообщение, не установлена.
+        Для содержательного анализа диалогов необходимо отдельное явное согласие.</p>
     </section>
     <section className={styles.section}>
       <h2>Promotion and rollback receipts</h2>

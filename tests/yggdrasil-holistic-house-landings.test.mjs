@@ -132,3 +132,38 @@ test("the canonical Reiki Yggdrasil landing has no obsolete site/archive footer 
   assert.ok(!recordPage.includes('reiki-yggdrasil@3fd7960aa77862c38f8a5754b64c3a79f5e0c96a'));
   assert.ok(!program.includes("yggdrasil-source-footer-panel"));
 });
+
+test("Higher Magic adopts the My Reiki chrome and keeps canonical curriculum and module routes", async () => {
+  const [page, header, curriculumView, theme, detail, dock, model, data] = await Promise.all([
+    readFile("components/yggdrasil-module-landing.tsx", "utf8"),
+    readFile("components/my-reiki-header.tsx", "utf8"),
+    readFile("components/yggdrasil-curriculum.tsx", "utf8"),
+    readFile("components/yggdrasil-curriculum-visual.module.css", "utf8"),
+    readFile("components/yggdrasil-pro-detail.module.css", "utf8"),
+    readFile("app/unified-mobile-dock.css", "utf8"),
+    readFile("lib/unified-mobile-dock.mjs", "utf8"),
+    readFile("data/academy/yggdrasil-curriculum.json", "utf8"),
+  ]);
+  const branch = page.slice(page.indexOf('if (module.slug === "higher-magic")'), page.indexOf('<main className={"academy-reading-shell'));
+  assert.ok(branch.includes('data-my-reiki-module-landing="higher-magic"'));
+  assert.ok(branch.includes('<MyReikiHeader locale={locale} program="pro" modulePath="/academy/reiki/yggdrasil/higher-magic"'));
+  assert.ok(branch.includes('<ReikiProgramNavigation locale={locale} active="pro"'));
+  assert.ok(branch.includes('program=pro#reiki-pro-higher-magic'));
+  assert.ok(branch.includes('href="#yggdrasil-curriculum-title"'));
+  assert.ok(branch.includes('visualTheme="my-reiki"'));
+  assert.ok(branch.includes('<PublicConsultationCta locale={locale} />'));
+  assert.ok(branch.includes('<YggdrasilSideNavigation locale={locale} activeSlug={module.slug} />'));
+  assert.ok(!branch.includes('<PublicSiteHeader'));
+  assert.ok(header.includes('modulePath ? "/" + language + modulePath'));
+  assert.ok(curriculumView.includes('visualTheme?: "navy" | "my-reiki"'));
+  assert.ok(curriculumView.includes("step.settings.map((setting)"));
+  assert.ok(theme.includes('[data-visual-theme="my-reiki"] .stageNavigation'));
+  assert.ok(theme.includes('white-space: normal') && theme.includes('overflow-wrap: anywhere'));
+  assert.ok(detail.includes('support-therapy-cabinet-hd.webp') && detail.includes('#fff19b,#ffc520 44%,#e99000'));
+  assert.ok(dock.includes('body:has([data-my-reiki-module-landing])'));
+  assert.ok(model.includes('higher-magic') && model.includes('return "reiki"'));
+  const level = JSON.parse(data).levels.find(item => item.id === 7);
+  assert.equal(level.steps.length, 6);
+  assert.equal(level.steps.reduce((sum, step) => sum + step.settings.length, 0), 32);
+  assert.equal(level.steps.reduce((sum, step) => sum + (step.video?.videos?.filter(v => Boolean(v.youtubeId)).length ?? 0), 0), 13);
+});

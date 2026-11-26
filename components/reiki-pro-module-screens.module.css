@@ -1,0 +1,184 @@
+/* Pro landing continuation: original artwork and the existing cream/gold Profile palette. */
+.screens {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 12px;
+  min-width: 0;
+}
+.screen {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: min(580px, max(0px, calc(100svh - 132px)));
+  padding: 7px;
+  border: 1px solid #d7b576;
+  border-radius: 20px;
+  background: linear-gradient(150deg, #fff9e6, #f5dfb9);
+  color: #103f30;
+  box-shadow: 0 3px 12px #442b1118;
+  scroll-margin-top: max(12px, env(safe-area-inset-top));
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(138px, 27svh, 225px);
+  overflow: hidden;
+  border-radius: 15px;
+  background: #21190f;
+}
+.hero > img {
+  object-fit: cover;
+  object-position: center;
+}
+.shade {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(0deg, #120f0ce8, #19140e70 58%, #19140e08 95%);
+  pointer-events: none;
+}
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  width: 100%;
+  padding: 13px 12px 12px;
+  color: #fff6df;
+}
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  color: #ffe7a7;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: .075em;
+  font: 700 clamp(10px, 2.7vw, 13px)/1.3 system-ui, sans-serif;
+}
+.kicker > span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ffe4a4;
+  border-radius: 50%;
+  background: #805a2a;
+  color: #fff6de;
+  letter-spacing: 0;
+  font: 700 15px/1 Georgia, serif;
+}
+.heroCopy h2 {
+  margin: 0;
+  color: #fff6df;
+  font: 700 clamp(24px, 6.4vw, 36px)/1.08 Georgia, serif;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 8px;
+  padding: 10px 5px 3px;
+}
+.lead {
+  color: #395044;
+  margin: 0;
+  font: 500 clamp(13px, 3.6vw, 17px)/1.35 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.body h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1px 0 0;
+  color: #103f30;
+  text-align: center;
+  font: 700 clamp(19px, 5.3vw, 27px)/1.15 Georgia, serif;
+}
+.body h3::before, .body h3::after {
+  content: "";
+  flex: 1;
+  min-width: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #b9955c);
+}
+.body h3::after { transform: rotate(180deg); }
+.steps {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.steps li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 33px;
+  padding: 4px 7px;
+  border: 1px solid #e0c28b;
+  border-radius: 10px;
+  background: #fff9e9;
+  color: #103f30;
+}
+.steps li > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #e7d1a5;
+  color: #654720;
+  font: 700 12px/1 Georgia, serif;
+}
+.steps strong {
+  min-width: 0;
+  color: #103f30;
+  font: 700 clamp(13px, 3.55vw, 18px)/1.22 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.cta {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 2px solid #fff4ba;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #fff19b, #ffc520 44%, #e99000);
+  color: #2b210c;
+  text-align: center;
+  text-decoration: none;
+  font: 700 clamp(16px, 4.6vw, 22px)/1.15 Georgia, serif;
+  overflow-wrap: anywhere;
+  box-shadow: 0 3px 10px #e8a33140;
+}
+.cta svg { flex: none; }
+.cta:focus-visible { outline: 3px solid #08714b; outline-offset: 2px; }
+@media (max-width: 354px), (max-height: 650px) {
+  .screens { gap: 10px; }
+  .screen { padding: 5px; border-radius: 16px; }
+  .hero { min-height: clamp(122px, 23svh, 150px); }
+  .heroCopy { padding: 9px; }
+  .body { padding: 8px 3px 3px; gap: 6px; }
+  .steps { gap: 3px; }
+  .steps li { min-height: 29px; padding: 3px 5px; grid-template-columns: 23px minmax(0, 1fr); gap: 6px; }
+  .steps li > span { width: 22px; height: 22px; }
+  .cta { min-height: 44px; }
+}
+@media (min-width: 700px) {
+  .screen { padding: 10px; }
+  .body { padding: 12px 10px 5px; }
+  .steps li { min-height: 40px; }
+}

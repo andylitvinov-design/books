@@ -113,7 +113,7 @@ test('private voice route is account-bound and reuses the pre-existing Brain zer
 test('mic permission is only for signed-in coaching routes and voice conversation remounts between sessions',()=>{
   const config=source('next.config.ts')
   const page=source('components/app/personal-coaching.jsx')
-  assert.match(config,/const privateCoachingVoiceSources = \["\/en\/app\/coaching", "\/ru\/app\/coaching"\]/)
+  assert.match(config,/const privateCoachingVoiceSources = \["\/en\/app\/coaching", "\/ru\/app\/coaching", "\/es\/app\/coaching"\]/)
   assert.match(config,/\.\.\.privateCoachingVoiceSources\.map/)
   assert.match(config,/microphone=\(\)/)
   assert.match(config,/microphone=\(self\)/)
@@ -169,18 +169,18 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){'))
   // On a new consented turn, a metadata-only model probe may restore verified
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
-    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
+    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){'))
   // Gemini checks a dedicated owner gate plus client consent, while Groq
   // keeps its verified-model probe. Neither sends text when unavailable.
   const verify="const needsVerifiedModel=!wisdomRequested&&!localInterruption&&"
   const selector="selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified'"
-  const wait="const modelReady=!needsVerifiedModel||"
+  const wait="const modelReady=!forceLocal&&(!needsVerifiedModel||"
   const retry="!selectedGeminiEngine&&await retryCoachModelAfterOutage()"
-  const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
+  const offline="if(forceLocal||localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
   const send="fetch('/api/app/my-coach/turn'"
   assert.ok(sendFunction.indexOf(verify)>=0 &&
     sendFunction.includes(selector) && sendFunction.includes(retry) &&
@@ -199,7 +199,8 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
-  assert.match(conf,/const publicMyCoachVoiceSources = \["\/en\/coaching\/sessions", "\/ru\/coaching\/sessions", "\/es\/coaching\/sessions"\]/)
+  for(const locale of ['en','ru','es'])assert.ok(conf.includes('"/'+locale+'/coaching/sessions"'))
+  assert.match(conf,/const publicMyCoachVoiceSources = \[/)
   assert.match(conf,/\.\.\.publicMyCoachVoiceSources\.map/)
   assert.match(conf,/microphone=\(self\)/)
   assert.doesNotMatch(loop,/\/api\/app\/coaching\/voice\/synthesize|api\.fish\.audio|HH_COACHING_FISH_API_KEY|reference_id/)
@@ -446,7 +447,10 @@ test('My Coach Replay animates large portrait only on actual device or cloud aud
   assert.ok(cloud.includes('onError:fail'))
   assert.match(replay,/setVoiceState\(\{phase:'speaking',beat:0\}\)/)
   assert.match(replay,/setPlaybackNotice\(voiceGate\.naturalUnavailable\)/)
-  assert.match(page,/onHidden=\(\)=>\{if\(document.hidden\)\{stopReplay\(\);setVoiceState\(\{phase:'idle',beat:0\}\)\}\}/)
+  const hidden=page.split('const onHidden=()=>{')[1]?.split("document.addEventListener('visibilitychange',onHidden)")[0]||''
+  assert.match(hidden,/if\(!document\.hidden\)return/)
+  assert.match(hidden,/stopReplay\(\)/)
+  assert.match(hidden,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState\(\{phase:'idle',beat:0\}\)/,'stop replay without overwriting a parked Gemini phase')
   assert.match(replay,/\.catch\(fail\)/)
   assert.ok(replay.includes('audioContext:replayAudioContextRef.current'))
   assert.doesNotMatch(replay,/getUserMedia|MediaRecorder|OPENROUTER_API_KEY|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
@@ -636,7 +640,8 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  const start=ui.indexOf('data-coach-basic-pro-toggle')
  assert.ok(start>0)
  const toggle=ui.slice(start,ui.indexOf('data-coach-pro-same-tap-disclosure',start))
- assert.match(toggle,/disabled=\{replaying\|\|paused\|\|protocolOpen\}/)
+ assert.match(toggle,/disabled=\{restoredDraft\|\|replaying\|\|paused\|\|protocolOpen\}/)
+ assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
  assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
  assert.match(toggle,/cancelPendingCoachTurn\(\)/)
  assert.match(ui,/\[coachEngine,setCoachEngine\]=useState\('gemini_live_free'\)/)

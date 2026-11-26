@@ -9,6 +9,7 @@ import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram, courseProg
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CoursePresetCatalog from './course-preset-catalog'
 import MyCoursesDashboard from './my-courses-dashboard'
+import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import { useSubscription } from './subscription-access'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
@@ -552,6 +553,9 @@ export function MyCourse({ data, locale = 'en' }) {
     courseProgramFromTopics(state.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID
 
   return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '') + (stressWelcome ? ' ' + styles.stressWelcomeRoot : '')} data-my-course>
+    {coursesIndexEntry && view === 'list' && courses.length === 0 && (
+      <CabinetFreeCourseBanners key={accountId} accountId={accountId} locale={locale} savedOnly />
+    )}
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} accountId={accountId} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
       locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}

@@ -1,22 +1,23 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 test("Montage audio is an owner-approved compact panel, not a second generator",()=>{
-  const start=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
+  const start=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact');
   const end=source.indexOf('data-video-audio-bed-panel',start);
   const pane=source.slice(start,end+300);
   assert.ok(start>0&&end>start,"dedicated compact pane");
-  assert.match(pane,/Choose audio tracks/);
-  assert.match(pane,/up to 3/);
+  assert.match(pane,/Choose Music/);
+  assert.match(pane,/attachedPresetIds\.length>=3/);
   for(const marker of ["data-video-audio-category","data-video-audio-compact-grid",
     "data-video-audio-compact-track","data-video-audio-compact-select","data-video-audio-compact-play",
     "data-video-audio-compact-upload","data-video-audio-compact-selected","data-video-audio-compact-volume",
     "data-video-audio-compact-attach",
     "data-video-audio-library","{deepAudioPane}"])assert.ok(pane.includes(marker),marker);
   assert.doesNotMatch(pane,/data-video-audio-mode=/);
-  assert.match(pane,/filteredAudio\.slice\(0,12\)/);
+  assert.match(pane,/filteredAudio\.slice\(0,4\)/);
   assert.doesNotMatch(pane,/data-video-audio-affirmations|data-video-voice-studio/);
   assert.match(pane,/setAudioCategoryOverride\(item\.id\)/);
   assert.match(pane,/attachedPresetIds\.includes\(id\)/);
@@ -33,16 +34,16 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
   const rail=source.slice(start,source.indexOf('</nav>',start));
-  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"text"[\s\S]*id:"concept"[\s\S]*id:"promo"/);
-  assert.ok(source.includes('"Choose your style"'));
-  assert.match(source,/"Add Text"/);
+  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"promo"[\s\S]*id:"text"[\s\S]*id:"concept"/);
+  assert.match(source,/data-video-montage-style/);
+  assert.match(rail,/id:"text"/);
   assert.ok(source.includes('data-video-audio-compact-upload'));
   assert.ok(source.includes('chooseAudioFile(event.currentTarget.files?.[0])'));
   assert.ok(source.includes('data-video-audio-rights'));
 });
 
 test("Montage Audio shows music only; voice lives in Hypno",()=>{
-  const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}'),
+  const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact'),
     source.indexOf('{musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>'));
   assert.doesNotMatch(panel,/data-video-voice-studio|MandalaCloudVoiceStudio|data-video-audio-affirmations/);
   assert.match(source,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
@@ -52,14 +53,17 @@ test("Montage Audio shows music only; voice lives in Hypno",()=>{
 
 test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
-  const eligible="startsWith(github.head_ref, 'codex/montage-audio-')";
-  assert.equal(workflow.split(eligible).length-1,8,
-    "seven existing Linux browser steps and the mandatory macOS runner");
-  const macos=workflow.slice(workflow.indexOf("  voice-webkit-macos:"),
-    workflow.indexOf("    needs: [webkit_preflight]",workflow.indexOf("  voice-webkit-macos:")));
-  assert.match(macos,/codex\/montage-audio-/);
-  assert.match(workflow,/runs-on: macos-15/);
-  assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  for(const filename of ["components/mandala-free-video-studio.tsx","lib/mandala/local-video-music.ts","components/studio-music-picker.jsx"])
+    assert.equal(requiresRealMediaWebKit([{status:"M",filename}]),true,filename);
+  const macos=workflow.slice(workflow.indexOf("  voice-webkit-macos:"),workflow.indexOf("  voice-webkit-macos:")+12000);
+  assert.match(macos,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.match(macos,/runs-on: macos-15/);
+  assert.match(macos,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/requiresRealMediaWebKit\(changed\)/);
+  assert.match(workflow,/playwright install --with-deps chromium webkit/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE=chromium node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/startsWith\(github\.head_ref, 'codex\/montage-audio-'\)/);
+
 });
 
 test("physical original-motion WebKit exports selected licensed music without requiring upload-only Attach",()=>{
@@ -96,5 +100,23 @@ test("Audio two-button route never performs premature render and keeps a single-
   assert.match(css,/\[data-video-stage-actions="montage"\]>\.quickGenerate/);
   assert.match(css,/order:0;min-height:49px;background:#fffcf7!important/);
   assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
-  assert.match(studio,/filteredAudio\.slice\(0,12\)/);
+  assert.match(studio,/filteredAudio\.slice\(0,4\)/);
+});
+
+
+test("captured microphone voice automatically attaches without repeat consent and has native playback",()=>{
+  const mic=source.slice(source.indexOf("async function startMicRecording()"),source.indexOf("function handleNativeVideoPlaybackFailure"));
+  assert.match(mic,/chooseAudioFile\(file,false,true\)/);
+  assert.match(mic,/setAttachedAudio\(\{kind:"file",file:selected\.file,id:selected\.url,nonLoop:true\}\)/);
+  assert.match(mic,/setSoundVolume\(100\);setAudioStartSeconds\(0\)/);
+  assert.match(mic,/recorder\.start\(\)/);
+  assert.match(source,/if\(fromMicrophone\|\|recipientAudioSelected\)setAudioRights\(true\)/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\?\s*<div className=\{videoStyles\.audioCompactRights\}/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\s*\?\s*<label className=\{videoStyles\.audioRights\}/);
+  assert.match(source,/uploadedAudio&&!uploadedAudio\.recorded\?\s*<label className=\{videoStyles\.audioLibraryRights\}/);
+  assert.match(source,/if\(uploadedAudio\?\.recorded&&player\.getAttribute\("src"\)===uploadedAudio\.url\)return false/);
+  assert.match(source,/data-video-recorded-audio-play/);
+  assert.match(source,/onClick=\{playSelectedRecording\}/);
+  assert.match(source,/if\(uploadedAudio&&!audioRights\)/);
+  assert.equal(source.match(/data-video-audio-player data-video-audio-source/g)?.length,1);
 });

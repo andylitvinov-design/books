@@ -483,3 +483,180 @@
 .page .libraryTile{color:var(--progress-ink)}
 .page .videoEmpty a,.page .mandalaEmpty a{color:#177c59}
 .page .identityCopy a{color:#107e61}
+
+/* The entire account history is organized by existing site rubrics. Each rail
+   is newest-first and scrolls horizontally toward older account records. */
+.topicNav{display:flex;align-items:center;gap:7px;margin:17px -4px 0;padding:3px 4px 8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.topicNav>span{flex:0 0 auto;font-size:11px;font-weight:780;color:#557568;text-transform:uppercase;letter-spacing:.08em;margin-right:3px}
+.page .topicNav button{flex:0 0 auto;white-space:nowrap;min-height:41px;padding:8px 12px;border-radius:999px;border:1px solid #d4e2d6;background:#fffdf8;color:#385f4b;font-size:12px;font-weight:740;cursor:pointer}
+.page .topicNav button[aria-pressed="true"]{background:#087e62;color:white;border-color:#087e62}
+.quickLinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px}
+.page .quickLinks a{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:45px;padding:8px 9px;border-radius:14px;border:1px solid #d6e6d8;color:#225e48;background:#f0f7f0;font-size:11.5px;font-weight:780;text-decoration:none;line-height:1.2;text-align:center}
+.quickLinks a>svg{flex-shrink:0}
+.quickLinks a>svg:last-child{width:13px}
+.quickLinks a>span{overflow-wrap:anywhere;min-width:0}
+.rubricCollection{margin:22px 0 0;min-width:0}
+.rubricCollectionHead{display:flex;gap:10px;align-items:baseline;justify-content:space-between;margin:0 3px 9px}
+.page .rubricCollectionHead h2{font-size:clamp(21px,4.2vw,28px);color:#253e33;margin:0}
+.rubricCollectionHead small{color:#708276;font-size:11px}
+.rubricSection{min-width:0;margin:17px 0 0;scroll-margin-top:16px}
+.page .rubricSection .sectionHead{display:flex;align-items:center;margin:0;padding:0 3px 9px}
+.page .rubricSection h3{font-size:clamp(17px,3.6vw,21px);font-weight:800;color:#294437;margin:0}
+.rubricSection h3 small{font-size:11px;color:#7a887d;font-weight:680}
+.rubricRail{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(168px,23vw,225px);gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:1px 3px 11px;scrollbar-width:thin}
+.rubricRail>div{min-width:0;scroll-snap-align:start}
+.rubricCard{width:100%;min-width:0}
+.page .rubricCard a{display:flex;flex-direction:column;gap:5px;color:#293e32;text-decoration:none;min-width:0}
+.rubricCover{display:grid;place-items:center;position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:17px;color:#297e62;background:linear-gradient(126deg,#dcefe4,#f5eee1);border:1px solid #e6e8dd}
+.rubricCover[data-category="courses"]{background:linear-gradient(130deg,#d8eadd,#f7e8cb);color:#806036}
+.rubricCover[data-category="tests"]{background:linear-gradient(130deg,#e1eee6,#e5f4e7);color:#276a56}
+.rubricCover[data-category="practices"]{background:linear-gradient(130deg,#e5ede0,#eee4f4);color:#9070a4}
+.rubricCover[data-category="services"]{background:linear-gradient(130deg,#ece9db,#faf1e2);color:#96734b}
+.rubricCover[data-category="reports"],.rubricCover[data-category="notes"]{background:linear-gradient(130deg,#e3f0f1,#faf5ec);color:#557a79}
+.rubricCover>svg{width:34px;height:34px}
+.rubricOpen{display:grid;place-items:center;position:absolute;right:7px;bottom:7px;width:27px;height:27px;background:#fffdf3e8;border-radius:50%;color:#345b4a}
+.rubricCard strong{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-height:2.6em;font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.rubricCard small{display:flex;gap:5px;align-items:center;font-size:11px;color:#738175}
+.rubricCard small svg{flex:none}
+.rubricCard .status{align-self:flex-start;margin-top:2px}
+.topicEmpty{padding:15px;border:1px dashed #cbdaca;border-radius:14px;background:#fbf9f1;color:#607166;font-size:12px}
+.page .fullHistoryToggle{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;margin-bottom:9px;padding:12px 15px;border:1px solid #d5e3d7;border-radius:16px;background:#edf5ee;color:#285f46;font-size:13px;font-weight:800;cursor:pointer}
+.fullHistoryToggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+@media(max-width:750px){.quickLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.rubricRail{margin-right:-12px;padding-right:12px;grid-auto-columns:minmax(162px,48%)}} 
+@media(max-width:350px){.rubricCollectionHead{flex-wrap:wrap}.rubricRail{grid-auto-columns:minmax(158px,73%)}.quickLinks a{font-size:11px;padding:8px 6px}}
+@media(prefers-reduced-motion:reduce){.rubricRail{scroll-behavior:auto}.fullHistoryToggle svg{transition:none}}
+
+.topicExplanation{margin:3px 2px 10px;color:#6f7e70;font-size:11px;line-height:1.35}
+
+/* The private activity dashboard shares the Daybook cabinet palette. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .page {
+  --progress-ink: var(--hh-cabinet-ink, #3c291c);
+  --progress-muted: var(--hh-cabinet-muted, #695644);
+  --progress-forest: var(--hh-cabinet-primary-hover, #00513d);
+  --progress-green: var(--hh-cabinet-primary, #006b4e);
+  --progress-edge: var(--hh-cabinet-border, #d7b576);
+  --progress-cream: var(--hh-cabinet-surface, #fff6e3);
+  padding-inline: 0;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  border-color: var(--progress-edge);
+  background: linear-gradient(135deg, var(--progress-cream), var(--hh-cabinet-surface-soft, #f5e3bf));
+  box-shadow: 0 6px 20px #130c0826;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .identityCopy h1 {
+  color: var(--progress-ink);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .avatar {
+  border-color: var(--progress-cream);
+  outline-color: var(--progress-edge);
+  background: linear-gradient(135deg, var(--progress-green), var(--progress-forest));
+  color: #fff6e3;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroEyebrow { color: var(--progress-green); font-size: 12px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.identityCopy p, .heroIntro) {
+  color: var(--progress-muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .identityCopy a {
+  color: var(--progress-green);
+  min-height: 44px;
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .metric,
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.libraryTile, .entry, .videoEmpty, .mandalaEmpty, .emptyState) {
+  color: var(--progress-ink);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .metric span { font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .metric small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .libraryCopy small {
+  color: var(--progress-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .libraryCopy strong { font-size: 16px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionHead h2 {
+  color: #fff6e3;
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionEyebrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.sectionFoot, .activityIntro, .footer) {
+  color: #e5d3b6;
+  font-size: 14px;
+  line-height: 1.45;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .footer p { font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .footer { border-color: var(--progress-edge); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionLink,
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .refresh {
+  min-height: 44px;
+  color: var(--progress-green);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .sectionLink {
+  padding: 8px 11px;
+  border-radius: 14px;
+  white-space: normal;
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoCard, .mandalaCard) {
+  padding: 10px;
+  color: var(--progress-ink);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+  border-radius: 22px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoTitle, .mandalaCard strong, .entryBody>strong) {
+  color: var(--progress-ink);
+  font-size: 16px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.videoMeta, .mandalaCard small, .entryBody p, .entryTop) {
+  color: var(--progress-muted);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .entryTop :is(span, time) { font-size: 12px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .resume {
+  border: 1px solid var(--progress-edge);
+  background: linear-gradient(120deg, var(--progress-green), var(--progress-forest));
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .resumeAction {
+  min-height: 48px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border: 1px solid var(--progress-edge);
+  font-size: 15px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .filters button {
+  min-height: 44px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page .filters button[aria-pressed="true"] {
+  color: #fff6e3;
+  background: var(--progress-green);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .page :is(.more, .mandalaButton) {
+  min-height: 44px;
+  color: var(--progress-forest);
+  background: var(--progress-cream);
+  border-color: var(--progress-edge);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.explanation, .loading) {
+  color: var(--progress-muted);
+  background: var(--progress-cream);
+  font-size: 14px;
+}
+@media(max-width:600px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .sectionHead { align-items: flex-start; flex-wrap: wrap; }
+}
+@media(max-width:360px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .library { grid-template-columns: minmax(0,1fr); }
+}

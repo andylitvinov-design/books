@@ -93,3 +93,76 @@ test('archived pages show earlier owner-only protocols without dropping same-mil
  assert.match(ui,/protocolPage\.accountId===accountId/)
  assert.match(ui,/activeAccountRef\.current!==accountId/)
 })
+
+// Regression: the public Samir coach must be accepted by the same archive as the other coaches.
+import {normalizeMyCoachProtocol} from '../lib/personal-coaching/session-protocol.mjs'
+import {projectCoachPriorSessions} from '../lib/coaching/coach-staged-memory.mjs'
+test('Samir can archive a reviewed partial conversation with his primary or optional method',()=>{
+ const input={id:protocolId,personaId:'genie',locale:'en',startedAt:date,completedAt:date,
+  turns:[{role:'user',content:'Yes',unanswered:true}]}
+ for(const methodId of [undefined,'woop','appreciative_inquiry']){
+  const p=normalizeMyCoachProtocol({...input,methodId})
+  assert.equal(p.personaId,'genie')
+  assert.equal(p.methodId,methodId||'woop')
+  assert.equal(p.turns[0].unanswered,true)
+ }
+ assert.throws(()=>normalizeMyCoachProtocol({...input,methodId:'grow'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('returning client never inherits a speech repair as name and older valid names survive',()=>{
+ const rows=['Say again','','','Mary Jane'].map((name,i)=>({
+  provenance:'client_reviewed_dialogue',completedAt:new Date(Date.parse(date)-i*1000).toISOString(),opening:{name}
+ }))
+ const result=projectCoachPriorSessions(rows,'Account Name')
+ assert.equal(result.preferredName,'Mary Jane')
+ assert.equal(result.previous.length,3)
+ assert.equal(projectCoachPriorSessions(rows.slice(0,3),'Account Name').preferredName,'Account Name')
+})
+
+import {normalizeMyCoachDraft,draftTranscriptPrefix,validDraftRevision} from '../lib/personal-coaching/protocol-draft.mjs'
+import {createCoachDraftQueue} from '../lib/personal-coaching/protocol-draft-queue.mjs'
+test('autosaved partial protocol remains unreviewed and does not become a reviewed fact',()=>{
+ const value={courseSessionId:'life_direction',protocol:{id:protocolId,personaId:'genie',locale:'ru',startedAt:date,completedAt:date,goal:'not confirmed',clientSummary:'not confirmed',turnLayout:'chronological',turns:[{role:'user',content:'Мой вопрос'}]}}
+ const draft=normalizeMyCoachDraft(value)
+ assert.equal(draft.protocol.provenance,'client_autosaved_unreviewed_draft')
+ assert.equal(draft.protocol.goal,'');assert.equal(draft.protocol.clientSummary,'')
+ assert.equal(draft.protocol.turns[0].unanswered,true)
+ assert.equal(projectCoachPriorSessions([draft.protocol]).hasPreviousSession,false)
+ assert.equal(validDraftRevision(0),false)
+ assert.equal(draftTranscriptPrefix(draft.protocol,{...draft.protocol,turns:[...draft.protocol.turns,{role:'assistant',content:'Reply'}]}),true)
+ assert.equal(draftTranscriptPrefix(draft.protocol,{...draft.protocol,turns:[{role:'user',content:'Changed'}]}),false)
+})
+test('checkpoint queue retries the same revision and only acknowledges matching server receipts',async()=>{
+ const revisions=[];let fail=true
+ const queue=createCoachDraftQueue(async(revision,value)=>{revisions.push(revision);if(fail){fail=false;throw Error('offline')}return {id:value.protocol.id,revision,saved:true}})
+ const value={courseSessionId:'life_direction',protocol:{id:protocolId,turns:[{role:'user',content:'First'}]}}
+ queue.offer(value);assert.equal(await queue.flush(),null);assert.equal(queue.revision(),0)
+ queue.offer({...value,protocol:{...value.protocol,turns:[...value.protocol.turns,{role:'assistant',content:'Reply'}]}})
+ assert.equal(await queue.flush(),2);assert.deepEqual(revisions,[1,1,2]);queue.stop();assert.equal(await queue.flush(),null)
+})
+test('draft API requires account header, origin, separate rate and no provider sharing',()=>{
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(route,/auth\.verified\(\)/);assert.match(route,/requireSameOrigin/);assert.match(route,/ACCOUNT_CHANGED/);assert.match(route,/my-coach-draft-checkpoint/)
+ assert.match(server,/pg_advisory_xact_lock/);assert.match(server,/payload_ciphertext=null/);assert.match(server,/draftTranscriptPrefix/)
+ assert.doesNotMatch(route,/fetch\(/)
+})
+
+import {coachDraftReviewDecision} from '../lib/personal-coaching/protocol-draft.mjs'
+test('manual saves cannot bypass a live draft or resurrect erased records; exact finalized retries require existing archive',()=>{
+ assert.equal(coachDraftReviewDecision(null,undefined,false),'new')
+ assert.equal(coachDraftReviewDecision(null,0,false),'new')
+ assert.equal(coachDraftReviewDecision(null,1,false),'conflict')
+ for(const revision of [undefined,0,1])assert.equal(coachDraftReviewDecision({state:'discarded',revision:1},revision,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},undefined,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},1,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'active',revision:2},2,false),'promote')
+ assert.equal(coachDraftReviewDecision({state:'finalized',revision:2},2,false),'conflict')
+ assert.equal(coachDraftReviewDecision({state:'finalized',revision:2},2,true),'retry')
+})
+
+test('archive deletion uses the same draft lock and retains an erasure tombstone',()=>{
+ const server=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+ const section=server.slice(server.indexOf('export async function deleteMyCoachProtocol'),server.indexOf('// Session ratings'))
+ assert.match(section,/await lockCoachDraft\(db,actor,input\.id\)/)
+ assert.match(section,/await finalizeCoachDraft\(db,actor,input\.id,draft\)/)
+})

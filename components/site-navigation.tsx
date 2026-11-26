@@ -16,12 +16,14 @@ type FullHeaderComponents = {
   CartNavLink: ComponentType<{ locale: PublicLocale }>;
   HeaderCreditProfile: ComponentType<{ locale?: PublicLocale }>;
 };
-export type SiteNavigationProps = {
+export type SiteNavigationBaseProps = {
   locale?: PublicLocale;
   onLocaleChange?: (locale: Locale) => void;
-  compact?: boolean;
-  fullHeaderComponents?: FullHeaderComponents;
 };
+export type SiteNavigationProps = SiteNavigationBaseProps & (
+  | { compact: true; fullHeaderComponents?: never }
+  | { compact?: false; fullHeaderComponents: FullHeaderComponents }
+);
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 const myCoachMenuCopy = { en: 'My Coach', ru: 'Мой коуч', es: 'Mi coach' } as const;

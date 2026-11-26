@@ -9,16 +9,18 @@ import {
 } from '../lib/coaching/gemini-voice-catalog.mjs'
 
 const expected = {
-  mira: ['Erinome','Gacrux'],
-  max: ['Orus','Orus'],
-  sofia: ['Vindemiatrix','Sulafat'],
-  alex: ['Alnilam','Charon'],
+  mira: ['Erinome','Sulafat'],
+  max: ['Alnilam','Charon'],
+  sofia: ['Vindemiatrix','Gacrux'],
+  alex: ['Enceladus','Orus'],
   merlin: ['Sadaltager','Algenib'],
-  harry: ['Achird','Achird'],
+  harry: ['Achird','Orus'],
+  genie: ['Puck','Achird'],
+  caesar: ['Algenib','Alnilam'],
   meditations: ['Algieba','Algieba'],
 }
 
-test('all seven owner-approved Gemini voice profiles have exact RU/EN identities',()=>{
+test('all nine owner-approved Gemini voice profiles have exact RU/EN identities',()=>{
   assert.deepEqual(Object.keys(APPROVED_GEMINI_VOICES).sort(),Object.keys(expected).sort())
   for(const [id,[ru,en]] of Object.entries(expected)){
     assert.equal(approvedGeminiVoice(id,'ru'),ru)

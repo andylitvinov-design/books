@@ -68,9 +68,9 @@ test('each one of 31 steps offers three original questions and three stage repli
  assert.equal(questions,279)
  assert.equal(replies,279)
 })
-test('all current eleven personas, including Samir, retain eight original tone moves in three locales',()=>{
- assert.equal(COACH_PERSONAS.length,11)
- assert.equal(Object.keys(COACH_PERSONA_SPEECH_VARIANTS).length,11)
+test('all current twelve personas, including Samir and Caesar, retain eight original tone moves in three locales',()=>{
+ assert.equal(COACH_PERSONAS.length,12)
+ assert.equal(Object.keys(COACH_PERSONA_SPEECH_VARIANTS).length,12)
  for(const p of COACH_PERSONAS){
   assert.ok(p.methods[0]&&p.methods.length>=1,'one active primary method for '+p.id)
   for(const locale of localeNames)for(const act of ['contact','reflect','clarify','repair','transition','pause','review','action']){

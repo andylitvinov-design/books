@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {prepareReportSession} from '@/lib/consultations/owner-report-sharing'
-import {BookOpen,FolderOpen,RefreshCw,ShieldCheck} from 'lucide-react'
+import {BookOpen,FolderOpen,RefreshCw,ShieldCheck,Trash2} from 'lucide-react'
 import {SessionMaterialPicker} from './session-material-picker'
 import {SessionSaveFooterVideo} from './session-save-footer-video'
 import {SessionAudioRecorder} from './session-audio-recorder'
@@ -29,6 +29,14 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
   const [notice,setNotice]=useState('')
   const selectedIds=session?.draft?.plan?.materialIds||
     session?.draft?.plan?.materials?.map(item=>item.id)||[]
+  const selectedPlacements=session?.draft?.plan?.materialPlacements||{}
+  const assetsById=new Map((session?.assets||[]).map(asset=>[asset.id,asset]))
+  const personalTracks=(session?.draft?.media||[]).filter(item=>{
+    const asset=assetsById.get(item.assetId)
+    return item.scope==='client'&&item.role!=='hidden'&&
+      (placement==='video'?asset?.kind==='video':placement==='audio'?asset?.kind==='audio':
+        placement==='all'&&['video','audio'].includes(asset?.kind))
+  })
   const legacyCount=(session?.draft?.plan?.resources||[]).length+
     (session?.draft?.media||[]).filter(item=>item.scope==='client').length
   const editorUrl=sessionId?'/admin/clients/'+encodeURIComponent(clientId)+
@@ -75,7 +83,7 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     await readSession(created.id)
     return created.id
   }
-  async function saveSelectedMaterials(ids){
+  async function saveSelectedMaterials(ids,placements={}){
     if(busy)return
     setBusy(true);setNotice('');setError('')
     try{
@@ -86,7 +94,7 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
         const owner=(await ownerApi(base+'/'+encodeURIComponent(id))).session
         if(owner?.draft?.reportDocumentId!==documentId)
           throw new Error('REPORT_SESSION_MISMATCH')
-        const draft={...owner.draft,plan:{...owner.draft.plan,materialIds:ids}}
+        const draft={...owner.draft,plan:{...owner.draft.plan,materialIds:ids,materialPlacements:placements}}
         try{
           await ownerApi(base+'/'+encodeURIComponent(id),'PATCH',{
             expectedRevision:owner.draftRevision,draft,
@@ -107,6 +115,31 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
         (ru?'Не удалось сохранить выбор. Повторите действие.':'Unable to save selected materials. Please try again.'))
     }finally{setBusy(false)}
   }
+  async function removePersonalTrack(assetId){
+    if(busy||!sessionId)return
+    setBusy(true);setError('');setNotice('')
+    try{
+      for(let attempt=0;attempt<2;attempt++){
+        const owner=(await ownerApi(base+'/'+encodeURIComponent(sessionId))).session
+        if(owner?.draft?.reportDocumentId!==documentId)throw new Error('REPORT_SESSION_MISMATCH')
+        const draft={...owner.draft,media:owner.draft.media
+          .filter(item=>item.assetId!==assetId)
+          .map((item,index)=>({...item,sortOrder:index}))}
+        try{
+          await ownerApi(base+'/'+encodeURIComponent(sessionId),'PATCH',{
+            expectedRevision:owner.draftRevision,draft,
+          })
+          await readSession(sessionId)
+          setNotice(ru?'Запись убрана из черновика отчёта. Исходный файл сохранён; опубликуйте обновление отдельно.':
+            'Track removed from the report draft. Its original file is retained; publish the revision separately.')
+          return
+        }catch(e){if(e.message!=='SESSION_CHANGED'||attempt===1)throw e}
+      }
+    }catch(e){setError(e.message==='REPORT_SESSION_MISMATCH'?
+      (ru?'Это видео относится к другому отчёту.':'This video belongs to another report.'):
+      (ru?'Не удалось убрать запись. Обновите данные и повторите.':'Could not detach this track. Refresh and retry.'))}
+    finally{setBusy(false)}
+  }
   async function refresh(){
     if(busy)return
     setLoading(true);setError('');setNotice('')
@@ -123,13 +156,29 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
   {(placement==='audio'||placement==='all')&&!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
     documentId={documentId} locale={locale} audioOnly
     onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}
+  {(placement==='video'||placement==='audio'||placement==='all')&&personalTracks.length>0&&
+    <section className={styles.ownerReportMaterials} aria-label={ru?'Личные записи отчёта':'Personal report recordings'}>
+      <h3>{ru?'Прикреплённые записи':'Attached recordings'}</h3>
+      {personalTracks.map(item=><div className={styles.ownerSelectedMediaRow} key={item.assetId}>
+        <span><strong>{item.title|| (ru?'Запись':'Recording')}</strong>
+          <small>{assetsById.get(item.assetId)?.kind==='audio'?(ru?'Аудиотрек':'Audio track'):(ru?'Видео':'Video')}</small></span>
+        <button type="button" disabled={busy} onClick={()=>void removePersonalTrack(item.assetId)}
+          aria-label={(ru?'Убрать из отчёта: ':'Remove from report: ')+(item.title||'Recording')}>
+          <Trash2 size={17} aria-hidden="true"/>{ru?'Убрать':'Remove'}
+        </button>
+      </div>)}
+      <p className={styles.ownerMaterialsMuted}>{ru?'Убирает запись только из этого отчёта. Если она уже опубликована, клиент увидит изменения после повторной публикации.':
+        'This only detaches the track from this report. If already published, the client sees the change after you publish again.'}</p>
+      {notice&&<p role="status" className={styles.success}>{notice}</p>}
+      {error&&<p role="alert" className={styles.error}>{error}</p>}
+    </section>}
   {(placement==='materials'||placement==='all')&&<section id="report-video-materials-editor" className={styles.ownerReportMaterials}
     aria-labelledby="report-materials-editor-title">
     <div className={styles.ownerMaterialsHeader}>
       <span className={styles.ownerMaterialsSymbol}><FolderOpen size={23} aria-hidden="true"/></span>
       <div>
         <span className={styles.eyebrow}>{ru?'РЕДАКТОР ОТЧЁТА':'REPORT EDITOR'}</span>
-        <h2 id="report-materials-editor-title">{ru?'Материалы из библиотеки':'Materials from library'}</h2>
+        <h2 id="report-materials-editor-title">{ru?'Видео и аудиотреки отчёта':'Report video and audio tracks'}</h2>
         <p>{ru?'Сохраните общее видео из отчёта или телефона, затем выбирайте его для других клиентов.':
           'Save a general video from this report or phone, then reuse it in other reports.'}</p>
       </div>
@@ -142,8 +191,8 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     </div>
     <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
     {loading?<p role="status">{ru?'Загружаем выбор материалов…':'Loading selected materials…'}</p>:
-      <SessionMaterialPicker locale={locale} selectedIds={selectedIds}
-        disabled={busy} onChange={ids=>void saveSelectedMaterials(ids)}/>}
+      <SessionMaterialPicker locale={locale} selectedIds={selectedIds} placements={selectedPlacements}
+        disabled={busy} onChange={(ids,placements)=>void saveSelectedMaterials(ids,placements)}/>}
     {legacyCount>0&&<p className={styles.ownerMaterialsMuted}>{ru?
       'Уже добавленные к этой консультации личные записи и старые ссылки сохранены. Они не становятся общими материалами.':
       'Existing personal recordings and legacy links remain in this consultation. They are not part of the shared library.'}</p>}

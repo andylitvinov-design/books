@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig,myCoachFishVoice,
- MY_COACH_FISH_VOICES,MIRA_RU_FISH_VOICE_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
+ MY_COACH_FISH_VOICES,OWNER_FISH_RU_CAST} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
   from '../lib/coaching/persona-presentations.mjs'
 import {
@@ -15,9 +15,9 @@ import {
   coachSessionHref, coachStagePrompt, buildCoachBehaviorPolicy, personaMethodFit,
 } from '../lib/coaching/persona-registry.mjs'
 
-test('eleven distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
-  assert.equal(COACH_PERSONAS.length, 11)
-  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 11)
+test('twelve distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
+  assert.equal(COACH_PERSONAS.length, 12)
+  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 12)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
     assert.ok(COACH_TOPICS.includes(persona.topic), persona.id)
@@ -125,8 +125,9 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.ok(avatar.includes('MyCoachMotionMedia personaId={photoId}'))
   assert.match(css,/\.livingPortraitMouth\{display:none!important\}/)
   assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])"))
-  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v1.mp4'"),
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry','genie'])"),
+    'approved six MP4 coaches remain allowlisted alongside Samir cinematic GIF')
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v2.mp4'"),
     'Merlin and Harry use pre-rendered greeting videos rather than synthesized facial movement')
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
   assert.ok(media.includes('coachNaturalVideoPath(personaId,state,visualScene)'))
@@ -165,10 +166,12 @@ test('mobile My Coach hero displays a still/MP4 scene with no CSS lip or eye dis
 // field and every opted-in natural-voice request failed before TTS.
 test('Mira Russian voice is locale-specific and never enabled without approved usage rights',()=>{
  assert.equal(myCoachFishVoice('mira','en',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),MIRA_RU_FISH_VOICE_CANDIDATE)
- assert.equal(myCoachFishVoice('max','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),MY_COACH_FISH_VOICES.max)
+ assert.equal(myCoachFishVoice('mira','ru',{}),null)
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),null)
+ // Obsolete Mira 'mur' approval must never resurrect an EN or wrong RU voice.
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),null)
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),null)
+ assert.equal(myCoachFishVoice('max','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),OWNER_FISH_RU_CAST.max)
  assert.equal(myCoachFishVoice('__proto__','ru',{}),null)
  const privateRoute=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
  const introRoute=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
@@ -251,7 +254,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(!voice.includes('audio-storyboard'))
 })
 
-test('each of eleven AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+test('each of twelve AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
   assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
   for(const locale of COACH_LOCALES){
     const voices=new Set(),introductions=new Set(),styles=new Set()
@@ -268,9 +271,9 @@ test('each of eleven AI personae introduces its own approach and unique speech s
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,11)
-    assert.equal(styles.size,11)
-    assert.equal(voices.size,11)
+    assert.equal(introductions.size,12)
+    assert.equal(styles.size,12)
+    assert.equal(voices.size,12)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)
@@ -295,7 +298,7 @@ test('legacy persona speech profiles remain pure and do not trigger device playb
   }
 })
 
-test('the eleven registered presentations flow directly into the same live dialogue',()=>{
+test('the twelve registered presentations flow directly into the same live dialogue',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
@@ -322,4 +325,20 @@ test('the eleven registered presentations flow directly into the same live dialo
   // no longer needs a second screen or another Play to start recognition.
   assert.ok(intro.includes('data-my-coach-audio-introduction={personaId}'))
   assert.ok(introCss.includes('@media(max-width:699px)'))
+})
+
+
+import {COACH_METHOD_CODES} from '../lib/coaching/persona-registry.mjs'
+test('optional deep-linked method remains a preference and accepts only persona-allowlisted values',()=>{
+ for(const persona of COACH_PERSONAS){
+  const method=COACH_METHOD_CODES[persona.methods[1]]
+  const legacy=coachSessionHref('ru',persona.id,{})
+  assert.equal(new URL(legacy,'https://example.test').searchParams.has('method'),false)
+  const params=Object.fromEntries(new URL(coachSessionHref('ru',persona.id,{},method),'https://example.test').searchParams)
+  assert.equal(resolveCoachSelection(params).methodId,method)
+  assert.equal(resolveCoachSelection({...params,method:'unregistered'}),null)
+  assert.equal(resolveCoachSelection({...params,method:[method,method]}),null)
+  assert.equal(resolveCoachSelection({...params,method:null}),null)
+  assert.equal(coachSessionHref('ru',persona.id,{},'unregistered'),null)
+ }
 })

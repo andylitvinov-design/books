@@ -39,11 +39,11 @@ export function energyworkFirstLessonAnswers(value) {
  * @param {Record<string, string>} values
  * @param {'en' | 'ru'} locale
  * @param {number} [now]
- * @param {'continue' | 'courses'} [afterSave]
+ * @param {'continue' | 'courses' | 'hints'} [afterSave]
  */
 export function energyworkCreateFirstLessonHandoff(values, locale, now = Date.now(), afterSave = 'continue') {
   if (!['en', 'ru'].includes(locale)) throw new Error('INVALID_LOCALE')
-  if (!['continue', 'courses'].includes(afterSave)) throw new Error('INVALID_DESTINATION')
+  if (!['continue', 'courses', 'hints'].includes(afterSave)) throw new Error('INVALID_DESTINATION')
   const subset = Object.fromEntries(IDS.filter(id => values[id] !== undefined).map(id => [id, values[id]]))
   return JSON.stringify({
     kind: HANDOFF_KIND,
@@ -63,7 +63,7 @@ export function energyworkReadFirstLessonHandoff(raw, locale, now = Date.now()) 
     if (!value || value.kind !== HANDOFF_KIND || value.version !== ENERGYWORK_VERSION ||
         value.locale !== locale || !Number.isSafeInteger(value.expiresAt) ||
         value.expiresAt <= now || value.expiresAt > now + MAX_AGE_MS) return null
-    if (value.afterSave !== undefined && !['continue', 'courses'].includes(value.afterSave)) return null
+    if (value.afterSave !== undefined && !['continue', 'courses', 'hints'].includes(value.afterSave)) return null
     return { answers: energyworkFirstLessonAnswers(value.answers), afterSave: value.afterSave ?? 'continue' }
   } catch {
     return null

@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck } from 'lucide-react'
 import {
-  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_RAIL_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona, COACH_METHOD_CODES, resolveCoachMethodId,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
@@ -281,6 +281,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
+  const [selectedMethod,setSelectedMethod]=useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
   const [humanExpanded, setHumanExpanded] = useState(false)
@@ -323,7 +324,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
-  const startHref = coachSessionHref(lang, selected.id, safeSettings)
+  const safeMethod=selectedMethod&&resolveCoachMethodId(selected.id,selectedMethod)||''
+  const startHref = coachSessionHref(lang, selected.id, safeSettings, safeMethod)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
   // Reuse the website's service-specific, privacy-filtered messenger handoff.
@@ -336,6 +338,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     setExpandedId(open => open === id ? null : id)
     if (id !== selectedId) {
       setSelectedId(id)
+      setSelectedMethod('')
       setSettings(normalizeCoachSettings(id))
     }
   }
@@ -382,11 +385,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             <h2>{hw.hello} {selectedName}</h2>
             <p>{hw.subtitle}</p>
           </div>
+          {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
-            {selected.id === 'mira'
+            {selected.id === 'mira' && !safeMethod
               ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
-              : <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>}
+              : <a className={heroStyles.talkButton} href={startHref}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
           </div>
           <div className={heroStyles.stageTopics}>
             <span>{hw.topic}</span>
@@ -410,19 +414,20 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
         <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
-          {PUBLIC_COACH_PERSONA_IDS.map(id => {
+          {PUBLIC_COACH_RAIL_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null
             const stillImage = id === 'harry'
               ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
-              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-still.svg'
+              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-natural-opening-v2.webp'
+              : id === 'caesar' ? '/images/holistic-house/my-coach-motion/caesar-emblem.svg'
               : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
-              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
-              <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
+              onClick={() => { if(id!==selectedId)setSelectedMethod(''); setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
+              <span className={heroStyles.railPortrait} data-persona={id} data-genie-roster-photo={id==='genie'?'webp':undefined} aria-hidden="true">
                 <picture>
-                  <source media="(prefers-reduced-motion: reduce)" type="image/webp"
+                  <source media="(prefers-reduced-motion: reduce)" type={id==='caesar'?'image/svg+xml':'image/webp'}
                     srcSet={stillImage} />
                   <img
                     className={heroStyles.railPhoto}
@@ -443,7 +448,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={heroStyles.benefitTiles}>
           <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
-          <Link href={startHref} prefetch={false}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></Link>
+          <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
         </div>
       </section>
       <section className={[heroStyles.directoryHeading, styles.compactHeading].join(" ")} id="all-coaches" aria-label={hw.browse}>
@@ -581,9 +586,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
-                  <Link className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
-                    prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
+                  <a className={styles.cardButton}
+                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}>
+                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
                 </div>
               </div>
               <button type="button" className={styles.heart}
@@ -613,7 +618,15 @@ export default function MyCoachCatalog({ locale = 'en' }) {
            <div><h3>{t.workStyle}</h3><p>{localCoachText(selectedPassport?.workStyle,lang)}</p></div>
            <div><h3>{t.suited}</h3><p>{localCoachText(selected.suitable, lang)}</p></div>
           <div><h3>{t.about}</h3><p>{localCoachText(selected.approach, lang)}</p></div>
-          <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p></div>
+          <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p>
+            <label data-coach-catalog-method style={{display:'grid',gap:6}}>
+              <span>{({ru:'Предпочтительный метод (необязательно)',en:'Preferred method (optional)',es:'Método preferido (opcional)'})[lang]}</span>
+              <select value={safeMethod} onChange={event=>setSelectedMethod(event.target.value)} style={{minHeight:44,maxWidth:'100%',fontSize:16}}>
+                <option value="">{({ru:'Обычный диалог',en:'Standard conversation',es:'Conversación habitual'})[lang]}</option>
+                {selected.methods.map(method=><option key={method} value={COACH_METHOD_CODES[method]}>{method}</option>)}
+              </select>
+              <small>{({ru:'Подтверждается при начале сессии после входа.',en:'Confirmed when you start a session after signing in.',es:'Se confirma al iniciar una sesión tras acceder a tu cuenta.'})[lang]}</small>
+            </label></div>
         </div>
         <div className={styles.opening}>
           <span>{t.example}</span>
@@ -644,8 +657,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={styles.preview}>
           <span>{t.preview}</span><p>{followupPreview}</p>
         </div>
-        <Link className={styles.primary} href={startHref} prefetch={false}
-          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></Link>
+        <a className={styles.primary} href={startHref}
+          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></a>
         <p className={styles.sessionNote}>{t.sessionNote}</p>
         <p className={styles.privacy}>{t.privacy}</p>
       </section>

@@ -78,6 +78,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const [speaking,setSpeaking]=useState(false);
  const [recording,setRecording]=useState(false);
  const [conversing,setConversing]=useState(false);
+ const [paused,setPaused]=useState(false);
+ const pauseOnHide=useRef(false);
  const dialogueActive=useRef(false);
  const dialogueOnTurn=useRef<((text:string)=>void)|null>(null);
  const resumeDialogue=useRef<(()=>void)|null>(null);
@@ -103,7 +105,15 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  },[]);
  const stopDialogue=useCallback(()=>{
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
-  if(mounted.current)setConversing(false);
+  pauseOnHide.current=false;
+  if(mounted.current){setConversing(false);setPaused(false);setNotice('');}
+  stop();
+ },[stop]);
+ const pauseDialogue=useCallback(()=>{
+  if(!dialogueActive.current)return;
+  // Retire every capture/playback callback, retaining only the UI pause state.
+  dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
+  if(mounted.current){setConversing(false);setPaused(true);setNotice('');}
   stop();
  },[stop]);
  const setVoiceId=useCallback((value:string)=>{
@@ -130,18 +140,21 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   setPrefersRecorded(ios27NeedsSpeechRecovery(window.navigator));
   const unwatch=controller.watchVoices(list=>
     setVoices(list.filter(v=>v.lang.toLowerCase().startsWith(speechLocale))));
-  const hide=()=>{if(document.hidden)stopDialogue();};
+  const suspend=()=>{
+   if(pauseOnHide.current){pauseDialogue();stop();}else stopDialogue();
+  };
+  const hide=()=>{if(document.hidden)suspend();};
   document.addEventListener('visibilitychange',hide);
-  window.addEventListener('pagehide',stopDialogue);
+  window.addEventListener('pagehide',suspend);
   window.addEventListener('hh:voice-companion-stop',stopDialogue);
   return ()=>{
    mounted.current=false;stopDialogue();unwatch();controller.destroy();
    if(speaker.current===controller)speaker.current=null;
    document.removeEventListener('visibilitychange',hide);
-   window.removeEventListener('pagehide',stopDialogue);
+   window.removeEventListener('pagehide',suspend);
    window.removeEventListener('hh:voice-companion-stop',stopDialogue);
   };
- },[enabled,speechLocale,stopDialogue]);
+ },[enabled,speechLocale,stopDialogue,pauseDialogue]);
  useEffect(()=>{
   if(!enabled)return;
   try{
@@ -161,9 +174,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const setRecognitionConsent=useCallback((value:boolean)=>{
   if(!value)stopDialogue();setSttConsent(value);setNotice('');
  },[stopDialogue]);
- const speak=useCallback((text:string)=>{
+ const speak=useCallback((text:string,explicitPlay=false)=>{
   if(!enabled)return;
-  if(chooseVoiceRoute({channel:'web',playbackConsent})!=='browser-speech'){
+  // Explicit Read aloud is an immediate user gesture, not automatic playback.
+  if(chooseVoiceRoute({channel:'web',playbackConsent:playbackConsent||explicitPlay})!=='browser-speech'){
    setNotice(t.permission);return;
   }
   if(document.hidden)return;
@@ -175,7 +189,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(!parts.length){if(dialogueActive.current)stopDialogue();return;}
   // No background synthesis and no new AI turn. A client gesture (or prior
   // explicit opt-in to auto-read) starts one existing browser voice session.
-  stop();setNotice('');lastSpoken.current=text;
+  if(explicitPlay){setPlaybackConsent(true);stopDialogue();}
+  else stop();
+  setNotice('');lastSpoken.current=text;
   const seq=generation.current;
   let index=0;
   const playNext=()=>{
@@ -194,10 +210,17 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     onStart:()=>{if(seq===generation.current)setSpeaking(true);},
     onEnd:(reason)=>{
      if(seq!==generation.current)return;
-     if(reason==='ended'){playNext();return;}
+     if(reason==='ended'){
+      // Safari can keep speechSynthesis.speaking true until after onend.
+      // Leave the event stack before scheduling the next spoken segment.
+      resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},100);
+      return;
+     }
      setSpeaking(false);
      if(dialogueActive.current)stopDialogue();
-     if(reason!=='cancelled')setNotice(t.error);
+     // An unexpected watchdog cancellation is also a playback failure.
+     // Our own explicit stop increments generation before cancelling.
+     setNotice(t.error);
     },
    },{rate:normalizeSpeechRate(rate),voiceURI:normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
    if(!result?.ok){
@@ -208,9 +231,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   };
   playNext();
  },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
- const dictate=useCallback((onTranscript:(text:string)=>void)=>{
+ const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
-  if(!sttConsent){setNotice(t.sttConsent);return;}
+  if(!sttConsent&&!consentOnStart){setNotice(t.sttConsent);return;}
   const Ctor=(window as SpeechWindow).SpeechRecognition||(window as SpeechWindow).webkitSpeechRecognition;
   if(!Ctor){stopDialogue();setNotice(t.inputUnavailable);return;}
   stop();setNotice('');
@@ -225,9 +248,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
     const text=capture.accept(event.results?.[0]?.[0]?.transcript);
-    if(text){hadSpeech=true;onTranscript(text);setNotice(t.captured);}
+    if(text){hadSpeech=true;const live=dialogueActive.current;
+    setNotice(live?'':t.captured);onTranscript(text);}
    };
-   instance.onerror=()=>{if(!capture.isActive())return;
+   instance.onerror=()=>{if(!capture.isActive()||hadSpeech)return;
      stopDialogue();setNotice(t.error);setRecording(false);recognition.current=null;};
    instance.onend=()=>{if(!capture.isActive())return;
      setRecording(false);recognition.current=null;
@@ -245,7 +269,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   stop();setNotice('');
   const epoch=generation.current;
   const capture=startCoachRecordedTurn({
-   locale:speechLocale,environment:window,purpose:recordedPurpose.current,
+   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,
    onState:state=>{
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
@@ -270,20 +294,26 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(capture){recordedTurn.current=capture;setRecording(true);}
   else{stopDialogue();setNotice(t.inputUnavailable);}
  },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public'}={})=>{
-  if(!enabled)return false;
-  if(!supported||!playbackConsent||!sttConsent){setNotice(t.permission);return false;}
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean}={})=>{
+  if(!enabled||document.hidden)return false;
+  const consentOnStart=options.consentOnStart===true;
+  if(!supported||(!consentOnStart&&(!playbackConsent||!sttConsent))){setNotice(t.permission);return false;}
   const recordedNeeded=prefersRecorded||!recognitionSupported;
   if(recordedNeeded&&(!recordedSupported||options.allowRecorded!==true)){
    setNotice(t.recordedConsent);return false;
   }
   if(!recordedNeeded&&!recognitionSupported){setNotice(t.inputUnavailable);return false;}
+  // An informed Start talking click is the single activation. Set session-only
+  // device playback and STT consent without losing Safari's user gesture.
+  // Native browser microphone permission is still requested separately.
+  if(consentOnStart){setPlaybackConsent(true);setSttConsent(true);}
   useRecordedDialogue.current=recordedNeeded;
   recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
-  dialogueActive.current=true;dialogueOnTurn.current=onTurn;setConversing(true);
+  pauseOnHide.current=options.pauseOnHide===true;
+  dialogueActive.current=true;dialogueOnTurn.current=onTurn;setPaused(false);setConversing(true);
   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
   if(recordedNeeded)dictateRecorded(receive);
-  else dictate(receive);
+  else dictate(receive,consentOnStart);
   return true;
  },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
    recordedSupported,prefersRecorded,sttConsent,supported,t]);
@@ -294,14 +324,27 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    else dictate(receive);
   }
  };
+ const markExternalSpeaking=useCallback(()=>{
+  // External renderer owns audio. Do not capture its output.
+  stop();if(mounted.current)setSpeaking(true);
+ },[stop]);
+ const resumeAfterExternalReply=useCallback(()=>{
+  stop();
+  if(!dialogueActive.current||document.hidden)return;
+  const epoch=generation.current;
+  resumeTimer.current=setTimeout(()=>{
+   resumeTimer.current=null;
+   if(epoch===generation.current&&dialogueActive.current&&!document.hidden)resumeDialogue.current?.();
+  },450);
+ },[stop]);
  const interruptReply=()=>{
-  if(!dialogueActive.current||!speaking)return;
+  if(!dialogueActive.current||!speaking||document.hidden)return;
   stop();
   resumeDialogue.current?.();
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
-  setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply};
+  setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,paused,pauseDialogue,
+  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 
