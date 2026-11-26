@@ -146,7 +146,16 @@ test("plot recommendation enforces aspect before storyboard assembly",async()=>{
 test("mobile director forwards aspect and invalidates a confirmed cut on format change",()=>{
   const source=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
   assert.match(source,/targetAspect:aspect/);
-  assert.match(source,/stageCaptions,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,/);
+  // All inputs to the confirmed cut must participate in its identity, even
+  // when additional personal-brief inputs are inserted into the key.
+  const key = source.match(/const timelineKey=JSON\.stringify\(\[([\s\S]*?)\]\);/);
+  assert.ok(key, "confirmed timeline identity must exist");
+  const fields = key[1].split(",").map(field=>field.trim());
+  for (const field of ["stageCaptions","clientWish","selectedCategoryId",
+    "selectedSubcategoryId","selectedTopicId","selectedScenarioId","selectedPlotId",
+    "selectedMeaningAxisId","selectedMotifId","selectedStyleId","aspect"]) {
+    assert.ok(fields.includes(field), field+" must invalidate a stale confirmed cut");
+  }
 });
 
 test('ranked landscape alternatives are unique and exclude portrait-only footage',async()=>{
