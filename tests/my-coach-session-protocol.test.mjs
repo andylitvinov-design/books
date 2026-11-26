@@ -454,3 +454,22 @@ test('explicit course review binds exact client quote, retains correction histor
  assert.ok(report.protocolOverview.includes(obj.turns[2].content))
  assert.equal(myCoachProtocolPdfOptions(record,{documentKind:'transcript'}).protocolOverview,'')
 })
+
+test('explicitly reopening a reviewed checkpoint suppresses stale candidates without deleting the evidence history',()=>{
+ const course='goal_result',q=coachCourseProtocolSchema(course,'en').checkpoints.find(x=>x.id==='goal').question
+ const turns=[{role:'assistant',content:q},{role:'user',content:'I want to open a new studio.'}]
+ const getRow=review=>coachCourseProtocolRows(course,turns,review,'en').find(x=>x.id==='goal')
+ assert.equal(getRow(null).status,'needs_confirmation')
+ let review=appendCoachCourseFieldReview(null,course,turns,'goal','turn:1')
+ assert.equal(getRow(review).status,'confirmed')
+ review=appendCoachCourseFieldReview(review,course,turns,'goal','open')
+ assert.equal(getRow(review).status,'not_explored')
+ assert.equal(getRow(review).quote,'')
+ assert.equal(getRow(review).turnIndex,null)
+ assert.equal(getRow(review).source,'client_selected_open')
+ assert.equal(review.events.length,2)
+ assert.equal(review.events[0].quote,turns[1].content)
+ review=appendCoachCourseFieldReview(review,course,turns,'goal','turn:1')
+ assert.equal(getRow(review).status,'confirmed')
+ assert.equal(review.events.length,3)
+})
