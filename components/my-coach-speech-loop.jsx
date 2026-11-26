@@ -116,10 +116,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!activeRef.current||generationRef.current!==generation||earlySpeechRef.current||
        phaseRef.current!=='thinking'||typeof phrase!=='string'||
        phrase.length<20||phrase.length>220)return
-    const early={generation,prefix:phrase,ended:false,final:null}
+    const early={generation,prefix:phrase,ended:false,final:null,started:false,timer:null}
     earlySpeechRef.current=early
-    changePhase('loading')
-    void speakCoachReply({reply:phrase,mode:'ai',locale},'',generation,false,true)
+    // Most short Groq replies finish within one sentence boundary. Give the
+    // final validated result a small coalescing window before spending TTS.
+    early.timer=window.setTimeout(()=>{
+      if(!activeRef.current||generationRef.current!==generation||earlySpeechRef.current!==early||phaseRef.current!=='thinking')return
+      early.timer=null;early.started=true
+      changePhase('loading')
+      void speakCoachReply({reply:phrase,mode:'ai',locale},'',generation,false,true)
+    },120)
   }
   function finishEarlyPhrase(early){
     if(earlySpeechRef.current!==early||generationRef.current!==early.generation||!early.final)return
@@ -145,6 +151,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     else changePhase('thinking')
   }
   function silence(){
+    if(earlySpeechRef.current?.timer!=null)window.clearTimeout(earlySpeechRef.current.timer)
     earlySpeechRef.current=null
     if(speechTimerRef.current)clearTimeout(speechTimerRef.current)
     speechTimerRef.current=null;blockedResumeRef.current=null;utteranceRef.current=null
@@ -216,6 +223,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     try{if(speakingRef.current&&utteranceRef.current)window.speechSynthesis?.pause?.()}catch{}
   }
   function cancelOutgoingCoachSpeech(){
+    if(earlySpeechRef.current?.timer!=null)window.clearTimeout(earlySpeechRef.current.timer)
     // Cancel ONLY the outgoing player and vendor fetch: never release the
     // already-capturing client microphone or the original Play audio context.
     providerUnavailableRef.current=null
@@ -960,7 +968,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     heardRef.current=''
     transcriptRef.current?.('')
     const early=earlySpeechRef.current
-    if(early&&early.generation===generation){
+    if(early&&early.generation===generation&&!early.started){
+      if(early.timer!==null)window.clearTimeout(early.timer)
+      earlySpeechRef.current=null
+      // One fully validated synthesis; no separate prefix or remainder.
+    }else if(early&&early.generation===generation){
       if(result.mode==='ai'&&result.approvedSpokenPrefix===early.prefix&&
          String(result.reply).startsWith(early.prefix)){
         early.final=result
