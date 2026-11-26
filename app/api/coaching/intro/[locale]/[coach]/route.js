@@ -73,7 +73,7 @@ export async function GET(request){
     if(request.headers.get('sec-fetch-site')==='cross-site')
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
-    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|lea|noah|iris|ray)\/?$/.exec(url.pathname)
+    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|caesar|lea|noah|iris|ray)\/?$/.exec(url.pathname)
     if(!match||!['','?v=2','?v=3','?v=4'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
     const version=url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
@@ -120,7 +120,7 @@ export async function GET(request){
       return await persistGreeting(config,personaId,locale,audio,version)
     }
     // New approved versioned greetings must be Gemini, never a substituted voice.
-    if(version==='v3'||version==='v4')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    if(personaId==='caesar'||version==='v3'||version==='v4')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.
