@@ -29,7 +29,7 @@ test('component is integrated into existing protected Clarity journal without ne
  const page=readFileSync(new URL('../components/app/daybook-journal.jsx',import.meta.url),'utf8')
  const component=readFileSync(new URL('../components/app/discover-practice.jsx',import.meta.url),'utf8')
  assert.match(page,/phase==='ready'&&account\?<><ClarityDaybook/)
- assert.match(page,/DiscoverPractice key=\{account\}/)
+ assert.match(page,/DiscoverPractice key=\{'discover:'\+account\}/)
  assert.match(component,/createJournalSaver\(appFetch,accountId\)/)
  assert.match(component,/await saver\.current\.save\(pending\.current\)/)
  assert.match(component,/if\(hasMore\)/)
