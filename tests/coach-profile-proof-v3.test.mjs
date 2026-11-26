@@ -27,3 +27,19 @@ test('actual HMAC receipt is account/session/track/transcript bound; append-only
    assert.equal(verifyCoachProfileArchiveProof(config,actor,invalid,value),false)
  assert.equal(verifyCoachProfileArchiveProof(config,actor,{...protocol,turns:[...protocol.turns,{role:'assistant',content:'Continue'}]},value),true)
 })
+
+
+test('signed profile proof offsets the prior acknowledged transcript without certifying old prompts',()=>{
+ let ledger=startCoachProfileDirectorV3({sessionId:'33333333-3333-4333-8333-333333333333',courseSessionId:'introductory',locale:'ru'},time)
+ const pending=ledger.pending
+ ledger=confirmCoachProfilePromptV3(ledger,{expectedRevision:0,questionTurnId:pending.questionTurnId,content:pending.question.text},time)
+ ledger=answerCoachProfileDirectorV3(ledger,{expectedRevision:0,questionId:pending.question.id,content:'0'},time)
+ const prefix=[{role:'assistant',content:'Предыдущее знакомство'},{role:'user',content:'Я согласен'}]
+ const value=issueCoachProfileArchiveProof(config,actor,{...ledger,acknowledgedPrefix:prefix})
+ const protocol={id:ledger.sessionId,courseSessionId:ledger.courseSessionId,locale:ledger.locale,
+  turns:[...prefix,...ledger.transcript]}
+ assert.equal(value.block.bindings[0].questionTurnIndex,2)
+ assert.equal(value.block.bindings[0].turnIndex,3)
+ assert.equal(verifyCoachProfileArchiveProof(config,actor,protocol,value),true)
+ assert.equal(verifyCoachProfileArchiveProof(config,actor,{...protocol,turns:[{role:'assistant',content:'Changed'},...protocol.turns.slice(1)]},value),false)
+})
