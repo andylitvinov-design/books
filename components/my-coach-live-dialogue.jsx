@@ -850,7 +850,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    if(privateTextOnly)return
+    if(privateTextOnly||voicePauseRef.current||paused)return
     // Dynamic replies preserve their consented remote provider. Fixed public
     // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
@@ -1551,6 +1551,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
+      freezeActiveClock()
       speechRef.current?.stop?.()
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
@@ -1879,7 +1880,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{resumeInFlight.current=false;if(draftMountedRef.current)setResumeBusy(false)}
   }
-  const keepCoachTab=liveVoiceSelected&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
+  const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
@@ -2489,7 +2490,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
-          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired} onChange={event=>{
+          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired||voicePaused||paused} onChange={event=>{
             engineManuallySelectedRef.current=true
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)

@@ -39,7 +39,10 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     audioSession:{type:'auto'},
     mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})},
   }
+  const windowEvents=new Map(),documentEvents=new Map()
   const fakeWindow={
+    addEventListener(type,fn){windowEvents.set(type,fn)},
+    removeEventListener(type,fn){if(windowEvents.get(type)===fn)windowEvents.delete(type)},
     navigator,SpeechRecognition:Recognition,webkitSpeechRecognition:Recognition,
     SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
     speechSynthesis:{
@@ -56,7 +59,9 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
       },
     },
   }
-  const fakeDocument={visibilityState:'visible',addEventListener(){},removeEventListener(){}}
+  const fakeDocument={visibilityState:'visible',
+    addEventListener(type,fn){documentEvents.set(type,fn)},
+    removeEventListener(type,fn){if(documentEvents.get(type)===fn)documentEvents.delete(type)}}
   const hooks={
     forwardRef:fn=>fn,
     useRef:value=>({current:value}),
@@ -112,6 +117,9 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
   },ref)
   return {
     ref,voices,inputs,phases,drafts,
+    hide(){fakeDocument.visibilityState='hidden';documentEvents.get('visibilitychange')?.()},
+    show(){fakeDocument.visibilityState='visible';documentEvents.get('visibilitychange')?.()},
+    pagehide(){windowEvents.get('pagehide')?.()},
     get starts(){return starts},
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
@@ -443,5 +451,26 @@ test('explicit pause preserves editable interim words and resumes the same mount
   assert.notEqual(first,second)
   assert.equal(session.starts,starts,'resume must not restart the session')
   assert.equal(session.intros,intros,'resume must not replay the introduction')
+  session.ref.current.stop()
+})
+
+test('background and pagehide require explicit Play and do not consume another introduction or turn',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  const introductions=session.intros,starts=session.starts,tts=session.ttsCalls
+  session.hide()
+  assert.equal(first.aborted,true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.startSession('intro'),false,'never resume in hidden document')
+  session.pagehide()
+  session.show()
+  assert.equal(session.phases.at(-1),'paused','visibility alone cannot resume')
+  assert.equal(session.ttsCalls,tts)
+  assert.equal(session.inputs.length,0)
+  assert.equal(session.ref.current.startSession('intro'),true)
+  await nextMic(session,2)
+  assert.equal(session.intros,introductions)
+  assert.equal(session.starts,starts)
   session.ref.current.stop()
 })
