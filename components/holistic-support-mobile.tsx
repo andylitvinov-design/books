@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import AcademyVideoProgress from "@/components/app/academy-video-progress";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
@@ -22,6 +23,8 @@ import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
+import { stageSupportGoalProfile, normalizeSavedGoalProfile } from "@/lib/holistic-support/saved-goal-profile.mjs";
+import { appFetch } from "@/lib/app/client-fetch";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -211,10 +214,10 @@ const copy = {
     healingTitle: "Reiki support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
-    progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Ratings and viewing history stay on your device. Your photo enters your private Cabinet only when you choose Save.",
+    progress: "Activity on this page", openFullProgress: "Open my saved progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
+    private: "Private until saved", privateInfo: "Goals and ratings are saved only when you choose Save to Cabinet. Photos and video progress enter your private account only through their separate explicit save actions.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
-    settings: "Languages & privacy", language: "Language", close: "Close settings",
+    settings: "Profile & settings", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
@@ -325,10 +328,10 @@ const copy = {
     healingTitle: "Рейки поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
-    progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Оценки и история просмотра остаются на устройстве. Фото попадает в личный кабинет только после нажатия «Сохранить».",
+    progress: "На этом экране", openFullProgress: "Открыть мой прогресс в кабинете", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
+    private: "Приватно до сохранения", privateInfo: "Цели и оценки сохраняются только по кнопке «Сохранить в кабинете». Фото и отметки о видео сохраняются в личном кабинете отдельными явными действиями.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
-    settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
+    settings: "Профиль и настройки", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
@@ -439,10 +442,10 @@ const copy = {
     healingTitle: "Apoyo Reiki", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
-    progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial permanecen en el dispositivo. La foto solo se guarda en tu cuenta cuando pulsas Guardar.",
+    progress: "Actividad en esta página", openFullProgress: "Abrir mi progreso guardado", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
+    private: "Privado hasta guardar", privateInfo: "Tus metas y valoraciones solo se guardan al elegir Guardar en mi cuenta. Las fotos y el progreso de vídeo se guardan en tu cuenta únicamente mediante acciones explícitas independientes.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
-    settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
+    settings: "Perfil y ajustes", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
 } as const;
@@ -694,6 +697,30 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
   };
+  // Explicit, transient handoff through the existing Google/PKCE + Cabinet consent.
+  // No health data in the OAuth URL, marketing pixels or CRM.
+  const saveGoalProfileToCabinet = async (input: {
+    scores: Record<"energy" | "money" | "relationships" | "meaning", number>;
+    savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
+    activeSector: GoalSector;
+  }) => {
+    const profile = normalizeSavedGoalProfile({ version: 1, ...input });
+    if (!profile) throw new Error("INVALID_SUPPORT_GOAL_PROFILE");
+    try {
+      // Fresh, verified account identity; do not infer the owner from a cached
+      // profile, email, browser hints or the account selected later in Google.
+      const cabinet = await appFetch("bootstrap?view=portrait", undefined, "GET");
+      if (typeof cabinet?.account?.id !== "string") throw new Error("ACCOUNT_UNVERIFIED");
+      stageSupportGoalProfile(profile, undefined, undefined, cabinet.account.id);
+      window.location.assign("/" + locale + "/app/portrait");
+    } catch (error: unknown) {
+      if (!(error instanceof Error) || !("status" in error) || error.status !== 401) throw error;
+      const started = await appFetch("auth/start", { locale, continueTo: "cabinet" }, "POST");
+      if (!started?.redirectUrl || typeof started.redirectUrl !== "string") throw new Error("SIGN_IN_UNAVAILABLE");
+      stageSupportGoalProfile(profile);
+      window.location.assign(started.redirectUrl);
+    }
+  };
   const saveGoalSector = (sector: GoalSector, value: GoalSectorSnapshot) => {
     setGoalSavedSectors(previous => ({ ...previous, [sector]: value }));
   };
@@ -738,6 +765,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
+    // Opening a clip is local UI activity, not a saved account completion.
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const chooseMeditationCategory = (value: MeditationCategory) => {
@@ -772,6 +800,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
   }, [choice, goalFilterOpen]);
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
+  const accountProgressHref = "/" + (locale === "es" ? "en" : locale) + "/app/progress";
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
   const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
@@ -940,7 +969,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
             initial={goalSelection} onApply={applyGoalFilter} onReset={resetGoalFilter}
             savedSectors={goalSavedSectors} onSave={saveGoalSector} preferredSector={profileSector}
             onCheckinChange={(sector, value) => onCheckinChange(goalSectorCheckinKey[sector], value)}
-            selectedFormats={goalRecommendationFormats} onSelectedFormatsChange={setGoalRecommendationFormats}
+            onSaveToCabinet={saveGoalProfileToCabinet}
             onClose={() => setGoalFilterOpen(false)} /> : goalSelection && !goalHasInlineFormat && choice !== "pump" && choice !== "tests" ? (
             <div className={styles.goalNoInline} role="status" data-support-goal-no-inline>
               <p data-support-goal-empty={activeGoalFormats.length === 0 ? "true" : undefined}>
@@ -1188,6 +1217,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
                 </Link> : null}
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
+                {playing && selected ? <div className={styles.videoAccountProgress} data-support-account-video-mark>
+                  <AcademyVideoProgress key={selected.id} videoId={selected.id} title={selected.title} locale={locale} />
+                </div> : null}
               </div>
               {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
                 <p>{t.energyIntro}</p>
@@ -1266,6 +1298,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
             <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
+          <Link href={accountProgressHref} prefetch={false} className={styles.accountProgressLink} data-support-open-account-progress>
+            <BarChart3 size={19} aria-hidden="true" /><span>{t.openFullProgress}</span><ArrowRight size={18} aria-hidden="true"/>
+          </Link>
         </section>
         <footer className={styles.disclaimer}>
           <p>{t.healthNote}</p>
@@ -1280,6 +1315,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
             href={"/" + language + "/holistic-support/mobile"} hrefLang={language} aria-current={locale === language ? "page" : undefined}>
             {language.toUpperCase()}</Link>)}
         </div>
+        <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/settings"} prefetch={false} className={styles.accountSettingsLink}
+          data-support-mobile-account-settings>
+          <UserRound size={20} aria-hidden="true" />
+          {locale === "ru" ? "Профиль и настройки" : locale === "es" ? "Perfil y ajustes · English" : "Profile & settings"}
+        </Link>
         <p>{t.privateInfo}</p>
         <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
       </section> : null}
@@ -1290,7 +1330,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false} data-support-mobile-messages>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.navMessages}</span>
         </Link>
-        <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
+        <Link href={accountProgressHref} prefetch={false} data-support-mobile-progress-link>
+          <BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span>
+        </Link>
         <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
       </nav>

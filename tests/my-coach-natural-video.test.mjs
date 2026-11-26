@@ -81,7 +81,7 @@ test('all twelve selected MP4s preserve the source video stream and have native 
   assert.equal(coachVideoPosterPath(null), null)
   assert.equal(coachVideoPosterPath('unrelated.png'), null)
 })
-test('production prepares legacy URLs from versioned files without recompressing the native video', () => {
+test('production prepares legacy URLs from versioned files without recompressing the native video', async () => {
  const build = source('scripts/prepare-my-coach-natural-mp4.mjs')
  const pkg = JSON.parse(source('package.json'))
  assert.match(pkg.scripts.prebuild, /node scripts\/prepare-my-coach-natural-mp4\.mjs/)
@@ -89,11 +89,15 @@ test('production prepares legacy URLs from versioned files without recompressing
  assert.match(build, /'-v1\.mp4'/)
  assert.doesNotMatch(build, /spawnSync|ffmpeg|fetch\(/)
  const proc = spawnSync(process.execPath, ['scripts/prepare-my-coach-natural-mp4.mjs'], {
-   cwd: new URL('../',import.meta.url), encoding: 'utf8', timeout: 8000,
+   cwd: new URL('../',import.meta.url), encoding: 'utf8', timeout: 70000,
    env: {...process.env, VERCEL_ENV: 'preview', HH_COACH_NATURAL_BUILD: '0'}
  })
  assert.equal(proc.status, 0, proc.stderr)
  assert.match(proc.stdout, /SKIP_NON_PROD/)
+ assert.match(proc.stdout, /HH_SAMIR_OPENING_POSTER genie-natural-(?:idle-v1|encourage-v2)\.mp4/)
+ const poster = await sharp(readFileSync(new URL('../public/images/holistic-house/my-coach-motion/genie-natural-opening-v2.webp',import.meta.url))).metadata()
+ assert.equal(poster.format, 'webp')
+ assert.ok(poster.width > 0 && poster.height > 0)
 })
 
 test('coach video can expand to the full hero width while typed replies restore without resetting the live session',()=>{

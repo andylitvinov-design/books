@@ -147,6 +147,11 @@ function savedMeaningRows(checkin,locale){
    current:status==='skipped'?null:current,desired:status==='skipped'?null:desired}
  })
 }
+function SavedProtocolOverview({protocol,locale}){
+ let overview
+ try{overview=myCoachProtocolPdfOptions(protocol,{locale}).protocolOverview}catch{return null}
+ return overview?<div data-coach-saved-protocol-overview><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{overview}</p></div>:null
+}
 function SavedProtocolCheckin({protocol,locale}){
  const words=savedCheckinCopy[locale]||savedCheckinCopy.en
  const opening=protocol.opening,rows=savedMeaningRows(protocol.profileCheckin,locale)
@@ -470,7 +475,8 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
-    <SavedProtocolCheckin protocol={protocol} locale={lang}/>
+    <SavedProtocolOverview protocol={protocol} locale={lang}/>
+   <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
