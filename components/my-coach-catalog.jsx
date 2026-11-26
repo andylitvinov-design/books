@@ -602,7 +602,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
           <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">
-            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="avatar" />
+            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="avatar" presentationLoop />
             {selected.symbol}
           </div>
           <div>

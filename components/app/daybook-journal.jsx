@@ -15,7 +15,10 @@ import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.m
 import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-route-intent.mjs'
 import styles from './daybook-journal.module.css'
 import DaybookStages from './daybook-stages'
+import DiscoverPractice from './discover-practice'
+import GoalJourneyPlanner from './goal-journey-planner'
 import { ClarityDaybook, ClarityStartButton, ProgramStartLink } from './clarity-program'
+import clarityStyles from './clarity-program.module.css'
 import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
@@ -190,9 +193,9 @@ export default function DaybookJournal({locale,...serverRoute}){
   routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
   replaceDaybookURL(url)
  }
- if(clarityMode)return <main className={styles.page} data-daybook-view="clarity" data-cabinet-theme="daybook" data-daybook-page>
-  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>
-  {phase==='ready'&&account?<ClarityDaybook key={account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} onLoadAll={()=>void collect(false)} loadError={['failed','large'].includes(exportStatus)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/>:
+ if(clarityMode)return <main className={phase==='ready'&&account?clarityStyles.coursePage:styles.page} data-daybook-view="clarity" data-cabinet-theme="daybook" data-daybook-page data-clarity-golden={phase==='ready'&&account?true:undefined}>
+  {!(phase==='ready'&&account)&&<header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>}
+  {phase==='ready'&&account?<ClarityDaybook key={account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} onLoadAll={()=>void collect(false)} loadError={['failed','large'].includes(exportStatus)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}><details><summary>{({en:'Optional: seven independent practices',ru:'Дополнительно: семь самостоятельных практик',es:'Opcional: siete prácticas autónomas'})[locale]||'Optional: seven independent practices'}</summary><DiscoverPractice key={'discover:'+account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/></details></ClarityDaybook>:
   <section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<ClarityStartButton locale={locale}/>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>}
  </main>
  return <main className={styles.page} data-daybook-view={tab} data-cabinet-theme="daybook" data-daybook-page>
@@ -229,6 +232,6 @@ export default function DaybookJournal({locale,...serverRoute}){
     {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
    </>}
   </>}
-  {account&&<div className={styles.guide} hidden={phase!=='ready'||tab!=='stages'}><DaybookStages key={account} accountId={account} locale={locale} stageNumber={stageNumber} initialLevel={initialLevel} initialStep={initialStep} initialGoalId={initialGoalId} entryRequest={guideEntryRequest} onStage={selectStage} onPositionChange={selectPosition} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}} onSessionLost={sessionLost} onReload={()=>void load()} onTab={selectTab} onLockChange={setGuideLocked} ready={phase==='ready'&&tab==='stages'}/></div>}
+  {account&&<div className={styles.guide} hidden={phase!=='ready'||tab!=='stages'}><DaybookStages key={account} accountId={account} locale={locale} stageNumber={stageNumber} initialLevel={initialLevel} initialStep={initialStep} initialGoalId={initialGoalId} entryRequest={guideEntryRequest} onStage={selectStage} onPositionChange={selectPosition} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}} onSessionLost={sessionLost} onReload={()=>void load()} onTab={selectTab} onLockChange={setGuideLocked} ready={phase==='ready'&&tab==='stages'}>{account&&phase==='ready'&&tab==='stages'&&<GoalJourneyPlanner key={'journey:'+account} accountId={account} locale={locale} today={today} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} disabled={guideLocked} onTab={selectTab} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/>}</DaybookStages></div>}
  </main>
 }

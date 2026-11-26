@@ -14,6 +14,8 @@ import {PrescriptionDocument} from '@/components/prescription-document'
 import {ClientSessionPage,ClientSessionVoiceMessage} from '@/components/client-session-page'
 import {sharedGranulesGuideReady} from '@/lib/clients/shared-education-video'
 import {SavedSessionManagement} from '@/components/app/saved-session-management'
+import {verifyReportGoal} from '@/lib/app/daybook-report-index'
+import {normalizeReportPlacement,reportProgramLabel,reportWeekHref} from '@/lib/consultations/report-program.mjs'
 import '../../[[...path]]/workspace.css'
 
 export const runtime='nodejs'
@@ -26,16 +28,18 @@ const valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 export default async function SavedSessionPage({params}){
   const {locale,id}=await params
   if(!['en','ru'].includes(locale)||!valid.test(id||''))notFound()
-  let saved,record=null,clientName=''
+  let saved,record=null,clientName='',verifiedGoalId=null
   try{
     const config=getAppConfig()
     const actor=await createRequestAuth({cookies:await cookies()},config).verified()
     const store=getPrescriptionStore()
     saved=await readSavedSession(config,store,actor,id)
     if(saved.session.report){
-      record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId)
+      record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId,{expectedSource:saved.expectedSource})
       if(record?.clientId!==saved.source.clientId||record?.status!=='active')record=null
     }
+    const assigned=normalizeReportPlacement(record?.programPlacement)
+    if(assigned?.program==='goal'&&assigned.goalId)verifiedGoalId=await verifyReportGoal(config,actor,assigned.goalId)
     const client=await store?.findClientById(saved.source.clientId)
     clientName=client?.fullName||''
   }catch(error){
@@ -52,12 +56,14 @@ export default async function SavedSessionPage({params}){
     }
     throw error
   }
+  const placement=normalizeReportPlacement(record?.programPlacement)
   const payment=record?.kind==='payment'
   const doc=record ? payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale):null
   return <>
     <nav className="hh-saved-session-topnav" aria-label={locale==='ru'?'Мой кабинет':'My Cabinet'}>
-      <Link prefetch={false} href={'/'+locale+'/app/portrait#personal-reports'}>
-        {locale==='ru'?'← Мои отчёты':'← My Reports'}
+      {placement&&<div><strong>{reportProgramLabel(placement,locale)}</strong><span> · {locale==='ru'?'Неделя':'Week'} {placement.week}</span></div>}
+      <Link prefetch={false} href={reportWeekHref(locale,placement,verifiedGoalId)}>
+        {placement?.program==='goal'&&!verifiedGoalId?(locale==='ru'?'← К моим целям':'← My goals'):placement?(locale==='ru'?'← К программе':'← Back to program'):(locale==='ru'?'← Мои отчёты':'← My Reports')}
       </Link>
     </nav>
     <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id} audioEmbedded={Boolean(doc&&!payment)}

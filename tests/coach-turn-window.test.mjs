@@ -227,7 +227,17 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
   assert.match(ui,/sessionContext:coachEphemeralContext\(providerHistory,providerWindow,responseLocale,message\)/)
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
-  assert.equal((ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol')).match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,5)
+  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
+  assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
+  // The sixth exit is the local verified-course opening handoff, not another
+  // provider call or unguarded write. Keep the safety/boundary and commit gates.
+  const handoff=send.slice(send.indexOf('if(courseGateOpeningAfter('),send.indexOf('// The review of an existing profile'))
+  assert.match(handoff,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
+  assert.match(handoff,/courseGateHandoffText\(responseLocale\)/)
+  assert.match(handoff,/!commitCompletedClientTurn\(requestId,message,\{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'opening'\}\)\)return null/)
+  assert.doesNotMatch(handoff,/fetch\(|appFetch\(|setTurns\(/)
+  const commit=ui.slice(ui.indexOf('function commitCompletedClientTurn'),ui.indexOf('async function discardPrivateDraft'))
+  assert.match(commit,/turnRequestRef.current!==requestId\|\|inFlightClientRef.current\?\.requestId!==requestId/)
   assert.doesNotMatch(ui,/return updated\.slice\(-160\)/)
   assert.match(ui,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
   // The report retains up to 80 complete exchanges; inference still sees at most ten context turns.

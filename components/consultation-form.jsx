@@ -3,6 +3,7 @@
 import './consultation-entry-layout.css'
 
 import { ConsultationClientSelector } from './consultation-client-selector'
+import { ReportProgramPicker } from './report-program-picker'
 import './consultation-studio.css'
 import './consultation-report.css'
 import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
@@ -452,6 +453,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         </div>
       </div>
       <ReportLanguagePicker locale={reportLocale} onChange={changeReportLocale} uiLocale={uiLocale} />
+      {includeRecommendation && <ReportProgramPicker initial={consultation?.programPlacement ?? null} locale={uiLocale}/>}
     </section>
 
     {includeRecommendation && <section className="consultation-studio-card" aria-labelledby="consultation-items-heading">
