@@ -5,7 +5,7 @@ const copy={
  ru:{title:'Сверка контрольных пунктов (необязательно)',hint:'Выберите свою реплику, только если она отвечает на этот пункт. Автоматически найденные ответы предварительные до вашего выбора. Необсуждённое можно оставить открытым.',unreviewed:'Ещё не проверено',open:'Оставить открытым / не подтверждать',skip:'Пропустить пункт',confirmed:'Проверенная вами реплика',candidate:'Возможный ответ — не подтверждён',source:'Ваша реплика',limit:'Достигнут предел правок. Сохраните текущий выбор.'},
  es:{title:'Revisar puntos de la sesión (opcional)',hint:'Elige tus propias palabras solo si responden a este punto. Las respuestas detectadas son provisionales hasta que las elijas. Puedes dejar puntos abiertos.',unreviewed:'Aún no revisado',open:'Dejar abierto / sin confirmar',skip:'Omitir este punto',confirmed:'Tu declaración revisada',candidate:'Respuesta posible — sin confirmar',source:'Tu turno',limit:'Límite de revisiones alcanzado. Conserva la selección actual.'}
 }
-export default function MyCoachCourseFieldReview({courseSessionId,turns,locale='en',value,onChange,disabled=false}){
+export default function MyCoachCourseFieldReview({courseSessionId,turns,locale='en',value,onChange,disabled=false,expanded=false}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const review=value?.courseSessionId===courseSessionId?value:null
  let rows
@@ -14,7 +14,7 @@ export default function MyCoachCourseFieldReview({courseSessionId,turns,locale='
  const quotes=coachCourseReviewQuotes(turns)
  const full=(review?.events.length||0)>=64
  return <section data-coach-course-field-review>
-  <details><summary>{t.title}</summary><p>{t.hint}</p>
+  <details open={expanded||undefined}><summary>{t.title}</summary><p>{t.hint}</p>
   {rows.map(row=>{
    const selection=row.status==='confirmed'?'turn:'+row.turnIndex:row.status==='skipped_by_client'?'skip':row.source==='client_selected_open'?'open':'unreviewed'
    return <div key={row.id} style={{margin:'12px 0'}}>
