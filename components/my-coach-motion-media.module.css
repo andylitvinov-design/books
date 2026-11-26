@@ -56,3 +56,9 @@
   inset:0 0 0 auto;
   height:100%;
 }
+
+/* The V4 contact-frame pair is not a crossfade. Keep the previous frame until
+   the next verified layer has actually begun playback. */
+.media .video.reactionLayer{opacity:0;transition:none;will-change:auto}
+.media .video.reactionLayer[data-reaction-visible='true']{opacity:1}
+@media(prefers-reduced-motion:reduce){.media .video.reactionLayer{display:none!important}}
