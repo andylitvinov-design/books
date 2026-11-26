@@ -8,7 +8,7 @@ import {startCoachRecordedTurn,coachRecordedSupported} from '@/lib/personal-coac
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '@/lib/personal-coaching/coach-voice-turn-quality.mjs'
 import {isCoachBargeEcho} from '@/lib/personal-coaching/coach-barge-in.mjs'
 import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
-import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -208,10 +208,12 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   function restoreCoachVolume(){
     try{cloudPlayerRef.current?.setVolume?.(1)}catch{}
     try{if(introPlayerRef.current?.audio)introPlayerRef.current.audio.volume=1}catch{}
+    try{if(speakingRef.current&&window.speechSynthesis?.paused)window.speechSynthesis.resume()}catch{}
   }
   function duckCoachVolume(){
     try{cloudPlayerRef.current?.setVolume?.(0.08)}catch{}
     try{if(introPlayerRef.current?.audio)introPlayerRef.current.audio.volume=0.08}catch{}
+    try{if(speakingRef.current&&utteranceRef.current)window.speechSynthesis?.pause?.()}catch{}
   }
   function cancelOutgoingCoachSpeech(){
     // Cancel ONLY the outgoing player and vendor fetch: never release the
@@ -239,22 +241,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!activeRef.current)return
     const interruptedPhase=phaseRef.current
     if(['loading','speaking'].includes(interruptedPhase))interruptedRef.current?.(lastSpokenCoachRef.current)
-    const computing=interruptedPhase==='thinking'||Boolean(earlySpeechRef.current)
-    if(computing){
-      // A model stream can remain live even after the first sentence plays.
-      generationRef.current+=1
-      earlySpeechRef.current=null
-      cancelRef.current?.()
-    }
+    // Invalidate every old callback, including a finished model's audio.
+    generationRef.current+=1
+    earlySpeechRef.current=null
+    cancelRef.current?.()
     cancelOutgoingCoachSpeech()
-    // Safari 27's native SpeechRecognition is unreliable; reuse the already
-    // captured mic. Desktop has working browser ASR: do not burn one of the
-    // shared, limited Whisper uploads on an ordinary manual interruption.
-    if(!computing&&ios27NeedsSpeechRecovery(window.navigator)&&
-       recordedTurnRef.current?.continueAfterCoach?.()){
-      changePhase('listening');setNotice('')
-      return
-    }
     recordedTurnRef.current?.cancel()
     recordedTurnRef.current=null
     startListening()
@@ -266,12 +257,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(bargeRecoveryRef.current.generation!==generation)
       bargeRecoveryRef.current={generation,retries:0}
     if(!activeRef.current||generationRef.current!==generation||
-       ios27NeedsSpeechRecovery(window.navigator)||
        recordedTurnRef.current||!coachRecordedSupported(window)||
        microphonePermissionStateRef.current==='denied')return
     const begin=()=>{
       if(!activeRef.current||generationRef.current!==generation||
          !['thinking','loading','speaking'].includes(phaseRef.current)||recordedTurnRef.current)return
+       // Do not acquire a microphone in a playback-only audio category.
+       if(!setCoachIos27DuplexRoute(window.navigator)){
+         setNotice(t.bargeManual);return
+       }
       const selected=chooseDictationLanguage({locale:lang,selection:speechLocaleRef.current,
         browserLanguages:window.navigator.languages?.length?window.navigator.languages:[window.navigator.language],
         lastTranscript:lastHeardRef.current})
@@ -283,7 +277,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       const monitor=startCoachRecordedTurn({
         locale:transcriptionLocale,environment:window,
         audioContext:audioContextRef.current,monitorPlayback:true,
-        onLevel:value=>{if(activeRef.current&&generationRef.current===generation)micLevelRef.current?.(value)},
+        onLevel:value=>{if(activeRef.current&&generationRef.current===monitorGeneration)micLevelRef.current?.(value)},
         onState:state=>{
           if(!activeRef.current||generationRef.current!==monitorGeneration)return
           if(state==='listening')setNotice('')
@@ -329,6 +323,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           // Playback continues while the monitor recovers. A dead automatic
           // monitor must be visible and the green mic still interrupts by tap.
           if(!interrupted){
+            restoreCoachVolume()
             const recovery=bargeRecoveryRef.current
             if(['MIC_CAPTURE','MIC_NO_SIGNAL'].includes(code)&&
                recovery.generation===monitorGeneration&&recovery.retries<1&&
@@ -981,7 +976,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   async function speakCoachReply(result,text,generation,naturalVoice=false,earlySegment=false,fullText=''){
-    if(result?.mode!=='intro'){
+    // Keep the active Basic interrupt monitor alive through synthesis and output.
+    if(!['safety','boundary'].includes(result?.mode))beginVoiceBargeMonitor(generation)
+    if(result?.mode!=='intro'&&!recordedTurnRef.current){
       setCoachIos27AudioSession(window.navigator,'playback')
       refreshCoachIos27PlaybackRoute(window.navigator)
     }
@@ -1037,8 +1034,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(utteranceRef.current!==voice)return
         clear()
         if(live()){
-          if(earlySegment)earlyPhraseEnded(generation)
-          else startListening()
+          afterSpeech()
           setNotice(t.fallback)
         }
       }
@@ -1095,8 +1091,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       cloudPlayerRef.current=null
       // Natural Google/Fish stays first; disclose the temporary OS voice.
       if(playDeviceFallback())return
-      if(earlySegment)earlyPhraseEnded(generation)
-      else startListening()
+      afterSpeech()
       setNotice(t.fallback)
     }
 

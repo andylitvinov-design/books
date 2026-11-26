@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {coachRecordingFailureCode} from '../lib/personal-coaching/coach-recorded-turn.mjs'
+import {coachRecordingFailureCode,createCoachVoiceGate} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -44,4 +44,43 @@ test('Safari STT failures are never permanently latched or falsely called Listen
   assert.match(ui,/if\(ios27&&coachRecordedSupported\(window\)\)/)
   assert.match(ui,/sttCooling:/)
   assert.match(ui,/sttRecovering:/)
+})
+
+import {createCoachBargeGate} from '../lib/personal-coaching/coach-barge-in.mjs'
+import {setCoachIos27DuplexRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
+
+test('Basic faster endpoints leave longer pauses for extended reflections',()=>{
+  const gate=createCoachVoiceGate({silenceMs:750,longSilenceMs:1050,longSpeechAfterMs:6500,resetAfterMs:6000})
+  for(const [t,v,e] of [[0,0,'silence'],[50,.1,'silence'],[100,.1,'speech'],[300,.1,'speech'],[1000,0,'speech'],[1050,0,'finish']])assert.equal(gate.update(t,v),e)
+  const long=createCoachVoiceGate({silenceMs:750,longSilenceMs:1050,longSpeechAfterMs:6500})
+  long.update(0,.1);long.update(50,.1);long.update(7000,.1)
+  assert.equal(long.update(7800,0),'speech');assert.equal(long.update(8050,0),'finish')
+  const silent=createCoachVoiceGate({resetAfterMs:6000})
+  silent.update(0,0);assert.equal(silent.update(6000,0),'rotate');assert.equal(silent.heard,false)
+})
+test('Basic barge gate rejects brief leakage and confirms sustained human voice',()=>{
+  const gate=createCoachBargeGate({threshold:.019,candidateTicks:3,confirmTicks:3,releaseTicks:5})
+  assert.deepEqual([.04,.04,.04].map(v=>gate.update(v)),['idle','idle','candidate'])
+  assert.equal([0,0,0,0,0].map(v=>gate.update(v)).at(-1),'restore')
+  assert.deepEqual([.04,.04,.04,.04,.04,.04].map(v=>gate.update(v)),['idle','idle','candidate','pending','pending','interrupt'])
+})
+test('Basic iOS duplex route has truthful capability detection',()=>{
+  const navigator={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 Version/27.0 Mobile Safari/604.1',audioSession:{type:'playback'}}
+  assert.equal(setCoachIos27DuplexRoute(navigator),true);assert.equal(navigator.audioSession.type,'play-and-record')
+  assert.equal(setCoachIos27DuplexRoute({userAgent:navigator.userAgent}),false)
+  assert.equal(setCoachIos27DuplexRoute({userAgent:navigator.userAgent,audioSession:{get type(){return 'playback'},set type(value){throw Error(value)}}}),false)
+})
+test('Basic fast STT retains same-origin, authenticated free quota and language check',()=>{
+  const ui=read('components/my-coach-speech-loop.jsx')
+  const rec=read('lib/personal-coaching/coach-recorded-turn.mjs')
+  const api=read('app/api/holistic-support/audio-storyboard/route.js')
+  assert.ok(ui.includes('if(!setCoachIos27DuplexRoute(window.navigator))'))
+  assert.ok(ui.includes("result?.mode!=='intro'&&!recordedTurnRef.current"))
+  assert.ok(ui.includes('generationRef.current=monitorGeneration'))
+  assert.ok(rec.includes('const plainText=fastCoach||'))
+  assert.ok(rec.includes('fastCoach?50:100'))
+  assert.ok(api.includes('purpose!=="ali_chat"&&purpose!=="my_coach"'))
+  assert.ok(api.includes('purpose==="my_coach"&&isSpeechTranscriptLanguageMismatch'))
+  assert.ok(api.includes('AbortSignal.any([request.signal,AbortSignal.timeout(12000)])'))
+  assert.ok(api.includes('whisper-large-v3-turbo'))
 })
