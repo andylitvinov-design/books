@@ -16,6 +16,7 @@ import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-r
 import styles from './daybook-journal.module.css'
 import DaybookStages from './daybook-stages'
 import DiscoverPractice from './discover-practice'
+import GoalJourneyPlanner from './goal-journey-planner'
 import { ClarityDaybook, ClarityStartButton, ProgramStartLink } from './clarity-program'
 import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
@@ -230,6 +231,7 @@ export default function DaybookJournal({locale,...serverRoute}){
     {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
    </>}
   </>}
+  {account&&phase==='ready'&&tab==='stages'&&<GoalJourneyPlanner key={'journey:'+account} accountId={account} locale={locale} today={today} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} disabled={guideLocked} onTab={selectTab} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/>}
   {account&&<div className={styles.guide} hidden={phase!=='ready'||tab!=='stages'}><DaybookStages key={account} accountId={account} locale={locale} stageNumber={stageNumber} initialLevel={initialLevel} initialStep={initialStep} initialGoalId={initialGoalId} entryRequest={guideEntryRequest} onStage={selectStage} onPositionChange={selectPosition} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}} onSessionLost={sessionLost} onReload={()=>void load()} onTab={selectTab} onLockChange={setGuideLocked} ready={phase==='ready'&&tab==='stages'}/></div>}
  </main>
 }
