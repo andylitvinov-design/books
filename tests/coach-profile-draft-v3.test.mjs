@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
 import {coachProfileDraftRequestV3,coachProfileDraftTransitionV3,coachProfileDraftViewV3,coachProfileDraftActiveV3} from '../lib/coaching/coach-profile-draft-v3.mjs'
 import {coachOpeningProgress,coachOpeningProtocolSnapshot} from '../lib/coaching/coach-opening-protocol.mjs'
 import {buildCoachProfileArchiveV3,validateCoachProfileArchiveV3} from '../lib/coaching/coach-profile-archive-v3.mjs'
@@ -72,4 +73,37 @@ test('private resume UI keeps typed profile actions and normal checkpoints mutua
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  for(const marker of ['data-coach-private-profile-v3','setProfileV3Enabled(result.profileV3Enabled===true)','profileV3Ref.current=structured','profileV3FaultRef.current=true','if(structured&&!structured.step.closed)draftRevision=structured.revision','if(restoredDraft)forceLocal=true','profileV3Ref.current&&!profileV3Ref.current.step.closed','questionTurnId:q.turnId','restoredProfileProof.current=coachProfileArchiveEnvelope(p)'])assert.ok(ui.includes(marker),marker)
  assert.ok(route.includes("profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'"))
+})
+
+
+test('typed profile continuation preserves the acknowledged unanswered opening transcript',()=>{
+ let value=fixture()
+ const old=value.protocol.turns
+ old.splice(2,0,{role:'user',content:'An earlier unanswered message',unanswered:true})
+ old.push({role:'user',content:'A trailing unanswered message',unanswered:true})
+ const prior=structuredClone(value.protocol),length=old.length
+ value=step(value,'profile-start')
+ assert.deepEqual(value.protocol.turns,prior.turns)
+ value=answer(value,'6')
+ assert.deepEqual(value.protocol.turns.slice(0,length),prior.turns)
+ assert.equal(draftTranscriptPrefix(prior,value.protocol),true)
+ assert.equal(buildCoachProfileArchiveV3(value.serverLedger).bindings[0].questionTurnIndex,length)
+ value=answer(value,'7')
+ assert.deepEqual(value.protocol.turns.slice(0,length),prior.turns)
+})
+test('checkpoint cannot clear pending marker without an appended adjacent assistant turn',()=>{
+ const previous=fixture().protocol
+ previous.turns=[{role:'user',content:'Pending',unanswered:true}]
+ const row={role:'user',content:'Pending'}
+ const other={role:'user',content:'Another request',unanswered:true}
+ const reply={role:'assistant',content:'Reply'}
+ const check=turns=>draftTranscriptPrefix(previous,{...previous,turns})
+ assert.equal(check([row]),false)
+ assert.equal(check([row,other]),false)
+ assert.equal(check([row,other,reply]),false)
+ assert.equal(check([previous.turns[0],other,reply]),true)
+ assert.equal(check([row,reply]),true)
+ assert.equal(check([row,reply,other]),true)
+ const older={...previous,turns:[previous.turns[0],other]}
+ assert.equal(draftTranscriptPrefix(older,{...older,turns:[row,other,reply]}),false)
 })
