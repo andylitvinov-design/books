@@ -48,7 +48,19 @@ test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compa
   const middleware = read("middleware.ts");
   const css = read("components/mandala-meditation.module.css");
   assert.match(middleware, /const publicMandalaLocalImages = \/\^\\\/\(en\|ru\|es\)\\\/holistic-support\\\/mandala/);
-  assert.match(middleware, /publicMandalaLocalImages\|\|ownerMessengerImages\|\|liveAudioPage\|\|ownerAvatarPilotPage\|\|ownerSimliDialoguePage\|\|ownerLukasVideoCheckPage\) \? ' blob:'/);
+  // Check the exact, route-scoped media allowance instead of a trailing
+  // substring that broke when the reviewed owner avatar routes were added.
+  const media = middleware.split("\n").find(line => line.includes("media-src 'self'") && line.includes("publicMandalaLocalImages"));
+  assert.ok(media, "Mandala must retain its scoped media-src directive");
+  const gate = media.match(/\+\s*\(\(([A-Za-z0-9_| \t]+)\)\s*\?\s*' blob:'\s*:\s*''\)/);
+  assert.ok(gate, "blob media must be conditional, not globally enabled");
+  assert.deepEqual(gate[1].split("||").map(value => value.trim()).sort(), [
+    "ownerRecorderPage", "deliveryOrigin", "reportNarrationReader",
+    "reikiIntroAudioManager", "coachingOwnerAudioManager", "practitionerCourseEditor",
+    "publicMandalaLocalImages", "ownerMessengerImages", "liveAudioPage",
+    "ownerAvatarPilotPage", "ownerSimliDialoguePage", "ownerLukasVideoCheckPage",
+  ].sort());
+  assert.match(middleware, /const publicMandalaLocalImages = \/\^\\\/\(en\|ru\|es\)\\\/holistic-support\\\/mandala\\\/\?\$\/\.test\(pathname\)/);
   assert.match(css, /\.focus \.freeVideoPanel\{display:none\}/);
   assert.match(css, /@media\(max-width:350px\)\{\.freeVideoSettings\{grid-template-columns:1fr\}/);
   assert.match(css, /\.freeVideoDownload/);

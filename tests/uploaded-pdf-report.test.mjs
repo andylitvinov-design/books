@@ -42,3 +42,17 @@ test('uploaded PDF and generated reports share the searchable and paginated arch
   const second=await listClientReportDirectory(store,{page:2,pageSize:1,listPdfSessions})
   assert.equal(second.rows[0].reportType,'remedies')
 })
+
+
+test('uploaded PDF placement is validated and sealed, never exposed by guest projection',()=>{
+ const goalId='12345678-1234-4234-9234-123456789abc'
+ const draft=normalizeDraft({...base,programPlacement:{program:'goal',week:2,goalId}})
+ assert.deepEqual(clientPayload(draft).programPlacement,{program:'goal',week:2,goalId})
+ assert.equal(guestSessionProjection({...clientPayload(draft),id,occurredOn:'2026-11-24',report:null}).programPlacement,undefined)
+ assert.throws(()=>normalizeDraft({...base,programPlacement:{program:'goal',week:9,goalId}}))
+ assert.throws(()=>normalizeDraft({...base,programPlacement:{program:'clarity',week:1,goalId}}))
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ assert.match(read('components/pdf-report-start-form.jsx'),/<ReportProgramPicker/)
+ assert.match(read('lib/app/daybook-report-index.js'),/session\.reportFormat==='pdf'\?'pdf'/)
+ assert.match(read('app/[locale]/app/sessions/[id]/page.jsx'),/record\?\.programPlacement\?\?pdfPlacement/)
+})

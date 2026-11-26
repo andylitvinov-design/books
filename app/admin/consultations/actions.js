@@ -7,6 +7,7 @@ import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
+import { parseReportProgram } from '@/lib/consultations/report-program.mjs'
 import { parseReportMaterialIds, parseReportMaterialPlacements, stageReportMaterials } from '@/lib/consultations/report-material-staging'
 import { deliveryEnabled, validUuid } from '@/lib/clients/delivery-model'
 import { createClient } from '@/lib/clients/service'
@@ -20,6 +21,8 @@ function input(formData) {
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
+  if(formData.has('reportProgram')||formData.has('reportWeek'))
+    data.programPlacement=parseReportProgram(formData.get('reportProgram'),formData.get('reportWeek'),formData.get('reportGoalId'))
   data.includeInvoice = formData.get('includeInvoice') === 'on'
   data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
@@ -34,6 +37,7 @@ function input(formData) {
 
 function safeConsultationError(error) {
   const message = error instanceof Error ? error.message : ''
+  if (/INVALID_REPORT_PROGRAM|INVALID_REPORT_WEEK/.test(message)) return 'Choose a valid program and week for this report.'
   if (/Select at least one document/i.test(message)) return 'Select a prescription, an invoice, or both.'
   if (/INVALID_DAO_RESOURCE_SCORE/.test(message)) return 'Enter a Wu Xing resource score from 0 to 10 with at most one decimal place.'
   if (/INVALID_REPORT_PROGRESS_SCORE/.test(message)) return 'Before and after scores must be between 0 and 10 (up to one decimal place).'
@@ -166,6 +170,7 @@ export async function createPdfReportSessionAction(previous, formData) {
     if(!title||title.length>160||!/^20[2-9]\d-\d{2}-\d{2}$/.test(occurredOn)||
       new Date(occurredOn+'T00:00:00Z').toISOString().slice(0,10)!==occurredOn)
       throw new Error('Invalid title or date')
+    const programPlacement=parseReportProgram(formData.get('reportProgram'),formData.get('reportWeek'),formData.get('reportGoalId'))
     const preferredLocale=String(formData.get('languagePreference')||'')
     if(!['ru','en'].includes(preferredLocale))throw new Error('Invalid language')
     if(formData.get('clientMode')==='new'){
@@ -185,7 +190,7 @@ export async function createPdfReportSessionAction(previous, formData) {
       if(!validUuid(clientId)||(await store.findClientById(clientId))?.status!=='active')
         throw new Error('Choose a client')
     }
-    session=await createClientSession(getAppConfig(),store,clientId,{occurredOn,title,reportFormat:'pdf',requestId,reportLocale:preferredLocale})
+    session=await createClientSession(getAppConfig(),store,clientId,{occurredOn,title,reportFormat:'pdf',requestId,reportLocale:preferredLocale,programPlacement})
   }catch {
     return {error:'Check the client, report title and date, then retry / Проверьте клиента, название и дату, затем повторите.'}
   }

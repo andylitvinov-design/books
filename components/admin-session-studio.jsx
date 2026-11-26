@@ -6,6 +6,7 @@ import { AdminSessionEngagement } from './admin-session-engagement'
 import { SessionSaveFooterVideo } from './session-save-footer-video'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 import { resolveSavedReportLocale } from '@/lib/documents/report-locale'
+import { REPORT_PROGRAMS,validReportGoalId } from '@/lib/consultations/report-program.mjs'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
 
@@ -35,6 +36,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
   const isPdf=draft.reportFormat==='pdf'
+  const invalidPdfGoal=isPdf&&draft.programPlacement?.goalId&&!validReportGoalId(draft.programPlacement.goalId)
   const sharedReportLocale=isPdf?(session.published?.reportLocale||draft.reportLocale):resolveSavedReportLocale(documents.find(doc=>doc.id===(session.published?.reportDocumentId||draft.reportDocumentId)),locale)
   const previewReportLocale=resolveSavedReportLocale(documents.find(doc=>doc.id===draft.reportDocumentId),locale)
   const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[]}
@@ -159,6 +161,18 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     <section className={styles.editorCard+' '+styles.reportReadyCard} id="session-attached-report">
       <h2>{isPdf?(ru?'Готовый PDF-отчёт':'Uploaded PDF report'):(ru?'Готовый отчёт клиента':'Saved client report')}</h2>
       {isPdf?<>
+        <fieldset><legend>{ru?'Программа и неделя':'Program and week'}</legend>
+          <label className={styles.field}>{ru?'Назначение отчёта':'Report placement'}
+            <select value={draft.programPlacement?draft.programPlacement.program+':'+draft.programPlacement.week:''} onChange={event=>{const [program,week]=event.target.value.split(':');setDraft(current=>({...current,programPlacement:program?{program,week:Number(week),...(program==='goal'&&current.programPlacement?.goalId?{goalId:current.programPlacement.goalId}:{})}:null}))}}>
+              <option value="">{ru?'Вне программы':'Standalone report'}</option>
+              {Object.entries(REPORT_PROGRAMS).flatMap(([program,definition])=>Array.from({length:definition.weeks},(_,i)=><option key={program+':'+(i+1)} value={program+':'+(i+1)}>{definition.label[ru?'ru':'en']} · {ru?'Неделя':'Week'} {i+1}</option>))}
+            </select>
+          </label>
+          {draft.programPlacement?.program==='goal'&&<label className={styles.field}>{ru?'ID согласованной цели (необязательно)':'Agreed goal ID (optional)'}
+            <input value={draft.programPlacement.goalId||''} maxLength={36} aria-invalid={Boolean(invalidPdfGoal)} onChange={event=>setDraft(current=>({...current,programPlacement:{...current.programPlacement,goalId:event.target.value.trim()}}))}/>
+          </label>}
+          <p>{ru?'Назначение недели не открывает платный доступ. Принадлежность цели проверяется в личном кабинете.':'Week placement does not unlock paid access. Goal ownership is verified in the client account.'}</p>
+        </fieldset>
         <p>{ru?'Клиент получит оригинальный PDF после защищённого входа; оформление не меняется.':'The client receives the original PDF after protected sign-in; its layout is unchanged.'}</p>
         <label className={styles.field}>{ru?'Основной PDF':'Primary PDF'}
           <select value={draft.primaryPdfAssetId||''} onChange={event=>setDraft(current=>choosePrimaryPdf(current,event.target.value||null))}>
@@ -392,7 +406,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <p>{ru?'Аудио сохраняется автоматически как черновик. Только кнопка «Опубликовать» обновляет страницу клиента. Личные заметки туда не попадают.':
         'Recordings save as drafts automatically. Only Publish updates the client page. Private notes are never included.'}</p>
       <div className={styles.actions}>
-        <button className={styles.primaryButton} disabled={block||session.status==='archived'||(isPdf&&!draft.primaryPdfAssetId)}
+        <button className={styles.primaryButton} disabled={block||session.status==='archived'||(isPdf&&!draft.primaryPdfAssetId)||Boolean(invalidPdfGoal)}
           onClick={()=>act('publish')}><Send size={18}/>{ru?'Опубликовать клиенту':'Publish to client'}</button>
         <button className={styles.secondaryButton} disabled={block||session.status!=='published'}
           onClick={()=>act('copy')}><Copy size={18}/>{ru?'Скопировать ссылку сессии':'Copy session-only link'}</button>

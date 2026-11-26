@@ -1,6 +1,7 @@
 'use client'
 import {useActionState,useState} from 'react'
 import {ConsultationClientSelector} from './consultation-client-selector'
+import {ReportProgramPicker} from './report-program-picker'
 import './consultation-studio.css'
 
 export function PdfReportStartForm({clients,selectedClientId,locale='en',requestId,action}) {
@@ -17,6 +18,7 @@ export function PdfReportStartForm({clients,selectedClientId,locale='en',request
       defaultValue={new Date().toISOString().slice(0,10)} style={{display:'block',width:'100%',padding:12,marginTop:6}}/></label>
     <label>{ru?'Язык ссылки':'Link language'}<select name="languagePreference" value={language} onChange={event=>setLanguage(event.target.value)}
       style={{display:'block',width:'100%',padding:12,marginTop:6}}><option value="ru">Русский</option><option value="en">English</option></select></label>
+    <ReportProgramPicker locale={locale}/>
     <p>{ru?'Укажите проверенный email клиента в его карточке: он понадобится для безопасной привязки Google-аккаунта. После выбора клиента откроется загрузка PDF.':
       'Keep the client’s verified email in the client record for secure Google-account linking. The PDF uploader opens next.'}</p>
     {state?.error&&<p role="alert">{state.error}</p>}

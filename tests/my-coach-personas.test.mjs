@@ -326,3 +326,19 @@ test('the eleven registered presentations flow directly into the same live dialo
   assert.ok(intro.includes('data-my-coach-audio-introduction={personaId}'))
   assert.ok(introCss.includes('@media(max-width:699px)'))
 })
+
+
+import {COACH_METHOD_CODES} from '../lib/coaching/persona-registry.mjs'
+test('optional deep-linked method remains a preference and accepts only persona-allowlisted values',()=>{
+ for(const persona of COACH_PERSONAS){
+  const method=COACH_METHOD_CODES[persona.methods[1]]
+  const legacy=coachSessionHref('ru',persona.id,{})
+  assert.equal(new URL(legacy,'https://example.test').searchParams.has('method'),false)
+  const params=Object.fromEntries(new URL(coachSessionHref('ru',persona.id,{},method),'https://example.test').searchParams)
+  assert.equal(resolveCoachSelection(params).methodId,method)
+  assert.equal(resolveCoachSelection({...params,method:'unregistered'}),null)
+  assert.equal(resolveCoachSelection({...params,method:[method,method]}),null)
+  assert.equal(resolveCoachSelection({...params,method:null}),null)
+  assert.equal(coachSessionHref('ru',persona.id,{},'unregistered'),null)
+ }
+})
