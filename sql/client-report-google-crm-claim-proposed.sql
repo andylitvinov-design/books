@@ -57,8 +57,9 @@ $fn$;
 revoke all on function app_private.report_crm_claim_allowed(uuid,text,uuid) from public,anon,authenticated,hh_app_inbox,hh_crm_backend;
 grant execute on function app_private.report_crm_claim_allowed(uuid,text,uuid) to hh_app_backend;
 
--- Existing hh_app_backend column grants already allow exactly this insertion
--- and lookup by owner/email_hash/id; do not grant contact ciphertext access.
+-- Explicit narrow readback privilege for INSERT ... RETURNING and deduplication.
+-- Never grant SELECT on contact_ciphertext or other CRM columns.
+grant select (id,owner_id,email_hash) on app.crm_contacts to hh_app_backend;
 create policy crm_report_claim_contact_lookup on app.crm_contacts
   for select to hh_app_backend
   using(app_private.report_crm_claim_allowed(owner_id,email_hash,null));

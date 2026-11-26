@@ -2380,19 +2380,38 @@ test('private session share grants enforce per-consultation ownership under real
 
 
 
-test('an explicitly selected Session is saved to exactly one Google Account, with pinned version and no Client binding', async()=>{
+test('verified Google report claim atomically links one client/CRM contact and pins the saved publication', async()=>{
   const {readFile}=await import('node:fs/promises')
   const admin=await adminClient()
   const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
-  const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
+  const recipient=actor(randomUUID(),randomUUID()),accountB=actor(randomUUID(),randomUUID()),owner=actor(randomUUID(),randomUUID())
+  const googleEmail='report-'+recipient.id+'@example.invalid'
+  const store={findClientById:async id=>id===clientId?{id,status:'active',fullName:'Synthetic report client',email:googleEmail,locale:'en'}:null}
+  const practitionerId='246aa1a3-a371-5a83-9f4b-cd23ff027a76'
+  const previous=(await admin.query('select trusted_auth_user_id,active,status,public_profile from app.practitioners where id=$1',[practitionerId])).rows[0]
+  const oldCrm=process.env.HH_CRM_ENABLED
   try{
-    const accountB=actor(randomUUID(),randomUUID())
-    await admin.query('insert into auth.users(id,email) values($1,$2)',[accountB.id,'test-'+randomUUID()+'@example.invalid'])
-    await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[accountB.claims.session_id,accountB.id])
-    await repo.ensureAccount(accountB)
-    await repo.onboarding(accountB,{adult:true,necessary:true,marketing:false,displayName:'Second Account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    process.env.HH_CRM_ENABLED='true'
+    for(const who of [recipient,accountB,owner]){
+      await admin.query('insert into auth.users(id,email) values($1,$2)',[who.id,who===recipient?googleEmail:who.id+'@example.invalid'])
+      await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+      await repo.ensureAccount(who)
+      await repo.onboarding(who,{adult:true,necessary:true,marketing:false,displayName:'Synthetic report account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    }
+    assert.ok(previous,'seeded primary practitioner exists')
+    await admin.query("update app.practitioners set trusted_auth_user_id=$2,active=true,status='approved',public_profile=$3 where id=$1",[practitionerId,owner.id,JSON.stringify({name:'Synthetic practitioner'})])
+    // Apply only the actual prerequisite migrations and proposed SQL in the
+    // guarded loopback fixture, never production. No mock schema or RLS bypass.
+    for(const file of [
+      '20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql',
+      '20261018123830_hh_crm_contact_lifecycle.sql',
+      '20261018183403_hh_crm_followups_activity_sources_20261018.sql',
+      '20261018184529_hh_crm_phone_first_contacts_20261018.sql',
+      '20261020165000_hh_public_service_crm_contact_intake_20261020.sql',
+    ])await admin.query(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
     const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
     await admin.query(sql)
+    await admin.query(await readFile(new URL('../sql/client-report-google-crm-claim-proposed.sql',import.meta.url),'utf8'))
     const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
       reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
     await admin.query(
@@ -2407,34 +2426,52 @@ test('an explicitly selected Session is saved to exactly one Google Account, wit
     assert.equal(intent.sourceKind,'client_session')
     const proof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[intent.id])).rows[0].browser_secret_hash
     // The user explicitly confirms the destination Account after sign-in.
-    const resource=await commitSessionSaveIntent(config,store,a,intent.id,proof)
+    await assert.rejects(commitSessionSaveIntent(config,store,recipient,intent.id,proof),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,intent.id,proof,{googleEmail:'foreign@example.invalid'}),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
+    assert.equal((await admin.query('select count(*)::int as n from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows[0].n,0)
+    const resource=await commitSessionSaveIntent(config,store,recipient,intent.id,proof,{googleEmail})
     assert.ok(resource.id)
-    assert.equal((await commitSessionSaveIntent(config,store,a,intent.id,proof)).id,resource.id)
-    const saved=await readSavedSession(config,store,a,resource.id)
+    assert.equal((await commitSessionSaveIntent(config,store,recipient,intent.id,proof,{googleEmail})).id,resource.id)
+    const saved=await readSavedSession(config,store,recipient,resource.id)
     assert.equal(saved.session.title,'Private session v1')
     assert.equal(saved.session.clientId,undefined)
     await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
     const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
-    assert.equal(bind.length,0)
+    assert.deepEqual(bind,[{account_id:recipient.id}])
+    const links=(await admin.query('select account_id,owner_id,contact_id from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows
+    assert.equal(links.length,1)
+    assert.equal(links[0].account_id,recipient.id)
+    assert.equal(links[0].owner_id,owner.id)
+    const contact=(await admin.query('select lifecycle,email_verified,suppressed from app.crm_contacts where id=$1',[links[0].contact_id])).rows[0]
+    assert.deepEqual(contact,{lifecycle:'client',email_verified:false,suppressed:false})
+    assert.equal((await admin.query('select count(*)::int as n from app.crm_consent_ledger where contact_id=$1',[links[0].contact_id])).rows[0].n,0)
+    assert.equal((await rawAs(accountB,'hh_app_backend',database=>database.query('select legacy_client_id from app_private.client_report_crm_links where legacy_client_id=$1',[clientId]))).rowCount,0)
+    await assert.rejects(rawAs(recipient,'authenticated',database=>database.query('select * from app_private.client_report_crm_links')),e=>e.code==='42501')
+    await assert.rejects(rawAs(recipient,'hh_app_backend',database=>database.query('select contact_ciphertext from app.crm_contacts')),e=>e.code==='42501')
     const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
     const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
-    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof,{googleEmail:'foreign@example.invalid'}),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
     await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
       [sessionId,payload(2)])
-    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
+    await assert.rejects(readSavedSession(config,store,recipient,resource.id),e=>e.code==='SESSION_CHANGED')
     const newIntent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
     const newProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[newIntent.id])).rows[0].browser_secret_hash
-    assert.equal((await commitSessionSaveIntent(config,store,a,newIntent.id,newProof)).id,resource.id)
-    assert.equal((await readSavedSession(config,store,a,resource.id)).session.title,'Private session v2')
+    assert.equal((await commitSessionSaveIntent(config,store,recipient,newIntent.id,newProof,{googleEmail})).id,resource.id)
+    assert.equal((await readSavedSession(config,store,recipient,resource.id)).session.title,'Private session v2')
+    assert.equal((await admin.query('select count(*)::int as n from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows[0].n,1)
     const oldFlag=process.env.HH_CLIENT_DELIVERY_ENABLED
     try{
       process.env.HH_CLIENT_DELIVERY_ENABLED='true'
-      assert.equal((await repo.bootstrap(a)).savedSessions.filter(row=>row.id===resource.id).length,1)
+      assert.equal((await repo.bootstrap(recipient)).savedSessions.filter(row=>row.id===resource.id).length,1)
     }finally{if(oldFlag===undefined)delete process.env.HH_CLIENT_DELIVERY_ENABLED
       else process.env.HH_CLIENT_DELIVERY_ENABLED=oldFlag}
-    await removeSavedSession(config,a,resource.id)
-    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
-  }finally{await admin.end()}
+    await removeSavedSession(config,recipient,resource.id)
+    await assert.rejects(readSavedSession(config,store,recipient,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+  }finally{
+    if(oldCrm===undefined)delete process.env.HH_CRM_ENABLED;else process.env.HH_CRM_ENABLED=oldCrm
+    if(previous)await admin.query('update app.practitioners set trusted_auth_user_id=$2,active=$3,status=$4,public_profile=$5 where id=$1',[practitionerId,previous.trusted_auth_user_id,previous.active,previous.status,JSON.stringify(previous.public_profile)])
+    await admin.end()
+  }
 })
 
 test('saved session table is account-scoped and the raw recipient cannot write',async()=>{
