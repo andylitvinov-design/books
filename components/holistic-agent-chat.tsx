@@ -9,6 +9,7 @@ import {MessengerDictationButton} from "@/components/app/messenger-dictation-but
 import {appendSpokenAnswer} from "@/lib/personal-coaching/speech-text";
 import {stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import {useAliPersona} from "@/components/app/use-ali-persona";
+import AliAudioCall from "./ali-audio-call";
 import {ALI_GEMINI_FREE_ENDPOINT,aliGeminiRequest,aliGeminiResult} from "@/lib/holistic-support/ali-gemini-consultant.mjs";
 import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/messenger-support-quiz";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
@@ -395,6 +396,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [entryOpen,setEntryOpen]=useState(true);
   const [recorderOpen,setRecorderOpen]=useState(false);
   const [voicePermissionOpen,setVoicePermissionOpen]=useState(false);
+  const [audioCallOpen,setAudioCallOpen]=useState(false);
   const voiceRequiresRecorded=voice.prefersRecorded||!voice.recognitionSupported;
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
@@ -1954,7 +1956,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){lukasRef.current?.stop();setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setJourneyPath(null);setJourneyAction(null);journeyPrefsRef.current={noAdvice:false,noQuestions:false};setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setAudioCallOpen(false);lukasRef.current?.stop();setNativeDictationRevision(value=>value+1);setDictationRevision(value=>value+1);setVoiceNoteRevision(value=>value+1);setJourneyPath(null);setJourneyAction(null);journeyPrefsRef.current={noAdvice:false,noQuestions:false};setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -1987,7 +1989,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         setStatus(locale==="ru"?"Речь сохранена в черновике. Проверьте её перед отправкой.":locale==="es"?
           "Tu mensaje quedó en el borrador. Revísalo antes de enviarlo.":"Speech kept in your draft. Review it before sending.");return;
       }
-      if(requiresProtectedReply(text,locale)){lukasRef.current?.stop();voice.stopDialogue();}
+      if(requiresProtectedReply(text,locale)){setAudioCallOpen(false);lukasRef.current?.stop();voice.stopDialogue();}
       sendSelectedTurn(text);
     };
   });
@@ -2000,27 +2002,35 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   useEffect(()=>{
     if(previousAudioScope.current===audioScope)return;
     lukasRef.current?.stop();previousAudioScope.current=audioScope;audioConsentScope.current=null;
-    voice.stopDialogue();setVoicePermissionOpen(false);
+    voice.stopDialogue();setVoicePermissionOpen(false);setAudioCallOpen(false);
   },[audioScope,voice.stopDialogue]);
 
   function toggleMessengerVoice(){
     closeComposerMenu();
-    if(voice.conversing){
-      if(lukasRef.current?.isActive()&&lukasRef.current.isSpeaking()){lukasRef.current.interrupt();voice.resumeAfterExternalReply();}
-      else if(voice.speaking)voice.interruptReply();
-      else {lukasRef.current?.interrupt();voice.pauseDialogue();}
-      return;
-    }
-    if(voicePermissionOpen){setVoicePermissionOpen(false);return;}
+    if(audioCallOpen)return;
+    // A phone call owns the microphone and output exclusively. End video
+    // first, so the same reply cannot be routed to Lukas and device speech.
+    lukasRef.current?.stop();voice.stopDialogue();
+    setVoicePermissionOpen(false);
     setNativeDictationRevision(value=>value+1);
     setDictationRevision(value=>value+1);
     setVoiceNoteRevision(value=>value+1);
-    stopAliPersonaAudio();
-    if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)beginMessengerVoice();
-    else setVoicePermissionOpen(true);
+    stopAliPersonaAudio();setStatus("");
+    setAudioCallOpen(true);
+    // The first call requires informed Start; later calls reuse the consent
+    // for this account/transport, on the user's original phone-button tap.
+    if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)
+      launchMessengerVoice(true);
   }
 
-  function beginMessengerVoice(){
+  function endPhoneCall(){
+    voice.stopDialogue();setAudioCallOpen(false);setVoicePermissionOpen(false);
+  }
+
+  function beginMessengerVoice(){launchMessengerVoice(false);}
+  function beginPhoneCall(){launchMessengerVoice(true);}
+
+  function launchMessengerVoice(phone:boolean){
     if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||document.hidden)return;
     if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
       "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
@@ -2036,10 +2046,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         "Microphone unavailable. Check Safari permissions or type instead.");
       return;
     }
-    lukasRef.current?.interrupt();
+    if(phone){lukasRef.current?.stop();stopAliPersonaAudio();voice.setAutoRead(false);}
+    else lukasRef.current?.interrupt();
+    const name=persona.name[locale]||persona.name.en;
+    const opening=phone&&!voice.paused?(locale==="ru"?`Привет, я ${name}. Я на связи. Что хочешь обсудить?`:locale==="es"?`Hola, soy ${name}. Te escucho. ¿De qué quieres hablar?`:`Hi, I am ${name}. I am here. What would you like to talk about?`):undefined;
     const launched=voice.startDialogue(text=>messengerVoiceTurn.current(text),{
       allowRecorded:voiceRequiresRecorded,consentOnStart:true,pauseOnHide:true,
-      recordedPurpose:authenticated?'ali_chat':'public'});
+      phoneCall:phone,opening,recordedPurpose:authenticated?'ali_chat':'public'});
     if(launched){audioConsentScope.current=audioScope;setVoicePermissionOpen(false);setStatus("");}
   }
 
@@ -2284,7 +2297,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {proBusy&&<button type="button" onClick={()=>{voice.stopDialogue();proAbort.current?.abort();setProBusy(false);}}
           aria-label={messengerView?t.cancel:undefined}><X size={19} aria-hidden="true"/></button>}
       </div>
-      {messengerView&&voicePermissionOpen&&!voice.conversing&&<section
+      {messengerView&&!audioCallOpen&&voicePermissionOpen&&!voice.conversing&&<section
         id="hh-ai-voice-onboarding" className={styles.voiceOnboarding}
         data-hh-ai-voice-consent role="group" aria-label={locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation"}>
         <strong>{locale==="ru"?"Говорите с Ali":locale==="es"?"Habla con Ali":"Talk with Ali"}</strong>
@@ -2317,7 +2330,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           </button>
         </div>
       </section>}
-      {messengerView&&(voice.conversing||voice.paused||voice.notice)&&<div className={styles.voiceConversationStatus}
+      {messengerView&&!audioCallOpen&&(voice.conversing||voice.paused||voice.notice)&&<div className={styles.voiceConversationStatus}
         data-hh-ai-voice-status>
         <span role="status" aria-live="polite">{voice.notice||(
           voice.paused?(locale==="ru"?"Пауза · история сохранена в чате":locale==="es"?"En pausa · historial en el chat":"Paused · history stays in chat"):
@@ -2379,11 +2392,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           blocked={testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected}
           checkBlocked={busy||proBusy||recorderOpen||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"}
           audioAvailable={voiceEnabled} audioActive={voice.conversing} audioPaused={voice.paused}
-          onAudioMode={switching=>{
-            if(switching){closeComposerMenu();voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(true);}
-            else toggleMessengerVoice();
-          }}
-          onActivate={()=>{voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);}}
+          onAudioMode={()=>toggleMessengerVoice()}
+          onActivate={()=>{setAudioCallOpen(false);voice.stopDialogue();stopAliPersonaAudio();setVoicePermissionOpen(false);}}
           onSpeaking={()=>voice.markExternalSpeaking()}
           onSpeechEnd={()=>voice.resumeAfterExternalReply()}
           onStop={()=>voice.stopDialogue()}
@@ -2825,6 +2835,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         </button>
       </div>}
     {!supportQuizOpen&&!showLandingComposer&&composer}
+    {messengerView&&!pageHelp&&audioCallOpen&&<AliAudioCall locale={locale}
+      name={persona.name[locale]||persona.name.en} image={persona.image} voice={voice}
+      ready={voiceEnabled&&voice.supported&&(!voiceRequiresRecorded||voice.recordedSupported)&&(!proSelected||proReady)}
+      busy={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"} recorded={voiceRequiresRecorded}
+      notice={status||undefined} onStart={beginPhoneCall} onEnd={endPhoneCall}/> }
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
