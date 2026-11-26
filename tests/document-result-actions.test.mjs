@@ -44,12 +44,17 @@ test('failed credential request can retry without caching an error',async()=>{
 
 
 test('Documents Ready uses compact cards with a primary cabinet action and three document actions', async () => {
-  const [result, cabinet, actions, css] = await Promise.all([
+  const [result, cabinet, actions, css, globalCss] = await Promise.all([
     readFile('components/consultation-result.jsx', 'utf8'),
     readFile('components/cabinet-link-actions.jsx', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
+    readFile('components/consultation-result-layout.css', 'utf8'),
     readFile('app/globals.css', 'utf8'),
   ])
+  assert.doesNotMatch(globalCss, /\.consultation-result-documents\s*\{/)
+  for (const component of [cabinet, actions]) {
+    assert.match(component, /import '\.\/consultation-result-layout\.css'/)
+  }
   assert.match(result, /consultation-result-topbar/)
   assert.match(result, /consultation-document-card/)
   assert.match(cabinet, /consultation-cabinet-card/)

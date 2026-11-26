@@ -80,8 +80,13 @@ test("The primary Order button opens the existing consented quote cart, never fa
   assert.match(viewer, /readBrowserTalismanCart\(\)/);
   assert.match(viewer, /saveBrowserTalismanCart/);
   assert.match(viewer, /setOrderOpen\(true\)/);
-  assert.match(viewer,/if\(dialog&&!dialog\.open\)dialog\.showModal\(\)/,
-    "a real user Order gesture opens the native dialog before React rerenders");
+  // The native dialog is opened from the real click event, with the
+  // React effect reserved for validated Google-return reentry.
+  assert.match(viewer, /if \(!showOrderDialog\(\)\) \{/);
+  assert.match(viewer, /if \(!dialog\.open\) dialog\.showModal\(\)/);
+  assert.match(viewer, /if \(orderOpen && !showOrderDialog\(\)\)/);
+  assert.match(viewer, /setDialogError\(true\)/);
+  assert.match(viewer, /\{dialogError && <p className=\{styles\.error\} role="alert">/);
   assert.match(viewer,/data-talisman-request-open=\{orderOpen\?"true":"false"\}/,
     "browser can verify actual React order state");
   assert.match(viewer,/if \(!saveBrowserTalismanCart\(/,

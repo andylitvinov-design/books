@@ -5125,3 +5125,59 @@
   .academy-mystery-video-bridge { padding: 14px; }
   .academy-mystery-video-bridge .academy-resource-links { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Contextual Academy story on the Reiki Yggdrasil overview */
+.yggdrasil-school-story { border-top: 1px solid #ded1c2; padding-top: 30px; }
+.yggdrasil-school-story__heading { max-width: 760px; }
+.yggdrasil-school-story__grid { display: grid; gap: 12px; margin-top: 20px; }
+.yggdrasil-school-story__item {
+  display: grid;
+  grid-template-columns: minmax(220px, .82fr) minmax(0, 1.18fr);
+  min-height: 250px;
+  overflow: hidden;
+  border: 1px solid #d8c9b5;
+  background: #fffaf3;
+}
+.yggdrasil-school-story__item--text-only { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.yggdrasil-school-story__item:nth-child(even) .yggdrasil-source-visual { order: 2; }
+.yggdrasil-school-story__item .yggdrasil-source-visual { min-height: 250px; background-position: center; }
+.yggdrasil-school-story__copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(20px, 3.5vw, 34px); }
+.yggdrasil-school-story__copy small {
+  color: #98745c;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.yggdrasil-school-story__copy h3 {
+  margin: 6px 0 8px;
+  color: #3a291f;
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 500;
+  line-height: 1.08;
+}
+.yggdrasil-school-story__copy p { margin: 0; color: #66574c; font-size: 13px; line-height: 1.58; }
+.yggdrasil-school-story__copy a {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 12px;
+  color: #70442d;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.yggdrasil-school-story__sources { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+
+
+.yggdrasil-school-story__heading h2 { margin:7px 0 10px; color:#2c2119; font-family:var(--font-serif); font-size:clamp(27px,5vw,42px); font-weight:400; line-height:1.12; }
+.yggdrasil-school-story__heading > p:not(.homeopathy-kicker) { color:#65564b; line-height:1.58; }
+.yggdrasil-school-story__copy { min-width:0; overflow-wrap:anywhere; }
+.yggdrasil-school-story__item { border-radius:18px; }
+@media (max-width: 760px) {
+  .yggdrasil-school-story__item { grid-template-columns: 1fr; min-height: 0; }
+  .yggdrasil-school-story__item:nth-child(even) .yggdrasil-source-visual { order: 0; }
+  .yggdrasil-school-story__item .yggdrasil-source-visual { min-height: 210px; }
+  .yggdrasil-school-story__copy { padding: 18px 15px 20px; }
+  .yggdrasil-school-story__sources { display: grid; gap: 4px; }
+}

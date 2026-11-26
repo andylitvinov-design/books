@@ -1,5 +1,7 @@
 'use client'
 
+import './consultation-result-layout.css'
+
 import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'

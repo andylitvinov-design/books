@@ -59,7 +59,7 @@ test('explicit hands-free conversation stays inside original AI turn and stops s
  assert.match(voice,/dialogueActive\.current&&!document\.hidden/);
  assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
  assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
- assert.match(voice,/if\(!supported\|\|!playbackConsent\|\|!sttConsent\)/);
+ assert.match(voice,/if\(!supported\|\|\(!consentOnStart&&\(!playbackConsent\|\|!sttConsent\)\)\)/);
  assert.match(chat,/if\(requiresProtectedReply\(text,locale\)\)voice\.stopDialogue\(\)/);
 });
 
@@ -80,7 +80,7 @@ test('every deliberate conversation exit terminates hands-free audio before cont
  assert.match(chat,/<select value=\{mode\} onChange=\{event=>\{voice\.stopDialogue\(\);setMode\(/);
  assert.match(chat,/\{busy&&<button type="button" onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);\}\}/);
  assert.match(controls,/const stopDialogue=useCallback\(\(\)=>\{\s*dialogueActive\.current=false;dialogueOnTurn\.current=null;/);
- assert.match(controls,/if\(mounted\.current\)setConversing\(false\);\s*stop\(\);/);
+ assert.match(controls,/if\(mounted\.current\)\{setConversing\(false\);setPaused\(false\);setNotice\(''\);\}\s*stop\(\);/);
 });
 
 test('Voice Companion is fail-closed in production unless an explicit verified build flag enables it',()=>{
@@ -110,9 +110,9 @@ test('disabled Voice Companion never initializes browser audio, microphone detec
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*mounted\.current=true;/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*try\{\s*const value=JSON\.parse\(window\.localStorage/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\|\|!prefsLoaded\)return;/);
- assert.match(voice,/const speak=useCallback\(\(text:string\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const speak=useCallback\(\(text:string,explicitPlay=false\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const dictate=useCallback\(\(onTranscript:.*\)=>\{\s*if\(!enabled\)return;/);
- assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\)return false;/);
+ assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\|\|document\.hidden\)return false;/);
 });
 
 test('composer microphone owns AI voice turn, not the video recorder',()=>{
