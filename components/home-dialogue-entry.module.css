@@ -690,3 +690,7 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 .composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
 .composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
 .composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}
+
+/* Fourth owner-approved program: the original three remain unchanged. */
+.programCard[data-home-intent-option="reiki"]{background:linear-gradient(125deg,#278b72,#075447 58%,#063b33);border-color:#ffe0a0;box-shadow:0 2px 9px #164f4055,inset 0 0 0 1px #ffe1a44d}
+.programCard[data-home-intent-option="reiki"] .programImage img{object-position:55% center}
