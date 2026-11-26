@@ -143,6 +143,8 @@ test('direct constrained WebSocket and genuine 16 kHz little-endian audio frames
  assert.equal(setup.setup.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS',
   'the actual socket setup must request start-of-user-speech interruption')
  assert.equal(setup.setup.realtimeInputConfig.automaticActivityDetection.startOfSpeechSensitivity,'START_SENSITIVITY_HIGH')
+ assert.equal(setup.setup.realtimeInputConfig.automaticActivityDetection.endOfSpeechSensitivity,'END_SENSITIVITY_LOW')
+ assert.equal(setup.setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs,900)
  assert.deepEqual(setup.setup.inputAudioTranscription,{})
  assert.deepEqual(setup.setup.outputAudioTranscription,{})
  assert.throws(()=>geminiLiveSetupMessage('gemini-3.8-live','Sulafat'))
@@ -240,19 +242,30 @@ test('discarded speaker frames cannot repopulate captions or create a completed 
  assert.deepEqual(final,['A valid next reply'])
 })
 
-test('quiet human voice ducks and interrupts coach after a sustained 120 ms onset at either capture cadence',()=>{
+test('quiet human voice ducks and interrupts coach only after a sustained 240 ms onset at either capture cadence',()=>{
  const detector=new GeminiLiveBargeDetector()
  assert.equal(detector.sample(.001,true),'none')
  assert.equal(detector.sample(.023,true),'duck')
- assert.equal(detector.sample(.025,true),'candidate')
- assert.equal(detector.sample(.024,true),'candidate')
+ for(let i=0;i<6;i++)assert.equal(detector.sample(.024,true),'candidate')
  assert.equal(detector.sample(.024,true),'interrupt')
+ assert.equal(detector.sample(.024,true),'active','one interruption per utterance')
  const fallback=new GeminiLiveBargeDetector()
- for(let i=0;i<2;i++)assert.notEqual(fallback.sample(.024,true,2048/48),'interrupt')
+ for(let i=0;i<5;i++)assert.notEqual(fallback.sample(.024,true,2048/48),'interrupt')
  assert.equal(fallback.sample(.024,true,2048/48),'interrupt')
  assert.equal(detector.userActive,true)
  for(let i=0;i<7;i++)detector.sample(.001,false)
  assert.equal(detector.userActive,false)
+})
+
+test('a loud 192 ms noise restores playback while a quiet short reply in listening mode remains active',()=>{
+ const detector=new GeminiLiveBargeDetector()
+ assert.equal(detector.sample(.35,true),'duck')
+ for(let i=0;i<5;i++)assert.equal(detector.sample(.25,true),'candidate')
+ assert.equal(detector.sample(.001,true),'none')
+ assert.equal(detector.sample(.001,true),'restore')
+ assert.equal(detector.userActive,false)
+ for(let i=0;i<3;i++)detector.sample(.017,false)
+ assert.equal(detector.userActive,true)
 })
 test('short playback echo ducks then restores without interrupting the coach',()=>{
  const detector=new GeminiLiveBargeDetector()

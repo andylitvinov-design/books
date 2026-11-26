@@ -911,10 +911,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // A louder speaker leaves more residual echo. Raise the threshold with
     // that level, while a quiet caller over softer playback can still pass.
     const speechThreshold=residual===null?.013:Math.max(.0105,Math.min(.013,.21*level))
-    if(micLevel>=speechThreshold)r.lastHumanAudioAt=Date.now()
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,micLevel*4)))
     const frameMs=1000*audio.length/r.context.sampleRate
     const event=r.bargeDetector.sample(micLevel,protectedPlayback,frameMs,speechThreshold)
+    if((!protectedPlayback&&micLevel>=speechThreshold)||r.bargeDetector.userActive)r.lastHumanAudioAt=Date.now()
     if(event==='duck'&&r.player.playing)r.player.setVolume(.4)
     else if(event==='restore')r.player.setVolume(1)
     else if(event==='interrupt')interrupt()
@@ -934,7 +934,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // Keep the sample clock running through echo and failed onsets. Google
       // must never hear the candidate before the local barge-in decision.
       // Send a genuine onset in order, including its first syllable.
-      if(residual!==null&&micLevel<speechThreshold)pcm.fill(0)
+      // Keep quieter phonemes and brief gaps in a candidate/confirmed phrase.
+      // The downstream gate zeros rejected playback candidates; never erase
+      // portions of a real utterance merely because echo analysis ran on it.
       const pending=r.pendingMic
       if(protectedPlayback&&!r.bargeDetector.userActive&&r.bargeDetector.candidateMs>0){
         pending.push(pcm)
