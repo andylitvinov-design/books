@@ -268,7 +268,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
     'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
-    'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
+    'data-coach-finish-with-protocol','className={styles.liveTranscript}','data-coach-inline-voice data-coach-call-dock',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
     'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
@@ -397,7 +397,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.doesNotMatch(ui,/replayCoachReplyOnDevice|new Utterance\(spokenText/)
 
   assert.ok(media.includes('onBlocked'))
-  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume}'))
+  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume,setMuted}'))
+  assert.match(media,/const setMuted=value=>\{userMuted=Boolean\(value\);setVolume\(requestedVolume\)\}/)
  assert.ok(media.includes('const setVolume=volume=>'),'voice interruption must mute speaker only')
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
@@ -640,7 +641,9 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  const ui=source('components/my-coach-live-dialogue.jsx')
  const start=ui.indexOf('data-coach-basic-pro-toggle')
  assert.ok(start>0)
- const toggle=ui.slice(start,ui.indexOf('data-coach-pro-same-tap-disclosure',start))
+ const toggle=ui.slice(start,ui.indexOf('</button>',start))
+ assert.ok(ui.indexOf('data-coach-pro-same-tap-disclosure')<start,'provider disclosure must precede engine switch')
+ assert.match(toggle,/aria-describedby=\{[^\n]*'hh-coach-pro-disclosure'/)
  assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
  assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|voicePaused\|\|protocolOpen\}/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
