@@ -1,4 +1,5 @@
 import { NextResponse, after } from 'next/server'
+import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, validReikiConsent } from '@/lib/academy/reiki-oauth-consent.js'
 import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
@@ -209,8 +210,47 @@ async function syncVerifiedTelegramBusinessEnquiries(config,actor,identities,{re
    "where telegram_peer_hash=$2 and contact_id is not null and stage='submitted' "+
    'and account_id is null returning contact_id',
    [actor.id,peerHash])
+  await recordReikiBusinessPeer(db,config,subject,peerHash)
   return {verified:true,linked:updated.rowCount,disabled:false}
  })
+}
+async function recordReikiBusinessPeer(db,config,subject,peerHash){
+ const {verifiedBusinessThreadProof}=await import('@/lib/crm/telegram-business-inbox')
+ const proof=verifiedBusinessThreadProof(subject,config)
+ if(!proof)return
+ // Roll out independently of the existing Cabinet account-link feature.
+ const ready=(await db.query(
+   "select pg_catalog.to_regprocedure('app_private.reiki_record_business_peer(text,text,text)') is not null as ready"
+ )).rows[0]?.ready===true
+ if(ready)await db.query('select app_private.reiki_record_business_peer($1,$2,$3)',[peerHash,proof.accountHash,proof.userHash])
+}
+
+// Old verified Business links predate the CRM-thread HMAC fields. Repair only
+// an already-linked account after fresh course consent, without creating a
+// channel link or sending any message to a provider.
+async function recoverReikiBusinessLink(config,actor,auth,view){
+ if(!view.sharingWithMessenger||view.messengerLinked)return view
+ try{
+   const eligible=await transaction(config,actor,async db=>(await db.query(
+     `select exists(select 1 from app_private.crm_tg_business_service_sessions
+       where account_id=$1 and linked_at is not null and stage='submitted'
+         and crm_thread_user_hash is null) as eligible`,[actor.id]
+   )).rows[0]?.eligible)
+   if(!eligible)return view
+   const {data,error}=await auth.client.auth.getUserIdentities()
+   const subject=!error&&verifiedTelegramSubject(data?.identities)
+   if(!subject)return view
+   const peerHash=operationHash({scope:'hh-telegram-business-peer',id:subject},config)
+   const linked=await transaction(config,actor,async db=>{
+     await db.query("select set_config('hh.telegram_verified_peer_hash',$1,true)",[peerHash])
+     await recordReikiBusinessPeer(db,config,subject,peerHash)
+     return (await db.query('select app_private.reconcile_my_reiki_messenger() as linked')).rows[0]?.linked===true
+   })
+   return linked?{...view,messengerLinked:true}:view
+ }catch{
+   // The committed course snapshot remains valid and can retry on the next visit.
+   return view
+ }
 }
 async function disableVerifiedTelegramBusinessSync(config,actor){
  return transaction(config,actor,async db=>{
@@ -247,10 +287,12 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider', 'reikiSharing'])
       const authChoice = body.provider ?? 'google'
       if (authChoice !== 'google' && authChoice !== 'telegram')
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
+      if (body.reikiSharing !== undefined && (body.reikiSharing !== true || !['energywork','energywork-daybook'].includes(body.continueTo) || authChoice !== 'google' || body.native)) throw new AppError('INVALID_CONTINUATION',400)
+      const reikiFlow = body.reikiSharing === true ? randomUUID() : null
       const selectedProvider = oauthProvider(authChoice)
       if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
       const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(body.continueTo) ? 'es' : 'en'
@@ -327,13 +369,16 @@ async function handle(request, { params }) {
         provider: selectedProvider.provider,
         options: {
           ...(authChoice === 'google' ? { scopes: 'openid email profile' } : { scopes: selectedProvider.scopes }),
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${reikiFlow ? '&reikiFlow=' + reikiFlow : ''}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
       if (error || !data.url || new URL(data.url).origin !== config.supabaseUrl)
         throw new AppError('SIGN_IN_UNAVAILABLE', 503)
-      return json({ redirectUrl: data.url })
+      const response = json({ redirectUrl: data.url, ...(reikiFlow ? { reikiFlow } : {}) })
+      if (['energywork','energywork-daybook'].includes(continueTo) && (reikiFlow || request.cookies?.get(REIKI_CONSENT_COOKIE)?.value)) response.cookies.set(REIKI_CONSENT_COOKIE,
+        reikiFlow ? reikiConsentProof(reikiFlow,null,config) : '', reikiConsentCookieOptions(config,reikiFlow ? undefined : 0))
+      return response
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
@@ -527,9 +572,13 @@ async function handle(request, { params }) {
         ? origin+directMessengerSetupPath(locale,recipientSlug) : continueTo==='clarity-daybook'&&account.onboardingState!=='active'
         ? origin+clarityOnboardingPath(locale) : programFromContinuation(continueTo)&&account.onboardingState!=='active'
         ? origin+programOnboardingPath(locale,programFromContinuation(continueTo)) : destination
-      return finishAuth(
-        NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
-      )
+      const response = finishAuth(NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }))
+      const reikiFlow = url.searchParams.get('reikiFlow')
+      if (['energywork','energywork-daybook'].includes(continueTo) && !linkedAccount && reikiFlow &&
+          validReikiConsent(request.cookies?.get(REIKI_CONSENT_COOKIE)?.value,reikiFlow,null,config)) {
+        response.cookies.set(REIKI_CONSENT_COOKIE,reikiConsentProof(reikiFlow,actor.id,config),reikiConsentCookieOptions(config))
+      }
+      return response
     }
     if (joined === 'auth/identities' && method === 'GET') {
       const actor=await auth.verified()
@@ -925,6 +974,14 @@ async function handle(request, { params }) {
       }
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'academy-energywork/verify-sharing' && method === 'POST') {
+      const body = await readBody(request,512)
+      onlyKeys(body,['reikiFlow'])
+      if (expectedAccount !== actor.id ||
+          !validReikiConsent(request.cookies?.get(REIKI_CONSENT_COOKIE)?.value,body.reikiFlow,actor.id,config))
+        throw new AppError('COURSE_SHARING_LOGIN_EXPIRED',409)
+      return json({verified:true})
+    }
     if (joined === 'academy-energywork/photo') {
       if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
         throw new AppError('ACCOUNT_CHANGED',409)
@@ -945,8 +1002,30 @@ async function handle(request, { params }) {
       if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
         throw new AppError('ACCOUNT_CHANGED',409)
       const energywork=createEnergyworkCourseRepository(config)
-      if (method === 'GET') return json({ accountId:actor.id, ...await energywork.read(actor) })
-      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,32768)) })
+      if (method === 'GET') {
+        const progress=await energywork.read(actor)
+        return json({accountId:actor.id,...await recoverReikiBusinessLink(config,actor,auth,progress)})
+      }
+      if (method === 'POST') {
+        const body = await readBody(request,32768)
+        if ((body.messengerConsent === true || body.reikiFlow !== undefined || body.action === 'withdraw-sharing') && expectedAccount !== actor.id)
+          throw new AppError('ACCOUNT_CHANGED',409)
+        if (body.reikiFlow !== undefined) {
+          if (body.action !== 'start' || body.consent !== true ||
+              !validReikiConsent(request.cookies?.get(REIKI_CONSENT_COOKIE)?.value,body.reikiFlow,actor.id,config))
+            throw new AppError('COURSE_SHARING_LOGIN_EXPIRED',409)
+          delete body.reikiFlow
+          body.teacherConsent = true
+          body.messengerConsent = true
+        }
+        const progress=await energywork.command(actor,body)
+        const view=['start','share'].includes(body.action)
+          ?await recoverReikiBusinessLink(config,actor,auth,progress):progress
+        const response=json({accountId:actor.id,...view})
+        if (['start','delete','withdraw-sharing'].includes(body.action) && request.cookies?.get(REIKI_CONSENT_COOKIE)?.value)
+          response.cookies.set(REIKI_CONSENT_COOKIE,'',reikiConsentCookieOptions(config,0))
+        return response
+      }
       throw new AppError('NOT_FOUND',404)
     }
     if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)

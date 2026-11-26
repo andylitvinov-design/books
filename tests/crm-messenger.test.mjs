@@ -205,7 +205,7 @@ test('v3 conversation workflow: late response from another client cannot replace
   assert.match(ui,/activeRef\.current=id/)
   assert.match(ui,/if\(activeRef\.current===id\)\{\s*setData\(previous=>\(\{/)
   assert.match(ui,/setData\(previous=>previous\?\{\.\.\.previous,messages:\[\],followups:\[\]/)
-  assert.match(ui,/if\(id===activeRef\.current\)\{\s*setData\(previous=>\(\{/)
+  assert.match(ui,/if\(id===activeRef\.current\)\{\s*setData\(previous=>\{\s*if\(previous\?\.historyRevision>result\.historyRevision\)return previous/)
   assert.match(ui,/aria-busy=\{threadLoading\}/)
   assert.match(ui,/threadLoading\|\|!selected\.reply\.ok/)
 })
@@ -262,7 +262,7 @@ test('v3 async chat switching never mixes the previous client conversation into 
   assert.match(ui,/activeRef\.current=id/)
   assert.match(ui,/if\(activeRef\.current===id\)\{\s*setData\(previous=>\(\{/)
   assert.match(ui,/setData\(previous=>previous\?\{\.\.\.previous,messages:\[\],followups:\[\]/)
-  assert.match(ui,/if\(id===activeRef\.current\)\{\s*setData\(previous=>\(\{/)
+  assert.match(ui,/if\(id===activeRef\.current\)\{\s*setData\(previous=>\{\s*if\(previous\?\.historyRevision>result\.historyRevision\)return previous/)
   assert.match(ui,/aria-busy=\{threadLoading\}/)
 })
 test('v3 internal note and followup authorizations reuse encrypted owner storage only',()=>{

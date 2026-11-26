@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import ts from 'typescript'
 import {
   ENERGYWORK_QUESTIONS,
   energyworkLessonRanges,
@@ -58,6 +59,28 @@ test('All five Reiki lessons retain closing practice; lesson one adds optional R
   assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('paths-03'))
   assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('init-02'))
   assert.ok(sequence.indexOf('paths-01') > sequence.indexOf('ygg-done'))
+})
+
+test('real editorial curriculum initializes and matches the public course sequence', async () => {
+  const moduleUrl = source => {
+    const { outputText } = ts.transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    })
+    return 'data:text/javascript;base64,' + Buffer.from(outputText).toString('base64')
+  }
+  const source = editorial
+    .replace('./yggdrasil-testimonials', moduleUrl(read('data/academy/yggdrasil-testimonials.ts')))
+    .replace('./yggdrasil-preparation-questions', moduleUrl(read('data/academy/yggdrasil-preparation-questions.ts')))
+  const { energyworkSlides } = await import(moduleUrl(source))
+  const slides = energyworkSlides()
+  assert.deepEqual(slides.map(slide => slide.id), energyworkSequence())
+  const closing = slides.slice(slides.findIndex(slide => slide.id === 'flight-done') - 2,
+    slides.findIndex(slide => slide.id === 'flight-done') + 1)
+  assert.deepEqual(closing.map(({ id, kind }) => [id, kind]), [
+    ['flight-03', 'practice'],
+    ['flight-hints', 'lesson'],
+    ['flight-done', 'milestone'],
+  ])
 })
 
 test('existing practice timers retain soundtrack, pause, answers and previous/next navigation', () => {

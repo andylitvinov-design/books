@@ -49,7 +49,11 @@ test('Google owner tool transition is allowlisted end-to-end with no open redire
   const route=read('app/api/app/[...path]/route.js')
   const practice=read('components/app/practice-workspace.jsx')
   assert.match(access,/tools: '\/admin\/tools'/)
-  assert.match(login,/\['growth', 'seo', 'acquisition', 'tools', 'youtubeConnect'\]\.includes/)
+  assert.match(login,/\['growth', 'seo', 'acquisition', 'tools', 'youtube','youtubeConnect','youtubeConnectEn'\]\.includes\(params\?\.destination\)/)
+  for(const source of [access,entry]){
+    assert.match(source,/youtube: '\/admin\/youtube-upload'/)
+    assert.match(source,/youtubeConnectEn: '\/api\/admin\/telegram-video\/youtube\/start\?target=en'/)
+  }
   assert.match(login,/\? params\.destination : 'cabinet'/)
   assert.doesNotMatch(login,/redirect\(params\?\.destination\)/)
   assert.match(login,/practitionerDestination\[destination\]/)
