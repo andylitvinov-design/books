@@ -900,17 +900,20 @@ test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual
     const postgres = workflow.split('    services:\n      postgres:\n')[1]?.split('    env:\n')[0];
     assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
     if (name === 'hh-reiki-all-slides-browser.yml') {
-      // The protected Reiki release retains one owner-approved real browser
-      // acceptance for #5626 and the exact reviewed mobile-fit branch.
-      const reikiGate = "github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 5626 || github.event.pull_request.head.ref == 'codex/reiki-daybook-fit-mobile-20261125')";
-      const expectedImage = "image: ${{ (" + reikiGate + ") && 'postgres:17-alpine' || '' }}";
+      // Both one-time Daybook acceptance PRs (#5626 and #5645) have merged
+      // after real Chromium/WebKit. Full manual QA remains available.
+      const reikiGate = "github.event_name == 'workflow_dispatch'";
+      const expectedImage = "image: " + "$" + "{{ (" + reikiGate + ") && 'postgres:17-alpine' || '' }}";
       assert.equal(postgres.split('\n').filter(line => /^\s*image:/.test(line)).map(line => line.trim()).join('\n'), expectedImage,
-        name + ' PostgreSQL must remain limited to manual QA or exact reviewed Daybook release');
-      for (const step of ['Isolated Chromium/WebKit runtime (manual or one-time Daybook acceptance)',
+        name + ' PostgreSQL must remain limited to full manual QA');
+      for (const step of ['Isolated Chromium/WebKit runtime (manual full acceptance)',
         'Initialize synthetic isolated account database', fullQA]) {
         assert.ok(workflow.includes('- name: ' + step + '\n        if: ' + reikiGate + '\n'),
-          name + ' expensive step must retain the exact owner-approved gate: ' + step);
+          name + ' expensive step must retain its manual gate: ' + step);
       }
+      assert.ok(workflow.includes("fromJSON((" + reikiGate + ") && '[\"chromium\",\"webkit\"]' || '[\"chromium\"]')"));
+      assert.ok(workflow.includes('node scripts/verify-reiki-referral-browser.mjs'));
+      assert.doesNotMatch(workflow, /5626|reiki-daybook-fit-mobile-20261125|HH_REIKI_DAYBOOK_ONLY/);
     } else {
       assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
     }
@@ -919,6 +922,32 @@ test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual
     assert.match(workflow, /workflow_dispatch:/, name + ' manual QA must remain callable');
     assert.doesNotMatch(workflow, /continue-on-error:\s*true/, name + ' cannot ignore real failures');
   }
+});
+
+test('Reiki source contracts skip dependency installation only for the exact reviewed import closure', () => {
+  const workflow = read('hh-reiki-all-slides-browser.yml');
+  const planner = workflow.split('      - name: Plan reviewed dependency-free Reiki source contracts\n')[1]
+    ?.split('      - uses: actions/setup-node@v4')[0];
+  assert.ok(planner);
+  assert.ok(planner.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  const rows = planner.split("done <<'HH_REIKI_REVIEWED'\n")[1]?.split('          HH_REIKI_REVIEWED\n')[0]
+    ?.trim().split('\n').map(line => line.trim().split(/\s+/));
+  const reviewed = ['tests/reiki-daybook-alternative.test.mjs','tests/reiki-referral-landing.test.mjs',
+    'tests/tantra-reiki-compact-fullwidth.test.mjs','tests/tantra-reiki-photographic-landing.test.mjs',
+    'tests/tantra-reiki-level-one-focus.test.mjs','tests/tantra-reiki-mobile-chapters.test.mjs',
+    'tests/tantra-reiki-teacher-compact.test.mjs','data/academy/energywork-ai-schema.js',
+    'data/academy/reiki-initiation-request.js','package.json','package-lock.json'];
+  assert.deepEqual(rows?.map(row=>row[1]),reviewed);
+  assert.ok(rows.every(([sha])=>/^[a-f0-9]{40}$/.test(sha)));
+  assert.ok(planner.includes('git hash-object -- "$file" 2>/dev/null || true'));
+  assert.ok(planner.includes('if [[ "$actual" != "$expected" ]]; then minimal=false; fi'));
+  assert.ok(planner.includes("printf 'minimal=%s\\n' \"$minimal\""));
+  assert.ok(workflow.includes("name: Install full dependencies for manual QA or changed test inputs\n        if: steps.reiki-deps.outputs.minimal != 'true'\n        run: npm ci --no-audit --no-fund"));
+  assert.ok(workflow.includes("name: Standalone scoped lint when full dependencies are installed\n        if: github.event_name == 'pull_request' && steps.reiki-deps.outputs.minimal != 'true'\n        run: npx --no-install eslint components/tantra-reiki-journey.tsx"));
+  for (const path of reviewed.filter(path=>path.startsWith('tests/'))) assert.ok(workflow.includes(path),path);
+  assert.match(workflow,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.ok(workflow.includes("github.event.action == 'synchronize'"));
+  assert.match(workflow,/workflow_dispatch:/);
 });
 
 test('Messenger mobile Draft skips heavy runners and automatically rechecks on Ready', () => {
