@@ -15,12 +15,12 @@ import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecorde
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
 const start=source.indexOf('const words={')
-const end=source.indexOf("  const active=phase!=='idle'",start)
+const end=source.indexOf("  const isPaused=phase==='paused',active=phase!=='idle'&&!isPaused",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
 function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
-  const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
+  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -108,10 +108,10 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
-    onVoiceLevel(){},onTranscript(){},onDraft(){},
+    onVoiceLevel(){},onTranscript(){},onDraft(value){drafts.push(value)},
   },ref)
   return {
-    ref,voices,inputs,phases,
+    ref,voices,inputs,phases,drafts,
     get starts(){return starts},
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
@@ -424,4 +424,24 @@ test('Basic voice pause retains the mounted logical conversation and resumes wit
   const resume=source.slice(source.indexOf('  function resumePausedSession(){'),source.indexOf('  stopRef.current=stopVoice'))
   assert.match(resume,/startListening\(\)/)
   assert.doesNotMatch(resume,/sessionStartRef|speakCoachReply|onTurn\(/)
+})
+
+
+test('explicit pause preserves editable interim words and resumes the same mounted conversation',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  first.onresult?.({results:[{isFinal:false,0:{transcript:'Мне важно сохранить эту мысль'}}]})
+  assert.equal(session.ref.current.pauseSession(),true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.hasLiveSession(),true)
+  assert.equal(session.inputs.length,0,'pause must not submit incomplete speech')
+  assert.equal(session.drafts.at(-1),'Мне важно сохранить эту мысль')
+  const starts=session.starts,intros=session.intros
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.'),true)
+  const second=await nextMic(session,2)
+  assert.notEqual(first,second)
+  assert.equal(session.starts,starts,'resume must not restart the session')
+  assert.equal(session.intros,intros,'resume must not replay the introduction')
+  session.ref.current.stop()
 })
