@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, Clapperboard, Sun, Leaf, MessageCircle, UserRound } from "lucide-react";
-import type { PublicLocale } from "@/lib/public-locales";
+import { isPublicInstallPath, type PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, isUnifiedMobileDockAppPath, isUnifiedMobileDockEditorialPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
 import { visualDockBottomOffset, visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
@@ -26,7 +26,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
   const router = useRouter();
   const localeMatch = pathname.match(/^\/(ru|en|es)(?:\/|$)/);
   const locale = (localeMatch?.[1] || initialLocale) as PublicLocale;
-  const visible = isUnifiedMobileDockPath(pathname);
+  const visible = isUnifiedMobileDockPath(pathname) && !isPublicInstallPath(pathname);
   const editorialOnly = !isUnifiedMobileDockAppPath(pathname) && isUnifiedMobileDockEditorialPath(pathname);
   const homeRoute = isUnifiedMobileDockHomePath(pathname);
   const navRef = useRef<HTMLElement>(null);

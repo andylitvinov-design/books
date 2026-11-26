@@ -369,19 +369,22 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
 
         <div className="yggdrasil-school-story__grid">
-          {schoolStory.map((item) => (
-            <article className="yggdrasil-school-story__item" key={item.key}>
-              <SourceVisual url={yggdrasilAcademyStoryImages[item.key]} label={item.title} />
-              <div className="yggdrasil-school-story__copy">
-                <small>{item.eyebrow}</small>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-                {item.key === "teacher" ? (
-                  <Link href={`/${locale}/about`}>{locale === "ru" ? "Подробнее об Андрее" : locale === "es" ? "Más sobre Andrii" : "More about Andrii"}<span aria-hidden="true"> →</span></Link>
-                ) : null}
-              </div>
-            </article>
-          ))}
+          {schoolStory.map((item) => {
+            const photoUrl = yggdrasilAcademyStoryImages[item.key];
+            return (
+              <article className={photoUrl ? "yggdrasil-school-story__item" : "yggdrasil-school-story__item yggdrasil-school-story__item--text-only"} key={item.key}>
+                {photoUrl ? <SourceVisual url={photoUrl} label={item.title} /> : null}
+                <div className="yggdrasil-school-story__copy">
+                  <small>{item.eyebrow}</small>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                  {item.key === "teacher" ? (
+                    <Link href={`/${locale}/about`}>{locale === "ru" ? "Подробнее об Андрее" : locale === "es" ? "Más sobre Andrii" : "More about Andrii"}<span aria-hidden="true"> →</span></Link>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
         </div>
 
         <p className="yggdrasil-program-source-note">{text.sourceNote}</p>

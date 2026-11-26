@@ -57,7 +57,7 @@ test('Handoff retains all first-lesson reflections only in a short-lived same-ta
   assert.match(learner,/continueTo: "energywork"/)
   assert.match(route,/continueTo === 'energywork'/)
   assert.match(learner,/void completeFirstLesson\(pending\)/)
-  assert.match(learner,/if \(handoff\.afterSave === "courses"\) window\.location\.assign/)
+  assert.match(learner,/if \(handoff\?\.afterSave === "courses"\) window\.location\.assign/)
 })
 
 test('Rejects forged slides, missing answers, missing mandatory review, and oversized payloads', () => {
@@ -81,8 +81,9 @@ test('Rejects forged slides, missing answers, missing mandatory review, and over
 test('Private onboarding and atomic account-owned save never enroll or share with teacher silently', () => {
   assert.match(learner,/adult: true, necessary: true, marketing: false/)
   assert.match(learner,/firstLesson: \{ answers: handoff\.answers \}/)
-  assert.match(learner,/teacherConsent: false/)
-  assert.match(server,/body\.teacherConsent === true\)\s+throw new AppError\('INVALID_FIRST_LESSON',400\)/)
+  assert.match(learner,/reikiFlow\?: string, teacherConsent = false/)
+  assert.match(route,/validReikiConsent\(request\.cookies\?\.get\(REIKI_CONSENT_COOKIE\)\?\.value,body\.reikiFlow,actor\.id,config\)/)
+  assert.match(server,/body\.teacherConsent === true && body\.messengerConsent !== true/)
   assert.match(server,/let firstLesson = null/)
   assert.match(server,/energyworkFirstLessonAnswers\(body\.firstLesson\.answers\)/)
   assert.match(server,/const merged = \{\.\.\.firstLesson, \.\.\.priorAnswers\}/)
