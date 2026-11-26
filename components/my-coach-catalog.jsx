@@ -387,7 +387,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           </div>
           {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
-            {selected.id === 'mira'
+            {selected.id === 'mira' && !safeMethod
               ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
               : <a className={heroStyles.talkButton} href={startHref}
                   data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}

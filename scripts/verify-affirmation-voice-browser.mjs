@@ -492,6 +492,10 @@ async function verifyWorkspaceHydration(browser,locale){
     const textSize=page.locator('[data-video-montage-text] [data-video-ideas-text-size]');
     const filmCanvas=page.locator('[data-mandala-cinematic-canvas]');
     const heroPlaying=page.locator('[data-video-mandala-hero]');
+    const textSizeSettings=page.locator('[data-video-montage-text] [data-video-text-size-settings]');
+    await expect(textSizeSettings.locator("summary")).toBeVisible();
+    await expect(textSize).toBeHidden();
+    await textSizeSettings.locator("summary").tap();
     await expect(textSize).toBeVisible();
     await textSize.press("Home");
     await expect(textSize).toHaveValue("0");
@@ -513,17 +517,36 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(textSize).toHaveValue("2");
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
     await expect.poll(phrasePixels,{timeout:12000}).not.toBe(smallPixels);
+    // Check all three real sizes while editing, before opening playback.
+    // Do not send keyboard/range events into the editor while the mobile
+    // player is active and has scrolled the page to a different control.
+    await textSize.press("Home");
+    await expect(textSize).toHaveValue("0");
+    await textSize.press("ArrowRight");
+    await expect(textSize).toHaveValue("1");
+    await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    await textSizeSettings.locator("summary").tap();
+    await expect(textSize).toBeHidden();
     // Preview is local, not an export, provider call or payment action.
     await previewText.tap();
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","true");
     await expect(filmCanvas).toBeVisible({timeout:15000});
     const firstFrame=await phrasePixels();
     await expect.poll(phrasePixels,{timeout:9000,intervals:[450,450,450]}).not.toBe(firstFrame);
-    // Restore the neutral size via the same slider; its real handler pauses
-    // playback and resets the playhead before the next Story check.
-    await textSize.press("ArrowLeft");
-    await expect(textSize).toHaveValue("1");
+    // Pause with the actual accessible player control. Never force a hidden
+    // input or simulate a playback state. Return to the visible Text editor.
+    const pausePreview=heroPlaying.locator('[data-video-preview-toggle]');
+    await expect(pausePreview).toBeVisible();
+    await expect(pausePreview).toHaveAttribute("aria-pressed","true");
+    await pausePreview.tap();
     await expect(heroPlaying).toHaveAttribute("data-preview-playing","false");
+    if(!await textSizeSettings.locator("summary").isVisible()){
+      await openVisibleMontageText(page,engine,"standard");
+    }
+    await expect(textSizeSettings.locator("summary")).toBeVisible();
+    await expect(textSize).toHaveValue("1");
+    if(await textSizeSettings.evaluate(node=>node.open))await textSizeSettings.locator("summary").tap();
+    await expect(textSize).toBeHidden();
     phase(engine,"montage-text-real-canvas-preview");
     await reviewStory.tap();
     await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
