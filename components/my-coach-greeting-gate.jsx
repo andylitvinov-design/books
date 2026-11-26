@@ -1,4 +1,5 @@
 'use client'
+import {clarityCourseId,clarityCourseDay,clarityCoachHref,CLARITY_COURSE_GROUP} from '@/lib/coaching/clarity-course.mjs'
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
@@ -36,7 +37,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -59,7 +60,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  function switchCoach(direction){
    if(!canSwitch||chosen.current||switching.current)return
    const nextId=greetingCoachNeighbor(PUBLIC_COACH_RAIL_IDS,personaId,direction)
-   const href=nextId&&coachSessionHref(lang,nextId)
+   const href=nextId&&clarityCoachHref(coachSessionHref(lang,nextId),clarityDay)
    if(!href)return
    switching.current=true
    touchOrigin.current=null
@@ -107,7 +108,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    }catch{if(audioRun.current===generation){setPhase('complete');setError(t.failed)}}
  }
  function chooseSession(id,options){
-   if(chosen.current||switching.current)return
+   if(chosen.current||switching.current||(!accountSaving&&clarityCourseDay(id)))return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
@@ -164,8 +165,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
          </details>}
        </div>
        <button type="button" className={styles.primary} data-coach-greeting-start
-         onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
-         <span>{t.start} {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+         disabled={Boolean(clarityDay)&&!accountSaving} onClick={()=>chooseSession(clarityCourseId(clarityDay)||INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
+         <span>{clarityDay?CLARITY_COURSE_GROUP.sessions[clarityDay-1].title[lang]+' · 20 min':t.start+' '+sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
        {privateProfileEnabled&&<div data-coach-private-profile-entry style={{display:'grid',gap:8}}>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button>
@@ -193,7 +194,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        <button type="button" className={styles.topicClose} onClick={()=>topicDialog.current?.close()} aria-label={t.close}><X size={23} aria-hidden="true"/></button>
      </div>
      <div className={styles.topicGroups}>
-       {COACH_PROGRAM_GROUPS.map(group=><section key={group.id} className={styles.topicGroup} data-coach-program={group.id}>
+       {[CLARITY_COURSE_GROUP,...COACH_PROGRAM_GROUPS.filter(group=>group.id!=='clarity')].map(group=><section key={group.id} className={styles.topicGroup} data-coach-program={group.id}>
          <button type="button" className={styles.topicGroupButton} aria-expanded={expandedGroup===group.id}
            aria-controls={'coach-topic-'+group.id} onClick={()=>setExpandedGroup(previous=>previous===group.id?null:group.id)}>
            <span>{coachCourseLocal(group.title,lang)}</span><small>{group.sessions.length}</small><ChevronDown size={19} aria-hidden="true"/>

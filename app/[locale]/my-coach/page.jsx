@@ -1,3 +1,4 @@
+import {clarityDay} from '@/lib/coaching/clarity-course.mjs'
 import { notFound } from 'next/navigation'
 import MyCoachCatalog from '@/components/my-coach-catalog'
 import { metadataBaseFor } from '@/data/site-metadata'
@@ -24,10 +25,10 @@ export async function generateMetadata({ params }) {
     },
   }
 }
-export default async function MyCoachPage({ params }) {
+export default async function MyCoachPage({ params, searchParams }) {
   const { locale } = await params
   if (!locales.includes(locale)) notFound()
   return <div className={styles.page} lang={locale} data-my-coach-page>
-    <MyCoachCatalog locale={locale} />
+    <MyCoachCatalog locale={locale} clarityDay={clarityDay((await searchParams)?.clarityDay)} />
   </div>
 }

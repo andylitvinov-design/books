@@ -1,3 +1,4 @@
+import {clarityDay} from '@/lib/coaching/clarity-course.mjs'
 import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import PublicCoachingDiscovery from '@/components/public-coaching-discovery'
@@ -31,7 +32,8 @@ export default async function PublicCoachingPage({params,searchParams}){
  const {locale}=await params
  if(!locales.includes(locale))notFound()
  const query=await searchParams
- const personaSelection=resolveCoachSelection(query)
+ const selection=resolveCoachSelection(query)
+ const personaSelection=selection?{...selection,clarityDay:clarityDay(query?.clarityDay)}:null
  const goalCourseId=typeof query.goalCourse==='string'&&COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===query.goalCourse)?query.goalCourse:null
  let catalog=null
  try{

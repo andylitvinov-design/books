@@ -1,3 +1,5 @@
+import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
+import {clarityReserve,clarityConfirm,clarityRelease} from '@/lib/app/clarity-course-access.js'
 import { NextResponse, after } from 'next/server'
 import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, validReikiConsent } from '@/lib/academy/reiki-oauth-consent.js'
 import { randomUUID } from 'node:crypto'
@@ -1180,7 +1182,9 @@ async function handle(request, { params }) {
     if (joined === 'my-coach/stream') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      const prepared=prepareMethodTurn(await readBody(request,16384))
+      const streamBody=await readBody(request,16384)
+      if(clarityCourseDay(streamBody?.courseSessionId))throw new AppError('CLARITY_COURSE_AUDIO_ONLY',409)
+      const prepared=prepareMethodTurn(streamBody)
       const stream=await myCoachGenerativeStreamTurn(prepared.body,
         {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor,methodAuthority:prepared.progress})
       const response=auth.apply(new NextResponse(stream,{status:200,headers:{
@@ -1213,10 +1217,12 @@ async function handle(request, { params }) {
         ownerTrial:practitionerEmailAllowed(actor),
       })
       await consumeRateBatch(config,liveQuota.attempts)
+      const grant=clarityCourseDay(start.courseSessionId)?await clarityReserve(config,actor,start.courseSessionId):null
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
       catch(error){
+        if(grant)await clarityRelease(config,actor,grant).catch(()=>{})
         // Fixed allowlist only: NEVER log API key, token, URL, personal data,
         // request payload, upstream response body or a raw exception message.
         const reasons={
@@ -1235,7 +1241,10 @@ async function handle(request, { params }) {
       // Three original delivered-token limits are an atomic DB commit. A
       // rejected rate dimension rolls back all of them; invalid Google
       // setup/auth/outage (G-L1..G-L7) never reaches this point.
-      await consumeRateBatch(config,liveQuota.successful)
+      try{
+        await consumeRateBatch(config,liveQuota.successful)
+        await clarityConfirm(config,actor,grant)
+      }catch(error){if(grant)await clarityRelease(config,actor,grant).catch(()=>{});throw error}
       return json(token)
     }
     // Server-only evidence checkpoint for the transcript of a Free Live call.
@@ -1272,6 +1281,7 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
       const body=await readBody(request,16384)
+      if(clarityCourseDay(body?.courseSessionId))throw new AppError('CLARITY_COURSE_AUDIO_ONLY',409)
       const geminiMode=['gemini_free','gemini_paid'].includes(body?.engine)?body.engine:null
       // Per-user + global limits are consumed BEFORE a model request. No
       // chargeable second provider call or automatic upgrade on error.
