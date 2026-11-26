@@ -5,7 +5,7 @@ import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound,Video} from "lucide-react";
 import {threeJourneyLabel} from "@/lib/holistic-support/three-journeys.mjs";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
@@ -148,10 +148,10 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onJourneySelect,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onJourneySelect,composer,onOpenLukasVideo}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
   onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;
-  onJourneySelect:(path:'therapy'|'consultation'|'goal')=>void;composer:ReactNode
+  onJourneySelect:(path:'therapy'|'consultation'|'goal')=>void;composer:ReactNode;onOpenLukasVideo?:()=>void
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
@@ -259,6 +259,8 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
               locale==="es"?"descubramos tus fortalezas y demos el siguiente paso.":
                 "discover your strengths, and take the next step."}</p>
           <div className={css.welcomeMeta}>
+            {onOpenLukasVideo&&<button type="button" data-hh-lukas-entry className={`${css.welcomeListen} ${css.lukasEntry}`}
+              onClick={()=>{stopAliPersonaAudio();setSpeaking(false);onOpenLukasVideo();}}><Video size={17} aria-hidden="true"/>{locale==="ru"?"Видео · Lukas":locale==="es"?"Vídeo · Lukas":"Video · Lukas"}</button>}
             <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
               aria-pressed={speaking} onClick={playGreeting}
               aria-label={locale==="ru"?(speaking?"Остановить голос ведущего":"Послушать голос ведущего"):
