@@ -342,7 +342,8 @@ test('recorded fallback completes one consented voice turn with a single STT cal
       assert.equal(options.body.get('consent'),'yes');
       assert.equal(options.body.get('locale'),'ru');
       assert.match(options.body.get('file').name,/\.m4a$/);
-      return {ok:true,json:async()=>({transcript:{text:'Я хочу обсудить свою цель'}})};
+      assert.equal(options.body.get('output'),'text');
+      return {ok:true,json:async()=>({text:'Я хочу обсудить свою цель'})};
     },
     performance:{now:()=>time},
     setInterval:fn=>{tick=fn;return 1;},

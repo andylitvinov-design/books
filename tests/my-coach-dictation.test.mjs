@@ -169,7 +169,9 @@ test('hands-free voice uses live consent and never ends on a natural TTS outage'
   assert.ok(fallback.includes("if(result.mode==='safety'||result.mode==='boundary')"),
     'safety and boundary stops retain their original guard')
   assert.ok(fallback.includes('afterSpeech()'))
-  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('afterSpeech()'))
+  const handoff=liveLoopForFallback(loop)
+  assert.ok(handoff.includes('continueAfterCoach?.()')&&handoff.includes('startListening()'))
   assert.ok(fallback.includes('setNotice(t.fallback)'))
   assert.doesNotMatch(fallback,/silence\(\)|changePhase\('idle'\)|introStartedRef\.current=false/)
   assert.ok(live.includes('afterSpeech()'),'a successful spoken reply must also auto-listen')
@@ -211,7 +213,9 @@ test('provider status changes during a natural voice reply preserve the active m
   const fallback=speech.slice(speech.indexOf('function showTextOnly(){'),
     speech.indexOf('// Never synthesize'))
   assert.ok(fallback.includes('providerUnavailableRef.current=null'))
-  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('afterSpeech()'))
+  const handoff=liveLoopForFallback(loop)
+  assert.ok(handoff.includes('continueAfterCoach?.()')&&handoff.includes('startListening()'))
   assert.ok(speech.includes('providerUnavailableRef.current=null\n            cloudControllerRef.current=null'))
   for(const marker of ["if(result.mode==='safety'||result.mode==='boundary')",
     'recognition.continuous=false','cue.onend=finishCue'])
@@ -388,3 +392,5 @@ test('iPhone 27 STT outage uses bounded recorded-mic recovery, never silent Web 
  assert.match(recovery,/phaseRef\.current==='starting'\)startListening\(\)/)
  assert.doesNotMatch(loop,/recordedSttUnavailableRef/)
 })
+
+function liveLoopForFallback(loop){return loop.slice(loop.indexOf('const afterSpeech=()=>{'),loop.indexOf('function playDeviceFallback(){'))}

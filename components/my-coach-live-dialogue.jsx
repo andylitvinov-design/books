@@ -2071,7 +2071,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
-            personaId={personaId} enabled={true}
+            personaId={personaId} voicePace={settings?.pace} basicMode={coachEngine.startsWith('groq_')} enabled={true}
             canStart={!courseGateRequired&&!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
