@@ -10,6 +10,7 @@ import {appendSpokenAnswer} from "@/lib/personal-coaching/speech-text";
 import {stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import AliAudioCall from "./ali-audio-call";
+import {resolveSpokenMenuChoice} from "@/lib/voice-companion/browser-voice.mjs";
 import {ALI_GEMINI_FREE_ENDPOINT,aliGeminiRequest,aliGeminiResult} from "@/lib/holistic-support/ali-gemini-consultant.mjs";
 import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/messenger-support-quiz";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
@@ -1990,7 +1991,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           "Tu mensaje quedó en el borrador. Revísalo antes de enviarlo.":"Speech kept in your draft. Review it before sending.");return;
       }
       if(requiresProtectedReply(text,locale)){setAudioCallOpen(false);lukasRef.current?.stop();voice.stopDialogue();}
-      sendSelectedTurn(text);
+      // Only an actual displayed choice menu can interpret a spoken ordinal.
+      // Free-form speech otherwise reaches the canonical assistant unchanged.
+      const latest=messages.at(-1);
+      const choices=audioCallOpen&&latest?.role==="assistant"
+        ?(readWaveEntryMenu(latest.text)?.choices.map((choice:{label:string})=>choice.label)||readWaveGoalMenu(latest.text)?.stages||[]):[];
+      sendSelectedTurn(resolveSpokenMenuChoice(text,choices));
     };
   });
 
@@ -2163,7 +2169,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       data-landing-composer={showLandingComposer||undefined}
       data-hh-chat-has-draft={Boolean(draft.trim())||undefined}
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
-      data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||voice.paused||Boolean(voice.notice))||undefined}>
+      data-voice-onboarding={messengerView&&!audioCallOpen&&(voicePermissionOpen||voice.conversing||voice.paused||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={composerPlaceholder}
         onFocus={()=>{
@@ -2204,13 +2210,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onClick={toggleMessengerVoice}
               disabled={!voiceEnabled||(!voice.conversing&&(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||(proSelected&&!proReady)))}
               aria-pressed={voice.conversing}
-              aria-expanded={voicePermissionOpen}
-              aria-controls="hh-ai-voice-onboarding"
-              aria-label={voice.conversing?(voice.speaking?
-                (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
-                (locale==="ru"?"Пауза":locale==="es"?"Pausar":"Pause")):
-                voice.paused?(locale==="ru"?"Продолжить аудиоразговор":locale==="es"?"Reanudar conversación":"Resume audio conversation"):
-                (locale==="ru"?"Начать голосовой разговор":locale==="es"?"Iniciar voz":"Start voice conversation")}>
+              aria-expanded={audioCallOpen} aria-haspopup="dialog"
+              aria-label={locale==="ru"?"Открыть аудиозвонок":locale==="es"?"Abrir llamada de audio":"Open audio call"}>
               <Mic size={19} aria-hidden="true"/><span>{locale==="ru"?"Живой разговор":locale==="es"?"Conversación en vivo":"Live voice conversation"}</span>
             </button>}
             {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
@@ -2233,13 +2234,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           onClick={toggleMessengerVoice}
           disabled={!voice.conversing&&(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||(proSelected&&!proReady))}
           aria-pressed={voice.conversing}
-          aria-expanded={voicePermissionOpen}
-          aria-controls="hh-ai-voice-onboarding"
-          aria-label={voice.conversing?(voice.speaking?
-            (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
-            (locale==="ru"?"Пауза":locale==="es"?"Pausar":"Pause")):
-            voice.paused?(locale==="ru"?"Продолжить аудиоразговор":locale==="es"?"Reanudar conversación":"Resume audio conversation"):
-            (locale==="ru"?"Бесплатный аудиоразговор":locale==="es"?"Conversación de audio gratuita":"Free audio conversation")}
+          aria-expanded={audioCallOpen} aria-haspopup="dialog"
+          aria-label={locale==="ru"?"Бесплатный аудиозвонок":locale==="es"?"Llamada de audio gratuita":"Free audio call"}
           title={locale==="ru"?"Аудиоразговор":locale==="es"?"Conversación de audio":"Audio conversation"}>
           <Phone size={21} aria-hidden="true"/>
         </button>}
