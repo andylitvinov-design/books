@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { requireAdminRequest } from "@/lib/prescriptions/admin";
 import { uiLocaleCookie } from "@/lib/ui-locale";
-import { readSearchMetrics, readPublicSitemap, verifiedSeoBaseline as baseline } from "@/lib/seo/admin-dashboard-data.mjs";
+import { readSearchMetrics, readPublicSitemap, readSearchOpportunities, verifiedSeoBaseline as baseline } from "@/lib/seo/admin-dashboard-data.mjs";
 import styles from "./seo-dashboard.module.css";
+import { SeoOpportunityFinder } from "@/components/admin-seo-opportunity-finder";
 import { SeoRecommendations } from "@/components/admin-seo-recommendations";
 import { getSeoRecommendations } from "@/lib/seo/actionable-recommendations.mjs";
 import { readSeomatorSnapshot } from "@/lib/seo/seomator-snapshot.mjs";
@@ -92,7 +93,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
   const t = copy[locale];
   const params = await searchParams;
   const days = [7, 28, 90].includes(Number(params?.days)) ? Number(params.days) : 28;
-  const [search, site, audit] = await Promise.all([readSearchMetrics(days), readPublicSitemap(), readSeomatorSnapshot()]);
+  const [search, site, audit, opportunities] = await Promise.all([readSearchMetrics(days), readPublicSitemap(), readSeomatorSnapshot(), params?.opportunities === "1" ? readSearchOpportunities(days) : null]);
   const live = search.status === "live";
   const useSaved = !live && days === 28;
   const summary = live ? search : useSaved ? baseline.search : {};
@@ -131,6 +132,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
       <Metric label={t.position} value={position(summary.position)} foot={summary.position==null?t.noPosition:t.searchNote}/>
     </div>
     <SeoRecommendations recommendationResult={recommendations} locale={locale} />
+    <SeoOpportunityFinder report={opportunities} days={days} locale={locale} filter={params?.intent} language={params?.language} />
     <section className={styles.panel + " " + styles.auditPanel} data-seomator-audit>
       <div className={styles.panelHeading}><div>
         <h2>{locale === "ru" ? "Глубокий SEO-аудит" : "Deep SEO audit"}</h2>
