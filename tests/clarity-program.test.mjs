@@ -115,3 +115,14 @@ test('session one workbook opens a dedicated golden flow without changing the ot
  assert.match(style,/overflow-y:auto/)
  assert.match(style,/repeat\(7,minmax\(0,1fr\)\)/)
 })
+
+test('coach selection is a scoped device preference and unavailable Clarity does not launch a different session',()=>{
+ const ui=read('components/app/coaching-course-dashboard.jsx')
+ assert.match(ui,/hh-daybook-coach-v1:/)
+ assert.match(ui,/choice.key===storageKey/)
+ assert.match(ui,/PUBLIC_COACH_PERSONAS.some/)
+ assert.match(ui,/sessionAvailable=program==='goal'/)
+ assert.match(ui,/sessionAvailable&&coach\?dashboardSessionHref/)
+ assert.match(ui,/disabled=\{locked\|\|!sessionAvailable\}/)
+ assert.match(ui,/window.localStorage.setItem\(storageKey,id\)/)
+})

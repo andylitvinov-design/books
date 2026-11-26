@@ -19,11 +19,20 @@ export function dashboardSessionHref(locale,program,number,id){
  const topic=program==='goal'?COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions[number-1]:null
  return topic?href+'&goalCourse='+encodeURIComponent(topic.id):href
 }
-export default function CoachingCourseDashboard({locale='en',program,title,sessions,selected,onSelect,practiceCounts,loaded=true,ready=true,locked=false,initialPanel=null,practiceOnlyReflection=false,practiceFlow=null,results,children,resources,onLeave,accountId}){
+const courseUnavailable={ru:'Коучинг-сессии курса пока недоступны. Самостоятельные практики открыты.',en:'Course coaching sessions are not available yet. Independent practices are open.',es:'Las sesiones de coaching aún no están disponibles. Las prácticas autónomas están abiertas.'}
+const preferenceKey=(accountId,program)=>typeof accountId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountId)&&['clarity','goal'].includes(program)?'hh-daybook-coach-v1:'+accountId+':'+program:null
+export default function CoachingCourseDashboard({locale='en',program,title,sessions,selected,onSelect,practiceCounts,loaded=true,ready=true,locked=false,initialPanel=null,practiceOnlyReflection=false,practiceFlow=null,results,children,resources,onLeave,accountId,sessionAvailable=program==='goal',sessionStatus,homework,homeworkStatus,protocol}){
  const lang=Object.hasOwn(copy,locale)?locale:'en',t=copy[lang]
- const [coachId,setCoachId]=useState(''),[panel,setPanel]=useState(initialPanel),[startAfterChoice,setStartAfterChoice]=useState(false)
+ const storageKey=preferenceKey(accountId,program)
+ const [choice,setChoice]=useState({key:null,id:''}),[panel,setPanel]=useState(initialPanel),[startAfterChoice,setStartAfterChoice]=useState(false)
+ const coachId=choice.key===storageKey?choice.id:''
  const rail=useRef(null),sheet=useRef(null),previousOwner=useRef(accountId)
- useEffect(()=>{if(previousOwner.current!==accountId){previousOwner.current=accountId;setCoachId('');setPanel(null);setStartAfterChoice(false)}},[accountId])
+ useEffect(()=>{
+  if(previousOwner.current!==accountId){previousOwner.current=accountId;setPanel(null);setStartAfterChoice(false)}
+  let id=''
+  try{const saved=storageKey&&window.localStorage.getItem(storageKey);if(PUBLIC_COACH_PERSONAS.some(p=>p.id===saved))id=saved}catch{}
+  setChoice({key:storageKey,id})
+ },[accountId,storageKey])
  useEffect(()=>{if(initialPanel)setPanel(initialPanel)},[initialPanel])
  useEffect(()=>{const node=rail.current,item=node?.querySelector('[aria-pressed="true"]');if(item){const a=node.getBoundingClientRect(),b=item.getBoundingClientRect();if(b.left<a.left)node.scrollLeft-=a.left-b.left+4;else if(b.right>a.right)node.scrollLeft+=b.right-a.right+4}},[selected,panel])
  useEffect(()=>{if(sheet.current)sheet.current.scrollTop=0},[selected,panel])
@@ -33,10 +42,15 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
  const completed=known&&count.total>0&&count.done===count.total
  const state=!known?t.unknown:completed?(practiceOnlyReflection?t.reflection:t.done):count.done?t.inProgress:t.notStarted
  const root='/'+lang
- const sessionHref=coach?dashboardSessionHref(lang,program,selected,coach.id):null
+ const sessionHref=sessionAvailable&&coach?dashboardSessionHref(lang,program,selected,coach.id):null
  const panelTitle=panel==='coach'?t.choose:panel==='homework'?t.homework:panel==='practice'?t.practice:panel==='results'?t.results:panel==='protocol'?t.protocol:t.resources
  const open=p=>{if(!locked||p==='practice'){setStartAfterChoice(false);setPanel(p)}}
- function pick(id){if(locked)return;setCoachId(id);setPanel(null);setStartAfterChoice(false)}
+ function pick(id){
+  if(locked||!PUBLIC_COACH_PERSONAS.some(p=>p.id===id))return
+  setChoice({key:storageKey,id})
+  try{if(storageKey)window.localStorage.setItem(storageKey,id)}catch{}
+  setPanel(null);setStartAfterChoice(false)
+ }
  if(panel==='practice'&&practiceFlow)return <div className={css.frame} data-coaching-course-dashboard={program} data-coaching-course-active={ready?true:undefined}><div className={css.layout}>{practiceFlow(()=>{setPanel(null);setStartAfterChoice(false)})}</div></div>
  return <div className={css.frame} data-coaching-course-dashboard={program} data-coaching-course-active={ready?true:undefined}>
   <div className={css.layout}>
@@ -57,7 +71,7 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
      <div className={css.banner}><span>{t.session} {selected} / {sessions.length}</span><h2>{sessionTitle}</h2><div className={css.progress}><progress max={known?count.total:1} value={known?count.done:0} aria-label={t.practiceProgress}/><strong>{known?count.done+'/'+count.total:'—'}</strong></div><small>{t.practiceProgress}</small></div>
      <div className={css.card}>
       <h3>{t.tasks}</h3><div className={css.taskbar}><CheckCircle2 size={17}/>{t.taskbar}</div>
-      <button type="button" className={css.task} data-coaching-task="homework" onClick={()=>open('homework')} disabled={locked}><ClipboardCheck size={29}/><strong>{t.homework}</strong><span className={css.neutral}>{t.notLinked}</span><ChevronRight size={17}/></button>
+      <button type="button" className={css.task} data-coaching-task="homework" onClick={()=>open('homework')} disabled={locked}><ClipboardCheck size={29}/><strong>{t.homework}</strong><span className={homeworkStatus?.complete?css.done:css.neutral}>{homeworkStatus?.label||t.notLinked}</span><ChevronRight size={17}/></button>
       <button type="button" className={css.task} data-coaching-task="practice" onClick={()=>open('practice')}><Flower2 size={29}/><strong>{t.practice}</strong><span className={completed?css.done:css.neutral}>{state}</span><ChevronRight size={17}/></button>
       <h3 className={css.materialHeading}><Layers size={21}/>{t.materials}</h3>
       <div className={css.materials}>
@@ -68,13 +82,13 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
     </>}
     {panel&&<div className={css.panelTitle}><span>{t.session} {selected} / {sessions.length}</span><h2>{panelTitle}</h2><p>{sessionTitle}</p></div>}
     {panel==='coach'&&<div className={css.coachList}>{PUBLIC_COACH_PERSONAS.map(persona=><button type="button" key={persona.id} aria-pressed={persona.id===coachId} onClick={()=>pick(persona.id)}><img src={portrait(persona.id)} width="56" height="56" alt=""/><span><strong>{localCoachText(persona.name,lang)}</strong><small>{localCoachText(persona.role,lang)}</small></span><ChevronRight size={19}/></button>)}</div>}
-    {panel==='homework'&&<div className={css.panelBody}><p>{t.homeworkEmpty}</p></div>}
+    <div className={css.panelBody} hidden={panel!=='homework'} data-coaching-homework-panel>{homework||<p>{t.homeworkEmpty}</p>}</div>
     <div className={css.panelBody} hidden={panel!=='practice'} data-coaching-practice-panel><p>{description}</p>{children}</div>
     <div className={css.panelBody} hidden={panel!=='results'} data-coaching-results-panel>{results||<p>{t.goalMissing}</p>}</div>
-    {panel==='protocol'&&<div className={css.panelBody}><p>{t.protocolEmpty}</p><Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'} prefetch={false} onClick={onLeave}>{t.archive}<ArrowRight size={18}/></Link></div>}
+    {panel==='protocol'&&<div className={css.panelBody} data-coaching-protocol-panel>{protocol||<p>{t.protocolEmpty}</p>}<Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'} prefetch={false} onClick={onLeave}>{t.archive}<ArrowRight size={18}/></Link></div>}
     <div className={css.panelBody} hidden={panel!=='resources'}>{resources}</div>
    </div>
-   {!panel&&<footer className={css.footer}>{sessionHref?<Link href={sessionHref} className={css.cta} data-coaching-session-start={selected} prefetch={false} onClick={onLeave}><Video size={26}/><strong>{t.start(selected)}</strong><ArrowRight size={22}/></Link>:<button type="button" className={css.cta} data-coaching-session-start={selected} disabled={locked} onClick={()=>{setStartAfterChoice(true);setPanel('coach')}}><Video size={26}/><strong>{t.start(selected)}</strong><ArrowRight size={22}/></button>}<small>{t.availability}</small></footer>}
+   {!panel&&<footer className={css.footer}>{sessionHref?<Link href={sessionHref} className={css.cta} data-coaching-session-start={selected} prefetch={false} onClick={onLeave}><Video size={26}/><strong>{t.start(selected)}</strong><ArrowRight size={22}/></Link>:<button type="button" className={css.cta} data-coaching-session-start={selected} disabled={locked||!sessionAvailable} onClick={()=>{setStartAfterChoice(true);setPanel('coach')}}><Video size={26}/><strong>{t.start(selected)}</strong><ArrowRight size={22}/></button>}{sessionStatus||<small>{sessionAvailable?t.availability:courseUnavailable[lang]}</small>}</footer>}
    {panel==='coach'&&startAfterChoice&&<p className={css.choiceNote}>{t.chooseBefore}</p>}
   </div>
  </div>
