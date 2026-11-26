@@ -1973,11 +1973,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           es:'Gemini Free Live transmite el micrófono y transcripciones a Google. Los datos Free pueden mejorar modelos. No almacenamos audio.',
         })[lang]:geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
-      {liveVoiceSelected&&!restoredDraft&&!paused&&['listening','speaking','thinking','loading'].includes(voiceState.phase)&&
-        <button type="button" className={styles.soundRecovery} data-coach-restore-sound
-          onClick={()=>speechRef.current?.resumeAudioByTap?.()}>
-          <Volume2 size={16} aria-hidden="true"/>{({ru:'Восстановить звук',en:'Restore sound',es:'Restaurar sonido'})[lang]}
-        </button>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
       <nav className={styles.sessionPanelNav} aria-label={lang==='ru'?'Разделы сессии':lang==='es'?'Secciones de la sesión':'Session sections'}>

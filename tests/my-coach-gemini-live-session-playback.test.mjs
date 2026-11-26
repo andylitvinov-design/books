@@ -793,15 +793,32 @@ test('standard MIME whitespace does not discard 24 kHz PCM',()=>{
 })
 
 
-test('sound recovery tap reasserts duplex route even when WebAudio is already running',async()=>{
+test('automatic route recovery handles running WebAudio without another button',()=>{
   const calls=[]
-  const r={context:{state:'running',resume(){calls.push('resume');return Promise.resolve()}},paused:false,ended:false}
-  const runtime={current:r},document={visibilityState:'visible'}
-  const restore=runInNewContext(section('  function resumeAudioByTap(){','  useImperativeHandle(')+'\nresumeAudioByTap',{
-    runtime,document,navigator:{},activateCoachIos27LiveDuplex:()=>calls.push('route'),
-    flushPendingAudio:()=>calls.push('flush'),notify:()=>calls.push('notice'),t:{audioRoute:'paused'}
+  const navigator={audioSession:{type:'ambient'}},document={visibilityState:'visible'}
+  const r={context:{state:'running'},paused:false,ended:false}
+  const runtime={current:r}
+  const refresh=runInNewContext(section('  function refreshLiveAudioRoute(','  function requestAudioResume(')+'\nrefreshLiveAudioRoute',{
+    runtime,document,navigator,activateCoachIos27LiveDuplex:()=>{calls.push('route');navigator.audioSession.type='play-and-record'}
   })
-  restore();await Promise.resolve();await Promise.resolve()
-  assert.deepEqual(calls,['route','resume','route','flush'])
-  document.visibilityState='hidden';restore();assert.equal(calls.length,4)
+  refresh(r);assert.deepEqual(calls,['route'])
+  refresh(r);assert.equal(calls.length,1)
+  refresh(r,true);assert.equal(calls.length,2)
+  document.visibilityState='hidden';refresh(r,true);assert.equal(calls.length,2)
+  document.visibilityState='visible';r.paused=true;refresh(r,true);assert.equal(calls.length,2)
+  r.paused=false;runtime.current=null;refresh(r,true);assert.equal(calls.length,2)
+  assert.match(component,/if\(!r\.hadAudio&&!r\.pendingAudio\.length\)refreshLiveAudioRoute\(r,true\)/)
+  assert.doesNotMatch(component,/data-coach-live-resume-audio|resumeAudioByTap/)
+})
+
+test('suspended PCM is resumed automatically on the existing live session',async()=>{
+  const h=session()
+  h.clock.context.state='suspended'
+  h.clock.context.resume=()=>{h.clock.context.state='running';return Promise.resolve()}
+  h.receive({audio:[pcm(.5)],output:'Automatic audio',turnComplete:true})
+  await Promise.resolve();await Promise.resolve()
+  h.clock.advanceTo(2)
+  assert.equal(h.clock.heardSamples,12000)
+  assert.equal(h.events.final.at(-1).interrupted,false)
+  h.assertLive()
 })

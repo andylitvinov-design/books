@@ -2099,6 +2099,3 @@
     height:clamp(460px,76dvh,820px);
   }
 }
-
-/* A dedicated, readable audio route control outside the fixed mic orb. */
-.soundRecovery{display:flex;align-items:center;justify-content:center;gap:6px;align-self:center;min-height:44px;max-width:100%;padding:6px 14px;border:1px solid #b7d3c3;border-radius:18px;background:#fffdf8;color:#174e42;font:650 13px/1.2 system-ui;cursor:pointer;flex:none}.soundRecovery:focus-visible{outline:2px solid #08644f;outline-offset:2px}

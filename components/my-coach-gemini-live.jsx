@@ -23,9 +23,9 @@ const ui={
     interrupt:'Перебить коуча',stop:'Завершить разговор',mic:'Микрофон недоступен',
     failure:'Живой голос недоступен. Можно продолжить текстом.',
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
-    reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Звук приостановлен. Нажмите «Включить звук».',
+    reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Восстанавливаем звук…',audioUnavailable:'Устройство пока не восстановило звук. История разговора сохранена.',
     resumedEarlier:'Разговор восстановлен. Если связь прервалась посреди фразы, повторите её последние слова.',
-    resumeAudio:'Включить звук',networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
+    networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
     playbackInterrupted:'Ответ прервался (G-L11). Можно продолжать говорить.',
     noReplyAudio:'Ответ получен без звука (G-L12). Повторите последние слова или продолжите текстом.',
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
@@ -50,9 +50,9 @@ const ui={
     interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',
     failure:'Live voice is unavailable. You can continue by text.',
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
-    reconnecting:'Restoring live voice…',audioRoute:'Audio is paused. Tap Enable audio to hear the coach.',
+    reconnecting:'Restoring live voice…',audioRoute:'Restoring audio…',audioUnavailable:'The device has not restored audio yet. Your conversation is preserved.',
     resumedEarlier:'The conversation has resumed. If the connection cut out mid-sentence, repeat the last few words.',
-    resumeAudio:'Enable audio',networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
+    networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
     playbackInterrupted:'Reply interrupted (G-L11). You can keep talking.',
     noReplyAudio:'The reply arrived without audio (G-L12). Repeat your last words or continue by text.',
     rateLimit:'Free live voice limit reached. You can continue by text.',
@@ -77,9 +77,9 @@ const ui={
     interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',
     failure:'La voz en vivo no está disponible. Puedes seguir por texto.',
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
-    reconnecting:'Restableciendo la voz…',audioRoute:'El audio está pausado. Toca Activar audio.',
+    reconnecting:'Restableciendo la voz…',audioRoute:'Restableciendo el audio…',audioUnavailable:'El dispositivo aún no ha restablecido el audio. La conversación se conserva.',
     resumedEarlier:'Se ha retomado la conversación. Si se cortó la conexión a mitad de una frase, repite las últimas palabras.',
-    resumeAudio:'Activar audio',networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
+    networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
     playbackInterrupted:'Respuesta interrumpida (G-L11). Puedes seguir hablando.',
     noReplyAudio:'La respuesta llegó sin audio (G-L12). Repite tus últimas palabras o continúa por texto.',
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
@@ -682,27 +682,39 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.modelTurnComplete&&!r.player?.playing)finishAudibleTurn(r)
     return true
   }
+  // Reassert the existing duplex route automatically, including the first PCM
+  // of a reply when Safari reports running but routes audio incorrectly.
+  function refreshLiveAudioRoute(r,force=false){
+    if(r.ended||r.paused||runtime.current!==r||typeof navigator==='undefined'||
+       (typeof document!=='undefined'&&document.visibilityState==='hidden'))return
+    if(!navigator.audioSession||(!force&&navigator.audioSession.type==='play-and-record'))return
+    activateCoachIos27LiveDuplex(navigator)
+  }
   function requestAudioResume(r){
-    if(r.ended||r.paused||r.audioResuming||r.context.state==='running')return
+    if(r.ended||r.paused||r.audioResuming||runtime.current!==r||r.context.state==='running'||
+       (typeof document!=='undefined'&&document.visibilityState==='hidden'))return
+    refreshLiveAudioRoute(r,true)
     r.audioResuming=true
     try{
       Promise.resolve(r.context.resume?.()).then(()=>{
         r.audioResuming=false
         if(r.ended)return
         if(r.paused){try{void r.context.suspend?.().catch?.(()=>{})}catch{};return}
-        if(r.context.state==='running')flushPendingAudio(r)
-        else setAudioNeedsGesture(true)
+        if(runtime.current!==r||(typeof document!=='undefined'&&document.visibilityState==='hidden'))return
+        if(r.context.state==='running'){refreshLiveAudioRoute(r);flushPendingAudio(r)}
+        else{setAudioNeedsGesture(true);notify(t.audioUnavailable)}
       }).catch(()=>{
         r.audioResuming=false
-        if(!r.ended)setAudioNeedsGesture(true)
+        if(!r.ended&&!r.paused&&runtime.current===r){setAudioNeedsGesture(true);notify(t.audioUnavailable)}
       })
-    }catch{r.audioResuming=false;setAudioNeedsGesture(true)}
+    }catch{r.audioResuming=false;setAudioNeedsGesture(true);notify(t.audioUnavailable)}
   }
   // Safari can interrupt an already scheduled reply without delivering another
   // PCM packet. Observe the output context itself, not only incoming frames.
   function handleAudioContextState(r){
     if(r.ended||r.paused||runtime.current!==r||!r.ready)return
     if(r.context.state==='running'){
+      refreshLiveAudioRoute(r)
       if(r.pendingAudio.length||r.player?.playing)flushPendingAudio(r)
       else if(r.audioNoticeShown){r.audioNoticeShown=false;setAudioNeedsGesture(false);notify('')}
       return
@@ -729,6 +741,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   function queueLivePart(r,part){
     if(r.outputWithoutAudio)return 'dropped'
+    if(!r.hadAudio&&!r.pendingAudio.length)refreshLiveAudioRoute(r,true)
     if(r.paused||r.context.state!=='running')return holdAudioPart(r,part)
     if(r.pendingAudio.length&&!flushPendingAudio(r)){
       if(!r.outputWithoutAudio&&r.context.state!=='running')return holdAudioPart(r,part)
@@ -1209,26 +1222,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     phaseChange('thinking')
     return true
   }
-  function resumeAudioByTap(){
-    const r=runtime.current
-    if(!r||r.ended)return
-    if(r.paused){void resumePausedSession(r);return}
-    if(document.visibilityState==='hidden')return
-    try{
-      // A running WebAudio context can still be routed to the wrong iOS output.
-      // Reassert duplex routing inside a genuine gesture, without reopening mic.
-      activateCoachIos27LiveDuplex(navigator)
-      const recovery=r.context.resume?.()
-      void Promise.resolve(recovery).then(()=>{
-        if(r.ended||r.paused||runtime.current!==r||document.visibilityState==='hidden')return
-        if(r.context.state==='running'){
-          activateCoachIos27LiveDuplex(navigator)
-          flushPendingAudio(r)
-        }else notify(t.audioRoute)
-      }).catch(()=>{if(!r.ended&&!r.paused)notify(t.audioRoute)})
-    }catch{notify(t.audioRoute)}
-  }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,resumeAudioByTap,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
@@ -1265,27 +1259,24 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
   },[personaId,lang,voiceName,enabled])
-  const recoverAudio=audioNeedsGesture&&phase!=='idle'&&phase!=='paused'
-  const label=recoverAudio?t.resumeAudio:phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
+  const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:t.stop
   return <div className={styles.root} data-my-coach-voice={phase}
-    data-gemini-free-live-audio="true">
+    data-gemini-free-live-audio="true" data-coach-audio-recovering={audioNeedsGesture?'true':undefined}>
     <button type="button" className={styles.button}
       disabled={(phase==='idle'||phase==='paused')&&!canStart}
       aria-pressed={phase!=='idle'&&phase!=='paused'} aria-label={label}
-      data-coach-live-resume-audio={recoverAudio?'true':undefined}
       title={label}
       onClick={()=>{
-        if(recoverAudio){resumeAudioByTap();return}
         if(phase==='idle'||phase==='paused'){startSession();return}
         if(phase==='speaking'){interrupt();return}
         stop()
       }}>
-      {recoverAudio?<Volume2 size={24} aria-hidden="true"/>:phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
+      {phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
         phase==='speaking'?<Mic size={19} aria-hidden="true"/>:
         <Square size={18} aria-hidden="true"/>}
       <span>{label}</span>
-      {!recoverAudio&&phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
+      {phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
     </button>
     {phase!=='idle'&&!notice&&
       <span className={styles.status} role="status">
