@@ -10,7 +10,7 @@
 .card h3{font-size:18px;margin:16px 0 6px}
 .progress{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:15px;padding:5px 4px}
 .progress progress{width:100%;height:10px;grid-column:1/-1;accent-color:#067a67}
-.weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.weeks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
 .weeks button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;padding:5px 2px;background:#fff8ea;border:1px solid #dfcba4;border-radius:12px;color:#143d3a;font:650 clamp(10px,3.2vw,14px)/1.2 system-ui,sans-serif}
 .weeks button[aria-pressed=true]{color:#fff;background:#067a67;border-color:#067a67}
 .tasks{padding-left:24px;margin:0}
@@ -24,3 +24,5 @@
 .notice,.terms{font-size:14px;line-height:1.5;color:#425850;margin:4px 0}
 .hero .notice{color:#fff4df}
 @media(max-width:374px){.shell{padding:8px}.card{padding:12px}.hero{padding:16px 12px}}
+
+.card[hidden]{display:none!important}

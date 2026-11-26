@@ -1,13 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {clarityDaybookPath,clarityOnboardingPath,savedClarityReflection,CLARITY_SYLLABUS,CLARITY_FREE_REFLECTION_TAG} from '../lib/app/clarity-program.mjs'
+import {clarityDaybookPath,clarityOnboardingPath,savedClarityReflection,CLARITY_SYLLABUS,CLARITY_FREE_REFLECTION_TAG,CLARITY_TASKS,CLARITY_DAY_COUNT,clarityDayTag,clarityDayNotes,clarityRecordedDays,clarityLegacyNotes} from '../lib/app/clarity-program.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('fixed route keeps locale and never accepts an arbitrary OAuth return',()=>{
  for(const locale of ['en','ru','es']){
   assert.equal(clarityDaybookPath(locale),'/'+locale+'/app/daybook?program=clarity')
   assert.match(clarityOnboardingPath(locale),new RegExp('clarityLocale='+locale+'$'))
-  assert.equal(CLARITY_SYLLABUS[locale].length,4)
+  assert.equal(CLARITY_SYLLABUS[locale].length,3)
+  assert.equal(CLARITY_TASKS[locale].length,3)
+  assert.ok(CLARITY_TASKS[locale].every(tasks=>tasks.length===3))
  }
  assert.equal(clarityDaybookPath('//attacker.example'),'/en/app/daybook?program=clarity')
  assert.equal(clarityOnboardingPath('es'),'/en/app/portrait?afterSignIn=clarity&clarityLocale=es')
@@ -19,8 +21,10 @@ test('free progress is only a saved journal reflection; it does not grant paid a
  assert.equal(savedClarityReflection([{...entry,text:' '}]),null)
  assert.equal(savedClarityReflection([entry]),entry)
  const source=read('components/app/clarity-program.jsx')
- assert.match(source,/week===1\?/)
- assert.match(source,/Payment for this session is not configured yet/)
+ assert.match(source,/max=\{CLARITY_DAY_COUNT\}/)
+ assert.match(source,/clarityDayNotes\(entries,number\)/)
+ assert.match(source,/notes\.length>1/)
+ assert.doesNotMatch(source,/LockKeyhole|Payment for this session is not configured yet/)
  assert.match(source,/createJournalSaver/)
  assert.doesNotMatch(source,/localStorage|sessionStorage/)
 })
@@ -45,4 +49,17 @@ test('Hero and guidance CTA share the same authenticated or Google entry',()=>{
  assert.match(source,/data-clarity-start data-clarity-personal/)
  assert.match(source,/href=\{clarityDaybookPath\(lang\)\}/)
  assert.match(source,/event\.preventDefault\(\)[\s\S]*?if\(!busy\)void begin\(\)/)
+})
+
+test('three independent notes, legacy isolation, duplicate protection and no fake completion',()=>{
+ const e=(day,extra={})=>({id:'id-'+day,kind:'note',goalId:null,revision:1,text:'saved',tags:[clarityDayTag(day)],...extra})
+ assert.equal(CLARITY_DAY_COUNT,3)
+ assert.throws(()=>clarityDayTag(4));assert.throws(()=>clarityDayTag('1'))
+ const legacy=e(1,{tags:[CLARITY_FREE_REFLECTION_TAG]})
+ const entries=[legacy,e(1),e(2,{revision:0}),e(3),e(1,{id:'duplicate'}),e(2,{goalId:'foreign'})]
+ assert.deepEqual(clarityRecordedDays(entries),[1,3]);assert.equal(clarityDayNotes(entries,1).length,2)
+ assert.deepEqual(clarityLegacyNotes(entries),[legacy]);assert.deepEqual(clarityRecordedDays([legacy]),[])
+ const ui=read('components/app/clarity-program.jsx');assert.match(ui,/href=\{root\+'\/my-coach'\}/);assert.match(ui,/tags:entry\?\.tags\|\|\[clarityDayTag\(day\)\]/)
+ assert.match(ui,/if\(!draft.current\)/);assert.match(ui,/hasMore\?/);assert.match(ui,/await saver.current.save/)
+ const pub=read('lib/public-coaching-programs.mjs');assert.match(pub,/id==='clarity'\?CLARITY_SYLLABUS\[locale\]/)
 })
