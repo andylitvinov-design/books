@@ -1,0 +1,72 @@
+name: HH one-time verified Coach V5 media import
+on:
+  push:
+    branches: [ops/coach-v5-verified-media-import-20261126]
+permissions:
+  contents: read
+jobs:
+  import-verified-media:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/ops/coach-v5-verified-media-import-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify immutable archive and stage exact public media
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$RUNNER_TEMP/hh-coach-v5"
+          mkdir -p "$tmp/source"
+          curl --proto '=https' --fail --silent --show-error --max-time 150 --output "$tmp/archive.zip" 'https://resource2.heygen.ai/document/82130b00043c43629cbe6a5644c2e3b2/original.zip'
+          test "$(stat -c %s "$tmp/archive.zip")" = 316898688
+          printf '%s  %s\n' '8bd1bd5054dae49e438e08deadea709c9ac9e091b967cc4fe68635083087dba0' "$tmp/archive.zip" | sha256sum --check
+          python3 - "$tmp/archive.zip" "$tmp/source" <<'PY'
+          import zipfile,sys,pathlib,re
+          src,dst=sys.argv[1:]
+          with zipfile.ZipFile(src) as z:
+              entries=z.infolist()
+              assert len(entries)==47
+              assert len({i.filename for i in entries})==47
+              assert sum(i.file_size for i in entries)<320000000
+              for i in entries:
+                  assert re.fullmatch(r'[a-zA-Z0-9_.-]+',i.filename)
+                  assert not i.is_dir()
+                  assert i.file_size<26000000
+                  if i.filename.endswith(('.mp4','.png')):
+                      pathlib.Path(dst,i.filename).write_bytes(z.read(i))
+          assert len(list(pathlib.Path(dst).glob('*.mp4')))==31
+          assert len(list(pathlib.Path(dst).glob('*.png')))==14
+          PY
+          node --version
+          node scripts/stage-coach-reactions-v4.mjs "$tmp/source" --all
+          node --test tests/coach-reaction-director.test.mjs
+          test "$(find public/images/holistic-house/my-coach-motion/reaction-v4 -maxdepth 1 -type f -name '*.mp4' | wc -l)" -eq 31
+          test "$(find public/images/holistic-house/my-coach-motion/reaction-v4 -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 14
+      - name: Commit only verified assets to isolated import branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git add -- public/images/holistic-house/my-coach-motion/reaction-v4/ lib/coaching/coach-reaction-v4-release.mjs
+          python3 - <<'PY'
+          import subprocess
+          files=subprocess.check_output(['git','diff','--cached','--name-only','-z']).decode().split('\0')
+          files=[f for f in files if f]
+          assert len(files)==46
+          assert all(f.startswith('public/images/holistic-house/my-coach-motion/reaction-v4/') or f=='lib/coaching/coach-reaction-v4-release.mjs' for f in files)
+          PY
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'media(coaching): stage 31 verified V5 reactions and 14 exact contact anchors'
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0='http.https://github.com/.extraheader'
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          git push origin HEAD:refs/heads/ops/coach-v5-verified-media-import-20261126
+          echo "HH_COACH_IMPORT_COMMIT=$(git rev-parse HEAD)"
