@@ -105,7 +105,7 @@ const copy={
 // Speech services receive only their minimum necessary data after a real
 // Play gesture. Keep full disclosures in the optional Privacy details.
 const avatarVisuals={
-  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',caesar:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
@@ -2438,7 +2438,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.ratingCard}>
         <div className={styles.ratingCoachHeader}>
           <img className={styles.ratingCoachPortrait}
-            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
+            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId==='caesar'?'caesar-emblem.svg':personaId+'-still.webp')}
             alt="" width={78} height={78}/>
           <div><h2>{ratingUi.title}</h2><strong>{name}</strong><p>{ratingUi.subtitle}</p></div>
         </div>

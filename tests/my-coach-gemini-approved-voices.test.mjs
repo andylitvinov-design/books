@@ -16,10 +16,11 @@ const expected = {
   merlin: ['Sadaltager','Algenib'],
   harry: ['Achird','Orus'],
   genie: ['Puck','Achird'],
+  caesar: ['Algenib','Alnilam'],
   meditations: ['Algieba','Algieba'],
 }
 
-test('all eight owner-approved Gemini voice profiles have exact RU/EN identities',()=>{
+test('all nine owner-approved Gemini voice profiles have exact RU/EN identities',()=>{
   assert.deepEqual(Object.keys(APPROVED_GEMINI_VOICES).sort(),Object.keys(expected).sort())
   for(const [id,[ru,en]] of Object.entries(expected)){
     assert.equal(approvedGeminiVoice(id,'ru'),ru)
