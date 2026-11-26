@@ -1,3 +1,5 @@
+import {coachCourseProtocolSchema,coachCourseProtocolGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {COACH_COURSE_SESSIONS,COACH_PROGRAM_SESSIONS,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -364,4 +366,51 @@ test('saved protocol displays the shared normalized PDF overview',()=>{
  const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
  assert.match(ui,/myCoachProtocolPdfOptions\(protocol,\{locale\}\)\.protocolOverview/)
  assert.match(ui,/data-coach-saved-protocol-overview/)
+})
+
+
+test('session protocol and transcript are separate exports, retaining legacy combined caller compatibility',()=>{
+ const obj={...sample(),courseSessionId:'business_design'}
+ const p=myCoachProtocolPdfOptions(obj,{locale:'en',documentKind:'protocol'})
+ assert.equal(p.entryKind,'protocol')
+ assert.deepEqual(p.entries,[])
+ assert.match(p.protocolOverview,/Business function map/)
+ assert.match(p.protocolOverview,/Target structure/)
+ assert.match(p.protocolOverview,/Leadership validation/)
+ assert.doesNotMatch(p.protocolOverview,/Strategic options/)
+ assert.doesNotMatch(p.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+ assert.match(p.protocolOverview,/No question-bound answer verified/)
+ const t=myCoachProtocolPdfOptions(obj,{locale:'en',documentKind:'transcript'})
+ assert.equal(t.protocolOverview,'')
+ assert.equal(t.clientReflection,'')
+ assert.equal(t.clientNextStep,'')
+ assert.equal(t.topic,'')
+ assert.equal(t.entries.length,2)
+ assert.notEqual(t.slug,p.slug)
+ assert.equal(myCoachProtocolPdfOptions(obj).entries.length,2)
+ assert.throws(()=>myCoachProtocolPdfOptions(obj,{documentKind:'unknown'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('both live and saved protocol use separate explicit transcript export',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/function exportProtocol\(print=false,documentKind='protocol'\)/)
+ assert.match(ui,/exportProtocol\(false,'transcript'\)/)
+ assert.match(archive,/function exportProtocol\(protocol,print=false,documentKind='protocol'\)/)
+ assert.match(archive,/exportProtocol\(protocol,false,'transcript'\)/)
+})
+
+test('every thematic course has distinct versioned multilingual checkpoints shared with the model instruction',()=>{
+ for(const item of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
+   const schema=coachCourseProtocolSchema(item.id,lang)
+   assert.equal(schema.courseSessionId,item.id)
+   assert.equal(schema.version,'hh-coach-course-report-v1')
+   assert.ok(schema.checkpoints.length>=3)
+   assert.equal(new Set(schema.checkpoints.map(row=>row.id)).size,schema.checkpoints.length)
+   const instruction=coachCourseLiveInstruction(item.id,lang)
+   for(const row of schema.checkpoints)assert.ok(instruction.includes(row.label),row.id)
+ }
+ assert.equal(coachCourseProtocolSchema('introductory'),null)
+ assert.equal(coachCourseProtocolSchema('meaning_axes_inner_growth'),null)
+ assert.equal(coachCourseProtocolSchema('constructor'),null)
+ assert.equal(coachCourseProtocolGuidance('unknown','ru'),'')
 })

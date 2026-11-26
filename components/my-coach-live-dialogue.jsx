@@ -1304,6 +1304,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json',...(methodSession?{'X-HH-Account-ID':methodSession.accountId}:{})},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          courseSessionId:selectedCourseId,
           ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
           ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
           ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
@@ -1491,9 +1492,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })),
     })
   }
-  function exportProtocol(print=false){
+  function exportProtocol(print=false,documentKind='protocol'){
     try{
-      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang})
+      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang,documentKind})
       if(print)openCoachingSessionPdf(options)
       else downloadCoachingSessionPdf(options)
       setProtocolError('')
@@ -2377,6 +2378,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {turns.length===0?<p>{protocolUi.empty}</p>:
           <details data-coach-insight-transcript>
           <summary>{({en:'View conversation history',ru:'История разговора',es:'Ver historial de conversación'})[lang]}</summary>
+          <div className={styles.protocolActions}><button type="button" disabled={protocolSaving} onClick={()=>exportProtocol(false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button></div>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
@@ -2394,9 +2396,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <label className={styles.protocolTextLabel}>{{ru:'Мой следующий шаг (необязательно)',en:'My next step (optional)',es:'Mi siguiente paso (opcional)'}[lang]}
           <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
         </label>
-        <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
+        <small className={styles.protocolPrivacy}>{({en:'The protocol PDF contains checkpoints and client statements; the full transcript is a separate export. AI suggestions are not confirmed decisions. Audio is not stored.',ru:'PDF протокола содержит контрольные пункты и слова клиента; полная стенограмма скачивается отдельно. Предложения ИИ не являются подтверждёнными решениями. Аудио не хранится.',es:'El PDF contiene puntos de sesión y palabras del cliente; la transcripción completa se descarga por separado. Las sugerencias de IA no son decisiones confirmadas. No se guarda audio.'})[lang]}</small>
         <div className={styles.protocolActions}>
-          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{protocolUi.download}</button>
+          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{({en:'Download protocol PDF',ru:'Скачать протокол PDF',es:'Descargar protocolo PDF'})[lang]}</button>
           <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(true)}><Printer size={16}/>{protocolUi.print}</button>
         </div>
         <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolOwnerReady||protocolSaved||protocolSaving}
