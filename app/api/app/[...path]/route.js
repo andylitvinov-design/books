@@ -1186,10 +1186,10 @@ async function handle(request, { params }) {
         ownerTrial:practitionerEmailAllowed(actor),
       })
       await consumeRateBatch(config,liveQuota.attempts)
-      const grant=clarityCourseDay(start.courseSessionId)?await clarityReserve(config,actor,start.courseSessionId):null
+      const grant=clarityCourseDay(start.courseSessionId)?await clarityReserve(config,actor,start.courseSessionId,start.clarityLeaseId,start.personaId):null
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
-        signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
+        signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)]),clarityRemainingSeconds:grant?.remainingSeconds})}
       catch(error){
         if(grant)await clarityRelease(config,actor,grant).catch(()=>{})
         // Fixed allowlist only: NEVER log API key, token, URL, personal data,
@@ -1212,7 +1212,7 @@ async function handle(request, { params }) {
       // setup/auth/outage (G-L1..G-L7) never reaches this point.
       try{
         await consumeRateBatch(config,liveQuota.successful)
-        await clarityConfirm(config,actor,grant)
+        await clarityConfirm(config,actor,grant,token.expiresAt)
       }catch(error){if(grant)await clarityRelease(config,actor,grant).catch(()=>{});throw error}
       return json(token)
     }

@@ -120,7 +120,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
-  canStart=true,elapsedSeconds=0,onSessionStart,onTimeLimit,onVoiceStateChange,
+  canStart=true,elapsedSeconds=0,clarityLeaseId=null,onSessionStart,onTimeLimit,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
@@ -135,7 +135,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const simliPilotRef=useRef(null)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
-    elapsedSeconds,onSessionStart,onTimeLimit,onVoiceStateChange,onMicLevel,onInputInterim,
+    elapsedSeconds,clarityLeaseId,onSessionStart,onTimeLimit,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
     liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
@@ -1088,6 +1088,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
         settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
+        ...(clarityCourseDay(r.courseSessionId)?{clarityLeaseId:propsRef.current.clarityLeaseId}:{}),
         voiceConsent:true,trainingUseConsent:true}),
     })}
     catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
@@ -1147,7 +1148,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           if(r.outputText){r.interrupted=true;commitOutput(r)}
           teardown(r);r.resumeUnavailable=true
           phaseChange('paused');notify(t.resumeUnavailable)
-        }else{const completedWindow=r.ready&&r.socket?.readyState===WebSocket.OPEN;notify(t.ended);stop();if(completedWindow)propsRef.current.onTimeLimit?.()}
+        }else{const completedWindow=r.ready&&r.socket?.readyState===WebSocket.OPEN;notify(t.ended);stop();if(completedWindow&&!clarityCourseDay(r.courseSessionId))propsRef.current.onTimeLimit?.()}
       },clarityCourseDay(r.courseSessionId)?Math.max(0,Math.min(MAX_SESSION_MS,Date.parse(token.expiresAt)-Date.now())):MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){

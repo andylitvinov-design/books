@@ -47,3 +47,27 @@ test('proposed voice grant is account and day scoped and feature gated',()=>{
  assert.match(sql,/revoke all .* from public,anon,authenticated/)
  assert.match(read('lib/app/clarity-course-access.js'),/HH_CLARITY_FREE_COURSE_ENABLED/)
 })
+
+import {clarityNextDay,clarityClockAdvance,clarityReviewExtends,clarityTurnAttribution,clarityRecap} from '../lib/coaching/clarity-continuity.mjs'
+test('course clock excludes first heartbeat, inactivity and lost connection; advances only at boundaries',()=>{
+ const time=100000
+ assert.deepEqual(clarityClockAdvance({active_ms:0,clock_at:null},time,true),{activeMs:0,clockAt:new Date(time).toISOString(),complete:false})
+ assert.equal(clarityClockAdvance({active_ms:5000,clock_at:new Date(time)},time+5000,true).activeMs,10000)
+ assert.equal(clarityClockAdvance({active_ms:5000,clock_at:new Date(time)},time+5000,false).activeMs,5000)
+ assert.equal(clarityClockAdvance({active_ms:5000,clock_at:new Date(time)},time+20000,true).activeMs,5000)
+ assert.equal(clarityClockAdvance({active_ms:1199000,clock_at:new Date(time)},time+5000,true).complete,true)
+ assert.equal(clarityNextDay([]),1)
+ assert.equal(clarityNextDay([{course_day:1,active_ms:1199999},{course_day:2,active_ms:1200000}]),1)
+ assert.equal(clarityNextDay([{course_day:1,active_ms:1200000}]),2)
+ assert.equal(clarityNextDay([1,2,3].map(course_day=>({course_day,active_ms:1200000}))),null)
+})
+test('course preserves previous reviewed events and author attribution; recap never asserts candidates',()=>{
+ const visitId='6c2b0e55-90ee-4c31-9b32-64c3860b5f28'
+ assert.deepEqual(clarityTurnAttribution({coachId:'caesar',visitId}),{coachId:'caesar',visitId})
+ assert.throws(()=>clarityTurnAttribution({coachId:'unknown',visitId}))
+ assert.throws(()=>clarityTurnAttribution({coachId:'mira'}))
+ assert.equal(clarityReviewExtends({events:[{revision:1}]},{events:[{revision:1},{revision:2}]}),true)
+ assert.equal(clarityReviewExtends({events:[{revision:1}]},{events:[]}),false)
+ const recap=clarityRecap([{status:'confirmed',label:'Goal',quote:'Learn Spanish'},{status:'needs_confirmation',label:'Resources',quote:'Invented candidate'}],'en',480)
+ assert.match(recap,/Learn Spanish/);assert.match(recap,/720/);assert.doesNotMatch(recap,/Invented candidate/)
+})
