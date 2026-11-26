@@ -150,7 +150,8 @@ try{
   assert.equal(await guide.locator('[data-guide-levels] button').count(),4)
   assert.equal(await guide.locator('[data-guide-steps] button').count(),7)
   assert.equal(await page.locator('[data-daybook-inline-help]').isVisible(),true)
-  assert.equal(await page.locator('main > nav').last().locator('button').count(),4)
+  assert.equal(await page.locator('[data-daybook-workspace-nav]').count(),0,'Course screens must not render the workspace tab strip')
+  assert.equal(await page.locator('main > nav:visible').count(),0,'Course screens must not show secondary navigation')
   assert.equal(await action('complete').isDisabled(),true,'An empty step must not be completable')
 
   for(const width of [320,354,390,430,768,1024]){
@@ -245,7 +246,8 @@ try{
   await action('save').click()
   await until(()=>[...records.values()].some(value=>value.goalId===goal2&&parseGuideEntry(value)),'Second goal did not save independently')
   await until(async()=>await action('save').count()>0&&!await action('save').isDisabled(),'Second goal save did not settle')
-  await page.locator('main > nav').getByRole('button',{name:{en:'Journal',ru:'Дневник',es:'Diario'}[locale],exact:true}).click()
+  await page.evaluate(()=>{const url=new URL(location.href);url.searchParams.set('tab','journal');window.history.pushState(null,'',url)})
+  await page.locator('[data-daybook-workspace-nav]').waitFor({state:'visible'})
   const journalRecord=page.locator('main > article').filter({hasText:'SYNTHETIC_DEEP_LINK'})
   await journalRecord.waitFor({state:'visible'})
   assert.ok(!(await journalRecord.innerText()).includes('hh-guide-v1'),'Journal must show readable answers instead of internal JSON')
@@ -262,7 +264,8 @@ try{
   assert.equal(await step(deepTask.id).getAttribute('aria-pressed'),'true')
   assert.equal(await goalSelect.inputValue(),goal1)
   for(const field of deepTask.fields)assert.equal(await task.getByLabel(field.label[locale],{exact:false}).inputValue(),deepAnswers[field.id],'Journal link must restore the matching saved answer')
-  await page.locator('main > nav').getByRole('button',{name:{en:'Journal',ru:'Дневник',es:'Diario'}[locale],exact:true}).click()
+  await page.evaluate(()=>{const url=new URL(location.href);url.searchParams.set('tab','journal');window.history.pushState(null,'',url)})
+  await page.locator('[data-daybook-workspace-nav]').waitFor({state:'visible'})
   await journalRecord.waitFor({state:'visible'})
   await deepLink.click()
   await guide.waitFor({state:'visible'})
@@ -308,7 +311,8 @@ try{
   // v2 questionnaire, not seeded into the guide fixture or injected into state.
   const vc=vectorCopy[locale],beforeVectorRecords=[...records.entries()],beforeVectorWrites=writes.length
   const nav=page.locator('main > nav'),wizard=page.locator('[data-daybook-vector-start]')
-  await nav.getByRole('button',{name:({en:'My goals',ru:'Мои цели',es:'Mis metas'})[locale],exact:true}).click()
+  await page.evaluate(()=>{const url=new URL(location.href);url.searchParams.set('tab','goals');window.history.pushState(null,'',url)})
+  await page.locator('[data-daybook-workspace-nav]').waitFor({state:'visible'})
   await page.locator('#daybook-goals').getByRole('button',{name:vc.new,exact:true}).click()
   await wizard.waitFor({state:'visible'})
   await wizard.locator('input[type=radio][value=work]').check()

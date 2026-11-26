@@ -162,6 +162,9 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
+          // SSR range inputs are visible before React commits. Wait for this same
+          // component's existing mount marker before real keyboard interaction.
+          await root.locator('[data-support-photo-hydrated="true"]').waitFor({state:"attached",timeout:30000});
           const relationshipsInput=root.locator('[data-support-scale="relationships"] input[type="range"]');
           await relationshipsInput.waitFor({state:"visible",timeout:30000});
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(),4,
@@ -209,11 +212,13 @@ for (const engine of [chromium, webkit]) {
           await relationships.press("Home");
           await relationships.press("ArrowRight");
           assert.equal(await relationships.inputValue(), "2", label + " keyboard 2/10");
+          await page.waitForFunction(()=>document.querySelector('[data-support-scale="relationships"] input')?.getAttribute("aria-valuetext")==="2 / 10",{},{timeout:10000});
           await launch.click();
           const basis = gallery.locator("[data-support-meditation-basis]");
           await basis.waitFor({ state:"visible", timeout:10000 });
-          assert.ok((await basis.innerText()).includes("2/10"),
-            label + " real selected minimum in gallery");
+          const firstBasisText=await basis.innerText();
+          assert.ok(firstBasisText.includes("2/10"),
+            label + " real selected minimum in gallery: "+firstBasisText);
           assert.ok((await basis.innerText()).includes({
             en:"Relationships",ru:"Отношения",es:"Relaciones",
           }[locale]), label + " matched lowest topic in user language");
@@ -251,6 +256,8 @@ for (const engine of [chromium, webkit]) {
           await money.focus();
           await money.press("Home");
           assert.equal(await money.inputValue(), "1", label + " lower money to 1");
+          await page.waitForFunction(()=>document.querySelector('[data-support-scale="money"] input')?.getAttribute("aria-valuetext")==="1 / 10",{},{timeout:10000});
+          await basis.waitFor({state:"detached",timeout:10000});
           assert.equal(await basis.count(), 0, label + " stale ranking is removed");
           await launch.click();
           await basis.waitFor({ state:"visible" });

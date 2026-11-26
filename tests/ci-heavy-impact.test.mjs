@@ -632,3 +632,23 @@ test('Messenger focused and isolated RLS contracts avoid unrelated media install
   assert.ok(matchesTrigger(parsePrTrigger(yaml,'hh-messages-wellness-v2.yml'),['.github/workflows/hh-messages-wellness-v2.yml'],'codex/public-book-library'));
   assert.ok(read('hh-pr-core-release.yml').includes('Lint changed JS/TS sources on PR; full lint for manual/merge queue'));
 });
+
+
+test('Course Banner uses four reviewed locked dependencies or original full install on any changed source',()=>{
+ const y=read('hh-app-r1.yml');
+ const section=y.split('  course-banner-browser:\n')[1].split('  database:\n')[0];
+ assert.ok(section.includes('Plan reviewed minimal Course Banner dependencies'));
+ for(const p of ['tests/course-banner/browser.mjs','components/app/free-course-banner.jsx',
+   'components/app/compact-assessment-report.jsx','lib/assessments/result-overview.js',
+   'lib/assessments/assessment-evidence-status.js','package.json','package-lock.json']) assert.ok(section.includes(p),p);
+ assert.ok(section.includes('hash-object'));
+ assert.ok(section.includes("const names=['react','react-dom','scheduler','typescript']"));
+ assert.ok(section.includes('sha512-'));
+ assert.ok(section.includes('npm ci --prefix "$HH_BANNER_DEPS" --include=dev --ignore-scripts --no-audit --no-fund'));
+ assert.equal((section.match(/steps\.banner-deps\.outputs\.minimal != 'true'/g)||[]).length,3);
+ assert.ok(section.includes('npm ci --no-audit --no-fund'));
+ assert.ok(section.includes('stage: materialize'));
+ assert.ok(section.includes('mcr.microsoft.com/playwright:v1.63.0-noble'));
+ assert.ok(section.includes('node tests/course-banner/browser.mjs'));
+ assert.doesNotMatch(section,/continue-on-error:\s*true/);
+});

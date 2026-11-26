@@ -42,3 +42,17 @@ test('greeting animation is available on hero and session for all six coaches', 
   assert.match(motion, /muted loop playsInline autoPlay/)
   assert.match(catalog, /phase="greeting" context="hero"/)
 })
+
+test('verified-account coaching archives automatically from the existing start action', () => {
+  const gate = code('components/my-coach-greeting-gate.jsx')
+  const session = code('components/my-coach-live-dialogue.jsx')
+  assert.doesNotMatch(gate, /privateAutosaveControl/)
+  assert.doesNotMatch(session, /data-coach-autosave-consent/)
+  assert.match(gate, /accountSaving/)
+  assert.match(session, /const saveToAccount=Boolean\(protocolOwnerRef.current\)/)
+  assert.match(session, /autoSaveRef.current=saveToAccount/)
+  assert.match(session, /setAutoSaveEnabled\(saveToAccount\)/)
+  assert.match(session, /if\(!await saveProtocol\(\)\)return/)
+  assert.match(session, /X-HH-Account-ID/)
+  assert.match(session, /setGeminiLiveConsent\(false\);setGeminiConsent\(false\)/)
+})
