@@ -16,7 +16,8 @@ import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} 
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
-import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {checkpointQuestionMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
@@ -769,7 +770,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{/* Sound is optional; the visual checkpoint is authoritative. */}
   },[openingProgress.lamps.invitation,openingProgress.lamps.identity,
     openingProgress.lamps.focus,openingProgress.lamps.confirmation,sessionClockStarted,paused,voiceState.phase])
-  const openingPosition=openingStagePosition(openingProgress,lang)
+  // Render finalized submitted input immediately, even before a provider or
+  // encrypted gate receipt. This display-only list never authorizes a fact.
+  const pendingProtocolInput=inFlightClientRef.current?.message||
+    (courseGateAttemptRef.current?.action==='course-gate-answer'?courseGateAttemptRef.current.content:'')
+  const protocolDisplayTurns=pendingProtocolInput?[...turns,{role:'user',content:pendingProtocolInput,unanswered:true}]:turns
+  const openingCaptured=openingCapturedAnswers(protocolDisplayTurns,history=>coachOpeningProgress({turns:history,locale:conversationLang,personaId,...localOpeningScope}))
+  const openingPosition=openingStagePosition(openingProgress,lang,openingCaptured)
   const profilePosition=profileStagePosition(profileProgress,COACH_PROFILE_AXES,lang)
   const stageIds=coachSessionVisibleStageIds(visibleMethodId,{legacy:progressValid&&!meaningProgressValid})
   const stageChecklistTitles=stageIds.map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
@@ -788,23 +795,38 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       courseRows=(coachCourseProtocolSchema(selectedCourseId,lang)?.checkpoints||[]).map(row=>({...row,status:'not_explored',turnIndex:null,quote:''}))
     }
   }
+  const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang)
+  // Do not use opening answers as core field candidates. Retain original indices.
+  let openingEnd=-1,openingCount=0
+  for(let i=0;i<turns.length&&openingCount<openingProgress.consumedTurns;i++){
+    if(turns[i].role==='user'&&turns[i].unanswered!==true){openingCount++;openingEnd=i}
+  }
+  if(openingProgress.completed&&!profileSelected&&courseRows.length&&!courseReviewInvalid){
+    const schemas=['ru','en','es'].map(locale=>({locale,schema:coachCourseProtocolSchema(selectedCourseId,locale)}))
+    courseRows=courseCapturedRows(courseRows,protocolDisplayTurns,(row,text)=>schemas.some(({locale,schema})=>{
+      const field=schema?.checkpoints.find(x=>x.id===row.id)
+      return field&&typeof text==='string'&&checkpointQuestionMatches(field,locale,text.trim())
+    }),{afterIndex:openingEnd,livePrompt:courseGate?.step.prompt})
+  }
   const coursePosition=courseStagePosition(courseRows,{promptId:courseReviewInvalid?null:courseGate?.step.prompt?.fieldId,
     paused:courseReviewInvalid||courseGate?.step.paused,completed:courseGate?.step.completed,
     allowProvisional:!courseGate&&!courseGateRequired&&!courseReviewInvalid})
   const savedProfile=profileV3?coachSavedProfileV3(profileV3.protocol,lang):null
   const savedProfilePosition=savedProfileStagePosition(savedProfile,profileV3?.step,lang)
   const progressMode=openingActive?'opening':savedProfile?'profile-v3':profileActive?'profile':courseRows.length?'course':'method'
-  const stagePosition=progressMode==='opening'?openingPosition:progressMode==='profile-v3'?savedProfilePosition:
-    progressMode==='profile'?profilePosition:progressMode==='course'?coursePosition:methodPosition
+  const coreMode=progressMode==='opening'?(profileSelected?'profile':courseSchema?'course':'method'):progressMode
+  const detailPosition=coreMode==='profile-v3'?savedProfilePosition:coreMode==='profile'?profilePosition:
+    coreMode==='course'?(openingActive?courseStagePosition((courseSchema?.checkpoints||[]).map(row=>({...row,status:'not_explored',quote:'',turnIndex:null})),{allowProvisional:false}):coursePosition):methodPosition
+  const stagePosition=groupedSessionPosition(openingPosition,detailPosition,{mode:coreMode,courseId:selectedCourseId,locale:lang,openingActive})
   const visibleProgressStep=stagePosition.step
   const visibleProgressTotal=stagePosition.total
   const visibleProgressName=progressMode==='opening'?({ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):
     progressMode==='profile-v3'?savedProfile.title:progressMode==='profile'?({ru:'Личный профиль',en:'Personal profile',es:'Perfil personal'}[lang]):
     progressMode==='course'?({ru:'Пункты протокола',en:'Session checkpoints',es:'Puntos de la sesión'}[lang]):visibleMethodName
   const stageDescription=methodPosition.rows[methodPosition.index]?.label||methodPosition.rows.at(-1)?.label||''
-  const plannedCourse=progressMode==='course'&&!courseGate&&stagePosition.index>=0
+  const plannedCourse=progressMode==='course'&&!courseGate&&detailPosition.index>=0
   const visibleProgressDescription=stagePosition.index>=0?
-    (plannedCourse?({ru:'Ориентир: ',en:'Suggested checkpoint: ',es:'Punto orientativo: '}[lang]):'')+stagePosition.rows[stagePosition.index].label:
+    (plannedCourse?({ru:'Ориентир: ',en:'Suggested checkpoint: ',es:'Punto orientativo: '}[lang]):'')+stagePosition.rows[stagePosition.index].label+' · '+stagePosition.rows[stagePosition.index].recorded+'/'+stagePosition.rows[stagePosition.index].total:
     courseReviewInvalid&&progressMode==='course'?({ru:'Ожидаем подтверждённый протокол',en:'Waiting for the verified protocol',es:'Esperando el protocolo verificado'}[lang]):
     stagePosition.finished?({ru:'Пункты обработаны',en:'Steps reviewed',es:'Pasos revisados'}[lang]):
     openingProgress.declined?({ru:'Сессия не начата',en:'Session not started',es:'Sesión no iniciada'}[lang]):
@@ -2251,19 +2273,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
             aria-valuemin={0} aria-valuemax={Math.max(1,visibleProgressTotal)} aria-valuenow={visibleProgressStep}
             aria-valuetext={visibleProgressDescription}>
-            {stagePosition.rows.map(row=><span key={row.id} data-stage-id={row.id}
-              data-stage-status={row.active?'current':row.status} data-stage-resolution={row.status} title={row.label}
+            {stagePosition.rows.map(row=><span key={row.id} data-stage-id={row.id} data-group-progress
+              data-stage-status={row.active?'current':row.status} data-stage-resolution={row.status}
+              title={row.label+' · '+row.recorded+'/'+row.total+' · '+row.confirmed+'/'+row.total}
+              style={{'--recorded':(row.recordedFraction*100)+'%','--verified':(row.verifiedFraction*100)+'%','--skipped':(row.skippedFraction*100)+'%'}}
               data-complete={row.status==='done'?'true':undefined}
               data-current={row.active?'true':undefined}/>)}
 
           </div>
           <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
         </summary>
-        <MyCoachSessionStateCard locale={lang} turns={turns}
+        <MyCoachSessionStateCard locale={lang} turns={protocolDisplayTurns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           opening={openingProgress} profile={profileProgress} openingPosition={openingPosition}
-          profilePosition={profilePosition} stagePosition={stagePosition} progressMode={progressMode}/>
-        {progressMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={coursePosition} provisional={plannedCourse}/>}
+          profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode}/>
+        {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.id!=='contact')} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}

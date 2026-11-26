@@ -1,7 +1,7 @@
 'use client'
 
 import {useMemo} from 'react'
-import {coachCapturedClientTurns,coachStageCounts} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {coachCapturedClientTurns,coachStageCounts,coachEvidenceMarks} from '@/lib/coaching/coach-session-stage-view.mjs'
 import Link from 'next/link'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
@@ -105,6 +105,16 @@ function QuoteList({values,unknown}){
   if(!values?.length)return <span className={styles.unknown}>{unknown}</span>
   return <ul className={styles.quotedList}>{values.map((value,index)=><li key={index}>{value}</li>)}</ul>
 }
+export function EvidenceChecks({row,locale='en'}){
+  const marks=coachEvidenceMarks(row)
+  const names=({ru:['Занесено','Проверено'],en:['Captured','Verified'],es:['Registrado','Verificado']})[locale]||['Captured','Verified']
+  return <span className={styles.evidenceChecks} data-coach-evidence-checks>
+    {[marks.recorded,marks.verified].map((checked,i)=><span key={i} className={styles.evidenceCheck} data-evidence-kind={i===0?'captured':'verified'} data-evidence-checked={checked?'true':'false'}>
+      <ReadOnlyCheckbox checked={checked}/><small>{names[i]}</small>
+      <span className={styles.screenReaderOnly}>{checked?' ✓':' —'}</span>
+    </span>)}
+  </span>
+}
 function ReadOnlyCheckbox({checked}){
   return <span className={styles.checkbox} data-checked={checked?'true':'false'} aria-hidden="true">
     {checked&&<Check size={14} strokeWidth={3}/>}
@@ -157,7 +167,7 @@ export default function MyCoachSessionStateCard({
           const state=done?t.done:status==='skipped'?captureT.skipped:status==='needs_confirmation'?t.mentioned:active?t.current:t.waiting
           const lamp=openingLampKey[key]
           return <li key={key} className={styles.stageRow}
-            data-opening-step={key} data-stage-id={key} data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
+            data-opening-step={key} data-stage-id={key} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>
               {label}
@@ -167,7 +177,7 @@ export default function MyCoachSessionStateCard({
               {automatic&&<small className={styles.openingValue}>{captureT.automatic}</small>}
             </span>
             <span className={styles.stageStatus}>{state}</span>
-            <ReadOnlyCheckbox checked={done}/>
+            <EvidenceChecks row={{status,quote}} locale={language}/>
           </li>
         })}
       </ol>
@@ -186,13 +196,14 @@ export default function MyCoachSessionStateCard({
             ?(rating.current===null?'—':rating.current)+' → '+(rating.desired===null?'—':rating.desired):
             rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
           return <li key={id} className={styles.stageRow} data-profile-axis={id} data-stage-id={id}
-            data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
+            data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>{label}
               {value&&<small className={styles.openingValue}>{value}</small>}
+              {rating?.quote&&<small className={styles.openingValue}>{rating.quote}</small>}
             </span>
             <span className={styles.stageStatus}>{state}</span>
-            <ReadOnlyCheckbox checked={done}/>
+            <EvidenceChecks row={{status,recorded:rating?.kind==='rated'||rating?.kind==='partial',quote:rating?.quote}} locale={language}/>
           </li>
         })}
       </ol>
@@ -213,14 +224,14 @@ export default function MyCoachSessionStateCard({
     {(progressMode==='method'||progressMode==='profile-v3')&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
-        {stagePosition.rows.map(({id,label,status,active},index)=>{
+        {stagePosition.rows.map(({id,label,status,active,recorded,value},index)=>{
           const done=status==='done'
           const state=done?t.done:status==='skipped'?({ru:'Пропущено',en:'Skipped',es:'Omitido'}[language]):active?t.current:status==='needs_confirmation'?t.mentioned:t.waiting
           return <li key={id} className={styles.stageRow} data-stage-id={id} data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
-            <span className={styles.stageName}>{label}</span>
+            <span className={styles.stageName}>{label}{value&&<small className={styles.openingValue}>{value}</small>}</span>
             <span className={styles.stageStatus}>{state}</span>
-            <ReadOnlyCheckbox checked={done}/>
+            {progressMode==='profile-v3'?<EvidenceChecks row={{status,recorded}} locale={language}/>:<ReadOnlyCheckbox checked={done}/>} 
             <span className={styles.screenReaderOnly}>{label}: {state}</span>
           </li>
         })}
@@ -234,12 +245,12 @@ export default function MyCoachSessionStateCard({
           const factStatus=authoritative?(mentioned?'confirmed':'not_explored'):card.factStatus[id]
           const checked=factStatus==='confirmed'
           return <div key={id} className={styles.fieldRow}
-            data-client-evidence={mentioned?'mentioned':'missing'} data-fact-status={factStatus}>
+            data-client-evidence={mentioned?'mentioned':'missing'} data-fact-status={factStatus} data-dual-evidence-field={!authoritative||undefined}>
           <dt>
             <Icon className={styles.fieldIcon} size={19} aria-hidden="true"/>
             <span className={styles.fieldName}>{label}</span>
             <span className={styles.fieldStatus}>{checked?t.confirmed:factStatus==='needs_confirmation'?t.mentioned:t.missing}</span>
-            <ReadOnlyCheckbox checked={checked}/>
+            {authoritative?<ReadOnlyCheckbox checked={checked}/>:<EvidenceChecks row={{status:factStatus,recorded:mentioned}} locale={language}/>}
           </dt>
           <dd>{value}</dd>
         </div>})}

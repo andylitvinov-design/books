@@ -66,3 +66,16 @@
 .openingValue{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.4}
 .stageStatus{white-space:normal;text-align:right;max-width:100px;overflow-wrap:anywhere}
 .stageRow[data-stage-status=needs_confirmation] .stageStatus{color:#896323}
+
+/* Two independent, labelled marks; do not make the captured mark look verified. */
+.evidenceChecks{display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.evidenceCheck{display:grid;justify-items:center;gap:2px;color:#61766d}
+.evidenceCheck small{font-size:10px;line-height:1.2;font-weight:600;overflow-wrap:anywhere}
+.evidenceCheck[data-evidence-kind=captured] .checkbox[data-checked=true]{background:#80ab9c;border-color:#80ab9c}
+.stageRow[data-dual-evidence-row]{grid-template-columns:27px minmax(0,1fr) auto;align-items:start}
+.stageRow[data-dual-evidence-row] .evidenceChecks{grid-column:2 / -1}
+.fieldRow[data-dual-evidence-field] dt{grid-template-columns:22px minmax(0,1fr) auto}
+.fieldRow[data-dual-evidence-field] .evidenceChecks{grid-column:2 / -1}
+.protocolGroup{border-top:1px solid #eae7dd;padding:9px 3px;display:grid;gap:8px;min-width:0}
+.protocolGroupTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#17493e;font-size:14px}
+.protocolGroupBar{height:6px;border-radius:99px;background:linear-gradient(to right,#32846b 0 var(--verified),#a7cfbe var(--verified) var(--recorded),#e7e3dc var(--recorded) calc(100% - var(--skipped)),#b9b4a9 calc(100% - var(--skipped)) 100%)}
