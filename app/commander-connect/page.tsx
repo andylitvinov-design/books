@@ -23,7 +23,7 @@ export default async function CommanderConnectPage() {
         <button id="continue" type="button" hidden>Продолжить через Google</button>
       </main>
       <Script
-        src="/commander-connect.js?v=20261109-owner-csp-nonce-v2"
+        src="/commander-connect.js?v=20261125-director-single-sso-v1"
         nonce={nonce}
         strategy="afterInteractive"
       />
