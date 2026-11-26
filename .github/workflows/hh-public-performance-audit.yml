@@ -41,6 +41,12 @@ on:
       - 'scripts/measure-home-css-network.mjs'
       - 'scripts/report-home-mobile-compare.mjs'
       - 'tests/home-mobile-compare.test.mjs'
+      - 'scripts/verify-home-browser-parity.mjs'
+      - 'scripts/build-public-home-documents.mjs'
+      - 'scripts/home-deferred-css.mjs'
+      - 'tests/public-home-document-build.test.mjs'
+      - 'tests/public-home-document-delivery.test.mjs'
+      - '.github/workflows/hh-public-performance-audit.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -106,11 +112,22 @@ jobs:
         timeout-minutes: 16
         shell: bash
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           NEXT_TELEMETRY_DISABLED: '1'
         run: |
           set -euo pipefail
+          # The event payload can retain the old stacked base after a retarget.
+          # Use the first parent of the exact checkout merge commit instead.
+          mapfile -t parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
+          [[ "${#parents[@]}" -eq 2 ]] || { echo 'Expected checked-out PR merge commit'; exit 1; }
+          PR_BASE_SHA="${parents[0]}"
           [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if [[ "$EVENT_BASE_SHA" != "$PR_BASE_SHA" ]]; then
+            echo "::warning::Event base $EVENT_BASE_SHA differs from actual checkout parent $PR_BASE_SHA"
+          fi
+          printf 'Actual baseline %s; candidate merge %s; PR head %s\n' "$PR_BASE_SHA" "$(git rev-parse HEAD)" "${parents[1]}"
+          mkdir -p artifacts/home-perf
+          printf '{"baseline":"%s","candidateMerge":"%s","candidateHead":"%s","eventBase":"%s"}\n' "$PR_BASE_SHA" "$(git rev-parse HEAD)" "${parents[1]}" "$EVENT_BASE_SHA" > artifacts/home-perf/source-shas.json
           git fetch --no-tags --depth=1 origin "$PR_BASE_SHA"
           baseline_dir="$RUNNER_TEMP/hh-home-baseline"
           git worktree add --detach "$baseline_dir" "$PR_BASE_SHA"
@@ -211,12 +228,16 @@ jobs:
             done
           done
           node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          # Separate applied network/CPU throttling, not a replacement for PSI.
+          npm install --prefix "$RUNNER_TEMP/hh-home-browser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          HH_PLAYWRIGHT_MODULE="$RUNNER_TEMP/hh-home-browser/node_modules/playwright/index.mjs" \
+            node scripts/verify-home-browser-parity.mjs artifacts/home-perf
       - name: Save matched slow-4G evidence for first-screen release review
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
         uses: actions/upload-artifact@v4
         with:
           name: hh-home-lighthouse-${{ github.run_id }}
-          path: artifacts/home-perf/*.json
+          path: artifacts/home-perf/
           if-no-files-found: ignore
           retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
