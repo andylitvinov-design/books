@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { ENERGYWORK_VERSION } from '../data/academy/energywork-ai-schema.js'
 import { mount, nodes, textOf, findButton } from './helpers/course-ui-harness.mjs'
 
 const snapshot = (accountId, marker, extra = {}) => ({ accountId, enrolled: true, revision: 3, sharingWithTeacher: false,
@@ -79,9 +80,9 @@ for (const action of actions) test(`${action}: repeated same-render invocation i
   const button = await prepare(h, action); assert.equal(button.props.disabled, false)
   button.props.onClick(); button.props.onClick(); await h.settle()
   assert.equal(posts.length, 1); assert.equal(requests[0].action, action)
-  assert.equal(posts[0].owner, 'owner-a'); assert.equal(requests[0].expectedRevision, 3); assert.equal(requests[0].version, '2026-10-18.p1')
-  if (action === 'submit-review') assert.deepEqual(requests[0], { version: '2026-10-18.p1', expectedRevision: 3, action, slideId: 'flight-04', locale: 'en', consent: true })
-  if (action === 'share') assert.deepEqual(requests[0], { version: '2026-10-18.p1', expectedRevision: 3, action, consent: true, teacherConsent: true })
+  assert.equal(posts[0].owner, 'owner-a'); assert.equal(requests[0].expectedRevision, 3); assert.equal(requests[0].version, ENERGYWORK_VERSION)
+  if (action === 'submit-review') assert.deepEqual(requests[0], { version: ENERGYWORK_VERSION, expectedRevision: 3, action, slideId: 'flight-04', locale: 'en', consent: true })
+  if (action === 'share') assert.deepEqual(requests[0], { version: ENERGYWORK_VERSION, expectedRevision: 3, action, consent: true, teacherConsent: true })
   posts[0].response.resolve(snapshot('owner-a', 'Confirmed same owner reflection', { revision: 4 })); await h.settle(); h.unmount()
 })
 test('A to B to A invalidates the first A command, and an obsolete B callback cannot write', async () => {
@@ -164,7 +165,7 @@ for (const [locale, edit, save, countLabel] of [
     assert.equal(findButton(h.tree, save).props.disabled, count < 50, 'keep the existing minimum without an upper cap')
   }
   findButton(h.tree, save).props.onClick(); await h.settle()
-  assert.deepEqual(requests, [{ version: '2026-10-18.p1', expectedRevision: 3, action: 'save', slideId: 'flight-04', nextSlideId: 'flight-04', answer: '🌞'.repeat(1701) }])
+  assert.deepEqual(requests, [{ version: ENERGYWORK_VERSION, expectedRevision: 3, action: 'save', slideId: 'flight-04', nextSlideId: 'flight-04', answer: '🌞'.repeat(1701), commitAnswer:true }])
   assert.ok(textOf(h.tree).includes('🌞'.repeat(1701)))
   h.unmount()
 })

@@ -51,10 +51,10 @@ const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
   "tan-study-07": "#tantra-original-master-programme",
 };
 type StoredProgress = {
-  accountId: string; enrolled: boolean; courseVersion: string;
+  accountId: string; enrollmentId?: string; enrolled: boolean; courseVersion: string;
   slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
   revision?: number; savedAt?: string; status?: "active" | "completed";
-  sharingWithTeacher?: boolean;
+  sharingWithTeacher?: boolean; sharingWithMessenger?: boolean; messengerLinked?: boolean;
   enrollmentLead?: { id: string; status: string; createdAt: string } | null;
   applicationLead?: { id: string; status: string; submittedAt: string } | null;
 };
@@ -65,8 +65,10 @@ type SaveCommand = {
   action: "save";
   version: string; slideId: string; nextSlideId: string;
   answer?: string;
-  secondaryAnswer?: string;
+  secondaryAnswer?: string; commitAnswer?: boolean;
 };
+const REIKI_OAUTH_FLOW_KEY = "hh-reiki-sharing-flow";
+const REIKI_START_EXPERIENCE_KEY = "hh-reiki-sharing-experience";
 
 const programmeSystemDescriptions: Record<EnergyworkLocale, Record<EnergyworkPath, string>> = {
   en: {
@@ -218,6 +220,10 @@ const copy = {
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
     consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
+    messengerConsent: "Share my course start, completed lessons and answers I confirm with Andrey in our private Holistic House Messenger conversation.",
+    startShareConsent: "I’m 18+ and agree to save my course privately and share my progress and confirmed answers with Andrey in our private Holistic House Messenger conversation.",
+    shareSettings: "Sharing with Andrey", shareActive: "Sharing enabled", sharePending: "Link your messenger account to make confirmed course entries visible to Andrey.", linkMessenger: "Link my messenger account",
+    stopSharing: "Stop sharing", stopSharingConfirm: "Remove the course entries shared with Andrey and stop future sharing? Your private course and any initiation request already submitted will be kept.", shareLoginExpired: "Your sign-in for sharing expired. Choose sharing again to continue.", sharedSave: "Saved to My Courses",
     initiationLetterHeading: "Your Reiki initiation request",
     initiationLetterHint: "Your free chat initiation, optional donations, certificate choice, personal session, contact details and motivation reach Andrey’s private CRM only after you confirm.",
     initiationConfirm: "I agree to share my photo, initiation, certificate and session choices, name, city, preferred time, motivation and all course answers with Andrey in his private CRM. This is not a booking or payment.",
@@ -232,7 +238,7 @@ const copy = {
     retry: "Retry", saveFailed: "Could not save. Your answer is still on this screen; retry before continuing.",
     conflict: "Your course changed in another session. Reload the saved version before continuing.",
     reload: "Reload saved progress", print: "Print / Save PDF",
-    resetConfirm: "Delete this course, its saved answers, and both related CRM leads (including any initiation request)? Your other courses remain.",
+    resetConfirm: "Delete this course, its saved answers, shared Messenger entries and both related CRM leads (including any initiation request)? Your other courses remain.",
     signupError: "Could not start Google sign-in. Try again from the My Courses cabinet.",
     accountError: "Account needs attention. Open your personal cabinet to complete sign-in and consent.",
     myCourses: "My Courses",
@@ -373,6 +379,10 @@ const copy = {
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
     consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
+    messengerConsent: "Разрешаю показывать Андрею начало курса, пройденные уроки и подтверждённые мной ответы в нашей личной переписке Holistic House Messenger.",
+    startShareConsent: "Мне есть 18 лет. Согласен(на) сохранять курс приватно и показывать Андрею прогресс и подтверждённые ответы в нашей личной переписке Holistic House Messenger.",
+    shareSettings: "Доступ для Андрея", shareActive: "Доступ включён", sharePending: "Привяжите мессенджер, чтобы Андрей увидел подтверждённые записи курса.", linkMessenger: "Привязать мессенджер",
+    stopSharing: "Отозвать доступ", stopSharingConfirm: "Удалить переданные Андрею записи курса и прекратить передачу новых? Личный курс и уже поданная заявка на инициацию сохранятся.", shareLoginExpired: "Время для входа истекло. Выберите передачу записей ещё раз.", sharedSave: "Сохранено в «Моих курсах»",
     initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
     initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, сертификат, личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
     initiationConfirm: "Согласен(на) передать Андрею фото, выбор инициаций, сертификата и личной сессии, имя, город, удобное время, мотивацию и все ответы курса в закрытую CRM. Это не оплата и не бронь.",
@@ -387,7 +397,7 @@ const copy = {
     retry: "Повторить", saveFailed: "Не удалось сохранить. Ответ остался на экране; повторите перед переходом.",
     conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
     reload: "Загрузить прогресс", print: "Печать / Сохранить PDF",
-    resetConfirm: "Удалить курс, ответы и оба связанных лида в CRM, включая заявку на инициацию? Остальные курсы останутся.",
+    resetConfirm: "Удалить курс, ответы, записи в Messenger и оба связанных лида в CRM, включая заявку на инициацию? Остальные курсы останутся.",
     signupError: "Не удалось начать вход через Google. Попробуйте через раздел «Мои курсы».",
     accountError: "Завершите вход и согласие в личном кабинете.",
     myCourses: "Мои курсы",
@@ -860,6 +870,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const [firstLessonConsent, setFirstLessonConsent] = useState(false);
   const authorizedOAuthLeave = useRef(false);
   const [shareConsented, setShareConsented] = useState(false);
+  const [messengerOptIn, setMessengerOptIn] = useState(false);
+  const [sharingWithMessenger, setSharingWithMessenger] = useState(false);
+  const [messengerLinked, setMessengerLinked] = useState(false);
   const [unpublishedAudio, setUnpublishedAudio] = useState<string | null>(null);
   const forwardOptionalAudio = useRef<string | null>(null);
   const [sharingWithTeacher, setSharingWithTeacher] = useState(false);
@@ -872,6 +885,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const accountIdRef = useRef<string | null>(null);
+  const enrollmentRef = useRef<string | undefined>(undefined);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const dirtyRef = useRef(new Set<string>());
@@ -882,6 +896,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const transferredPreviewAnswers = useRef<AnswerMap>({});
   const clearAccountProgress = useCallback(() => {
     accountIdRef.current = null;
+    enrollmentRef.current = undefined;
+    setMessengerOptIn(false);
+    setSharingWithMessenger(false);
+    setMessengerLinked(false);
     revisionRef.current = 0;
     progressRef.current = "welcome-01";
     syncedAnswersRef.current = {};
@@ -906,10 +924,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   }, []);
   const request = useCallback((body: SaveCommand) => {
     const owner = accountIdRef.current;
+    const expectedEnrollmentId = enrollmentRef.current;
     const task = queueRef.current.catch(() => {}).then(async () => {
-      if (!owner || owner !== accountIdRef.current) throw new Error("ACCOUNT_CHANGED");
+      if (!owner || owner !== accountIdRef.current || expectedEnrollmentId !== enrollmentRef.current) throw new Error("ACCOUNT_CHANGED");
       const submit = () => appFetch("academy-energywork", {
-        ...body, expectedRevision: revisionRef.current,
+        ...body, expectedRevision: revisionRef.current, expectedEnrollmentId,
       }, "POST", { accountId: owner }) as Promise<StoredProgress>;
       let value: StoredProgress;
       try {
@@ -923,6 +942,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
           accountId: owner,
         }) as StoredProgress;
         if (!latest.enrolled || latest.accountId !== owner || owner !== accountIdRef.current ||
+            latest.enrollmentId !== expectedEnrollmentId || expectedEnrollmentId !== enrollmentRef.current ||
             !Number.isSafeInteger(latest.revision)) throw error;
         const changedElsewhere = (id: string, submitted: string | undefined) =>
           submitted !== undefined &&
@@ -935,7 +955,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         syncedAnswersRef.current = { ...(latest.answers ?? {}) };
         value = await submit();
       }
-      if (!value.enrolled || !Number.isSafeInteger(value.revision) || value.accountId !== owner || owner !== accountIdRef.current)
+      if (!value.enrolled || !Number.isSafeInteger(value.revision) || value.accountId !== owner || owner !== accountIdRef.current || value.enrollmentId !== expectedEnrollmentId || enrollmentRef.current !== expectedEnrollmentId)
         throw new Error("INVALID_PROGRESS_RESPONSE");
       revisionRef.current = value.revision!;
       progressRef.current = value.slideId ?? "welcome-01";
@@ -948,6 +968,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         setAnswers(merged);
       }
       setCourseCompleted(value.status === "completed");
+      setSharingWithMessenger(Boolean(value.sharingWithMessenger));
+      setMessengerLinked(Boolean(value.messengerLinked));
+      setSharingWithTeacher(Boolean(value.sharingWithTeacher));
       setSaveError(null);
       return value;
     });
@@ -960,11 +983,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     return task;
   }, [clearAccountProgress]);
   const hydrate = useCallback((value: StoredProgress, openEntrySlide = false) => {
-    if (accountIdRef.current && (accountIdRef.current !== value.accountId || (!value.enrolled && revisionRef.current > 0))) {
+    if (accountIdRef.current && (accountIdRef.current !== value.accountId || (enrollmentRef.current && value.enrollmentId !== enrollmentRef.current) || (!value.enrolled && revisionRef.current > 0))) {
       clearAccountProgress();
     }
     if (accountIdRef.current !== value.accountId || !value.enrolled) setInitiationPhoto(null);
     accountIdRef.current = value.accountId;
+    enrollmentRef.current = value.enrollmentId;
+    setSharingWithMessenger(Boolean(value.sharingWithMessenger));
+    setMessengerLinked(Boolean(value.messengerLinked));
     setCourseCompleted(value.status === "completed");
     if (!value.enrolled) {
       setSharingWithTeacher(false);
@@ -1005,7 +1031,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     } finally { setBusy(false); }
   }, [hydrate, clearAccountProgress]);
 
-  const completeFirstLesson = useCallback(async (handoff: FirstLessonHandoff) => {
+  const completeFirstLesson = useCallback(async (handoff: FirstLessonHandoff | null, reikiFlow?: string, teacherConsent = false, experience?: string) => {
     setBusy(true);
     setSync("checking");
     setSaveError(null);
@@ -1014,7 +1040,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       // The adult/necessary-processing consent was explicitly selected on the
       // Lesson 1 save card before the OAuth redirect.
       const bootstrap = await appFetch("bootstrap", undefined, "GET") as ReikiBootstrap;
-      if (!bootstrap.account?.id) throw new Error("ACCOUNT_UNAVAILABLE");
+      if (!bootstrap.account?.id || (accountIdRef.current && accountIdRef.current !== bootstrap.account.id)) throw new Error("ACCOUNT_CHANGED");
+      if (reikiFlow) await appFetch("academy-energywork/verify-sharing", {reikiFlow}, "POST", {accountId: bootstrap.account.id});
       if (bootstrap.account.onboardingState !== "active") {
         await appFetch("onboarding", {
           adult: true, necessary: true, marketing: false,
@@ -1024,39 +1051,61 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         }, "POST", { accountId: bootstrap.account.id });
       }
       const value = await appFetch("academy-energywork", {
-        action: "start", consent: true, teacherConsent: false,
-        version: ENERGYWORK_COURSE_VERSION, firstLesson: { answers: handoff.answers },
+        action: "start", consent: true, teacherConsent, messengerConsent: teacherConsent,
+        locale, version: ENERGYWORK_COURSE_VERSION, ...(reikiFlow ? { reikiFlow } : {}),
+        ...(handoff ? { firstLesson: { answers: handoff.answers } } : {}),
       }, "POST", { accountId: bootstrap.account.id }) as StoredProgress;
-      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision) ||
-          !value.answers?.["flight-04"]) {
+      if (!value.enrolled || value.accountId !== bootstrap.account.id || !value.slideId || !Number.isSafeInteger(value.revision) ||
+          (handoff && !value.answers?.["flight-04"])) {
         throw new Error("INVALID_FIRST_LESSON_RESPONSE");
       }
       hydrate(value); // Private server persistence is confirmed before continuation.
-      try { window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
-      catch { /* The confirmed server save survives restricted browser storage. */ }
+      try {
+        window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
+        window.sessionStorage.removeItem(REIKI_OAUTH_FLOW_KEY);
+        window.sessionStorage.removeItem(REIKI_START_EXPERIENCE_KEY);
+      } catch { /* The confirmed server save survives restricted browser storage. */ }
       setFirstLessonConsent(false);
+      setMessengerOptIn(false);
+      if (!handoff && value.slideId === "welcome-01") {
+        const sequence = energyworkSlides();
+        const nextWelcome = sequence[sequence.findIndex(item => item.id === "welcome-01") + 1]?.id;
+        if (nextWelcome) {
+          let advanced = await request({action: "save", version: ENERGYWORK_COURSE_VERSION, slideId: "welcome-01", nextSlideId: nextWelcome});
+          const questionIndex = sequence.findIndex(item => item.id === "welcome-02");
+          if (nextWelcome === "welcome-02" && experience && sequence[questionIndex]?.question?.options?.some(choice => choice.id === experience) && sequence[questionIndex+1]) {
+            advanced = await request({action: "save", version: ENERGYWORK_COURSE_VERSION, slideId: "welcome-02", nextSlideId: sequence[questionIndex+1]!.id, answer: experience, commitAnswer: true});
+          }
+          hydrate(advanced);
+        }
+      }
       // The confirmed private snapshot already opens Lesson 2 without another slide.
-      if (handoff.afterSave === "courses") window.location.assign("/" + locale + "/app/course?view=courses");
-      if (handoff.afterSave === "hints") setIndex(energyworkSlides().findIndex(item => item.id === "flight-hints"));
+      if (handoff?.afterSave === "courses") window.location.assign("/" + locale + "/app/course?view=courses");
+      if (handoff?.afterSave === "hints") setIndex(energyworkSlides().findIndex(item => item.id === "flight-hints"));
     } catch (error) {
       // A network error must never masquerade as a successful saved course.
       // Retain the short-lived, same-tab handoff for a deliberate retry.
       const unauthorized = (error as { status?: number })?.status === 401;
       setSync(unauthorized ? "guest" : "consent");
-      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
-      setSaveError(unauthorized ? t.signupError : t.firstSaveError);
+      const expired = (error as { code?: string }).code === "COURSE_SHARING_LOGIN_EXPIRED";
+      if (expired) {
+        try { window.sessionStorage.removeItem(REIKI_OAUTH_FLOW_KEY); window.sessionStorage.removeItem(REIKI_START_EXPERIENCE_KEY); } catch { /* retry privately */ }
+        setMessengerOptIn(false);
+      }
+      setIndex(handoff ? energyworkSlides().findIndex(item => item.id === "flight-done") : 0);
+      setSaveError(expired ? t.shareLoginExpired : unauthorized ? t.signupError : t.firstSaveError);
     } finally {
       setBusy(false);
     }
-  }, [hydrate, locale, t.firstSaveError, t.signupError]);
+  }, [hydrate, locale, request, t.firstSaveError, t.shareLoginExpired, t.signupError]);
 
   useEffect(() => {
     // React can replay the mount effect. A consented handoff starts only once.
     if (loadedLocale.current === locale) return;
     loadedLocale.current = locale;
     entrySlidePending.current = true;
-    let raw: string | null = null;
-    try { raw = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+    let raw: string | null = null, flow: string | null = null, experience: string | null = null;
+    try { raw = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); flow = window.sessionStorage.getItem(REIKI_OAUTH_FLOW_KEY); experience = window.sessionStorage.getItem(REIKI_START_EXPERIENCE_KEY); }
     catch { /* Storage unavailable: the guest course still works normally. */ }
     const pending = energyworkReadFirstLessonHandoff(raw, locale);
     if (pending) {
@@ -1068,7 +1117,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       for (const id of Object.keys(pending.answers)) dirtyRef.current.add(id);
       setDirtyCount(dirtyRef.current.size);
     }
-    if (pending && !new URLSearchParams(window.location.search).has("auth")) {
+    const cancelled = new URLSearchParams(window.location.search).has("auth");
+    if (flow && !cancelled && (!raw || pending)) {
+      void completeFirstLesson(pending, flow, false, experience || undefined);
+      return;
+    }
+    if (flow) { try { window.sessionStorage.removeItem(REIKI_OAUTH_FLOW_KEY); window.sessionStorage.removeItem(REIKI_START_EXPERIENCE_KEY); } catch { /* best effort */ } }
+    if (pending && !cancelled) {
       // Resume immediately in the lesson, not the cabinet homepage.
       void completeFirstLesson(pending);
       return;
@@ -1154,10 +1209,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     setBusy(true);
     try {
       let result = await appFetch("academy-energywork", {
-        action: "start", consent: true, teacherConsent: false, version: ENERGYWORK_COURSE_VERSION,
+        action: "start", consent: true, teacherConsent: messengerOptIn, messengerConsent: messengerOptIn, locale, version: ENERGYWORK_COURSE_VERSION,
       }, "POST", { accountId: owner }) as StoredProgress;
       if (result.accountId !== owner || accountIdRef.current !== owner || !result.enrolled ||
           !Number.isSafeInteger(result.revision)) throw new Error("INVALID_PROGRESS_RESPONSE");
+      enrollmentRef.current = result.enrollmentId;
       revisionRef.current = result.revision!;
       syncedAnswersRef.current = { ...result.answers };
       const serverPosition = Math.max(0, slides.findIndex(item => item.id === result.slideId));
@@ -1181,6 +1237,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       const newEdits = Object.entries(answersRef.current).filter(([id, answer]) =>
         dirtyRef.current.has(id) && answer !== draft[id]);
       hydrate(result);
+      setMessengerOptIn(false);
       if (frontier > 0 && serverPosition <= frontier) setIndex(index);
       if (newEdits.length) {
         const updated = { ...answersRef.current, ...Object.fromEntries(newEdits) };
@@ -1195,33 +1252,54 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       setSaveError((error as { status?: number })?.status === 403 ? t.accountError : t.saveFailed);
     } finally { setBusy(false); }
   }
-  async function shareWithTeacher() {
-    if (busy || !shareConsented || sync !== "ready") return;
+  async function shareWithTeacher(withdraw = false, messenger = false) {
+    const owner = accountIdRef.current, enrollment = enrollmentRef.current;
+    if (busy || !owner || sync !== "ready" || (!withdraw && !(messenger ? messengerOptIn : shareConsented))) return;
+    if (withdraw && !window.confirm(t.stopSharingConfirm)) return;
     setBusy(true);
     try {
       await queueRef.current.catch(() => {});
+      if (owner !== accountIdRef.current || enrollment !== enrollmentRef.current) throw new Error("ACCOUNT_CHANGED");
       const value = await appFetch("academy-energywork", {
-        action: "share", version: ENERGYWORK_COURSE_VERSION, consent: true, teacherConsent: shareConsented,
-      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
-      hydrate(value);
+        ...(withdraw ? {action: "withdraw-sharing", confirmed: true} : {action: "share", consent: true, teacherConsent: true, ...(messenger ? {messengerConsent: true} : {})}),
+        version: ENERGYWORK_COURSE_VERSION, locale, expectedRevision: revisionRef.current, expectedEnrollmentId: enrollment,
+      }, "POST", { accountId: owner }) as StoredProgress;
+      if (value.accountId !== owner || accountIdRef.current !== owner || value.enrollmentId !== enrollment || enrollmentRef.current !== enrollment)
+        throw new Error("ACCOUNT_CHANGED");
+      revisionRef.current = value.revision ?? revisionRef.current;
+      setSharingWithTeacher(Boolean(value.sharingWithTeacher));
+      setSharingWithMessenger(Boolean(value.sharingWithMessenger));
+      setMessengerLinked(Boolean(value.messengerLinked));
       setShareConsented(false);
-    } catch {
-      setSaveError(t.saveFailed);
+      setMessengerOptIn(false);
+      setSaveError(null);
+    } catch (error) {
+      setSaveError((error as {status?: number}).status === 409 ? t.conflict : t.saveFailed);
     } finally { setBusy(false); }
   }
-  async function signIn() {
+  async function signIn(firstLesson = false, experience?: string) {
     if (busy) return;
     setBusy(true);
     try {
       const continuation = daybook ? { continueTo: "energywork-daybook" } : { continueTo: "energywork" };
-      const response = await appFetch("auth/start", { locale, ...continuation }, "POST") as { redirectUrl?: string };
+      try {
+        window.sessionStorage.removeItem(REIKI_OAUTH_FLOW_KEY);
+        window.sessionStorage.removeItem(REIKI_START_EXPERIENCE_KEY);
+        if (!firstLesson) window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
+      } catch { if (messengerOptIn) throw new Error("SHARING_STORAGE_UNAVAILABLE"); }
+      const response = await appFetch("auth/start", { locale, ...continuation, ...(messengerOptIn ? {reikiSharing: true} : {}) }, "POST") as { redirectUrl?: string; reikiFlow?: string };
+      if (messengerOptIn) {
+        if (!response.reikiFlow) throw new Error("MISSING_REIKI_FLOW");
+        window.sessionStorage.setItem(REIKI_OAUTH_FLOW_KEY, response.reikiFlow);
+        if (experience) window.sessionStorage.setItem(REIKI_START_EXPERIENCE_KEY, experience);
+      }
       if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
       // The short-lived, consented first-lesson handoff is safely kept within
       // this tab, so an expected OAuth navigation should not warn of lost edits.
       let pending: string | null = null;
       try { pending = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
       catch { /* Standard Google login still works without storage. */ }
-      authorizedOAuthLeave.current = Boolean(energyworkReadFirstLessonHandoff(pending, locale));
+      authorizedOAuthLeave.current = messengerOptIn || Boolean(energyworkReadFirstLessonHandoff(pending, locale));
       window.location.assign(response.redirectUrl);
     } catch {
       authorizedOAuthLeave.current = false;
@@ -1239,8 +1317,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       const pending = energyworkReadFirstLessonHandoff(value, locale);
       if (!pending) throw new Error("INVALID_FIRST_LESSON");
       setSaveError(null);
-      if (sync === "guest") await signIn();
-      else await completeFirstLesson(pending);
+      if (sync === "guest") await signIn(true);
+      else await completeFirstLesson(pending, undefined, messengerOptIn);
     } catch {
       setSaveError(t.firstSaveError);
     }
@@ -1365,7 +1443,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     setDirtyCount(dirtyRef.current.size);
     setCopyState("idle");
   }
-  async function store(nextSlideId: string) {
+  async function store(nextSlideId: string, commitAnswer = nextSlideId !== slide.id) {
     if (sync !== "ready") return;
     const current = answersRef.current;
     const secondaryId = slide.secondaryQuestion?.id;
@@ -1381,7 +1459,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     const secondary = secondaryId ? (needsBackfill ? combined : current[secondaryId] || "") : undefined;
     const response = await request({
       action: "save", version: ENERGYWORK_COURSE_VERSION,
-      slideId: slide.id, nextSlideId,
+      slideId: slide.id, nextSlideId, ...(commitAnswer ? {commitAnswer: true} : {}),
       ...(slide.question ? { answer: primary } : {}),
       ...(secondaryId ? { secondaryAnswer: secondary } : {}),
     });
@@ -1429,6 +1507,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   async function next() {
     if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing) return;
     if (completed && !needsCompletionConfirmation) return;
+    if (messengerOptIn && (sync === "guest" || sync === "consent") &&
+        (slide.kind === "welcome" || (startAtExperience && slide.id === "welcome-02"))) {
+      const experience = slide.id === "welcome-02" ? answersRef.current[slide.id] : undefined;
+      if (sync === "guest") await signIn(false, experience);
+      else await completeFirstLesson(null, undefined, true, experience);
+      return;
+    }
     if (slide.id === "flight-done" && sync !== "ready") {
       if (sync === "guest" || sync === "consent") await saveLessonOneToCabinet("continue");
       return;
@@ -1438,7 +1523,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     // if its answer is unchanged. No duplicate server revision or cursor write.
     const alreadyStored = sync === "ready" && energyworkAdvanceAlreadyStored(
       slide.id, nextId, progressRef.current,
-      currentAnswerIsDirty());
+      currentAnswerIsDirty()) && !(sharingWithMessenger && slide.question && slide.id !== "end-01");
     if (sync === "ready" && !alreadyStored) {
       setBusy(true);
       try {
@@ -1515,7 +1600,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       setBusy(true);
       try {
         await queueRef.current.catch(() => {});
-        const value = await appFetch("academy-energywork", { action:"delete", confirmed: true }, "POST",
+        const value = await appFetch("academy-energywork", { action:"delete", confirmed: true, expectedRevision: revisionRef.current, expectedEnrollmentId: enrollmentRef.current }, "POST",
           { accountId: accountIdRef.current || undefined }) as StoredProgress;
         hydrate(value);
       } catch { setSaveError(t.saveFailed); setBusy(false); return; }
@@ -1523,7 +1608,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     }
     answersRef.current = {};
     setIndex(0); setGuestFrontier(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
-    setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
+    setMessengerOptIn(false);setSharingWithMessenger(false);setMessengerLinked(false);setShareConsented(false);setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
     setInitiationPhoto(null);
     dirtyRef.current.clear();
     setDirtyCount(0);
@@ -1570,13 +1655,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       await queueRef.current.catch(() => {});
       const value = await appFetch("academy-energywork", {
         action: "apply", version: ENERGYWORK_COURSE_VERSION,
-        expectedRevision: revisionRef.current, confirmed: true,
+        expectedRevision: revisionRef.current, expectedEnrollmentId: enrollmentRef.current, confirmed: true,
       }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
       hydrate(value);
       setApplicationConsented(false);
     } catch (error) {
       const code = (error as { code?: string })?.code;
-      setApplicationMessage(code === "COURSE_PROGRESS_CHANGED" ? t.conflict : t.saveFailed);
+      setApplicationMessage((code === "COURSE_PROGRESS_CHANGED" || code === "COURSE_ENROLLMENT_CHANGED") ? t.conflict : t.saveFailed);
     } finally { setBusy(false); }
   }
   async function copyNotes() {
@@ -1591,6 +1676,32 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     }
   }
 
+  const sharingChoice = (start = false) => (
+    <label className={styles.consentLabel}>
+      <input type="checkbox" checked={messengerOptIn} disabled={busy} onChange={event => setMessengerOptIn(event.target.checked)} />
+      <span>{start ? t.startShareConsent : t.messengerConsent}</span>
+    </label>
+  );
+  const optionalStartSharing = (sync === "guest" || sync === "consent") &&
+    (slide.kind === "welcome" || (startAtExperience && slide.id === "welcome-02")) ? (
+      <details className={styles.courseSharingChoice} data-reiki-start-sharing>
+        <summary>{t.shareSettings}</summary>{sharingChoice(true)}
+      </details>
+    ) : null;
+  const sharingPanel = sync === "ready" ? (
+    <div className={styles.courseSharingChoice}>
+      {sharingWithMessenger && !messengerLinked ? <p>{t.sharePending}{" "}
+        <Link href={"/" + locale + "/app/settings#hh-settings-messengers"}>{t.linkMessenger}</Link>
+      </p> : null}
+      <details>
+        <summary>{t.shareSettings}{sharingWithMessenger ? " · " + t.shareActive : ""}</summary>
+        {sharingWithMessenger ? <button type="button" disabled={busy} onClick={() => shareWithTeacher(true)}>{t.stopSharing}</button> : <>
+          {sharingChoice()}
+          <button type="button" disabled={busy || !messengerOptIn} onClick={() => shareWithTeacher(false, true)}>{t.finalEnableShare}</button>
+        </>}
+      </details>
+    </div>
+  ) : null;
   const welcomeOffer = t.welcomeOffer;
   const daybookIntroTitle = locale === "ru" ? "О курсе" : "About the course";
   const daybookWelcome = daybook && slide.id === "welcome-01";
@@ -1643,6 +1754,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         </div>
         <span className={daybookStyles.rewardLotus}>{lotusMark}</span>
       </div>
+      {optionalStartSharing}
     </section>
   ) : (
         <section data-daybook-part={daybook ? "sheet" : undefined} className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} data-daybook-density={daybook ? (slide.question || slide.kind === "practice" || slide.kind === "voices" || slide.kind === "milestone" ? "activity" : "lesson") : undefined} aria-labelledby="energywork-slide-title">
@@ -1744,6 +1856,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                   </div>
                 </div>
               ) : null}
+              {optionalStartSharing}
               {slide.kind === "milestone" ? (
                 <div className={styles.milestoneInlineChoices} role="group" aria-label={t.lessonChoices}
                   data-reiki-milestone-choices>
@@ -1775,6 +1888,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                       data-reiki-first-lesson-consent />
                     <span>{t.firstSaveConsent}</span>
                   </label>
+                  {sharingChoice()}
                   <p className={styles.firstLessonPrivacy}>
                     <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
                     {" · "}{t.firstSaveAssurance}
@@ -1927,7 +2041,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                               <span>{t.teacherShareConsent}</span>
                             </label>
                             <button type="button" className={styles.initiationSend}
-                              disabled={busy || !shareConsented} onClick={shareWithTeacher}>
+                              disabled={busy || !shareConsented} onClick={() => shareWithTeacher()}>
                               {t.finalEnableShare}<ArrowRight size={18} aria-hidden="true" />
                             </button>
                           </div>
@@ -2030,7 +2144,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                       ) : (
                         <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
                       )}
-                      <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
+                      <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{sharingWithMessenger ? t.messengerConsent : t.reviewPrivate}</p>
                     </div>
                   </details>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
@@ -2069,7 +2183,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
       <div className={styles.savedLine} data-reiki-private-save-status aria-live="polite">
         {sync === "ready" ? <>
           <LockKeyhole size={13} aria-hidden="true" />
-          <span>{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</span>
+          <span>{busy || dirtyRef.current.size > 0 ? t.saving : sharingWithMessenger ? t.sharedSave : t.saved}</span>
           <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
         </> : null}
         {sync === "guest" ? <span>{t.preview}</span> : null}
@@ -2083,6 +2197,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                   onChange={event => setConsented(event.target.checked)} />
                 <span>{t.consentText}</span>
               </label>
+              {sharingChoice()}
               <button type="button" className={styles.syncButton}
                 disabled={!consented || busy} onClick={startSaving}>{t.enableSave}</button>
             </details>
@@ -2117,6 +2232,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
         </div>
       )}
       {!daybook || daybookSaveNeedsAttention ? saveStatusPanel : null}
+      {!daybook ? sharingPanel : null}
     </div>
   );
 
@@ -2227,6 +2343,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
           <ReikiCourseReferralShare locale={locale} />
         </div>
         {!daybookSaveNeedsAttention ? saveStatusPanel : null}
+        {sharingPanel}
         <a className={daybookStyles.masterQuestion} data-reiki-master-question href={masterQuestionUrl} target="_blank" rel="noopener noreferrer">
           <MessageCircle size={19} aria-hidden="true" />
           <span>{locale === "ru" ? "Отправить сообщение / вопрос мастеру" : "Send a message / question to master"}</span>

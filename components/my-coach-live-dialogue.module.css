@@ -1899,3 +1899,203 @@
   border-radius:.25em;
   background:rgba(12,23,19,.82);
 }
+
+
+/* V5: approved portrait-first live conversation. Only the accepted-session
+   surface changes; the shared media, audio controls and privacy gates stay mounted. */
+.root[data-session-visual-v5][data-coach-greeting-stage='session']{
+  background:#f8f3e8;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHero{
+  height:clamp(360px,54dvh,640px);min-height:0;max-height:none;
+  border-radius:28px;box-shadow:0 8px 26px #13352a21;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait[data-persona]{
+  background:#172a23!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait :global([data-coach-motion-context='session']){
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  max-width:none!important;aspect-ratio:auto!important;border-radius:inherit;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait :global([data-coach-motion-context='session']) :is(img,video){
+  object-fit:cover!important;object-position:center 32%!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait + .sessionHeroShade{
+  background:linear-gradient(180deg,#081d184d 0%,transparent 25%,transparent 52%,#081c18e8 100%);
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHeroCopy{
+  position:absolute;inset:0;display:block;width:auto;pointer-events:none;
+  padding:0;text-shadow:0 2px 8px #000a;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHeroBadge{
+  position:absolute;top:15px;left:15px;max-width:calc(100% - 82px);
+  padding:8px 12px;font:750 10px/1.2 system-ui;
+  background:#0b4d3dd9;border:1px solid #e2d6b3ac;color:#fff;white-space:normal;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait ~ .sessionHeroCopy h1{
+  position:absolute;left:18px;bottom:38px;margin:0;padding:0;max-width:calc(100% - 36px);
+  width:auto;border-radius:0;background:none;color:#fff;
+  font:650 clamp(32px,8vw,55px)/1.03 Georgia,serif;letter-spacing:-.035em;
+  overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait ~ .sessionHeroCopy p{
+  position:absolute;left:18px;bottom:16px;right:18px;margin:0;padding:0;
+  width:auto;max-width:calc(100% - 36px);border-radius:0;background:none;
+  font:650 clamp(12px,3.3vw,17px)/1.2 system-ui;color:#f3e1b6;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] :is(.sessionHeroCopy>small,.coachStyleChip,.sessionAvatar,.quickGoals){
+  display:none!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .heroPlayControl{left:50%;top:50%}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .heroSubtitle{
+  left:12px;right:12px;bottom:90px;max-width:calc(100% - 24px);margin:0;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls[data-coach-inline-voice]{
+  box-sizing:border-box;display:grid;grid-template-columns:50px minmax(0,1fr) 72px 58px 54px;
+  grid-template-rows:60px;align-items:center;gap:8px;
+  height:84px;min-height:84px;max-height:84px;flex:0 0 84px;
+  padding:5px 10px 19px;margin:0 auto;width:100%;max-width:100%;
+  border:1px solid #285c4b;border-radius:22px;background:linear-gradient(120deg,#153e32,#0b3027);
+  color:#fff;box-shadow:0 4px 14px #102a2420;overflow:visible;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .keyboardControl{grid-column:1;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .microphoneWave{
+  grid-column:2;grid-row:1;min-width:0;border:0;overflow:hidden;height:44px
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter{
+  grid-column:3;grid-row:1;width:100%;min-width:0;max-width:72px;
+  height:60px;min-height:0;max-height:60px;overflow:visible;color:#fff;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice]){
+  width:100%;min-width:0;max-width:72px;height:60px;min-height:0;max-height:60px;
+  overflow:visible;display:flex;align-items:center;justify-content:center;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice] button){
+  width:56px;min-width:56px;max-width:56px;height:56px;min-height:56px;max-height:56px;
+  border:2px solid #e0f5e7;border-radius:50%;background:linear-gradient(145deg,#209f7d,#00634f);
+  box-shadow:0 0 0 4px #a6f0cf30;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice] [data-coach-voice-status]){
+  position:absolute;left:50%;top:100%;bottom:auto;transform:translateX(-50%);margin:0;
+  width:max-content;max-width:108px;height:auto;max-height:15px;line-height:15px;
+  text-align:center;font-size:10px;color:#e7f9ef;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .experienceModeControl{grid-column:4;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .endControl{grid-column:5;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls :is(.keyboardControl,.experienceModeControl,.endControl){
+  width:100%;min-width:0;max-width:none;height:48px;min-height:44px;padding:4px 2px;
+  gap:3px;border-radius:16px;border:1px solid #ffffff4d;background:#ffffff12;color:#f3fff8;
+  font-size:10px;box-shadow:none;overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .experienceModeControl[aria-pressed=true]{background:#b0e5c92b;border-color:#b0e5c999;color:#e0fff0}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .endControl{background:#a9393a;border-color:#f7c4b8;color:white}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceWorkspace>.voicePlayNotice{
+  display:block;margin:2px 6px;padding:0;font:500 11px/1.35 system-ui;color:#466254;
+  overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionProgress{
+  border-radius:18px;background:#fffcf5;border-color:#e0dccd;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionProgressText strong{
+  white-space:normal;overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav{
+  order:-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  width:100%;min-width:0;flex:0 0 auto;margin:0 0 4px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button{
+  display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;
+  padding:6px 4px;border:1px solid #e0ddd0;border-radius:22px;background:#fffcf5;color:#174e42;
+  font:650 clamp(11px,2.8vw,14px)/1.2 system-ui;overflow-wrap:anywhere;cursor:pointer;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button svg{flex:none}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button:disabled{opacity:.55;cursor:not-allowed}
+.root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has([data-coach-progress-accordion][open])) .sessionPanelNav button[data-coach-panel='transcript'],
+.root[data-session-visual-v5][data-coach-greeting-stage='session']:has([data-coach-progress-accordion][open]) .sessionPanelNav button[data-coach-panel='insights']{
+  color:#fff;background:#08644f;border-color:#08644f;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button:focus-visible{
+  outline:2px solid #9e7938;outline-offset:2px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .conversationPanel{
+  background:transparent;border:0;box-shadow:none;padding:4px 0;gap:8px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .conversationPanel .liveTranscript{
+  border:0;background:transparent;box-shadow:none;padding:0 3px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptFeed{
+  gap:9px;min-width:0;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptCoach,
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptUser{
+  border-radius:17px;padding:10px 12px;border:1px solid #e2ded0;
+  background:#fffcf5;color:#173e39;max-width:92%;box-shadow:0 2px 7px #213c2c0a;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptCoach{align-self:flex-start}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptUser{
+  align-self:flex-end;background:#e1eee5;border-color:#cfe3d7;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptFeed p{
+  color:#173e39;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.45;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer{
+  background:#fffcf5;border:1px solid #e0ddd0;border-radius:22px;padding:7px 9px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer{
+  display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:7px;align-items:center;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer textarea{
+  border-radius:18px;min-height:46px;padding:10px 11px;font-size:16px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer .send{
+  display:grid;place-items:center;min-height:46px;width:46px;border-radius:50%;padding:0;background:#08644f;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer .send span{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;
+}
+/* Large portrait intentionally scrolls with the session on short phones;
+   no clipped transcript or invisible privacy text. Existing keyboard mode
+   remains fixed to the actual visual viewport. */
+@media(max-width:699px){
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)){
+    height:var(--hh-coach-visible-height,100dvh);max-height:var(--hh-coach-visible-height,100dvh);
+    min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+    gap:7px;padding-bottom:max(10px,env(safe-area-inset-bottom));
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(260px,52dvh,510px);width:calc(100% - 20px);min-height:0;max-height:none;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'][data-coach-view-expanded='true']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(300px,76dvh,720px);
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace{
+    display:flex;flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+    width:calc(100% - 20px);gap:7px;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls[data-coach-inline-voice]{
+    grid-template-columns:44px minmax(0,1fr) 60px 50px 49px;gap:5px;padding-inline:7px;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel{
+    flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .liveTranscript{
+    flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptFeed{
+    flex:0 0 auto;min-height:100px;max-height:clamp(160px,28dvh,260px);overflow-y:auto;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .textComposer{
+    flex:0 0 auto;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .voiceWorkspace>.voicePlayNotice{display:none}
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .sessionPanelNav{display:none}
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .conversationPanel .textComposer{
+    padding:5px 6px;border-radius:16px;
+  }
+}
+@media(min-width:700px){
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'][data-coach-view-expanded='true'] .sessionHero{
+    height:clamp(460px,76dvh,820px);
+  }
+}
