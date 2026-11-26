@@ -96,3 +96,16 @@ test('course preserves previous reviewed events and author attribution; recap ne
  const recap=clarityRecap([{status:'confirmed',label:'Goal',quote:'Learn Spanish'},{status:'needs_confirmation',label:'Resources',quote:'Invented candidate'}],'en',480)
  assert.match(recap,/Learn Spanish/);assert.match(recap,/720/);assert.doesNotMatch(recap,/Invented candidate/)
 })
+
+import {clarityConsentQuestion,clarityHeardInvitation,clarityExplicitAssent} from '../lib/coaching/clarity-continuity.mjs'
+test('invitation and affirmative consent are separate from connecting',()=>{
+ for(const [locale,yes,no] of [['ru','Да, готова!','Да, но не сейчас'],['en','Yes!','Yes, but not now'],['es','Sí.','Sí, pero no ahora']]){
+  assert.equal(clarityHeardInvitation(clarityConsentQuestion(locale),locale),true)
+  assert.equal(clarityHeardInvitation('Hello',locale),false)
+  assert.equal(clarityExplicitAssent(yes,locale),true)
+  assert.equal(clarityExplicitAssent(no,locale),false)
+ }
+ const access=read('lib/app/clarity-course-access.js')
+ assert.match(access,/Boolean\(row.clock_confirmed_at\)/)
+ assert.match(access,/row.state==='issued'&&fresh\(row.lease_until,now\)/)
+})

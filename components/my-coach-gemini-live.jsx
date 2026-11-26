@@ -15,7 +15,7 @@ import {
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
-  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,
+  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,geminiLiveClarityInvitation,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
 const ui={
@@ -120,7 +120,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
-  canStart=true,elapsedSeconds=0,clarityLeaseId=null,onSessionStart,onTimeLimit,onVoiceStateChange,
+  canStart=true,elapsedSeconds=0,clarityLeaseId=null,clarityRecapText='',onSessionStart,onTimeLimit,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
@@ -135,7 +135,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const simliPilotRef=useRef(null)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
-    elapsedSeconds,clarityLeaseId,onSessionStart,onTimeLimit,onVoiceStateChange,onMicLevel,onInputInterim,
+    elapsedSeconds,clarityLeaseId,clarityRecapText,onSessionStart,onTimeLimit,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
     liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
@@ -817,7 +817,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // consent, name or archived memory; do not repeat it on reconnect.
       if(!r.introSent){
         r.introSent=true
-        if(!sendSocket(r,r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
+        if(!sendSocket(r,clarityCourseDay(r.courseSessionId)?geminiLiveClarityInvitation(propsRef.current.locale,propsRef.current.clarityRecapText):r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
         phaseChange('thinking')
         r.replyWatch?.touch()
         r.greetingTimer=setTimeout(()=>{

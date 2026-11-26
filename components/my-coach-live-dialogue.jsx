@@ -1,6 +1,6 @@
 'use client'
 import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityHomeworkCandidates} from '@/lib/coaching/clarity-course.mjs'
-import {clarityRecap} from '@/lib/coaching/clarity-continuity.mjs'
+import {clarityRecap,clarityExplicitAssent,clarityHeardInvitation} from '@/lib/coaching/clarity-continuity.mjs'
 
 import {useEffect,useRef,useState} from 'react'
 import {flushSync} from 'react-dom'
@@ -324,6 +324,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [courseGate,setCourseGate]=useState(null),[courseLease,setCourseLease]=useState(null),[courseGateBusy,setCourseGateBusy]=useState(false)
   const courseLeaseRef=useRef(null),courseClockInFlight=useRef(false),courseSecondsRef=useRef(0),courseClockState=useRef(null),courseEndRef=useRef(null)
   const courseGateBusyRef=useRef(false),courseSpeechRef=useRef(null)
+  const [courseConfirmed,setCourseConfirmed]=useState(false),[courseShareRecap,setCourseShareRecap]=useState(false)
+  const courseConfirmedRef=useRef(false),courseInvitationRef=useRef(false),courseConfirmBusyRef=useRef(false)
   const [protocolSummary,setProtocolSummary]=useState('')
   const [protocolNextStep,setProtocolNextStep]=useState('')
   const [protocolSaving,setProtocolSaving]=useState(false)
@@ -964,7 +966,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   async function send(event){
     event.preventDefault()
-    if(clarityCourseDay(selectedCourseId)&&!courseLeaseRef.current)return null
+    if(clarityCourseDay(selectedCourseId)&&!courseConfirmedRef.current)return null
     if(restoredDraft)return await sendMessage(draft.trim(),{forceLocal:true})
     if(liveVoiceSelected){
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
@@ -1179,7 +1181,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
     if(profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed))return null
-    if(clarityCourseDay(selectedCourseId)&&!courseLeaseRef.current)return null
+    if(clarityCourseDay(selectedCourseId)&&!courseConfirmedRef.current)return null
     if(restoredDraft&&voiceTurn)return null
     if(restoredDraft)forceLocal=true
     let message=String(raw||'').trim()
@@ -1812,21 +1814,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     courseGateBusyRef.current=true;setCourseGateBusy(true)
     try{
       if(courseSpeechRef.current){window.speechSynthesis?.cancel();courseSpeechRef.current=null}
-      const p=await requestClarity('begin',{courseSessionId:courseClockState.current.courseSessionId,confirmed:true})
+      const p=await requestClarity('prepare',{courseSessionId:courseClockState.current.courseSessionId,confirmed:true})
       if(!p.leaseId||!draftMountedRef.current)throw Error('CLARITY_INVALID')
       courseLeaseRef.current=p.leaseId;courseVisitRef.current=p.leaseId
+      courseConfirmedRef.current=false;courseInvitationRef.current=false;setCourseConfirmed(false)
       courseSecondsRef.current=p.activeSeconds
       if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
       if(!courseRootRef.current)courseRootRef.current={personaId,methodId:visibleMethodId}
       setActiveSessionSeconds(p.activeSeconds);setCourseLease(p.leaseId);setCourseGate(old=>({...old,error:''}))
-      setPaused(false);setSessionClockStarted(true)
+      setPaused(false);setSessionClockStarted(false)
     }catch{setCourseGate(old=>({...old,error:clarityError}))}
     finally{courseGateBusyRef.current=false;setCourseGateBusy(false)}
+  }
+  async function confirmClarityClock(){
+    const leaseId=courseLeaseRef.current,p=courseClockState.current
+    if(!leaseId||!p||courseConfirmedRef.current||courseConfirmBusyRef.current||speechRef.current?.isConnected?.()!==true)return
+    courseConfirmBusyRef.current=true
+    try{
+      await requestClarity('confirm',{courseSessionId:p.courseSessionId,leaseId,confirmed:true})
+      if(courseLeaseRef.current!==leaseId||!draftMountedRef.current)return
+      courseConfirmedRef.current=true;setCourseConfirmed(true);setSessionClockStarted(true)
+    }catch{setCourseGate(old=>({...old,error:clarityError}))}
+    finally{courseConfirmBusyRef.current=false}
   }
   async function pauseClarityClock(){
     const leaseId=courseLeaseRef.current,p=courseClockState.current
     if(!leaseId||!p)return
-    courseLeaseRef.current=null;setCourseLease(null);setSessionClockStarted(false)
+    courseLeaseRef.current=null;courseConfirmedRef.current=false;courseInvitationRef.current=false;setCourseConfirmed(false);setCourseLease(null);setSessionClockStarted(false)
     refreshClarityRecap(courseSecondsRef.current)
     try{await requestClarity('pause',{courseSessionId:p.courseSessionId,leaseId},true)}catch{/* stale lease expires server-side */}
     queuePrivateDraft(turnsRef.current);void autoSaveQueueRef.current?.flush()
@@ -1841,8 +1855,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const beat=async()=>{
       const leaseId=courseLeaseRef.current,p=courseClockState.current
       if(stopped||!leaseId||!p||courseClockInFlight.current)return
-      const active=speechRef.current?.isConnected?.()===true&&document.visibilityState==='visible'&&!p.paused&&!coachProfileOpenRef.current&&['listening','speaking','thinking'].includes(p.phase)
-      if(active)seenConnected=true
+      const connected=speechRef.current?.isConnected?.()===true
+      const active=courseConfirmedRef.current&&connected&&document.visibilityState==='visible'&&!p.paused&&!coachProfileOpenRef.current&&['listening','speaking','thinking'].includes(p.phase)
+      if(connected)seenConnected=true
       if(document.visibilityState==='hidden'||p.paused||(seenConnected&&['paused','idle'].includes(p.phase))){speechRef.current?.stop?.();void pauseClarityClock();return}
       courseClockInFlight.current=true
       try{
@@ -1850,7 +1865,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(stopped||courseLeaseRef.current!==leaseId)return
         if(!Number.isInteger(data.activeSeconds)||data.activeSeconds<courseSecondsRef.current||data.activeSeconds>1200)throw Error('CLARITY_INVALID')
         courseSecondsRef.current=data.activeSeconds;setActiveSessionSeconds(data.activeSeconds)
-        if(data.complete){courseLeaseRef.current=null;setCourseLease(null);setSessionClockStarted(false);courseEndRef.current?.()}
+        if(data.complete){courseLeaseRef.current=null;courseConfirmedRef.current=false;courseInvitationRef.current=false;setCourseConfirmed(false);setCourseLease(null);setSessionClockStarted(false);courseEndRef.current?.()}
         else queuePrivateDraft(turnsRef.current)
       }catch{
         if(!stopped&&courseLeaseRef.current===leaseId){speechRef.current?.stop?.();void pauseClarityClock();setCourseGate(old=>({...old,error:clarityError}))}
@@ -2007,7 +2022,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <strong>{({ru:'Сессия',en:'Session',es:'Sesión'})[lang]} {clarityCourseDay(selectedCourseId)} / 3 · {Math.floor(activeSessionSeconds/60)}:{String(Math.floor(activeSessionSeconds%60)).padStart(2,'0')} / 20:00</strong>
         {!courseLease&&activeSessionSeconds<1200&&<><p>{courseGate?.recap||({ru:'Готовы продолжить коучинг?',en:'Ready to continue coaching?',es:'¿Listo para continuar?'})[lang]}</p>
           <button type="button" onClick={speakClarityRecap}>{({ru:'Послушать резюме',en:'Listen to recap',es:'Escuchar resumen'})[lang]}</button>{' '}
-          <button type="button" disabled={courseGateBusy} onClick={()=>void beginClarityClock()}>{({ru:'Да, начать / продолжить',en:'Yes, start / continue',es:'Sí, empezar / continuar'})[lang]}</button></>}
+          <label><input type="checkbox" checked={courseShareRecap} onChange={e=>setCourseShareRecap(e.target.checked)}/> {({ru:'Разрешаю передать подтверждённое резюме Gemini Free для озвучивания (Google может использовать данные для улучшения моделей).',en:'Share the confirmed recap with Gemini Free for speech (Google may use data to improve models).',es:'Compartir el resumen confirmado con Gemini Free para la voz (Google puede usar los datos para mejorar modelos).'})[lang]}</label><button type="button" disabled={courseGateBusy} onClick={()=>void beginClarityClock()}>{({ru:'Подготовить голос коуча',en:'Prepare coach voice',es:'Preparar voz del coach'})[lang]}</button></>}
+        {courseLease&&!courseConfirmed&&<><p>{({ru:'Нажмите Play, выслушайте коуча и ответьте «Да». Время ещё не идёт.',en:'Press Play, listen to the coach and answer Yes. The clock has not started.',es:'Pulsa Play, escucha al coach y responde Sí. El tiempo aún no cuenta.'})[lang]}</p><button type="button" disabled={voiceState.phase!=='listening'} onClick={()=>void confirmClarityClock()}>{({ru:'Да, продолжить',en:'Yes, continue',es:'Sí, continuar'})[lang]}</button></>}
         {courseLease&&<button type="button" onClick={()=>{speechRef.current?.stop?.();void pauseClarityClock()}}>{({ru:'Пауза с сохранением',en:'Pause and keep progress',es:'Pausar y guardar progreso'})[lang]}</button>}
         {courseGate?.error&&<p role="alert">{courseGate.error}</p>}
       </div>}
@@ -2031,7 +2047,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
-            voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds} clarityLeaseId={courseLease}
+            voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds} clarityLeaseId={courseLease} clarityRecapText={courseShareRecap?courseGate?.recap||'':''}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady&&(!clarityCourseDay(selectedCourseId)||Boolean(courseLease))}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
@@ -2049,6 +2065,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             }}
             onInputInterim={setSpeechPreview}
             onInputFinal={text=>{
+              if(clarityCourseDay(selectedCourseId)&&!courseConfirmedRef.current){if(courseInvitationRef.current&&clarityExplicitAssent(text,conversationLang))void confirmClarityClock();return}
               appendLiveTranscript('user',text)
               // Current client corrections/topic changes outrank all old memory.
               if(['correction','topic_shift'].includes(
@@ -2059,7 +2076,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               }
             }}
             onOutputInterim={setStreamingPreview}
-            onOutputFinal={(text,details)=>appendLiveTranscript('assistant',text,{interrupted:details?.interrupted===true})}
+            onOutputFinal={(text,details)=>{if(clarityCourseDay(selectedCourseId)&&!courseConfirmedRef.current){courseInvitationRef.current=details?.interrupted!==true&&clarityHeardInvitation(text,conversationLang);return}appendLiveTranscript('assistant',text,{interrupted:details?.interrupted===true})}}
             onInterrupted={()=>{setStreamingPreview('');setPlaybackNotice('')}}
             onDirectorProgress={setLiveDirectorProgress}
             onNotice={setPlaybackNotice}
