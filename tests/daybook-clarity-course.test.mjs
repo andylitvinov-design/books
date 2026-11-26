@@ -1,3 +1,4 @@
+import {createClarityCourseClock,advanceClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -22,7 +23,12 @@ test('three localized course days and bounded duration',()=>{
  assert.equal(clarityCourseDay('clarity_discover'),null)
  assert.equal(clarityCoachHref('//external.example',1),'//external.example')
 })
-test('first-day homework requires a reviewed timed ending and separate acceptance',()=>{
+test('first-day homework requires a matching server clock, reviewed ending and separate acceptance',()=>{
+ const protocolId='00000000-0000-4000-8000-000000000001',segmentId='00000000-0000-4000-8000-000000000011',connectionId='00000000-0000-4000-8000-000000000021'
+ let clock=createClarityCourseClock()
+ const event={day:1,protocolId,segmentId,connectionId}
+ clock=advanceClarityCourseClock(clock,{...event,type:'begin',expectedRevision:0,atMs:0,coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId,connectionId,coachId:'mira',atMs:0,turnId:'consent:1'}})
+ for(let t=10000;t<=1200000;t+=10000)clock=advanceClarityCourseClock(clock,{...event,type:'observe',expectedRevision:clock.revision,atMs:t,evidence:'server_observed_connected'})
  const opening={completed:true,declined:false,checkmarks:{confirmation:true},confirmedQuote:'Yes'}
  const record={id:'00000000-0000-4000-8000-000000000001',courseSessionId:'clarity_day_1',provenance:'client_reviewed_dialogue',savedAt:'2026-11-26T12:00:00Z',turns:[],clientSummary:'Reflection',clientNextStep:'Next',durationSeconds:1200,opening}
  for(const locale of ['en','ru','es']){
@@ -31,7 +37,8 @@ test('first-day homework requires a reviewed timed ending and separate acceptanc
   const timed={...record,clarityTimeLimitReached:true}
   assert.equal(clarityHomeworkCandidates(timed,coachCourseProtocolRows(record.courseSessionId,[],null,locale)).length,5)
   assert.deepEqual(clarityCourseResult(timed,locale).homework,[])
-  const result=clarityCourseResult({...timed,clarityHomeworkAccepted:true},locale)
+  assert.deepEqual(clarityCourseResult({...timed,clarityHomeworkAccepted:true},locale).homework,[])
+  const result=clarityCourseResult({...timed,clarityHomeworkAccepted:true},locale,{clock})
   assert.equal(result.day,1);assert.equal(result.summary,'Reflection')
   assert.equal(result.homework.length,5);assert.ok(result.homework.every(r=>r.question))
  }
@@ -40,10 +47,13 @@ test('first-day homework requires a reviewed timed ending and separate acceptanc
  assert.equal(clarityCourseResult({...record,savedAt:null}),null)
  assert.equal(clarityCourseResult({...record,provenance:'draft'}),null)
  for(const bad of [{clarityTimeLimitReached:false},{durationSeconds:1199},{opening:null},{opening:{...opening,completed:false}},{courseSessionId:'clarity_day_2'},{clarityHomeworkAccepted:false},{turns:[{role:'assistant',mode:'safety'}]}]){
-  assert.deepEqual(clarityCourseResult({...accepted,...bad}).homework,[])
+  assert.deepEqual(clarityCourseResult({...accepted,...bad},'en',{clock}).homework,[])
  }
  const rows=[['request','not_explored'],['life_balance','needs_confirmation'],['needs','confirmed'],['strengths','skipped_by_client'],['symptoms','not_explored']].map(([id,status])=>({id,status,label:'L',question:'Q'}))
- assert.deepEqual(clarityHomeworkRows(accepted,rows).map(r=>r.id),['request'])
+ assert.deepEqual(clarityHomeworkRows(accepted,rows,clock).map(r=>r.id),['request'])
+ assert.deepEqual(clarityHomeworkRows(accepted,rows),[])
+ assert.deepEqual(clarityHomeworkRows({...accepted,id:'00000000-0000-4000-8000-000000000009'},rows,clock),[])
+ assert.deepEqual(clarityHomeworkRows({...accepted,clarityHomeworkAccepted:false},rows,clock),[])
  assert.deepEqual(clarityHomeworkRows(record,rows),[])
 })
 test('homework answers are saved separately, scoped to the exact report and field',async()=>{

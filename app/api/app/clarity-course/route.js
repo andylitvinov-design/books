@@ -1,3 +1,4 @@
+import {readClarityCourseClock} from '@/lib/app/clarity-course-clock-store.js'
 import {NextResponse} from 'next/server'
 import {getAppConfig,requestOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
@@ -21,11 +22,12 @@ export async function GET(request){
   if([...query.keys()].some(k=>k!=='locale'))throw new AppError('INVALID_QUERY',400)
   const locale=['ru','en','es'].includes(query.get('locale'))?query.get('locale'):'en'
   const grant=await clarityGrantStatus(config,actor)
+  const clock=await readClarityCourseClock(config,actor)
   const results=[]
   let cursor=null,complete=false
   for(let i=0;i<8;i++){
    const page=await listMyCoachProtocols(config,actor,cursor||{})
-   for(const protocol of page.protocols){const result=clarityCourseResult(protocol,locale);if(result)results.push(result)}
+   for(const protocol of page.protocols){const result=clarityCourseResult(protocol,locale,{clock});if(result)results.push(result)}
    if(!page.hasMore){complete=true;break}
    if(!page.nextCursor)break
    cursor=page.nextCursor
