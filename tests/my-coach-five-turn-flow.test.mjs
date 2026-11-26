@@ -11,18 +11,20 @@ import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
-import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '../lib/personal-coaching/coach-voice-turn-quality.mjs'
+import {createCoachBasicEndpointPolicy,coachBasicListeningMode,coachBasicBackchannel} from '../lib/personal-coaching/coach-basic-dialogue-policy.mjs'
+import {isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecordedSupported,startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
 const start=source.indexOf('const words={')
-const end=source.indexOf("  const active=phase!=='idle'",start)
+const end=source.indexOf("  const isPaused=phase==='paused',active=phase!=='idle'&&!isPaused",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
 function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
-  const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
+  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -41,7 +43,10 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     audioSession:{type:'auto'},
     mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})},
   }
+  const windowEvents=new Map(),documentEvents=new Map()
   const fakeWindow={
+    addEventListener(type,fn){windowEvents.set(type,fn)},
+    removeEventListener(type,fn){if(windowEvents.get(type)===fn)windowEvents.delete(type)},
     navigator,SpeechRecognition:Recognition,webkitSpeechRecognition:Recognition,
     SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
     speechSynthesis:{
@@ -58,7 +63,9 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
       },
     },
   }
-  const fakeDocument={visibilityState:'visible',addEventListener(){},removeEventListener(){}}
+  const fakeDocument={visibilityState:'visible',
+    addEventListener(type,fn){documentEvents.set(type,fn)},
+    removeEventListener(type,fn){if(documentEvents.get(type)===fn)documentEvents.delete(type)}}
   const hooks={
     forwardRef:fn=>fn,
     useRef:value=>({current:value}),
@@ -68,23 +75,25 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
   }
   const schedule=(fn,ms)=>{const current=++id;timers.set(current,{fn,ms});return current}
   const cancel=id=>timers.delete(id)
+  fakeWindow.setTimeout=schedule;fakeWindow.clearTimeout=cancel
   const sandbox={
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
-    setCoachIos27AudioSession,
+    setCoachIos27AudioSession,setCoachIos27DuplexRoute,
     // Feed the real category-reset logic into the evaluated controller, while
     // using a synthetic browser microtask instead of touching real hardware.
     refreshCoachIos27PlaybackRoute:(nav)=>refreshCoachIos27PlaybackRoute(nav,fn=>queueMicrotask(fn)),
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     // The VM runs the real controller body; inject its real pure imports.
     coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech,
+    createCoachBasicEndpointPolicy,coachBasicListeningMode,coachBasicBackchannel,isCoachBargeEcho,
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
     coachSessionOpeningAudioPath,lockedCoachSessionVoice,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
-      assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=6','only the short session opening, never the full presentation')
+      assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=7','only the short session opening, never the full presentation')
       intros++
       queueMicrotask(()=>{onStart?.();onEnd?.()})
       return {cancel(){}}
@@ -111,10 +120,13 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
-    onVoiceLevel(){},onTranscript(){},onDraft(){},
+    onVoiceLevel(){},onTranscript(){},onDraft(value){drafts.push(value)},
   },ref)
   return {
-    ref,voices,inputs,phases,
+    ref,voices,inputs,phases,drafts,
+    hide(){fakeDocument.visibilityState='hidden';documentEvents.get('visibilitychange')?.()},
+    show(){fakeDocument.visibilityState='visible';documentEvents.get('visibilitychange')?.()},
+    pagehide(){windowEvents.get('pagehide')?.()},
     get starts(){return starts},
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
@@ -345,7 +357,8 @@ test('recorded fallback completes one consented voice turn with a single STT cal
       assert.equal(options.body.get('consent'),'yes');
       assert.equal(options.body.get('locale'),'ru');
       assert.match(options.body.get('file').name,/\.m4a$/);
-      return {ok:true,json:async()=>({transcript:{text:'Я хочу обсудить свою цель'}})};
+      assert.equal(options.body.get('output'),'text');
+      return {ok:true,json:async()=>({text:'Я хочу обсудить свою цель'})};
     },
     performance:{now:()=>time},
     setInterval:fn=>{tick=fn;return 1;},
@@ -396,9 +409,80 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(source,/document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
-  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused\]\)/)
+  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen\]\)/)
+  assert.match(source,/data-coach-pause-control/)
+  assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
 })
+
+
+test('Active voice clock preserves partial intervals and freezes across repeat pauses and reload checkpoints',async()=>{
+  const {createCoachActiveClock}=await import('../lib/coaching/coach-active-clock.mjs')
+  const clock=createCoachActiveClock()
+  assert.equal(clock.setRunning(0,true),0)
+  assert.equal(clock.setRunning(7125,false),7.125)
+  assert.equal(clock.sample(100000),7.125)
+  assert.equal(clock.setRunning(100000,true),7.125)
+  assert.equal(clock.sample(101375),8.5)
+  assert.equal(clock.setRunning(101375,false),8.5)
+  assert.equal(clock.setRunning(101375,false),8.5)
+  assert.equal(clock.sample(200000),8.5)
+  assert.equal(clock.restore(8.5),8.5)
+  assert.equal(clock.setRunning(300000,true),8.5)
+  assert.equal(clock.setRunning(301500,false),10)
+  assert.equal(clock.sample(900000),10)
+})
+test('Basic voice pause retains the mounted logical conversation and resumes without a greeting',()=>{
+  const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  assert.match(source,/stopVoice\(\{pause:true\}\)/)
+  assert.match(source,/phaseRef\.current==='paused'\)return resumePausedSession\(\)/)
+  assert.match(source,/hasLiveSession:\(\)=>activeRef\.current\|\|phaseRef\.current==='paused'/)
+  const resume=source.slice(source.indexOf('  function resumePausedSession(){'),source.indexOf('  stopRef.current=stopVoice'))
+  assert.match(resume,/startListening\(\)/)
+  assert.doesNotMatch(resume,/sessionStartRef|speakCoachReply|onTurn\(/)
+})
+
+
+test('explicit pause preserves editable interim words and resumes the same mounted conversation',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  first.onresult?.({results:[{isFinal:false,0:{transcript:'Мне важно сохранить эту мысль'}}]})
+  assert.equal(session.ref.current.pauseSession(),true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.hasLiveSession(),true)
+  assert.equal(session.inputs.length,0,'pause must not submit incomplete speech')
+  assert.equal(session.drafts.at(-1),'Мне важно сохранить эту мысль')
+  const starts=session.starts,intros=session.intros
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.'),true)
+  const second=await nextMic(session,2)
+  assert.notEqual(first,second)
+  assert.equal(session.starts,starts,'resume must not restart the session')
+  assert.equal(session.intros,intros,'resume must not replay the introduction')
+  session.ref.current.stop()
+})
+
+test('background and pagehide require explicit Play and do not consume another introduction or turn',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  const introductions=session.intros,starts=session.starts,tts=session.ttsCalls
+  session.hide()
+  assert.equal(first.aborted,true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.startSession('intro'),false,'never resume in hidden document')
+  session.pagehide()
+  session.show()
+  assert.equal(session.phases.at(-1),'paused','visibility alone cannot resume')
+  assert.equal(session.ttsCalls,tts)
+  assert.equal(session.inputs.length,0)
+  assert.equal(session.ref.current.startSession('intro'),true)
+  await nextMic(session,2)
+  assert.equal(session.intros,introductions)
+  assert.equal(session.starts,starts)
+  session.ref.current.stop()
+})
+
 
 test('all public coaches retain approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
   for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const provider of ['fish_free','gemini_tts_free']){

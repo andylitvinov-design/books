@@ -7,11 +7,13 @@ import styles from './my-coach-motion-media.module.css'
 // Separate visual-only renderer for the verified V4 original-camera group.
 // Two fixed video elements retain the outgoing endpoint until the incoming
 // video is ready. The live audio owner and the legacy card player are untouched.
-export default function CoachReactionDirectorMedia({media,intent,enabled,onReady}){
+export default function CoachReactionDirectorMedia({media,intent,enabled,onReady,onUnavailable}){
   const firstRef=useRef(null),secondRef=useRef(null)
   const controller=useRef(null)
   const readyRef=useRef(onReady)
   readyRef.current=onReady
+  const unavailableRef=useRef(onUnavailable)
+  unavailableRef.current=onUnavailable
   const [visible,setVisible]=useState(null)
   const [activeBlock,setActiveBlock]=useState(null)
   useEffect(()=>{
@@ -21,7 +23,8 @@ export default function CoachReactionDirectorMedia({media,intent,enabled,onReady
     const player=createReactionPlayback({
       media,videos:[a,b],
       onVisible:(slot,id)=>{setVisible(slot);setActiveBlock(id)},
-      onReady:value=>readyRef.current?.(value)
+      onReady:value=>readyRef.current?.(value),
+      onUnavailable:()=>unavailableRef.current?.()
     })
     controller.current=player
     return ()=>{controller.current=null;player.dispose()}

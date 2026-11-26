@@ -12,7 +12,7 @@ export default function SamirMotionVideos({take='idle',cycle=false,onReady}){
   const [failed,setFailed]=useState([])
   const [reelTake,setReelTake]=useState('idle')
   const selected=cycle?(failed.includes(reelTake)?nextSamirMotionTake(reelTake,failed):reelTake):take
-  const target=selected&&!failed.includes(selected)?selected:null
+  const target=selected&&!failed.includes(selected)?selected:['idle','listening'].find(name=>!failed.includes(name))||null
   const next=cycle&&target?nextSamirMotionTake(target,failed):null
   wanted.current=target
   useEffect(()=>{
@@ -23,7 +23,7 @@ export default function SamirMotionVideos({take='idle',cycle=false,onReady}){
       try{video.currentTime=0}catch{}
       const started=video.play()
       if(started?.catch)void started.catch(()=>{
-        if(wanted.current===target)onReady?.(false)
+        if(wanted.current===target){setFailed(prior=>prior.includes(target)?prior:[...prior,target]);onReady?.(false)}
       })
     }else{
       setVisible(target)

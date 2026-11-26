@@ -1,5 +1,6 @@
 import test from 'node:test'
 import './coach-session-director.test.mjs'
+import './coach-signature-speech.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
 import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
@@ -186,7 +187,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
-  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?cloudProvider:\s*geminiVoiceReady\?geminiVoiceTier:null/)
+  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?\(lockedSessionVoice\?\(matchingFreeVoice\?'gemini_tts_free':null\):cloudProvider\):\s*geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
@@ -226,7 +227,8 @@ test('PCM analysis remains bounded but cannot deform the photographic face',()=>
   assert.doesNotMatch(hero,/onVoiceLevel=\{setPortraitLevel\}|ref=\{portraitHeroRef\}/)
   assert.ok(hero.includes('phase={motionPhase} context="session" scene={visualScene}'))
   assert.ok(media.includes('onPlaying={()=>setVideoReady(true)}'))
-  assert.ok(media.includes('onError={()=>setVideoReady(false)}'))
+  assert.ok(media.includes('onError={()=>{setVideoReady(false);if(src)setFailedLegacy'))
+  assert.ok(media.includes('onUnavailable={failCamera}'))
 })
 
 test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{
@@ -314,7 +316,7 @@ test('the twelve registered presentations flow directly into the same live dialo
   assert.ok(!ui.includes('coachPresentationVoice'))
   assert.ok(!voice.includes('coachPresentationVoice'))
   assert.ok(ui.includes('data-session-visual-v4'))
-  assert.ok(ui.includes('className={styles.conversationPanel}'))
+  assert.match(ui,/styles\.conversationPanel.*callStyles\.conversation/)
   assert.ok(!ui.includes('{introductionComplete&&<>'))
   assert.ok(!ui.includes('onReady={()=>setIntroductionComplete(true)}'))
   assert.ok(voice.includes('sessionStartRef.current?.()'))
