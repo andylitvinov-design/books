@@ -669,11 +669,23 @@ test('all eight coaches and three languages: real opening, server-issued field, 
   let view=step('course-gate-start'),first=view.prompt.fieldId
   const answer=content=>step('course-gate-answer',{promptId:view.prompt.id,content})
   assert.equal(view.acceptedCount,0)
+  const offTopic={ru:'Это ответ на другой вопрос',en:'This is an answer to another question',es:'Esta es la respuesta a otra pregunta'}[locale]
+  view=answer(offTopic);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0);assert.equal(view.review,null)
   assert.throws(()=>coachCourseGateTransition(value,request('course-gate-answer',{promptId:'stale',content:f.yes}),'2026-11-26T18:12:00.000Z'))
   view=answer(f.answer);assert.equal(view.prompt.kind,'confirm');assert.equal(view.review,null)
   view=answer(f.ambiguous);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0)
   view=answer(f.answer);view=answer(f.yes)
   assert.notEqual(view.prompt.fieldId,first);assert.equal(view.acceptedCount,1);assert.equal(view.review.events[0].quote,f.answer)
+  const event=view.review.events[0],b=event.binding
+  assert.equal(b.questionTurnIndex,event.turnIndex-1);assert.equal(b.confirmationTurnIndex,event.turnIndex+2)
+  assert.ok(value.protocol.turns[b.questionTurnIndex].content.includes(coachCourseProtocolSchema(course,locale).checkpoints[0].question))
+  const bound=coachCourseProtocolRows(course,value.protocol.turns,view.review,locale).find(x=>x.id===first)
+  assert.equal(bound.questionTurnIndex,b.questionTurnIndex);assert.equal(bound.confirmationTurnIndex,b.confirmationTurnIndex)
+  assert.equal(bound.question,value.protocol.turns[b.questionTurnIndex].content)
+  const forged=JSON.parse(JSON.stringify(view.review));forged.events[0].binding.questionTurnIndex=0
+  assert.throws(()=>normalizeCoachCourseFieldReview(forged,course,value.protocol.turns))
+  const changed=value.protocol.turns.map((row,i)=>i===b.confirmationTurnIndex?{...row,content:f.ambiguous}:row)
+  assert.throws(()=>normalizeCoachCourseFieldReview(view.review,course,changed))
   assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}),true)
   assert.equal(coachCourseGateArchiveMatches(value,value.protocol),false)
   view=answer(f.skip);assert.equal(view.acceptedCount,2);assert.equal(view.review.events.at(-1).status,'skipped_by_client')
@@ -701,4 +713,29 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
  assert.match(native,/if\(propsRef.current.onInputFinal\?\.\(value\)===true\)\{stop\(\);return true\}/)
  assert.equal((native.match(/if\(r.inputText&&commitInput\(r\)\)return/g)||[]).length,3)
+})
+
+import {authoredCheckpointQuestion,checkpointAnswerMismatch,checkpointClarification,checkpointQuestionMatches,checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
+test('authored protocol questions and conservative mismatch checks are question-bound in EN/RU/ES',()=>{
+ const fixtures={en:'My goal: change jobs',ru:'Моя цель: сменить работу',es:'Mi meta: cambiar de trabajo'}
+ for(const [lang,answer] of Object.entries(fixtures)){
+  const goal=coachCourseProtocolSchema('goal_result',lang).checkpoints.find(x=>x.id==='goal')
+  const feelings=coachCourseProtocolSchema('clarity_understand',lang).checkpoints.find(x=>x.id==='feelings')
+  assert.notEqual(goal.question,feelings.question)
+  assert.equal(authoredCheckpointQuestion(goal,lang),goal.question)
+  assert.ok(checkpointQuestionMatches(goal,lang,checkpointClarification(goal,lang)))
+  assert.ok(checkpointConfirmation(goal.question,answer,lang).includes(goal.question))
+  assert.equal(checkpointAnswerMismatch('feelings',answer),true)
+  assert.equal(checkpointAnswerMismatch('goal',answer),false)
+  assert.equal(checkpointAnswerMismatch('situation',answer),false)
+  assert.equal(checkpointAnswerMismatch('feelings',answer+'; '+answer),false)
+ }
+})
+
+test('pre-upgrade bound pending echo can be reviewed without losing the actual legacy question',()=>{
+ const course='goal_result',answer='сменить работу',row=coachCourseProtocolSchema(course,'ru').checkpoints.find(x=>x.id==='goal')
+ const question='Что вам важно зафиксировать по теме «'+row.label+'»?'
+ const turns=[{role:'assistant',content:question},{role:'user',content:answer},{role:'assistant',content:'По теме «'+row.label+'» я предварительно записал: «'+answer+'». Это верно?'},{role:'user',content:'Да'}]
+ const review={version:'hh-coach-course-review-v1',courseSessionId:course,events:[{fieldId:'goal',status:'confirmed',turnIndex:1,quote:answer,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}}]}
+ assert.equal(coachCourseProtocolRows(course,turns,review,'ru').find(x=>x.id==='goal').question,question)
 })
