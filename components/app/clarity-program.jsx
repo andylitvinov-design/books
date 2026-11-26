@@ -8,8 +8,9 @@ import {useSearchParams} from 'next/navigation'
 import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
 import DaybookWeekReports from './daybook-week-reports'
 import CoachingCourseDashboard from './coaching-course-dashboard'
-import ClarityPractice from './clarity-practice'
-import {clarityPracticeProgress} from '@/lib/app/clarity-practice.mjs'
+import DaybookGames from './daybook-games'
+import {gameProgress} from '@/lib/app/daybook-games.mjs'
+import {clarityPracticeNotes} from '@/lib/app/clarity-practice.mjs'
 import {ArrowRight,CheckCircle2,ChevronDown,Compass,NotebookPen} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
@@ -218,24 +219,24 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
 }
 export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
- const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries),firstProgress=clarityPracticeProgress(entries)
+ const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries),oldPractice=Array.from({length:7},(_,i)=>clarityPracticeNotes(entries,i+1)).flat()
  const searchParams=useSearchParams()
  const requestedWeek=searchParams?.getAll('week')
  const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
  const [selected,setSelected]=useState(()=>clarityDay(initialDay))
  const resultState=useClarityResults(accountId,lang,onSessionLost)
- const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>n===1?!firstProgress.complete:!recorded.includes(n))||CLARITY_DAY_COUNT)
+ const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!gameProgress(entries,n).complete)||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
  const sheet=useRef(null)
  function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
- const counts=days.map((_,i)=>i===0?firstProgress:{done:recorded.includes(i+1)?1:0,total:1})
+ const counts=days.map((_,i)=>gameProgress(entries,i+1))
  const assigned=resultState.phase==='ready'&&day===1?resultState.data.results.filter(r=>r.day===1&&r.homework.length):[]
  const homeworkTotal=assigned.reduce((n,r)=>n+r.homework.length,0)
  const homeworkDone=assigned.reduce((n,r)=>n+r.homework.filter(row=>clarityHomeworkNotes(entries,r.id,row.id).length===1).length,0)
  return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
-  <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} practiceOnlyReflection={day!==1}
-   practiceFlow={day===1?onClose=><ClarityPractice accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(1);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(2);onClose()}} oldNotes={clarityDayNotes(entries,1)}/>:null}
+  <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} 
+   practiceFlow={onClose=><DaybookGames day={day} accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(day);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(Math.min(day+1,3));onClose()}}/>}
    results={<><ClarityCourseResults state={resultState} day={day} locale={lang}/><DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/></>}
    protocol={<ClarityCourseProtocol key={day} state={resultState} day={day} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/>}
    sessionAvailable={false}
@@ -254,6 +255,7 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
    initialPanel={routeWeek===4?'resources':null}
    resources={<>
     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
+    {oldPractice.length>0&&<details className={css.resources}><summary>{t.legacy} · 1</summary>{oldPractice.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
     {legacy.length>0&&<details className={css.resources}><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
     <details className={css.resources} open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
     {children}<p className={css.notice}>{t.privacy}</p><Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>

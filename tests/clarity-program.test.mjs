@@ -103,7 +103,7 @@ test('shared coaching dashboard uses real practice progress, portrait and distin
 
 test('session one workbook opens a dedicated golden flow without changing the other sessions',()=>{
  const ui=read('components/app/clarity-program.jsx'),flow=read('components/app/clarity-practice.jsx'),dashboard=read('components/app/coaching-course-dashboard.jsx'),style=read('components/app/clarity-practice.module.css')
- assert.match(ui,/practiceFlow=\{day===1\?/)
+ assert.match(ui,/practiceFlow=\{onClose=><DaybookGames day=\{day\}/)
  assert.match(dashboard,/panel==='practice'&&practiceFlow/)
  assert.match(flow,/await saver.current.save\(pending.current\)/)
  assert.match(flow,/clarityPracticeTag\(step\)/)
@@ -126,3 +126,6 @@ test('coach selection is a scoped device preference and unavailable Clarity does
  assert.match(ui,/disabled=\{locked\|\|!sessionAvailable\}/)
  assert.match(ui,/window.localStorage.setItem\(storageKey,id\)/)
 })
+
+import {daybookGames,gameTag,gameNotes,gameProgress,validGameAnswer,gameResult} from '../lib/app/daybook-games.mjs'
+test('three days, nine tap-first games, localized steps and explicit review',()=>{for(const locale of ['ru','en','es'])for(const day of [1,2,3]){const games=daybookGames(locale,day);assert.equal(games.length,3);for(const g of games){assert.equal(g.steps.length,4);assert.ok(g.steps.every(s=>s.prompt&&['scale','pick','multi'].includes(s.kind)));assert.throws(()=>gameResult(g,{}));const answers=g.steps.map(s=>s.kind==='multi'?[0]:0);assert.ok(gameResult(g,answers).includes(g.title));assert.ok(g.steps.every(s=>!validGameAnswer(s,undefined)))}}assert.throws(()=>gameTag(4,1));assert.equal(gameProgress([],1).done,0);const n={id:'1',revision:1,kind:'note',goalId:null,text:'result',tags:[gameTag(1,1)]};assert.equal(gameProgress([n],1).done,1);assert.equal(gameProgress([n,n],1).done,0);assert.equal(gameNotes([n],2,1).length,0);assert.equal(gameProgress([{...n,revision:0}],1).done,0);assert.equal(gameProgress([{...n,tags:['clarity-practice-v1-step-1']}],1).done,0)})
