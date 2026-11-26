@@ -28,7 +28,8 @@ test('multiple notes never silently select or overwrite a record',()=>{
 test('component is integrated into existing protected Clarity journal without new entitlement authority',()=>{
  const page=readFileSync(new URL('../components/app/daybook-journal.jsx',import.meta.url),'utf8')
  const component=readFileSync(new URL('../components/app/discover-practice.jsx',import.meta.url),'utf8')
- assert.match(page,/phase==='ready'&&account\?<><ClarityDaybook/)
+ assert.match(page,/phase==='ready'&&account\?<ClarityDaybook key=\{account\}[^\n]*accountId=\{account\}/)
+ assert.match(page,/<ClarityDaybook[^\n]*<DiscoverPractice key=\{'discover:'\+account\}[^\n]*<\/ClarityDaybook>/)
  assert.match(page,/DiscoverPractice key=\{'discover:'\+account\}/)
  assert.match(component,/createJournalSaver\(appFetch,accountId\)/)
  assert.match(component,/await saver\.current\.save\(pending\.current\)/)

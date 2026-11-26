@@ -12,6 +12,7 @@ import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coa
 import MyCoachMotionMedia from './my-coach-motion-media'
 import {MyCoachInlineProfile} from './my-coach-compact-profile'
 import {COACH_PROGRAM_GROUPS,INTRODUCTORY_COACH_SESSION_ID,coachCourseLocal} from '@/lib/coaching/coach-course-journey.mjs'
+import {MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
 import styles from './my-coach-greeting-gate.module.css'
 
 const words={
@@ -36,7 +37,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,clarityDay=null}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -106,14 +107,14 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      })
    }catch{if(audioRun.current===generation){setPhase('complete');setError(t.failed)}}
  }
- function chooseSession(id){
+ function chooseSession(id,options){
    if(chosen.current||switching.current||(!accountSaving&&clarityCourseDay(id)))return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
    player.current?.cancel?.()
    player.current=null
-   onStart?.(id)
+   onStart?.(id,options)
  }
  function showTopics(){
    setExpandedGroup(null)
@@ -166,6 +167,10 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        <button type="button" className={styles.primary} data-coach-greeting-start
          disabled={Boolean(clarityDay)&&!accountSaving} onClick={()=>chooseSession(clarityCourseId(clarityDay)||INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
          <span>{clarityDay?CLARITY_COURSE_GROUP.sessions[clarityDay-1].title[lang]+' · 20 min':t.start+' '+sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+       {privateProfileEnabled&&<div data-coach-private-profile-entry style={{display:'grid',gap:8}}>
+         <button type="button" className={styles.secondary} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button>
+         <button type="button" className={styles.secondary} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button>
+       </div>}
        <div className={styles.actionGrid} data-has-resume={resumeControl?'true':'false'}>
          <button type="button" className={styles.secondary} data-coach-greeting-thematic ref={topicTrigger}
            aria-haspopup="dialog" onClick={showTopics}><List size={24} aria-hidden="true"/><span>{compactCopy.thematic}</span></button>

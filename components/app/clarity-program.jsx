@@ -4,6 +4,9 @@ import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clar
 import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
+import {useSearchParams} from 'next/navigation'
+import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
+import DaybookWeekReports from './daybook-week-reports'
 import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
@@ -213,9 +216,12 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
 export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
  const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries)
+ const searchParams=useSearchParams()
+ const requestedWeek=searchParams?.getAll('week')
+ const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
  const [selected,setSelected]=useState(()=>clarityDay(initialDay))
  const resultState=useClarityResults(accountId,lang,onSessionLost)
- const day=selected??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
+ const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
  const sheet=useRef(null)
@@ -273,11 +279,13 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
      </div>
     </article>
    })}
-   <details className={css.resources}>
+   <DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day}/>
+   <details className={css.resources} open={routeWeek===4?true:undefined}>
     <summary><BookOpen size={16} aria-hidden="true"/><strong>{g.resources}</strong><ChevronDown size={16} aria-hidden="true"/></summary>
     <div className={css.resourceBody}>
      <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
      {legacy.length>0&&<details><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
+     <details open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
      {children}
      <p className={css.notice}>{t.privacy}</p>
      <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
