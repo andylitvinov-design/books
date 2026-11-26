@@ -1,7 +1,6 @@
--- PROPOSED / DRAFT ONLY. Generate a tracked Supabase migration through the
--- repository's normal isolated migration workflow after review and RLS tests.
--- This file has NOT been applied to production. Do not deploy the dependent
--- code before schema acceptance. No clinical payload or marketing permission.
+-- Applied via Supabase migration history: 20261126153747, 26 Nov 2026.
+-- Exact isolated-tested DDL; only this explanatory comment differs from the proposal.
+-- No clinical payload or marketing permission.
 begin;
 alter table app_private.client_account_bindings
   drop constraint client_account_bindings_first_source_kind_check;

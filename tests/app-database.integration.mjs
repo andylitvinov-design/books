@@ -2411,7 +2411,7 @@ test('verified Google report claim atomically links one client/CRM contact and p
     ])await admin.query(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
     const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
     await admin.query(sql)
-    await admin.query(await readFile(new URL('../sql/client-report-google-crm-claim-proposed.sql',import.meta.url),'utf8'))
+    await admin.query(await readFile(new URL('../supabase/migrations/20261126153747_hh_client_report_google_crm_claim_20261126.sql',import.meta.url),'utf8'))
     const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
       reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
     await admin.query(

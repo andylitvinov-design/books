@@ -262,8 +262,10 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.impact.outputs.full == 'true' }}
         uses: actions/cache/restore@v4
         with:
-          path: .next/cache
-          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Build actual application with locked production dependencies
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
