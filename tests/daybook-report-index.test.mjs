@@ -23,3 +23,14 @@ test('Clarity and Business render report links filtered by selected week',()=>{
  assert.match(read('components/app/clarity-program.jsx'),/<DaybookWeekReports[^>]*program="clarity"/)
  assert.match(read('components/app/business-daybook.jsx'),/<DaybookWeekReports[^>]*program="business"/)
 })
+
+test('saved session and generated PDF must use the exact authorized publication even on concurrent republish',()=>{
+ const flow=read('lib/app/client-session-save-flow.js')
+ const service=read('lib/clients/session-delivery-service.js')
+ assert.match(flow,/const expectedSource=\{revision:ref\.source_revision,hash:ref\.source_hash\}/)
+ assert.match(flow,/getPublishedClientSession\(config,store,clientId,sessionId,\{expectedSource\}\)/)
+ assert.match(flow,/session\.publishedRevision!==row\.published_revision/)
+ assert.match(service,/getPublishedClientSession\(config,store,clientId,sessionId,\{expectedSource=null\}=\{\}\)/)
+ for(const path of ['app/[locale]/app/sessions/[id]/page.jsx','app/api/app/saved-sessions/[id]/pdf/route.js'])
+   assert.match(read(path),/\{expectedSource:saved\.expectedSource\}/)
+})

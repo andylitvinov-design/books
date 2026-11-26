@@ -34,7 +34,7 @@ export default async function SavedSessionPage({params}){
     const store=getPrescriptionStore()
     saved=await readSavedSession(config,store,actor,id)
     if(saved.session.report){
-      record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId)
+      record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId,{expectedSource:saved.expectedSource})
       if(record?.clientId!==saved.source.clientId||record?.status!=='active')record=null
     }
     const client=await store?.findClientById(saved.source.clientId)
