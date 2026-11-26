@@ -481,12 +481,9 @@ test("guided practice uses six-tab deep link and actual Montage Canvas playback"
  assert.match(guided,/holistic-support\/mandala#guided-video-series/);
  assert.match(mobile,/holistic-support\/mandala#guided-video-series/);
  for(const source of [guided,mobile]){assert.match(source,/data-video-quick-control="ready"/);assert.doesNotMatch(source,/data-video-quick-control="practices"/);}
- assert.match(voice,/montageText\.locator\('\[data-video-ideas-text-size\]'\)\)\.toBeHidden\(\)/);
- assert.match(voice,/data-video-idea-phrase\]\[data-selected="true"\]/);
- assert.match(voice,/await editPhrase\(replacementPhrase\)/);
- assert.match(voice,/await editPhrase\(originalPhrase\)/);
+ assert.match(voice,/data-video-montage-text\] \[data-video-ideas-text-size/);
  assert.match(voice,/getImageData\(x,y,w,h\)/);
- assert.match(voice,/await expect\.poll\(phrasePixels,\{timeout:12000\}\)\.not\.toBe\(originalPixels\)/);
+ assert.match(voice,/await expect\.poll\(phrasePixels,\{timeout:12000\}\)\.not\.toBe\(smallPixels\)/);
  assert.match(voice,/await previewText\.tap\(\)/);
  assert.match(voice,/await expect\(filmCanvas\)\.toBeVisible/);
  assert.match(voice,/\.not\.toBe\(firstFrame\)/);
