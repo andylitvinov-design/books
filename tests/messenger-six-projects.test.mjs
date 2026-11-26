@@ -9,7 +9,7 @@ const agent=read('components/holistic-agent-chat.tsx')
 const agentCss=read('components/holistic-agent-chat.module.css')
 const runner=read('components/app/messenger-test-journey.jsx')
 
-test('first screen shows six owner-requested projects with explanatory subtitles in RU/EN/ES',()=>{
+test('conversation-first welcome retains all six localized projects in the composer menu',()=>{
  for(const locale of ['en','ru','es'])assert.match(projects,new RegExp('^'+locale+':\\{','m'))
  const ru=projects.slice(projects.indexOf("\nru:{"),projects.indexOf("\nes:{"));
  const es=projects.slice(projects.indexOf("\nes:{"));
@@ -23,7 +23,16 @@ test('first screen shows six owner-requested projects with explanatory subtitles
    assert.ok(projects.includes('id:"'+id+'"'),id)
    assert.ok(projectCss.includes('data-hh-ai-project="'+id+'"'),id)
  }
- assert.match(agent,/messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>/)
+ // Current approved conversation-first welcome has three journeys; the six
+ // original projects remain available in the same composer disclosure.
+ assert.match(agent,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&\(!lukasPanelOpen\|\|supportQuizOpen\)&&<>/)
+ assert.match(agent,/<MessengerAiLanding locale=\{locale\} composer=\{composer\}/)
+ assert.match(agent,/onJourneySelect=\{startJourney\}/)
+ const landing=read('components/app/messenger-ai-landing.tsx')
+ assert.deepEqual([...landing.matchAll(/data-hh-genie-path-choice="([^"]+)"/g)].map(m=>m[1]),['therapy','consultation','goal'])
+ for(const id of ['therapy','consultation','goal'])assert.ok(landing.includes("onJourneySelect('"+id+"')"),id)
+ const tools=agent.match(/<details className=\{styles\.alchemistTools\} data-hh-alchemist-tools>[\s\S]*?<\/details>/)?.[0]||''
+ assert.match(tools,/<MessengerSixProjects locale=\{locale\} onSelect=\{id=>\{closeComposerMenu\(\);startProject\(id\);\}\}\/>/)
  assert.match(agent,/data-home-handoff-user-preview/)
  // Selecting a project closes the viewport-safe popup before starting the same flow.
  assert.match(agent,/<MessengerSixProjects locale=\{locale\} onSelect=\{id=>\{closeComposerMenu\(\);startProject\(id\);\}\}\/>/)
