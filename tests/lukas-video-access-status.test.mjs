@@ -1,0 +1,14 @@
+import {test} from 'node:test'
+import assert from 'node:assert/strict'
+import {readLukasVideoAccessStatus} from '../lib/coaching/lukas-video-access-status.mjs'
+const actor={id:'11111111-1111-4111-8111-111111111111'}
+function context({google=true,owner=false,ownerActive=true,account={status:'active',onboarding_state:'active'},ledger=true,used=80,busy=false}={}){
+ const calls=[]
+ return {calls,auth:{verified:async()=>actor,client:{auth:{getUser:async()=>({data:{user:{id:actor.id,identities:google?[{provider:'google',user_id:actor.id}]:[]}}})}}},ownerEmailAllowed:()=>owner,ownerPractitionerActive:async()=>ownerActive,transaction:async(c,a,fn)=>{assert.equal(a,actor);return fn({query:async(sql,args)=>{calls.push({sql,args});if(sql.includes('from app.accounts'))return {rows:account?[account]:[]};if(sql.includes('to_regclass'))return {rows:[{ledger:ledger?'app_private.lukas_video_reservations':null}]};return {rows:[{personal_used:used,busy}]}}})}}
+}
+test('registered customer receives own 300 second entitlement and remaining balance',async()=>{const c=context();const r=await readLukasVideoAccessStatus(c);assert.equal(r.personalLimitSeconds,300);assert.equal(r.remainingSeconds,220);assert.equal(r.videoAvailable,false);assert.deepEqual(c.calls.at(-1).args,[actor.id])})
+test('confirmed owner has no personal quota, but busy still applies',async()=>{const r=await readLukasVideoAccessStatus(context({owner:true,busy:true,used:500}));assert.equal(r.ownerExempt,true);assert.equal(r.personalLimitSeconds,null);assert.equal(r.remainingSeconds,null);assert.equal(r.code,'BUSY');assert.equal(r.videoAvailable,false)})
+test('non-owner or inactive owner cannot obtain exemption',async()=>{for(const c of [context({owner:false}),context({owner:true,ownerActive:false})])assert.equal((await readLukasVideoAccessStatus(c)).personalLimitSeconds,300)})
+test('missing ledger cannot claim unused quota',async()=>{const r=await readLukasVideoAccessStatus(context({ledger:false}));assert.equal(r.remainingSeconds,null);assert.equal(r.code,'UNAVAILABLE')})
+test('Google auth, active account and consent required',async()=>{const guest=context({google:false});assert.equal((await readLukasVideoAccessStatus(guest)).code,'AUTH_REQUIRED');assert.equal(guest.calls.length,0);assert.equal((await readLukasVideoAccessStatus(context({account:null}))).code,'AUTH_REQUIRED');assert.equal((await readLukasVideoAccessStatus(context({account:{status:'active',onboarding_state:'pending'}}))).code,'CONSENT_REQUIRED')})
+test('exhausted or busy never authorizes allocation',async()=>{for(const [c,code] of [[context({used:300}),'PERSONAL_QUOTA_EXHAUSTED'],[context({busy:true}),'BUSY']]){const r=await readLukasVideoAccessStatus(c);assert.equal(r.code,code);assert.equal(r.videoAvailable,false);assert.equal(r.voiceAlternative,true)}})

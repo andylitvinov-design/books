@@ -562,6 +562,7 @@ function withClosingPractices(
   lesson: EnergyworkSlide[],
   practiceIds: readonly string[],
   finaleId: string,
+  closingLessonId?: string,
 ): EnergyworkSlide[] {
   const practices = practiceIds.map((id) => {
     const practice = lesson.find((slide) => slide.id === id);
@@ -571,9 +572,13 @@ function withClosingPractices(
   const finale = lesson.find((slide) => slide.id === finaleId);
   if (!finale || (finale.kind !== "milestone" && finale.kind !== "finish"))
     throw new Error("MISSING_REIKI_LESSON_FINALE_" + finaleId);
+  const closingLesson = closingLessonId ? lesson.find((slide) => slide.id === closingLessonId) : undefined;
+  if (closingLessonId && closingLesson?.kind !== "lesson")
+    throw new Error("MISSING_REIKI_CLOSING_LESSON_" + closingLessonId);
   return [
-    ...lesson.filter((slide) => slide.id !== finaleId && !practiceIds.includes(slide.id)),
+    ...lesson.filter((slide) => slide.id !== finaleId && slide.id !== closingLessonId && !practiceIds.includes(slide.id)),
     ...practices,
+    ...(closingLesson ? [closingLesson] : []),
     finale,
   ];
 }
@@ -592,9 +597,9 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    // Single graduation/consent checkpoint after the Sun practice.
+    // The optional Hints lesson stays between the Sun practice and graduation.
     ...withClosingPractices(commonSlides.filter((slide) =>
-      slide.phase === "flight"), ["flight-03", "flight-hints"], "flight-done"),
+      slide.phase === "flight"), ["flight-03"], "flight-done", "flight-hints"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),
