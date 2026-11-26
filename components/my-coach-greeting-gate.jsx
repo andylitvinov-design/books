@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useRouter} from 'next/navigation'
 import {ArrowLeft,Play,Headphones,History,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X,Info} from 'lucide-react'
-import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,COACH_METHOD_CODES} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -35,7 +35,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,privateAutosaveControl,resumeControl}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -162,7 +162,6 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            <p>“{greetingText}”</p>
          </details>}
        </div>
-       <div className={styles.consent}>{privateAutosaveControl}</div>
        <button type="button" className={styles.primary} data-coach-greeting-start
          onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
          <span>{t.start} {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
@@ -175,7 +174,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>
        {error&&<p className={styles.error} role="status">{error}</p>}
      </div>}
-     <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}</span></p>
+     <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
      {phase!=='complete'&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
@@ -185,7 +184,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)event.currentTarget.close()
      }}}>
      <div className={styles.topicHeader}>
-       <div><h2 id="coach-topics-title">{t.choose}</h2><p>{t.hint}</p></div>
+       <div><h2 id="coach-topics-title">{t.choose}</h2><p>{t.hint}{accountSaving?' '+({en:'Session text is saved privately in your account.',ru:'Текст сессии сохраняется в личном кабинете.',es:'El texto se guarda en tu cuenta privada.'})[lang]:''}</p></div>
        <button type="button" className={styles.topicClose} onClick={()=>topicDialog.current?.close()} aria-label={t.close}><X size={23} aria-hidden="true"/></button>
      </div>
      <div className={styles.topicGroups}>
@@ -205,6 +204,15 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
    </dialog>
    <div className={styles.profileBelow}>
+     {methodSelectionEnabled&&onMethodSelect&&<label data-coach-method-choice style={{display:'grid',gap:7,margin:'0 0 12px',fontSize:14}}>
+       <span>{({ru:'Методика сессии (необязательно)',en:'Session method (optional)',es:'Método de sesión (opcional)'})[lang]}</span>
+       <select value={selectedMethod} onChange={event=>onMethodSelect(event.target.value)}
+         style={{minHeight:44,maxWidth:'100%',borderRadius:12,padding:'8px',fontSize:16}}>
+         <option value="">{({ru:'Обычный диалог',en:'Standard conversation',es:'Conversación habitual'})[lang]}</option>
+         {persona?.methods.map(name=><option key={name} value={COACH_METHOD_CODES[name]}>{name}</option>)}
+       </select>
+       <small>{({ru:'Выбор фиксируется при начале сессии. Для другой методики начните новую сессию.',en:'Your choice is locked when the session starts. Start a new session to change it.',es:'El método se fija al comenzar. Inicia otra sesión para cambiarlo.'})[lang]}</small>
+     </label>}
      <MyCoachInlineProfile personaId={personaId} locale={lang} methodId={methodId}/>
      <Link className={styles.back} href={'/'+lang+'/my-coach'}>
        <ArrowLeft size={17} aria-hidden="true"/>{t.back}</Link>

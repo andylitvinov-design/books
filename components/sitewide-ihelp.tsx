@@ -9,7 +9,7 @@ import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
 import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
-import type {PublicLocale} from "@/lib/public-locales";
+import {isPublicInstallPath, type PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
 
 // The heavyweight AI conversation is only needed after an explicit iHelp tap.
@@ -49,6 +49,11 @@ function selectedEditorTab():string {
 
 export function SitewideIHelp(){
  const pathname=usePathname()||"/";
+ if(isPublicInstallPath(pathname))return null;
+ return <PageHelp pathname={pathname}/>;
+}
+
+function PageHelp({pathname}:{pathname:string}){
  const locale=routeLocale(pathname);
  const t=UI[locale];
  const [open,setOpen]=useState(false);
