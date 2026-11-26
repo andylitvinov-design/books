@@ -1,3 +1,4 @@
+import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -72,4 +73,35 @@ test('private resume UI keeps typed profile actions and normal checkpoints mutua
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  for(const marker of ['data-coach-private-profile-v3','setProfileV3Enabled(result.profileV3Enabled===true)','profileV3Ref.current=structured','profileV3FaultRef.current=true','if(structured&&!structured.step.closed)draftRevision=structured.revision','if(restoredDraft)forceLocal=true','profileV3Ref.current&&!profileV3Ref.current.step.closed','questionTurnId:q.turnId','restoredProfileProof.current=coachProfileArchiveEnvelope(p)'])assert.ok(ui.includes(marker),marker)
  assert.ok(route.includes("profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'"))
+})
+
+
+test('fresh private profile opening keeps six gates and hands off rather than asking legacy inner scores',()=>{
+ const input={locale:'en',openingHistory:['Yes','Alice','Personal profile','I feel calm'],message:'Yes'}
+ const legacy=coachOpeningTurn(input,'mira')
+ const privateReply=coachOpeningTurn({...input,deferProfileToPrivateDirector:true},'mira')
+ assert.equal(privateReply.openingProgress.completed,true)
+ assert.equal(privateReply.openingProgress.answers.focus.kind,'profile')
+ assert.match(privateReply.message,/start the private profile check-in/)
+ assert.notEqual(legacy.message,privateReply.message)
+ const incomplete=coachOpeningTurn({locale:'en',openingHistory:[],message:'Yes',deferProfileToPrivateDirector:true},'mira')
+ assert.equal(incomplete.openingProgress.completed,false)
+ const after=coachOpeningTurn({...input,openingHistory:[...input.openingHistory,'Yes'],message:'5',deferProfileToPrivateDirector:true},'mira')
+ assert.equal(after.stage,'profile_handoff')
+ assert.equal(after.profileProgress,undefined)
+})
+test('new private profile entry is capability gated and never starts a voice provider',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const gate=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ assert.match(ui,/privateProfileEnabled=\{protocolOwnerReady&&profileV3Enabled\}/)
+ assert.match(ui,/if\(privateProfile&&\(!profileV3Enabled\|\|!protocolOwnerRef.current\|\|!coachProfileTrackForCourse\(id\)\)\)return/)
+ assert.match(ui,/if\(privateProfile\)\{toggleComposer\(\);return\}/)
+ assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
+ assert.match(ui,/deferProfileToPrivateDirector:freshPrivateProfile/)
+ assert.match(ui,/if\(freshProfileAwaiting\)return null/)
+ assert.match(ui,/privateTextOnly\?<span data-coach-private-text-resume/)
+ assert.match(gate,/chooseSession\(MEANING_AXES_COACH_SESSION_ID,\{privateProfile:true\}\)/)
+ assert.match(route,/params.get\('view'\)==='capabilities'/)
+ assert.match(route,/profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'/)
 })

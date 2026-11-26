@@ -40,7 +40,11 @@ async function handle(request,write){
   }else{
    const params=new URL(request.url).searchParams
    if([...params.keys()].some(k=>!['before','beforeId','view','personaId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
-   result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId')})
+   if(params.get('view')==='capabilities'){
+    if([...params.keys()].length!==1)throw new AppError('MY_COACH_DRAFT_INVALID',400)
+    // Metadata-only; no draft or personal data read. Same verified owner and origin.
+    result={profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'}
+   }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId')})
   }
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){
