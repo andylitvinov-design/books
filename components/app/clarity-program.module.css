@@ -10,7 +10,7 @@
 .card h3{font-size:18px;margin:16px 0 6px}
 .progress{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:15px;padding:5px 4px}
 .progress progress{width:100%;height:10px;grid-column:1/-1;accent-color:#067a67}
-.weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.weeks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
 .weeks button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;padding:5px 2px;background:#fff8ea;border:1px solid #dfcba4;border-radius:12px;color:#143d3a;font:650 clamp(10px,3.2vw,14px)/1.2 system-ui,sans-serif}
 .weeks button[aria-pressed=true]{color:#fff;background:#067a67;border-color:#067a67}
 .tasks{padding-left:24px;margin:0}
@@ -24,3 +24,73 @@
 .notice,.terms{font-size:14px;line-height:1.5;color:#425850;margin:4px 0}
 .hero .notice{color:#fff4df}
 @media(max-width:374px){.shell{padding:8px}.card{padding:12px}.hero{padding:16px 12px}}
+
+.card[hidden]{display:none!important}
+
+/* Clarity uses the approved Reiki golden-one-screen course composition.
+   Only the active course screen is fixed; long expanded content remains readable. */
+:global(html):has(.coursePage[data-clarity-golden]),
+:global(body):has(.coursePage[data-clarity-golden]){height:100%;overflow:hidden!important;overscroll-behavior:none;background:#24170e!important}
+:global(body):has(.coursePage[data-clarity-golden]) :global([data-sitewide-capture]),
+:global(body):has(.coursePage[data-clarity-golden]) :global([data-sitewide-capture-retry]),
+:global(body):has(.coursePage[data-clarity-golden]) :global([data-sitewide-antistress-banner]),
+:global(body):has(.coursePage[data-clarity-golden]) :global([data-hh-unified-dock]),
+:global(body):has(.coursePage[data-clarity-golden]) :global([data-hh-ihelp-trigger]){display:none!important}
+.coursePage[data-clarity-golden]{position:fixed;inset:0;z-index:110;width:100%;height:100dvh;min-height:0;max-height:100dvh;overflow:hidden;margin:0;padding:0;color:#fff5e2;color-scheme:light;background:radial-gradient(ellipse at 65% 12%,#7d4b224d,transparent 46%),linear-gradient(155deg,#362111,#24160d 75%);font:400 15px/1.35 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;box-sizing:border-box}
+.golden,.golden *{box-sizing:border-box}
+.golden{height:100%;min-height:0;width:100%;max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(5px,1dvh,9px);padding:max(7px,env(safe-area-inset-top)) clamp(9px,2.7vw,18px) max(8px,env(safe-area-inset-bottom));overflow:hidden}
+.golden :is(button,a,summary,textarea):focus-visible,.sheet:focus-visible{outline:2px solid #d4a95d;outline-offset:2px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:none}
+.courseBack,.help{display:inline-flex;align-items:center;gap:7px;min-height:44px;color:#fff4df;font:700 14px/1.2 system-ui,sans-serif;text-decoration:none}
+.help{justify-content:center;border:1px solid #dfbd85;background:#fff4de;color:#07553d;border-radius:99px;padding:5px 12px;cursor:pointer}
+.cover{flex:none;min-width:0;min-height:90px;padding:10px 13px;border:1px solid #e8c48a;border-radius:19px;color:#392013;background:linear-gradient(90deg,#fff7e8 4%,#fff4dfed 49%,#fff3d744 79%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right 35%/cover;box-shadow:0 2px 12px #120a0640}
+.cover h1{max-width:83%;font:700 clamp(24px,6.8vw,36px)/1.04 Georgia,serif;letter-spacing:-.025em;margin:0 0 5px;color:#392013}
+.cover p{font-size:clamp(12px,3.5vw,15px);font-weight:750;margin:0 0 5px;color:#392318}
+.ribbon{display:inline-flex;align-items:center;gap:5px;background:#07553d;color:#fff6df;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:750;letter-spacing:.035em}
+.dayTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex:none;margin:0;padding:0}
+.dayTabs button{min-width:0;min-height:58px;padding:4px;display:grid;justify-items:center;gap:1px;border:1px solid #e1be81;border-radius:13px;background:linear-gradient(145deg,#fffaf0,#fae6c7);color:#392318;font:750 12px/1.1 system-ui,sans-serif;cursor:pointer}
+.dayTabs button b{font-size:21px;line-height:1}
+.dayTabs button small{display:flex;align-items:center;gap:3px;font-size:11px;line-height:1.15}
+.dayTabs button[aria-pressed=true]{background:linear-gradient(145deg,#087f56,#00462f);color:#fff7e8;box-shadow:inset 0 0 0 1px #e8c48a,0 0 8px #e6ac5030}
+.dayBanner{flex:none;min-width:0;padding:8px 12px;border-radius:14px;background:linear-gradient(90deg,#392318ed,#493021bf 63%,#3923186e),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 55%/cover;color:#fff3df}
+.dayBanner>span{font-size:12px;font-weight:750;color:#e8c48a}
+.dayBanner h2{font:700 clamp(20px,5.7vw,29px)/1.08 Georgia,serif;letter-spacing:-.02em;margin:3px 0 5px;color:#fff6e5}
+.dayBanner>small{display:block;color:#f0d6ae;font-size:10px;margin-top:2px}
+.dayProgress{display:flex;align-items:center;gap:7px;font-size:12px;font-variant-numeric:tabular-nums}
+.dayProgress progress{flex:1;min-width:0;width:100%;height:7px;border:1px solid #e1be81;border-radius:99px;appearance:none;overflow:hidden;background:#896744;accent-color:#77c56d}
+.dayProgress progress::-webkit-progress-bar{background:#896744;border-radius:99px}
+.dayProgress progress::-webkit-progress-value{background:linear-gradient(90deg,#148456,#a0dc78);border-radius:99px}
+.dayProgress progress::-moz-progress-bar{background:#77c56d;border-radius:99px}
+.sheet{flex:1 1 0;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#cda157 transparent;background:linear-gradient(145deg,#fffaf0,#f9e7c7);border:1px solid #eec887;border-radius:19px;padding:10px 12px;color:#392318;box-shadow:0 2px 16px #e6ac5030}
+.dayCard{min-width:0;margin:0;padding:0;color:#392318;background:none;border:0}
+.dayCard[hidden]{display:none!important}
+.about h3{display:flex;align-items:center;gap:8px;font:700 23px/1.1 Georgia,serif;color:#392013;margin:0 0 4px}
+.about h3::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,#cda157,transparent)}
+.about p{font-size:14px;line-height:1.3;margin:0 0 7px}
+.practiceHeading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:750;color:#07553d;margin:0 0 4px}
+.practiceList{display:grid;gap:4px}
+.practice,.resources{min-width:0;border:1px solid #dcb981;border-radius:11px;background:#fff9ed}
+.practice summary,.resources>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 8px;list-style:none;font:650 13px/1.2 system-ui,sans-serif;color:#392318;cursor:pointer}
+.practice summary::-webkit-details-marker,.resources>summary::-webkit-details-marker{display:none}
+.practice summary strong,.resources>summary strong{flex:1;min-width:0;overflow-wrap:anywhere}
+.practice summary>svg,.resources>summary>svg{flex:none;color:#07553d}
+.practice[open]>summary>svg:last-child,.resources[open]>summary>svg:last-child{transform:rotate(180deg)}
+.stepNum{display:grid;place-items:center;width:25px;height:25px;flex:none;border-radius:7px;background:#f0dfbd;color:#07553d;font-weight:750}
+.practiceBody,.resourceBody{padding:4px 10px 10px;border-top:1px solid #e5d1ad;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
+.practiceBody p,.resourceBody p{margin:6px 0}
+.practiceBody a,.resourceBody a{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#07553d;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.practiceBody button:not(.primary){min-height:44px;border:1px solid #dfbd85;border-radius:9px;background:#fffaf0;color:#07553d;padding:7px 10px;font:inherit;cursor:pointer}
+.practiceBody .reflection{margin-top:8px}
+.practiceBody .reflection label{font-size:14px;color:#392318}
+.practiceBody .reflection textarea{resize:vertical;min-height:76px;max-height:40dvh;font-size:16px;border-color:#d3b27b;background:#fffdf7}
+.practiceBody .primary{margin-top:8px;min-height:44px;font-size:14px;color:#fff6e3;background:linear-gradient(145deg,#087f56,#00462f);border-color:#cda157}
+.resources{margin-top:6px;background:#f6e7cb}
+.resources>summary{color:#07553d;font-size:12px}
+.resourceBody details{margin:6px 0;padding:4px 8px;border:1px solid #dfbd85;border-radius:9px}
+.resourceBody details summary{min-height:44px;cursor:pointer}
+.courseFooter{flex:none;display:grid;gap:3px;text-align:center;min-width:0}
+.coachCta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:7px 12px;border:2px solid #dfbd85;border-radius:99px;background:linear-gradient(135deg,#087b55,#004a33);color:#fff6e3;text-decoration:none;font:750 clamp(14px,4.3vw,18px)/1.15 system-ui,sans-serif}
+.coachCta svg{flex:none}
+.courseFooter small{font-size:10px;color:#ead3ae}
+@media(max-height:650px){.golden{gap:5px}.cover{min-height:0;padding:7px 10px}.cover h1{font-size:24px}.cover p{margin-bottom:3px}.dayTabs button{min-height:52px}.dayBanner{padding:6px 10px}.dayBanner h2{font-size:21px}.sheet{padding:8px 10px}.about h3{font-size:21px}.about p{font-size:13px;margin-bottom:4px}}
+@media(max-height:480px){.cover{display:none}.golden{padding-block:4px}.dayBanner>small{display:none}}
