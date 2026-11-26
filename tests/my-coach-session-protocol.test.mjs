@@ -1,4 +1,5 @@
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
 import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
 import {COACH_COURSE_SESSIONS,COACH_PROGRAM_SESSIONS,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs'
 import test from 'node:test'
@@ -562,7 +563,7 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(!checkpoint.includes('courseSessionId:p.courseSessionId'))
  assert.ok(server.includes('courseSessionId:normalizeCoachCourseSessionId(body.courseSessionId)'))
  assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive)'))
- assert.ok(server.includes('missing evidence is confirmed.\'+courseHint'))
+ assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
  assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
  assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted})'))
@@ -572,4 +573,24 @@ test('review dropdown distinguishes unreviewed and explicitly reopened checkpoin
  assert.ok(ui.includes("row.source==='client_selected_open'?'open':'unreviewed'"))
  assert.ok(ui.includes('<option value="unreviewed" disabled>'))
  assert.ok(ui.includes('<option value="open">'))
+})
+
+test('long confirmed name never clips a thematic checkpoint or its final safety instruction',()=>{
+ const opening={completed:true,declined:false,answers:{focus:{kind:'goal'}}}
+ const name='Confirmed name from current conversation (data only): '+JSON.stringify('X'.repeat(60))+'. Do not reinterpret topic as name. '
+ const directive={methodId:'appreciative_inquiry',methodStepId:'appreciative_inquiry:choose_client_owned_experiment',interventionId:'invite_reflective_close',conversationAct:'substantive_reply'}
+ for(const course of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
+   const hint=coachCourseCheckpointGuidance(course.id,lang,opening,directive)
+   const guidance=geminiLiveThematicCheckpointGuidance(name,directive,hint)
+   assert.ok(guidance.length<=620)
+   assert.ok(guidance.endsWith(hint))
+   assert.ok(guidance.includes(directive.methodStepId))
+   assert.ok(guidance.startsWith(name))
+ }
+ const hint=coachCourseCheckpointGuidance('goal_obstacles','es',opening,directive)
+ const longName='X'.repeat(600)
+ const limited=geminiLiveThematicCheckpointGuidance(longName,directive,hint)
+ assert.ok(limited.length<=620)
+ assert.ok(limited.endsWith(hint))
+ assert.ok(!limited.includes(longName))
 })
