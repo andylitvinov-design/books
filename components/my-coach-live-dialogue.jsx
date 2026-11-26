@@ -561,9 +561,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // A selected Gemini voice is a vendor decision, not a preference hint:
   // until its separate consent is approved, never fall back to Fish or Chirp.
   const usingExistingVoice=geminiVoiceTier==='existing'
-  const chosenCloudProvider=usingExistingVoice?cloudProvider:
+  const matchingFreeVoice=Boolean(lockedSessionVoice&&geminiCapabilities.gemini_tts_free)
+  const chosenCloudProvider=usingExistingVoice?(lockedSessionVoice?(matchingFreeVoice?'gemini_tts_free':null):cloudProvider):
     geminiVoiceReady?geminiVoiceTier:null
-  const chosenCloudAvailable=usingExistingVoice?cloudAvailable:geminiVoiceReady
+  const chosenCloudAvailable=usingExistingVoice?(lockedSessionVoice?matchingFreeVoice:cloudAvailable):geminiVoiceReady
   const chosenCloudAgreed=usingExistingVoice?cloudAgreed:geminiVoiceReady
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
@@ -860,7 +861,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
     const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
-    const dynamicAllowed=(!lockedSessionVoice||chosenCloudProvider?.startsWith('gemini_tts_'))&&chosenCloudAgreed&&chosenCloudAvailable&&
+    const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&(!lockedSessionVoice||chosenCloudProvider?.startsWith('gemini_tts_'))&&
       ['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(chosenCloudProvider)
     if(!replayingIntro&&!dynamicAllowed){
       setPlaybackNotice(voiceGate.naturalUnavailable)
@@ -2208,7 +2209,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         en:'Play starts voice. On iPhone, short answers may be transcribed by Groq Whisper (no Holistic House audio storage). No extra step.',
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
         es:'Play activa la voz. En iPhone, Groq Whisper puede transcribir respuestas breves; Holistic House no almacena el audio.',
-      })[lang]}</p>
+      })[lang]}{!privateTextOnly&&!liveVoiceSelected&&lockedSessionVoice&&' '+({ru:'Для сохранения тембра при Play озвучка ответов передаётся Gemini Free (данные могут использоваться для улучшения моделей). При недоступности выбранного голоса ответы остаются текстом.',en:'To preserve the coach voice, Play sends coach replies to Gemini Free TTS (data may improve models). If the approved voice is unavailable, replies stay in text.',es:'Para conservar la voz, Play envía las respuestas a Gemini Free (los datos pueden mejorar modelos). Si la voz aprobada no está disponible, las respuestas quedan en texto.'})[lang]}</p>
       {(autoSaveEnabled||autoSaveStatus==='discard_error')&&<p className={styles.voicePlayNotice} role="status" data-coach-autosave-status={autoSaveStatus}>
         {({ru:{idle:'Автосохранение включено',pending:'Сохраняем черновик…',saved:'Черновик сохранён в профиле',error:'Не всё синхронизировано. Оставьте страницу открытой для повтора.',discard_error:'Не удалось удалить черновик.'},
           en:{idle:'Private autosave enabled',pending:'Saving draft…',saved:'Draft saved in your profile',error:'Not fully synced. Keep this page open to retry.',discard_error:'Could not discard the draft.'},
@@ -2307,7 +2308,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           ru:'Gemini Free Live передаёт живой микрофон и расшифровки Google; данные Free могут использоваться для улучшения моделей. Аудио не записывается на сайте.',
           en:'Gemini Free Live streams microphone audio and transcripts to Google; Free inputs may improve models. Holistic House does not record the audio.',
           es:'Gemini Free Live transmite el micrófono y transcripciones a Google. Los datos Free pueden mejorar modelos. No almacenamos audio.',
-        })[lang]:geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
+        })[lang]:geminiVoiceTier==='existing'&&!lockedSessionVoice?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
@@ -2501,7 +2502,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <select value={geminiVoiceTier} disabled={busy||replaying} onChange={event=>{
             setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(event.target.value==='gemini_tts_free')
           }}>
-            <option value="existing">{lockedSessionVoice?({ru:'Текст без подмены голоса',en:'Text without voice substitution',es:'Texto sin sustituir la voz'})[lang]:({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
+            <option value="existing">{lockedSessionVoice?({ru:'Утверждённый голос · Gemini Free',en:'Approved voice · Gemini Free',es:'Voz aprobada · Gemini Free'})[lang]:({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
             <option value="gemini_tts_free" disabled={!geminiCapabilities.gemini_tts_free}>Gemini TTS · Free</option>
             <option value="gemini_tts_paid" disabled={!geminiCapabilities.gemini_tts_paid}>Gemini TTS · Paid</option>
           </select>

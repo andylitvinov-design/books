@@ -110,7 +110,7 @@ export async function GET(request){
       try{
         input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',locale,personaId,
           voiceName,text:coachSpokenText(introduction).text,
-          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true},{preserveRecordedVoice:true})
       }catch{throw new AppError('MY_COACH_INTRO_INVALID',400)}
       await consumeRate(config,{op:'my-coach-gemini-public-intro-minute'},3,60)
       await consumeRate(config,{op:'my-coach-gemini_tts_free-global-day'},24,86400)
@@ -123,7 +123,7 @@ export async function GET(request){
       return await persistGreeting(config,personaId,locale,audio,version)
     }
     // New approved versioned greetings must be Gemini, never a substituted voice.
-    if((personaId==='merlin'&&voiceName)||(personaId==='caesar'&&version!=='v6')||version==='v3'||version==='v4'||version==='v5'||(version==='v6'&&voiceName))throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    if(voiceName||(personaId==='caesar'&&version!=='v6')||version==='v3'||version==='v4'||version==='v5')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.

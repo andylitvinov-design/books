@@ -11,6 +11,7 @@ import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detec
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
@@ -993,7 +994,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     const replyLocale=['en','ru','es'].includes(result.locale)?result.locale:
       ['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current:
       detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
-    const preserveMerlinVoice=personaId==='merlin'&&['ru','en'].includes(replyLocale)
+    const preserveApprovedVoice=Boolean(lockedCoachSessionVoice(personaId,replyLocale))
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
       if(!live())return
@@ -1095,7 +1096,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       cloudPlayerRef.current?.cancel()
       cloudPlayerRef.current=null
       // Natural Google/Fish stays first; disclose the temporary OS voice.
-      if(!preserveMerlinVoice&&playDeviceFallback())return
+      if(!preserveApprovedVoice&&playDeviceFallback())return
       if(earlySegment)earlyPhraseEnded(generation)
       else startListening()
       setNotice(t.fallback)
@@ -1135,7 +1136,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
       cloudProvider:voiceProvider,voiceName:selectedVoice}=voiceConfigRef.current
-    if(preserveMerlinVoice&&!['gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)){
+    if(preserveApprovedVoice&&!['gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)){
       showTextOnly();return
     }
     if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){

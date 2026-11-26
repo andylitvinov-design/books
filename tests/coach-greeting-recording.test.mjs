@@ -282,9 +282,22 @@ test('short in-session audio is cached separately, uses the approved voice and n
   assert.equal((await harness({env:{}}).GET(new Request('https://holistichouse.vercel.app'+coachSessionOpeningAudioPath('merlin','ru')))).status,503)
 })
 
-test('Merlin missing approved greeting never substitutes a different provider',async()=>{
+test('all eight missing approved greetings never substitute a different provider',async()=>{
   const h=harness({env:{}})
-  const response=await h.GET(h.request('merlin','ru'))
-  assert.equal(response.status,503)
+  for(const id of COACH_OPENING_PUBLIC_IDS)for(const locale of ['ru','en']){
+    const response=await h.GET(new Request('https://holistichouse.vercel.app'+coachIntroAudioPath(id,locale)))
+    assert.equal(response.status,503,id+'/'+locale)
+  }
   assert.equal(h.fishCalls,0)
+})
+
+test('all eight session openings are distinct, short and do not re-introduce the character',()=>{
+ for(const locale of ['ru','en','es']){
+   const lines=COACH_OPENING_PUBLIC_IDS.map(id=>coachSessionOpeningLine(id,locale))
+   assert.equal(new Set(lines).size,8)
+   for(const line of lines){assert.ok(line.length<110);assert.equal((line.match(/\?/g)||[]).length,1)}
+ }
+ const gate=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ assert.match(gate,/coachIntroAudioPath\(personaId,lang\)/)
+ assert.doesNotMatch(gate,/greetingQuote|fullGreeting|fallbackText:/)
 })

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
+import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
@@ -20,7 +21,7 @@ const end=source.indexOf("  const active=phase!=='idle'",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({personaId='mira',cloudProvider='fish_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
+function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
   const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
@@ -81,7 +82,7 @@ function createSession({personaId='mira',cloudProvider='fish_free',ttsFailures=[
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
-    coachSessionOpeningAudioPath,
+    coachSessionOpeningAudioPath,lockedCoachSessionVoice,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
       assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=6','only the short session opening, never the full presentation')
       intros++
@@ -153,7 +154,7 @@ test('one Play sustains five iOS 27 synthetic turns and recovers one failed natu
   assert.deepEqual(session.inputs,phrases,'all five user turns reach the model exactly once')
   assert.equal(session.ttsCalls,5,'one synthesis attempt per answer, no paid retry')
   assert.equal(session.spoken,4,'natural TTS still streams on four successful turns')
-  assert.equal(session.deviceSpoken,1,'the failed natural turn is spoken by device instead of going silent')
+  assert.equal(session.deviceSpoken,0,'approved voice failure preserves text instead of substituting a device voice')
   assert.equal(session.cues,6,'first post-MP3 mic and all five follow-ups each get a real recovery cue')
   assert.ok(session.cueVolumes.every(volume=>volume>0&&volume<=0.3),'a muted cue does not reset iOS audio')
   assert.ok(session.phases.includes('listening'))
@@ -224,7 +225,7 @@ test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS
   assert.deepEqual(session.inputs,phrases,'all ten distinct user phrases delivered once')
   assert.equal(session.ttsCalls,10,'no hidden provider retries')
   assert.equal(session.spoken,8,'successful natural audio remains primary')
-  assert.equal(session.deviceSpoken,2,'two natural failures receive audible device fallback')
+  assert.equal(session.deviceSpoken,0,'failed approved audio never substitutes a device voice')
   assert.equal(session.cues,11,'the first Safari turn also follows a recovery cue')
   session.ref.current.stop()
   assert.equal(mic.aborted,true)
@@ -399,9 +400,9 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   assert.match(source,/\},\[sessionClockStarted,paused,voicePaused\]\)/)
 })
 
-test('Merlin retains approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
-  for(const provider of ['fish_free','gemini_tts_free']){
-    const session=createSession({personaId:'merlin',cloudProvider:provider,ttsFailures:[1]})
+test('all public coaches retain approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
+  for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const provider of ['fish_free','gemini_tts_free']){
+    const session=createSession({personaId,cloudProvider:provider,ttsFailures:[1]})
     assert.equal(session.ref.current.startSession('Я рядом и внимательно вас слушаю. Готовы начать?',{naturalVoice:true}),true)
     const mic=await nextMic(session,1)
     mic.hear('Да, я готов начать')

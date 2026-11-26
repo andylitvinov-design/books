@@ -65,7 +65,7 @@ test('Play selects an available coach voice without separate checkbox or microph
   assert.ok(loop.includes('cloudVoiceConsent:true'))
   assert.ok(loop.includes('startCoachingMp3Playback(response'))
   assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
-  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'))
+  assert.ok(loop.includes('coachSessionOpeningAudioPath(personaId,lang)'))
   assert.ok(!loop.includes('speakOnDevice()'))
   assert.ok(!loop.includes('api.fish.audio'))
 })

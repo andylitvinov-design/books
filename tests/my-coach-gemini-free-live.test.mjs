@@ -12,7 +12,7 @@ import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  geminiLiveContextMessage,geminiLiveDirectorMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
-import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice,MERLIN_VOCAL_DELIVERY} from '../lib/coaching/gemini-voice-catalog.mjs'
+import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice,MERLIN_VOCAL_DELIVERY,coachVocalDelivery,approvedGeminiVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
 
 const key='AIza'+'A'.repeat(36)
@@ -77,7 +77,7 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
    const setup=body.bidiGenerateContentSetup
    assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
    assert.deepEqual(setup.generationConfig.responseModalities,['AUDIO'])
-   assert.equal(setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
+   assert.equal(setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Erinome')
    assert.equal(setup.generationConfig.maxOutputTokens,1100)
    assert.equal(Object.hasOwn(setup,'sessionResumption'),false)
    // Apply the documented REST AuthToken precedence to real socket setup.
@@ -701,4 +701,16 @@ test('Merlin Live retains the recorded RU/EN voice identity and calm speaking di
     assert.ok(setup.systemInstruction.parts[0].text.includes(MERLIN_VOCAL_DELIVERY))
     assert.match(setup.systemInstruction.parts[0].text,/Never repeat your name, biography/)
   }
+})
+
+test('all eight public coaches lock the recorded RU/EN voice and share TTS delivery',()=>{
+ for(const id of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en']){
+   const voice=approvedGeminiVoice(id,locale)
+   const alternative=GEMINI_COACH_VOICE_OPTIONS[id].find(v=>v!==voice)
+   const input=normalizeGeminiFreeLiveStart({...start,personaId:id,locale,voiceName:alternative})
+   const setup=geminiFreeLiveSetup(input)
+   assert.equal(input.voiceName,voice)
+   assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice)
+   assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice)))
+ }
 })
