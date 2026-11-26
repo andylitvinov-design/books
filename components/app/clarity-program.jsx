@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,BookOpen,CheckCircle2,Compass} from 'lucide-react'
+import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
@@ -110,6 +110,11 @@ const COPY={
   "open": "Abrir herramienta"
  }
 }
+const GOLDEN={
+ en:{overview:'Course overview',duration:'3 days · Free workbook',about:'About the day',notes:'Reflection',resources:'Course resources',help:'Open iHelp',progress:'Saved reflections',recorded:'Saved',notRecorded:'Not saved',availability:'Session availability in My Coach'},
+ ru:{overview:'Описание курса',duration:'3 дня · Бесплатный дневник',about:'О занятии',notes:'Личная рефлексия',resources:'Материалы курса',help:'Открыть iHelp',progress:'Сохранённые записи',recorded:'Сохранено',notRecorded:'Нет записи',availability:'Доступность сессии — в My Coach'},
+ es:{overview:'Descripción del curso',duration:'3 días · Diario gratuito',about:'Sobre el día',notes:'Reflexión personal',resources:'Recursos del curso',help:'Abrir iHelp',progress:'Notas guardadas',recorded:'Guardado',notRecorded:'Sin nota',availability:'Disponibilidad en My Coach'}
+}
 function useProgramStart(locale,program){
  const lang=clarityLocale(locale),t=COPY[lang]
  const [busy,setBusy]=useState(false),[error,setError]=useState(false)
@@ -196,38 +201,73 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  <label>{t.reflection}<textarea rows={6} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
+  <label>{t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
   {entry&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
   {failed&&<p role="alert">{t.error}</p>}
   <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
  </div>
 }
-export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost}){
- const lang=clarityLocale(locale),t=COPY[lang],days=CLARITY_SYLLABUS[lang]
+export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children}){
+ const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
  const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries)
  const [selected,setSelected]=useState(null)
  const day=selected??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
- return <section className={css.shell} data-clarity-daybook>
-  <header className={css.hero}><span>CLARITY · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></header>
-  <p className={css.terms}>{t.terms}</p>
-  <div className={css.progress}><span>{t.progress}</span><strong>{recorded.length} / {CLARITY_DAY_COUNT}</strong><progress max={CLARITY_DAY_COUNT} value={recorded.length} aria-label={t.progress}/></div>
-  <nav className={css.weeks} aria-label={t.details}>{days.map(([title],i)=><button key={i} type="button" aria-pressed={day===i+1} aria-controls={'clarity-day-'+(i+1)} onClick={()=>setSelected(i+1)}>{recorded.includes(i+1)?<CheckCircle2 size={18}/>:<BookOpen size={18}/>}<span>{t.day} {i+1}</span></button>)}</nav>
-  {days.map(([title,description],i)=>{
-   const number=i+1,notes=clarityDayNotes(entries,number)
-   return <article className={css.card} key={number} id={'clarity-day-'+number} hidden={day!==number} data-clarity-day={number}>
-    <span className={css.eyebrow}>{t.day} {number} · {t.free}</span><h2>{title}</h2><p>{description}</p>
-    <Link href={root+'/my-coach'} prefetch={false} className={css.back}>{t.coach}<ArrowRight size={16}/></Link><p className={css.notice}>{t.coachHint}</p>
-    <h3>{t.steps}</h3><ol className={css.tasks}>{CLARITY_TASKS[lang][i].map(([name,body,tool])=><li key={name}><strong>{name}</strong><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16}/></Link>}</li>)}</ol>
-    <h3>{t.homework}</h3><p className={css.notice}>{t.homeworkHint}</p>
-    {hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:notes.length>1?<><p role="status">{t.duplicate}</p><Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></>:<FreeReflection key={notes[0]?.id||'new'} accountId={accountId} locale={lang} day={number} entry={notes[0]} onSaved={onSaved} onSessionLost={onSessionLost}/>}
-    {number===CLARITY_DAY_COUNT&&<Link href={toolPaths.goal} className={css.back}>{t.goals}<ArrowRight size={16}/></Link>}
-   </article>
-  })}
-  {legacy.length>0&&<details className={css.card}><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
-  <p className={css.notice}>{t.privacy}</p>
-  <Link href={root+'/coaching/clarity'} prefetch={false} className={css.back}>{t.details}</Link>
-  <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+ const sheet=useRef(null)
+ function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
+ return <section className={css.golden} data-clarity-daybook data-clarity-design="golden-one-screen-v3">
+  <div className={css.topbar}>
+   <Link href={root+'/coaching/clarity'} prefetch={false} className={css.courseBack}><ArrowLeft size={18} aria-hidden="true"/>{g.overview}</Link>
+   <button type="button" className={css.help} data-daybook-inline-help aria-label={g.help} aria-haspopup="dialog" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={18} aria-hidden="true"/>iHelp</button>
+  </div>
+  <header className={css.cover}>
+   <h1>{t.title}</h1><p>{g.duration}</p><span className={css.ribbon}><Sparkles size={14} aria-hidden="true"/>CLARITY · DAYBOOK</span>
+  </header>
+  <nav className={css.dayTabs} aria-label={t.details}>{days.map(([title],i)=>{
+   const done=recorded.includes(i+1)
+   return <button key={i} type="button" aria-pressed={day===i+1} aria-controls={'clarity-day-'+(i+1)} onClick={()=>chooseDay(i+1)} title={title+' · '+(done?g.recorded:g.notRecorded)}><span>{t.day}</span><b>{i+1}</b><small>{done?<CheckCircle2 size={13} aria-hidden="true"/>:<BookOpen size={13} aria-hidden="true"/>}{done?'1/1':'0/1'}</small></button>
+  })}</nav>
+  <div className={css.dayBanner} data-clarity-progress>
+   <span>{t.day} {day} / {CLARITY_DAY_COUNT}</span><h2>{days[day-1][0]}</h2>
+   <div className={css.dayProgress}><progress max={CLARITY_DAY_COUNT} value={recorded.length} aria-label={t.progress}/><strong>{recorded.length}/{CLARITY_DAY_COUNT}</strong></div>
+   <small>{g.progress}</small>
+  </div>
+  <div className={css.sheet} ref={sheet} data-clarity-sheet tabIndex={0} aria-label={t.steps}>
+   {days.map(([title,description],i)=>{
+    const number=i+1,notes=clarityDayNotes(entries,number)
+    return <article className={css.dayCard} key={number} id={'clarity-day-'+number} hidden={day!==number} data-clarity-day={number}>
+     <div className={css.about}><h3>{g.about}</h3><p>{description}</p></div>
+     <div className={css.practiceHeading}>{t.steps}<span>{CLARITY_TASKS[lang][i].length}</span></div>
+     <div className={css.practiceList}>
+      {CLARITY_TASKS[lang][i].map(([name,body,tool],index)=><details className={css.practice} key={name} data-clarity-practice>
+       <summary><span className={css.stepNum}>{index+1}</span><strong>{name}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
+       <div className={css.practiceBody}><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16} aria-hidden="true"/></Link>}</div>
+      </details>)}
+      <details className={css.practice} data-clarity-reflection>
+       <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
+       <div className={css.practiceBody}>
+        {hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:notes.length>1?<><p role="status">{t.duplicate}</p><Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></>:<FreeReflection key={notes[0]?.id||'new'} accountId={accountId} locale={lang} day={number} entry={notes[0]} onSaved={entry=>{setSelected(current=>current??number);onSaved(entry)}} onSessionLost={onSessionLost}/>}
+        {number===CLARITY_DAY_COUNT&&<Link href={toolPaths.goal} className={css.back}>{t.goals}<ArrowRight size={16}/></Link>}
+       </div>
+      </details>
+     </div>
+    </article>
+   })}
+   <details className={css.resources}>
+    <summary><BookOpen size={16} aria-hidden="true"/><strong>{g.resources}</strong><ChevronDown size={16} aria-hidden="true"/></summary>
+    <div className={css.resourceBody}>
+     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
+     {legacy.length>0&&<details><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
+     {children}
+     <p className={css.notice}>{t.privacy}</p>
+     <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+    </div>
+   </details>
+  </div>
+  <footer className={css.courseFooter}>
+   <Link href={root+'/my-coach'} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
+   <small>{g.availability}</small>
+  </footer>
  </section>
 }
