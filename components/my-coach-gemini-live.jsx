@@ -1235,7 +1235,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         if(r.modelTurnComplete)finishAudibleTurn(r)
         else{phaseChange('thinking');r.replyWatch?.touch()}
       }},
-      onLevel:level=>{if(level!==null)propsRef.current.onMicLevel?.(level)},
+      // The player's output RMS is not microphone input. Only capture() may publish the live mic level.
     })
     runtime.current=r
     context.onstatechange=()=>handleAudioContextState(r)

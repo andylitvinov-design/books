@@ -1230,8 +1230,9 @@
   height:36px;min-height:0;border-radius:99px;
   background:linear-gradient(180deg,#0ac68c,#008565);
   opacity:.28;transform-origin:center;
-  transform:scaleY(calc(.105 + var(--coach-mic-level,0) * var(--wave-gain,1)));
-  transition:transform 90ms ease-out,opacity 140ms ease-out;
+  /* Display-only amplification: provider RMS, VAD and speech interruption are unchanged. */
+  transform:scaleY(clamp(.105,calc(.105 + var(--coach-mic-level,0) * var(--wave-gain,1) * 4),1));
+  transition:transform 45ms linear,opacity 90ms ease-out;
 }
 .root[data-session-visual-v4] .microphoneWave[data-voice-detected='true'] .waveBars i{opacity:.85}
 .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
@@ -2104,7 +2105,7 @@
 /* Approved live-dialogue composition, 26 Nov. The portrait, text and real
    voice controls form ONE card. All media and provider handlers remain mounted.
    Geometry deliberately uses the existing visual viewport measurement on iOS. */
-.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']{--coach-dock-height:78px;--coach-card-gap:7px;--coach-card-width:min(calc(100% - 20px),850px);gap:var(--coach-card-gap)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']{--coach-dock-height:85px;--coach-card-gap:7px;--coach-card-width:min(calc(100% - 20px),850px);gap:var(--coach-card-gap)}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionScroll{flex:0 0 auto;min-height:0;max-height:none;overflow:visible;padding:0;margin:0}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero{box-sizing:border-box;width:var(--coach-card-width);height:clamp(310px,54dvh,620px);min-height:0;max-height:none;margin:0 auto;border:0;border-radius:27px;overflow:hidden;isolation:isolate;background:#13271e}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPortrait[data-persona]{inset:0;width:100%;height:100%;background:#172a23!important}
@@ -2125,7 +2126,7 @@
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .heroViewToggle{background:#13251bc2;color:#fff;border:1px solid #f7eedb88;box-shadow:none;backdrop-filter:blur(9px)}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .heroSubtitle{bottom:calc(var(--coach-dock-height) + 7px);z-index:8}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:var(--coach-card-width);max-width:850px;min-width:0;margin:calc(-1 * var(--coach-dock-height) - var(--coach-card-gap)) auto 0;gap:var(--coach-card-gap);overflow:visible}
-.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls[data-coach-inline-voice]{position:relative;z-index:6;order:-5;box-sizing:border-box;display:grid;grid-template-columns:44px minmax(0,1fr) 66px minmax(0,1fr) 44px;grid-template-rows:55px;align-items:center;gap:6px;flex:0 0 var(--coach-dock-height);height:var(--coach-dock-height);min-height:var(--coach-dock-height);max-height:var(--coach-dock-height);width:100%;max-width:none;margin:0;padding:0 12px 20px;border:0;border-radius:0 0 27px 27px;background:linear-gradient(0deg,#092c24e8,transparent);box-shadow:none;overflow:visible}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls[data-coach-inline-voice]{position:relative;z-index:6;order:-5;box-sizing:border-box;display:grid;grid-template-columns:44px minmax(0,1fr) 66px minmax(0,1fr) 44px;grid-template-rows:60px 17px;align-items:center;gap:2px 6px;flex:0 0 var(--coach-dock-height);height:var(--coach-dock-height);min-height:var(--coach-dock-height);max-height:var(--coach-dock-height);width:100%;max-width:none;margin:0;padding:0 12px 6px;border:0;border-radius:0 0 27px 27px;background:linear-gradient(0deg,#092c24e8,transparent);box-shadow:none;overflow:visible}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .keyboardControl{grid-column:1;grid-row:1}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .microphoneWave{grid-column:2;grid-row:1;width:100%;height:44px;min-width:0;border:0;overflow:hidden}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter{grid-column:3;grid-row:1;position:relative;width:66px;max-width:66px;min-width:0;height:55px;min-height:55px;max-height:55px;overflow:visible;align-self:center}
@@ -2143,7 +2144,9 @@
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl{background:#cd4448;border-color:#f4a5a5;color:#fff}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl>svg{width:21px;height:21px}
-.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .waveBars i{background:linear-gradient(180deg,#86ffe0,#23c7a1);opacity:.6}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .waveBars i{background:linear-gradient(180deg,#86ffe0,#23c7a1);opacity:clamp(.34,calc(.34 + var(--coach-mic-level,0) * 5),1);flex:1 1 2px;min-width:1px;max-width:3px}
+/* The whole live input strip fits even the narrowest iPhone; no clipped bars. */
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .waveBars{gap:1px;max-width:100%;height:40px}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace>.sessionProgress[data-coach-progress-accordion]{order:-4;flex:0 0 auto;box-sizing:border-box;width:100%;max-width:100%;min-height:0;max-height:none;margin:0;border-radius:19px;background:#fffcf5}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionProgressSummary{min-height:44px;padding:6px 10px}
 .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace>.voicePlayNotice{order:-3;flex:0 0 auto;display:block;margin:0 5px;padding:0;font:500 10px/1.3 system-ui;color:#466254}

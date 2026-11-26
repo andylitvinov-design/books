@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
 import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches} from '../lib/coaching/coach-reaction-v4-registry.mjs'
-import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
+import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
  let s=initialCoachMicActivity()
@@ -296,4 +296,33 @@ test('shared personality empathy veto prevents cheerful reaction to explicit sha
  }
  for(const text of ["If I did it?","Maybe I did it.","She said I did it.","I never said I did it.","Я думал, что у меня получилось.","Может быть, я справился.","Она сказала: «Я справилась».","Quizá lo logré.","Si yo lo logré.","Dijo que lo logré."])assert.notEqual(classifyClientReactionText(text),'progress',text)
  for(const text of ["I did it","Я справился","Lo logré","У меня получилось","I made it"])assert.equal(classifyClientReactionText(text),'progress',text)
+})
+
+test('Merlin uses one released conversation-capable camera from introduction through dialogue',()=>{
+ const group=REACTION_V5_CAMERA_GROUPS.merlin
+ assert.equal(group,'alternate')
+ const media=releasedReactionMedia('merlin',REACTION_V4_RELEASED,group)
+ const presentation=releasedCoachPresentationLoop('merlin',REACTION_V4_RELEASED,group)
+ assert.ok(media&&presentation)
+ assert.equal(media.anchorHash,presentation.anchorHash)
+ const ids=media.blocks.map(b=>b.id)
+ for(const phase of ['idle','listening','thinking','speaking']){
+  const intent=coachReactionIntent({phase,micActive:phase==='listening'})
+  assert.ok(chooseCoachReaction('merlin',intent,ids,[],{group}),phase)
+ }
+ assert.equal(chooseCoachReaction('merlin',coachReactionIntent({phase:'speaking',stage:'safety'}),ids,[],{group}),null)
+ assert.equal(chooseCoachReaction('merlin',coachReactionIntent({phase:'speaking',coachScene:'empathy'}),ids,[],{group}),null)
+})
+test('mobile microphone meter uses capture input only, not Gemini player output; dock fits the bars',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const live=read('components/my-coach-gemini-live.jsx')
+ const capture=live.slice(live.indexOf('function capture(r,chunk)'),live.indexOf('async function installCapture(r)'))
+ assert.match(capture,/onMicLevel\?\.\(Math\.max\(0,Math\.min\(1,micLevel\*4\)\)\)/)
+ const player=live.slice(live.indexOf('r.player=new GeminiLivePcmPlayer'),live.indexOf('runtime.current=r',live.indexOf('r.player=new GeminiLivePcmPlayer')))
+ assert.ok(player.length>0)
+ assert.doesNotMatch(player,/onMicLevel/)
+ const css=read('components/my-coach-live-dialogue.module.css')
+ assert.ok(css.includes('var(--coach-mic-level,0) * var(--wave-gain,1) * 4'))
+ assert.ok(css.includes('grid-template-rows:60px 17px'))
+ assert.ok(css.includes('flex:1 1 2px;min-width:1px;max-width:3px'))
 })
