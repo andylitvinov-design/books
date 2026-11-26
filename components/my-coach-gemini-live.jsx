@@ -6,7 +6,7 @@ import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
   prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
-  restoreCoachIos27LiveDuplex,
+  restoreCoachIos27LiveDuplex,refreshCoachLiveDuplex,
 } from '@/lib/personal-coaching/coach-ios-live-duplex.mjs'
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
@@ -222,6 +222,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.pauseEpoch=(r.pauseEpoch||0)+1
     if(!r.paused){
       r.paused=true
+      r.routePrimed=false
+      r.audioResumeAttempt=null
       r.pausedPhase=r.currentPhase||(r.speaking?'speaking':r.ready?'listening':'loading')
       r.replyWatch?.clear()
       if(r.greetingTimer){clearTimeout(r.greetingTimer);r.greetingTimer=null}
@@ -682,45 +684,66 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.modelTurnComplete&&!r.player?.playing)finishAudibleTurn(r)
     return true
   }
-  // Reassert the existing duplex route automatically, including the first PCM
-  // of a reply when Safari reports running but routes audio incorrectly.
+  function canRecoverLiveAudio(r){
+    return !r.ended&&!r.paused&&runtime.current===r&&
+      (typeof document==='undefined'||document.visibilityState!=='hidden')
+  }
   function refreshLiveAudioRoute(r,force=false){
-    if(r.ended||r.paused||runtime.current!==r||typeof navigator==='undefined'||
-       (typeof document!=='undefined'&&document.visibilityState==='hidden'))return
-    if(!navigator.audioSession||(!force&&navigator.audioSession.type==='play-and-record'))return
-    activateCoachIos27LiveDuplex(navigator)
+    if(!canRecoverLiveAudio(r)||typeof navigator==='undefined')return
+    const epoch=r.pauseEpoch
+    const reselect=force&&!r.routePrimed
+    if(reselect)r.routePrimed=true
+    refreshCoachLiveDuplex(navigator,()=>canRecoverLiveAudio(r)&&r.pauseEpoch===epoch,reselect)
   }
   function requestAudioResume(r){
-    if(r.ended||r.paused||r.audioResuming||runtime.current!==r||r.context.state==='running'||
-       (typeof document!=='undefined'&&document.visibilityState==='hidden'))return
+    if(!canRecoverLiveAudio(r)||r.audioResumeAttempt||r.context.state==='running'||
+       r.context.state==='closed')return
     refreshLiveAudioRoute(r,true)
-    r.audioResuming=true
+    const attempt={}
+    r.audioResumeAttempt=attempt
+    const settled=()=>{
+      if(r.paused&&!r.ended&&runtime.current===r&&!r.resumeInFlight&&r.context.state==='running'){
+        try{void r.context.suspend?.().catch?.(()=>{})}catch{}
+      }
+      if(r.audioResumeAttempt!==attempt)return
+      r.audioResumeAttempt=null
+      if(!canRecoverLiveAudio(r))return
+      if(r.context.state==='running')flushPendingAudio(r)
+      else{setAudioNeedsGesture(true);notify(t.audioUnavailable)}
+    }
     try{
-      Promise.resolve(r.context.resume?.()).then(()=>{
-        r.audioResuming=false
-        if(r.ended)return
-        if(r.paused){try{void r.context.suspend?.().catch?.(()=>{})}catch{};return}
-        if(runtime.current!==r||(typeof document!=='undefined'&&document.visibilityState==='hidden'))return
-        if(r.context.state==='running'){refreshLiveAudioRoute(r);flushPendingAudio(r)}
-        else{setAudioNeedsGesture(true);notify(t.audioUnavailable)}
-      }).catch(()=>{
-        r.audioResuming=false
-        if(!r.ended&&!r.paused&&runtime.current===r){setAudioNeedsGesture(true);notify(t.audioUnavailable)}
-      })
-    }catch{r.audioResuming=false;setAudioNeedsGesture(true);notify(t.audioUnavailable)}
+      Promise.resolve(r.context.resume?.()).then(settled,settled)
+    }catch{settled()}
+  }
+  function watchLiveAudioSession(r){
+    const session=navigator.audioSession
+    if(!session?.addEventListener)return
+    let previous=session.state
+    session.addEventListener('statechange',()=>{
+      const state=session.state
+      if(state===previous)return
+      previous=state
+      if(!canRecoverLiveAudio(r)||(!r.ready&&!r.resumeAfterDrain))return
+      if(state==='interrupted'){r.routePrimed=false;return}
+      if(state!=='active')return
+      // The OS can return the device without changing the Web Audio state or
+      // settling the resume requested during the interruption.
+      r.audioResumeAttempt=null
+      handleAudioContextState(r)
+    },{signal:r.abort.signal})
   }
   // Safari can interrupt an already scheduled reply without delivering another
   // PCM packet. Observe the output context itself, not only incoming frames.
   function handleAudioContextState(r){
-    if(r.ended||r.paused||runtime.current!==r||!r.ready)return
+    if(!canRecoverLiveAudio(r)||(!r.ready&&!r.resumeAfterDrain))return
     if(r.context.state==='running'){
-      refreshLiveAudioRoute(r)
+      refreshLiveAudioRoute(r,Boolean(r.pendingAudio.length||r.player?.playing))
       if(r.pendingAudio.length||r.player?.playing)flushPendingAudio(r)
       else if(r.audioNoticeShown){r.audioNoticeShown=false;setAudioNeedsGesture(false);notify('')}
       return
     }
     if(r.context.state==='closed')return
-    if(!r.audioNoticeShown){r.audioNoticeShown=true;notify(t.audioRoute)}
+    if(!r.audioNoticeShown){r.routePrimed=false;r.audioNoticeShown=true;notify(t.audioRoute)}
     setAudioNeedsGesture(true)
     requestAudioResume(r)
   }
@@ -741,7 +764,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   function queueLivePart(r,part){
     if(r.outputWithoutAudio)return 'dropped'
-    if(!r.hadAudio&&!r.pendingAudio.length)refreshLiveAudioRoute(r,true)
+    if(!r.hadAudio&&!r.pendingAudio.length)refreshLiveAudioRoute(r,!r.routePrimed)
     if(r.paused||r.context.state!=='running')return holdAudioPart(r,part)
     if(r.pendingAudio.length&&!flushPendingAudio(r)){
       if(!r.outputWithoutAudio&&r.context.state!=='running')return holdAudioPart(r,part)
@@ -1158,7 +1181,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
-      pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,
+      pendingAudio:[],pendingAudioChars:0,audioResumeAttempt:null,audioNoticeShown:false,routePrimed:false,
       playbackNoticeShown:false,
       reconnectSoon:false,resumeAfterDrain:false,liveToken:null,backpressureChunks:0,
       checkpointSerial:0,lastAssistantTurnFinished:false,lastHumanAudioAt:0,
@@ -1194,6 +1217,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     })
     runtime.current=r
     context.onstatechange=()=>handleAudioContextState(r)
+    // This optional platform signal must never prevent ordinary Web Audio.
+    try{watchLiveAudioSession(r)}catch{}
     generation.current++
     starting.current=true
     setNotice('')

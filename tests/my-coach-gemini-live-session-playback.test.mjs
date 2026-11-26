@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {setImmediate as settleResume,setTimeout as nextTimer} from 'node:timers/promises'
 import {runInNewContext} from 'node:vm'
+import * as duplex from '../lib/personal-coaching/coach-ios-live-duplex.mjs'
 import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
   GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
@@ -84,14 +86,14 @@ function audioClock(sampleRate=48000){
   return {context,sources,advanceTo,get heardSamples(){return heardSamples}}
 }
 
-function session(sampleRate=48000){
+function session(sampleRate=48000,environment={}){
   const clock=audioClock(sampleRate),events={final:[],interim:[],notices:[],phases:[],gestures:[],input:[],interruptions:[]}
   let stops=0,socketCloses=0,micStops=0
   const track={readyState:'live',stop(){micStops++;this.readyState='ended'}}
   const sent=[],credential={token:'auth_tokens/synthetic-existing-session'}
   const socket={readyState:1,bufferedAmount:0,send:raw=>sent.push(JSON.parse(raw)),
     close(){socketCloses++;this.readyState=3}}
-  const r={context:clock.context,socket,stream:{active:true,getTracks:()=>[track]},
+  const r={context:clock.context,socket,stream:{active:true,getTracks:()=>[track]},abort:new AbortController(),
     ready:true,ended:false,sessionStarted:true,introSent:true,firstAudio:false,greetingTimer:null,
     history:[],openingHistory:[],inputText:'',outputText:'',speaking:false,interrupted:false,
     modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,lastAssistantTurnFinished:false,
@@ -106,7 +108,7 @@ function session(sampleRate=48000){
     onInterrupted:text=>events.interruptions.push(text),
   }}
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
-    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState})',{
+    '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState,watch:()=>watchLiveAudioSession(runtime.current)})',{
     GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,
     geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,
     Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
@@ -115,7 +117,7 @@ function session(sampleRate=48000){
     notify:notice=>events.notices.push(notice),
     setNotice:notice=>events.notices.push(notice),
     setAudioNeedsGesture:value=>events.gestures.push(value),
-    t:{failure:'unavailable',audioRoute:'paused',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting',
+    t:{failure:'unavailable',audioRoute:'paused',audioUnavailable:'device unavailable',playbackInterrupted:'reply interrupted',reconnecting:'reconnecting',
       resumedEarlier:'resumed from previous checkpoint',noReplyAudio:'missing audio'},
     checkpoint:()=>{},flushSideband:()=>{},
     stop:()=>{stops++;r.ended=true;track.stop();socket.close();r.player?.stop()},
@@ -123,6 +125,7 @@ function session(sampleRate=48000){
     getToken:()=>assert.fail('a turn must not mint a credential'),
     connect:()=>assert.fail('a turn must not open a connection'),
     loadApprovedContext:()=>{assert.fail('playback must not request private context')},
+    ...duplex,...environment,
   },{timeout:1000})
   methods.makePlayer(r,clock.context)
   function receive({audio=[],output,input,turnComplete=false,interrupted=false}={}){
@@ -145,7 +148,7 @@ function session(sampleRate=48000){
     assert.equal(track.readyState,'live')
     assert.ok(!events.notices.includes('unavailable'))
   }
-  return {r,clock,events,receive,assertLive,sent,...methods}
+  return {r,runtime,clock,events,receive,assertLive,sent,...methods}
 }
 
 // Drive the same ~32 ms blocks that the capture worklet delivers. Echo
@@ -793,21 +796,32 @@ test('standard MIME whitespace does not discard 24 kHz PCM',()=>{
 })
 
 
-test('automatic route recovery handles running WebAudio without another button',()=>{
-  const calls=[]
-  const navigator={audioSession:{type:'ambient'}},document={visibilityState:'visible'}
-  const r={context:{state:'running'},paused:false,ended:false}
-  const runtime={current:r}
-  const refresh=runInNewContext(section('  function refreshLiveAudioRoute(','  function requestAudioResume(')+'\nrefreshLiveAudioRoute',{
-    runtime,document,navigator,activateCoachIos27LiveDuplex:()=>{calls.push('route');navigator.audioSession.type='play-and-record'}
+test('running audio primes the duplex route once and corrects later category drift without another button',async()=>{
+  const writes=[]
+  let category='play-and-record'
+  const audioSession={
+    get type(){return category},
+    set type(value){category=value;writes.push(value)},
+  }
+  const h=session(48000,{
+    navigator:{userAgent:'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15',audioSession},
+    document:{visibilityState:'visible'},
   })
-  refresh(r);assert.deepEqual(calls,['route'])
-  refresh(r);assert.equal(calls.length,1)
-  refresh(r,true);assert.equal(calls.length,2)
-  document.visibilityState='hidden';refresh(r,true);assert.equal(calls.length,2)
-  document.visibilityState='visible';r.paused=true;refresh(r,true);assert.equal(calls.length,2)
-  r.paused=false;runtime.current=null;refresh(r,true);assert.equal(calls.length,2)
-  assert.match(component,/if\(!r\.hadAudio&&!r\.pendingAudio\.length\)refreshLiveAudioRoute\(r,true\)/)
+  const reply=()=>{
+    h.receive({audio:[coachVoicePcm(.25)],output:'Audible reply',turnComplete:true})
+    h.clock.advanceTo(h.clock.context.currentTime+.5)
+  }
+  reply()
+  // Safari coalesces writes in one task. Explicitly let the scheduled category change run.
+  await nextTimer(0)
+  assert.deepEqual(writes,['auto','play-and-record'])
+  reply()
+  assert.deepEqual(writes,['auto','play-and-record'])
+  category='ambient'
+  reply()
+  assert.deepEqual(writes,['auto','play-and-record','play-and-record'])
+  assert.equal(h.clock.heardSamples,18000)
+  h.assertLive()
   assert.doesNotMatch(component,/data-coach-live-resume-audio|resumeAudioByTap/)
 })
 
@@ -816,9 +830,111 @@ test('suspended PCM is resumed automatically on the existing live session',async
   h.clock.context.state='suspended'
   h.clock.context.resume=()=>{h.clock.context.state='running';return Promise.resolve()}
   h.receive({audio:[pcm(.5)],output:'Automatic audio',turnComplete:true})
-  await Promise.resolve();await Promise.resolve()
+  await settleResume()
   h.clock.advanceTo(2)
   assert.equal(h.clock.heardSamples,12000)
   assert.equal(h.events.final.at(-1).interrupted,false)
   h.assertLive()
+})
+
+function hardwareSession(environment={}){
+  const audioSession=Object.assign(new EventTarget(),{state:'active',type:'play-and-record'})
+  const document={visibilityState:'visible'}
+  const h=session(48000,{navigator:{audioSession},document,...environment})
+  h.watch()
+  function hardwareState(state){
+    audioSession.state=state
+    audioSession.dispatchEvent(new Event('statechange'))
+  }
+  return {...h,hardwareState,document}
+}
+
+test('hardware reactivation alone plays the entire held reply after a failed resume',async()=>{
+  const h=hardwareSession(),context=h.clock.context
+  context.state='interrupted'
+  let attempts=0
+  context.resume=()=>{
+    attempts++
+    if(attempts===1)return Promise.reject(Error('hardware is busy'))
+    context.state='running'
+    return Promise.resolve()
+  }
+  h.receive({audio:[coachVoicePcm(.5)],output:'Held voice',turnComplete:true})
+  await settleResume()
+  assert.equal(attempts,1)
+  assert.equal(h.r.pendingAudio.length,1)
+  h.hardwareState('interrupted')
+  h.hardwareState('active')
+  await settleResume()
+  assert.equal(attempts,2)
+  h.clock.advanceTo(1)
+  assert.equal(h.clock.heardSamples,12000)
+  assert.ok(h.clock.sources[0].buffer.getChannelData(0).some(sample=>sample>.1))
+  assert.deepEqual(h.events.final,[{text:'Held voice',interrupted:false}])
+  h.assertLive()
+})
+
+test('hardware reactivation supersedes a pending resume once and ignores its late rejection',async()=>{
+  const h=hardwareSession(),context=h.clock.context
+  context.state='interrupted'
+  const attempts=[]
+  context.resume=()=>new Promise((resolve,reject)=>attempts.push({resolve,reject}))
+  h.receive({audio:[coachVoicePcm(.5)],output:'Only once',turnComplete:true})
+  assert.equal(attempts.length,1)
+  h.hardwareState('interrupted')
+  h.hardwareState('active')
+  h.hardwareState('active')
+  assert.equal(attempts.length,2)
+  context.state='running'
+  attempts[1].resolve()
+  await settleResume()
+  const noticesBefore=h.events.notices.slice()
+  attempts[0].reject(Error('obsolete hardware interruption'))
+  await settleResume()
+  assert.deepEqual(h.events.notices,noticesBefore)
+  assert.equal(h.events.gestures.at(-1),false)
+  h.clock.advanceTo(1)
+  assert.equal(h.clock.heardSamples,12000)
+  assert.deepEqual(h.events.final,[{text:'Only once',interrupted:false}])
+  h.assertLive()
+})
+
+test('active hardware cannot resume a hidden, paused, replaced or aborted live session',()=>{
+  for(const state of ['hidden','paused','replaced','aborted']){
+    const h=hardwareSession()
+    h.clock.context.state='interrupted'
+    let attempts=0
+    h.clock.context.resume=()=>{attempts++;return Promise.resolve()}
+    h.hardwareState('interrupted')
+    if(state==='hidden')h.document.visibilityState='hidden'
+    if(state==='paused')h.r.paused=true
+    if(state==='replaced')h.runtime.current=null
+    if(state==='aborted')h.r.abort.abort()
+    h.hardwareState('active')
+    assert.equal(attempts,0,state)
+  }
+})
+
+test('a completed reply drains after the old socket closes and before resumption',async()=>{
+  const reconnects=[]
+  const h=hardwareSession({scheduleReconnect:r=>reconnects.push(r)})
+  const context=h.clock.context
+  context.state='interrupted'
+  context.resume=()=>Promise.reject(Error('hardware is busy'))
+  h.receive({audio:[coachVoicePcm(.5)],output:'Tail before reconnect',turnComplete:true})
+  await settleResume()
+  // These are the states set by the actual close handler in the socket rollover test.
+  h.r.ready=false
+  h.r.socket.readyState=3
+  h.r.resumeAfterDrain=true
+  h.hardwareState('interrupted')
+  context.resume=()=>{context.state='running';return Promise.resolve()}
+  h.hardwareState('active')
+  await settleResume()
+  assert.equal(reconnects.length,0)
+  h.clock.advanceTo(1)
+  assert.equal(h.clock.heardSamples,12000)
+  assert.deepEqual(h.events.final,[{text:'Tail before reconnect',interrupted:false}])
+  assert.equal(reconnects.length,1)
+  assert.equal(reconnects[0],h.r)
 })
