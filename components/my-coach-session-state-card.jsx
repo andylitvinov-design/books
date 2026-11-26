@@ -1,6 +1,7 @@
 'use client'
 
 import {useMemo} from 'react'
+import {coachCapturedClientTurns,coachStageCounts} from '@/lib/coaching/coach-session-stage-view.mjs'
 import Link from 'next/link'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
@@ -10,7 +11,7 @@ import styles from './my-coach-session-state-card.module.css'
 
 const copy={
   ru:{
-    subtitle:'По вашим словам · предварительно',stages:'Этапы коучинга',information:'Ключевая информация',
+    subtitle:'Текущий протокол · ваши слова',stages:'Этапы коучинга',information:'Ключевая информация',
     done:'Пройдено',current:'Сейчас',waiting:'Впереди',mentioned:'Требует уточнения',confirmed:'Подтверждено',missing:'Не исследовано',
     topic:'Рабочая тема',outcome:'Желаемый результат',facts:'Значимые факты',
     tensions:'Возможные противоречия',resources:'Ваши ресурсы',
@@ -20,7 +21,7 @@ const copy={
     privacy:'Данные остаются в текущей вкладке. Для долгосрочного сохранения нужно отдельное согласие.'
   },
   en:{
-    subtitle:'Your words · provisional',stages:'Coaching stages',information:'Key information',
+    subtitle:'Live protocol · your words',stages:'Coaching stages',information:'Key information',
     done:'Completed',current:'Current',waiting:'Next',mentioned:'Needs confirmation',confirmed:'Verified',missing:'Not explored',
     topic:'Working topic',outcome:'Desired result',facts:'Significant facts',
     tensions:'Possible tensions',resources:'Your resources',
@@ -30,7 +31,7 @@ const copy={
     privacy:'This stays in the current tab. Long-term saving requires separate consent.'
   },
   es:{
-    subtitle:'Tus palabras · provisional',stages:'Etapas del coaching',information:'Información esencial',
+    subtitle:'Protocolo en curso · tus palabras',stages:'Etapas del coaching',information:'Información esencial',
     done:'Completado',current:'Actual',waiting:'Siguiente',mentioned:'Requiere confirmación',confirmed:'Verificado',missing:'Sin explorar',
     topic:'Tema de trabajo',outcome:'Resultado deseado',facts:'Hechos importantes',
     tensions:'Posibles contradicciones',resources:'Tus recursos',
@@ -41,6 +42,26 @@ const copy={
   }
 }
 const openingLampKey={invitation:'invitation',name:'identity',focus:'focus',confirmation:'confirmation'}
+const captureCopy={
+ ru:{title:'Реплики клиента',recorded:'Получено в этой сессии',empty:'Здесь появятся ваши распознанные ответы.',older:'Предыдущие реплики',pending:'Ответ коуча ещё не получен',confirmed:'Подтверждено',skipped:'Пропущено',automatic:'Выбрано автоматически, без ответа',quote:'Ваш ответ',hint:'Полученная реплика ещё не означает подтверждение пункта или сохранение в профиле.'},
+ en:{title:'Client statements',recorded:'Captured in this session',empty:'Your recognized answers will appear here.',older:'Earlier statements',pending:'Coach reply pending',confirmed:'Confirmed',skipped:'Skipped',automatic:'Selected automatically, no client answer',quote:'Your answer',hint:'A captured statement is not yet a confirmed checkpoint or a saved profile record.'},
+ es:{title:'Respuestas del cliente',recorded:'Recibidas en esta sesión',empty:'Tus respuestas reconocidas aparecerán aquí.',older:'Respuestas anteriores',pending:'Respuesta del coach pendiente',confirmed:'Confirmado',skipped:'Omitido',automatic:'Selección automática, sin respuesta',quote:'Tu respuesta',hint:'Una respuesta recibida aún no confirma un punto ni acredita su guardado en el perfil.'}
+}
+function CapturedStatement({item,t}){
+ return <li data-coach-captured-turn={item.turnIndex} className={styles.captureItem}>
+   <span>{item.quote}</span>{item.unanswered&&<small>{t.pending}</small>}
+ </li>
+}
+function CapturedStatements({items,t}){
+ const latest=items.slice(-3).reverse(),earlier=items.slice(0,-3).reverse()
+ return <section className={styles.captureSection} data-coach-captured-statements aria-label={t.title}>
+   <h3 className={styles.sectionTitle}><BookOpenCheck size={18} aria-hidden="true"/>{t.title}</h3>
+   <p className={styles.captureCount} role="status">{t.recorded}: {items.length}</p>
+   {items.length?<ul className={styles.captureList}>{latest.map(item=><CapturedStatement key={item.turnIndex} item={item} t={t}/>)}</ul>:<p className={styles.captureHint}>{t.empty}</p>}
+   {earlier.length>0&&<details className={styles.captureEarlier}><summary>{t.older} ({earlier.length})</summary><ul className={styles.captureList}>{earlier.map(item=><CapturedStatement key={item.turnIndex} item={item} t={t}/>)}</ul></details>}
+   <p className={styles.captureHint}>{t.hint}</p>
+ </section>
+}
 const radarPoint=(index,value)=>{
   const angle=-Math.PI/2+index*Math.PI/4
   return [Number((160+Math.cos(angle)*94*value/10).toFixed(1)),Number((123+Math.sin(angle)*94*value/10).toFixed(1))]
@@ -101,6 +122,9 @@ export default function MyCoachSessionStateCard({
   const language=copy[locale]?locale:'en'
   const t=copy[language]
   const card=useMemo(()=>coachSessionStateView({locale:language,turns,progress}),[language,turns,progress])
+  const captureT=captureCopy[language]
+  const captured=useMemo(()=>coachCapturedClientTurns(turns),[turns])
+  const openingCounts=coachStageCounts(openingPosition)
   const review=profile?.version===COACH_PROFILE_REVIEW_VERSION
   const fields=[
     {id:'topic',label:t.topic,Icon:Target,mentioned:!!card.workingTopicQuote,
@@ -120,27 +144,27 @@ export default function MyCoachSessionStateCard({
   ]
   return <div className={styles.body} data-coach-session-state-card>
     <p className={styles.intro}><BookOpenCheck size={16} aria-hidden="true"/>{t.subtitle}</p>
+    <CapturedStatements items={captured} t={captureT}/>
     {opening&&<section className={styles.stageSection} data-coach-opening-checklist
       aria-label={language==='ru'?'Начало сессии':language==='es'?'Inicio de sesión':'Session opening'}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
         {language==='ru'?'Начало сессии · 6 шагов':language==='es'?'Inicio de sesión · 6 pasos':'Session opening · 6 steps'}
       </h3>
+      <p className={styles.captureCount}>{captureT.confirmed}: {openingCounts.confirmed}/{openingCounts.total}{openingCounts.skipped>0?' · '+captureT.skipped+': '+openingCounts.skipped:''}</p>
       <ol className={styles.stageList}>
-        {openingPosition.rows.map(({id:key,label,status,active},index)=>{
+        {openingPosition.rows.map(({id:key,label,status,active,quote,automatic},index)=>{
           const done=status==='done'
-          const state=done?t.done:active?t.current:t.waiting
+          const state=done?t.done:status==='skipped'?captureT.skipped:status==='needs_confirmation'?t.mentioned:active?t.current:t.waiting
           const lamp=openingLampKey[key]
-          const value=key==='name'?opening.answers?.name?.value:
-            key==='continuity'?opening.answers?.continuity?.kind:
-            key==='focus'?opening.answers?.focus?.kind:''
           return <li key={key} className={styles.stageRow}
-            data-opening-step={key} data-stage-id={key} data-stage-status={done?'done':active?'current':'pending'} aria-current={active?'step':undefined}>
+            data-opening-step={key} data-stage-id={key} data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>
               {label}
               {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
                 aria-hidden="true"/>}
-              {value&&<small className={styles.openingValue}>{String(value).slice(0,55)}</small>}
+              {quote&&<small className={styles.openingValue} data-coach-opening-answer>{captureT.quote}: «{quote}»</small>}
+              {automatic&&<small className={styles.openingValue}>{captureT.automatic}</small>}
             </span>
             <span className={styles.stageStatus}>{state}</span>
             <ReadOnlyCheckbox checked={done}/>
