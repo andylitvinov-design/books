@@ -5,9 +5,12 @@ export const publicLocales: readonly PublicLocale[] = ['ru', 'en', 'es'];
 export function publicHomePath(locale: PublicLocale) {
   return locale === 'en' ? '/' : `/${locale}`;
 }
+export function isPublicInstallPath(pathname: string) {
+  return /^\/(?:en|ru|es)\/install\/?$/.test(pathname);
+}
 export function hasSpanishCounterpart(pathname: string) {
   if (/^\/(?:en|ru|es)\/mytube\/?$/.test(pathname)) return true;
-  if (/^\/(?:en|ru|es)\/install\/?$/.test(pathname)) return true;
+  if (isPublicInstallPath(pathname)) return true;
   if (/^\/(?:en|ru|es)\/holistic-support\/mandala\/?$/.test(pathname)) return true;
   if (/^\/(?:en|ru|es)\/pro\/?$/.test(pathname)) return true;
   if (/^\/(?:en|ru|es)\/(?:holistic-support|temple-support|temple-insights|personality-profiles|tests)\/?$/.test(pathname)) return true;

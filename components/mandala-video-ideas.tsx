@@ -369,6 +369,19 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   onPendingChange(false);
  };
 
+ const sizeControl=(
+  <div className={css.sizeCard} data-video-ideas-size={languagePicker?"advanced":"inline"}>
+   <div className={css.sizeTitle}>
+    <label htmlFor="video-ideas-text-size"><span className={css.sample} data-scale={scaleValues[textSizeIndex]}>Aa</span>{t.size}</label>
+    <output htmlFor="video-ideas-text-size">{t.sizes[textSizeIndex]}</output>
+   </div>
+   <input id="video-ideas-text-size" data-video-ideas-text-size type="range" min={0} max={2} step={1}
+    value={textSizeIndex} disabled={disabled}
+    onChange={event=>{onResetPreview();onChange(old=>({...old,textScale:scaleValues[Number(event.currentTarget.value)]}));}}/>
+   <div className={css.sizeHints} aria-hidden="true">{t.sizes.map(value=><span key={value}>{value}</span>)}</div>
+  </div>
+ );
+
  return <section className={css.ideas} data-video-text-redesign={languagePicker?"true":undefined} data-video-ideas-compact data-video-ideas-goal-category={goalContext.categoryId||"neutral"} aria-label={t.select} hidden={!active}>
   {languagePicker?<header className={css.languageHeader} data-video-text-language-header>
    <h3 id="video-ideas-phrases-heading">{locale==="ru"?"Фразы в вашем видео":locale==="es"?"Frases de tu vídeo":"Text for your video"}</h3>
@@ -397,16 +410,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
     </button>)}
   </nav>:null}
   {languagePicker&&languageNotice?<p className={css.languageNotice} role="status" data-video-text-language-notice>{languageNotice}</p>:null}
-  <div className={css.sizeCard} data-video-ideas-size>
-   <div className={css.sizeTitle}>
-    <label htmlFor="video-ideas-text-size"><span className={css.sample} data-scale={scaleValues[textSizeIndex]}>Aa</span>{t.size}</label>
-    <output htmlFor="video-ideas-text-size">{t.sizes[textSizeIndex]}</output>
-   </div>
-   <input id="video-ideas-text-size" data-video-ideas-text-size type="range" min={0} max={2} step={1}
-    value={textSizeIndex} disabled={disabled}
-    onChange={event=>{onResetPreview();onChange(old=>({...old,textScale:scaleValues[Number(event.currentTarget.value)]}));}}/>
-   <div className={css.sizeHints} aria-hidden="true">{t.sizes.map(value=><span key={value}>{value}</span>)}</div>
-  </div>
+  {languagePicker?<details className={css.sizeDisclosure} data-video-text-size-settings>
+   <summary><SlidersHorizontal size={17} aria-hidden="true"/><span>{t.size}</span><ChevronDown size={16} aria-hidden="true"/></summary>
+   {sizeControl}
+  </details>:sizeControl}
 
   <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
    {!languagePicker?<div className={css.phraseHeader}>
