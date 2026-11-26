@@ -24,5 +24,5 @@ test('exact owner-scoped archive lookup and explicit lazy view',()=>{
  assert.match(store,/where account_id=\$1 and protocol_id=\$2/)
  assert.match(ui,/onClick=\{\(\)=>void open\(\)\}/)
  assert.match(ui,/AbortController/)
- assert.match(ui,/protocol\.id!==report\.id\|\|protocol.day!==report.day/)
+ assert.match(ui,/protocol\?\.id!==report\.id\|\|protocol\.day!==report\.day/)
 })
