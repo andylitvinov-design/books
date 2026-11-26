@@ -690,3 +690,6 @@
 
 /* Closed extra directions must not expose focusable topic controls in Chromium or WebKit. */
 .root .extraDirections:not([open]) > :not(summary){display:none!important}
+
+.root .welcomeMeta:has(.lukasEntry){flex-wrap:wrap;justify-content:space-between!important}
+.root .welcomeListen.lukasEntry{background:#087b61;color:#fff;min-height:44px!important;padding:7px 10px!important;font-size:clamp(11px,3.3vw,13px)!important;white-space:nowrap}
