@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {practiceCatalog,weekStart,priorWeek,skillTags,readSkillTags,recommendedSkill,practiceTags,validEntry,stableJournalId,normalizeSkills} from '@/lib/app/daybook-micro-coaching.mjs'
+import DaybookCoachLink from './daybook-coach-link'
 import css from './daybook-today.module.css'
 const COPY={
  en:['Micro coaching · 2–3 min','Optional private exercises. Answers are not automatically sent to AI or a specialist.','My weekly skills','Choose one or two skills and rate current confidence 0–10. Not a diagnostic score.','First skill','Second skill (optional)','Current self-rating','A real example (optional)','Save weekly focus','Previous week self-rating','Suggested from your chosen skills and self-ratings; choose another if you wish.','Practice','Start','Next','Back','Stop without saving','What did you notice? (optional)','Review your answers','Save practice','Saved and verified in your journal.','Already saved for this date.','Checking your private journal…','Could not verify your journal. Nothing is marked saved.','Check saved entry','Saving…','None','Goal (optional)','Retry save','Current week self-rating','No verified previous-week rating.','Review or delete saved notes in your private journal.','Discard unsaved answers?','Save not confirmed; retry the same answers or check the saved entry.','Date','Week starting'],
@@ -52,6 +53,12 @@ export default function DaybookMicroCoaching({accountId,locale='en',day,goals=[]
  const lock=['saving','failed'].includes(daily.phase),weekLock=['saving','failed'].includes(weekly.phase)
  const allowedGoals=goals.filter(g=>['active','accepted','in_progress'].includes(g.status)),goalId=allowedGoals.some(g=>g.id===goal)?goal:null
  const valid=answers.slice(0,3).every(a=>a.trim())
+ const mayLeave=!lock&&!weekLock&&!(step>=0&&daily.phase==='ready')
+ function coachLink(v){
+  if(!['existing','saved'].includes(v.phase)||!v.entry?.id||!Number.isInteger(v.entry.revision)||v.entry.revision<1)return null
+  return <DaybookCoachLink accountId={accountId} kind="journal" itemId={v.entry.id} revision={v.entry.revision} locale={lang} disabled={!mayLeave} onSessionLost={onSessionLost}/>
+ }
+ function ratingChange(skill){const before=old?.find(s=>s.id===skill.id);if(!before)return '';const delta=skill.rating-before.rating;return ' ('+before.rating+' → '+skill.rating+'; '+(delta>0?'+':'')+delta+')'}
  function reset(){setAnswers(['','','','']);setStep(-1)}
  function stop(){if(!answers.some(a=>a.trim())||window.confirm(t[31]))reset()}
  function status(v){
@@ -69,15 +76,15 @@ export default function DaybookMicroCoaching({accountId,locale='en',day,goals=[]
    {weekly.phase==='ready'&&<><label>{t[4]}<select value={s1} onChange={e=>setS1(e.target.value)}><option value="">{t[25]}</option>{catalog.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label>{t[6]}<input type="number" min="0" max="10" step="1" value={r1} onChange={e=>setR1(e.target.value)}/></label>
    <label>{t[5]}<select value={s2} onChange={e=>setS2(e.target.value)}><option value="">{t[25]}</option>{catalog.filter(p=>p.id!==s1).map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>{s2&&<label>{t[6]}<input type="number" min="0" max="10" step="1" value={r2} onChange={e=>setR2(e.target.value)}/></label>}
    <label>{t[7]}<textarea maxLength={800} value={example} onChange={e=>setExample(e.target.value)}/></label><button type="button" className={css.primary} disabled={!skillSelection||lock} onClick={saveWeekly}>{t[8]}</button></>}
-   {current&&<><p>{t[28]}</p><ul>{current.map(s=><li key={s.id}>{label(s.id)}: {s.rating}/10</li>)}</ul><p>{t[30]}</p></>}
+   {current&&<><p>{t[28]}</p><ul>{current.map(s=><li key={s.id}>{label(s.id)}: {s.rating}/10{ratingChange(s)}</li>)}</ul><p>{t[30]}</p>{mayLeave&&coachLink(weekly)}</>}
    {old&&<><p>{t[9]}</p><ul>{old.map(s=><li key={s.id}>{label(s.id)}: {s.rating}/10</li>)}</ul></>}{previous.phase==='ready'&&<p>{t[29]}</p>}{['loading','error'].includes(previous.phase)&&status(previous)}
   </details>
   <p>{t[33]}: {day}</p>{recommendation&&<p>{t[10]} {label(recommendation)}</p>}
   <label>{t[11]}<select value={practice} disabled={lock||(step>=0&&daily.phase==='ready')} onChange={e=>{setChosen(true);setPractice(e.target.value);reset()}}>{catalog.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
   {status(daily)}
   {daily.phase==='ready'&&step===-1&&<button type="button" className={css.primary} onClick={()=>{setChosen(true);setStep(0)}}>{t[12]}</button>}
-  {daily.phase==='ready'&&step>=0&&step<4&&<div><p>{step+1}/4</p><label>{step===3?t[16]:selected.steps[step]}<textarea maxLength={800} value={answers[step]} onChange={e=>setAnswers(old=>old.map((a,i)=>i===step?e.target.value:a))}/></label>{step>0&&<button type="button" onClick={()=>setStep(n=>n-1)}>{t[14]}</button>}<button type="button" className={css.primary} disabled={step<3&&!answers[step].trim()} onClick={()=>setStep(n=>n+1)}>{t[13]}</button><button type="button" onClick={stop}>{t[15]}</button></div>}
+  {daily.phase==='ready'&&step>=0&&step<4&&<div><p>{step+1}/4</p><label>{step===3?t[16]:selected.steps[step]}<textarea maxLength={800} value={answers[step]} onChange={e=>setAnswers(old=>old.map((a,i)=>i===step?e.target.value:a))}/></label>{step>0&&<button type="button" onClick={()=>setStep(step-1)}>{t[14]}</button>}<button type="button" className={css.primary} disabled={step<3&&!answers[step].trim()} onClick={()=>setStep(step+1)}>{t[13]}</button><button type="button" onClick={stop}>{t[15]}</button></div>}
   {daily.phase==='ready'&&step===4&&<div><h3>{t[17]}</h3>{selected.steps.map((q,i)=><div key={i}><p>{q}</p><p>{answers[i]}</p></div>)}{answers[3]&&<p>{t[16]}: {answers[3]}</p>}<button type="button" onClick={()=>setStep(3)}>{t[14]}</button><button type="button" disabled={!valid||weekLock} className={css.primary} onClick={savePractice}>{t[18]}</button><button type="button" onClick={stop}>{t[15]}</button></div>}
-  {['existing','saved'].includes(daily.phase)&&<p>{t[30]}</p>}
+  {['existing','saved'].includes(daily.phase)&&<><p>{t[30]}</p>{mayLeave&&coachLink(daily)}</>}
  </section>
 }
