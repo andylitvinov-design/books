@@ -24,6 +24,16 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 2
+          # Syntax and the two Node contracts need source only, not the large
+          # public media tree. Keep every workflow, script and test plus the
+          # current contract's isolated CI/YouTube source dependencies.
+          sparse-checkout: |
+            .github
+            scripts
+            tests
+            lib/ci
+            lib/youtube
+            app/qa/youtube-phone
       - name: Pin exact PR event base before shallow changed-workflow audit
         if: github.event_name == 'pull_request'
         shell: bash
@@ -81,6 +91,18 @@ jobs:
             echo 'No workflow YAML files found; refusing empty validation' >&2
             exit 1
           fi
+          # Independently prove the sparse workspace includes every tracked
+          # YAML definition. Missing files must fail, never shrink validation.
+          tracked=0
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.yml|*.yaml)
+                [[ -f "$file" ]] || { echo "Missing tracked workflow: $file" >&2; exit 1; }
+                tracked=$((tracked + 1))
+                ;;
+            esac
+          done < <(git ls-tree -r --name-only -z HEAD -- .github/workflows/)
+          (( tracked == ${#files[@]} )) || { echo 'Workflow inventory mismatch' >&2; exit 1; }
           printf 'Full workflow validation: %s definitions\n' "${#files[@]}" >> "$GITHUB_STEP_SUMMARY"
           # Full baseline syntax/expression audit: historical shell warnings are
           # inventoried separately; changed workflows still get strict shellcheck.
