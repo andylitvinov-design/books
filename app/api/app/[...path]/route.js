@@ -3,6 +3,8 @@ import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, val
 import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import { createReikiJoinIntent,verifyReikiJoinIntent,reikiJoinCookieName,createReikiRetryProof,verifyReikiRetryProof,REIKI_RETRY_COOKIE,REIKI_JOIN_TTL,REIKI_RETRY_TTL } from '@/lib/academy/reiki-registration-proof.mjs'
+import { syncReikiRegistration } from '@/lib/academy/reiki-registration-store'
 import {
   TELEGRAM_OIDC_PROVIDER, IDENTITY_LINK_COOKIE, telegramLoginEnabled, oauthProvider,
   createIdentityLinkProof, verifyIdentityLinkProof,
@@ -289,8 +291,11 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider', 'reikiSharing'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider', 'reikiSharing', 'reikiRegistration'])
       const authChoice = body.provider ?? 'google'
+      if(body.reikiRegistration!==undefined && (authChoice!=='google'||body.continueTo!=='energywork-daybook'||!['en','ru','es'].includes(body.reikiRegistration)))
+        throw new AppError('INVALID_REIKI_REGISTRATION',400)
+      const reikiJoin=body.reikiRegistration===undefined?null:createReikiJoinIntent(body.reikiRegistration,config)
       if (authChoice !== 'google' && authChoice !== 'telegram')
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
       if (body.reikiSharing !== undefined && (body.reikiSharing !== true || !['energywork','energywork-daybook'].includes(body.continueTo) || authChoice !== 'google' || body.native)) throw new AppError('INVALID_CONTINUATION',400)
@@ -371,7 +376,7 @@ async function handle(request, { params }) {
         provider: selectedProvider.provider,
         options: {
           ...(authChoice === 'google' ? { scopes: 'openid email profile' } : { scopes: selectedProvider.scopes }),
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${reikiFlow ? '&reikiFlow=' + reikiFlow : ''}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${reikiFlow ? '&reikiFlow=' + reikiFlow : ''}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}${reikiJoin ? `&reikiJoin=${reikiJoin.nonce}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -380,6 +385,9 @@ async function handle(request, { params }) {
       const response = json({ redirectUrl: data.url, ...(reikiFlow ? { reikiFlow } : {}) })
       if (['energywork','energywork-daybook'].includes(continueTo) && (reikiFlow || request.cookies?.get(REIKI_CONSENT_COOKIE)?.value)) response.cookies.set(REIKI_CONSENT_COOKIE,
         reikiFlow ? reikiConsentProof(reikiFlow,null,config) : '', reikiConsentCookieOptions(config,reikiFlow ? undefined : 0))
+      if(reikiJoin)response.cookies.set(reikiJoin.cookieName,reikiJoin.value,{
+        path:'/api/app/auth',maxAge:REIKI_JOIN_TTL,httpOnly:true,secure:!config.test,sameSite:'lax',
+      })
       return response
     }
     if (joined === 'auth/callback' && method === 'GET') {
@@ -396,6 +404,12 @@ async function handle(request, { params }) {
         coachingMode = url.searchParams.get('coachingMode'),
         coachingLang = url.searchParams.get('coachingLang'),
         recipientSlug = url.searchParams.get('recipientSlug')
+      const reikiJoinNonce=url.searchParams.get('reikiJoin')
+      const reikiCookie=reikiJoinNonce===null?null:reikiJoinCookieName(reikiJoinNonce)
+      if(reikiJoinNonce!==null && (!reikiCookie||continueTo!=='energywork-daybook'||url.searchParams.getAll('reikiJoin').length!==1))
+        throw new AppError('INVALID_REIKI_REGISTRATION',400)
+      const reikiLocale=reikiCookie?verifyReikiJoinIntent(reikiJoinNonce,request.cookies.get(reikiCookie)?.value,config):null
+      let reikiRetryUpdate
       const linkMode = url.searchParams.get('link')
       if (linkMode !== null && linkMode !== '1') throw new AppError('INVALID_LINK_FLOW',400)
       const linkProof = linkMode === '1'
@@ -407,6 +421,12 @@ async function handle(request, { params }) {
         throw new AppError('INVALID_LINK_FLOW',403)
       const finishAuth = response => {
         const applied = auth.apply(response)
+        if(reikiCookie&&url.searchParams.get('native')!=='1')applied.cookies.set(reikiCookie,'',{
+          path:'/api/app/auth',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+        })
+        if(reikiRetryUpdate!==undefined)applied.cookies.set(REIKI_RETRY_COOKIE,reikiRetryUpdate||'',{
+          path:'/api/app',maxAge:reikiRetryUpdate?REIKI_RETRY_TTL:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+        })
         if (linkedAccount) applied.cookies.set(IDENTITY_LINK_COOKIE,'',{
           path:'/api/app/auth',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
         })
@@ -437,7 +457,7 @@ async function handle(request, { params }) {
         if (linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id','reikiJoin']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -559,6 +579,17 @@ async function handle(request, { params }) {
           }))
       }
       const account=await createAppRepository(config).ensureAccount(actor)
+      if(reikiLocale&&!linkedAccount){
+        try{
+          await syncReikiRegistration(config,actor,auth.client,reikiLocale)
+          reikiRetryUpdate=null
+        }catch{
+          // Preserve verified login; a scoped, signed account-bound cookie
+          // retries the operational registration on the next Cabinet bootstrap.
+          if(actor.email)reikiRetryUpdate=createReikiRetryProof(actor,reikiLocale,config)
+          console.error('HH_REIKI_CRM_REGISTRATION_RETRY')
+        }
+      }
       // Auto-attach only proven Business enquiries; never invalidate login
       // on a transient CRM error. Settings retries an authenticated POST.
       if(telegramLoginEnabled()){
@@ -1394,7 +1425,21 @@ async function handle(request, { params }) {
       // account check and private rate limit above. Other tabs stay unchanged.
       const requestedView = new URL(request.url).searchParams.get('view')
       const view = requestedView === 'portrait' || requestedView === 'practice' ? requestedView : 'full'
-      return json(await repo.bootstrap(actor, { view }))
+      const data=await repo.bootstrap(actor, { view })
+      const retryCookie=request.cookies?.get(REIKI_RETRY_COOKIE)?.value
+      const retryLocale=retryCookie?verifyReikiRetryProof(actor,retryCookie,config):null
+      let clearRetry=Boolean(retryCookie&&!retryLocale)
+      if(retryLocale){
+        try{
+          await syncReikiRegistration(config,actor,auth.client,retryLocale)
+          clearRetry=true
+        }catch{console.error('HH_REIKI_CRM_REGISTRATION_RETRY')}
+      }
+      const response=json(data)
+      if(clearRetry)response.cookies.set(REIKI_RETRY_COOKIE,'',{
+        path:'/api/app',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+      })
+      return response
     }
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))

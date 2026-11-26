@@ -405,7 +405,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
-    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
+    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,courseSessionId:r.courseSessionId,
           ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
@@ -463,20 +463,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const preceding=r.history.slice(-10)
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
-    propsRef.current.onInputFinal?.(value)
+    if(propsRef.current.onInputFinal?.(value)===true){stop();return true}
     r.openingHistory.push(value)
     r.openingHistory=r.openingHistory.slice(0,33)
     r.lastAssistantTurnFinished=false
     r.pendingDirectorHint=''
     void checkpoint(r,value,preceding)
+    return false
   }
   function commitOutput(r){
     const value=audioTranscription(r.outputText)
     r.outputText=''
     propsRef.current.onOutputInterim?.('')
     if(!value||r.ended)return
-    r.history.push({role:'assistant',content:value})
-    r.history=r.history.slice(-20)
+    // Unheard/partial speech is retained in the private transcript, not fed
+    // back to the Director as a completed spoken assistant turn.
+    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20)}
     propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
     r.interrupted=false
   }
@@ -866,12 +868,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     const allowAudio=r.audioGate.accept(frame)
     if(frame.output&&allowAudio){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
       propsRef.current.onOutputInterim?.(r.outputText)
     }
     if(frame.audio?.length){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       if(allowAudio){
         r.replyWatch?.touch()
         let outcome='dropped'
@@ -890,7 +892,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }
     }
     if(frame.turnComplete){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       r.modelTurnComplete=true
       finishAudibleTurn(r)
     }
@@ -1258,7 +1260,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
-    propsRef.current.onInputFinal?.(body)
+    if(propsRef.current.onInputFinal?.(body)===true){stop();return true}
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
     r.lastAssistantTurnFinished=false

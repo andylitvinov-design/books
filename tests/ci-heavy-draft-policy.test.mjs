@@ -250,15 +250,54 @@ test('Support Guide checks browser syntax on PRs and runs browser QA on push or 
   assert.match(browser,/playwright install --with-deps chromium webkit/);
   assert.match(browser,/^          node scripts\/verify-holistic-support-guided-card\.mjs$/m);
 });
-test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-production/manual',()=>{
+test('wave 2: messenger delegates duplicate booking lint and tsc only on protected production PRs',()=>{
   const source=read('hh-messenger-notification-build.yml');
   assert.ok(source.includes('npx --no-install eslint lib/app/repository.js'));
+  const booking=source.split('      - name: Booking lint and TypeScript\n')[1]?.split('      - name: Lint new notification')[0];
+  assert.ok(booking);
+  assert.match(booking,/if \[\[ "\$GITHUB_EVENT_NAME" != "pull_request" \|\| "\$HH_TARGET_BASE" != "codex\/public-book-library" \]\]; then\n\s+npx --no-install eslint lib\/app\/repository\.js/);
   assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
   assert.ok(source.includes('npx --no-install tsc --noEmit'));
   assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
   assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.match(source,/^  workflow_dispatch:/m);
 });
+test('duplicate Profile Axis lint is delegated only to protected Core; strict writer lint and OAuth stay independent',()=>{
+  const source=read('hh-profile-axis-matching.yml');
+  const gate="if: "+ "$"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes('- name: Scoped ESLint\n        '+gate+'\n        run: |'));
+  assert.match(source,/- name: Lint writer API, UI and contracts\n\s+run: npx --no-install eslint --max-warnings 0/);
+  assert.match(source,/node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
+  assert.match(source,/tests\/account-picker-disclosure-verifier\.test\.mjs/);
+  assert.match(source,/tests\/intelligence-risk\.test\.mjs/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
+test('Reiki capture retains every test and installs only locked TypeScript for unchanged reviewed dependencies',()=>{
+  const source=read('reiki-enquiry-capture-ci.yml');
+  const planner=source.split('      - name: Plan exact reviewed Reiki capture dependency closure\n')[1]?.split('      - name: Install only locked TypeScript')[0];
+  assert.ok(planner);
+  assert.ok(planner.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  const rows=planner.split("done <<'HH_CAPTURE_REVIEWED'\n")[1]?.split('          HH_CAPTURE_REVIEWED\n')[0]?.trim().split('\n').map(line=>line.trim().split(/\s+/));
+  assert.equal(rows?.length,26);
+  assert.equal(new Set(rows.map(row=>row[1])).size,26);
+  assert.ok(rows.every(([sha])=>/^[a-f0-9]{40}$/.test(sha)));
+  for(const name of ['tests/kundalini-reiki-course.test.mjs','tests/reiki-unified-order-capture.test.mjs','tests/academy-course-capture.test.mjs','tests/reiki-landing-conversion.test.mjs','tests/contact-channel-chooser.test.mjs','tests/reiki-mobile-order-crm.test.mjs','tests/remote-energy-support-booking.test.mjs','tests/energywork-kundalini-ygg-study.test.mjs','tests/holistic-support-consultation-tests-separation.test.mjs']){
+    assert.ok(rows.some(row=>row[1]===name),name);
+    assert.ok(source.split('      - name: Confirm Kundalini and Reiki course capture behaviour')[1].includes(name),name);
+  }
+  for(const name of ['package.json','package-lock.json','lib/practitioners/public-service-enquiry-input.mjs','lib/assessments/contracts.js']) assert.ok(rows.some(row=>row[1]===name),name);
+  assert.ok(planner.includes('git hash-object -- "$file" 2>/dev/null || true'));
+  assert.ok(planner.includes('if [[ "$actual" != "$expected" ]]; then minimal=false; fi'));
+  assert.ok(source.includes("if: steps.capture-deps.outputs.minimal == 'true'"));
+  assert.ok(source.includes("if: steps.capture-deps.outputs.minimal != 'true'\n        run: npm ci --no-audit --no-fund"));
+  assert.match(source,/entry\.integrity/);
+  assert.match(source,/entry\.hasInstallScript/);
+  assert.match(source,/npm ci --prefix "\$tmp" --include=dev --ignore-scripts/);
+  assert.match(source,/npx --no-install tsc --noEmit/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{
   const source=read('hh-my-progress-release.yml');
   assert.match(source,/^  push:/m);
