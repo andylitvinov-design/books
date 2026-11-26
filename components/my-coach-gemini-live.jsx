@@ -20,7 +20,7 @@ import {
 const ui={
   ru:{start:'Начать живой разговор',paused:'Разговор на паузе',continue:'Продолжить разговор',resumeUnavailable:'Прежнее голосовое соединение недоступно. История текущего диалога сохранена; можно продолжить текстом или завершить сессию.',connecting:'Подключаем голос Gemini…',
     listening:'Слушаю',speaking:'Коуч говорит',thinking:'Коуч отвечает…',
-    interrupt:'Перебить коуча',stop:'Завершить разговор',mic:'Микрофон недоступен',
+    interrupt:'Перебить коуча',stop:'Завершить разговор',mic:'Микрофон недоступен',micRecovering:'Восстанавливаем микрофон…',micResumeFailed:'Микрофон не восстановился. Нажмите Play ещё раз или продолжите текстом. История сохранена.',
     failure:'Живой голос недоступен. Можно продолжить текстом.',
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
     reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Восстанавливаем звук…',audioUnavailable:'Устройство пока не восстановило звук. История разговора сохранена.',
@@ -47,7 +47,7 @@ const ui={
      ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
   en:{start:'Start live conversation',paused:'Conversation paused',continue:'Continue conversation',resumeUnavailable:'The previous voice connection is unavailable. Your current dialogue is preserved; continue by text or end the session.',connecting:'Connecting Gemini Live…',
     listening:'Listening',speaking:'Coach speaking',thinking:'Coach replying…',
-    interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',
+    interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',micRecovering:'Restoring microphone…',micResumeFailed:'The microphone did not recover. Press Play again or continue by text. Your conversation is preserved.',
     failure:'Live voice is unavailable. You can continue by text.',
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
     reconnecting:'Restoring live voice…',audioRoute:'Restoring audio…',audioUnavailable:'The device has not restored audio yet. Your conversation is preserved.',
@@ -74,7 +74,7 @@ const ui={
      ended:'20 minutes — close the voice session or begin a new one.'},
   es:{start:'Iniciar voz en vivo',paused:'Conversación en pausa',continue:'Continuar conversación',resumeUnavailable:'La conexión de voz anterior no está disponible. Tu diálogo se conserva; continúa por texto o termina la sesión.',connecting:'Conectando voz Gemini…',
     listening:'Escuchando',speaking:'El coach habla',thinking:'Respondiendo…',
-    interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',
+    interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',micRecovering:'Restableciendo el micrófono…',micResumeFailed:'El micrófono no se recuperó. Pulsa Play de nuevo o continúa por texto. Tu conversación se conserva.',
     failure:'La voz en vivo no está disponible. Puedes seguir por texto.',
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
     reconnecting:'Restableciendo la voz…',audioRoute:'Restableciendo el audio…',audioUnavailable:'El dispositivo aún no ha restablecido el audio. La conversación se conserva.',
@@ -221,6 +221,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r=runtime.current
     if(!r||r.ended)return false
     r.pauseEpoch=(r.pauseEpoch||0)+1
+    // Invalidate an outstanding Play even when iOS delays its permission promise.
+    r.resumeInFlight=false
     if(!r.paused){
       r.paused=true
       r.routePrimed=false
@@ -239,16 +241,16 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // Automatic VAD: flush the already-sent input, not a fabricated turn.
       if(r.ready&&r.introSent)sendSocket(r,{realtimeInput:{audioStreamEnd:true}})
     }
-    // Also cover a second hide while a user-activated resume is in flight.
-    for(const track of r.stream?.getAudioTracks?.()||[])track.enabled=false
+    // iOS can leave a formally live track permanently silent after backgrounding.
+    // Release capture on every pause; Play will open a fresh local microphone.
+    releasePausedCapture(r)
     r.player?.setVolume?.(0)
     try{void r.context?.suspend?.().catch?.(()=>{})}catch{}
     propsRef.current.onMicLevel?.(0)
     setAudioNeedsGesture(false)
     if(disconnect){
       // pagehide may place this same document in the back/forward cache.
-      // Release hardware and the socket, but keep the in-memory checkpoint.
-      for(const track of r.stream?.getTracks?.()||[])try{track.stop()}catch{}
+      // Hardware is already released; park only transport and retain checkpoint.
       if(r.socket){
         const socket=r.socket
         parkPausedSocket(r)
@@ -258,6 +260,16 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     phaseChange('paused')
     notify(r.resumeUnavailable?t.resumeUnavailable:'')
     return true
+  }
+  function releasePausedCapture(r){
+    r.captureEpoch=(r.captureEpoch||0)+1
+    if(r.processor?.port)r.processor.port.onmessage=null
+    if(r.processor?.onaudioprocess)r.processor.onaudioprocess=null
+    for(const node of [r.source,r.processor,r.sink])try{node?.disconnect()}catch{}
+    r.source=null;r.processor=null;r.sink=null
+    // Keep the ended stream reference until replacement, so pending cold startup
+    // is distinguishable from an established session on pause.
+    for(const track of r.stream?.getTracks?.()||[])try{track.enabled=false;track.stop()}catch{}
   }
   function parkPausedSocket(r,denied=false){
     r.ready=false;r.socket=null;r.reconnectSoon=false
@@ -293,45 +305,66 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.resumeUnavailable=true
       notify(t.resumeUnavailable);return false
     }
-    const epoch=r.pauseEpoch
-    r.resumeInFlight=true
+    // If cold startup is still awaiting the original permission, do not open
+    // a second microphone. That startup will park its stream when it arrives.
+    if(!r.stream){notify(t.micRecovering);return false}
+    const epoch=r.pauseEpoch,attempt={}
+    r.resumeInFlight=attempt
     let freshStream=null
+    const current=()=>!r.ended&&r.resumeInFlight===attempt&&
+      epoch===r.pauseEpoch&&document.visibilityState!=='hidden'
+    const stopStream=stream=>{
+      for(const track of stream?.getTracks?.()||[])try{track.stop()}catch{}
+    }
+    const bounded=(promise,ms)=>new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(Error('PAUSED_AUDIO_TIMEOUT')),ms)
+      Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value)},
+        error=>{clearTimeout(timer);reject(error)})
+    })
     try{
-      // Both browser permissions are requested directly from the Play gesture.
+      releasePausedCapture(r)
+      notify(t.micRecovering)
+      // Both browser permissions begin directly in the Play gesture.
       prepareCoachIos27LiveDuplex(navigator)
-      const needsMic=r.stream&&r.stream.getAudioTracks().every(track=>track.readyState==='ended')
-      const audioReady=Promise.resolve(r.context.resume?.())
-      const microphone=needsMic?navigator.mediaDevices.getUserMedia({
+      const audioReady=Promise.resolve(r.context.resume?.()).then(()=>{
+        if(!current()&&r.paused&&!r.ended&&!r.resumeInFlight)
+          void r.context.suspend?.().catch?.(()=>{})
+      })
+      const microphone=Promise.resolve(navigator.mediaDevices.getUserMedia({
         video:false,audio:{channelCount:1,echoCancellation:true,
           noiseSuppression:true,autoGainControl:true},
-      }):Promise.resolve(null)
-      const [audioResult,micResult]=await Promise.allSettled([audioReady,microphone])
-      if(micResult.status==='fulfilled')freshStream=micResult.value
-      if(r.ended||epoch!==r.pauseEpoch||document.visibilityState==='hidden'){
-        for(const track of freshStream?.getTracks?.()||[])track.stop()
-        if(!r.ended){r.player?.setVolume?.(0);void r.context.suspend?.().catch?.(()=>{})}
-        return false
-      }
-      if(audioResult.status==='rejected'||micResult.status==='rejected'||
-         r.context.state!=='running')throw Error('PAUSED_AUDIO_UNAVAILABLE')
-      if(freshStream){
-        for(const track of freshStream.getAudioTracks())track.enabled=false
-        try{r.source?.disconnect();r.processor?.disconnect();r.sink?.disconnect()}catch{}
-        if(r.processor?.port)r.processor.port.onmessage=null
-        if(r.processor?.onaudioprocess)r.processor.onaudioprocess=null
-        r.stream=freshStream
-        watchMicrophone(r)
-        r.resampler=new GeminiLivePcmResampler(r.context.sampleRate)
-        await installCapture(r)
-      }
-      if(r.ended||epoch!==r.pauseEpoch||document.visibilityState==='hidden'){
-        for(const track of freshStream?.getTracks?.()||[])track.stop()
-        if(!r.ended){r.player?.setVolume?.(0);void r.context.suspend?.().catch?.(()=>{})}
-        return false
-      }
-      r.paused=false
+      })).then(stream=>{
+        if(!current()){stopStream(stream);throw Error('STALE_MICROPHONE')}
+        freshStream=stream
+        return stream
+      })
+      await bounded(Promise.all([audioReady,microphone]),5000)
+      if(!current()){stopStream(freshStream);return false}
+      if(r.context.state!=='running')throw Error('PAUSED_AUDIO_UNAVAILABLE')
+      const tracks=freshStream.getAudioTracks()
+      if(!tracks.some(track=>track.readyState==='live'))throw Error('PAUSED_MIC_UNAVAILABLE')
+      for(const track of tracks)track.enabled=false
+      r.stream=freshStream
+      watchMicrophone(r)
+      r.resampler=new GeminiLivePcmResampler(r.context.sampleRate)
+      let confirmFrame
+      const firstFrame=new Promise(resolve=>{confirmFrame=resolve})
+      const installed=await bounded(installCapture(r,chunk=>{
+        if(current()&&chunk?.length&&tracks.some(track=>
+          track.readyState==='live'&&track.enabled&&track.muted!==true))confirmFrame()
+      }),2500)
+      if(!current()){stopStream(freshStream);return false}
+      if(installed===false)throw Error('PAUSED_CAPTURE_UNAVAILABLE')
       activateCoachIos27LiveDuplex(navigator)
-      for(const track of r.stream?.getAudioTracks?.()||[])track.enabled=true
+      for(const track of tracks)track.enabled=true
+      // While probing, r.paused still gates provider PCM. Never claim Listening
+      // until the new graph has delivered an actual frame from an unmuted track.
+      await bounded(firstFrame,2500)
+      if(!current()){stopStream(freshStream);return false}
+      if(r.context.state!=='running'||!tracks.some(track=>
+        track.readyState==='live'&&track.enabled&&track.muted!==true))
+        throw Error('PAUSED_MIC_UNAVAILABLE')
+      r.paused=false
       r.player?.setVolume?.(1)
       notify('')
       phaseChange(r.ready?(r.pausedPhase==='thinking'?'thinking':'listening'):'loading')
@@ -355,16 +388,16 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       flushSideband(r)
       return true
     }catch{
-      for(const track of freshStream?.getTracks?.()||[])try{track.stop()}catch{}
-      if(!r.ended){
+      stopStream(freshStream)
+      if(current()){
         r.paused=true
-        for(const track of r.stream?.getAudioTracks?.()||[])track.enabled=false
+        releasePausedCapture(r)
         r.player?.setVolume?.(0)
         try{void r.context.suspend?.().catch?.(()=>{})}catch{}
-        phaseChange('paused');notify(t.audioRoute)
+        phaseChange('paused');notify(t.micResumeFailed)
       }
       return false
-    }finally{r.resumeInFlight=false}
+    }finally{if(r.resumeInFlight===attempt)r.resumeInFlight=false}
   }
 
   function interrupt(){
@@ -911,10 +944,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // A louder speaker leaves more residual echo. Raise the threshold with
     // that level, while a quiet caller over softer playback can still pass.
     const speechThreshold=residual===null?.013:Math.max(.0105,Math.min(.013,.21*level))
-    if(micLevel>=speechThreshold)r.lastHumanAudioAt=Date.now()
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,micLevel*4)))
     const frameMs=1000*audio.length/r.context.sampleRate
     const event=r.bargeDetector.sample(micLevel,protectedPlayback,frameMs,speechThreshold)
+    if((!protectedPlayback&&micLevel>=speechThreshold)||r.bargeDetector.userActive)r.lastHumanAudioAt=Date.now()
     if(event==='duck'&&r.player.playing)r.player.setVolume(.4)
     else if(event==='restore')r.player.setVolume(1)
     else if(event==='interrupt')interrupt()
@@ -934,7 +967,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // Keep the sample clock running through echo and failed onsets. Google
       // must never hear the candidate before the local barge-in decision.
       // Send a genuine onset in order, including its first syllable.
-      if(residual!==null&&micLevel<speechThreshold)pcm.fill(0)
+      // Keep quieter phonemes and brief gaps in a candidate/confirmed phrase.
+      // The downstream gate zeros rejected playback candidates; never erase
+      // portions of a real utterance merely because echo analysis ran on it.
       const pending=r.pendingMic
       if(protectedPlayback&&!r.bargeDetector.userActive&&r.bargeDetector.candidateMs>0){
         pending.push(pcm)
@@ -957,23 +992,29 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
-  async function installCapture(r){
-    const ctx=r.context
+  async function installCapture(r,onFrame){
+    const ctx=r.context,stream=r.stream,epoch=r.captureEpoch||0
+    const stale=()=>r.ended||r.stream!==stream||(r.captureEpoch||0)!==epoch
     let processor
+    const deliver=chunk=>{
+      if(stale()||r.processor!==processor)return
+      onFrame?.(chunk)
+      capture(r,chunk)
+    }
     if(ctx.audioWorklet?.addModule&&typeof window.AudioWorkletNode==='function'){
       try{
         await ctx.audioWorklet.addModule('/audio/my-coach-gemini-live-worklet.js')
-        if(r.ended)return
+        if(stale())return false
         processor=new window.AudioWorkletNode(ctx,'holistic-gemini-live-capture')
-        processor.port.onmessage=event=>capture(r,event.data)
+        processor.port.onmessage=event=>deliver(event.data)
       }catch{processor=null}
     }
-    if(r.ended)return
+    if(stale())return false
     if(!processor){
       if(typeof ctx.createScriptProcessor!=='function')throw Error('AUDIO_WORKLET_UNAVAILABLE')
       const blockSize=2**Math.ceil(Math.log2(ctx.sampleRate*.032))
       processor=ctx.createScriptProcessor(blockSize,1,1)
-      processor.onaudioprocess=event=>capture(r,
+      processor.onaudioprocess=event=>deliver(
         new Float32Array(event.inputBuffer.getChannelData(0)))
     }
     // Attach the track only after the graph is ready to consume current audio.
@@ -983,8 +1024,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.sink.gain.value=0
     r.sink.connect(ctx.destination)
     processor.connect(r.sink)
-    r.source=ctx.createMediaStreamSource(r.stream)
+    r.source=ctx.createMediaStreamSource(stream)
     r.source.connect(processor)
+    return true
   }
 
   function connect(r,token,{resume=false}={}){
@@ -1115,9 +1157,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     return data
   }
   function watchMicrophone(r){
-    for(const track of r.stream.getAudioTracks()){
+    const stream=r.stream
+    for(const track of stream.getAudioTracks()){
       track.addEventListener('ended',()=>{
-        if(!r.ended&&!r.paused){notify(t.mic);stop()}
+        if(!r.ended&&!r.paused&&r.stream===stream&&runtime.current===r){
+          // Device revocation/interruption is recoverable by Play; not End.
+          pauseSession();notify(t.micResumeFailed)
+        }
       },{once:true})
     }
   }
@@ -1131,9 +1177,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // Safari can revoke the microphone when a call takes over, privacy is
       // changed, or iOS suspends media. Do not leave a silent "Listening" UI.
       watchMicrophone(r)
-      if(r.paused)for(const track of r.stream.getAudioTracks())track.enabled=false
       stage='capture'
-      await installCapture(r)
+      if(r.paused)releasePausedCapture(r)
+      else await installCapture(r)
       if(r.ended)return
       stage='token'
       const token=await getToken(r)
