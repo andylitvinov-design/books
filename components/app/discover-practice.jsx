@@ -22,8 +22,8 @@ function PracticeNote({accountId,locale,practice,entry,onSaved,onSessionLost}){
   inFlight.current=true;setBusy(true)
   try{
    if(!pending.current){
-    const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone
-    pending.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:[practice.tag],kind:'note',locale,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null}
+    const timezone=entry?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone
+    pending.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||[practice.tag],kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
    }
    const saved=await saver.current.save(pending.current)
    if(!active.current)return
@@ -41,10 +41,10 @@ function PracticeNote({accountId,locale,practice,entry,onSaved,onSessionLost}){
   <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.saving:failed?t.retry:entry?t.update:t.save}</button>
  </div>
 }
-export default function DiscoverPractice({accountId,locale='en',entries,hasMore,loadingAll,onLoadAll,onSaved,onSessionLost}){
+export default function DiscoverPractice({accountId,locale='en',entries,hasMore,loadingAll,loadError,onLoadAll,onSaved,onSessionLost}){
  const lang=Object.hasOwn(copy,locale)?locale:'en',t=copy[lang]
  const practices=discoverPractices(lang)
- if(hasMore)return <section className={css.shell} data-discover-practice><h2>{t.title}</h2><p>{t.intro}</p><button type="button" disabled={loadingAll} onClick={onLoadAll}>{loadingAll?t.loading:t.load}</button></section>
+ if(hasMore)return <section className={css.shell} data-discover-practice><h2>{t.title}</h2><p>{t.intro}</p><button type="button" disabled={loadingAll} onClick={onLoadAll}>{loadingAll?t.loading:t.load}</button>{loadError&&<p role="alert">{t.error}</p>}</section>
  return <section className={css.shell} data-discover-practice>
   <header className={css.hero}><h2>{t.title}</h2><p>{t.intro}</p></header>
   <p>{t.count}: {discoverRecordedDays(entries).length} / 7</p>
