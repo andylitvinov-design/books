@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {coachIsNameRepairUtterance} from '@/lib/coaching/coach-opening-protocol.mjs'
+import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import styles from './my-coaching-plan.module.css'
 
 const copy={
@@ -25,6 +26,7 @@ function DraftRow({item,t,lang,onAction,busy}){
   <div className={styles.reportTop}><div><span>{t.unreviewed}</span><h2>{p.personaId}</h2><small>{new Date(item.updatedAt).toLocaleDateString(lang)} · {p.turns.length}</small></div></div>
   <details className={styles.reportDetails}><summary>{t.review}</summary>
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
+   <MyCoachSavedProfileV3 protocol={p} locale={lang}/>
    {p.turns.map((row,i)=><div className={styles.reportSection} key={i}><b>{row.role==='user'?t.you:t.coach}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.content}</p></div>)}
    <label>{t.name}<input value={name} maxLength={60} onChange={e=>{setName(e.target.value);setChecked(false)}}/></label>
    <label>{t.goal}<textarea rows={2} value={goal} maxLength={180} onChange={e=>{setGoal(e.target.value);setChecked(false)}}/></label>
