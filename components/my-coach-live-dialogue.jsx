@@ -2151,7 +2151,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {!sessionHasStarted&&<MyCoachInlineProfile personaId={personaId}
         locale={conversationLang} methodId={visibleMethodId}/>}
       {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
-        aria-label={ui.stageQuestion}
+        onToggle={event=>{if(event.currentTarget.open)setSummaryPreviewOpen(false)}} aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleProgressStep}
         data-coach-stage-source={openingActive?'client-evidence-opening':profileActive?'client-evidence-profile':progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
@@ -2340,8 +2340,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}
         </section>}
         {!courseGateRequired&&!courseGate&&!courseGateBusy&&!courseGateAttemptRef.current&&!paused&&!freshProfileAwaiting&&!profileV3Active&&!profileV3Busy&&!profileV3Fault&&<form className={`${styles.composer} ${callStyles.composer}`} onSubmit={send}>
-          <button type="button" className={callStyles.moreButton} aria-controls="hh-coach-more-options" aria-expanded={moreOptionsOpen} aria-label={({ru:'Дополнительные настройки',en:'More options',es:'Más opciones'})[lang]} onClick={()=>setMoreOptionsOpen(value=>!value)}><Plus size={23} aria-hidden="true"/></button>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
+          <button type="button" className={callStyles.moreButton} aria-controls="hh-coach-more-options" aria-expanded={moreOptionsOpen} aria-label={({ru:'Дополнительные настройки',en:'More options',es:'Más opciones'})[lang]} onClick={()=>setMoreOptionsOpen(value=>!value)}><Plus size={23} aria-hidden="true"/></button>
           <textarea ref={composerRef} id="hh-my-coach-live-input" data-coach-composer-field value={draft} maxLength={1200} rows={2}
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>

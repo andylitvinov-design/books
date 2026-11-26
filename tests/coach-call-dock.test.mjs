@@ -14,6 +14,11 @@ test('shared call dock keeps microphone, speaker and explicit end actions separa
   assert.match(view,/data-coach-panel="summary"[^\n]+showSessionPanel\('summary'\)/)
   assert.match(view,/id="hh-coach-more-options"[^\n]+open=\{moreOptionsOpen\}/)
   assert.match(view,/data-coach-basic-pro-toggle/)
+  assert.ok(view.indexOf('data-coach-basic-pro-toggle')>view.indexOf('id="hh-coach-more-options"'))
+  const css=read('components/my-coach-call-dock.module.css')
+  assert.match(css,/\.dock \.hangup\{\s*grid-column:6/)
+  assert.match(css,/\.dock \.speaker\{grid-column:5/)
+  assert.match(css,/\.wave\[data-coach-live-wave\]\{\s*grid-column:2\/5/)
 })
 test('Gemini speaker mute survives ducking, restore and repeated volume updates',()=>{
   const gain={value:1,cancelScheduledValues(){},setTargetAtTime(value){this.value=value}}
