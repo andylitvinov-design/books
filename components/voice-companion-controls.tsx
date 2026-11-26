@@ -202,7 +202,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   setNotice('');lastSpoken.current=text;
   const seq=generation.current;
   const phone=phoneCall.current&&dialogueActive.current;
-  let index=0;
+  let index=0,busyRetries=0;
   const playNext=()=>{
    if(seq!==generation.current)return;
    if(index>=parts.length){
@@ -215,11 +215,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     }
     return;
    }
+   let segmentStarted=false;
    const result=speaker.current?.speak(parts[index++],speechLocale,{
-    onStart:()=>{if(seq===generation.current)setSpeaking(true);},
+    onStart:()=>{if(seq===generation.current){segmentStarted=true;setSpeaking(true);}},
     onEnd:(reason)=>{
      if(seq!==generation.current)return;
-     if(reason==='ended'){
+     if(reason==='ended'&&(!phone||segmentStarted)){
+      busyRetries=0;
       // Safari can keep speechSynthesis.speaking true until after onend.
       // Leave the event stack before scheduling the next spoken segment.
       resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},100);
@@ -232,7 +234,11 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
      setNotice(t.error);
     },
    },{rate:normalizeSpeechRate(rate),voiceURI:normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
-   if(!result?.ok){
+   if(!result?.ok&&seq===generation.current){
+    // iOS can briefly retain the old synthesis queue between spoken chunks.
+    if(phone&&result?.reason==='busy'&&busyRetries++<2){
+     index--;resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},180);return;
+    }
     setSpeaking(false);
     if(dialogueActive.current)stopDialogue();
     setNotice(t.error);
@@ -287,8 +293,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.onstart=()=>{
     if(!capture.isActive()||hadSpeech)return;
     setRecording(true);
-    if(phoneCall.current){idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.micSilent);}},90000);}
+    if(phoneCall.current){
+     if(idleTimer.current!==null)clearTimeout(idleTimer.current);
+     idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.micSilent);}},90000);
+    }
    };
+   if(phoneCall.current)idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.inputUnavailable);}},30000);
    instance.start();if(!phoneCall.current)setRecording(true);
   }catch{stopDialogue();recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
  },[enabled,speechLocale,sttConsent,stop,stopDialogue,t]);
@@ -305,7 +315,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
      setRecording(true);setNotice(state==='hearing'?t.recording:'');
-     if(phoneCall.current&&state==='listening'&&idleTimer.current===null){
+     if(phoneCall.current&&state==='listening'){
+      if(idleTimer.current!==null)clearTimeout(idleTimer.current);
       idleTimer.current=setTimeout(()=>{if(epoch===generation.current){stopDialogue();setNotice(t.micSilent);}},90000);
      }
     }else if(state==='transcribing'){
@@ -326,7 +337,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
       code==='MIC_NO_SIGNAL'?t.micSilent:t.error);
    },
   });
-  if(capture){recordedTurn.current=capture;if(!phoneCall.current)setRecording(true);}
+  if(capture){recordedTurn.current=capture;
+   if(!phoneCall.current)setRecording(true);
+   else if(idleTimer.current===null)idleTimer.current=setTimeout(()=>{if(epoch===generation.current){stopDialogue();setNotice(t.inputUnavailable);}},30000);
+  }
   else{stopDialogue();setNotice(t.inputUnavailable);}
  },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
  const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string}={})=>{
