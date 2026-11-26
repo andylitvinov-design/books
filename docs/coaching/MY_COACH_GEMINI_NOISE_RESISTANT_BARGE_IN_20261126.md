@@ -1,0 +1,7 @@
+# My Coach P0 — prevent false Gemini Live interruptions
+
+Owner reproduction (26 November): coach cuts itself off after a sneeze/background sound, waits for a new utterance, and can lose words. Screens show Gemini 3.1 Flash Live and a partial greeting. Root-cause candidates verified in source: 120 ms local barge-in confirmation, high endpoint sensitivity, 600 ms pause, and zeroing low residual frames inside a real utterance. Existing echo cancellation and PCM reference remain enabled.
+
+Changes: 240 ms sustained local confirmation only during playback/tail; reversible duck until confirmed; one cut per active utterance; normal listening retains its 80 ms local threshold and Google HIGH onset for quiet/short speech. Preserve queued onset and low-energy confirmed phonemes. Google endpoint sensitivity LOW and 900 ms silence, matching client and server; no extra provider, requests, or paid services. Rejected noise does not advance lastHumanAudioAt during playback. Existing manual interrupt is unchanged. An amplitude detector cannot distinguish every long cough from actual speech.
+
+Acceptance: full greeting through 192 ms noise and loopback/reflections; quiet genuine speech over the speaker retains first PCM block; brief listening-mode reply is not gated by 240 ms; no duplicate cut; no synthetic user turn; verify physically on iPhone (both Safari and Chrome), with speakerphone, quiet voice, 0.5 s thinking pauses, sneezing and manual interrupt. No change to quotas or session protocol.

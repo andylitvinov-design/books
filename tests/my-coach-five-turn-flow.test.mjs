@@ -17,12 +17,12 @@ import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecorde
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
 const start=source.indexOf('const words={')
-const end=source.indexOf("  const active=phase!=='idle'",start)
+const end=source.indexOf("  const isPaused=phase==='paused',active=phase!=='idle'&&!isPaused",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
 function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
-  const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
+  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -41,7 +41,10 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     audioSession:{type:'auto'},
     mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})},
   }
+  const windowEvents=new Map(),documentEvents=new Map()
   const fakeWindow={
+    addEventListener(type,fn){windowEvents.set(type,fn)},
+    removeEventListener(type,fn){if(windowEvents.get(type)===fn)windowEvents.delete(type)},
     navigator,SpeechRecognition:Recognition,webkitSpeechRecognition:Recognition,
     SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
     speechSynthesis:{
@@ -58,7 +61,9 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
       },
     },
   }
-  const fakeDocument={visibilityState:'visible',addEventListener(){},removeEventListener(){}}
+  const fakeDocument={visibilityState:'visible',
+    addEventListener(type,fn){documentEvents.set(type,fn)},
+    removeEventListener(type,fn){if(documentEvents.get(type)===fn)documentEvents.delete(type)}}
   const hooks={
     forwardRef:fn=>fn,
     useRef:value=>({current:value}),
@@ -112,10 +117,13 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
-    onVoiceLevel(){},onTranscript(){},onDraft(){},
+    onVoiceLevel(){},onTranscript(){},onDraft(value){drafts.push(value)},
   },ref)
   return {
-    ref,voices,inputs,phases,
+    ref,voices,inputs,phases,drafts,
+    hide(){fakeDocument.visibilityState='hidden';documentEvents.get('visibilitychange')?.()},
+    show(){fakeDocument.visibilityState='visible';documentEvents.get('visibilitychange')?.()},
+    pagehide(){windowEvents.get('pagehide')?.()},
     get starts(){return starts},
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
@@ -398,6 +406,76 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(source,/document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
-  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused\]\)/)
+  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen\]\)/)
+  assert.match(source,/data-coach-pause-control/)
+  assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
+})
+
+
+test('Active voice clock preserves partial intervals and freezes across repeat pauses and reload checkpoints',async()=>{
+  const {createCoachActiveClock}=await import('../lib/coaching/coach-active-clock.mjs')
+  const clock=createCoachActiveClock()
+  assert.equal(clock.setRunning(0,true),0)
+  assert.equal(clock.setRunning(7125,false),7.125)
+  assert.equal(clock.sample(100000),7.125)
+  assert.equal(clock.setRunning(100000,true),7.125)
+  assert.equal(clock.sample(101375),8.5)
+  assert.equal(clock.setRunning(101375,false),8.5)
+  assert.equal(clock.setRunning(101375,false),8.5)
+  assert.equal(clock.sample(200000),8.5)
+  assert.equal(clock.restore(8.5),8.5)
+  assert.equal(clock.setRunning(300000,true),8.5)
+  assert.equal(clock.setRunning(301500,false),10)
+  assert.equal(clock.sample(900000),10)
+})
+test('Basic voice pause retains the mounted logical conversation and resumes without a greeting',()=>{
+  const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  assert.match(source,/stopVoice\(\{pause:true\}\)/)
+  assert.match(source,/phaseRef\.current==='paused'\)return resumePausedSession\(\)/)
+  assert.match(source,/hasLiveSession:\(\)=>activeRef\.current\|\|phaseRef\.current==='paused'/)
+  const resume=source.slice(source.indexOf('  function resumePausedSession(){'),source.indexOf('  stopRef.current=stopVoice'))
+  assert.match(resume,/startListening\(\)/)
+  assert.doesNotMatch(resume,/sessionStartRef|speakCoachReply|onTurn\(/)
+})
+
+
+test('explicit pause preserves editable interim words and resumes the same mounted conversation',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  first.onresult?.({results:[{isFinal:false,0:{transcript:'Мне важно сохранить эту мысль'}}]})
+  assert.equal(session.ref.current.pauseSession(),true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.hasLiveSession(),true)
+  assert.equal(session.inputs.length,0,'pause must not submit incomplete speech')
+  assert.equal(session.drafts.at(-1),'Мне важно сохранить эту мысль')
+  const starts=session.starts,intros=session.intros
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.'),true)
+  const second=await nextMic(session,2)
+  assert.notEqual(first,second)
+  assert.equal(session.starts,starts,'resume must not restart the session')
+  assert.equal(session.intros,intros,'resume must not replay the introduction')
+  session.ref.current.stop()
+})
+
+test('background and pagehide require explicit Play and do not consume another introduction or turn',async()=>{
+  const session=createSession()
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  const first=await nextMic(session,1)
+  const introductions=session.intros,starts=session.starts,tts=session.ttsCalls
+  session.hide()
+  assert.equal(first.aborted,true)
+  assert.equal(session.phases.at(-1),'paused')
+  assert.equal(session.ref.current.startSession('intro'),false,'never resume in hidden document')
+  session.pagehide()
+  session.show()
+  assert.equal(session.phases.at(-1),'paused','visibility alone cannot resume')
+  assert.equal(session.ttsCalls,tts)
+  assert.equal(session.inputs.length,0)
+  assert.equal(session.ref.current.startSession('intro'),true)
+  await nextMic(session,2)
+  assert.equal(session.intros,introductions)
+  assert.equal(session.starts,starts)
+  session.ref.current.stop()
 })
