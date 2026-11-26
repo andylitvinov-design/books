@@ -405,7 +405,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
-    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
+    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,courseSessionId:r.courseSessionId,
           ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
@@ -475,8 +475,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.outputText=''
     propsRef.current.onOutputInterim?.('')
     if(!value||r.ended)return
-    r.history.push({role:'assistant',content:value})
-    r.history=r.history.slice(-20)
+    // Unheard/partial speech is retained in the private transcript, not fed
+    // back to the Director as a completed spoken assistant turn.
+    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20)}
     propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
     r.interrupted=false
   }
