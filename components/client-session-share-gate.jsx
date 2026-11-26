@@ -1,5 +1,5 @@
 'use client'
-import { useEffect,useState } from 'react'
+import { useEffect,useRef,useState } from 'react'
 import {ArrowRight,BarChart3,Compass,Download,FileText,Layers,LockKeyhole,Sparkles,Target} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import styles from './client-report-invitation.module.css'
@@ -9,11 +9,20 @@ export function ClientSessionShareGate({locale='en',selector,invitationReady=fal
   const [status,setStatus]=useState(invitationReady?'ready':'checking')
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState(false)
+  const pendingInvite=useRef(null),verifiedSelector=useRef(null)
   useEffect(()=>{
     let active=true
-    const secret=window.location.hash.startsWith('#')?window.location.hash.slice(1):''
-    if(!secret){setStatus(invitationReady?'ready':'unavailable');return}
-    if(!/^[a-zA-Z0-9_-]{43}$/.test(secret)){setStatus('unavailable');return}
+    const fragment=window.location.hash.slice(1)
+    if(fragment){
+      // Remove the capability before any network request, even on rejection.
+      // A memory-only ref survives Strict Mode effect replay, never storage.
+      pendingInvite.current={selector,secret:fragment}
+      verifiedSelector.current=null
+      window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search)
+    }
+    const secret=pendingInvite.current?.selector===selector?pendingInvite.current.secret:''
+    if(!secret){setStatus(invitationReady||verifiedSelector.current===selector?'ready':'unavailable');return}
+    if(!/^[a-zA-Z0-9_-]{43}$/.test(secret)){pendingInvite.current=null;setStatus('unavailable');return}
     const controller=new AbortController()
     setStatus('checking')
     fetch('/api/client-session-access',{method:'POST',credentials:'same-origin',cache:'no-store',
@@ -21,11 +30,12 @@ export function ClientSessionShareGate({locale='en',selector,invitationReady=fal
       .then(res=>{
         if(!res.ok)throw new Error('Access unavailable')
         if(active){
-          window.history.replaceState(null,'',window.location.pathname)
+          pendingInvite.current=null
+          verifiedSelector.current=selector
           setStatus('ready')
         }
       })
-      .catch(()=>{if(active)setStatus('unavailable')})
+      .catch(()=>{if(active){pendingInvite.current=null;setStatus('unavailable')}})
     return ()=>{active=false;controller.abort()}
   },[selector,invitationReady])
 
@@ -48,14 +58,14 @@ export function ClientSessionShareGate({locale='en',selector,invitationReady=fal
     features:['Анализ ситуации','Основные выводы','Рекомендации'],cta:'Войти через Google и открыть отчёт',busy:'Открываем Google…',
     note:'Войдите или создайте личный кабинет через Google, чтобы прочитать, сохранить и скачать отчёт.',
     trust:['Конфиденциально','Скачать PDF','В личном кабинете'],
-    identity:'Доступ только для подтверждённого аккаунта клиента. Если ваш адрес Google отличается от указанного специалистом, свяжитесь с ним. Регистрация не означает подписку на рассылку.',
+    identity:'Доступ только для подтверждённого аккаунта клиента. Если ваш адрес Google отличается от указанного специалистом, свяжитесь с ним. Подтверждение связывает аккаунт с вашей карточкой у специалиста для получения отчёта. Подписка на рассылку не оформляется.',
     checking:'Проверяем приглашение…',unavailable:'Ссылка недоступна или срок её действия истёк. Попросите специалиста отправить новую ссылку.',error:'Не удалось начать вход. Попробуйте ещё раз.',cover:'Личный отчёт',caption:'Анализ · рекомендации'
   }:{
     label:'Your personal report',title:'Your report is ready',description:'A personalized analysis of your situation, key insights, recommendations and next steps.',
     features:['Situation analysis','Key insights','Recommendations'],cta:'Sign in with Google to access your report',busy:'Opening Google…',
     note:'Log in or create your personal account with Google to view, save and download your report.',
     trust:['Secure & private','Download PDF','In your Cabinet'],
-    identity:'Only the verified client account can access the report. If your Google email differs from the address recorded by your practitioner, please contact them. Registration does not subscribe you to marketing.',
+    identity:'Only the verified client account can access the report. If your Google email differs from the address recorded by your practitioner, please contact them. Confirmation links your account to your practitioner’s client record for report delivery. It does not subscribe you to marketing.',
     checking:'Checking your invitation…',unavailable:'This link is unavailable or expired. Please ask your practitioner for a new link.',error:'Could not start sign-in. Please try again.',cover:'Personal report',caption:'Analysis · insights'
   }
 

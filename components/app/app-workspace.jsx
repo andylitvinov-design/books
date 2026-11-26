@@ -1225,8 +1225,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
           <p className="hh-muted">
             {intent?.sourceKind === 'client_session'
               ? (ru
-                  ? 'Вы подтверждаете сохранение только этой консультации в показанный Google-аккаунт. Остальные записи клиента не будут привязаны или открыты автоматически.'
-                  : 'You are confirming this one consultation for the Google Account shown above. No other client records will be linked or unlocked automatically.')
+                  ? 'Вы сохраняете эту консультацию в показанный Google-аккаунт. При получении приглашения аккаунт связывается с подтверждённой карточкой клиента у специалиста. Другие консультации не сохраняются автоматически. Подписка на рассылку не оформляется.'
+                  : 'You are saving this consultation to the Google Account shown above. Claiming an invitation links the account to the verified client record held by your practitioner. Other consultations are not automatically saved. No marketing subscription is created.')
               : intent?.sourceKind === 'guest_result'
               ? (ru
                   ? 'Будет сохранён только этот выбранный результат.'
