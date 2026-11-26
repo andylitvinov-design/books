@@ -44,6 +44,8 @@ import MyCoachCourseJourney from './my-coach-course-journey'
 import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
+import {coachReactionIntent,coachExplicitFarewell} from '@/lib/coaching/coach-reaction-director.mjs'
+import useCoachReactionActivity from './use-coach-reaction-activity'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
 import MyCoachCourseFieldReview from './my-coach-course-field-review'
@@ -347,6 +349,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
   const [voiceState,setVoiceState]=useState({phase:'idle',beat:0})
+  const reactionActivity=useCoachReactionActivity(voiceState.phase,personaId)
   const voicePaused=voiceState.phase==='paused'
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
@@ -1758,7 +1761,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const motionPhase=paused||voiceState.phase==='paused'?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
-  const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
+  // The visual director observes real speech ownership and the current turn only.
+  // Existing turn, microphone and playback handlers remain authoritative.
+  const reactionLastTurn=turns[turns.length-1]
+  const reactionReplyText=streamingPreview||
+    (!inFlightClientRef.current&&reactionLastTurn?.role==='assistant'&&!reactionLastTurn.interrupted?reactionLastTurn.content:(!introComplete?introduction:''))
+  const reactionStage=!inFlightClientRef.current&&reactionLastTurn?.role==='assistant'&&!reactionLastTurn.interrupted?reactionLastTurn.stage||'':''
+  const reactionClientText=motionPhase==='listening'?speechPreview:
+    ['thinking','speaking'].includes(motionPhase)?
+      (inFlightClientRef.current?.message||[...turns].reverse().find(turn=>turn.role==='user')?.content||''):''
+  const reactionReplyScene=selectCoachVisualScene({phase:motionPhase,text:reactionReplyText,stage:reactionStage})
+  const reactionIntent=coachReactionIntent({
+    phase:voiceState.phase==='loading'?'loading':motionPhase,micActive:reactionActivity.micActive,
+    clientText:reactionClientText,coachText:reactionReplyText,coachScene:reactionReplyScene,stage:reactionStage,
+    paused:paused||voicePaused,opening:!restoredDraft&&(!introComplete||(!turns.length&&!inFlightClientRef.current)),
+    closing:reactionStage==='closing'||reactionStage==='farewell'||coachExplicitFarewell(reactionClientText),
+    turnKey:turns.filter(turn=>turn.role==='user').length+(inFlightClientRef.current?1:0)
+  })
+  const visualScene=reactionIntent.scene
   const sessionPanelCopy={en:{transcript:'Transcript',insights:'Progress',summary:'Insight'},ru:{transcript:'Диалог',insights:'Прогресс',summary:'Инсайт'},es:{transcript:'Diálogo',insights:'Progreso',summary:'Insight'}}[lang]
   function showSessionPanel(panel){
     const root=sessionRootRef.current
@@ -1832,7 +1852,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.sessionPortrait} data-persona={personaId}
         data-coach-motion-video={['mira','max','sofia','alex','merlin','harry','genie'].includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
-        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
+        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} reactionIntent={reactionIntent} />
       </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <button type="button" className={styles.heroViewToggle} data-coach-view-toggle
@@ -1900,6 +1920,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
+              reactionActivity.observe(level)
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))
@@ -1930,6 +1951,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             canStart={!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
+              reactionActivity.observe(level)
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))

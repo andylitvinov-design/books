@@ -153,7 +153,7 @@ test('mobile My Coach hero displays a still/MP4 scene with no CSS lip or eye dis
   assert.ok(hero.includes('.sessionAvatar{display:none}'))
   assert.ok(ui.includes('data-voice-phase={voiceState.phase}'))
   assert.ok(ui.includes('data-session-visual-v2'))
-  assert.ok(ui.includes('<MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />'))
+  assert.ok(ui.includes('<MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} reactionIntent={reactionIntent} />'))
   assert.match(hero,/sessionPortrait\[data-persona\]::after\{display:none!important;content:none!important/)
   assert.doesNotMatch(hero,/hh-hero-mouth-speaking|--hh-hero-mouth-image|--hh-portrait-mouth-scale/)
   assert.ok(media.includes("data-coach-motion-scene={visualScene}"))
