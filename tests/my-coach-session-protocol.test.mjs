@@ -731,3 +731,11 @@ test('authored protocol questions and conservative mismatch checks are question-
   assert.equal(checkpointAnswerMismatch('feelings',answer+'; '+answer),false)
  }
 })
+
+test('pre-upgrade bound pending echo can be reviewed without losing the actual legacy question',()=>{
+ const course='goal_result',answer='сменить работу',row=coachCourseProtocolSchema(course,'ru').checkpoints.find(x=>x.id==='goal')
+ const question='Что вам важно зафиксировать по теме «'+row.label+'»?'
+ const turns=[{role:'assistant',content:question},{role:'user',content:answer},{role:'assistant',content:'По теме «'+row.label+'» я предварительно записал: «'+answer+'». Это верно?'},{role:'user',content:'Да'}]
+ const review={version:'hh-coach-course-review-v1',courseSessionId:course,events:[{fieldId:'goal',status:'confirmed',turnIndex:1,quote:answer,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}}]}
+ assert.equal(coachCourseProtocolRows(course,turns,review,'ru').find(x=>x.id==='goal').question,question)
+})
