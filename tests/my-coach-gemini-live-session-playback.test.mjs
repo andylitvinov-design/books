@@ -598,6 +598,34 @@ test('cold microphone startup connects only after the worklet or fallback can co
   }
 })
 
+test('browser timer receivers do not interrupt incoming PCM or completion of successive replies',()=>{
+  // Native Window timers reject a watchdog instance as their receiver.
+  let scheduled=0,cleared=0
+  function setTimer(){
+    assert.equal(this,undefined,'call the browser timer as a global function')
+    return ++scheduled
+  }
+  function clearTimer(id){
+    assert.equal(this,undefined,'clear the browser timer as a global function')
+    assert.equal(id,scheduled)
+    cleared++
+  }
+  const BrowserWatchdog=runInNewContext('('+GeminiLiveReplyWatchdog.toString()+')',{
+    setTimeout:setTimer,clearTimeout:clearTimer,
+  })
+  const h=session()
+  h.r.replyWatch=new BrowserWatchdog({canFire:()=>true,onStall:()=>assert.fail('unexpected stall')})
+  for(const text of ['First answer','Second answer']){
+    h.receive({audio:[coachVoicePcm(.5)],output:text,turnComplete:true})
+    h.clock.advanceTo(h.clock.context.currentTime+1)
+    assert.deepEqual(h.events.final.at(-1),{text,interrupted:false})
+  }
+  assert.equal(h.clock.heardSamples,24000)
+  assert.equal(scheduled,2)
+  assert.equal(cleared,2)
+  h.assertLive()
+})
+
 test('the reply watchdog is idle until a response is expected and defers during active speech or playback',()=>{
   let time=0,id=0,stalls=0,blocked=false
   const timers=new Map()
