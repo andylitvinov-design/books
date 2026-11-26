@@ -250,15 +250,54 @@ test('Support Guide checks browser syntax on PRs and runs browser QA on push or 
   assert.match(browser,/playwright install --with-deps chromium webkit/);
   assert.match(browser,/^          node scripts\/verify-holistic-support-guided-card\.mjs$/m);
 });
-test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-production/manual',()=>{
+test('wave 2: messenger delegates duplicate booking lint and tsc only on protected production PRs',()=>{
   const source=read('hh-messenger-notification-build.yml');
   assert.ok(source.includes('npx --no-install eslint lib/app/repository.js'));
+  const booking=source.split('      - name: Booking lint and TypeScript\n')[1]?.split('      - name: Lint new notification')[0];
+  assert.ok(booking);
+  assert.match(booking,/if \[\[ "\$GITHUB_EVENT_NAME" != "pull_request" \|\| "\$HH_TARGET_BASE" != "codex\/public-book-library" \]\]; then\n\s+npx --no-install eslint lib\/app\/repository\.js/);
   assert.ok(source.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then'));
   assert.ok(source.includes('npx --no-install tsc --noEmit'));
   assert.ok(source.includes('HH_TARGET_BASE: \${{ github.event.pull_request.base.ref }}'));
   assert.ok(source.includes("cancel-in-progress: \${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
   assert.match(source,/^  workflow_dispatch:/m);
 });
+test('duplicate Profile Axis lint is delegated only to protected Core; strict writer lint and OAuth stay independent',()=>{
+  const source=read('hh-profile-axis-matching.yml');
+  const gate="if: "+ "$"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes('- name: Scoped ESLint\n        '+gate+'\n        run: |'));
+  assert.match(source,/- name: Lint writer API, UI and contracts\n\s+run: npx --no-install eslint --max-warnings 0/);
+  assert.match(source,/node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
+  assert.match(source,/tests\/account-picker-disclosure-verifier\.test\.mjs/);
+  assert.match(source,/tests\/intelligence-risk\.test\.mjs/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
+test('Reiki capture retains every test and installs only locked TypeScript for unchanged reviewed dependencies',()=>{
+  const source=read('reiki-enquiry-capture-ci.yml');
+  const planner=source.split('      - name: Plan exact reviewed Reiki capture dependency closure\n')[1]?.split('      - name: Install only locked TypeScript')[0];
+  assert.ok(planner);
+  assert.ok(planner.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  const rows=planner.split("done <<'HH_CAPTURE_REVIEWED'\n")[1]?.split('          HH_CAPTURE_REVIEWED\n')[0]?.trim().split('\n').map(line=>line.trim().split(/\s+/));
+  assert.equal(rows?.length,26);
+  assert.equal(new Set(rows.map(row=>row[1])).size,26);
+  assert.ok(rows.every(([sha])=>/^[a-f0-9]{40}$/.test(sha)));
+  for(const name of ['tests/kundalini-reiki-course.test.mjs','tests/reiki-unified-order-capture.test.mjs','tests/academy-course-capture.test.mjs','tests/reiki-landing-conversion.test.mjs','tests/contact-channel-chooser.test.mjs','tests/reiki-mobile-order-crm.test.mjs','tests/remote-energy-support-booking.test.mjs','tests/energywork-kundalini-ygg-study.test.mjs','tests/holistic-support-consultation-tests-separation.test.mjs']){
+    assert.ok(rows.some(row=>row[1]===name),name);
+    assert.ok(source.split('      - name: Confirm Kundalini and Reiki course capture behaviour')[1].includes(name),name);
+  }
+  for(const name of ['package.json','package-lock.json','lib/practitioners/public-service-enquiry-input.mjs','lib/assessments/contracts.js']) assert.ok(rows.some(row=>row[1]===name),name);
+  assert.ok(planner.includes('git hash-object -- "$file" 2>/dev/null || true'));
+  assert.ok(planner.includes('if [[ "$actual" != "$expected" ]]; then minimal=false; fi'));
+  assert.ok(source.includes("if: steps.capture-deps.outputs.minimal == 'true'"));
+  assert.ok(source.includes("if: steps.capture-deps.outputs.minimal != 'true'\n        run: npm ci --no-audit --no-fund"));
+  assert.match(source,/entry\.integrity/);
+  assert.match(source,/entry\.hasInstallScript/);
+  assert.match(source,/npm ci --prefix "\$tmp" --include=dev --ignore-scripts/);
+  assert.match(source,/npx --no-install tsc --noEmit/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('wave 2: My Progress production post-merge checks keep full independent compile',()=>{
   const source=read('hh-my-progress-release.yml');
   assert.match(source,/^  push:/m);
@@ -899,12 +938,55 @@ test('Browser source-only PR checks never boot synthetic PostgreSQL; full manual
     const workflow = read(name);
     const postgres = workflow.split('    services:\n      postgres:\n')[1]?.split('    env:\n')[0];
     assert.ok(postgres, name + ' must preserve the isolated PostgreSQL service for full QA');
-    assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    if (name === 'hh-reiki-all-slides-browser.yml') {
+      // Both one-time Daybook acceptance PRs (#5626 and #5645) have merged
+      // after real Chromium/WebKit. Full manual QA remains available.
+      const reikiGate = "github.event_name == 'workflow_dispatch'";
+      const expectedImage = "image: " + "$" + "{{ (" + reikiGate + ") && 'postgres:17-alpine' || '' }}";
+      assert.equal(postgres.split('\n').filter(line => /^\s*image:/.test(line)).map(line => line.trim()).join('\n'), expectedImage,
+        name + ' PostgreSQL must remain limited to full manual QA');
+      for (const step of ['Isolated Chromium/WebKit runtime (manual full acceptance)',
+        'Initialize synthetic isolated account database', fullQA]) {
+        assert.ok(workflow.includes('- name: ' + step + '\n        if: ' + reikiGate + '\n'),
+          name + ' expensive step must retain its manual gate: ' + step);
+      }
+      assert.ok(workflow.includes("fromJSON((" + reikiGate + ") && '[\"chromium\",\"webkit\"]' || '[\"chromium\"]')"));
+      assert.ok(workflow.includes('node scripts/verify-reiki-referral-browser.mjs'));
+      assert.doesNotMatch(workflow, /5626|reiki-daybook-fit-mobile-20261125|HH_REIKI_DAYBOOK_ONLY/);
+    } else {
+      assert.ok(postgres.includes(image), name + ' must not allocate Docker/PostgreSQL on source-only PR');
+    }
     assert.ok(workflow.includes(sourceContract), name + ' must still run its real PR source contract');
     assert.ok(workflow.includes(fullQA), name + ' must preserve real-browser manual acceptance');
     assert.match(workflow, /workflow_dispatch:/, name + ' manual QA must remain callable');
     assert.doesNotMatch(workflow, /continue-on-error:\s*true/, name + ' cannot ignore real failures');
   }
+});
+
+test('Reiki source contracts skip dependency installation only for the exact reviewed import closure', () => {
+  const workflow = read('hh-reiki-all-slides-browser.yml');
+  const planner = workflow.split('      - name: Plan reviewed dependency-free Reiki source contracts\n')[1]
+    ?.split('      - uses: actions/setup-node@v4')[0];
+  assert.ok(planner);
+  assert.ok(planner.includes("github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  const rows = planner.split("done <<'HH_REIKI_REVIEWED'\n")[1]?.split('          HH_REIKI_REVIEWED\n')[0]
+    ?.trim().split('\n').map(line => line.trim().split(/\s+/));
+  const reviewed = ['tests/reiki-daybook-alternative.test.mjs','tests/reiki-referral-landing.test.mjs',
+    'tests/tantra-reiki-compact-fullwidth.test.mjs','tests/tantra-reiki-photographic-landing.test.mjs',
+    'tests/tantra-reiki-level-one-focus.test.mjs','tests/tantra-reiki-mobile-chapters.test.mjs',
+    'tests/tantra-reiki-teacher-compact.test.mjs','data/academy/energywork-ai-schema.js',
+    'data/academy/reiki-initiation-request.js','package.json','package-lock.json'];
+  assert.deepEqual(rows?.map(row=>row[1]),reviewed);
+  assert.ok(rows.every(([sha])=>/^[a-f0-9]{40}$/.test(sha)));
+  assert.ok(planner.includes('git hash-object -- "$file" 2>/dev/null || true'));
+  assert.ok(planner.includes('if [[ "$actual" != "$expected" ]]; then minimal=false; fi'));
+  assert.ok(planner.includes("printf 'minimal=%s\\n' \"$minimal\""));
+  assert.ok(workflow.includes("name: Install full dependencies for manual QA or changed test inputs\n        if: steps.reiki-deps.outputs.minimal != 'true'\n        run: npm ci --no-audit --no-fund"));
+  assert.ok(workflow.includes("name: Standalone scoped lint when full dependencies are installed\n        if: github.event_name == 'pull_request' && steps.reiki-deps.outputs.minimal != 'true'\n        run: npx --no-install eslint components/tantra-reiki-journey.tsx"));
+  for (const path of reviewed.filter(path=>path.startsWith('tests/'))) assert.ok(workflow.includes(path),path);
+  assert.match(workflow,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.ok(workflow.includes("github.event.action == 'synchronize'"));
+  assert.match(workflow,/workflow_dispatch:/);
 });
 
 test('Messenger mobile Draft skips heavy runners and automatically rechecks on Ready', () => {
@@ -1001,4 +1083,39 @@ test('Core specialist uses slim only on verified non-strict paths, with unchange
   assert.ok(core.includes('needs: [scope]'));
   assert.doesNotMatch(core,/^  hh-specialist:/m);
   assert.doesNotMatch(job, /continue-on-error:\s*true/);
+});
+
+test('source specialist wave: only duplicate production-PR compile and lint are delegated',()=>{
+  const gate="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const ready="    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const configs=[
+    ['practice-material-previews.yml','unit-types-build',['ESLint of changed interactive panels','TypeScript regression','Production Next.js build'],
+      ['tests/practice-material-preview-url.test.mjs','tests/material-library-upload-headers.test.mjs','tests/practice-private-report-materials.test.mjs','tests/client-session-owner-audio-upload.test.mjs']],
+    ['hh-kling-video.yml','kling',['Install dependencies for standalone Kling verification','Scoped ESLint','TypeScript','Next.js build'],
+      ['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
+    ['pro-reiki-master-paths.yml','validate-pro',['ESLint changed implementation','Type-check the application','Validate the Next.js production build'],
+      ['tests/profi-hub.test.mjs','tests/pro-master-search-placement.test.mjs','tests/temple-support-hub.test.mjs']],
+    ['hh-direct-video-notes.yml','media-contract',['Scope lint'],
+      ['tests/direct-message-media-transport.test.mjs','tests/direct-message-video-notes.test.mjs','tests/messages-private-media-pagination.test.mjs']],
+  ];
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/run: npm run build/);
+  assert.ok(core.includes('npx --no-install eslint "${files[@]}"'));
+  for(const [file,job,steps,contracts] of configs){
+    const s=read(file);
+    assert.ok(s.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]'),file+' Ready trigger');
+    assert.ok(s.includes('  '+job+':\n'+ready),file+' Draft guard');
+    assert.match(s,/^  workflow_dispatch:/m);
+    for(const name of steps)assert.ok(s.includes('- name: '+name+'\n        '+gate+'\n        run:'),file+' nonproduction '+name);
+    for(const f of contracts)assert.ok(s.includes(f),file+' lost '+f);
+    assert.doesNotMatch(s,/continue-on-error:\s*true/);
+  }
+  // Only Kling has no third-party imports in its exact source contract graph.
+  // Practice, Pro Reiki and private media retain the complete lockfile install.
+  const kling=read('hh-kling-video.yml');
+  assert.ok(kling.includes('run: node --test tests/kling-video.test.mjs tests/kling-avatar.test.mjs'));
+  assert.ok(kling.includes('run: npm ci --ignore-scripts --no-audit --no-fund'));
+  for(const f of ['practice-material-previews.yml','pro-reiki-master-paths.yml','hh-direct-video-notes.yml'])
+    assert.match(read(f),/^      - run: npm ci /m);
 });

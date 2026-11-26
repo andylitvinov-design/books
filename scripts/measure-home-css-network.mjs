@@ -15,8 +15,8 @@ export function snapshot(html) {
       .map(x=>x.match(/\bhref=["']([^"']+)/i)?.[1]).filter(Boolean)};
 }
 export function assertHeroPreload(data,path="/"){
-  // The current Home scene is hidden by the approved hero CSS. A pine
-  // preload is no longer required; it cannot substitute for the real portrait.
+  // Match the actual rendered guide. A scenic or stale persona preload
+  // cannot substitute for the real portrait.
   const hero=data.heroImage;
   assert.ok(hero&&/^\/images\/holistic-house\/(?:ali-inner-alchemist-hero\.webp|my-coach-motion\/[a-z0-9_-]+\.webp)$/i.test(hero.src??""),
     "Approved SSR persona image missing: "+path);
@@ -39,6 +39,8 @@ async function main(){
       cssBytes+=Buffer.byteLength(await s.text());
     }
     assert.ok(data.decodedHtmlBytes<300000,"HTML payload regression >300 KB: "+path);
+    assert.ok(data.highPriorityImages.some(href=>/ideas-pine-reference\.webp/.test(href)),
+      "Scenic hero background preload missing: "+path);
     assertHeroPreload(data,path);
     list.push({path,htmlBytes:data.decodedHtmlBytes,cssFiles:unique.length,cssBytes,
       heroImage:data.heroImage,highPriorityImages:data.highPriorityImages});

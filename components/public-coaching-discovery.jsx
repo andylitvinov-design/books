@@ -317,7 +317,7 @@ function CoachingCatalogGroup({group,items,locale,renderCard}){
   </section>
 }
 
-export default function PublicCoachingDiscovery({locale='en',catalog=null,personaSelection=null}){
+export default function PublicCoachingDiscovery({locale='en',catalog=null,personaSelection=null,goalCourseId=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const selectedPersona=getCoachPersona(personaSelection?.personaId)
   const selectedPersonaName=selectedPersona?localCoachText(selectedPersona.name,lang):''
@@ -606,8 +606,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session||liveChat?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id} data-coach-session-layout={liveChat?'true':undefined}>
-        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id} locale={lang}
-          personaId={selectedPersona.id} settings={personaSelection?.settings}
+        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id+':'+(personaSelection?.methodId||'standard')} locale={lang}
+          personaId={selectedPersona.id} methodPreference={personaSelection?.methodId} settings={personaSelection?.settings} initialGoalCourseId={goalCourseId}
           onClose={()=>setLiveChat(false)}
           onGuided={starterScheme?()=>{setLiveChat(false);start(starterScheme,true)}:null}/> : <>
         <Link className={styles.personaWelcomeChange} href={'/'+lang+'/my-coach'} prefetch={false}>

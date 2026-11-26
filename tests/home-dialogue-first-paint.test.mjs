@@ -29,7 +29,7 @@ test("public Home has one light conversation-first entry and preserves seven rea
  assert.match(entry,/data-home-send-to-ali/);
  assert.doesNotMatch(entry,/data-home-mode-button=/);
  assert.match(entry,/data-home-intent-option=\{art\.id\}/);
- for(const id of ["clarity","goal","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ for(const id of ["clarity","goal","business","reiki"])assert.ok(entry.includes('id:"'+id+'"'),id);
  assert.match(entry,/program\.steps\.map/);
  assert.match(dock,/"mytube","video","coach","ai","services","practice","profile"/);
  assert.match(globalDock,/UNIFIED_DOCK_IDS\.map\(id =>/);
@@ -134,7 +134,7 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
 });
 
-test("Approved homepage has three program cards, three substeps per program and five methods",()=>{
+test("Approved homepage has four program cards, three substeps per program and five methods",()=>{
  const entry=read("components/home-dialogue-entry.tsx");
  const styles=read("components/home-dialogue-entry.module.css");
  const deferred=read("components/home-deferred-content.tsx");
@@ -143,7 +143,7 @@ test("Approved homepage has three program cards, three substeps per program and 
    assert.ok(entry.includes(text),text);
  assert.doesNotMatch(entry,/data-home-mode-button=/);
  assert.match(entry,/data-home-intent-option=\{art\.id\}/);
- for(const id of ["clarity","goal","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ for(const id of ["clarity","goal","business","reiki"])assert.ok(entry.includes('id:"'+id+'"'),id);
  assert.match(entry,/program\.steps\.map/);
  assert.equal((entry.match(/<form className=\{styles\.composer\}/g)||[]).length,1);
  assert.match(entry,/useAliPersona\("alex"\)/);
@@ -156,7 +156,7 @@ test("Approved homepage has three program cards, three substeps per program and 
  assert.match(entry,/data-home-continue-path/);
  assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
  assert.match(styles,/SAMIR_MOCK_FIDELITY_20261123_V2/);
- assert.match(styles,/\.programGrid\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/max-height:800px/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
  assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);

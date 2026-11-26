@@ -129,13 +129,7 @@ test('consultation entry restores compact auto-parser and open Note field while 
 })
 
 test('compact consultation screen targets remedies on the first mobile viewport', async () => {
-  const [css, globalCss, form] = await Promise.all([
-    readFile('components/consultation-entry-layout.css', 'utf8'),
-    readFile('app/globals.css', 'utf8'),
-    readFile('components/consultation-form.jsx', 'utf8'),
-  ])
-  assert.doesNotMatch(globalCss, /\.consultation-text-import textarea\s*\{/)
-  assert.match(form, /import '\.\/consultation-entry-layout\.css'/)
+  const css = await readFile('app/globals.css', 'utf8')
   assert.match(css, /Compact consultation entry \+ auto parser/)
   assert.match(css, /\.consultation-new-shell \.prescription-admin-description\s*\{\s*display: none/)
   assert.match(css, /\.consultation-form--compact[\s\S]*gap: 11px/)

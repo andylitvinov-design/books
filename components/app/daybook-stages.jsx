@@ -11,6 +11,8 @@ import {GUIDE_WEEKS,getGuideTask,guideTag,guideText,guideRecords,parseGuideEntry
 import DaybookGoalContext from './daybook-goal-context'
 import DaybookCoachLink from './daybook-coach-link'
 import css from './daybook-stages.module.css'
+import DaybookWeekReports from './daybook-week-reports'
+import CoachingCourseDashboard from './coaching-course-dashboard'
 
 const copy={
  ru:{title:'Дневник целей',intro:'Ваш коучинг-гид — от намерения к действию.',eyebrow:'МОЙ DAYBOOK',weeks:'Недели коучинга',week:'Неделя',level:'Уровень',levels:'Уровни работы',steps:'Шаги недели',step:'Шаг',of:'из',shortLevels:['Тесты','ИИ-коуч','Практика','Сессия'],start:'Выбрать направление',review:'Итоги и новые перспективы',reviewTag:'Завершение программы',backToWeeks:'Вернуться к неделям',completed:'Выполнено',progress:'Прогресс недели',save:'Сохранить черновик',savePreparation:'Сохранить подготовку',complete:'Сохранить и завершить шаг',completeReview:'Сохранить итоги',saved:'Сохранено в дневнике и проверено',saving:'Сохраняем…',failed:'Сохранение не подтверждено. Ваши ответы остаются здесь. Повторите сохранение перед продолжением.',retry:'Повторить сохранение',reload:'Обновить дневник',discard:'На этой странице есть несохранённые ответы. Выйти и удалить черновики?',unknown:'Загрузите оставшиеся записи, чтобы увидеть точный прогресс и продолжить работу.',load:'Загрузить записи',loading:'Загружаем…',loadFailed:'Не удалось загрузить все записи. Повторите попытку.',required:'Заполните обязательные поля, чтобы завершить шаг.',validation:'Проверьте ответы: заполните обязательные поля и сократите слишком длинный текст.',optional:'необязательно',noRating:'Без оценки',draft:'Несохранённый черновик',draftHint:'Можно переключать недели и шаги — черновики останутся на этой странице.',goalHint:'Без цели — общий черновик.',tools:'Материалы к этому шагу',vectors:'Колесо жизни и смысловые оси',tests:'Тесты и самооценки',plan:'Коучинговый план',goals:'Мои цели и действия',today:'Сегодня и недельный обзор',courses:'Курсы и практики',videos:'Моя видеобиблиотека',coach:'Выбрать ИИ-коуча',human:'Перейти к личным сессиям',deeper:'Открыть практики',preparation:'Подготовка к работе',preparationHint:'Сохраните запрос и заметки. Открытие формата не подтверждает оплату или проведение сессии.',optionalSupport:'Дополнительная поддержка по теме недели. Первый уровень можно пройти самостоятельно.',priceHint:'Стоимость и доступность уточняются перед заказом. Сейчас XP не списываются.',private:'Записи приватны и не передаются коучу автоматически.',legacy:'Мои прежние записи этой недели',legacyHint:'Сохранённые ответы из предыдущей версии дневника. Они не отмечают новые задания выполненными.',previous:'Предыдущий шаг',next:'Следующий шаг',nextWeek:'Следующая неделя',allDone:'Все семь шагов этой недели сохранены и завершены.',reviewIntro:'Посмотрите на свой путь и выберите, что хотите продолжить.',summaryDone:'Итоги сохранены'},
@@ -52,7 +54,7 @@ function revealSelection(rail){
  if(inner.left<outer.left)rail.scrollLeft-=outer.left-inner.left+4
  else if(inner.right>outer.right)rail.scrollLeft+=inner.right-outer.right+4
 }
-export default function DaybookStages({accountId,locale='en',stageNumber=1,onStage,entries=[],hasMore,loadingAll,loadError,onLoadAll,onSaved,onSessionLost,onReload,onTab,ready,initialGoalId=null,initialLevel=1,initialStep=1,entryRequest=null,onPositionChange,onLockChange}){
+export default function DaybookStages({accountId,locale='en',stageNumber=1,onStage,entries=[],hasMore,loadingAll,loadError,onLoadAll,onSaved,onSessionLost,onReload,onTab,ready,initialGoalId=null,initialLevel=1,initialStep=1,entryRequest=null,onPositionChange,onLockChange,children}){
  const lang=Object.hasOwn(copy,locale)?locale:'en',c=copy[lang],root='/'+lang
  const review=Number(stageNumber)===8,week=GUIDE_WEEKS[bounded(stageNumber,7)-1],weekId=review?'review':week.id
  const [goalId,setGoalId]=useState(initialGoalId),[level,setLevel]=useState(bounded(initialLevel,4)),[stepNumber,setStepNumber]=useState(bounded(initialStep,7))
@@ -164,7 +166,13 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
    {effectiveLevel===2&&current&&!dirty&&<div className={css.coachHandoff}><DaybookCoachLink accountId={accountId} locale={lang} kind="journal" itemId={current.id} revision={current.revision} disabled={locked||!ready} onSessionLost={onSessionLost}/></div>}
   </section>
   {task.resources?.length>0&&<details className={css.resources}><summary><BookOpen size={18} aria-hidden="true"/>{c.tools}</summary><div className={css.links}>{task.resources.map(resourceLink)}</div></details>}</div>
- return <div ref={workbookRef} className={css.workbook} data-daybook-guide data-guide-active-week={review?8:week.number} data-guide-layout="weekly-practices">
+ const sessionRows=[...GUIDE_WEEKS.map(w=>[w.title[lang],w.subtitle[lang]]),[c.review,c.reviewIntro]]
+ const sessionCounts=[...GUIDE_WEEKS.map(w=>{const n=guideProgress(entries,goalId,w.id);return {done:n.completed,total:n.total}}),{done:parseGuideEntry(guideRecords(entries,goalId,'review',1,'summary')[0])?.completed===true?1:0,total:1}]
+ return <div ref={workbookRef}>
+ <CoachingCourseDashboard accountId={accountId} locale={lang} program="goal" title={({ru:'Достижение моей цели',en:'Achieving My Goal',es:'Alcanzar mi meta'})[lang]} sessions={sessionRows} selected={review?8:week.number} onSelect={navigate} practiceCounts={sessionCounts} loaded={loaded} ready={ready} locked={locked} initialPanel={entryRequest||expanded?'practice':null} onLeave={leave}
+  results={ready&&goalId?<DaybookWeekReports key={accountId+':'+goalId} locale={lang} accountId={accountId} program="goal" week={review?8:week.number} goalId={goalId} showEmpty/>:null}
+  resources={<>{children}<button type="button" disabled={locked||!ready} onClick={()=>onTab('goals')}>{c.goals}</button><Link href={root+'/app/portrait'} prefetch={false} onClick={leave}>{c.title}</Link></>}>
+ <div className={css.workbook} data-daybook-guide data-guide-active-week={review?8:week.number} data-guide-layout="weekly-practices">
   <header className={css.hero}><span className={css.eyebrow}><NotebookPen size={17} aria-hidden="true"/>{c.eyebrow}</span><h1>{c.title}</h1><p>{c.intro}</p></header>
   <div className={css.goalBar}>
    <div><DaybookGoalContext compact active={ready} accountId={accountId} locale={lang} selectedId={goalId} disabled={locked||!ready} onChange={chooseGoal} onSessionLost={onSessionLost}/><p className={css.goalHint}>{review?c.reviewTag:c.week+' '+week.number+' '+c.of+' 7'}</p>{!goalId&&<p className={css.goalHint}>{c.goalHint}</p>}</div>
@@ -191,8 +199,10 @@ export default function DaybookStages({accountId,locale='en',stageNumber=1,onSta
    </div>}
    {!review&&<button type="button" className={css.resume} disabled={locked||!ready||!loaded} onClick={resume}>{nextStep?p.next+' — '+c.step+' '+nextStep:week.number===7?c.review:c.nextWeek}<ArrowRight size={20} aria-hidden="true"/></button>}
   </div>
-  {legacy.length>0&&<details className={css.legacy}><summary>{c.legacy}</summary><p className={css.hint}>{c.legacyHint}</p>{legacy.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><p>{stageReadable(entry,lang)}</p></article>)}</details>}
+   {legacy.length>0&&<details className={css.legacy}><summary>{c.legacy}</summary><p className={css.hint}>{c.legacyHint}</p>{legacy.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><p>{stageReadable(entry,lang)}</p></article>)}</details>}
   {loaded&&!review&&effectiveLevel===1&&progress.completed===7&&<p className={css.finished}><CheckCircle2 size={20} aria-hidden="true"/>{c.allDone}</p>}
   <button type="button" className={css.reviewLink} disabled={locked||!ready} onClick={()=>navigate(review?7:8)}>{review?<ArrowLeft size={18} aria-hidden="true"/>:<Flag size={18} aria-hidden="true"/>}{review?c.backToWeeks:c.review}{!review&&<ArrowRight size={17} aria-hidden="true"/>}</button>
+ </div>
+ </CoachingCourseDashboard>
  </div>
 }

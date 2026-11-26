@@ -57,11 +57,11 @@ jobs:
         run: node --conditions=react-server --test tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs
       - name: Booking lint and TypeScript
         run: |
-          npx --no-install eslint lib/app/repository.js lib/practitioners/booking-master-email.js app/api/app/'[...path]'/route.js tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs
           if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then
+            npx --no-install eslint lib/app/repository.js lib/practitioners/booking-master-email.js app/api/app/'[...path]'/route.js tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs
             npx --no-install tsc --noEmit
           else
-            echo 'Shared HH PR core release gate owns TypeScript for production PRs'
+            echo 'Shared HH PR core release gate owns changed-file ESLint and TypeScript for production PRs'
           fi
         env:
           HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}

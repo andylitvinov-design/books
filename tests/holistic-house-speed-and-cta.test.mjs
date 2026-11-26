@@ -114,7 +114,7 @@ test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   const es = read("app/es/page.tsx");
   const stage = read("components/home-featured-workspace.tsx");
   const css = read("components/home-featured-workspace.module.css");
-  assert.match(stage, /<h2 id="hh-home-features-title">/);
+  assert.match(stage, /<h1 id="hh-home-features-title">/);
   assert.match(stage, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
   for (const heading of ["Explore your path at Holistic House","Ваш путь в Holistic House","Tu camino en Holistic House"])
     assert.ok(stage.includes(heading));

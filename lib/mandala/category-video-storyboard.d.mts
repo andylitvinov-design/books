@@ -61,6 +61,7 @@ export interface CategoryStoryboardOptions {
  durationSeconds?:number;
  styleId?:string|null;
  excludedMotifs?:readonly string[];
+ stageVisualTags?:readonly (readonly string[])[];
  scenes?:readonly unknown[];
 }
 export declare function planMyTubeCategory(options?:CategoryStoryboardOptions):CategoryStoryboardPlan;

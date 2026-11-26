@@ -355,6 +355,10 @@ async function inspect(browserType,locale,width){
     await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
       waitUntil:"domcontentloaded",timeout:75000,
     });
+    // SSR can paint the audience buttons before React binds their handlers.
+    // Wait for the real Studio hydration contract, then perform one user click.
+    await expect(page.locator('[data-video-studio-hydrated]'))
+      .toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
     // Follow the same visible Magic Mirror path as the existing voice E2E.
     // Selecting the format does not generate a video or spend credits.
@@ -646,6 +650,8 @@ try{
  // Video Studio route, not a static mock. No media render or external AI call.
  const helpMirror=page.locator('[data-hh-mirror-goals]');
  const headerHelp=page.locator('[data-video-ihelp-header-trigger]');
+ await expect(page.locator('[data-video-studio-hydrated]'))
+   .toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
  await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','landing');
  await expect(headerHelp).toHaveCount(1);
  await expect(headerHelp).toBeHidden();

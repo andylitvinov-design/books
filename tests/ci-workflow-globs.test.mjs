@@ -37,6 +37,22 @@ test('every CI YAML is structurally checked; touched workflows keep strict Shell
 });
 
 
+test('actionlint checks every tracked workflow without checking out public media', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const checkout = lint.split('      - uses: actions/checkout@v4')[1]
+    ?.split('      - name: Pin exact PR event base')[0];
+  assert.ok(checkout, 'exact shallow checkout must remain');
+  assert.match(checkout, /fetch-depth: 2/);
+  const sparse = checkout.split('sparse-checkout: |')[1]?.trim().split('\n').map(line => line.trim());
+  assert.deepEqual(sparse, ['.github', 'scripts', 'tests', 'lib/ci', 'lib/youtube', 'app/qa/youtube-phone']);
+  assert.match(lint, /git ls-tree -r --name-only -z HEAD -- \.github\/workflows\//);
+  assert.match(lint, /Missing tracked workflow:/);
+  assert.match(lint, /Workflow inventory mismatch/);
+  assert.match(lint, /git diff --name-only -z "\$BASE_SHA" HEAD -- '\.github\/workflows\/'/);
+  assert.match(lint, /actionlint -shellcheck= -color/);
+  assert.match(lint, /actionlint -color "\$\{files\[@\]\}"/);
+});
+
 test('actionlint does not rerun Core Git fixtures on the constrained slim runner', () => {
   const lint = workflow('hh-actionlint.yml');
   const fast = lint.split('      - name: Fast zero-install CI policy contracts')[1]
@@ -276,8 +292,9 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
     'editing the IA workflow itself must retain the full specialist path');
   assert.match(s, /uses: actions\/cache\/restore@v4/);
   assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}"));
-  assert.ok(s.includes("key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
-  assert.match(s, /path: \.next\/cache/);
+  assert.ok(s.includes("key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
+  assert.match(s, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+  assert.ok(s.includes('npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs'));
   assert.doesNotMatch(s, /actions\/cache\/save@v4/,
     'PR workflow restores only; trusted production remains the sole cache writer');
 });
@@ -411,7 +428,7 @@ test('Mandala restores the same immutable production Core MP3 cache before safe 
   assert.match(mandala,/run: node --test tests\/mandala-scenario-audio\.test\.mjs/);
 });
 
-test('cheap Mandala UI source contracts fail before macOS WebKit without skipping real media',()=>{
+test('cheap Mandala UI source contracts have one required preflight owner before macOS WebKit',()=>{
   const source=workflow('holistic-support-mandala.yml');
   const preflight=source.split('  webkit_preflight:\n')[1]
     ?.split('  voice-webkit-macos:\n')[0]||'';
@@ -425,12 +442,15 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
     'tests/mandala-approved-mobile-studio.test.mjs',
   ]) {
     assert.ok(preflight.includes(file),'fast source preflight missing '+file);
-    assert.ok(focused.includes(file),'full independent source acceptance must remain '+file);
+    assert.ok(!focused.split('      - name: Mandala and mobile support contracts\n')[1]?.split('\n      - name:')[0]?.includes(file),'source-only test must not repeat after dependency/media generation: '+file);
   }
   assert.ok(focused.includes('tests/mandala-workspace-tabs.test.mjs'),
     'TypeScript-dependent workspace test remains in the required full suite');
   assert.ok(!preflight.includes('tests/mandala-workspace-tabs.test.mjs'),
     'a no-install preflight must never import TypeScript-dependent workspace tests');
+  assert.match(preflight,/^    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}$/m,'Ready PRs must run preflight');
+  assert.match(preflight,/test "\$\(git rev-parse HEAD\)" = "\$GITHUB_SHA"/,'same tested candidate is required');
+  assert.match(preflight,/node --test tests\/video-studio-question-registry\.test\.mjs tests\/mandala-video-goal-media-coverage\.test\.mjs tests\/mandala-approved-mobile-studio\.test\.mjs tests\/video-reels-ci-routing\.test\.mjs/);
   assert.ok(preflight.includes('node scripts/ci-pr-readiness.mjs'));
   assert.ok(preflight.includes('git rev-parse HEAD^2'));
   assert.doesNotMatch(preflight,/npm ci|npm run build|actions\/cache\/save/,'preflight must remain a cheap no-install gate');
@@ -740,13 +760,28 @@ test('CI latency: keep all Public Services cases, balance two lanes and fail clo
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
+test('all three browser specialists restore the exact production-owned Next v2 cache',()=>{
+  const producer=workflow('hh-static-image-cost-guard.yml');
+  const key=producer.split('\n').find(line=>line.includes('key: hh-core-next-v2-'))?.trim();
+  assert.ok(key);
+  for(const file of ['ia-v2.yml','release-reaudit.yml','site-video-browser.yml']){
+    const block=workflow(file).split('      - name: Restore trusted production Next compiler cache\n')[1]?.split('\n      - name:')[0];
+    assert.ok(block,file);
+    assert.ok(block.includes(key),file+' must use the producer key');
+    assert.match(block,/path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+    assert.match(block,/actions\/cache\/restore@v4/);
+    assert.doesNotMatch(block,/restore-keys:|actions\/cache\/save@v4/);
+  }
+});
+
 test('duplicate specialist lint is removed only on protected production PRs; real build, browser and read-only caches remain',()=>{
   for (const file of ['release-reaudit.yml','site-video-browser.yml']) {
     const s=workflow(file);
     assert.ok(s.includes('Restore trusted production Next compiler cache'));
     assert.ok(s.includes('Restore trusted production-owned scenario media cache'));
-    assert.ok(s.includes('hh-core-next-v1-')&&s.includes('hh-core-media-v1-'));
-    assert.ok(s.includes('path: .next/cache')&&s.includes('uses: actions/cache/restore@v4'));
+    assert.ok(s.includes('hh-core-next-v2-')&&s.includes('hh-core-media-v1-'));
+    assert.match(s, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+    assert.ok(s.includes('uses: actions/cache/restore@v4'));
     assert.doesNotMatch(s,/actions\/cache\/save@v4/);
     assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then'));
     assert.ok(s.includes('npm run build -- --no-lint'));

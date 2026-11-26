@@ -1375,24 +1375,3 @@ a.service-home-start-card:hover {
 }
 
 @media (max-width: 350px) { .site-navigation .site-main-menu-grid a { padding-inline: 2px; font-size: 10.5px; } .site-navigation .site-main-menu-grid a svg { width: 21px; height: 21px; } }
-
-/* Reserve the measured, collapsed topic grid above the About link while its
-   lazy module loads. Two- and three-column layouts have different heights.
-   Once mounted, the real content determines the size, including user zoom. */
-[data-home-deferred-sections] {
-  --home-discovery-size: min(947px, calc(596px + 33vw));
-  content-visibility: auto;
-  contain-intrinsic-block-size: auto var(--home-discovery-size);
-}
-[data-home-deferred-sections]:not(:has(> [data-home-deferred-content])) {
-  min-block-size: var(--home-discovery-size);
-}
-@media (max-width: 700px) {
-  [data-home-deferred-sections] { --home-discovery-size: calc(598px + 84vw); }
-}
-@media (max-width: 360px) {
-  [data-home-deferred-sections] { --home-discovery-size: 906px; }
-}
-@media (scripting: none) {
-  [data-home-deferred-sections] { --home-discovery-size: 140px; }
-}

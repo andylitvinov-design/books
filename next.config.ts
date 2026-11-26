@@ -23,7 +23,6 @@ const practitionerRecordingSources = [
 // private client media is added to the CDN. Paths stay unchanged and design
 // remains pixel-identical to the approved Max/Andrey homepage.
 const homepagePublicImageSources = [
-  "/images/holistic-house/ali-inner-alchemist-hero.webp",
   "/images/holistic-house/my-coach-motion/:path*",
   "/images/holistic-house/ideas-pine-reference.webp",
   "/images/video-goal-art/:path*",

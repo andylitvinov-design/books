@@ -4,6 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {prepareNaturalDialogue,acceptNaturalOutput,finishNaturalDialogue} from "../lib/holistic-support/natural-dialogue.mjs";
 import {validatedOllamaConfig,generateOwnedOllama} from "../lib/holistic-support/owned-ollama.mjs";
+import {repeatedDialogueQuestion,repairRepeatedDialogueQuestion} from "../lib/holistic-support/ali-dialogue-quality.mjs";
 const d={status:"recommend",message:"A reviewed option is available.",suggestions:[
   {id:"video:1",kind:"video",title:"Verified video",href:"/en/holistic-support",reasons:["chosen_topic"]}]};
 test("free fallback without provider consent never invokes a language model",async()=>{
@@ -97,4 +98,138 @@ test("owned inference sends only allowed request to configured model (mock netwo
   assert.equal(called.url,"https://agent.example.org/api/chat");
   assert.equal(JSON.parse(called.options.body).stream,false);
   assert.equal(called.options.redirect,"error");
+});
+
+// Synthetic-only regressions: no provider, storage or client data.
+const aliQuestionCases=[
+  [
+    "ru",
+    "Что для вас важнее всего?",
+    "Понимаю. Что сейчас для вас важнее всего?",
+    "Да, уже сказал.",
+    true
+  ],
+  [
+    "ru",
+    "Что для вас сейчас важнее?",
+    "Что для вас сейчас важнее?!",
+    "Работа.",
+    true
+  ],
+  [
+    "ru",
+    "Вам важнее работа или семья?",
+    "Вам важнее работа или здоровье?",
+    "Не знаю.",
+    false
+  ],
+  [
+    "ru",
+    "Что для вас важнее всего?",
+    "Что для вас важнее всего?",
+    "Повтори вопрос",
+    false
+  ],
+  [
+    "ru",
+    "Как дела?",
+    "Хорошо, я понял.",
+    "Спасибо",
+    false
+  ],
+  [
+    "en",
+    "What matters most to you?",
+    "What is most important to you right now?",
+    "My family.",
+    true
+  ],
+  [
+    "en",
+    "What would you like to talk about?",
+    "Thanks for sharing. What's on your mind?",
+    "Work.",
+    true
+  ],
+  [
+    "en",
+    "Would you prefer a morning or evening session?",
+    "Would you prefer a morning or weekend session?",
+    "I'm unsure.",
+    false
+  ],
+  [
+    "en",
+    "What matters most to you?",
+    "What matters most to you?",
+    "Repeat the question",
+    false
+  ],
+  [
+    "en",
+    "I can explain the options.",
+    "I can explain the options.",
+    "Please explain.",
+    false
+  ],
+  [
+    "es",
+    "¿Qué es lo más importante para ti?",
+    "Entiendo. ¿Qué te importa más ahora?",
+    "Mi familia.",
+    true
+  ],
+  [
+    "es",
+    "¿De qué te gustaría hablar?",
+    "¿De qué quieres conversar?",
+    "Trabajo.",
+    true
+  ],
+  [
+    "es",
+    "¿Prefieres hablar del trabajo o de la familia?",
+    "¿Prefieres hablar del trabajo o del dinero?",
+    "No sé.",
+    false
+  ],
+  [
+    "es",
+    "¿Qué te importa más ahora?",
+    "¿Qué te importa más ahora?",
+    "Repite la pregunta",
+    false
+  ],
+  [
+    "es",
+    "Estoy aquí.",
+    "Estoy aquí.",
+    "Gracias.",
+    false
+  ]
+];
+for(const [locale,old,reply,message,expected] of aliQuestionCases){
+ test("Ali bounded repeat check "+locale+" "+old+" / "+message,()=>{
+  const history=[{role:"assistant",text:old},{role:"user",text:"fixture"},{role:"assistant",text:"Acknowledgement."}];
+  assert.equal(repeatedDialogueQuestion({reply,history,message,locale}).repeated,expected);
+  const fixed=repairRepeatedDialogueQuestion({reply,history,message,locale});
+  assert.equal(fixed.changed,expected);
+  if(expected)assert.doesNotMatch(fixed.reply,/[?？]/u);
+  else assert.equal(fixed.reply,reply);
+ });
+}
+test("Ali uses a grounded different question instead of another generic loop",()=>{
+ const result=repairRepeatedDialogueQuestion({locale:"en",message:"Closeness",reply:"What matters most to you?",history:[{role:"assistant",text:"What is most important to you?"}],alternative:"Do you miss attention or feeling understood?"});
+ assert.equal(result.reason,"grounded_alternative");
+});
+test("Ali never attributes a user question to the assistant",()=>{
+ assert.equal(repeatedDialogueQuestion({reply:"What matters most to you?",history:[{role:"user",text:"What matters most to you?"}]}).repeated,false);
+});
+test("Ali rejects a repeated generated question without a second model call",async()=>{
+ const history=[{role:"assistant",text:"What is most important to you right now?"}];
+ const envelope=prepareNaturalDialogue({locale:"en",message:"Work.",decision:{status:"no_match",message:"What matters most to you?"},history,channel:"browser",consent:{browserInference:true}});
+ let calls=0;
+ const answer=await finishNaturalDialogue(envelope,async()=>{calls++;return "What matters most to you?";});
+ assert.equal(calls,1);assert.equal(answer.modelUsed,false);
+ assert.equal(repeatedDialogueQuestion({reply:answer.text,history,locale:"en"}).repeated,false);
 });

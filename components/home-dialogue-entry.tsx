@@ -238,21 +238,25 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     ru:{intro:"Твой ИИ-проводник к ясности, цели и развитию.",welcome:"Давай вместе разберёмся, что для тебя сейчас важно — снять напряжение, достичь цели или развить бизнес.",listen:"Послушать моё приветствие",prompt:"С чем ты хочешь поработать сегодня?",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Программы","Видео","Тесты","Практики"],send:"Отправить сообщение",listenOn:"Воспроизвести приветствие",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения.",group:"Выбери программу",programs:[
       {title:"Ясность и снятие стресса",detail:"Спокойствие и восстановление ресурсов.",steps:["Снять напряжение","Восстановить энергию","Вернуть ясность"],prompt:"Хочу начать программу «Ясность и снятие стресса». Помоги понять мою ситуацию и выбрать первый шаг."},
       {title:"Достижение моей цели",detail:"От идеи к результату: найти цель, ресурсы и пройти путь.",steps:["Определить цель","Построить план","Достичь результата"],prompt:"Хочу начать программу «Достижение моей цели». Помоги определить мою цель и следующий шаг."},
-      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Уточнить стратегию","Найти ресурсы","Улучшить результат"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."}]},
+      {title:"Поддержка бизнеса",detail:"Развитие проектов, стратегия, ресурсы и рост дохода.",steps:["Уточнить стратегию","Найти ресурсы","Улучшить результат"],prompt:"Хочу начать программу «Поддержка бизнеса». Помоги прояснить задачу моего бизнеса и следующий шаг."},
+      {title:"Reiki Practic",detail:"Бесплатный курс из 5 недель. Медитации, три системы Рейки и подготовка к инициации.",steps:["5 недель","Практики","Инициация"],prompt:"Хочу познакомиться с курсом практик Рейки."}]},
     en:{intro:"Your AI guide to clarity, goals and growth.",welcome:"Let's discover what matters now — relieving stress, achieving a goal or growing your business.",listen:"Listen to my greeting",prompt:"What would you like to work on today?",methods:"What we use to help:",tools:["AI coaches","Programs","Videos","Tests","Practices"],send:"Send a message",listenOn:"Play my greeting",privacy:"Start free without signing in. Long-term memory requires your permission.",group:"Choose a program",programs:[
       {title:"Clarity & Stress Relief",detail:"Find calm, clarity and restore your resources.",steps:["Relieve stress","Restore energy","Find clarity"],prompt:"I'd like to start the Clarity & Stress Relief program. Help me understand my situation and choose the first step."},
       {title:"Achieving My Goal",detail:"From idea to result: find your goal, resources and path.",steps:["Define my goal","Build a plan","Achieve results"],prompt:"I'd like to start the Achieving My Goal program. Help me define my goal and next step."},
-      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Clarify strategy","Find resources","Improve results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."}]},
+      {title:"Business Support",detail:"Develop projects, strategy, resources and revenue.",steps:["Clarify strategy","Find resources","Improve results"],prompt:"I'd like to start the Business Support program. Help me clarify my business challenge and next step."},
+      {title:"Reiki Practic",detail:"Free five-week course: meditations, three Reiki traditions and initiation preparation.",steps:["5 weeks","Practices","Initiation"],prompt:"I would like to explore the Reiki Practitioner course."}]},
     es:{intro:"Tu guía de IA hacia la claridad, las metas y el crecimiento.",welcome:"Descubramos qué importa ahora: aliviar el estrés, alcanzar una meta o desarrollar tu negocio.",listen:"Escucha mi bienvenida",prompt:"¿En qué quieres trabajar hoy?",methods:"Trabajamos con:",tools:["Coaches IA","Programas","Vídeos","Pruebas","Prácticas"],send:"Enviar mensaje",listenOn:"Reproducir bienvenida",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso.",group:"Elige un programa",programs:[
       {title:"Claridad y alivio del estrés",detail:"Calma, claridad y recuperación de recursos.",steps:["Aliviar el estrés","Recuperar energía","Ganar claridad"],prompt:"Quiero empezar el programa Claridad y alivio del estrés. Ayúdame a entender mi situación y elegir el primer paso."},
       {title:"Alcanzar mi meta",detail:"De la idea al resultado: encuentra tu meta, recursos y camino.",steps:["Definir mi meta","Crear un plan","Lograr resultados"],prompt:"Quiero empezar el programa Alcanzar mi meta. Ayúdame a definir mi objetivo y el siguiente paso."},
-      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Aclarar estrategia","Encontrar recursos","Mejorar resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."}]}
+      {title:"Apoyo empresarial",detail:"Desarrollo de proyectos, estrategia, recursos e ingresos.",steps:["Aclarar estrategia","Encontrar recursos","Mejorar resultados"],prompt:"Quiero empezar el programa Apoyo empresarial. Ayúdame a aclarar el reto de mi negocio y el siguiente paso."},
+      {title:"Reiki Practic",detail:"Curso gratuito de 5 semanas: meditaciones, tres tradiciones Reiki y preparación para la iniciación (EN/RU).",steps:["5 semanas","Prácticas","Iniciación"],prompt:"Quiero conocer el curso de Reiki."}]}
   } as const;
   const msg=programCopy[locale];
   const programArt=[
     {id:"clarity",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",icon:Flower2,steps:[Flower2,Leaf,Sparkles]},
     {id:"goal",image:"/images/holistic-house/course-focus-mountain-boy.webp",icon:Compass,steps:[Compass,Route,TrendingUp]},
     {id:"business",image:"/images/holistic-house/shamanic-cards-business-hd.avif",icon:BarChart3,steps:[BriefcaseBusiness,Sprout,TrendingUp]},
+    {id:"reiki",image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",icon:Flower2,steps:[CalendarDays,Flower2,Sparkles]},
   ] as const;
   const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
 
@@ -263,10 +267,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   function openAttachments(){
     openGoalIntent(locale==="ru"?"Я хочу добавить фотографию к своему вопросу.":locale==="es"?"Quiero adjuntar una imagen a mi pregunta.":"I'd like to add a photo to my question.");
   }
-  // Reserve high priority for the portrait the visitor actually sees.
+  // A CSS background cannot be discovered by the HTML preload scanner.
+  // React hoists resource hints into the initial document <head> without
+  // changing the existing portrait, hero, copy or mobile layout.
   return <section className={styles.root} data-home-dialogue-entry data-home-mode="self"
     data-home-interactive={interactive?"true":"false"} lang={locale}>
     <link rel="preload" as="image" href={picture} fetchPriority="high"/>
+    <link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high"/>
     <header className={styles.header} data-home-dialogue-header>
       <Link href={locale==="en"?"/":"/"+locale} className={styles.brand} prefetch={false} aria-label="Holistic House">
         <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>
@@ -331,7 +338,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       {msg.programs.map((program,index)=>{
         const art=programArt[index],ProgramIcon=art.icon;
         return <button type="button" key={art.id} className={styles.programCard} data-home-intent-option={art.id}
-          aria-label={program.title} onClick={()=>startConversationWith(draft.trim()?program.prompt+"\n"+draft.trim():program.prompt,art.id==="business"?"business":"self")}>
+          aria-label={program.title} onClick={()=>router.push("/"+locale+"/programs/"+art.id)}>
           <span className={styles.programImage}><img src={art.image} width={240} height={180} alt="" loading="lazy"/><ProgramIcon aria-hidden="true" size={28}/></span>
           <span className={styles.programContent}><strong>{program.title}</strong><small>{program.detail}</small>
             <span className={styles.programSteps}>{program.steps.map((step,i)=>{const StepIcon=art.steps[i];return <span key={step}><StepIcon size={15} aria-hidden="true"/>{step}</span>})}</span>

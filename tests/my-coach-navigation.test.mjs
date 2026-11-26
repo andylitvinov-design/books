@@ -42,7 +42,7 @@ test('persona handoff keeps the existing, reviewed session runner and user conse
   assert.match(runner, /personaMethodFit/)
   assert.match(runner, /authoredFollowupFor/)
   assert.match(runner, /CoachingSessionIntroduction/)
-  assert.match(component, /coachSessionHref\(lang, selected.id, safeSettings\)/)
+  assert.match(component, /coachSessionHref\(lang, selected.id, safeSettings, safeMethod\)/)
   assert.match(component, /a generative text dialogue is offered when a verified free privacy-preserving model is configured/i)
   const reg = read('lib/coaching/persona-registry.mjs')
   assert.match(reg, /COACH_SAFETY_RULES/)
@@ -71,4 +71,41 @@ test('About coach expands inline and Start Session opens the selected persona, n
   assert.match(runner, /setEntryStep\(direct\?'questions':'intro'\)/)
   assert.match(runner, /coachingSchemeRequiresAdultConsent\(s\)/)
   assert.match(runnerCss, /prefers-reduced-motion:reduce/)
+})
+
+
+test('header Back checkpoints consented draft without opening the Insight review', () => {
+  const source=read('components/my-coach-live-dialogue.jsx')
+  const back=source.slice(source.indexOf('async function navigateBackToCoaches'),source.indexOf('function resumeFromProtocol'))
+  assert.match(back,/retainPendingClient\(\)/)
+  assert.match(back,/autoSaveRef\.current/)
+  assert.match(back,/await autoSaveQueueRef\.current\?\.flush\(\)/)
+  assert.match(back,/window\.location\.assign\(href\)/)
+  assert.doesNotMatch(back,/endWithProtocol|setProtocolOpen/)
+  assert.match(source,/className=\{styles\.chooseCoach\}[^\n]+onClick=\{navigateBackToCoaches\}/)
+})
+
+test('Insight foregrounds the normalized overview and collapses the transcript', () => {
+  const source=read('components/my-coach-live-dialogue.jsx')
+  // The result preview and PDF projection share the same immutable reviewed snapshot.
+  assert.match(source,/insightResult=protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)\s*\n\s*insightOverview=myCoachProtocolPdfOptions\(insightResult,\{locale:conversationLang\}\)\.protocolOverview/)
+  assert.match(source,/insightRows=coachCourseProtocolRows\(insightResult\.courseSessionId,insightResult\.turns,insightResult\.courseFieldReview,lang\)/)
+  assert.match(source,/insightProfile=coachSavedProfileV3\(insightResult,lang\)/)
+  const view=source.slice(source.indexOf('data-my-coach-protocol>'))
+  assert.ok(view.indexOf('data-coach-insight-overview')>=0)
+  assert.ok(view.indexOf('data-coach-insight-overview')<view.indexOf('data-coach-insight-transcript'))
+  assert.match(view,/<details data-coach-insight-transcript>/)
+})
+
+
+test('catalog method preference reaches the existing authenticated greeting, never starts a session itself',()=>{
+ const catalog=read('components/my-coach-catalog.jsx')
+ const runner=read('components/public-coaching-discovery.jsx')
+ const dialogue=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(catalog.includes('data-coach-catalog-method'))
+ assert.ok(runner.includes('methodPreference={personaSelection?.methodId}'))
+ assert.ok(dialogue.includes('methodPreference&&resolveCoachMethodId(personaId,methodPreference)'))
+ assert.ok(dialogue.includes('method&&protocolOwnerRef.current?{methodId:method,methodSessionId:crypto.randomUUID()'))
+ assert.ok(dialogue.includes('methodSelectionEnabled={protocolOwnerReady}'))
+ assert.ok(dialogue.includes("protocolOwnerReady&&!greetingAccepted?selectedMethod:''"))
 })

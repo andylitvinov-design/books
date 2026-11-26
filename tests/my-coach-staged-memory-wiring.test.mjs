@@ -112,3 +112,78 @@ test('consented first saved protocol survives recent-page limit without exposing
  assert.equal(projectCoachPriorSessions([latest],'',{...first,provenance:'draft'}).foundation,null)
  assert.match(ui(),/memorySharePrior=memoryReady&&allowOpeningPrior&&stagedMemory\?\.sharePrior===true/)
 })
+
+import {selectCoachArchiveFoundation} from '../lib/personal-coaching/protocol-archive.mjs'
+test('explicit introduction wins beyond 20 records, not the newest intro',async()=>{
+ const records=Array.from({length:65},(_,index)=>({
+   id:'00000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),
+   provenance:'client_reviewed_dialogue',completedAt:'2026-11-22T10:00:00.000Z',
+   courseSessionId:index===25||index===40?'introductory':index===0?undefined:'life_direction',
+   goal:'Record '+index
+ }))
+ let calls=0
+ const readPage=async cursor=>{
+  const start=cursor?Number(cursor.beforeId.slice(-12)):0
+  const protocols=records.slice(start,start+20),last=protocols.at(-1),hasMore=start+20<records.length
+  calls++
+  return {protocols,hasMore,nextCursor:hasMore?{before:'2026-11-22T10:00:00.000001Z',beforeId:last.id}:null}
+ }
+ const selected=await selectCoachArchiveFoundation(readPage)
+ assert.equal(selected.record.goal,'Record 25')
+ assert.equal(selected.kind,'introductory');assert.equal(selected.searchComplete,true)
+ assert.equal(calls,2)
+ const bound=await selectCoachArchiveFoundation(readPage,{maxPages:1})
+ assert.equal(bound.record.goal,'Record 0');assert.equal(bound.kind,'legacy_untyped')
+ assert.equal(bound.searchComplete,false)
+ const fallback=await selectCoachArchiveFoundation(async()=>({protocols:[records[0]],hasMore:false,nextCursor:null}))
+ assert.equal(fallback.kind,'legacy_untyped');assert.equal(fallback.searchComplete,true)
+ const other=await selectCoachArchiveFoundation(async()=>({protocols:[records[1]],hasMore:false,nextCursor:null}))
+ assert.equal(other.kind,'earliest_reviewed')
+})
+test('foundation selector cannot advance a repeated cursor or select an unreviewed record',async()=>{
+ const id='00000000-0000-4000-8000-000000000001'
+ const cursor={before:'2026-11-22T10:00:00.000001Z',beforeId:id}
+ let calls=0
+ const selected=await selectCoachArchiveFoundation(async()=>{
+  calls++
+  return {protocols:[{id,provenance:'client_autosaved_unreviewed_draft',courseSessionId:'introductory'}],hasMore:true,nextCursor:cursor}
+ })
+ assert.equal(calls,2);assert.equal(selected.record,null);assert.equal(selected.searchComplete,false)
+})
+test('foundation kind identifies an actual course without exposing raw dialogue',async()=>{
+ const {projectCoachPriorSessions}=await import('../lib/coaching/coach-staged-memory.mjs')
+ const p={provenance:'client_reviewed_dialogue',completedAt:'2026-11-22T10:00:00.000Z',
+  goal:'Base',turns:[{role:'user',content:'SECRET RAW TRANSCRIPT'}]}
+ const explicit=projectCoachPriorSessions([], '', {...p,courseSessionId:'introductory',foundationSearchComplete:true})
+ assert.equal(explicit.foundationKind,'introductory');assert.equal(explicit.hasPreviousSession,true)
+ assert.equal(explicit.foundationSearchComplete,true)
+ const legacy=projectCoachPriorSessions([], '', p)
+ assert.equal(legacy.foundationKind,'legacy_untyped')
+ assert.equal(legacy.foundationSearchComplete,false)
+ assert.doesNotMatch(JSON.stringify(explicit),/SECRET RAW TRANSCRIPT/)
+})
+
+
+test('an explicit recent introduction beats incomplete unrelated foundation without claiming earliest',async()=>{
+ const {projectCoachPriorSessions,coachPriorRecapRole}=await import('../lib/coaching/coach-staged-memory.mjs')
+ const record=(n,course)=>({id:'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),provenance:'client_reviewed_dialogue',completedAt:'2026-11-26T00:00:00.000Z',savedAt:'2026-11-26T00:00:00.000Z',courseSessionId:course,goal:'Record '+n,turns:[{role:'user',content:'PRIVATE RAW'}]})
+ const old={...record(1,'life_direction'),foundationSearchComplete:false}
+ const recent=record(135,'introductory')
+ const newer=record(136,'life_direction')
+ const result=projectCoachPriorSessions([newer,recent],'',old)
+ assert.equal(result.foundation.topic,'Record 135')
+ assert.equal(result.foundationKind,'introductory')
+ assert.equal(result.foundationSearchComplete,false)
+ assert.equal(coachPriorRecapRole(result,result.foundation),'introductory_earliest_unverified')
+ const note=coachLiveMemoryNote({prior:result,priorAllowed:true,continuity:'previous'})
+ assert.match(note,/introductory_earliest_unverified/)
+ assert.doesNotMatch(note,/PRIVATE RAW/)
+ assert.equal((note.match(/Record 135/g)||[]).length,1)
+ const trueFirst={...record(25,'introductory'),foundationSearchComplete:true}
+ const verified=projectCoachPriorSessions([recent,newer],'',trueFirst)
+ assert.equal(verified.foundation.topic,'Record 25')
+ assert.equal(coachPriorRecapRole(verified,verified.foundation),'introductory')
+ const fallback=projectCoachPriorSessions([newer],'',old)
+ assert.equal(coachPriorRecapRole(fallback,fallback.foundation),'earliest_reviewed_not_introductory')
+ assert.match(service(),/coachPriorRecapRole\(reviewed,recap\)/)
+})

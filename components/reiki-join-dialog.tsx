@@ -6,9 +6,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./reiki-join-dialog.module.css";
 
 const copy = {
-  en: { badge: "JOIN THE COURSE", title: "Join the Reiki Practitioner Course", intro: "Start your free Reiki journey in your personal Daybook.", course: "Reiki Practitioner", cover: "5 weeks · 3 Reiki systems · Free", lessons: "Online lessons", progress: "Save progress", practices: "Reiki practices", google: "Sign in with Google", action: "and join the course", wait: "Opening Google…", note: "New here? Your free personal account is created automatically.", private: "Secure & private", free: "Free access", close: "Close sign-in window" },
-  ru: { badge: "ПРИСОЕДИНИТЬСЯ К КУРСУ", title: "Станьте практиком Рейки", intro: "Начните бесплатный курс в личном дневнике Daybook.", course: "Практик Рейки", cover: "5 недель · 3 системы · Бесплатно", lessons: "Онлайн-уроки", progress: "Ваш прогресс", practices: "Практики Рейки", google: "Войти через Google", action: "и начать курс", wait: "Открываем Google…", note: "Если вы впервые здесь, личный кабинет создастся автоматически и бесплатно.", private: "Конфиденциально", free: "Бесплатный доступ", close: "Закрыть окно входа" },
-  es: { badge: "ÚNETE AL CURSO", title: "Únete al curso Reiki Practitioner", intro: "Comienza gratis en tu Daybook personal. Curso disponible en inglés y ruso.", course: "Reiki Practitioner", cover: "5 semanas · 3 sistemas · Gratis", lessons: "Clases en línea", progress: "Guarda tu progreso", practices: "Prácticas Reiki", google: "Accede con Google", action: "y únete al curso", wait: "Abriendo Google…", note: "Si eres nuevo, tu cuenta personal se creará automáticamente y sin coste.", private: "Seguro y privado", free: "Acceso gratuito", close: "Cerrar ventana de acceso" },
+  en: { badge: "JOIN THE COURSE", title: "Join the Reiki Practitioner Course", intro: "Start your free Reiki journey in your personal Daybook.", course: "Reiki Practitioner", cover: "5 weeks · 3 Reiki systems · Free", lessons: "Online lessons", progress: "Save progress", practices: "Reiki practices", google: "Sign in with Google", action: "and join the course", wait: "Opening Google…", note: "Your free account is created automatically. Name and email are saved in Academy CRM for enrollment. Your journal stays private; no mailing subscription.", private: "Secure & private", free: "Free access", close: "Close sign-in window" },
+  ru: { badge: "ПРИСОЕДИНИТЬСЯ К КУРСУ", title: "Станьте практиком Рейки", intro: "Начните бесплатный курс в личном дневнике Daybook.", course: "Практик Рейки", cover: "5 недель · 3 системы · Бесплатно", lessons: "Онлайн-уроки", progress: "Ваш прогресс", practices: "Практики Рейки", google: "Войти через Google", action: "и начать курс", wait: "Открываем Google…", note: "Бесплатный кабинет создаётся автоматически. Имя и email сохраняются в CRM Академии для записи на курс. Дневник личный, без рассылок.", private: "Конфиденциально", free: "Бесплатный доступ", close: "Закрыть окно входа" },
+  es: { badge: "ÚNETE AL CURSO", title: "Únete al curso Reiki Practitioner", intro: "Comienza gratis en tu Daybook personal. Curso disponible en inglés y ruso.", course: "Reiki Practitioner", cover: "5 semanas · 3 sistemas · Gratis", lessons: "Clases en línea", progress: "Guarda tu progreso", practices: "Prácticas Reiki", google: "Accede con Google", action: "y únete al curso", wait: "Abriendo Google…", note: "Tu cuenta gratuita se crea automáticamente. Nombre y correo se guardan en el CRM de la Academia para la inscripción. Diario privado, sin suscripción a correos.", private: "Seguro y privado", free: "Acceso gratuito", close: "Cerrar ventana de acceso" },
 } as const;
 
 function GoogleMark() {
@@ -64,11 +64,11 @@ export function ReikiJoinDialog({ locale, busy, error, onGoogle, onDismiss }: { 
         <div><span><Layers size={21} aria-hidden="true" /></span>{t.progress}</div>
         <div><span><Sparkles size={21} aria-hidden="true" /></span>{t.practices}</div>
       </div>
+      <p className={styles.note}>{t.note}</p>
       <button type="button" className={styles.google} data-reiki-join-google disabled={busy} aria-busy={busy} onClick={onGoogle} autoFocus>
         <GoogleMark /><span>{busy ? t.wait : <>{t.google}<br />{t.action}</>}</span><ArrowRight size={22} aria-hidden="true" />
       </button>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <p className={styles.note}>{t.note}</p>
       <div className={styles.footer}><span><LockKeyhole size={15} aria-hidden="true" />{t.private}</span><span><BookOpen size={15} aria-hidden="true" />{t.free}</span></div>
     </div>
   </dialog>;

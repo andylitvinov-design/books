@@ -38,8 +38,8 @@ test('Free Live cannot use Paid key or be enabled without all the privacy gates'
  assert.equal(geminiFreeLiveConfig(free).model,GEMINI_FREE_LIVE_MODEL)
  assert.equal(GEMINI_FREE_LIVE_MAX_SECONDS,1200)
 })
-test('all eleven personas, four locked voices, RU/EN/ES and separate audio-training consent',()=>{
- assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,11)
+test('all twelve personas, locked voice candidates, RU/EN/ES and separate audio-training consent',()=>{
+ assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,12)
  for(const personaId of Object.keys(GEMINI_COACH_VOICE_OPTIONS))
  for(const locale of ['ru','en','es'])
  for(const voiceName of GEMINI_COACH_VOICE_OPTIONS[personaId]){
@@ -506,7 +506,10 @@ test('the worklet delivers complete ordered microphone blocks around 32 ms at ea
 
 test('iPhone audio resume and bounded network backpressure are wired',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
- assert.match(live,/data-coach-live-resume-audio/)
+ assert.doesNotMatch(live,/data-coach-live-resume-audio|resumeAudioByTap/)
+ assert.match(live,/function refreshLiveAudioRoute\(r,force=false\)/)
+ assert.match(live,/function requestAudioResume\(r\)\{[\s\S]*?refreshLiveAudioRoute\(r,true\)/)
+ assert.doesNotMatch(load('components/my-coach-live-dialogue.jsx'),/data-coach-restore-sound|Restore sound/)
  assert.match(live,/r\.context\.resume\?\.\(\)/)
  assert.match(live,/r\.pendingAudio\.length>=MAX_PENDING_AUDIO_CHUNKS/)
  assert.match(live,/r\.pendingAudioChars\+part\.length>MAX_PENDING_AUDIO_CHARS/)

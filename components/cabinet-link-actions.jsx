@@ -1,7 +1,5 @@
 'use client'
 
-import './consultation-result-layout.css'
-
 import { useState } from 'react'
 
 export function CabinetLinkActions({ clientId, locale = 'en' }) {

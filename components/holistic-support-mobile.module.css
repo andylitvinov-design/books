@@ -174,6 +174,8 @@
 .localeLinks { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 .localeLinks a { display: grid; place-items: center; min-height: 45px; border: 1px solid #bfcbbe; border-radius: 11px; color: #146b52; font-weight: 800; text-decoration: none; }
 .localeLinks a[aria-current="page"] { border-color: #13785c; background: #d9ebdf; }
+.accountSettingsLink { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 45px; margin: 11px 0 0; padding: 9px 12px; border: 1px solid #0b775a; border-radius: 12px; background: #e7f5ed; color: #075c45; font-size: 15px; font-weight: 800; text-align: center; text-decoration: none; }
+.accountSettingsLink:hover, .accountSettingsLink:focus-visible { background: #c9eada; outline-offset: 2px; }
 .settingsPanel button { min-height: 44px; padding: 9px 14px; border: 0; border-radius: 11px; background: #096b52; color: white; font-weight: 800; }
 
 
@@ -1225,6 +1227,20 @@
 .practiceTabs>button[aria-pressed="true"]{background:#e4f5ea;color:#087b5b;border-color:#9acbb2}
 .practiceTabs> :is(button,a):focus-visible{outline:3px solid #168a65;outline-offset:2px}
 @media(max-width:350px){.practiceTabs{gap:5px}.practiceTabs> :is(button,a){min-height:44px;font-size:12px;padding-inline:3px}}
+
+/* Local check-ins remain on this page; authenticated progress is a separate
+ * owner-scoped route. No local ratings are persisted by this navigation. */
+.accountProgressLink{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;margin-top:11px;padding:10px 14px;border:1px solid #a6d5bb;border-radius:15px;background:linear-gradient(120deg,#e7f5eb,#d5eee3);color:#126348;font-size:14px;font-weight:800;text-align:center;text-decoration:none}
+.accountProgressLink svg{flex:none}
+.accountProgressLink span{min-width:0;overflow-wrap:anywhere}
+.accountProgressLink:hover{background:#cae9da}
+@media(max-width:640px){.accountProgressLink{min-height:46px;margin-top:9px;font-size:12px}}
+.videoAccountProgress{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0;padding:7px 0}
+.page .videoAccountProgress button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:43px;padding:9px 13px;border:1px solid #abd3bc;border-radius:12px;background:#e9f6ec;color:#14674c;font-size:12px;font-weight:780;cursor:pointer}
+.videoAccountProgress button:disabled{opacity:.72;cursor:default}
+.videoAccountProgress a{color:#14674c;font-size:12px;font-weight:700}
+.videoAccountProgress p{margin:0;color:#99552f;font-size:12px}
+@media(max-width:640px){.videoAccountProgress{width:100%;padding:7px 2px}.page .videoAccountProgress button{max-width:100%;min-height:44px;font-size:11px}}
 
 /* Source-backed three-direction catalogue is the first Courses action.
    Optional goal-profile journeys stay collapsed until explicit activation. */

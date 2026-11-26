@@ -2,6 +2,7 @@ name: Holistic House public test collections acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/simple-test-picker.jsx'
@@ -47,6 +48,7 @@ concurrency:
 
 jobs:
   collections-unit-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -76,6 +78,7 @@ jobs:
           tests/profile-test-course-journey.test.mjs
           tests/guest-test-journey-progress.test.mjs
       - name: Lint modified application code
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: >-
           npx --no-install eslint
           components/app/simple-test-picker.jsx

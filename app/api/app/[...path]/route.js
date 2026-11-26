@@ -3,6 +3,8 @@ import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, val
 import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import { createReikiJoinIntent,verifyReikiJoinIntent,reikiJoinCookieName,createReikiRetryProof,verifyReikiRetryProof,REIKI_RETRY_COOKIE,REIKI_JOIN_TTL,REIKI_RETRY_TTL } from '@/lib/academy/reiki-registration-proof.mjs'
+import { syncReikiRegistration } from '@/lib/academy/reiki-registration-store'
 import {
   TELEGRAM_OIDC_PROVIDER, IDENTITY_LINK_COOKIE, telegramLoginEnabled, oauthProvider,
   createIdentityLinkProof, verifyIdentityLinkProof,
@@ -21,6 +23,8 @@ import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-c
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
+import {COACH_SESSION_COOKIE,COACH_SESSION_TTL_SECONDS,sealCoachSession} from '@/lib/coaching/session-authority.mjs'
+import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest} from '@/lib/coaching/method-session-transport.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
@@ -287,8 +291,11 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider', 'reikiSharing'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider', 'reikiSharing', 'reikiRegistration'])
       const authChoice = body.provider ?? 'google'
+      if(body.reikiRegistration!==undefined && (authChoice!=='google'||body.continueTo!=='energywork-daybook'||!['en','ru','es'].includes(body.reikiRegistration)))
+        throw new AppError('INVALID_REIKI_REGISTRATION',400)
+      const reikiJoin=body.reikiRegistration===undefined?null:createReikiJoinIntent(body.reikiRegistration,config)
       if (authChoice !== 'google' && authChoice !== 'telegram')
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
       if (body.reikiSharing !== undefined && (body.reikiSharing !== true || !['energywork','energywork-daybook'].includes(body.continueTo) || authChoice !== 'google' || body.native)) throw new AppError('INVALID_CONTINUATION',400)
@@ -309,7 +316,7 @@ async function handle(request, { params }) {
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira', 'clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) &&
-        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['commander-monitor','cabinet','progress','settings','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (recipientSlug !== null) {
@@ -369,7 +376,7 @@ async function handle(request, { params }) {
         provider: selectedProvider.provider,
         options: {
           ...(authChoice === 'google' ? { scopes: 'openid email profile' } : { scopes: selectedProvider.scopes }),
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${reikiFlow ? '&reikiFlow=' + reikiFlow : ''}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${reikiFlow ? '&reikiFlow=' + reikiFlow : ''}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}${reikiJoin ? `&reikiJoin=${reikiJoin.nonce}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -378,6 +385,9 @@ async function handle(request, { params }) {
       const response = json({ redirectUrl: data.url, ...(reikiFlow ? { reikiFlow } : {}) })
       if (['energywork','energywork-daybook'].includes(continueTo) && (reikiFlow || request.cookies?.get(REIKI_CONSENT_COOKIE)?.value)) response.cookies.set(REIKI_CONSENT_COOKIE,
         reikiFlow ? reikiConsentProof(reikiFlow,null,config) : '', reikiConsentCookieOptions(config,reikiFlow ? undefined : 0))
+      if(reikiJoin)response.cookies.set(reikiJoin.cookieName,reikiJoin.value,{
+        path:'/api/app/auth',maxAge:REIKI_JOIN_TTL,httpOnly:true,secure:!config.test,sameSite:'lax',
+      })
       return response
     }
     if (joined === 'auth/callback' && method === 'GET') {
@@ -394,6 +404,12 @@ async function handle(request, { params }) {
         coachingMode = url.searchParams.get('coachingMode'),
         coachingLang = url.searchParams.get('coachingLang'),
         recipientSlug = url.searchParams.get('recipientSlug')
+      const reikiJoinNonce=url.searchParams.get('reikiJoin')
+      const reikiCookie=reikiJoinNonce===null?null:reikiJoinCookieName(reikiJoinNonce)
+      if(reikiJoinNonce!==null && (!reikiCookie||continueTo!=='energywork-daybook'||url.searchParams.getAll('reikiJoin').length!==1))
+        throw new AppError('INVALID_REIKI_REGISTRATION',400)
+      const reikiLocale=reikiCookie?verifyReikiJoinIntent(reikiJoinNonce,request.cookies.get(reikiCookie)?.value,config):null
+      let reikiRetryUpdate
       const linkMode = url.searchParams.get('link')
       if (linkMode !== null && linkMode !== '1') throw new AppError('INVALID_LINK_FLOW',400)
       const linkProof = linkMode === '1'
@@ -405,6 +421,12 @@ async function handle(request, { params }) {
         throw new AppError('INVALID_LINK_FLOW',403)
       const finishAuth = response => {
         const applied = auth.apply(response)
+        if(reikiCookie&&url.searchParams.get('native')!=='1')applied.cookies.set(reikiCookie,'',{
+          path:'/api/app/auth',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+        })
+        if(reikiRetryUpdate!==undefined)applied.cookies.set(REIKI_RETRY_COOKIE,reikiRetryUpdate||'',{
+          path:'/api/app',maxAge:reikiRetryUpdate?REIKI_RETRY_TTL:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+        })
         if (linkedAccount) applied.cookies.set(IDENTITY_LINK_COOKIE,'',{
           path:'/api/app/auth',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
         })
@@ -426,7 +448,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','progress','settings','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -435,7 +457,7 @@ async function handle(request, { params }) {
         if (linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id','reikiJoin']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -482,6 +504,10 @@ async function handle(request, { params }) {
                 ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait?space=today`
+                : continueTo === 'progress'
+                  ? `${origin}/${locale}/app/progress`
+                : continueTo === 'settings'
+                  ? `${origin}/${locale}/app/settings`
                 : continueTo === 'my-practice'
                   ? profi
                     ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
@@ -553,6 +579,17 @@ async function handle(request, { params }) {
           }))
       }
       const account=await createAppRepository(config).ensureAccount(actor)
+      if(reikiLocale&&!linkedAccount){
+        try{
+          await syncReikiRegistration(config,actor,auth.client,reikiLocale)
+          reikiRetryUpdate=null
+        }catch{
+          // Preserve verified login; a scoped, signed account-bound cookie
+          // retries the operational registration on the next Cabinet bootstrap.
+          if(actor.email)reikiRetryUpdate=createReikiRetryProof(actor,reikiLocale,config)
+          console.error('HH_REIKI_CRM_REGISTRATION_RETRY')
+        }
+      }
       // Auto-attach only proven Business enquiries; never invalidate login
       // on a transient CRM error. Settings retries an authenticated POST.
       if(telegramLoginEnabled()){
@@ -1101,19 +1138,58 @@ async function handle(request, { params }) {
     // The gateway invokes it only when an actual provider request is attempted.
     const reserveCoachingFreeCall=()=>consumeRate(config,
       {op:'coaching-openrouter-shared-daily'},40,86400)
-    // Signed-in, stateless dialogue for the selected My Coach persona. Client
-    // history is not stored; auth, same-origin protection and DB throttles apply.
+    // Optional method handshake for the signed-in text/stream transport.
+    // Existing clients keep their current route and Gemini Live is unchanged.
+    const coachMethodContext=()=>({token:request.cookies.get(COACH_SESSION_COOKIE)?.value,config,actor})
+    const withCoachMethodCookie=(response,state)=>{
+      response.cookies.set(COACH_SESSION_COOKIE,state?sealCoachSession(state,config,actor):'',{
+        httpOnly:true,secure:!config.test,sameSite:'lax',path:'/api/app/my-coach',
+        maxAge:state?COACH_SESSION_TTL_SECONDS:0
+      })
+      return response
+    }
+    const methodError=error=>{
+      const known=['COACH_SESSION_REQUIRED','COACH_SESSION_METHOD_CONFLICT']
+      if(known.includes(error?.message))return new AppError(error.message,409)
+      if(error?.message==='COACHING_BRAIN_SENSITIVE_CONTENT')
+        return new AppError('COACHING_BRAIN_SENSITIVE_CONTENT',400)
+      return new AppError('COACHING_BRAIN_INPUT_INVALID',400)
+    }
+    const requireMethodOwner=body=>{
+      if(body?.methodSessionId!==undefined&&request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+    }
+    const prepareMethodTurn=body=>{
+      requireMethodOwner(body)
+      try{return prepareCoachMethodTurn(body,coachMethodContext())}
+      catch(error){throw methodError(error)}
+    }
+    if(joined==='my-coach/session'){
+      if(method==='DELETE')return withCoachMethodCookie(json({ended:true}),null)
+      if(method!=='POST')throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,512)
+      requireMethodOwner(body)
+      let state
+      try{state=startCoachMethodSession(body,coachMethodContext())}
+      catch(error){throw methodError(error)}
+      await consumeRate(config,{op:'my-coach-session-start',actor:actor.id},12,3600)
+      return withCoachMethodCookie(json({started:true,methodId:state.methodId,targetSeconds:1200,
+        ...(state.clientSessionId?{methodSessionId:state.clientSessionId}:{})}),state)
+    }
+    // Signed-in dialogue; no client transcript is stored by the authority.
     if (joined === 'my-coach/stream') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      const stream=await myCoachGenerativeStreamTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor})
-      return new Response(stream,{status:200,headers:{
+      const prepared=prepareMethodTurn(await readBody(request,16384))
+      const stream=await myCoachGenerativeStreamTurn(prepared.body,
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor,methodAuthority:prepared.progress})
+      const response=auth.apply(new NextResponse(stream,{status:200,headers:{
         ...PRIVATE_HEADERS,
         'Content-Type':'text/event-stream; charset=utf-8',
         'Cache-Control':'private, no-store, max-age=0',
         'X-Accel-Buffering':'no',
-      }})
+      }}))
+      return prepared.progress?withCoachMethodCookie(response,prepared.progress.session):response
     }
     // An authenticated, one-use credential constrained to a single FREE
     // Gemini Live model, chosen fictional persona and allowed voice.
@@ -1123,8 +1199,13 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       const vendor=geminiFreeLiveConfig(process.env)
       if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      const liveBody=await readBody(request,2048)
+      requireMethodOwner(liveBody)
+      let selected
+      try{selected=prepareCoachMethodRequest(liveBody,coachMethodContext())}
+      catch(error){throw methodError(error)}
       let start
-      try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
+      try{start=normalizeGeminiFreeLiveStart(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.
@@ -1163,10 +1244,17 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
+      const checkpointBody=await readBody(request,8192)
+      requireMethodOwner(checkpointBody)
+      let selected
+      try{selected=prepareCoachMethodRequest(checkpointBody,coachMethodContext())}
+      catch(error){throw methodError(error)}
       let progress
-      try{progress=geminiFreeLiveCheckpoint(await readBody(request,8192))}
+      try{progress=geminiFreeLiveCheckpoint(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
-      return json(progress)
+      const {__methodSession,...clientProgress}=progress
+      const response=json(clientProgress)
+      return __methodSession?withCoachMethodCookie(response,__methodSession):response
     }
     // Metadata-only check: no client transcript, API key or test generation.
     if (joined === 'my-coach/engines') {
@@ -1193,9 +1281,12 @@ async function handle(request, { params }) {
         await consumeRate(config,{op:'my-coach-'+geminiMode+'-actor-day',actor:actor.id},
           geminiMode==='gemini_paid'?6:16,86400)
       }
-      return json(await myCoachGenerativeTurn(body,
+      const prepared=prepareMethodTurn(body)
+      const result=await myCoachGenerativeTurn(prepared.body,
         {signal:request.signal,reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
-          config,actor}))
+          config,actor,methodAuthority:prepared.progress})
+      const response=json(result)
+      return prepared.progress?withCoachMethodCookie(response,prepared.progress.session):response
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
@@ -1334,7 +1425,21 @@ async function handle(request, { params }) {
       // account check and private rate limit above. Other tabs stay unchanged.
       const requestedView = new URL(request.url).searchParams.get('view')
       const view = requestedView === 'portrait' || requestedView === 'practice' ? requestedView : 'full'
-      return json(await repo.bootstrap(actor, { view }))
+      const data=await repo.bootstrap(actor, { view })
+      const retryCookie=request.cookies?.get(REIKI_RETRY_COOKIE)?.value
+      const retryLocale=retryCookie?verifyReikiRetryProof(actor,retryCookie,config):null
+      let clearRetry=Boolean(retryCookie&&!retryLocale)
+      if(retryLocale){
+        try{
+          await syncReikiRegistration(config,actor,auth.client,retryLocale)
+          clearRetry=true
+        }catch{console.error('HH_REIKI_CRM_REGISTRATION_RETRY')}
+      }
+      const response=json(data)
+      if(clearRetry)response.cookies.set(REIKI_RETRY_COOKIE,'',{
+        path:'/api/app',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+      })
+      return response
     }
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
