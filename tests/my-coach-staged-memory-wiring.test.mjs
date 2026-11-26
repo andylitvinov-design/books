@@ -162,3 +162,28 @@ test('foundation kind identifies an actual course without exposing raw dialogue'
  assert.equal(legacy.foundationSearchComplete,false)
  assert.doesNotMatch(JSON.stringify(explicit),/SECRET RAW TRANSCRIPT/)
 })
+
+
+test('an explicit recent introduction beats incomplete unrelated foundation without claiming earliest',async()=>{
+ const {projectCoachPriorSessions,coachPriorRecapRole}=await import('../lib/coaching/coach-staged-memory.mjs')
+ const record=(n,course)=>({id:'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),provenance:'client_reviewed_dialogue',completedAt:'2026-11-26T00:00:00.000Z',savedAt:'2026-11-26T00:00:00.000Z',courseSessionId:course,goal:'Record '+n,turns:[{role:'user',content:'PRIVATE RAW'}]})
+ const old={...record(1,'life_direction'),foundationSearchComplete:false}
+ const recent=record(135,'introductory')
+ const newer=record(136,'life_direction')
+ const result=projectCoachPriorSessions([newer,recent],'',old)
+ assert.equal(result.foundation.topic,'Record 135')
+ assert.equal(result.foundationKind,'introductory')
+ assert.equal(result.foundationSearchComplete,false)
+ assert.equal(coachPriorRecapRole(result,result.foundation),'introductory_earliest_unverified')
+ const note=coachLiveMemoryNote({prior:result,priorAllowed:true,continuity:'previous'})
+ assert.match(note,/introductory_earliest_unverified/)
+ assert.doesNotMatch(note,/PRIVATE RAW/)
+ assert.equal((note.match(/Record 135/g)||[]).length,1)
+ const trueFirst={...record(25,'introductory'),foundationSearchComplete:true}
+ const verified=projectCoachPriorSessions([recent,newer],'',trueFirst)
+ assert.equal(verified.foundation.topic,'Record 25')
+ assert.equal(coachPriorRecapRole(verified,verified.foundation),'introductory')
+ const fallback=projectCoachPriorSessions([newer],'',old)
+ assert.equal(coachPriorRecapRole(fallback,fallback.foundation),'earliest_reviewed_not_introductory')
+ assert.match(service(),/coachPriorRecapRole\(reviewed,recap\)/)
+})
