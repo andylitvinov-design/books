@@ -74,18 +74,19 @@ export async function GET(request){
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|caesar|lea|noah|iris|ray)\/?$/.exec(url.pathname)
-    if(!match||!['','?v=2','?v=3','?v=4'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!match||!['','?v=2','?v=3','?v=4','?v=5'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
-    const version=url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
+    const version=url.search==='?v=5'?'v5':url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
     if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
     if(version==='v4'&&!((locale==='en'&&/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId))||(locale==='ru'&&/^(?:alex|max)$/.test(personaId))))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(version==='v5'&&(personaId!=='caesar'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
     // Record the same authored greeting shown on the coach's introduction card.
     const introduction=intro?.text||coachOpeningIntro(personaId,locale)
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
-    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'
+    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'||url.search==='?v=5'
     if(useRecordedGreeting){
       // Storage failure must not be interpreted as a cache miss: that would
       // trigger paid TTS again on every transient outage.
@@ -96,6 +97,8 @@ export async function GET(request){
       if(saved)return storedAudioResponse(saved)
     }
 
+    // Never record a new voice into Caesar's obsolete v2 cache key.
+    if(personaId==='caesar'&&version!=='v5')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
     // Freeze each selected public RU/EN Gemini voice into a real MP3. Only the
     // fixed editorial greeting leaves the server, never a visitor's words.
     // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
@@ -120,7 +123,7 @@ export async function GET(request){
       return await persistGreeting(config,personaId,locale,audio,version)
     }
     // New approved versioned greetings must be Gemini, never a substituted voice.
-    if(personaId==='caesar'||version==='v3'||version==='v4')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    if(personaId==='caesar'||version==='v3'||version==='v4'||version==='v5')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.

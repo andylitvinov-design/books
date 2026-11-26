@@ -42,12 +42,15 @@ test('Caesar has independent localized profile, five compass steps and one-quest
 
 test('Caesar greeting and approved voice are independent; no unapproved Spanish voice',()=>{
  for(const locale of ['ru','en']){
-  assert.equal(approvedGeminiVoice('caesar',locale),'Achird')
-  assert.equal(coachIntroAudioPath('caesar',locale),'/api/coaching/intro/'+locale+'/caesar?v=2')
-  assert.equal(coachGreetingObjectKey('caesar',locale),'v2/'+locale+'/caesar.mp3')
+  assert.equal(approvedGeminiVoice('caesar',locale),locale==='ru'?'Algenib':'Alnilam')
+  assert.equal(coachIntroAudioPath('caesar',locale),'/api/coaching/intro/'+locale+'/caesar?v=5')
+  assert.equal(coachGreetingObjectKey('caesar',locale,'v5'),'v5/'+locale+'/caesar.mp3')
  }
  assert.equal(approvedGeminiVoice('caesar','es'),null)
  assert.equal(allowedGeminiCoachVoice('caesar','Puck'),false)
+ assert.equal(allowedGeminiCoachVoice('caesar','Achird'),false)
+ assert.equal(coachGreetingObjectKey('caesar','es','v5'),null)
+ assert.equal(coachGreetingObjectKey('max','ru','v5'),null)
 })
 
 test('Caesar protocol remains in the shared archive with its own method and identity',()=>{
