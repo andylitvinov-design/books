@@ -142,7 +142,9 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
        {identity.preferredName?' · '+t.name+': '+identity.preferredName:''}</p>
      {identity.hasPreviousSession&&<p>{identity.previous?.[0]?.date||''} · {identity.previous?.[0]?.topic||''}</p>}
      {identityConfirmed&&identity.hasPreviousSession&&<div>
-       {identity.foundation&&<p>{({ru:'Первая сохранённая сессия',en:'First saved session',es:'Primera sesión guardada'})[lang]}: {[identity.foundation.date,identity.foundation.topic,identity.foundation.clientConclusions,identity.foundation.clientNextStep].filter(Boolean).join(' · ')}</p>}
+       {identity.foundation&&<p>{(identity.foundationKind==='introductory'?
+       {ru:'Вводная сессия',en:'Introductory session',es:'Sesión introductoria'}:
+       {ru:'Самая ранняя сохранённая сессия (не подтверждена как вводная)',en:'Earliest saved session (not verified as introductory)',es:'Primera sesión guardada (no verificada como introductoria)'})[lang]}: {[identity.foundation.date,identity.foundation.topic,identity.foundation.clientConclusions,identity.foundation.clientNextStep].filter(Boolean).join(' · ')}</p>}
        {identity.previous?.[1]&&<p>{[identity.previous[1].date,identity.previous[1].topic,identity.previous[1].clientConclusions,identity.previous[1].clientNextStep].filter(Boolean).join(' · ')}</p>}
        {identity.previous?.[0]?.clientConclusions&&<p>{t.recap}: {identity.previous[0].clientConclusions}</p>}
        {identity.previous?.[0]?.clientNextStep&&<p>{t.step}: {identity.previous[0].clientNextStep}</p>}
