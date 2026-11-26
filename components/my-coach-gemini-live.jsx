@@ -1329,7 +1329,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
-    {process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
+    {personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
       phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>

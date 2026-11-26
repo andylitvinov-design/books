@@ -30,6 +30,7 @@ export interface EmotionalVideoInput {
   excludedMotifs?:readonly string[];
   styleId?:string|null;
   allowAbstractMotion?:boolean;
+  personalVisualTags?:readonly string[];
 }
 export interface EmotionalVideoBeat {
   beatIndex:number;

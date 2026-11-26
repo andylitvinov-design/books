@@ -2,13 +2,19 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {readFileSync} from 'node:fs'
 import {getProgramOverview,PUBLIC_PROGRAMS,PROGRAM_LOCALES} from '../lib/public-coaching-programs.mjs'
+import {BUSINESS_SYLLABUS,BUSINESS_SESSION_COUNT} from '../lib/app/business-daybook.mjs'
 import {isUnifiedMobileDockPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 test('four localized public program routes have exact complete outlines and separate Daybooks',()=>{
  for(const locale of PROGRAM_LOCALES){
   for(const [i,id] of PUBLIC_PROGRAMS.entries()){
    const p=getProgramOverview(locale,id)
-   assert.equal(p.rows.length,[3,8,4,5][i])
+   assert.equal(p.rows.length,[3,8,BUSINESS_SESSION_COUNT,5][i])
+   if(id==='business'){
+    assert.equal(BUSINESS_SESSION_COUNT,8)
+    assert.deepEqual(p.rows,BUSINESS_SYLLABUS[locale].map(([title,description])=>[title,description]))
+    assert.match(p.count,/^8 /)
+   }
    assert.ok(p.rows.every(row=>row.length===2&&row.every(Boolean)))
    assert.equal(p.startHref,['/'+locale+'/app/daybook?program=clarity','/'+locale+'/app/daybook?start=vector','/'+locale+'/app/daybook/business','/'+(locale==='ru'?'ru':'en')+'/academy/principles-of-energywork/daybook'][i])
    assert.equal(isUnifiedMobileDockPath('/'+locale+'/programs/'+id),true)
@@ -40,4 +46,13 @@ test('home program controls open public detail pages, composer and real Daybook 
  assert.doesNotMatch(ui,/UnifiedMobileDock|dangerouslySetInnerHTML/)
  const page=read('app/[locale]/programs/[program]/page.jsx')
  assert.match(page,/if\(!p\)notFound\(\)/)
+})
+
+
+test('public Business renders an icon for all eight sessions with a defensive fallback',()=>{
+ const ui=read('components/public-program-overview.jsx')
+ const match=ui.match(/business:\[([^\]]+)\]/)
+ assert.ok(match)
+ assert.equal(match[1].split(',').length,BUSINESS_SESSION_COUNT)
+ assert.match(ui,/const RowIcon=icons\[p\.id\]\?\.\[index\]\?\?programIcons\[p\.id\]/)
 })

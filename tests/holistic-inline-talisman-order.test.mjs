@@ -74,3 +74,13 @@ test("Talisman draft keeps only controlled theme and master identity across OAut
   assert.match(workspace, /TALISMAN_REQUEST_DRAFT_KEY/);
   assert.match(workspace, /Via Holistic House portal/);
 });
+
+
+test("fixed-budget talismans render a local truthful status without a directory dependency",()=>{
+ const loader=read("components/holistic-inline-support-order.tsx");
+ assert.match(loader,/useLayoutEffect\(\(\) => \{ setChoice\(kind\); setSearched/);
+ assert.match(loader,/if \(!searched \|\| unpricedTalisman\) return/);
+ assert.match(loader,/searched && unpricedTalisman && \([\s\S]*?<p role="status" data-unpriced-talisman>\{t.unpricedTalisman\}/);
+ assert.match(loader,/searched && choice !== "consultation" && !unpricedTalisman && masters/);
+ for(const text of ["Talisman prices are not published.","Цены на талисманы не опубликованы.","Los talismanes no tienen precio publicado."])assert.ok(loader.includes(text));
+});

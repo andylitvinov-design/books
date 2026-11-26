@@ -70,3 +70,11 @@ test('legacy cabinet cannot expose original PDF content or direct asset bytes',(
  assert.match(route,/export const GET=handle/)
  assert.match(route,/export const POST=handle/)
 })
+
+
+test('original PDF cannot be claimed via the legacy cabinet without a CRM invitation',()=>{
+ const flow=readFileSync(new URL('../lib/app/client-session-save-flow.js',import.meta.url),'utf8')
+ assert.match(flow,/if\(current\.session\.reportFormat==='pdf'&&!grantId\)deny\(\)/)
+ assert.match(flow,/if\(current\.session\.reportFormat==='pdf'&&!prepared\.source_session_grant_id\)deny\(\)/)
+ assert.match(flow,/await registerVerifiedReportClient\(db,config,actor,intent,recipient,googleEmail\)/)
+})
