@@ -368,7 +368,10 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
             <span className={styles.orbitCaption}>3 REIKI PATHS · ONE BEGINNING</span>
           </div>
         </section>
-        <MyReikiQuiz locale={locale} />
+        <section className={styles.reikiBenefits} aria-labelledby="reiki-benefits-title">
+          <h2 id="reiki-benefits-title">{detailsCopy.heading}</h2>
+          <div className={styles.reikiBenefitGrid}>{detailsCopy.benefits.map((label,index)=>{ const Icon = benefitIcons[index]; return <div key={index} className={styles.reikiBenefitCard} data-reiki-benefit={index}><Icon size={27} aria-hidden="true" /><strong>{label}</strong></div>; })}</div>
+        </section>
         <section className={styles.reikiDetailsScreen} id="reiki-course-details" data-reiki-details-screen aria-labelledby="reiki-syllabus-title">
           <div className={styles.reikiSyllabus}>
           <p className={styles.sectionEyebrow}>DAYBOOK · 05</p><h2 id="reiki-syllabus-title">{daybookCopy.syllabus}</h2>
@@ -376,10 +379,7 @@ export function PrinciplesOfEnergywork({ locale, program: rawProgram }: { locale
             {[v.flightTitle, ...paths.map(system => system.title), t.personalTitle].map((title, index) => <a key={index} href="#reiki-start" data-reiki-week={index + 1}><span className={styles.reikiWeekPhoto} data-reiki-week-photo={index + 1} aria-hidden="true"><Image src={detailPhotos[index]} alt="" fill sizes="(max-width: 700px) 34vw, 260px" unoptimized /></span><div className={styles.reikiWeekCopy}><small>{daybookCopy.week} {index + 1}</small><strong>{title}</strong><p>{daybookCopy.details[index]}</p></div><ArrowRight size={19} aria-hidden="true" /></a>)}
           </nav>
           </div>
-          <section className={styles.reikiBenefits} aria-labelledby="reiki-benefits-title">
-            <h2 id="reiki-benefits-title">{detailsCopy.heading}</h2>
-            <div className={styles.reikiBenefitGrid}>{detailsCopy.benefits.map((label,index)=>{ const Icon = benefitIcons[index]; return <div key={index} className={styles.reikiBenefitCard} data-reiki-benefit={index}><Icon size={27} aria-hidden="true" /><strong>{label}</strong></div>; })}</div>
-          </section>
+          <MyReikiQuiz locale={locale} />
           <div className={styles.reikiDetailsStart}><ReikiDaybookStart locale={locale} className={styles.primaryButton} /></div>
         <div className={styles.reikiSecondary} data-reiki-details-formats>
           <div className={styles.heroQuickLinks}>

@@ -350,6 +350,65 @@ test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting
 })
 
 
+test('duplex refresh makes a distinct guarded route transition on iOS WebKit',async()=>{
+ const {refreshCoachLiveDuplex,restoreCoachIos27LiveDuplex}=await import('../lib/personal-coaching/coach-ios-live-duplex.mjs')
+ const nextTask=()=>new Promise(resolve=>setTimeout(resolve,0))
+ const writes=[]
+ let category='ambient',active=true
+ const session={get type(){return category},set type(value){category=value;writes.push(value)}}
+ // The standalone UA has no Safari Version token and a frozen OS version.
+ const standalone={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',audioSession:session}
+ const current=()=>active
+
+ assert.equal(refreshCoachLiveDuplex(standalone,current,false),true)
+ assert.deepEqual(writes,['play-and-record'],'wrong category is corrected immediately')
+ assert.equal(refreshCoachLiveDuplex(standalone,current,false),true)
+ assert.deepEqual(writes,['play-and-record'],'ordinary replies leave an already duplex route alone')
+ await nextTask()
+ assert.deepEqual(writes,['play-and-record'],'no extra transition on ordinary correction')
+ writes.length=0
+ assert.equal(refreshCoachLiveDuplex(standalone,current),true)
+ assert.equal(refreshCoachLiveDuplex(standalone,current),true)
+ assert.deepEqual(writes,['auto'],'overlapping requests share the pending task')
+ await nextTask()
+ assert.deepEqual(writes,['auto','play-and-record'])
+
+ writes.length=0
+ refreshCoachLiveDuplex(standalone,current)
+ active=false
+ await nextTask()
+ assert.deepEqual(writes,['auto'],'background, paused or obsolete runner lost its route claim')
+ assert.equal(refreshCoachLiveDuplex(standalone,current),false)
+ assert.deepEqual(writes,['auto'])
+ active=true
+
+ const ipad={userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:5,audioSession:session}
+ category='play-and-record'
+ writes.length=0
+ refreshCoachLiveDuplex(ipad,current)
+ session.type='ambient'
+ await nextTask()
+ assert.deepEqual(writes,['auto','ambient'],'a later category choice wins')
+ category='play-and-record'
+ writes.length=0
+ refreshCoachLiveDuplex(ipad,current)
+ restoreCoachIos27LiveDuplex(ipad)
+ await nextTask()
+ assert.deepEqual(writes,['auto','playback','auto'],'teardown cancels recovery')
+
+ writes.length=0
+ for(const device of [
+   {...ipad,maxTouchPoints:0},
+   {...standalone,userAgent:'Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 Chrome/144.0'},
+   {...standalone,userAgent:standalone.userAgent+' CriOS/144.0'},
+   {...standalone,userAgent:standalone.userAgent+' FxiOS/145.0'},
+   {...standalone,userAgent:'iPhone Gecko/145 Firefox/145'},
+   {...standalone,audioSession:undefined},
+   {...standalone,get audioSession(){throw Error('unavailable')}},
+ ])assert.equal(refreshCoachLiveDuplex(device,current),false)
+ assert.deepEqual(writes,[])
+})
+
 test('greeting swipe follows public rail in both directions, ignores vertical, short and invalid gestures',()=>{
  const ids=PUBLIC_COACH_RAIL_IDS
  assert.equal(ids[0],'merlin')
