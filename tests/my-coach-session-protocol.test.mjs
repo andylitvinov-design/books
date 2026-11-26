@@ -569,7 +569,7 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(checkpoint.includes('courseSessionId:r.courseSessionId'))
  assert.ok(!checkpoint.includes('courseSessionId:p.courseSessionId'))
  assert.ok(server.includes('courseSessionId:normalizeCoachCourseSessionId(body.courseSessionId)'))
- assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive)'))
+ assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
  assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
@@ -635,4 +635,16 @@ test('protocol validation gate: ambiguous confirmation, interrupted echo, exact 
  go('issue','rating',{questionId:'q3'});go('delivery','rating',{questionId:'q3',deliveryId:'d5',final:true});go('answer','rating',{questionId:'q3',deliveryId:'d5',turnId:'t4',text:'0',final:true});assert.equal(s.pending.candidate.value,0)
  const ack=ev('save_ack','rating',{questionId:'q3',receipt:s.pending.candidate.receipt,durableRevision:2});s=transitionCoachProtocolGate(s,ack);assert.equal(transitionCoachProtocolGate(s,ack),s);assert.equal(coachProtocolGateNext(s),null)
  go('reopen','goal',{turnId:'t5',explicitCorrection:true,coachId:'caesar'});assert.equal(s.accepted.goal,undefined);assert.equal(s.accepted.rating.value,0);assert.equal(coachProtocolGateNext(s).fieldId,'goal')
+})
+
+import {coachCourseGateTransition,coachCourseGateView,coachCourseGateRetry,coachCourseGateArchiveMatches} from '../lib/coaching/coach-course-gate-draft.mjs'
+test('server thematic draft adapter binds typed prompts, retains reviewed quote and rejects stale/foreign actions',()=>{
+ const protocol={...sample(),courseSessionId:'goal_result',turnLayout:'chronological'}
+ assert.equal(typeof coachCourseGateTransition,'function')
+ const g=createCoachProtocolGate({sessionId:protocol.id,courseSessionId:'goal_result',fields:[{id:'baseline',kind:'text'}]})
+ const previous={protocol,revision:1,courseSessionId:'goal_result',courseGate:{gate:g,prompt:null,review:null,paused:false}}
+ assert.equal(coachCourseGateView(previous).completed,false)
+ assert.equal(coachCourseGateArchiveMatches(previous,{...protocol,courseFieldReview:{events:[]}}),false)
+ assert.equal(coachCourseGateRetry(previous,{revision:0}),false)
+ assert.throws(()=>coachCourseGateTransition(previous,{action:'course-gate-answer',id:protocol.id,revision:1,consent:true,requestId:'bad',promptId:'other',content:'да'},new Date().toISOString()))
 })
