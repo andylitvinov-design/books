@@ -72,3 +72,16 @@ test('About coach expands inline and Start Session opens the selected persona, n
   assert.match(runner, /coachingSchemeRequiresAdultConsent\(s\)/)
   assert.match(runnerCss, /prefers-reduced-motion:reduce/)
 })
+
+
+test('catalog method preference reaches the existing authenticated greeting, never starts a session itself',()=>{
+ const catalog=read('components/my-coach-catalog.jsx')
+ const runner=read('components/public-coaching-discovery.jsx')
+ const dialogue=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(catalog.includes('data-coach-catalog-method'))
+ assert.ok(runner.includes('methodPreference={personaSelection?.methodId}'))
+ assert.ok(dialogue.includes('methodPreference&&resolveCoachMethodId(personaId,methodPreference)'))
+ assert.ok(dialogue.includes('method&&protocolOwnerRef.current?{methodId:method,methodSessionId:crypto.randomUUID()'))
+ assert.ok(dialogue.includes('methodSelectionEnabled={protocolOwnerReady}'))
+ assert.ok(dialogue.includes("protocolOwnerReady&&!greetingAccepted?selectedMethod:''"))
+})

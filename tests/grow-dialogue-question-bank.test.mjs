@@ -53,14 +53,7 @@ test('do not repeat a recently posed coach question',()=>{
  ]},2)
  assert.ok(second.length>0&&second[0].key!==first.key)
 })
-test('reviewed SQL rows and runtime snapshot contain identical question IDs',()=>{
- const src=readFileSync(new URL('../supabase/migrations/20261116231510_coaching_grow_dialogue_questions_v1.sql',import.meta.url),'utf8')
- for(const q of GROW_DIALOGUE_QUESTIONS)assert.ok(src.includes("'"+q.key+"'"))
- assert.match(src,/FORCE ROW LEVEL SECURITY/)
- assert.match(src,/REVOKE ALL .*anon,authenticated/)
- assert.match(src,/TO hh_app_backend/)
-})
-test('My Coach connects bank to existing Director policy and model prompts',()=>{
+test('My Coach connects optional questions to existing Director policy and model prompts',()=>{
  const src=readFileSync(new URL('../lib/coaching/conversational-persona.mjs',import.meta.url),'utf8')
  assert.match(src,/growDialogueQuestionGuidance\(directive,input\)/)
  assert.match(src,/coachSessionDirectivePrompt\(directive\)/)

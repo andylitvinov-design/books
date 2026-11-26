@@ -426,7 +426,7 @@
   color:#173f36;resize:none;font:500 16px/1.4 system-ui,sans-serif
 }
 .root[data-compact][data-chat-skin="messenger"]>.form .actions{
-  flex:none;display:flex;align-items:center;justify-content:flex-end;
+  position:relative;flex:none;display:flex;align-items:center;justify-content:flex-end;
   gap:3px;margin:0;flex-wrap:nowrap
 }
 .root[data-compact][data-chat-skin="messenger"]>.form .actions>button,
@@ -449,7 +449,7 @@
   border-color:#7bb8a1;background:#e1f6e9
 }
 .root[data-compact][data-chat-skin="messenger"] .composerMore{
-  position:relative;flex:none;min-width:40px;margin:0
+  position:static;flex:none;min-width:40px;margin:0
 }
 .root[data-compact][data-chat-skin="messenger"] .composerMore summary{
   list-style:none;cursor:pointer
@@ -457,7 +457,7 @@
 .root[data-compact][data-chat-skin="messenger"] .composerMore summary::-webkit-details-marker{display:none}
 .root[data-compact][data-chat-skin="messenger"] .composerMenu{
   position:absolute;right:0;bottom:calc(100% + 9px);z-index:15;
-  display:grid;gap:6px;width:min(300px,calc(100vw - 38px));
+  display:grid;gap:6px;box-sizing:border-box;width:min(300px,calc(100vw - 38px));
   max-height:min(65dvh,520px);overflow-y:auto;overscroll-behavior:contain;
   padding:10px;border:1px solid #e6dfd5;border-radius:16px;
   background:#fffcf7;box-shadow:0 9px 22px #26382d31
@@ -760,3 +760,414 @@
  .root[data-compact][data-chat-skin="messenger"] .thread :is(.assistant,.user){font-size:16px}
  .root[data-compact][data-chat-skin="messenger"]>.form textarea{font-size:16px}
 }
+
+/* A single real message form: first inside the hero flow, then docked below
+   the ongoing WhatsApp-like conversation after the first user message. */
+.root[data-compact][data-chat-skin="messenger"]:not([data-has-messages="true"])>.thread{
+  background:#faf6ef;background-image:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+  position:relative;box-sizing:border-box;display:flex;flex-direction:column;gap:9px;
+  width:100%;min-width:0;min-height:143px;margin:0;padding:13px;
+  border:1px solid #d2e9db;border-radius:25px;background:#fffefa;
+  box-shadow:0 6px 18px #215c3c16}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+  box-sizing:border-box;display:block;flex:1 0 auto;width:100%;min-width:0;
+  height:108px;min-height:108px;max-height:160px;padding:3px 5px 59px;
+  border:0;background:transparent;box-shadow:none;resize:none;border-radius:15px;
+  font:520 17px/1.42 system-ui,sans-serif;color:#214439}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea::placeholder{
+  color:#89918c;opacity:1}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+  position:absolute;left:13px;right:13px;bottom:10px;display:flex;justify-content:flex-end;
+  flex-wrap:nowrap;align-items:center;gap:6px;min-width:0}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary{
+  box-sizing:border-box;flex:none;display:grid;place-items:center;width:42px;min-width:42px;
+  height:44px;min-height:44px;border:1px solid #e1e8df;border-radius:14px;
+  background:#fffcf7;color:#096e57;padding:7px;cursor:pointer}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+  display:flex;align-items:center;justify-content:center;gap:9px;flex:1 1 135px;
+  width:auto;min-width:126px;height:45px;min-height:45px;
+  padding:8px 12px;border:1px solid #008d6c;border-radius:999px;
+  background:linear-gradient(110deg,#06a986,#007553);color:#fff;
+  font:780 clamp(12px,3.55vw,15px)/1.1 system-ui,sans-serif;
+  box-shadow:0 3px 12px #05846320;white-space:nowrap}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]:disabled{
+  opacity:.72;cursor:not-allowed}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:focus-within textarea{
+  outline:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:focus-within{
+  outline:2px solid #168b71;outline-offset:1px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread{
+  background-color:#f6f6ed;background-image:radial-gradient(circle at 9px 14px,#d6dcc94b 1px,transparent 1.5px),
+  radial-gradient(circle at 42px 46px,#d4dacc42 1px,transparent 1.5px);background-size:66px 66px;
+  gap:8px;padding:10px 8px 14px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.form{
+  min-height:56px;max-width:100%;margin:0 4px 5px;padding:5px 6px;
+  border-radius:28px;box-shadow:0 4px 15px #20503815}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.form textarea{
+  height:44px;min-height:44px;max-height:90px;font-size:16px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread>.user{
+  background:#ddf3d6;color:#153d30;border-color:#bfe0b8}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread .assistant{
+  background:#fffefa;color:#203e33;border-color:#e4e2d8}
+@media(max-width:360px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{padding:10px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{left:10px;right:10px;gap:3px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary{width:39px;min-width:39px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{min-width:119px;font-size:12px}
+}
+
+/* 21 Nov single-viewport entry: one wide textarea and plus/Free-Pro/Send/mic. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+  gap:7px;min-height:124px;padding:10px 12px;border-radius:23px}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+  height:98px;min-height:98px;max-height:144px;width:100%;
+  padding:3px 3px 50px;font-size:16px;line-height:1.35}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+  left:10px;right:10px;bottom:9px;gap:4px;justify-content:stretch}
+.root[data-compact][data-chat-skin="messenger"] .freeProSwitch{
+  display:flex;flex:none;align-items:center;min-width:0;padding:2px;
+  border:1px solid #e2d8ca;border-radius:99px;background:#fffaf2}
+.root[data-compact][data-chat-skin="messenger"] .freeProSwitch button{
+  display:grid;place-items:center;flex:none;width:43px;min-width:43px;
+  height:40px;min-height:40px;padding:5px 2px;border:0;border-radius:99px;
+  color:#18513f;background:transparent;box-shadow:none;cursor:pointer;
+  font:750 12px/1 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .freeProSwitch button[aria-pressed="true"]{
+  background:linear-gradient(110deg,#0a9a7b,#086951);color:#fff}
+.root[data-compact][data-chat-skin="messenger"] .freeProSwitch button:focus-visible{
+  outline:2px solid #07846f;outline-offset:1px}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+  min-width:0;flex:1 1 85px;gap:4px;padding:8px 5px;font-size:clamp(10px,2.95vw,13px)}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] svg{width:17px;height:17px;flex:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions .recorderToggle{
+  flex:none;width:41px;min-width:41px;height:44px;min-height:44px;order:20}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent{
+  display:grid;gap:5px;min-width:0;padding:8px 0 1px;
+  color:#275546;font:540 11px/1.24 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent strong{font:760 12px/1.2 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent label{display:flex;align-items:flex-start;gap:7px;cursor:pointer}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent label input{
+  accent-color:#068d70;width:17px;height:17px;flex:none;margin:0}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent p{margin:2px 0;font:inherit}
+.root[data-compact][data-chat-skin="messenger"] .geminiConsent a{color:#087963;font-weight:750}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-gemini-pending="true"]{
+  min-height:0;gap:6px}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-gemini-pending="true"] textarea{
+  height:58px;min-height:58px;max-height:120px;padding-bottom:0}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-gemini-pending="true"] .actions{
+  position:static;order:3}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-gemini-pending="true"] .geminiConsent{
+  order:2}
+.root[data-compact][data-chat-skin="messenger"]>.form .freeProSwitch button{
+  width:40px;min-width:40px;height:40px;min-height:40px}
+.root[data-compact][data-chat-skin="messenger"]>.form .actions .recorderToggle{order:20}
+@media(max-width:365px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+   padding:8px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+   left:8px;right:8px;gap:3px}
+ .root[data-compact][data-chat-skin="messenger"] .freeProSwitch button{
+   width:39px;min-width:39px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{font-size:10px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions .recorderToggle{
+   width:38px;min-width:38px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+   min-height:112px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+   min-height:85px;height:85px}
+}
+
+/* Ali mic: compact informed activation before capture. iOS 27 reuses
+   the existing short, free-quota STT path for signed-in or guest use. */
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding{
+  display:grid;gap:5px;min-width:0;width:100%;padding:9px 11px;
+  box-sizing:border-box;border:1px solid #cee5d9;border-radius:15px;
+  background:#f8fcf8;color:#194839;font:520 12px/1.4 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding strong{
+  font:800 15px/1.3 system-ui,sans-serif;color:#114937}
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding .voiceDisclosure{
+  margin:0;color:#305a4b;font:520 11px/1.32 system-ui,sans-serif;overflow-wrap:anywhere}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions{
+  display:flex;gap:7px;align-items:center;justify-content:flex-end}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  min-height:42px;padding:7px 12px;border-radius:11px;
+  border:1px solid #cbdad0;color:#17513d;background:#fffefa;
+  font:750 12px/1.2 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button[data-hh-ai-start-voice]{
+  background:#087e64;border-color:#087e64;color:white}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button:disabled{
+  opacity:.46;cursor:not-allowed}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus{
+  display:flex;gap:8px;align-items:center;justify-content:space-between;
+  min-height:34px;padding:5px 9px;box-sizing:border-box;
+  border:1px solid #bcdbc9;border-radius:11px;background:#edfbf4;
+  color:#14553e;font:690 12px/1.3 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus button{
+  flex:none;min-height:33px;padding:5px 9px;background:white;
+  border:1px solid #bedccc;border-radius:9px;color:#11694e;
+  font:740 12px/1.2 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"]{
+  min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  padding:10px}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] textarea{
+  min-height:56px;height:56px;padding:4px;flex:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .actions{
+  position:static;order:1;width:100%;align-self:stretch}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .voiceOnboarding{
+  order:2}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .voiceConversationStatus{
+  order:3}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"]{
+  flex-direction:column;align-items:stretch;gap:6px;
+  max-height:min(65dvh,480px);overflow-y:auto}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"] textarea{
+  flex:none;width:100%;min-height:44px;height:44px}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"] .actions{
+  width:100%;align-self:stretch;justify-content:space-between}
+.root[data-compact][data-chat-skin="messenger"] .recorderToggle[aria-expanded="true"]{
+  border-color:#0c9778;color:#066d54;background:#e7f9ef}
+.root[data-compact][data-chat-skin="messenger"] .recorderToggle[aria-pressed="true"]{
+  color:#075641;border-color:#0c9778;background:#ddf4e6}
+@media(max-width:370px){
+ .root[data-compact][data-chat-skin="messenger"] .voiceOnboarding{font-size:11px;padding:8px}
+ .root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button{padding:6px 8px;font-size:11px}
+}
+
+/* Inline landing composer lives in the scrollable conversation: let its menu
+   extend into that scroll area instead of underneath the fixed page header. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .composerMenu{
+ top:calc(100% + 9px);bottom:auto
+}
+
+/* 23 Nov: wide editable input + compact buttons, first turn only. */
+@media(max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+   min-height:115px;gap:6px;padding:9px 11px;border-radius:22px;
+   box-shadow:0 4px 15px #215c3c12}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+   height:93px;min-height:93px;max-height:138px;
+   padding:3px 4px 47px;font-size:16.5px;line-height:1.33}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+   left:10px;right:10px;bottom:8px;gap:4px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary{
+   width:40px;min-width:40px;height:42px;min-height:42px;border-radius:13px}
+ .root[data-compact][data-chat-skin="messenger"] .freeProSwitch button{
+   width:38px;min-width:38px;height:40px;min-height:40px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+   min-width:0;flex:1 1 115px;min-height:42px;height:42px;gap:5px;
+   padding:7px 5px;font-size:clamp(11px,3.35vw,14px);
+   background:linear-gradient(110deg,#13ad87,#047b59)}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] svg{
+   flex:none;width:17px;height:17px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions .recorderToggle{
+   flex:none;width:40px;min-width:40px;height:42px;min-height:42px;order:20}
+}
+@media(max-width:355px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+   min-height:111px;padding:8px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+   left:8px;right:8px;gap:3px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary,
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions .recorderToggle{
+   width:37px;min-width:37px}
+ .root[data-compact][data-chat-skin="messenger"] .freeProSwitch button{width:35px;min-width:35px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{font-size:11px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{min-height:108px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+   height:86px;min-height:86px}
+}
+
+
+/* Samir one-viewport composer: never shrink explicit Gemini or voice consent. */
+@media(max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]){position:relative;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;min-height:94px;margin:0;padding:5px 7px;border-radius:19px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) textarea{display:block;flex:0 0 auto;box-sizing:border-box;width:100%;height:42px;min-height:42px;max-height:72px;padding:7px 8px;font-size:16px;line-height:1.25;background:transparent;resize:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions{position:static;left:auto;right:auto;bottom:auto;display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:4px;min-width:0}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .freeProSwitch{flex:none;margin-right:auto}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions button[type="submit"]{display:grid;place-items:center;flex:0 0 44px;box-sizing:border-box;width:44px;min-width:44px;height:44px;min-height:44px;padding:6px;border-radius:50%;font-size:0}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions button[type="submit"] span{display:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions button[type="submit"] svg{display:block;width:20px;height:20px}
+ /* The + menu must open above the iPhone dock, not underneath it. */
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .composerMenu{top:auto;bottom:calc(100% + 9px);max-height:min(48dvh,370px);overflow-y:auto}
+}
+@media(max-width:365px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]){min-height:90px;padding:5px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) textarea{height:39px;min-height:39px;padding:6px 7px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions{gap:3px}
+}
+
+/* Narrow Safari: both lines of the editable 16px placeholder remain visible. */
+@media(max-width:365px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) textarea{
+   height:48px;min-height:48px;padding:6px 7px
+ }
+}
+
+/* The three help intents and seven goal steps use real keyboard/touch controls. */
+.dialogueMenu{display:grid;gap:12px;min-width:0}
+.dialogueChoices{display:grid;gap:8px;min-width:0}
+.dialogueChoice{display:flex;align-items:center;min-height:44px;width:100%;padding:10px 12px;text-align:start;white-space:normal;overflow-wrap:anywhere;border:1px solid var(--hh-light-border,#E9DFD1);border-radius:12px;background:var(--hh-light-surface-soft,#F5ECDC);color:var(--hh-light-text,#143D3A);font:inherit;font-weight:600;cursor:pointer}
+.dialogueChoice:focus-visible{outline:3px solid var(--hh-light-focus,#176E6E);outline-offset:3px}
+.dialogueChoice:disabled{opacity:.6;cursor:default}
+
+/* 23 Nov full-screen Samir first turn: single horizontal message bar.
+   Tier selector remains available from the + attachment menu. */
+@media(max-width:760px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]){
+   position:relative;display:flex;flex-direction:row;align-items:center;
+   gap:5px;min-height:66px;height:66px;padding:4px 5px;border:0;
+   border-radius:34px;background:#fffcf7;box-shadow:0 2px 12px #184a3b32}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) textarea{
+   order:2;flex:1 1 auto;width:0;min-width:0;height:58px;min-height:58px;max-height:60px;
+   padding:9px 6px;resize:none;font-size:clamp(16px,4.15vw,18px);line-height:1.25;
+   background:transparent;border:0;box-shadow:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions{display:contents}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore{
+   position:relative;order:1;flex:none;margin:0}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore>summary{
+   display:grid;place-items:center;width:43px;height:48px;min-width:43px;min-height:48px;
+   border:1px solid #e3d8c9;border-radius:50%;background:#fff8eb;color:#08775c}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .photoShortcut{
+   order:3;display:grid;place-items:center;flex:none;width:34px;min-width:34px;
+   height:44px;min-height:44px;padding:0;border:0;background:transparent;color:#035743}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .recorderToggle{
+   order:4;flex:none;width:35px;min-width:35px;height:44px;min-height:44px;
+   padding:0;border:0;background:transparent;color:#065440}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+   order:5;display:grid;place-items:center;flex:none;width:56px;min-width:56px;
+   height:56px;min-height:56px;margin:0;padding:8px;border-radius:50%;
+   background:linear-gradient(140deg,#14b691,#007956);border:1px solid #007958;
+   color:#fff;box-shadow:0 2px 10px #00684d35}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] svg{
+   display:block;width:25px;height:25px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"] span{display:none}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMenu{
+   position:absolute;left:0;right:auto;top:auto;bottom:calc(100% + 12px);
+   width:min(290px,calc(100vw - 22px));max-height:45dvh;overflow-y:auto;
+   z-index:100;background:#fffdf7;border:1px solid #e1d7c7;border-radius:16px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMenu .freeProSwitch{
+   display:flex;justify-content:flex-start;width:max-content;min-height:40px}
+}
+@media(max-width:355px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .composerMore>summary{width:38px;min-width:38px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .photoShortcut{width:29px;min-width:29px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .recorderToggle{width:30px;min-width:30px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+   width:49px;min-width:49px;height:49px;min-height:49px}
+}
+
+/* Approved Samir established chat: large natural bubbles, one composer, no tiers. */
+@media(max-width:760px){
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]{background:transparent;gap:0;min-height:0;overflow:hidden}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.thread{background:transparent;gap:12px;padding:clamp(90px,23dvh,210px) 10px 12px;min-height:0;overflow:auto;scroll-padding-bottom:12px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread :is(.user,.assistant){font:550 19px/1.4 system-ui,sans-serif;letter-spacing:0;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px 14px;border:1px solid #fff8;border-radius:22px;box-shadow:0 4px 15px #24150d45;color:#102e27;max-width:88%}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread>.user{background:#d9f0ce;border-bottom-right-radius:5px;margin-left:auto!important;align-self:flex-end}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread .assistant{background:#fff8ed;border-top-left-radius:5px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar{width:100%;gap:6px;align-items:flex-start}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar p{flex:0 1 auto;min-width:0;max-width:calc(100% - 42px);margin:0!important}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messagePortrait{width:34px;height:34px;border:1px solid #ffe0a3}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .messageWithAvatar:has([data-hh-voice-turn]) p{max-width:calc(100% - 82px)}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] [data-hh-voice-turn]{font-size:13px;flex:none;min-width:28px!important;min-height:28px!important;margin-inline-start:2px!important;padding:2px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] :is(.projectOptions,.topicChoices,.startActions,.videoOptions,.judgmentChoices){grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] :is(.projectOptions,.topicChoices,.startActions,.videoOptions,.judgmentChoices) :is(button,a){background:linear-gradient(145deg,#fff9e9,#f9dfa9);color:#123c30;border:1px solid #fff2c9;border-radius:15px;min-height:48px;font:700 16px/1.25 system-ui}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .projectOptions :is(button,a) strong{font-size:16px;color:#123c30}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .projectOptions :is(button,a) small{font-size:12px;color:#425e50}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .hiLearningRating{gap:5px;justify-content:center;padding:3px 0;color:#fff;font-size:12px;text-shadow:0 1px 3px #000}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .hiLearningRating button{min-height:34px;padding:4px 7px;background:#25352fc9;border-color:#f6dda5;color:white;text-shadow:none}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]){position:relative;display:flex;align-items:center;flex-direction:row;gap:4px;min-height:66px;height:auto;margin:0 5px max(6px,env(safe-area-inset-bottom));padding:5px;border:1px solid #fff7d8;border-radius:34px;background:#fff8ee;box-shadow:0 3px 16px #171d1b55}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]) textarea{order:2;flex:1 1 0%;width:0;min-width:0;height:54px;min-height:54px;max-height:90px;padding:6px;font:500 16px/1.25 system-ui;border:0;background:transparent;box-shadow:none}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form:not([data-voice-onboarding="true"]) .actions{display:contents}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMore{order:1;flex:none;margin:0}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMore>summary{width:40px;min-width:40px;height:44px;border-radius:50%;background:#fff3da;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .photoShortcut{order:3;width:34px;min-width:34px;height:44px;padding:0;border:0;background:transparent;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .recorderToggle{order:4;width:35px;min-width:35px;height:44px;padding:0;border:0;background:transparent;color:#075742}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .actions button[type="submit"]{order:5;width:50px;min-width:50px;height:50px;min-height:50px;border-radius:50%;background:linear-gradient(135deg,#10ad86,#006f53);color:white}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .actions button[type="button"]:not(.photoShortcut):not(.recorderToggle){order:6}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .composerMenu{left:0;right:auto;top:auto;bottom:calc(100% + 8px);max-width:calc(100vw - 24px);max-height:45dvh;overflow:auto}
+ :global([data-keyboard-open="true"]) .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.thread{padding-top:8px}
+}
+@media(max-width:355px){
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"] .thread :is(.user,.assistant){font-size:18px;padding:10px 11px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .photoShortcut{width:29px;min-width:29px}
+ .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .recorderToggle{width:30px;min-width:30px}
+}
+
+/* While dictating, the same composer becomes a single X / waveform / check row.
+   Do not let the landing composer's absolute actions or old live consent take over. */
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;min-height:0!important;padding:8px!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>textarea{display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions{position:static!important;display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}
+
+/* Modern Safari native top layer: preserve inline details and the legacy
+   fallback without letting a rounded/overflowing composer clip the menu. */
+.composerMenu[popover]:not(:popover-open){display:none!important}
+.composerMenu:popover-open{position:fixed!important;margin:0!important;inset:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;display:grid!important;max-width:none!important}
+
+
+/* Established AI conversation — compact WhatsApp/Telegram-style composer.
+   Scoped to the actual in-thread form, never the opening card or recording UI.
+   The input has one line when empty and grows only for authored text. */
+@media(max-width:767px){
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not(:has(:global([data-hh-dictation-active="true"]))){
+  display:flex;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:nowrap;gap:4px;min-height:50px;height:auto;
+  margin:0;padding:3px 6px max(3px,env(safe-area-inset-bottom));border:0;border-top:1px solid #e3e8e0;border-radius:0;background:#f8f9f5;box-shadow:none;max-width:100%;overflow:visible;
+ }
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not(:has(:global([data-hh-dictation-active="true"]))){
+  padding-bottom:3px;margin:0;min-height:50px;align-items:center;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea{
+  order:2;flex:1 1 0%;min-width:0;width:0;min-height:40px;max-height:100px;padding:9px 12px;box-sizing:border-box;
+  border:1px solid #dce3db;border-radius:22px;background:#fff;color:#193e34;box-shadow:none;outline:none;resize:none;
+  font:400 16px/20px system-ui,sans-serif;overflow-y:auto;caret-color:#087a60;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea:focus{
+  outline:none;box-shadow:0 0 0 1px #78b7a7;border-color:#78b7a7;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>textarea::placeholder{
+  font-weight:400;color:#82908b;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])>.actions{display:contents}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .composerMore{
+  order:1;flex:0 0 40px;min-width:40px;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .composerMore>summary,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.photoShortcut{
+  display:grid;place-items:center;flex:0 0 40px;width:40px;min-width:40px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:#23685a;
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.photoShortcut{order:3}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>.recorderToggle,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]) .actions>button[type="submit"]{
+  order:4;display:grid;place-items:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:#087b61;color:#fff;box-shadow:none;
+ }
+ /* Empty: microphone, like WhatsApp. Authored message: send. The + menu
+    retains attachments, voice notes and the live voice conversation. */
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"]):not([data-hh-chat-has-draft="true"]) .actions>button[type="submit"]{display:none}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form:not([data-voice-onboarding="true"]):not([data-gemini-pending="true"])[data-hh-chat-has-draft="true"] .actions>.recorderToggle{display:none}
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .actions>button:focus-visible,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.form .composerMore>summary:focus-visible{outline:2px solid #087b61;outline-offset:1px}
+}
+
+/* Lukas stays above the independently scrolling chat; the composer stays usable. */
+.lukasVideoHeader{order:0;flex:none;min-width:0;width:100%;margin:0 auto;max-width:800px}
+.lukasVideoHeader:empty{display:none}
+@media(max-width:760px){:global(.hh-messages-page) .root[data-compact]>.lukasVideoHeader{order:0;flex:none;margin:0;max-width:none}}
+:global(.hh-messages-page) [data-keyboard-open="true"] .lukasVideoHeader [data-lukas-portrait]{--hh-lukas-height:clamp(48px,10dvh,88px)}
+
+/* Free audio call: same attachment slot, no extra composer width. */
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus{flex-wrap:wrap;justify-content:flex-start;gap:6px}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus>span{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus button{min-height:44px;flex:0 1 auto}
+.root[data-compact][data-chat-skin="messenger"] [data-hh-ai-audio-call][aria-pressed="true"]{background:#ddf4e6;color:#075641}

@@ -30,7 +30,9 @@ async function check(name, detail, fn) {
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
-  // Real direct CDN Home: visible markup alone is not enough. Require the
+  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  // Real Home: visible markup alone is not enough. Require the
   // lightweight first-party script to have initialized its controls.
   // A rapid back-navigation may still be replacing the outgoing document.
   // Verify the REAL CDN or React Home rather than testing a stale DOM.
@@ -39,7 +41,7 @@ async function assertCspPublicHome(page) {
   const fast = page.locator('body[data-fast-home="en"]');
   if (await fast.count()) {
     await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
-    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(4);
+    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(3);
     await expect(fast.locator('[data-home-intent-form]')).toBeVisible();
     await expect(fast.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
@@ -53,6 +55,16 @@ async function assertCspPublicHome(page) {
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
+  await expect(home.locator('[data-home-intent-option]')).toHaveCount(4);
+  const programIds=['clarity','goal','business','reiki'];
+  assert.deepEqual(await home.locator('[data-home-intent-option]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),programIds);
+  for (const intention of programIds) {
+    const program=home.locator('[data-home-intent-option="'+intention+'"]');
+    await expect(program).toHaveCount(1);
+    await expect(program).toBeVisible();
+    await expect(program).toHaveAttribute('type','button');
+  }
+  await expect(home.locator('[data-home-methods]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -630,7 +642,33 @@ async function exercise(engine, browserType, width) {
           } else {
             await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
           }
-          await cspPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          // A WebKit Back/Forward restore can start a second, mandatory full
+          // document navigation when the CSP boundary rejects a foreign router
+          // history tree. Do not evaluate the outgoing document while it is
+          // being replaced. Retry ONLY that transient navigation race; the
+          // actual CSP, JS-error and history assertions below remain fatal.
+          await expect.poll(async () => {
+            let settled;
+            try {
+              settled = await cspPage.evaluate(() => new Promise(resolve =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve({
+                  href: location.href, readyState: document.readyState,
+                  policy: document.body?.dataset.cspClass,
+                })))));
+            } catch (error) {
+              if (engine === 'webkit' &&
+                  /Execution context was destroyed, most likely because of a navigation/.test(String(error?.message)))
+                return false; // A navigation is in flight, NOT a successful check.
+              throw error;
+            }
+            const pathname = new URL(settled.href).pathname;
+            const expectedPolicy = pathname === '/en/academy/reiki/tantra-reiki'
+              ? 'tantra-media'
+              : ['/en/client/tests', '/en/app/portrait'].includes(pathname)
+                ? 'private' : 'public-video';
+            return settled.href === cspPage.url() && settled.readyState === 'complete'
+              && settled.policy === expectedPolicy;
+          }, { timeout: 20000, message: 'After history traversal wait for the final loaded document and matching CSP' }).toBe(true);
         };
         if (engine === 'chromium') {
           const cdp = await cspContext.newCDPSession(cspPage);
@@ -720,11 +758,35 @@ async function exercise(engine, browserType, width) {
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
           const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
+          // The normal Home has an IntersectionObserver-driven lazy catalogue above
+          // About. Exercise the user scroll through it before locating the lower link;
+          // a late insertion can otherwise move the click target on a busy CI runner.
+          // This is still a single real user click and all CSP/history assertions remain.
+          if (!fromFastHome) {
+            const deferredHome = cspPage.locator('[data-home-deferred-sections]');
+            await expect(deferredHome).toHaveCount(1);
+            await deferredHome.scrollIntoViewIfNeeded();
+            await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
+          }
           const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
+          await publicAbout.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+          await cspPage.evaluate(() => {
+            window.__hhAboutClickEvidence = null;
+            document.addEventListener('click', event => {
+              const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+              window.__hhAboutClickEvidence = { href: link?.getAttribute('href') || null, trusted: event.isTrusted,
+                tag: event.target instanceof Element ? event.target.tagName : null };
+            }, { capture: true, once: true });
+          });
           await publicAbout.click();
-          await expect(cspPage).toHaveURL(origin + '/en/about');
+          try {
+            await expect(cspPage).toHaveURL(origin + '/en/about', { timeout: 20000 });
+          } catch (error) {
+            const clickEvidence = await cspPage.evaluate(() => window.__hhAboutClickEvidence).catch(() => null);
+            throw new Error(`${error.message}; aboutClick=${JSON.stringify(clickEvidence)}`);
+          }
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),

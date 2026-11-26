@@ -66,7 +66,7 @@ const words = {
       reiki: ["Рейки-сессия", "Мастер, время и длительность"],
       browse: ["Тесты и самопомощь", "Оценка состояния и бесплатный разбор"],
       reading: ["Spiritual Reading", "Дао, Таро, консультации"],
-      consultation: ["Психотерапия и поддержка", "Бесплатно, 30 или 60 минут"],
+      consultation: ["Терапия и коучинг", "Поддержка эмоций, ресурсов и личных целей"],
       services: ["Отношения и расстановки", "Партнёрские и семейные сценарии"],
       business: ["Бизнес и карьера", "Консультации, стратегия и командные вопросы"],
       video: ["Персональное видео", "Три варианта создания"],
@@ -87,7 +87,7 @@ const words = {
       reiki: ["Reiki sessions", "Practitioners and preferred time"],
       browse: ["Tests & self-help", "Self-checks and free situation review"],
       reading: ["Spiritual Reading", "Taoist insights and Tarot"],
-      consultation: ["Psychotherapy & support", "Free, 30 or 60 minutes"],
+      consultation: ["Therapy & coaching", "Support for emotions, energy and personal goals"],
       services: ["Relationships & constellations", "Personal, family and partnership patterns"],
       business: ["Business & career", "Consultations, strategy and team challenges"],
       video: ["Personal video", "Three video ideas"],
@@ -108,7 +108,7 @@ const words = {
       reiki: ["Sesiones de Reiki", "Profesionales y horarios"],
       browse: ["Tests y autoayuda", "Autoevaluaciones y revisión gratuita"],
       reading: ["Spiritual Reading", "Tao y Tarot"],
-      consultation: ["Psicoterapia y apoyo", "Gratis, 30 o 60 minutos"],
+      consultation: ["Terapia y coaching", "Apoyo emocional, recursos y metas personales"],
       services: ["Relaciones y constelaciones", "Patrones personales, familiares y de pareja"],
       business: ["Negocios y carrera", "Consultas, estrategia y equipos"],
       video: ["Vídeo personal", "Tres ideas de vídeo"],
@@ -300,8 +300,17 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
         aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
         {expanded ? more[1] : more[0]} <ArrowRight size={16} aria-hidden="true" />
       </button> : null}
-      <div id={regionId} className={styles.content} role="region" aria-label={title}>
-        {children}
+      <div id={regionId} className={styles.content} role="region" aria-label={title}
+        hidden={!expanded} style={!expanded ? {
+          display:"none", visibility:"hidden", position:"absolute",
+          width:0, height:0, overflow:"hidden", pointerEvents:"none",
+        } : undefined}>
+        {/* Old consultation and practitioner enquiry forms are optional.
+            Do not mount them under the compact list until the category is
+            explicitly opened; CSS on the nested form otherwise overrides the
+            collapsed mobile view. Deep links and expanded panels retain
+            their original working actions. */}
+        {(id === "consultation" || id === "directory") && !expanded ? null : children}
       </div>
     </article>
   );

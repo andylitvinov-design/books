@@ -14,3 +14,7 @@ Soft time targets: Goal 0–3 min (goalRestated + workingFocusEstablished), Real
 Existing My Coach API, personas, provider fallback and TTS remain. This PR adds a prompt hint to lib/coaching/conversational-persona.mjs; the existing Director output enforcement stays authoritative. Existing PR #4731 (server-owned clock) and #4813 (evidence-driven six visual lamps) are separate pending dependencies, NOT proof of LIVE behavior. No changes to either PR head.
 
 Acceptance: run focused Node tests; exact-HEAD Core + Specialist + hh-merge-check; verify SQL 23 rows, RU/EN/ES, forced RLS, no anon/authenticated grants and one preserved model-key FK; after merge, hourly Production release and real authenticated multi-turn iPhone voice acceptance are needed. No new hourly workflow, paid API, provider or extra Vercel deploy.
+
+
+## Consolidation 25 Nov 2026
+GROW code and tests already present in production, 23-row catalog migration 20261116231510 already applied (verified earlier). Do not replay the migration. Method authority #5601 merged 265ddcb9 and canonical Vercel READY. This residual PR adds only the optional validated catalog/URL method preference to the existing greeting. No URL grants consent, sets server evidence, starts a model, or bypasses authenticated explicit start. Keep default legacy URL unchanged. Physical iPhone and deliberate same-account replay/multi-tab limitations remain separately tracked in #5473.

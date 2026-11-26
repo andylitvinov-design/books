@@ -151,7 +151,11 @@ test("unsupported codecs fail explicitly instead of substituting silent video",a
 
 test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES and no network upload",()=>{
   assert.match(client,/data-video-audio-player/);
-  assert.match(client,/controls preload="metadata"/);
+  const native=client.slice(client.indexOf("const audioPreviewPlayer="),client.indexOf("const recordingPlayButton="));
+  assert.match(native,/<audio\b[^>]*ref=\{setAudioPreviewNode\}/);
+  assert.match(native,/controls=\{!inlineRecordingPlayer\}\s+hidden=\{inlineRecordingPlayer\}\s+preload="metadata"/);
+  assert.match(client,/data-video-recorded-audio-play[\s\S]*?onClick=\{playSelectedRecording\}/);
+  assert.match(client,/\{inlineRecordingPlayer\?audioPreviewPlayer:null\}\s*\{recordingPlayButton\}/);
   assert.match(client,/void player\.play\(\)\.catch/);
   // Native event handlers may take an event to reject stale Safari media nodes.
   assert.match(client,/onPlay=\{(?:\(\)=>|event=>)/);
@@ -222,5 +226,6 @@ test('procedural native recorder cannot silently downgrade H264/AAC to generic M
   assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
   assert.match(client,/proceduralRoute==="unsupported"/);
-  assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);
+  assert.match(client,/allowProceduralBrowser:reelModeActive\|\|\(procedural&&!safariWebKit\)/);
+  assert.match(client,/if\(reelModeActive&&\(!useWebCodecsMp4\|\|!hasWebCodecs\|\|preferWebm\|\|forceMp4ForRetry\)\)/);
 });

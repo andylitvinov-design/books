@@ -34,8 +34,10 @@ on:
       - 'tests/assessment-interpretation*.mjs'
       - 'scripts/verify-interpretation*.mjs'
       - 'supabase/migrations/**'
-      - 'package.json'
       - 'package-lock.json'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
 permissions:
   contents: read
 concurrency:

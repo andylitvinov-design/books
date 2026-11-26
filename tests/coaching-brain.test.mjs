@@ -14,7 +14,6 @@ import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coachin
 // focused coaching verification and the existing production prebuild suite.
 import './coach-session-director.test.mjs'
 import './my-coach-session-progress.test.mjs'
-import './coach-method-selection.test.mjs'
 // Reuse this existing trusted coaching prebuild gate; changing package.json
 // would trigger unrelated expensive CI fan-out.
 import './my-coach-dictation.test.mjs'

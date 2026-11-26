@@ -29,10 +29,14 @@ export type BrowserMovieOptions={
   allowProceduralBrowser?:boolean;
   seconds:number;
   frameRate:number;
-  renderFrame:(seconds:number)=>boolean;
+  renderFrame:(seconds:number)=>boolean|Promise<boolean>;
   audio?:BrowserMovieAudio;
+  audioMaster?:AudioBuffer;
   shouldContinue:()=>boolean;
   onProgress?:(percent:number)=>void;
+  // Only for independently decoded, timestamp-addressable first-party frames.
+  // Native <video> playback is time-dependent and MUST keep real-time pacing.
+  sourceFrameClock?:"native-playback"|"timestamp-decoded";
 };
 
 /** A silent Safari MP4 requires only the video encoder; an AAC movie
@@ -46,7 +50,7 @@ export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
     supportsProceduralWebCodecsMp4(needsAudio);
 }
 
-function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
+export function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
   return typeof VideoEncoder!=="undefined"&&
     typeof VideoEncoder.isConfigSupported==="function"&&
     typeof VideoFrame!=="undefined"&&
@@ -167,9 +171,25 @@ async function verifyDecodableMp4Export(
     }
     if(!(await track.canDecode()))throw new Error("video_output_decoder_failed");
     const sink=new VideoSampleSink(track);
-    const frame=await sink.getSample(await track.getFirstTimestamp());
-    if(!frame)throw new Error("video_output_decoder_failed");
-    frame.close();
+    const first=await track.getFirstTimestamp();
+    if(first===null||!Number.isFinite(first))
+      throw new Error("video_output_decoder_failed");
+    // MP4 metadata and one decoded frame do not prove that later shots exist.
+    // Check the beginning, middle and end before credits or download.
+    const checkpoints=[
+      Math.max(0,first+.05),
+      Math.max(0,expected.seconds/2),
+      Math.max(0,expected.seconds-.5),
+    ];
+    for(const at of checkpoints){
+      const sample=await sink.getSample(at);
+      try{
+        if(!sample||sample.codedWidth!==expected.width||
+           sample.codedHeight!==expected.height||
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
+          throw new Error("video_output_decoder_failed");
+      }finally{sample?.close();}
+    }
   }catch(error){
     if(error instanceof Error&&/^video_output_/.test(error.message))throw error;
     throw new Error("video_output_decoder_failed");
@@ -202,6 +222,56 @@ export async function verifyNativeSafariMp4Tracks(blob:Blob,requireAudio:boolean
 }
 
 /**
+ * Safari's own MediaRecorder can produce a playable H.264/AAC movie.
+ * A forced Mediabunny remux used to discard it when conversion failed.
+ * Inspect real native opening/middle/last frames before attempting remux.
+ * No sound playback, network calls, uploads or paid renderer.
+ */
+async function nativeSafariMp4HasPlayableTimeline(blob:Blob,seconds:number):Promise<boolean>{
+  if(typeof document==="undefined"||typeof window==="undefined"||
+     typeof URL.createObjectURL!=="function")return false;
+  const video=document.createElement("video");
+  const objectUrl=URL.createObjectURL(blob);
+  video.preload="auto";video.muted=true;video.playsInline=true;
+  const awaitEvent=(eventName:"loadeddata"|"seeked",start:()=>void):Promise<void>=>
+    new Promise((resolve,reject)=>{
+      let done=false;
+      const cleanup=()=>{window.clearTimeout(timer);
+        video.removeEventListener(eventName,ok);video.removeEventListener("error",fail);};
+      const finish=(error?:Error)=>{
+        if(done)return;
+        done=true;cleanup();
+        if(error)reject(error);else resolve();
+      };
+      const ok=()=>finish();
+      const fail=()=>finish(new Error("native_mp4_player_rejected"));
+      const timer=window.setTimeout(()=>finish(new Error("native_mp4_player_timeout")),4500);
+      video.addEventListener(eventName,ok,{once:true});
+      video.addEventListener("error",fail,{once:true});
+      try{start();}catch{finish(new Error("native_mp4_player_rejected"));}
+    });
+  try{
+    await awaitEvent("loadeddata",()=>{video.src=objectUrl;video.load();});
+    if(video.error||video.videoWidth<160||video.videoHeight<160||
+       !Number.isFinite(video.duration)||Math.abs(video.duration-seconds)>2)
+      return false;
+    for(const at of [Math.max(.05,seconds/2),Math.max(.05,seconds-.55)]){
+      await awaitEvent("seeked",()=>{video.currentTime=at;});
+      if(video.error||video.readyState<2||video.videoWidth<160||
+         video.videoHeight<160||Math.abs(video.currentTime-at)>1.25)
+        return false;
+    }
+    return true;
+  }catch{
+    return false;
+  }finally{
+    video.pause();video.removeAttribute("src");
+    try{video.load();}catch{/* Detached native player cleanup. */}
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
  * Safari's MediaRecorder can return a fragmented but superficially valid MP4
  * that its own <video> rejects. Losslessly remux the H.264/AAC packets into a
  * fast-start MP4 before Ready; if the browser has to reencode incompatible
@@ -224,6 +294,12 @@ export async function normalizeNativeSafariMp4ForPlayback(
     const audio=await original.getPrimaryAudioTrack();
     if(requireAudio&&(!audio||await audio.getCodec()!=="aac"))
       throw new Error("native_mp4_invalid_tracks");
+
+    // Preserve a genuinely native-playable, AVC/AAC-verified original instead
+    // of forcing every Safari recording through conversion. Otherwise use the
+    // existing fast-start conversion and sample verification, never stock.
+    if(await nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds))
+      return nativeBlob;
 
     // Fast-start places moov metadata ahead of mdat. Do not rely on the
     // MediaRecorder's claimed MIME or copy its raw fragmented header to Ready.
@@ -263,11 +339,13 @@ export async function normalizeNativeSafariMp4ForPlayback(
        end<expectedSeconds-2||end>expectedSeconds+2||end<=first)
       throw new Error("native_mp4_output_incomplete");
     const sink=new VideoSampleSink(track);
-    for(const at of [Math.max(0,first+.05),Math.max(0,end-.5)]){
+    // Fragmented Safari files can have intact metadata and first/last samples
+    // but an undecodable middle. Do not advertise such a movie as Ready.
+    for(const at of [Math.max(0,first+.05),Math.max(0,end/2),Math.max(0,end-.5)]){
       const sample=await sink.getSample(at);
       try{
         if(!sample||sample.codedWidth<160||sample.codedHeight<160||
-           (at>end*.6&&sample.timestamp<end*.5))
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
           throw new Error("native_mp4_output_unplayable");
       }finally{sample?.close();}
     }
@@ -283,15 +361,22 @@ export async function normalizeNativeSafariMp4ForPlayback(
 
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
-  const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
-  if(!(supportsLocalWebCodecsMp4(Boolean(audio))||
-    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(Boolean(audio)))))
+  const {canvas,seconds,frameRate,renderFrame,audio,audioMaster,shouldContinue,onProgress}=options;
+  const withAudio=Boolean(audio||audioMaster);
+  if(!(supportsLocalWebCodecsMp4(withAudio)||
+    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(withAudio))))
     throw new Error("webcodecs_not_supported");
   if(!Number.isFinite(seconds)||seconds<3||seconds>MAX_DURATION||
     !Number.isFinite(frameRate)||frameRate<6||frameRate>25||
     canvas.width<160||canvas.height<160||canvas.width*canvas.height>1920*1080)
     throw new Error("invalid_video_dimensions_or_timing");
   if(!shouldContinue())throw new Error("export_cancelled");
+  const timestampDecoded=options.sourceFrameClock==="timestamp-decoded";
+  if(options.sourceFrameClock!==undefined&&options.sourceFrameClock!=="native-playback"&&
+     options.sourceFrameClock!=="timestamp-decoded")
+    throw new Error("video_frame_clock_invalid");
+  if(timestampDecoded&&!options.allowProceduralBrowser)
+    throw new Error("timestamp_frame_clock_requires_verified_source");
   // Preflight BOTH actual codecs before waiting for the entire film. A failed
   // AAC codec must never produce a silent substitute for selected speech.
   // Probe with Mediabunny's own encoding configuration, not a fixed
@@ -314,7 +399,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   // An unavailable baseline profile falls back to a preflighted AVC encoder,
   // not a second expensive movie render.
   const selectedAvcCodec=baselineSupported?mobileCompatAvcCodec:undefined;
-  if(audio){
+  if(withAudio){
     const aac=await canEncodeAudio("aac",{
       sampleRate:SAMPLE_RATE,numberOfChannels:2,
       quality:new Quality({bitrate:128000}),
@@ -334,10 +419,9 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   });
   output.addVideoTrack(videoSource);
   let audioSource:AudioBufferSource|undefined;
-  let audioBuffer:AudioBuffer|undefined;
   try{
-    if(audio){
-      audioBuffer=await prepareLocalAudio(audio,seconds);
+    const audioBuffer=audioMaster??(audio?await prepareLocalAudio(audio,seconds):undefined);
+    if(audioBuffer){
       if(!shouldContinue())throw new Error("export_cancelled");
       audioSource=new AudioBufferSource({codec:"aac",quality:new Quality({bitrate:128000})});
       output.addAudioTrack(audioSource);
@@ -347,8 +431,10 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const audioTask=audioBuffer&&audioSource
       ?audioSource.add(audioBuffer).catch(error=>{audioFailure=error;}).finally(()=>audioSource?.close())
       :Promise.resolve();
-    // Pace native first-party video playback while encoding the same drawn
-    // Canvas frames, stage captions, phrases and actual source scenes.
+    // Native HTMLVideoElement playback MUST pace with real elapsed time.
+    // An approved timestamp-decoded CanvasSink has independent source frames:
+    // do not artificially stall each exact PTS until the movie's wall time.
+    // Both modes still encode/verify the same audio, captions and real frames.
     const frames=Math.ceil(seconds*frameRate);
     const startedAt=performance.now();
     // An actual native WebKit video decoder can temporarily withhold the
@@ -368,7 +454,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
+      const remaining=timestampDecoded?0:
+        startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
@@ -377,11 +464,12 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // encode calls. Those milliseconds are already included in the pacing
       // clock above, so exclude them here too. The whole-export deadline
       // below still bounds cumulative work; original PTS/frames stay exact.
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
+      if(!timestampDecoded&&
+         performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;
-      let decodedRealFrame=renderFrame(time);
+      let decodedRealFrame=await renderFrame(time);
       if(!decodedRealFrame){
         const waitStarted=performance.now();
         do{
@@ -389,7 +477,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
           if(performance.now()-waitStarted>=maxFrameDecoderWaitMs ||
              decoderHoldMs+performance.now()-waitStarted>=maxTotalDecoderWaitMs)break;
           await new Promise<void>(resolve=>setTimeout(resolve,40));
-          decodedRealFrame=renderFrame(time);
+          decodedRealFrame=await renderFrame(time);
         }while(!decodedRealFrame);
         decoderHoldMs+=performance.now()-waitStarted;
         if(!decodedRealFrame)throw new Error("licensed_scene_frame_unavailable");
@@ -418,7 +506,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       throw new Error("video_output_not_mp4");
     await verifyDecodableMp4Export(bytes,{
       width:canvas.width,height:canvas.height,seconds,
-      withAudio:Boolean(audio),mime:await output.getMimeType(),
+      withAudio,mime:await output.getMimeType(),
     });
     if(!shouldContinue())throw new Error("export_cancelled");
     onProgress?.(100);

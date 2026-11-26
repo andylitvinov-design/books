@@ -57,9 +57,9 @@ test('explicit hands-free conversation stays inside original AI turn and stops s
  assert.match(voice,/data-hh-voice-conversation/);
  assert.match(voice,/dialogueActive\.current=false;dialogueOnTurn\.current=null/);
  assert.match(voice,/dialogueActive\.current&&!document\.hidden/);
- assert.match(voice,/if\(!value\)stopDialogue\(\)/);
  assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
- assert.match(voice,/if\(!supported\|\|!recognitionSupported\|\|!playbackConsent\|\|!sttConsent\)/);
+ assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
+ assert.match(voice,/if\(!supported\|\|\(!consentOnStart&&\(!playbackConsent\|\|!sttConsent\)\)\)/);
  assert.match(chat,/if\(requiresProtectedReply\(text,locale\)\)voice\.stopDialogue\(\)/);
 });
 
@@ -75,12 +75,12 @@ test('hands-free fail-closed preserves unsent speech on busy or no model consent
 test('every deliberate conversation exit terminates hands-free audio before continuing',()=>{
  const chat=source('components/holistic-agent-chat.tsx');
  const controls=source('components/voice-companion-controls.tsx');
- assert.match(chat,/function resetConversation\(\)\{voice\.stopDialogue\(\);[\s\S]*?controller\.current\?\.abort\(\);selectVoiceMessage\(null\);followTail\.current=true/);
+ assert.match(chat,/function resetConversation\(\)\{[\s\S]*?voice\.stopDialogue\(\);[\s\S]*?controller\.current\?\.abort\(\);selectVoiceMessage\(null\);followTail\.current=true/);
  assert.doesNotMatch(chat,/onClick=\{\(\)=>\{voice\.stop\(\);controller\.current\?\.abort\(\);selectVoiceMessage\(null\)/);
  assert.match(chat,/<select value=\{mode\} onChange=\{event=>\{voice\.stopDialogue\(\);setMode\(/);
  assert.match(chat,/\{busy&&<button type="button" onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);\}\}/);
  assert.match(controls,/const stopDialogue=useCallback\(\(\)=>\{\s*dialogueActive\.current=false;dialogueOnTurn\.current=null;/);
- assert.match(controls,/if\(mounted\.current\)setConversing\(false\);\s*stop\(\);/);
+ assert.match(controls,/if\(mounted\.current\)\{setConversing\(false\);setPaused\(false\);setNotice\(''\);\}\s*stop\(\);/);
 });
 
 test('Voice Companion is fail-closed in production unless an explicit verified build flag enables it',()=>{
@@ -110,16 +110,40 @@ test('disabled Voice Companion never initializes browser audio, microphone detec
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*mounted\.current=true;/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*try\{\s*const value=JSON\.parse\(window\.localStorage/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\|\|!prefsLoaded\)return;/);
- assert.match(voice,/const speak=useCallback\(\(text:string\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const speak=useCallback\(\(text:string,explicitPlay=false\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const dictate=useCallback\(\(onTranscript:.*\)=>\{\s*if\(!enabled\)return;/);
- assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\|\|document\.hidden\)return false;/);
 });
 
 test('composer microphone owns AI voice turn, not the video recorder',()=>{
  const chat=source('components/holistic-agent-chat.tsx');
  assert.match(chat,/data-hh-conversation-mic/);
  assert.match(chat,/voice\.startDialogue\(text=>/);
- assert.match(chat,/setDraft\(text\);void sendTurn\(text\)/);
+ assert.match(chat,/setDraft\(text\);sendSelectedTurn\(text\)/);
  assert.doesNotMatch(chat,/className=\{styles\.recorderToggle\}[\s\S]{0,90}onClick=\{\(\)=>setRecorderOpen/);
  assert.match(chat,/!messengerView\|\|recorderOpen/);
+});
+
+test('iPhone Safari can use the same ephemeral recorded microphone capture as My Coach',()=>{
+ const speech=source('components/voice-companion-controls.tsx');
+ const chat=source('components/holistic-agent-chat.tsx');
+ const recorder=source('lib/personal-coaching/coach-recorded-turn.mjs');
+ const route=source('app/api/holistic-support/audio-storyboard/route.js');
+ assert.match(speech,/ios27NeedsSpeechRecovery\(window\.navigator\)/);
+ assert.match(speech,/coachRecordedSupported\(window\)/);
+ assert.match(speech,/startCoachRecordedTurn\(/);
+ assert.match(speech,/recordedPurpose\.current/);
+ assert.match(speech,/const interruptReply=/);
+ assert.match(speech,/recordedTurn\.current\?\.cancel\(\)/);
+ assert.match(recorder,/purpose!=='public'/);
+ assert.match(recorder,/body\.set\('consent','yes'\)/);
+ assert.match(route,/if\(purpose==="my_coach"\)/);
+ assert.match(route,/else if\(purpose==="ali_chat"\)/);
+ assert.match(route,/createRequestAuth\(request,config\)\.verified\(\)/);
+ assert.match(chat,/data-hh-ai-voice-consent/);
+ assert.match(chat,/data-hh-ai-start-voice/);
+ assert.match(chat,/data-hh-ai-stop-voice/);
+ assert.match(chat,/data-hh-ai-voice-status/);
+ assert.match(chat,/voice\.interruptReply\(\)/);
+ assert.doesNotMatch(chat,/data-hh-conversation-mic[\s\S]{0,100}disabled=\{!voiceEnabled\|\|/);
 });

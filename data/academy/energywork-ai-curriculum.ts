@@ -286,6 +286,9 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
     body: l("Did you manage to fly up to the Sun during the Sun meditation?", "Удалось ли вам подняться к Солнцу во время медитации «Полёт к Солнцу»?"),
     question: { type: "text", prompt: l("Describe please how was the Sun energy flow?", "Опишите, пожалуйста, каким был поток солнечной энергии.") } },
+  { id: "flight-hints", phase: "flight", kind: "lesson",
+    title: l("Receive daily Reiki inspiration", "Вдохновение Рейки каждый день"),
+    body: l("One Reiki hint and one photo in Telegram every day for 30 days.", "Одна подсказка Рейки и одна фотография в Telegram ежедневно в течение 30 дней.") },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
@@ -546,7 +549,7 @@ const initiationPhotoSlide: EnergyworkSlide = {
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
     title: l("Choose your Reiki initiation format", "Выберите формат Рейки-инициации"),
-    body: l("Choose one free Level 1 initiation in chat. Add other Reiki systems by donation, or request a personal 30-minute (€50) or 60-minute (€100) session. No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Другие системы — за донейшн; личная сессия — 30 минут (€50) или 60 минут (€100). Здесь нет оплаты."),
+    body: l("Choose one free Level 1 initiation in chat. You may add other systems by donation, an optional Level 1 certificate ($50), or a personal session (30 min €50 / 60 min €100). No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Можно дополнительно запросить другие системы за донейшн, сертификат I ступени ($50) или личную сессию (30 мин €50 / 60 мин €100). Здесь нет оплаты."),
     question: { type: "text", prompt: l("My Reiki initiation request and motivation", "Моя заявка на Рейки-инициацию и мотивация") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
@@ -559,6 +562,7 @@ function withClosingPractices(
   lesson: EnergyworkSlide[],
   practiceIds: readonly string[],
   finaleId: string,
+  closingLessonId?: string,
 ): EnergyworkSlide[] {
   const practices = practiceIds.map((id) => {
     const practice = lesson.find((slide) => slide.id === id);
@@ -568,9 +572,13 @@ function withClosingPractices(
   const finale = lesson.find((slide) => slide.id === finaleId);
   if (!finale || (finale.kind !== "milestone" && finale.kind !== "finish"))
     throw new Error("MISSING_REIKI_LESSON_FINALE_" + finaleId);
+  const closingLesson = closingLessonId ? lesson.find((slide) => slide.id === closingLessonId) : undefined;
+  if (closingLessonId && closingLesson?.kind !== "lesson")
+    throw new Error("MISSING_REIKI_CLOSING_LESSON_" + closingLessonId);
   return [
-    ...lesson.filter((slide) => slide.id !== finaleId && !practiceIds.includes(slide.id)),
+    ...lesson.filter((slide) => slide.id !== finaleId && slide.id !== closingLessonId && !practiceIds.includes(slide.id)),
     ...practices,
+    ...(closingLesson ? [closingLesson] : []),
     finale,
   ];
 }
@@ -589,9 +597,9 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    // Single graduation/consent checkpoint after the Sun practice.
+    // The optional Hints lesson stays between the Sun practice and graduation.
     ...withClosingPractices(commonSlides.filter((slide) =>
-      slide.phase === "flight"), ["flight-03"], "flight-done"),
+      slide.phase === "flight"), ["flight-03"], "flight-done", "flight-hints"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),

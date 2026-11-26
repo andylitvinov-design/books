@@ -1,14 +1,20 @@
 'use client'
 
-import {useCallback,useEffect,useMemo,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
+import MyCoachContext from './my-coach-context'
+import MyCoachDraftArchive from './my-coach-draft-archive'
+import DaybookDailySettings from './daybook-daily-settings'
+import ReikiHintsSettings from './reiki-hints-settings'
+import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
 import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
+import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 
 const protocolCopy={
  en:{title:'My Coach · Session protocol',transcript:'Conversation transcript',print:'Print / open PDF',download:'Download PDF',delete:'Delete protocol',confirm:'Delete this private conversation protocol permanently?',error:'Could not load or delete the saved protocols.',pdfError:'Could not prepare the protocol PDF.',coach:'AI coach'},
@@ -18,7 +24,7 @@ const protocolCopy={
 const copy={
  en:{
   title:'My Goals & Coaching Reports',subtitle:'Your goals, actions and coaching session reports — all in one private space.',
-  plan:'Goals & actions',reports:'Coaching reports',loading:'Opening your private plan…',retry:'Try again',
+  plan:'Goals & actions',reports:'Coaching reports',context:'My Context',contextIntro:'This is the compact, consented context Ali can use in a future coaching conversation. It never includes raw transcripts or test results.',contextEmpty:'There is no active context permission yet.',contextGoals:'Approved goals',contextActions:'Open actions',loading:'Opening your private plan…',retry:'Try again',
   emptyTitle:'Your plan begins with one conversation',empty:'Complete a coaching session to capture what matters and choose a first step.',
   start:'Start a coaching session',edit:'Edit area',save:'Save changes',saving:'Saving…',saved:'Changes saved',
   current:'Where I am now',desired:'What I want to change',obstacles:'What gets in the way',rating:'My self-rating (optional · 0–10)',
@@ -38,7 +44,7 @@ const copy={
  },
  ru:{
   title:'Мои цели и отчёты коучинга',subtitle:'Ваши цели, действия и отчёты коучинга — в одном личном пространстве.',
-  plan:'Цели и действия',reports:'Отчёты коучинга',loading:'Открываем ваш личный план…',retry:'Повторить',
+  plan:'Цели и действия',reports:'Отчёты коучинга',context:'Мой контекст',contextIntro:'Это краткий согласованный контекст, который Ali может использовать в будущей коуч-беседе. В нём нет сырых расшифровок и результатов тестов.',contextEmpty:'Пока нет активного разрешения на использование контекста.',contextGoals:'Подтверждённые цели',contextActions:'Незавершённые действия',loading:'Открываем ваш личный план…',retry:'Повторить',
   emptyTitle:'Ваш план начинается с одного разговора',empty:'Пройдите коуч-сессию, чтобы определить важное и выбрать первый шаг.',
   start:'Начать коуч-сессию',edit:'Изменить сферу',save:'Сохранить изменения',saving:'Сохраняем…',saved:'Изменения сохранены',
   current:'Где я сейчас',desired:'Что я хочу изменить',obstacles:'Что мне мешает',rating:'Моя самооценка (необязательно · 0–10)',
@@ -58,7 +64,7 @@ const copy={
  },
  es:{
   title:'Mis metas e informes de coaching',subtitle:'Tus metas, acciones e informes de coaching en un espacio privado.',
-  plan:'Metas y acciones',reports:'Informes de coaching',loading:'Abriendo tu plan privado…',retry:'Reintentar',
+  plan:'Metas y acciones',reports:'Informes de coaching',context:'Mi contexto',contextIntro:'Este es el contexto breve y consentido que Ali puede usar en una futura conversación de coaching. Nunca incluye transcripciones sin procesar ni resultados de pruebas.',contextEmpty:'Aún no hay permiso de contexto activo.',contextGoals:'Metas aprobadas',contextActions:'Acciones pendientes',loading:'Abriendo tu plan privado…',retry:'Reintentar',
   emptyTitle:'Tu plan comienza con una conversación',empty:'Completa una sesión de coaching para aclarar lo importante y elegir un primer paso.',
   start:'Iniciar una sesión',edit:'Editar área',save:'Guardar cambios',saving:'Guardando…',saved:'Cambios guardados',
   current:'Dónde estoy ahora',desired:'Qué quiero cambiar',obstacles:'Qué se interpone',rating:'Mi valoración (opcional · 0–10)',
@@ -124,6 +130,46 @@ const areaSubtitles={
   personal_growth:'Aprendizaje y crecimiento',lifestyle:'Hábitos y equilibrio vital'},
 }
 
+const savedCheckinCopy={
+ en:{opening:'Opening steps recorded',name:'Preferred name',feelings:'Feelings · client words',focus:'Recorded focus',profile:'Meaning axes · saved self-ratings',updates:'Meaning axes · saved updates in this session',current:'Now',desired:'Desired',notCaptured:'Not recorded here',skipped:'Skipped',partial:'Partial',rated:'Recorded',unknown:'Session type not recorded',focuses:{profile:'Personal profile',goal:'Goal',challenge:'Problem',self_exploration:'Self-exploration',deferred:'Deferred'}},
+ ru:{opening:'Зафиксированные шаги вступления',name:'Предпочитаемое имя',feelings:'Состояние · слова клиента',focus:'Зафиксированный фокус',profile:'Оси смысла · сохранённые самооценки',updates:'Оси смысла · уточнения этой сессии',current:'Сейчас',desired:'Желаемое',notCaptured:'Не зафиксировано здесь',skipped:'Пропущено',partial:'Частично',rated:'Зафиксировано',unknown:'Тип сессии не зафиксирован',focuses:{profile:'Личный профиль',goal:'Цель',challenge:'Проблема',self_exploration:'Самопознание',deferred:'Отложено'}},
+ es:{opening:'Pasos de inicio registrados',name:'Nombre preferido',feelings:'Emociones · palabras del cliente',focus:'Enfoque registrado',profile:'Ejes de sentido · autoevaluaciones guardadas',updates:'Ejes de sentido · cambios guardados en esta sesión',current:'Ahora',desired:'Deseado',notCaptured:'No registrado aquí',skipped:'Omitido',partial:'Parcial',rated:'Registrado',unknown:'Tipo de sesión no registrado',focuses:{profile:'Perfil personal',goal:'Meta',challenge:'Problema',self_exploration:'Autoconocimiento',deferred:'Aplazado'}}
+}
+function savedMeaningRows(checkin,locale){
+ if(!['hh-coach-profile-intake-v1','hh-coach-profile-intake-v2'].includes(checkin?.version)||!Array.isArray(checkin.ratings))return []
+ const valid=n=>Number.isInteger(n)&&n>=0&&n<=10
+ return COACH_PROFILE_AXES.map(axis=>{
+  const item=checkin.ratings.find(row=>row?.axis===axis.id)
+  const current=valid(item?.current)?item.current:null,desired=valid(item?.desired)?item.desired:null
+  const status=item?.kind==='skipped'?'skipped':current!==null&&desired!==null?'rated':
+   current!==null||desired!==null?'partial':'notCaptured'
+  return {id:axis.id,label:axis.name[locale]||axis.name.en,status,
+   current:status==='skipped'?null:current,desired:status==='skipped'?null:desired}
+ })
+}
+function SavedProtocolCheckin({protocol,locale}){
+ const words=savedCheckinCopy[locale]||savedCheckinCopy.en
+ const opening=protocol.opening,rows=savedMeaningRows(protocol.profileCheckin,locale)
+ const steps=['invitation','name','continuity','focus','feelings','confirmation']
+ const recorded=steps.filter(step=>opening?.checkmarks?.[step]===true).length
+ return <>
+  {opening&&<div className={styles.reportSection} data-my-coach-saved-opening>
+   <b>{words.opening} · {recorded}/6</b>
+   {opening.name&&<p>{words.name}: {opening.name}</p>}
+   {words.focuses[opening.focus]&&<p>{words.focus}: {words.focuses[opening.focus]}</p>}
+   {opening.feelings&&<p>{words.feelings}: {opening.feelings}</p>}
+  </div>}
+  {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
+   <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
+   <p>{words.current} / {words.desired}</p>
+   {rows.map(row=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
+    {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
+     <>{row.current??'—'} / {row.desired??'—'}{row.status==='partial'?' · '+words.partial:''}</>}
+   </p>)}
+  </div>}
+ </>
+}
+
 function formatDate(value,locale){
  if(!value||!Number.isFinite(Date.parse(value)))return ''
  try{return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{day:'numeric',month:'short',year:'numeric'}).format(new Date(value))}catch{return ''}
@@ -140,33 +186,62 @@ function domainState(area){
 export default function MyCoachingPlan({accountId,locale='en'}){
  const lang=copy[locale]?locale:'en',t={...copy[lang],...uiCopy[lang]}
  const searchParams=useSearchParams()
- const [tab,setTab]=useState(searchParams?.get('tab')==='reports'?'reports':'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
+ const requestedTab=searchParams?.get('tab')
+ const [tab,setTab]=useState(['reports','context'].includes(requestedTab)?requestedTab:'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [protocols,setProtocols]=useState([]),[protocolError,setProtocolError]=useState(''),[protocolDeleting,setProtocolDeleting]=useState('')
+ const [protocolPage,setProtocolPage]=useState({accountId:'',hasMore:false,nextCursor:null})
+ const [protocolPageLoading,setProtocolPageLoading]=useState(false)
+ const activeAccountRef=useRef(accountId),loadRevision=useRef(0)
+ activeAccountRef.current=accountId
+ const visibleProtocols=protocolPage.accountId===accountId?protocols:[]
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
  const [expandedArea,setExpandedArea]=useState(''),[showAllAreas,setShowAllAreas]=useState(false),[areaPicker,setAreaPicker]=useState(false),[showProgressDetails,setShowProgressDetails]=useState(false)
  const load=useCallback(async()=>{
-  if(!accountId)return
+  const revision=++loadRevision.current
+  if(!accountId){setProtocols([]);setProtocolPage({accountId:'',hasMore:false,nextCursor:null});return}
   setLoading(true);setError('');setReportError('');setProtocolError('')
+  // New account/reload invalidates every previous page and in-flight request.
+  setProtocols([]);setProtocolPage({accountId:'',hasMore:false,nextCursor:null});setProtocolPageLoading(false)
   try{
    const [life,reportsResult,protocolResult]=await Promise.all([
-    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
+    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}).catch(()=>null),
     appFetch('personal-coaching-reports',undefined,'GET',{accountId}).catch(()=>null),
     fetch('/api/app/my-coach/protocol',{method:'GET',credentials:'same-origin',cache:'no-store',headers:{'x-hh-account-id':accountId}})
       .then(async response=>response.ok?response.json():null).catch(()=>null),
    ])
-   if(!Array.isArray(life?.domains)||life.domains.length!==8)throw new Error('COACHING_PLAN_RESPONSE_INVALID')
-   setPlan(life)
+   if(activeAccountRef.current!==accountId||loadRevision.current!==revision)return
+   // The independently authorized archive must stay visible even when the Life Plan fails.
+   const validLife=Array.isArray(life?.domains)&&life.domains.length===8
+   setPlan(validLife?life:null)
+   if(!validLife)setError('load')
    setReports(Array.isArray(reportsResult?.reports)?reportsResult.reports:[])
    setProtocols(Array.isArray(protocolResult?.protocols)?protocolResult.protocols:[])
+   setProtocolPage({accountId,hasMore:protocolResult?.hasMore===true,
+     nextCursor:protocolResult?.nextCursor||null})
    if(!protocolResult)setProtocolError(protocolCopy[lang].error)
    if(!reportsResult)setReportError('load')
-   setDrafts(Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])))
-  }catch(e){setError(e?.code||'load');setReportError(e?.code||'load')}
-  finally{setLoading(false)}
+   setDrafts(validLife?Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])):{})
+  }catch(e){if(activeAccountRef.current===accountId&&loadRevision.current===revision){
+    setError(e?.code||'load');setReportError(e?.code||'load')
+  }}
+  finally{if(activeAccountRef.current===accountId&&loadRevision.current===revision)setLoading(false)}
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!plan?.domains)return
+  const area=plan.domains.find(item=>item.goals?.some(goal=>goal.id===wanted))
+  if(!area)return
+  setTab('plan');setExpandedArea(area.areaKey)
+  if(!PRIMARY_GOAL_AREAS.includes(area.areaKey))setShowAllAreas(true)
+ },[searchParams,plan])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!expandedArea)return
+  document.getElementById('goal-'+wanted)?.scrollIntoView({block:'center',behavior:'smooth'})
+ },[searchParams,expandedArea,plan])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
@@ -217,6 +292,37 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    setProtocolError('')
   }catch{setProtocolError(protocolCopy[lang].pdfError)}
  }
+ async function loadEarlierProtocols(){
+  const cursor=protocolPage.accountId===accountId?protocolPage.nextCursor:null
+  if(!accountId||!cursor||!protocolPage.hasMore||protocolPageLoading)return
+  const revision=loadRevision.current
+  setProtocolPageLoading(true);setProtocolError('')
+  try{
+   const params=new URLSearchParams({before:cursor.before,beforeId:cursor.beforeId})
+   const response=await fetch('/api/app/my-coach/protocol?'+params.toString(),{
+    method:'GET',credentials:'same-origin',cache:'no-store',
+    headers:{'x-hh-account-id':accountId},
+   })
+   const data=await response.json().catch(()=>null)
+   if(!response.ok||!Array.isArray(data?.protocols)||typeof data?.hasMore!=='boolean')
+    throw Error('MY_COACH_PROTOCOL_PAGE_UNAVAILABLE')
+   if(activeAccountRef.current!==accountId||loadRevision.current!==revision)return
+   setProtocols(previous=>{
+    const known=new Set(previous.map(item=>item.id))
+    return [...previous,...data.protocols.filter(item=>{
+      if(!item||typeof item.id!=='string'||known.has(item.id))return false
+      known.add(item.id);return true
+    })]
+   })
+   setProtocolPage({accountId,hasMore:data.hasMore,nextCursor:data.nextCursor||null})
+  }catch{
+   if(activeAccountRef.current===accountId&&loadRevision.current===revision)
+    setProtocolError(protocolCopy[lang].error)
+  }finally{
+   if(activeAccountRef.current===accountId&&loadRevision.current===revision)
+    setProtocolPageLoading(false)
+  }
+ }
  async function deleteProtocol(protocol){
   if(!window.confirm(protocolCopy[lang].confirm))return
   setProtocolDeleting(protocol.id);setProtocolError('')
@@ -258,13 +364,17 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    <h1>{t.title}</h1><p>{t.subtitle}</p>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
-    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+protocols.length}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+visibleProtocols.length}</span></button>
+    <button type="button" role="tab" id="coach-context-tab" aria-controls={tab==='context'?'coach-context-panel':undefined} aria-selected={tab==='context'} className={tab==='context'?styles.tabActive:styles.tab} onClick={()=>setTab('context')}><Sparkles size={16}/>{t.context}</button>
    </div>
   </header>
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
   {notice&&<div className={styles.notice} role="status">{notice}</div>}
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
+  {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
+   <DaybookDailySettings accountId={accountId} locale={lang} goals={plan?.goals||[]}/>
+   <ReikiHintsSettings key={accountId} accountId={accountId} locale={lang}/>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
      onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
@@ -327,7 +437,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
         {busy?<LoaderCircle className={styles.spin} size={17}/>:<Save size={17}/>} {busy?t.saving:t.save}</button>
        <div className={styles.goalList}><strong>{t.goals} · {count}</strong>
         {count===0&&<p>{t.noGoals}</p>}
-        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
+        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id} id={'goal-'+goal.id}>
          <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
          <span>{goal.status}</span>
          {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}>
@@ -355,10 +465,12 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
+   <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
-   {protocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
+   {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
@@ -376,7 +488,16 @@ export default function MyCoachingPlan({accountId,locale='en'}){
      </div>
     </div>
    </article>)}
-   {!reports.length&&!protocols.length&&!reportError&&!protocolError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
+   {protocolPage.accountId===accountId&&protocolPage.hasMore&&protocolPage.nextCursor&&
+    <button type="button" className={styles.primaryButton} data-my-coach-load-earlier
+      disabled={protocolPageLoading} onClick={()=>void loadEarlierProtocols()}>
+      {protocolPageLoading?({
+        en:'Loading earlier sessions…',ru:'Загружаем предыдущие сессии…',es:'Cargando sesiones anteriores…',
+      }[lang]):({
+        en:'Show earlier sessions',ru:'Показать предыдущие сессии',es:'Mostrar sesiones anteriores',
+      }[lang])}
+    </button>}
+   {!reports.length&&!visibleProtocols.length&&!reportError&&!protocolError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
    {reports.map(record=>{
     const report=record.report||{},accepted=(report.actionCandidates||[]).filter(item=>item.status==='accepted')
     const available=accepted.filter(item=>!importedKeys.has(record.id+'|'+item.candidateId))
@@ -424,9 +545,17 @@ export default function MyCoachingPlan({accountId,locale='en'}){
        {importing===record.id?<LoaderCircle className={styles.spin} size={16}/>:<Plus size={16}/>} {importing===record.id?t.adding:t.add}
       </button>
       {reportError&&<p className={styles.inlineError} role="alert">{t.importError}</p>}
+      {!!accepted.length&&<CoachMemoryReview key={accountId+':'+record.id} accountId={accountId}
+        reportId={record.id} areaKey={areas[record.id]||'career_business'} locale={lang}
+        importedKeys={importedKeys} onSaved={load}/>}
      </div>
     </article>
    })}
   </section>}
+  {tab==='context'&&!!plan?.contextPermissions?.length&&
+   <details className={styles.permissions}><summary>{t.contextTitle}<ChevronDown size={18}/></summary>
+    <p>{t.contextInfo}</p>{contextError&&<p role="alert">{contextError}</p>}
+    {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}><span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}<button type="button" className={styles.saveButton} disabled={!!revoking} onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button></div>)}
+   </details>}
  </main>
 }

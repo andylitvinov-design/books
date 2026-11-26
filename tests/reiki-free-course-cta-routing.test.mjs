@@ -32,7 +32,22 @@ test("main Reiki hero CTAs go to the interactive learner rather than an overview
 
   const core = read("components/principles-of-energywork.tsx");
   assert.match(core, /const learnPath = REIKI_FREE_COURSE_PATH/);
-  assert.match(core, /href=\{learnPath\} className=\{styles.primaryButton\} data-energywork-interactive-course/);
+  // Free is now the approved Daybook-first entry. The classic learner remains
+  // an explicit secondary route, not an overview or enquiry form.
+  assert.equal((core.match(/<ReikiDaybookStart locale=\{locale\} className=\{styles.primaryButton\} \/>/g) || []).length, 3);
+  assert.match(core, /className=\{styles.reikiDetailsStart\}>\s*<ReikiDaybookStart locale=\{locale\} className=\{styles.primaryButton\} \/>/);
+  assert.match(core, /href=\{learnPath\} className=\{styles.ghostButton\} data-energywork-interactive-course/);
+  // Owner removed the duplicate Classic course link from the final CTA panel.
+  assert.doesNotMatch(core, /data-energywork-final-online/);
+  assert.match(core, /data-energywork-final-choices>\s*<ReikiDaybookStart locale=\{locale\} className=\{styles.primaryButton\} \/>\s*<\/div>/);
+  const entry = read("components/reiki-practitioner-entry.tsx");
+  assert.match(entry, /const language = locale === "ru" \? "ru" : "en"/);
+  assert.match(entry, /const destination = reikiLandingPath\(language\) \+ "\/daybook"/);
+  assert.match(entry, /await appFetch\("bootstrap\?view=portrait"\);[\s\S]*?window.location.assign\(destination\)/);
+  assert.match(entry, /status !== 401\) throw failure/);
+  assert.match(entry, /appFetch\("auth\/start",[\s\S]*?continueTo: "energywork-daybook"/);
+  assert.match(entry, /data-reiki-start-free/);
+  assert.doesNotMatch(entry, /lead-form|enquiry-form/);
 
   const referral = read("components/reiki-referral-landing.tsx");
   assert.match(referral, /const courseHref = REIKI_FREE_COURSE_PATH/);

@@ -23,7 +23,12 @@ export async function GET(request){
     const actor=await auth.verified()
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-    const result=await listMyCoachProtocols(config,actor)
+    const params=new URL(request.url).searchParams
+    for(const key of params.keys())
+      if(!['before','beforeId'].includes(key))throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
+    const result=await listMyCoachProtocols(config,actor,{
+      before:params.get('before'),beforeId:params.get('beforeId'),
+    })
     return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)
@@ -41,13 +46,13 @@ export async function POST(request){
     const actor=await auth.verified()
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-    const input=await readBody(request,100000)
+    const input=await readBody(request,260000)
     if(!input||typeof input!=='object'||Array.isArray(input))
       throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
     await consumeRate(config,{op:'my-coach-protocol',actor:actor.id},15,3600)
     let result
     if(input.action==='save'){
-      if(Object.keys(input).some(key=>!['action','consent','protocol'].includes(key)))
+      if(Object.keys(input).some(key=>!['action','consent','protocol','draftRevision'].includes(key)))
         throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
       result=await saveMyCoachProtocol(config,actor,input)
     }else if(input.action==='delete'){

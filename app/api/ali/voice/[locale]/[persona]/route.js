@@ -5,6 +5,8 @@ import {safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {aliPersonaGreeting,isAliPersonaId} from '@/lib/holistic-support/ali-personas.mjs'
 import {myCoachFishConfig,myCoachFishVoice} from '@/lib/coaching/my-coach-fish-voice.mjs'
+import {aliGeminiGreetingVoice,synthesizeAliGeminiGreeting} from '@/lib/holistic-support/ali-gemini-free-tts.mjs'
+import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
  normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
 
@@ -30,14 +32,15 @@ const validRequest=(request,params)=>{
  return {locale,persona}
 }
 
-// A cached readiness check prevents a delayed 503 from blocking iOS user-gesture
-// fallback TTS. It never requests audio or spends a TTS character.
+// Fresh advisory readiness; no synthesis or TTS charge. Never cache failure.
 export async function HEAD(request,{params}){
  const selection=validRequest(request,await params)
  if(!selection)return new Response(null,{status:400,headers:{'Cache-Control':'no-store'}})
- const available=Boolean(googleChirpConfig()||myCoachFishConfig())
+ // Gemini's already approved FREE tier continues after Fish's 2026-11-30
+ // expiry. HEAD remains zero-synthesis / zero-quota.
+ const available=Boolean(googleChirpConfig()||geminiCoachTtsConfig(process.env,'gemini_tts_free')||myCoachFishConfig())
  return new Response(null,{status:available?204:503,headers:{
-  'Cache-Control':'public,max-age=60,s-maxage=300',
+  'Cache-Control':'no-store',
   'X-Content-Type-Options':'nosniff'
  }})
 }
@@ -60,15 +63,39 @@ export async function GET(request,{params}){
     signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])})
    return new NextResponse(audio,{status:200,headers:{...AUDIO_HEADERS,'Content-Length':String(audio.length)}})
   }
+  const gemini=geminiCoachTtsConfig(process.env,'gemini_tts_free')
   const vendor=myCoachFishConfig()
-  const referenceId=myCoachFishVoice(persona,locale)
-  if(!vendor||!referenceId)throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
+  const referenceId=vendor?myCoachFishVoice(persona,locale):null
+  if(!gemini&&(!vendor||!referenceId))
+   throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
+  // One public greeting request = one Ali rate-budget slot. The free Gemini
+  // rate bucket is SHARED with My Coach, so this route cannot bypass limits
+  // from private voice previews. Never invoke a paid TTS model here.
   await consumeRate(config,{op:'ali-voice-minute'},10,60)
   await consumeRate(config,{op:'ali-voice-day'},20,86400)
+  let geminiFailed=false
+  if(gemini){
+   const voiceName=aliGeminiGreetingVoice(persona,locale)
+   if(!voiceName)throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
+   await consumeRate(config,{op:'my-coach-gemini_tts_free-global-day'},24,86400)
+   try{
+    const audio=await synthesizeAliGeminiGreeting({config:gemini,locale,
+     personaId:persona,text,
+     signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})
+    return new NextResponse(audio,{status:200,headers:{
+     ...AUDIO_HEADERS,'Content-Type':'audio/wav',
+     'Content-Length':String(audio.length),'X-Ali-Voice-Source':'gemini-free'}})
+   }catch{
+    // Fixed public text only. Fall back exclusively to the explicitly
+    // approved FREE Fish model before its expiry, never to paid Gemini/Fish.
+    geminiFailed=true
+   }
+  }
+  if(!vendor||!referenceId)throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
   await consumeRate(config,{op:'my-coach-public-intro-global-day'},40,86400)
   const upstream=await fetch('https://api.fish.audio/v1/tts',{
    method:'POST',cache:'no-store',
-   signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),
+   signal:AbortSignal.any([request.signal,AbortSignal.timeout(geminiFailed?9000:15000)]),
    headers:{Authorization:`Bearer ${vendor.key}`,'Content-Type':'application/json',
     Accept:'audio/mpeg',model:vendor.model},
    body:JSON.stringify({text,format:'mp3',reference_id:referenceId,

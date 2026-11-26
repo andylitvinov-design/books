@@ -5,8 +5,8 @@ import {startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-tu
 import {createCoachBargeGate,isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-function fakeAudioEnvironment(){
- let clock=0,energy=0,tick=null,stopped=0,uploads=0;
+function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=false,recordedBytes=2000,transcribedText='Я хочу уточнить вашу мысль'}={}){
+ let clock=0,energy=0,tick=null,stopped=0,uploads=0,captures=0;
  class Recorder{
   static isTypeSupported(m){return m==='audio/mp4'}
   state='inactive';mimeType='audio/mp4'
@@ -14,7 +14,7 @@ function fakeAudioEnvironment(){
   stop(){
    if(this.state!=='recording')return
    this.state='inactive'
-   this.ondataavailable?.({data:new Blob([new Uint8Array(2000)])})
+   this.ondataavailable?.({data:new Blob([new Uint8Array(recordedBytes)])})
    this.onstop?.()
   }
  }
@@ -26,21 +26,27 @@ function fakeAudioEnvironment(){
   close(){return Promise.resolve()}
  }
  const environment={
-  navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++}}]})}},
+  navigator:{userAgent,mediaDevices:{getUserMedia:async()=>{
+   captures++
+   const track={kind:'audio',muted:muteFirstCapture&&captures===1,
+     readyState:'live',stop(){stopped++}}
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]}
+  }}},
   MediaRecorder:Recorder,AudioContext:Context,File,FormData,Blob,
   fetch:async(url,init)=>{
    assert.equal(url,'/api/holistic-support/audio-storyboard')
    assert.equal(init.method,'POST')
    assert.equal(init.body.get('locale'),'ru')
    uploads++
-   return {ok:true,json:async()=>({transcript:{text:'Я хочу уточнить вашу мысль'}})}
+   return {ok:true,json:async()=>({transcript:{text:transcribedText}})}
   },
   setInterval(fn){tick=fn;return 1},
   clearInterval(){tick=null},
   performance:{now:()=>clock},
  }
  return {environment,pulse(rms,ms=100){clock+=ms;energy=rms;tick?.()},get uploading(){return uploads},
-  get stopped(){return stopped},get ticker(){return tick}}
+  get stopped(){return stopped},get ticker(){return tick},
+  get captureRequests(){return captures}}
 }
 
 test('voice monitor ducks then restores after playback echo disappears without any STT request',async()=>{
@@ -53,6 +59,18 @@ test('voice monitor ducks then restores after playback echo disappears without a
  sound.pulse(0);sound.pulse(0);assert.deepEqual(calls,['duck','restore'])
  assert.equal(sound.uploading,0,'candidate audio never leaves the browser')
  c.cancel();assert.equal(sound.uploading,0);assert.ok(sound.stopped>0)
+})
+test('iPhone low-energy user speech triggers a local interrupt while audio plays',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2'}),calls=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+   monitorPlayback:true,onCandidate:()=>calls.push('duck'),
+   onCandidateExpired:()=>calls.push('restore'),
+   onSpeechDetected:()=>calls.push('interrupt'),onFailure:code=>assert.fail(code)})
+ for(let i=0;i<20&&!sound.ticker;i++)await new Promise(r=>setImmediate(r))
+ for(let i=0;i<4;i++)sound.pulse(.023)
+ assert.deepEqual(calls,['duck','interrupt'])
+ assert.equal(sound.uploading,0,'no Whisper request until a human utterance ends')
+ monitor.cancel()
 })
 test('confirmed speech stops coach before recording ends and transcribes once',async()=>{
  const sound=fakeAudioEnvironment(),calls=[]
@@ -133,7 +151,8 @@ test('iPhone defaults to already-guarded WebCodecs while 0 disables it',async()=
 test('iOS Safari reset cue failure preserves the live coach and offers microphone retry',()=>{
  const ui=source('components/my-coach-speech-loop.jsx')
  assert.match(ui,/iosCueBrokenRef\.current=true/)
- assert.match(ui,/iosCueBrokenRef\.current&&recordedSttUnavailableRef\.current/)
+ assert.match(ui,/iosCueBrokenRef\.current&&!coachRecordedSupported\(window\)/)
+  assert.match(ui,/if\(ios27&&coachRecordedSupported\(window\)\)/)
  assert.match(ui,/recognition\.onstart=null;recognition\.onresult=null/)
  assert.match(ui,/changePhase\('ready'\);setNotice\(t\.iosCueFailed\)/)
  assert.doesNotMatch(ui,/silence\(\);changePhase\('idle'\);setNotice\(t\.iosCueFailed\)/)
@@ -270,4 +289,79 @@ test('persistently muted iPhone audio track stops after one bounded recovery, no
  assert.deepEqual(errors,['MIC_NO_SIGNAL'])
  assert.equal(uploads,0)
  capture.cancel()
+})
+
+test('iPhone barge monitor reacquires a muted output track and still interrupts locally',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',muteFirstCapture:true})
+ const states=[],failures=[],calls=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  monitorPlayback:true,onState:state=>states.push(state),onFailure:code=>failures.push(code),
+  onSpeechDetected:()=>calls.push('interrupt')})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<9;i++)sound.pulse(0)
+ for(let i=0;i<30&&(sound.captureRequests<2||!sound.ticker);i++)
+   await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(sound.captureRequests,2,'WebKit muted monitor is reacquired once')
+ assert.ok(states.includes('recovering'),'user sees a recovery state before unavailable')
+ assert.deepEqual(failures,[],'transient muted monitor is not immediately disabled')
+ for(let i=0;i<4;i++)sound.pulse(.045)
+ assert.deepEqual(calls,['interrupt'])
+ assert.equal(sound.uploading,0,'no model/STT call before user utterance finishes')
+ monitor.cancel()
+})
+
+test('iPhone digitally silent barge monitor reacquires once, without retrying forever',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2'})
+ const failures=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  monitorPlayback:true,onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<46;i++)sound.pulse(0)
+ for(let i=0;i<30&&(sound.captureRequests<2||!sound.ticker);i++)
+   await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(sound.captureRequests,2)
+ for(let i=0;i<80;i++)sound.pulse(0)
+ assert.equal(sound.captureRequests,2,'quiet room must not cause an endless reset loop')
+ assert.deepEqual(failures,[])
+ assert.equal(sound.uploading,0,'no ambient silence is uploaded')
+ monitor.cancel()
+})
+
+test('Safari capture loss must not permanently disable Groq STT or require the cue fallback',()=>{
+ const ui=source('components/my-coach-speech-loop.jsx')
+ assert.match(ui,/if\(code==='MIC_CAPTURE'\)/)
+ assert.match(ui,/const recovery=captureRetryRef\.current/)
+ assert.match(ui,/\['STT_UNAVAILABLE','STT_RATE_LIMIT','STT_SIGN_IN'\]\.includes\(code\)/)
+  assert.match(ui,/recoverRecordedStt\(code,generation\)/)
+  assert.doesNotMatch(ui,/recordedSttUnavailableRef/)
+ assert.doesNotMatch(ui,/\['STT_UNAVAILABLE','MIC_CAPTURE'\]\.includes\(code\)/)
+ assert.match(ui,/changePhase\('ready'\);setNotice\(t\.captureFailed\)/)
+})
+ 
+test('locally truncated iPhone recording reports capture loss instead of disabling Whisper',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',recordedBytes:100})
+ const failures=[]
+ const recorder=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<3;i++)sound.pulse(.11)
+ for(let i=0;i<14;i++)sound.pulse(0)
+ for(let i=0;i<30&&!failures.length;i++)await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual(failures,['MIC_CAPTURE'])
+ assert.equal(sound.uploading,0,'incomplete local audio must never reach the provider')
+ recorder.cancel()
+})
+
+test('empty but successful STT response is not classified as provider outage',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',transcribedText:''})
+ const failures=[]
+ const recorder=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<3;i++)sound.pulse(.11)
+ for(let i=0;i<14;i++)sound.pulse(0)
+ for(let i=0;i<30&&!failures.length;i++)await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual(failures,['MIC_NO_SIGNAL'])
+ assert.equal(sound.uploading,1,'one real spoken phrase is sent once, without retries')
+ recorder.cancel()
 })

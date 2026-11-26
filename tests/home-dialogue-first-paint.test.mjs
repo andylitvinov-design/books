@@ -27,10 +27,10 @@ test("public Home has one light conversation-first entry and preserves seven rea
  assert.match(entry,/<SiteNavigation locale=\{locale\} compact \/>/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(entry,/data-home-mode-button="self"/);
- assert.match(entry,/data-home-mode-button="business"/);
- for(const label of ["Для себя","Для бизнеса","For myself","For business","Para mí","Para mi negocio"])
-   assert.ok(entry.includes(label),label);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ for(const id of ["clarity","goal","business","reiki"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ assert.match(entry,/program\.steps\.map/);
  assert.match(dock,/"mytube","video","coach","ai","services","practice","profile"/);
  assert.match(globalDock,/UNIFIED_DOCK_IDS\.map\(id =>/);
 });
@@ -47,11 +47,13 @@ test("initial paint is local and deferred: no media network or large course bund
  assert.match(styles,/ideas-pine-reference\.webp/);
  assert.match(lazy,/IntersectionObserver/);
  assert.match(lazy,/rootMargin:"220px 0px"/);
- assert.match(lazy,/ssr:false/);
- assert.match(content,/ssr:false/);
+ assert.match(lazy,/const HomeDeferredContent = lazy\(/);
+ assert.match(content,/const HomeExpandedCatalog = lazy\(/);
  assert.match(content,/MySpaceTopics/);
- assert.doesNotMatch(content,/^import \{ MySpaceTopics \} from/m);
- assert.match(content,/import\("\.\/my-space-topics"\)/);
+ // The topic component is allowed as a direct import INSIDE the deferred module.
+ // The first-screen observer must not import its CSS-bearing content eagerly.
+ assert.doesNotMatch(lazy,/^import \{ MySpaceTopics \} from/m);
+ assert.match(content,/^import \{ MySpaceTopics \} from/m);
  assert.match(catalog,/HomeFeaturedWorkspace/);
  assert.doesNotMatch(main,/<HomeFeaturedWorkspace|<HomeSectionCarousel|<MySpaceTopics/);
  assert.doesNotMatch(entry,/https:\/\/|<iframe|<video|fetch\(/);
@@ -119,8 +121,9 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt,hint\.id==="business"\?"business":mode\)\}/);
+ assert.match(home,/startConversationWith\(draft\.trim\(\)\?program\.prompt/);
  assert.match(home,/startConversationWith\(draft\)/);
+ assert.match(home,/art\.id==="business"\?"business":"self"/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
  assert.match(chat,/data-home-handoff-pending/);
@@ -131,69 +134,30 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
 });
 
-test("approved scenic Home shows four clear choices above the wide Ali composer in three languages",()=>{
+test("Approved homepage has four program cards, three substeps per program and five methods",()=>{
  const entry=read("components/home-dialogue-entry.tsx");
- const css=read("components/home-dialogue-entry.module.css");
+ const styles=read("components/home-dialogue-entry.module.css");
  const deferred=read("components/home-deferred-content.tsx");
- for(const phrase of ["Energy & Stress Release","Love & Confidence","Money & Growth","Business Support","Holistic House","What do you need today?","Энергия и снятие стресса","Apoyo empresarial"])
-   assert.ok(entry.includes(phrase),phrase);
- for(const id of ["stress","love","money","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
- assert.match(entry,/data-home-free-review/);
- assert.match(entry,/freeReviewTitle:"Understand my situation"/);
- assert.match(entry,/freeReviewDetail:"Get a free personal review"/);
- assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
- assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
- assert.match(entry,/services\/free-situation-review/);
- assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
- assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
- assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
- assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
- assert.match(css,/\.language summary\{min-width:44px\}/);
- assert.match(css,/\{width:44px;min-width:44px\}/);
- assert.match(entry,/data-home-focus-grid/);
- assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-free-review'));
- assert.match(entry,/data-home-continue-path/);
+ for(const text of ["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса",
+   "В нашей работе мы используем:","ИИ-коучи","Программы","Видео","Тесты","Практики"])
+   assert.ok(entry.includes(text),text);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option=\{art\.id\}/);
+ for(const id of ["clarity","goal","business","reiki"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ assert.match(entry,/program\.steps\.map/);
+ assert.equal((entry.match(/<form className=\{styles\.composer\}/g)||[]).length,1);
+ assert.match(entry,/useAliPersona\("alex"\)/);
+ assert.match(entry,/data-home-open-ali-persona/);
+ assert.match(entry,/data-home-ali-greeting-play/);
+ assert.match(entry,/data-home-intent-composer/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
- assert.match(css,/\.composer\{display:flex;flex-direction:column/);
- assert.match(css,/\.scene\{[^\n]*ideas-pine-reference\.webp/);
- assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
- assert.doesNotMatch(entry,/data-home-service-action/);
- assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
-});
-
-test("owner-approved compact first screen keeps persona, full composer, categories and help CTAs",()=>{
- const home=read("components/home-dialogue-entry.tsx");
- const styles=read("components/home-dialogue-entry.module.css");
- for(const label of ["Get Ideas","Diagnostic & Hints","Get Support","Session & Service",
-   "Choose a direction","How it works — in 3 simple steps","Start free chat"]) {
-   assert.ok(home.includes(label),label);
- }
- for(const fragment of ["data-home-open-ali-persona","data-home-ali-greeting-play",
-   "data-home-intent-composer","data-home-how-it-works","data-home-request-session"]) {
-   assert.ok(home.includes(fragment),fragment);
- }
- assert.ok(home.indexOf("data-home-dialogue-hero")<home.indexOf("data-home-intent-form"));
- assert.ok(home.indexOf("data-home-intent-form")<home.indexOf("data-home-focus-grid"));
- assert.ok(home.indexOf("data-home-focus-grid")<home.indexOf("data-home-how-it-works"));
- assert.ok(home.indexOf("data-home-how-it-works")<home.indexOf("data-home-request-session"));
- assert.match(styles,/HOME_SCREEN_VISUAL_20261120/);
+ assert.match(entry,/data-home-methods/);
+ assert.match(entry,/msg\.tools\.map/);
+ assert.match(entry,/data-home-continue-path/);
+ assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
+ assert.match(styles,/SAMIR_MOCK_FIDELITY_20261123_V2/);
+ assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/max-height:800px/);
- assert.match(styles,/\.heroPortrait/);
- assert.match(styles,/\.focusPhoto/);
- assert.match(styles,/\.finalActions/);
- assert.doesNotMatch(home,/<iframe|<video|fetch\(/);
-});
-
-test("mobile correction preserves distinct business help links and prevents clipped hero",()=>{
- const home=read("components/home-dialogue-entry.tsx");
- const styles=read("components/home-dialogue-entry.module.css");
- assert.match(home,/service-group-business/);
- assert.match(home,/hint.id==="love"\?Heart/);
- assert.match(home,/hint.id==="money"\?TrendingUp/);
- assert.match(styles,/MOBILE_HERO_CONTENT_SAFE_20261120/);
- assert.match(styles,/\.heroStory\{height:auto;min-height:165px/);
- const before=home.indexOf("data-home-intent-form");
- const after=home.indexOf("data-home-focus-grid");
- assert.ok(before>=0&&after>before,"The Ali composer must appear before the topic tiles");
+ assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
+ assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
 });

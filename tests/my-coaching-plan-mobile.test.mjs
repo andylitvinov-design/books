@@ -22,7 +22,9 @@ test('mobile plan keeps old secure save, reports, revoke and delete paths',()=>{
  for(const key of ['data-goal-progress','data-goal-areas','data-goal-expanded','summarizeCoachingProgress(domains)',
    'orderedCoachingAreas(domains,showAllAreas)','onClick={()=>saveArea(area)}',"appFetch('coaching-life-plan/areas/",
    "appFetch('personal-coaching-reports'","onClick={()=>revokeContext(permission.sessionId)}",
-   "onClick={()=>deleteAction(action)}",'planConsents[record.id]===true'])assert.ok(jsx.includes(key),key)
+   "onClick={()=>deleteAction(action)}",'planConsents[record.id]===true','<MyCoachContext',"setTab('context')",
+   'contextPermissions'])assert.ok(jsx.includes(key),key)
+ assert.doesNotMatch(jsx,/projectCoachContextSnapshot/)
  assert.match(css,/support-first-screen-photos\.webp/)
  assert.match(css,/reiki-approved-sunrise-v3\.webp/)
  assert.match(css,/@media\(max-width:430px\)/)

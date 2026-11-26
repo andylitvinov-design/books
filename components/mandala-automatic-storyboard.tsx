@@ -10,13 +10,15 @@ import {MandalaStoryboardSceneSketch} from "./mandala-storyboard-scene-sketch";
 import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
  isReviewedStoryWithPhotosSequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
-import {storyboardPhotoReferences,STORYBOARD_REFERENCE_STATUS} from "@/lib/mandala/storyboard-photo-references.mjs";
+import {storyboardPhotoReferences,illustrativeStoryboardPhotoReferences,
+ STORYBOARD_REFERENCE_STATUS,STORYBOARD_ILLUSTRATION_STATUS} from "@/lib/mandala/storyboard-photo-references.mjs";
 import type {StoryboardReferencePhoto} from "@/lib/mandala/storyboard-photo-references.mjs";
 import type {CategoryStoryboardShot} from "@/lib/mandala/category-video-storyboard.mjs";
 import type {ApprovedVideoConcept} from "./mandala-video-concept";
 import styles from "./mandala-video-mobile.module.css";
 
 type Locale="ru"|"en"|"es";
+export type StoryboardSourceIssue="photos"|"media"|"review"|"duration";
 type Shot={sceneId:string;startSeconds:number;durationSeconds:number};
 type Props={
  locale:Locale;goal:string;theme:string;durationSeconds:number;aspect:string;styleIndex:number;
@@ -33,6 +35,7 @@ type Props={
    captions:string[],outputAspect?:"portrait"|"landscape")=>boolean;
  onChooseQuality:(sourceReady:boolean)=>void;
  onApprovalRequiredChange?:(pending:boolean)=>void;
+ onSourceIssueChange?:(issue:StoryboardSourceIssue)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
  onEditPhrase:(phrase:string)=>void;
@@ -78,7 +81,7 @@ function StoryboardReferencePoster({photo,locale,action,keywords,onPhotoLoaded,o
  </div>;
  return <>
   {/* eslint-disable-next-line @next/next/no-img-element */}
-  <img src={photo.src} alt={photo.labels[locale]} loading="lazy" decoding="async"
+  <img src={photo.src} alt={photo.labels[locale]} loading="eager" decoding="async"
    onLoad={event=>{
      const img=event.currentTarget;
      if(img.complete&&img.naturalWidth>=600&&img.naturalHeight>=600)
@@ -100,11 +103,14 @@ const clock=(time:number)=>{
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
  phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
- scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,fiveSceneShots,onOpenIdeas,onEditPhrase
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,
+ onSourceIssueChange,fiveSceneShots,onOpenIdeas,onEditPhrase
 }:Props){
  const t=words[locale];
  const [expandedScene,setExpandedScene]=useState<number|null>(null);
  const [loadedPhotoIds,setLoadedPhotoIds]=useState<readonly string[]>([]);
+ const [unavailablePhotoIds,setUnavailablePhotoIds]=useState<readonly string[]>([]);
+ const [photoRetry,setPhotoRetry]=useState(0);
  const [photoOutputAspect,setPhotoOutputAspect]=useState<"portrait"|"landscape">(
    aspect==="landscape"?"landscape":"portrait");
  const phraseKey=phrases.join("\u001f");
@@ -139,20 +145,35 @@ export function MandalaAutomaticStoryboard({
   locale,goal:concept.goal||goal,phrases:phraseKey?phraseKey.split("\u001f"):[],
   concept,count:concept.storyboard?.length||Math.max(4,Math.ceil(durationSeconds/5)),pace
  }),[locale,goal,concept,phraseKey,durationSeconds,pace]);
+ const matchedReferences=useMemo(()=>storyboardPhotoReferences({
+  scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
+  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[],
+  sceneGuides:guides.scenes,aspect:photoOutputAspect
+ }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes,photoOutputAspect]);
+ // Exact scene matches stay strict. A separate, visibly labelled photo story
+ // can reuse the selected canonical story's reviewed thematic photographs.
+ // Neither branch attaches media until the visitor accepts all six images.
+ const illustrativeReferences=useMemo(()=>matchedReferences.length===6&&
+   matchedReferences.every(Boolean)?[]:illustrativeStoryboardPhotoReferences({
+    scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
+    shotCount:guides.scenes.length,aspect:photoOutputAspect,
+    avoidImagery:concept.avoidImagery||[],userEditedFields:concept.userEditedFields||[]
+   }),[matchedReferences,concept.scenarioId,concept.categoryId,concept.avoidImagery,
+    concept.userEditedFields,guides.scenes.length,photoOutputAspect]);
+ const illustrativePhotos=illustrativeReferences.length===6;
+ const references=illustrativePhotos?illustrativeReferences:matchedReferences;
  const storyKey=JSON.stringify([
   concept.signature,concept.storyboard?.map(shot=>[shot.title,shot.action,shot.emotion])??null,
   phraseKey,styleIndex,pace,durationSeconds,photoOutputAspect,theme,
-  concept.avoidImagery||[],personalizationKey
+  concept.avoidImagery||[],personalizationKey,references.map(photo=>photo?.id||null)
  ]);
- const references=useMemo(()=>storyboardPhotoReferences({
-  scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
-  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[]
- }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes.length]);
  const hasSixPhotoReferences=references.length===6&&
    references.every(photo=>photo&&isTrustedStoryPhoto(photo))&&
    new Set(references.map(photo=>photo?.id)).size===6;
  const referencesDecoded=hasSixPhotoReferences&&references.every(photo=>
    photo&&loadedPhotoIds.includes(photo.id));
+ const unavailableReferenceCount=references.filter(photo=>
+   photo&&unavailablePhotoIds.includes(photo.id)).length;
  const proposal=useMemo(()=>{
   const parameters={
    categoryId:concept.categoryId,locale,aspect:"portrait" as const,durationSeconds,scenes,
@@ -234,9 +255,12 @@ export function MandalaAutomaticStoryboard({
  const manualFiveReady=Boolean(!choice.selectionMissing&&!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
  const storyboardSourcesPending=!manualFiveReady&&!eligible&&!photoAdaptationApplied;
+ const sourceIssue:StoryboardSourceIssue=choice.selectionMissing||scriptNeedsReview?"review":
+  hasSixPhotoReferences?(durationSeconds===30?"photos":"duration"):"media";
  useEffect(()=>{
   onApprovalRequiredChange?.(storyboardSourcesPending);
  },[storyboardSourcesPending,onApprovalRequiredChange]);
+ useEffect(()=>{onSourceIssueChange?.(sourceIssue);},[sourceIssue,onSourceIssueChange]);
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  // Source-reviewed photos remain visible as REFERENCES until a visitor
  // explicitly accepts the illustrative photomontage.
@@ -259,7 +283,7 @@ export function MandalaAutomaticStoryboard({
    <p>{locale==="ru"?"Выбранный фильм не соответствует текущим настройкам. Вернитесь в «Идеи» и выберите историю заново.":
      locale==="es"?"La historia seleccionada no corresponde a los ajustes actuales. Vuelve a Ideas para elegirla.":
      "The selected film is no longer available for these preferences. Reopen Ideas and choose a story."}</p>
-   <button type="button" className={styles.storyAutoApply} onClick={onOpenIdeas}>
+   <button type="button" className={styles.storyAutoApply} data-storyboard-choose-another-story onClick={onOpenIdeas}>
     {t.ideas}<ArrowRight size={17}/>
    </button>
  </section>;
@@ -283,7 +307,10 @@ export function MandalaAutomaticStoryboard({
     scriptSceneAlignment.reason:"curated_editorial_review"}
   data-storyboard-graphics-mode={photoReferenceCount?"licensed-photographic-references":"screenplay-scene-sketch"}
   data-storyboard-reference-count={photoReferenceCount}
-  data-storyboard-reference-status={photoReferenceCount?STORYBOARD_REFERENCE_STATUS:undefined}
+  data-storyboard-reference-status={photoReferenceCount?
+    illustrativePhotos?STORYBOARD_ILLUSTRATION_STATUS:STORYBOARD_REFERENCE_STATUS:undefined}
+  data-storyboard-reference-match={illustrativePhotos?"illustrative":"scene"}
+  data-storyboard-source-issue={storyboardSourcesPending?sourceIssue:undefined}
   data-storyboard-media-ready={manualFiveReady||eligible||photoAdaptationApplied}
   data-storyboard-action-proof={photoAdaptationApplied?"user_approved_symbolic_photo_montage":
     v3RequiresActionProof?"editorial_unverified":"legacy"}
@@ -331,10 +358,16 @@ export function MandalaAutomaticStoryboard({
      <div className={styles.storyAutoPoster}>
       {media?.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
-       reference?<StoryboardReferencePoster key={reference.id} photo={reference}
+       reference?<StoryboardReferencePoster key={reference.id+":"+photoRetry} photo={reference}
         locale={locale} action={guide.visual} keywords={authored?.keywords||guide.keywords}
-        onPhotoLoaded={id=>setLoadedPhotoIds(curr=>curr.includes(id)?curr:[...curr,id])}
-        onPhotoUnavailable={id=>setLoadedPhotoIds(curr=>curr.filter(x=>x!==id))}/>:
+        onPhotoLoaded={id=>{
+          setLoadedPhotoIds(curr=>curr.includes(id)?curr:[...curr,id]);
+          setUnavailablePhotoIds(curr=>curr.filter(x=>x!==id));
+        }}
+        onPhotoUnavailable={id=>{
+          setLoadedPhotoIds(curr=>curr.filter(x=>x!==id));
+          setUnavailablePhotoIds(curr=>curr.includes(id)?curr:[...curr,id]);
+        }}/>:
        <div className={styles.storyAutoNoPoster} data-video-story-media-missing={!shot}>
         <MandalaStoryboardSceneSketch locale={locale} action={guide.visual}
           visualSubject={authored?.visualSubject}
@@ -348,6 +381,7 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
+      {reference?<small data-storyboard-reference-title>{reference.labels[locale]}</small>:null}
       {sourcePhrase?<button type="button" className={styles.storyAutoPhraseEdit}
         data-storyboard-scene-phrase data-storyboard-edit-phrase={index+1}
         aria-label={(locale==="ru"?"Редактировать установку в сцене ":
@@ -366,7 +400,10 @@ export function MandalaAutomaticStoryboard({
         {guide.visual}
       </button>
       {authored?<small data-storyboard-media-brief>
-        {locale==="ru"?"Подбираем видео или фото именно этого действия":
+        {illustrativePhotos?(locale==="ru"?"Фото по теме; действие сценария не заснято":
+          locale==="es"?"Foto temática; la acción del guion no está filmada":
+          "Thematic photo; the scripted action was not filmed"):
+         locale==="ru"?"Подбираем видео или фото именно этого действия":
           locale==="es"?"Vídeo o foto de esta acción exacta":
           "Video or photo depicting this exact action"}
       </small>:null}
@@ -388,7 +425,11 @@ export function MandalaAutomaticStoryboard({
   {!manualFiveReady&&replacingGraphics?<p className={styles.storyAutoEmpty} role="status"
    data-video-story-graphics-detected>{t.replace}</p>:null}
   {!manualFiveReady&&!eligible&&!photoAdaptationApplied?<p className={styles.storyAutoEmpty} role="status"
-   data-video-story-missing-relevant-media>{photoReferenceCount?
+   data-video-story-missing-relevant-media>{illustrativePhotos?
+     (locale==="ru"?"Подобраны 6 фотографий по теме. Проверьте снимки и подтвердите фотоисторию — она иллюстрирует идею, а не точные действия сценария.":
+      locale==="es"?"Hay 6 fotos de la temática. Revisa y confirma la historia fotográfica: ilustra la idea, no las acciones exactas del guion.":
+      "Six thematic photos are selected. Review and accept the photo story: it illustrates the idea, not the exact scripted actions."):
+    photoReferenceCount?
      (locale==="ru"?"Реальные фото показывают направление сюжета, но конкретные действия сцен ещё не подтверждены. Для экспорта нужен соответствующий материал.":
       locale==="es"?"Las fotos reales ilustran la historia, pero las acciones exactas aún no están verificadas. Para exportar se necesitan medios adecuados.":
        "Real photos illustrate the story, but the exact shot actions are not yet verified. Matching media is still required to export.")
@@ -405,10 +446,16 @@ export function MandalaAutomaticStoryboard({
       </button>)}
    </div>:null}
   {photoApprovalRequired?<p role="status" data-storyboard-photo-approval-required>
-    {locale==="ru"?"Это фото-референсы, а не кадры экспорта. Нажмите «Использовать эти 6 фото в видео», чтобы получить именно этот сюжет.":
-     locale==="es"?"Estas son fotos de referencia. Pulsa «Usar estas 6 fotos en el vídeo» para exportar estas escenas.":
-     "These are photo references, not export frames. Choose «Use these 6 photos in my video» to export this exact story."}
+    {locale==="ru"?"Нажмите «Использовать эти 6 фото в видео», чтобы включить показанные снимки в свой ролик.":
+     locale==="es"?"Pulsa «Usar estas 6 fotos en el vídeo» para incluir las fotografías mostradas en tu vídeo.":
+     "Choose «Use these 6 photos in my video» to include the photographs shown in your video."}
    </p>:null}
+  {photoApprovalRequired&&unavailableReferenceCount>0?<button type="button"
+    className={styles.storyAutoApply} data-storyboard-retry-photos disabled={disabled}
+    onClick={()=>{setLoadedPhotoIds([]);setUnavailablePhotoIds([]);setPhotoRetry(value=>value+1);}}>
+    {locale==="ru"?"Фото не загрузились — повторить":
+      locale==="es"?"No se cargaron las fotos — reintentar":"Photos did not load — retry"}
+  </button>:null}
   {hasSixPhotoReferences&&!photoAdaptationApplied&&durationSeconds===30&&
    !scriptNeedsReview&&scriptSceneAlignment.aligned&&!choice.selectionMissing?
    <button type="button" className={styles.storyAutoApply}
@@ -438,6 +485,13 @@ export function MandalaAutomaticStoryboard({
      locale==="es"?"Es un montaje fotográfico ilustrativo; las acciones no están confirmadas como filmaciones.":
      "This is an illustrative photo montage; the scripted actions were not verified as filmed events."}
   </p>:null}
+  {storyboardSourcesPending&&sourceIssue!=="photos"?<button type="button"
+    className={styles.storyAutoApply} data-storyboard-choose-another-story
+    disabled={disabled} onClick={onOpenIdeas}>
+    {locale==="ru"?"Выбрать или изменить сюжет":
+      locale==="es"?"Elegir o editar la historia":"Choose or edit the story"}
+    <ArrowRight size={19} aria-hidden="true"/>
+  </button>:null}
   <button type="button" className={styles.storyAutoApply}
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}

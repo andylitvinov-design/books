@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
@@ -136,10 +137,10 @@ test('any verified complex PR uses its real owner browser cases instead of all 1
   assert.equal(simulate([['D','components/commerce/service-cart.tsx']]).mode,'full');
 });
 
-test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
+test('14 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
-  assert.equal(PUBLIC_BROWSER_CASES.length, 13);
-  assert.equal(new Set(PUBLIC_BROWSER_CASES).size, 13);
+  assert.equal(PUBLIC_BROWSER_CASES.length, 14);
+  assert.equal(new Set(PUBLIC_BROWSER_CASES).size, 14);
   for (const name of PUBLIC_BROWSER_CASES) {
     assert.ok(source.includes('run_case "' + name + '" node scripts/' + name),
       'missing real suite: ' + name);
@@ -1549,8 +1550,29 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
+    // Reviewed Mandala owner requires real impact and an independently Ready PR.
+    "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'run: node scripts/ci-heavy-impact.mjs mandala',
+    "if: steps.policy.outputs.policy_only != 'true'",
+    // The Mandala specialist now triggers on reviewed media paths for any PR,
+    // rather than on a historical branch-name allowlist. Both the changed
+    // source path and the actual 120-scenario manifest must route to it.
+    "- 'components/mandala-free-video-studio.tsx'",
+    "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Workflow ownership is content-based now. An old one-PR branch name must
+  // not be a substitute for the real audio contracts asserted above.
+  assert.doesNotMatch(mandala,/startsWith\(github\.head_ref, 'feat\/hh-goal-tree-'\)/,
+    'audio owner tests must not rely on a retired branch-specific gate');
+  // Protected macOS release ownership follows exact changed source, never branch prefixes.
+  assert.ok(mandala.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'macOS job must require tested-base real media impact');
+  assert.ok(mandala.includes('git show "$tested_base:lib/ci/merge-check-light.mjs"'),
+    'trusted production classifier must decide whether WebKit runs');
+  assert.equal(requiresRealMediaWebKit(delta.map(([status,filename])=>({status,filename}))),true,
+    'real 120-scenario audio source changes must run macOS WebKit');
+  assert.equal(requiresRealMediaWebKit([{status:'M',filename:'tests/goal-tree-audio-playlists.test.mjs'}]),false,
+    'Node contract-only edits do not spend on macOS browser');
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
@@ -1789,4 +1811,121 @@ test('Coach-only shared App dispatcher keeps Public Services source contracts bu
   const notPure=(_bin,args)=>args[0]==='diff'
     ? 'M'+z+'app/api/app/[...path]/route.js'+z+'M'+z+'app/api/payments/route.js'+z : git(_bin,args);
   assert.equal(planPublicServicesEvent(env,notPure).mode,'full','mixed payments always require real browser acceptance');
+});
+
+test('authenticated immutable merge proof avoids shallow-history fallback, never accepts a mismatched tuple', () => {
+  const base='a'.repeat(40), head='b'.repeat(40), first='c'.repeat(40), merge='d'.repeat(40), z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_SHA:merge,
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    HH_PUBLIC_VERIFIED_EVENT_BASE:base,HH_PUBLIC_VERIFIED_TESTED_BASE:first,
+    HH_PUBLIC_VERIFIED_HEAD:head,HH_PUBLIC_VERIFIED_MERGE:merge};
+  const git=(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(({HEAD:merge,'HEAD^1':first,'HEAD^2':head})[args[1]]+'\n');
+    if(args[0]==='merge-base')throw Error('old event base is outside depth 2');
+    if(args[0]==='diff'){
+      assert.equal(args[4],first);
+      return Buffer.from('M'+z+'scripts/verify-academy-messenger-order.mjs'+z);
+    }
+    throw Error('unavailable BASE owner '+args[0]);
+  };
+  const plan=planPublicServicesEvent(env,git);
+  assert.equal(plan.mode,'focused');
+  assert.equal(plan.cases,'verify-academy-messenger-order.mjs');
+  assert.equal(publicPlaywrightEngines(plan),'chromium webkit');
+  assert.equal(requiresPublicServicesHeavyPr(plan),true);
+  for(const key of ['GITHUB_SHA','HH_PUBLIC_VERIFIED_EVENT_BASE','HH_PUBLIC_VERIFIED_TESTED_BASE',
+    'HH_PUBLIC_VERIFIED_HEAD','HH_PUBLIC_VERIFIED_MERGE']){
+    const bad=planPublicServicesEvent({...env,[key]:'e'.repeat(40)},git);
+    assert.equal(bad.mode,'full',key);
+    assert.equal(bad.reason,'MISMATCHED_VERIFIED_ANCESTRY');
+  }
+  assert.equal(planPublicServicesEvent({...env,HH_PUBLIC_VERIFIED_HEAD:''},git).mode,'full');
+  const without=Object.fromEntries(Object.entries(env).filter(([key])=>!key.startsWith('HH_PUBLIC_VERIFIED_')));
+  assert.equal(planPublicServicesEvent(without,git).mode,'full');
+  assert.equal(planPublicServicesEvent({...env,GITHUB_EVENT_NAME:'workflow_dispatch'},git).cases,'all');
+  const yaml=workflow('hh-public-services-production.yml');
+  assert.ok(yaml.includes('id: ancestry'));
+  for(const field of ['event_base','tested_base','head','merge'])assert.ok(yaml.includes('steps.ancestry.outputs.'+field));
+});
+
+test('BASE-owned existing isolated Services UI gets its own browser cases; shared/unknown changes stay full',()=>{
+  const trigger=parsePrTrigger(workflow('hh-public-services-production.yml'));
+  const services=['components/services-assist-mobile.tsx','components/services-assist-quiz.tsx',
+    'components/services-conversion-hero.tsx','components/services-unified-catalog.module.css'];
+  const alchemy='components/alchemy-soul-landing.tsx',topics='components/holistic-support-topic-filter.tsx';
+  for(const file of services){
+    assert.deepEqual(verifiedCriticalPublicCases(file,trigger),
+      ['verify-public-services-production.mjs','verify-service-cart-browser.mjs']);
+  }
+  assert.deepEqual(verifiedCriticalPublicCases(alchemy,trigger),
+    ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']);
+  assert.deepEqual(verifiedCriticalPublicCases(topics,trigger),
+    ['verify-holistic-topics-browser.mjs','verify-holistic-support-recommendations-mobile.mjs','verify-public-services-production.mjs']);
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const simulate=rows=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='show')return Buffer.from(workflow('hh-public-services-production.yml'));
+      if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+      throw Error('Unexpected command');
+    });
+  for(const file of [...services,alchemy,topics]){
+    const plan=simulate([['M',file]]);
+    assert.equal(plan.reason,'PROTECTED_PUBLIC_OWNER_CASES',file);
+    assert.equal(plan.mode,'focused');
+    assert.equal(requiresPublicServicesHeavyPr(plan),true);
+    assert.equal(simulate([['A',file]]).mode,'full');
+    assert.equal(simulate([['D',file]]).mode,'full');
+    assert.equal(simulate([['M',file],['M','middleware.ts']]).mode,'full');
+    assert.equal(simulate([['M',file],['M','app/api/payments/unknown/route.js']]).mode,'full');
+  }
+  for(const file of ['components/services-brand-new.tsx','components/services-personal-consultation-mobile.tsx',
+    'app/api/public/unknown/route.js','lib/commerce/shared.js']){
+    assert.equal(verifiedCriticalPublicCases(file,trigger),null,file);
+  }
+});
+
+test('Public Services, practitioner editor and Home delegate only duplicate PR lint to required Core',()=>{
+  const core=workflow('hh-pr-core-release.yml');
+  assert.ok(core.includes('npx --no-install eslint "${files[@]}"'));
+  const pub=workflow('hh-public-services-production.yml');
+  assert.equal((pub.match(/then npx --no-install eslint /g)||[]).length,2);
+  assert.ok(pub.includes('"$GITHUB_BASE_REF" != codex/public-book-library'));
+  assert.ok(pub.includes('node --test tests/contact-channel-chooser.test.mjs'));
+  const practice=workflow('practice-visual-services.yml');
+  assert.ok(practice.includes("name: Lint all changed components\n        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"));
+  const home=workflow('hh-home-conversation.yml');
+  assert.ok(home.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then'));
+  assert.ok(home.includes('HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs'));
+});
+
+test('CI-only Public Services plus Home/Practice lint policy does not build the storefront',()=>{
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const paths=['.github/workflows/hh-public-services-production.yml',
+    '.github/workflows/hh-home-conversation.yml','.github/workflows/practice-visual-services.yml',
+    'scripts/ci-public-services-plan.mjs','tests/ci-public-services-plan.test.mjs',
+    'tests/ci-pr-selective-workflows.test.mjs'];
+  const simulate=rows=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='show')return Buffer.from(workflow(args[1].split('/').at(-1)));
+      if(args[0]==='diff')return Buffer.from(rows.flat().join(z)+z);
+      throw Error('Unexpected git request');
+    });
+  const rows=paths.map(path=>['M',path]);
+  const plan=simulate(rows);
+  assert.deepEqual([plan.mode,plan.reason,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts','INDEPENDENT_OWNER_OR_CORE',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for(const path of ['middleware.ts','app/api/payments/unknown/route.js',
+    'components/holistic-support-mobile.tsx','.github/workflows/unknown-new.yml']){
+    assert.equal(simulate([...rows,['M',path]]).mode,'full',path);
+  }
+  for(const path of paths.slice(1,3)){
+    assert.equal(simulate([['A',path]]).mode,'full',path+' added');
+    assert.equal(simulate([['D',path]]).mode,'full',path+' deleted');
+  }
+  assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'workflow_dispatch'}).cases,'all');
 });

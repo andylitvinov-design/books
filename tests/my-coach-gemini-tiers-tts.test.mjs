@@ -68,13 +68,13 @@ test('failed or overlong Gemini output fails closed without a retry',async()=>{
   await assert.rejects(verifiedGeminiCoachingReply(geminiCoachTextConfig(free,'gemini_free'),
     {messages},async()=>({status:429,ok:false})),{message:'GEMINI_COACH_RATE_LIMIT'})
 })
-test('ten personas have four server-allowlisted voice candidates for RU and EN',()=>{
-  const ids=['mira','max','sofia','alex','merlin','harry','lea','noah','iris','ray']
-  assert.deepEqual(Object.keys(GEMINI_COACH_VOICE_OPTIONS).sort(),[...ids].sort())
-  for(const id of ids){
+test('eleven personas retain approved, distinct server-allowlisted RU/EN voice candidates',()=>{
+  const counts={mira:6,max:7,sofia:7,alex:6,merlin:6,harry:5,genie:5,lea:4,noah:4,iris:4,ray:4}
+  assert.deepEqual(Object.keys(GEMINI_COACH_VOICE_OPTIONS).sort(),Object.keys(counts).sort())
+  for(const [id,count] of Object.entries(counts)){
     const opts=coachGeminiVoiceOptions(id)
-    assert.equal(opts.length,4)
-    assert.equal(new Set(opts).size,4)
+    assert.equal(opts.length,count)
+    assert.equal(new Set(opts).size,count)
     assert.ok(opts.every(name=>allowedGeminiCoachVoice(id,name)))
     assert.equal(allowedGeminiCoachVoice(id,'malicious-id'),false)
   }
@@ -93,9 +93,19 @@ test('free Gemini TTS requires distinct feature consent and uses a fixed public 
   assert.throws(()=>normalizeGeminiCoachTtsInput({...common,trainingUseConsent:true,
     text:'An injected text'}),{message:'GEMINI_COACH_TTS_INVALID'})
 })
+function makeMonoPcmWav({rate=24000,channels=1}={}){
+  const size=44+80*channels*2,wav=Buffer.alloc(size)
+  wav.write('RIFF',0,'ascii');wav.writeUInt32LE(size-8,4)
+  wav.write('WAVE',8,'ascii');wav.write('fmt ',12,'ascii')
+  wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20)
+  wav.writeUInt16LE(channels,22);wav.writeUInt32LE(rate,24)
+  wav.writeUInt32LE(rate*channels*2,28)
+  wav.writeUInt16LE(channels*2,32);wav.writeUInt16LE(16,34)
+  wav.write('data',36,'ascii');wav.writeUInt32LE(size-44,40)
+  return wav
+}
 test('one Gemini TTS request selects exact approved voice and returns real-format WAV bytes',async()=>{
-  const wav=Buffer.alloc(128)
-  wav.write('RIFF',0,'ascii');wav.write('WAVE',8,'ascii')
+  const wav=makeMonoPcmWav()
   const input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',
     locale:'en',personaId:'mira',voiceName:'Sulafat',preview:true,
     voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
@@ -107,15 +117,36 @@ test('one Gemini TTS request selects exact approved voice and returns real-forma
       const body=JSON.parse(options.body)
       assert.equal(body.model,'gemini-3.8-flash-lite-tts')
       assert.equal(body.store,false,'no Google interaction storage for private coach speech')
-      assert.equal(body.generation_config.speech_config[0].voice,'Sulafat')
+      assert.deepEqual(body.response_format,{type:'audio'},'unary WAV is the documented default')
+      assert.deepEqual(body.generation_config,{speech_config:[{voice:'Sulafat'}]},
+        'undocumented language/max_output_tokens must not break Google Free TTS')
       assert.match(body.input[0].content[0].text,/There is a lot/)
       return {ok:true,status:200,json:async()=>({
         steps:[{type:'model_output',content:[{type:'audio',data:wav.toString('base64')}]}]})}
     }})
   assert.equal(calls,1)
   assert.equal(audio.toString('ascii',0,4),'RIFF')
-  assert.equal(audio.length,128)
+  assert.equal(audio.length,wav.length)
 })
+test('Gemini TTS rejects malformed RIFF chunks, stereo and non-24kHz PCM',async()=>{
+  const input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',
+    locale:'ru',personaId:'mira',voiceName:'Sulafat',preview:true,
+    voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+  const wrongSize=makeMonoPcmWav();wrongSize.writeUInt32LE(99999,4)
+  const wrongCodec=makeMonoPcmWav();wrongCodec.writeUInt16LE(3,20)
+  const wrongData=makeMonoPcmWav();wrongData.writeUInt32LE(99999,40)
+  for(const bad of [Buffer.alloc(128),makeMonoPcmWav({rate:16000}),
+    makeMonoPcmWav({channels:2}),wrongSize,wrongCodec,wrongData]){
+    let calls=0
+    await assert.rejects(synthesizeGeminiCoachTts({
+      config:geminiCoachTtsConfig(free,'gemini_tts_free'),input,
+      fetcher:async()=>{calls++;return {ok:true,status:200,json:async()=>({
+        steps:[{type:'model_output',content:[{type:'audio',data:bad.toString('base64')}]}]})}}
+    }),{message:'GEMINI_COACH_TTS_INVALID_AUDIO'})
+    assert.equal(calls,1,'never retry paid/free provider on invalid audio')
+  }
+})
+
 test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live off',()=>{
   const brain=source('lib/app/coaching-brain.js')
   const route=source('app/api/app/[...path]/route.js')
@@ -131,10 +162,25 @@ test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live o
   assert.match(tts,/consumeRate\(config/)
   assert.match(tts,/audio\/wav/)
   assert.match(ui,/geminiVoiceByLocale/)
+  assert.match(ui,/const usingExistingVoice=geminiVoiceTier==='existing'/)
+  assert.match(ui,/geminiVoiceReady\?geminiVoiceTier:null/)
+  assert.match(ui,/const chosenCloudAgreed=usingExistingVoice\?cloudAgreed:geminiVoiceReady/)
+  assert.match(ui,/const chosenCloudAvailable=usingExistingVoice\?cloudAvailable:geminiVoiceReady/)
   assert.match(ui,/geminiTextPrivacyDetails/)
   assert.match(ui,/geminiVoicePrivacyDetails/)
   assert.match(ui,/data-gemini-voice-consent/)
   assert.match(ui,/previewGeminiCoachVoice/)
   assert.match(ui,/value="gemini" disabled/)
   assert.match(player,/startsWith\('audio\/mpeg'\)/)
+})
+
+test('current Google AI Studio AQ. auth keys pass Free text and TTS config without Paid escalation',()=>{
+  const authKey='AQ.'+'x'.repeat(50)
+  const provided={...free,HH_GEMINI_FREE_API_KEY:authKey}
+  assert.equal(geminiCoachTextConfig(provided,'gemini_free')?.apiKey,authKey)
+  assert.equal(geminiCoachTtsConfig(provided,'gemini_tts_free')?.apiKey,authKey)
+  assert.equal(geminiCoachTextConfig({...provided,HH_GEMINI_PAID_API_KEY:authKey},'gemini_free'),null)
+  assert.equal(geminiCoachTextConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(49)},'gemini_free'),null)
+  assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(51)},'gemini_tts_free'),null)
+  assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:' AQ.'+'x'.repeat(50)},'gemini_tts_free'),null)
 })

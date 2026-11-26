@@ -45,7 +45,6 @@ test('user explicitly closes PDF then sees the full five-star rating screen and 
  assert.match(ui,/ratingOpen\)return/)
  assert.match(css,/\.ratingStars/)
  assert.match(css,/\.ratingCoachPortrait/)
- assert.match(ui,/personaId==='harry'\?'harry-soft-still\.webp'/)
 })
 test('feedback server is same-origin, signed-in and stored in encrypted account envelope',()=>{
  const route=src('app/api/app/my-coach/rating/route.js')

@@ -35,19 +35,13 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   const ready=page.locator('[data-video-ready]');
   const readyPlayer=ready.locator('video');
   const result=page.locator('[data-video-result]');
-  const renderedPlayer=page.locator('[data-mandala-video-preview]');
-  let verificationTapped=false,guestTapped=false;
+  const renderedPlayer=ready.locator('video[data-mandala-video-preview]');
+  let verificationTapped=false;
   await expect.poll(async()=>{
-    if(await readyPlayer.isVisible())return true;
-    const verify=page.locator('[data-video-verify-playback]');
+    const verify=ready.locator('[data-ready-play-verify]');
     if(!verificationTapped&&await verify.isVisible()){
       try{await verify.click({timeout:2000});verificationTapped=true;}
-      catch(error){if(await verify.isVisible())throw error;}
-    }
-    const guestPlay=page.locator('[data-video-guest-play]');
-    if(!guestTapped&&await guestPlay.isVisible()){
-      try{await guestPlay.click({timeout:2000});guestTapped=true;}
-      catch(error){if(await guestPlay.isVisible())throw error;}
+      catch(error){if(error.name!=='TimeoutError')throw error;return false;}
     }
     return readyPlayer.isVisible();
   },{timeout,intervals:[250,500,1000]}).toBe(true);
@@ -57,13 +51,11 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   await expect(page.locator('[data-video-effect-overlay]')).toHaveCount(0,{timeout:12000});
   await expect(page.locator('[data-mandala-video-download]')).toBeHidden();
   await expect.poll(()=>renderedPlayer.evaluate(video=>
-    video instanceof HTMLVideoElement&&video.currentSrc.startsWith('blob:')&&
+    video instanceof HTMLVideoElement&&
+    (video.currentSrc.startsWith('blob:')||video.srcObject instanceof Blob)&&
     video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
     {timeout:20000}).toBe(true);
-  await expect.poll(()=>readyPlayer.evaluate(video=>
-    video instanceof HTMLVideoElement&&video.currentSrc.startsWith('blob:')&&
-    video.readyState>=1&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
-    {timeout:20000}).toBe(true);
+  await expect(ready).toHaveAttribute('data-ready-state','complete');
   const encodeStarts=await page.evaluate(()=>window.__hhTestEncodeStarts);
   assert.equal((encodeStarts?.mediaRecorderStarts||0)+
     (encodeStarts?.videoEncoderConfigurations||0),1,
@@ -83,11 +75,14 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
     assert.equal(downloads,0,'GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN');
   }finally{page.off('download',onDownload);}
   const movie=await page.evaluate(async()=>{
-    const video=document.querySelector('[data-mandala-video-preview]');
-    if(!(video instanceof HTMLVideoElement)||!video.currentSrc.startsWith('blob:')||
+    const video=document.querySelector('[data-video-ready] video[data-mandala-video-preview]');
+    if(!(video instanceof HTMLVideoElement)||
        video.readyState<2||video.videoWidth===0||video.videoHeight===0||video.error)
       throw Error('REAL_GUEST_VIDEO_NOT_DECODED');
-    const blob=window.__hhTestRecordedVideoBlobs?.get(video.currentSrc);
+    const captured=window.__hhTestRecordedVideoBlobs;
+    const blob=video.srcObject instanceof Blob
+      ? [...(captured?.values()||[])].find(item=>item===video.srcObject)
+      : captured?.get(video.currentSrc);
     if(!(blob instanceof Blob))throw Error('REAL_GUEST_VIDEO_BLOB_MISSING');
     if(blob.size<20000||blob.size>100000000)throw Error('REAL_GUEST_VIDEO_BYTES_INVALID');
     const dataUrl=await new Promise((resolve,reject)=>{

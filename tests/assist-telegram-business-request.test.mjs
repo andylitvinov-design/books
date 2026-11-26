@@ -108,12 +108,19 @@ test('subsequent private Telegram Business messages are accepted but forwarded/o
  const follow=fixture();follow.business_message.text='Подтвердить';
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.request,null);
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.text,'Подтвердить');
+ const long=fixture();long.business_message.text='x'.repeat(801);
+ const large=telegramBusinessMessageFromUpdate(long);
+ assert.equal(large?.longText,true);
+ assert.equal(large?.text.length,800);
+ assert.equal(large?.request,null);
+ const media=fixture();delete media.business_message.text;
+ media.business_message.sticker={file_id:'fixture'};
+ assert.equal(telegramBusinessMessageFromUpdate(media)?.mediaKind,'sticker');
  for(const change of [
    v=>{v.business_message.forward_origin={type:'user'}},
    v=>{v.business_message.sender_business_bot={id:77}},
    v=>{v.business_message.chat.type='group'},
    v=>{v.business_message.from.id=999},
-   v=>{v.business_message.text='x'.repeat(801)},
    v=>{v.business_message.date=0},
    v=>{v.update_id=0.4},
  ]){
@@ -384,7 +391,19 @@ test('first signed Telegram Business enquiry sends the existing female avatar ex
  const photo=route.indexOf('await sendHolisticBusinessWelcomePhoto(',first);
  const message=route.indexOf('await sendHolisticBusinessRequestReply(',first);
  assert.ok(first>0&&photo>first&&message>photo,'must await photo first, then send text');
- assert.ok(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1)<0,'welcome only in first request branch');
+ // A first general CRM enquiry has a separate photo-before-menu path.
+ // The structured service path returns before the general path, so a
+ // single signed update cannot reach both photo sends.
+ const general=route.indexOf('if(businessLead?.created)',message);
+ const serviceReturn=route.indexOf('return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})',message);
+ const generalPhoto=route.indexOf('await sendHolisticBusinessWelcomePhoto(',general);
+ const generalMessage=route.indexOf('await sendHolisticBusinessRequestReply(',generalPhoto);
+ assert.ok(general>message&&serviceReturn>message&&serviceReturn<general,'service reply must return before general welcome');
+ assert.ok(generalPhoto>general&&generalMessage>generalPhoto,'general first contact sends photo before text');
+ assert.equal(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1),generalPhoto,'no additional photo in service or secretary paths');
+ assert.equal(route.indexOf('await sendHolisticBusinessWelcomePhoto(',generalPhoto+1),-1,'no further welcome photo sends');
+ assert.match(route.slice(generalPhoto,generalMessage),/generalWelcome:true/);
+ assert.match(route.slice(generalMessage,generalMessage+350),/welcomeLocale:welcome.locale/);
  assert.match(route,/HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED/);
 });
 

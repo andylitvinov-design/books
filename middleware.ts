@@ -43,10 +43,17 @@ export async function middleware(request: NextRequest) {
   }
   // Only anonymous-safe direct HTML Home requests. RSC, client navigation,
   // explicit full React Home and ALL app/account routes bypass this gate.
-  const fastLocale = instantHomeLocale({
-    pathname:request.nextUrl.pathname,method:request.method,
-    headers:request.headers,searchParams:request.nextUrl.searchParams,
-  })
+  // OWNER-APPROVED_HOME_RESTORE_20261120: PR #5214 shipped the new React UI,
+  // but the legacy CDN HTML was still rewriting the public EN/RU home by default.
+  // Keep one canonical home view across EN/RU/ES. An explicit *new*, verified
+  // legacy opt-in is required for performance experiments; never silently
+  // replace the approved persona hero, wide Ali composer and mobile cards.
+  const fastLocale = process.env.HH_ENABLE_LEGACY_INSTANT_HOME === 'true'
+    ? instantHomeLocale({
+        pathname:request.nextUrl.pathname,method:request.method,
+        headers:request.headers,searchParams:request.nextUrl.searchParams,
+      })
+    : null
   if (fastLocale) {
     const requested = request.nextUrl.searchParams.get('lang')
     if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))
@@ -126,6 +133,11 @@ export async function middleware(request: NextRequest) {
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = pathname === '/admin/videos'
   const materialLibraryPage = pathname === '/admin/materials'
+  // Only the six-persona My Coach session may establish Gemini's direct
+  // constrained, short-lived WebSocket. Other private pages stay same-origin.
+  const geminiCoachLiveSocket = /^\/(en|ru|es)\/coaching\/sessions\/?$/.test(pathname) &&
+    process.env.HH_MY_COACH_GEMINI_LIVE_FREE_ENABLED === 'true'
+  const geminiCoachLiveOrigin = geminiCoachLiveSocket ? ' wss://generativelanguage.googleapis.com' : ''
   const liveAudioPage = /^\/(en|ru|es)\/live(?:\/host)?\/?$/.test(pathname)
   const liveAudioOrigin = (() => {
     if (!liveAudioPage || process.env.HH_LIVE_AUDIO_ENABLED !== 'true') return ''
@@ -143,7 +155,7 @@ export async function middleware(request: NextRequest) {
   const reikiIntroAudioManager = /^\/admin\/materials\/courses\/reiki-practitioner\/?$/.test(pathname)
   const coachingOwnerAudioManager = /^\/admin\/materials\/coaching\/(egyptian|greek)\/?$/.test(pathname)
   const coachingLearnerAudioPlayer = /^\/(en|ru)\/app\/coaching\/(egyptian|greek)\/?$/.test(pathname)
-  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/learn\/?$/.test(pathname)
+  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/(?:learn|daybook)\/?$/.test(pathname)
   // Only the authenticated course editor and published standalone course player
   // can fetch signed media from the dedicated PRIVATE educational Storage bucket.
   const practitionerCourseEditor = /^\/(en|ru|es)\/app\/practice\/?$/.test(pathname)
@@ -192,10 +204,11 @@ export async function middleware(request: NextRequest) {
         ? ' ' + url.origin : ''
     } catch { return '' }
   })()
-  // Signed user-owned portrait URLs are exposed only inside the authenticated My Videos cabinet.
+  // Signed user-owned photos are displayed by the same private photo library
+  // in My Videos and in Video Studio. The API still requires the owner's session.
   const privateSupportPhotoCabinet = /^\/(en|ru|es)\/app\/videos\/?$/.test(pathname)
   const privateSupportPhotoOrigin = (() => {
-    if (!privateSupportPhotoCabinet) return ''
+    if (!privateSupportPhotoCabinet && !publicMandalaLocalImages) return ''
     try {
       const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
       return url.protocol === 'https:' && /^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)
@@ -290,6 +303,9 @@ export async function middleware(request: NextRequest) {
   const eventsPosterImageOrigin = /^\/(en|ru|es)\/events(?:\/[^/]+)?\/?$/.test(pathname)
     ? ' https://img.evbuc.com https://cdn.evbuc.com' : ''
   // Owner-only private video PUT; never widen client/guest playback CSP.
+  // Read-only weekly Daybook Pexels preview, isolated to signed-in goal plans.
+  const daybookWeeklyImageOrigin = /^\/(en|ru)\/app\/my-coaching-plan\/?$/.test(pathname)
+    ? ' https://images.pexels.com' : ''
   const externalVideoUploadOrigin = (() => {
     if ((process.env.HH_CLIENT_DELIVERY_ENABLED!=='true'&&!materialLibraryPage) ||
       process.env.HH_CLIENT_VIDEO_EXTERNAL_ENABLED!=='true' ||
@@ -300,7 +316,25 @@ export async function middleware(request: NextRequest) {
       return ' https://'+process.env.HH_CLIENT_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com'
     return ''
   })()
-  const cspClass = liveAudioPage ? 'live-audio'
+  // A single authenticated synthetic avatar lab may contact only avatar transport.
+  const ownerAvatarPilotPage = /^\/admin\/coach-live-avatar\/?$/.test(pathname) && process.env.HH_COACH_AVATAR_PILOT==='owner-free-only'
+  const ownerAvatarPilotOrigin = ownerAvatarPilotPage ? (() => {
+    let extra=''
+    try{const u=new URL(process.env.HH_COACH_AVATAR_LIVEKIT_ORIGIN||'');if(u.protocol==='wss:'&&!u.username&&!u.password&&!u.port&&u.pathname==='/'&&!u.search&&!u.hash)extra=' '+u.origin+' https://'+u.host}catch{}
+    return ' wss://api.simli.ai https://api.simli.ai wss://*.livekit.cloud https://*.livekit.cloud'+extra
+  })() : ''
+  const ownerSimliDialoguePage = /^\/(en|ru|es)\/(?:app\/messages|coaching\/sessions)\/?$/.test(pathname) &&
+    process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true' &&
+    process.env.HH_SIMLI_OWNER_DIALOGUE_PILOT==='owner-non-sensitive-only' &&
+    process.env.HH_SIMLI_DIALOGUE_PRIVACY_APPROVED==='true' &&
+    process.env.HH_COACH_AVATAR_PILOT==='owner-free-only' &&
+    process.env.HH_SIMLI_FREE_ACCOUNT_VERIFIED==='true'
+  const ownerLukasVideoCheckPage = /^\/(en|ru|es)\/app\/messages\/?$/.test(pathname) &&
+    process.env.NEXT_PUBLIC_HH_LUKAS_VIDEO_CHECK==='true' &&
+    process.env.HH_COACH_AVATAR_PILOT==='owner-free-only' &&
+    process.env.HH_SIMLI_FREE_ACCOUNT_VERIFIED==='true'
+  const ownerSimliDialogueOrigin = (ownerSimliDialoguePage||ownerLukasVideoCheckPage) ? ' wss://api.simli.ai https://api.simli.ai wss://*.livekit.cloud https://*.livekit.cloud' : ''
+  const cspClass = ownerAvatarPilotPage ? 'owner-avatar-pilot' : liveAudioPage ? 'live-audio'
     : youtubePhoneUploader ? 'youtube-uploader'
     : youtubePracticeUploader ? 'practitioner-youtube'
     : videoManager ? 'video-manager'
@@ -310,10 +344,10 @@ export async function middleware(request: NextRequest) {
           : 'restricted'
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubeOAuthUploadAllowed ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages || supportMobilePublishedMedia || privateSupportPhotoCabinet ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin + privateSupportPhotoOrigin,
+    (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages || supportMobilePublishedMedia || privateSupportPhotoCabinet ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + daybookWeeklyImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin + privateSupportPhotoOrigin,
     youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader || humanSpecialistVideoPage ? ' https://player.vimeo.com' : '') : messengerIntroductionVideo ? "frame-src https://app.heygen.com" : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + humanSpecialistPresentationOrigin  + directMessageStorageOrigin + personalVideoStorage.media + studioMusicStorageOrigin + ((messengerIntroductionVideo||studioIntroductionVideo) ? ' https://resource2.heygen.ai' : ''),
-    "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + personalVideoStorage.connect + studioMusicStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage||ownerAvatarPilotPage||ownerSimliDialoguePage||ownerLukasVideoCheckPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + humanSpecialistPresentationOrigin  + directMessageStorageOrigin + personalVideoStorage.media + studioMusicStorageOrigin + ((messengerIntroductionVideo||studioIntroductionVideo) ? ' https://resource2.heygen.ai' : ''),
+    "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + geminiCoachLiveOrigin + ownerAvatarPilotOrigin + ownerSimliDialogueOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + personalVideoStorage.connect + studioMusicStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)

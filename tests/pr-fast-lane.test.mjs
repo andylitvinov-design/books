@@ -154,6 +154,27 @@ test('single required check co-locates Core proof and real specialist; failed Co
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
+test('CORE merge gate may await slow mandatory WebKit without an early ubuntu-slim termination', () => {
+  const source=workflow('hh-pr-core-release.yml');
+  const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  assert.ok(gate, 'the real protected merge gate must exist');
+  const runner=gate.match(/^    runs-on: ([^\n]+)$/m)?.[1] ?? '';
+  const budget=gate.match(/^    timeout-minutes: ([^\n]+)$/m)?.[1] ?? '';
+  for (const line of [runner,budget]) {
+    assert.match(line, /needs\.scope\.outputs\.route == 'ASSETS'/);
+    assert.match(line, /needs\.scope\.outputs\.route == 'TEXT'/);
+    assert.doesNotMatch(line, /needs\.scope\.outputs\.route == 'CORE'/,
+      'CORE must never inherit a 12-minute timeout or the 15-minute ubuntu-slim hard limit');
+  }
+  assert.match(runner,/ubuntu-slim.*ubuntu-24\.04/);
+  assert.match(budget,/&& 12 \|\| 45/,
+    'ASSETS/TEXT retain short budget, while CORE/DOCK/FULL keep 45 minutes');
+  assert.match(gate,/^    needs: \[scope\]$/m);
+  assert.match(gate,/Fail closed if mandatory Core failed/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true|timeout-minutes:\s*0/);
+});
+
 test('PR automation policy and agent entry point require specialist safety gates', () => {
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
@@ -464,7 +485,12 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
       (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-support-second-screen.test.mjs') &&
         s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
-    assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
+    assert.ok(patterns.includes('package-lock.json'), name + ' lost dependency lockfile coverage');
+    if (name === 'hh-billing-isolated.yml') {
+      assert.ok(patterns.includes('package.json'), name + ' retains the reviewed monetization-script route');
+    } else {
+      assert.ok(!patterns.includes('package.json'), name + ' must not fan out from a Core-covered package-only script edit');
+    }
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }
 });
@@ -499,7 +525,17 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
     assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
   }
   assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
-  assert.match(ia, /run: npm run build/);
+  // IA must always perform real compilation before its isolated browser run.
+  // The reviewed exact Messenger UI lane reuses only Core prebuild tests/lint;
+  // all unproven candidates must still execute the original complete build.
+  const build=ia.split('- name: Real IA browser build with verified Core prebuild reuse')[1]
+    ?.split('- name: Full TypeScript outside production PR')[0];
+  assert.ok(build, 'IA real build step must remain');
+  assert.match(build, /steps\.dock-scope\.outputs\.dock_only != 'true'/);
+  assert.match(build, /if node --input-type=commonjs - <<'HH_IA_CORE_PROOF'/);
+  assert.match(build, /then\s+echo[^\n]*\n[\s\S]*?\.\/node_modules\/\.bin\/next build --no-lint\s+else\s+npm run build\s+fi/);
+  assert.match(build, /HEAD\^1/);
+  assert.match(build, /HEAD\^2/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
 
@@ -828,9 +864,10 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   const macosCondition=macos.match(/^    if: (.+)$/m)?.[1];
   assert.ok(macosCondition?.includes("github.event_name == 'pull_request' && github.event.pull_request.draft == false"),
     'macOS WebKit requires a non-Draft PR');
-  for (const prefix of requiredPrefixes)
-    assert.ok(macosCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
-      'macOS WebKit may not skip '+prefix);
+  assert.ok(macosCondition.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'WebKit eligibility must be computed from changed files on trusted tested BASE');
+  assert.match(yaml,/media_required: \$\{\{ steps\.media_gate\.outputs\.media_required \}\}/,
+    'preflight must publish real exact-merge impact');
   for (const contract of [
     'runs-on: macos-15', 'HH_VOICE_E2E_ENGINE: webkit',
     "HH_VOICE_E2E_HEADED: '1'", 'node scripts/verify-affirmation-voice-browser.mjs',

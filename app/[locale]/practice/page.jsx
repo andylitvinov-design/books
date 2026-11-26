@@ -2,6 +2,13 @@ import { notFound } from 'next/navigation'
 import PracticeShowcase from '@/components/practice-showcase'
 
 const SUPPORTED_LOCALES = ['en', 'ru', 'es']
+function publicPresentationStorageOrigin() {
+  try {
+    const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
+    return url.protocol === 'https:' && !url.username && !url.password && url.pathname === '/' &&
+      !url.search && !url.hash ? url.origin : ''
+  } catch { return '' }
+}
 
 // This page must render with the per-request CSP nonce from the root layout.
 // Static HTML drops the nonce under strict-dynamic, blocking hydration and ALL buttons.
@@ -31,5 +38,7 @@ export async function generateMetadata({ params }) {
 export default async function PracticePreviewPage({ params }) {
   const { locale } = await params
   if (!SUPPORTED_LOCALES.includes(locale)) notFound()
-  return <PracticeShowcase locale={locale} />
+  const presentationStorageOrigin = publicPresentationStorageOrigin()
+  if (!presentationStorageOrigin) return <PracticeShowcase locale={locale} />
+  return <PracticeShowcase locale={locale} presentationStorageOrigin={presentationStorageOrigin} />
 }
