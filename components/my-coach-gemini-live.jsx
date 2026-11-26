@@ -464,12 +464,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const preceding=r.history.slice(-10)
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
-    propsRef.current.onInputFinal?.(value)
+    if(propsRef.current.onInputFinal?.(value)===true){stop();return true}
     r.openingHistory.push(value)
     r.openingHistory=r.openingHistory.slice(0,33)
     r.lastAssistantTurnFinished=false
     r.pendingDirectorHint=''
     void checkpoint(r,value,preceding)
+    return false
   }
   function commitOutput(r){
     const value=audioTranscription(r.outputText)
@@ -868,12 +869,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     const allowAudio=r.audioGate.accept(frame)
     if(frame.output&&allowAudio){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
       propsRef.current.onOutputInterim?.(r.outputText)
     }
     if(frame.audio?.length){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       if(allowAudio){
         r.replyWatch?.touch()
         let outcome='dropped'
@@ -892,7 +893,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }
     }
     if(frame.turnComplete){
-      if(r.inputText)commitInput(r)
+      if(r.inputText&&commitInput(r))return
       r.modelTurnComplete=true
       finishAudibleTurn(r)
     }
@@ -1260,7 +1261,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
-    propsRef.current.onInputFinal?.(body)
+    if(propsRef.current.onInputFinal?.(body)===true){stop();return true}
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
     r.lastAssistantTurnFinished=false
