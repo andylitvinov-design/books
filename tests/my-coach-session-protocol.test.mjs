@@ -1,4 +1,5 @@
-import {coachCourseProtocolSchema,coachCourseProtocolGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolSchema,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
 import {COACH_COURSE_SESSIONS,COACH_PROGRAM_SESSIONS,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -413,4 +414,43 @@ test('every thematic course has distinct versioned multilingual checkpoints shar
  assert.equal(coachCourseProtocolSchema('meaning_axes_inner_growth'),null)
  assert.equal(coachCourseProtocolSchema('constructor'),null)
  assert.equal(coachCourseProtocolGuidance('unknown','ru'),'')
+})
+
+test('thematic checkpoint captures a visible question candidate without automatic confirmation',()=>{
+ const course='goal_result',q=coachCourseProtocolSchema(course,'en').checkpoints.find(x=>x.id==='goal').question
+ const turns=[{role:'assistant',content:q},{role:'user',content:'I want to open a new studio.'}]
+ const row=coachCourseProtocolRows(course,turns,null,'en').find(x=>x.id==='goal')
+ assert.equal(row.status,'needs_confirmation')
+ assert.equal(row.turnIndex,1)
+ assert.equal(row.questionTurnIndex,0)
+ const interrupted=coachCourseProtocolRows(course,[{...turns[0],interrupted:true},turns[1]],null,'en').find(x=>x.id==='goal')
+ assert.notEqual(interrupted.source,'visible_prompt_candidate')
+ assert.equal(interrupted.status,'needs_confirmation')
+ const repair=coachCourseProtocolRows(course,[turns[0],{role:'user',content:'Please repeat it'}],null,'en').find(x=>x.id==='goal')
+ assert.equal(repair.status,'not_explored')
+})
+test('explicit course review binds exact client quote, retains correction history and skip, rejects forged or foreign source',()=>{
+ const course='goal_result',obj={...sample(),courseSessionId:course}
+ let review=appendCoachCourseFieldReview(null,course,obj.turns,'goal','turn:0')
+ review=appendCoachCourseFieldReview(review,course,obj.turns,'goal','turn:2')
+ review=appendCoachCourseFieldReview(review,course,obj.turns,'success','skip')
+ const record=normalizeMyCoachProtocol({...obj,courseFieldReview:review})
+ assert.equal(record.courseFieldReview.events.length,3)
+ assert.equal(record.courseFieldReview.events[0].quote,obj.turns[0].content)
+ assert.equal(record.courseFieldReview.events[1].revision,2)
+ const rows=coachCourseProtocolRows(course,record.turns,record.courseFieldReview,'ru')
+ assert.equal(rows.find(x=>x.id==='goal').quote,obj.turns[2].content)
+ assert.equal(rows.find(x=>x.id==='goal').source,'client_reviewed_quote')
+ assert.equal(rows.find(x=>x.id==='success').status,'skipped_by_client')
+ assert.deepEqual(normalizeMyCoachProtocol(record),record)
+ assert.throws(()=>appendCoachCourseFieldReview(review,course,obj.turns,'goal','turn:1'),/MY_COACH_PROTOCOL_INVALID/)
+ assert.throws(()=>normalizeCoachCourseFieldReview(review,'business_design',obj.turns),/MY_COACH_PROTOCOL_INVALID/)
+ const tampered=structuredClone(review);tampered.events[0].quote='Invented quote'
+ assert.throws(()=>normalizeMyCoachProtocol({...obj,courseFieldReview:tampered}),/MY_COACH_PROTOCOL_INVALID/)
+ assert.equal(normalizeMyCoachDraft({courseSessionId:course,protocol:record}).protocol.courseFieldReview,undefined)
+ const report=myCoachProtocolPdfOptions(record,{locale:'en',documentKind:'protocol'})
+ assert.match(report.protocolOverview,/Client-reviewed quote \(not server-issued question proof\)/)
+ assert.match(report.protocolOverview,/Skipped by client/)
+ assert.ok(report.protocolOverview.includes(obj.turns[2].content))
+ assert.equal(myCoachProtocolPdfOptions(record,{documentKind:'transcript'}).protocolOverview,'')
 })
