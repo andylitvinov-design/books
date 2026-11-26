@@ -1,0 +1,23 @@
+# My Coach — Emotional Reaction Director V1
+
+**Scope:** the existing canonical My Coach voice/text session, all seven prerecorded personas; Caesar's Simli/live path is separate. This is a local visual observer, not an emotion recognizer, diagnosis, new voice engine, or a separate coach.
+
+## Flow
+
+The current speech engine remains the sole owner of input/output audio, mic permission, barge-in, transcript and session time. The director receives the real voice phase, existing normalized mic level, current interim/final text and existing reviewed reply cues. It emits a bounded visual intent, actor and reason (no raw conversation in media diagnostics). No extra LLM calls, microphone capture, analytics, storage, external media fetches or additional subscriptions.
+
+- Idle/open mic without speech → presence. Client speech (120ms onset, 450ms quiet hysteresis, 750ms stale expiry) → listening/interest. Actual coach output has priority over microphone level; waiting for output → thinking.
+- Explicit discomfort/safety → calm contact hold, before any positive reaction. This is a conservative reading of words, not a conclusion about the client's feelings. Unsupported empathy/understanding actions are not invented.
+- Positive support is one-shot per client turn and requires an explicit progress cue and appropriate coach reply. Greeting once per mounted session. No automatic smile during distress. Long, unsupported or failed actions fall back to the verified contact frame or a suitable available neutral take.
+- Two muted video layers, no lip-sync claim. Preload the desired next take; at the actual ended boundary re-evaluate latest intent. Retain outgoing last frame until valid incoming clip is ready and playing. Reject wrong resolution/currentSrc, incompatible anchor, and failed assets. For safety, pause, reduced motion, offscreen or hidden tab, the visual hold takes precedence over continuity. No audio delay when video is late. Exact decoded endpoints were validated offline; real iPhone normal-speed continuity still needs acceptance.
+
+## V4 first-party activation
+
+The manifest lists the 15 original-camera V4 blocks, seven verified PNG anchors and exact hashes, from #5587 comment 7195565839. The 13 alternate-camera blocks are preserved in the existing HeyGen archive and MUST NOT be mixed into a primary cycle. Current repository does not contain the new binary files. The source-only director is wired now; until an authorized media import, it uses the existing first-party legacy player and the new speech/cue decision, not fake V4 URLs. The legacy player is not certified seamless.
+
+1. In an authorized network-enabled checkout recover the original PNG + MP4 files from the existing HeyGen asset IDs. The PNG must be the exact archive PNG (provider image CDN may transcode); use the archived ZIP c80fe494e2604c6d9f182a52d9df5339. Use fresh signed video URLs only for one-time download, not runtime or build-time dependencies.
+2. Name files exactly as the existing registry functions specify. Run `node scripts/stage-coach-reactions-v4.mjs /path/to/downloads`. Optionally supply one or more known coach IDs. Every file and anchor is verified by SHA-256 before the allowlist is updated; no network inside the script.
+3. Commit the verified first-party files and generated allowlist together through the existing protected publication process. Run the existing coaching release suite; it validates every enabled asset hash. Do not override the low-resolution legacy archive or add a provider dependency.
+4. Real-device QA: 20-minute EN/RU/ES conversation, typed and spoken inputs, silence, actual TTS playback, interruption, pause/resume, reduced motion, hidden tab, slow network, all same-anchor transitions and repeated reactions, no audio gaps or duplicated mic ownership. Verify actual videoWidth/videoHeight/currentSrc and V4 mode; do not label legacy fallback V4. Use existing scheduled publisher; no extra paid build or Vercel Sandbox.
+
+Primary coverage is still limited: Merlin has one original greeting, Harry and Samir three blocks each, the other four two each. Do not claim six/eight distinct reactions per coach yet. Fill semantic gaps and adapt alternate takes in a separately reviewed media release. Long greeting/encouragement blocks can defer a visual switch until their endpoint; audio never waits for them. Maintain existing originals. No new media generation in this change.

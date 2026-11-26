@@ -1,11 +1,14 @@
 'use client'
-import {useEffect,useRef,useState} from 'react'
+import {useEffect,useMemo,useRef,useState} from 'react'
 import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {coachNaturalTake,coachNaturalVideoPath,coachVideoPosterPath} from '@/lib/coaching/coach-natural-motion.mjs'
 import styles from './my-coach-motion-media.module.css'
 import SamirMotionVideos from './samir-motion-videos'
 import {samirMotionTake} from '@/lib/coaching/samir-motion.mjs'
+import {releasedReactionMedia} from '@/lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_RELEASED} from '@/lib/coaching/coach-reaction-v4-release.mjs'
+import CoachReactionDirectorMedia from './coach-reaction-director-media'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -15,7 +18,7 @@ const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
 // Samir's third, no-speech MP4 is owner-approved, not the rejected talking clip.
 
 // Decorative silent video. Never synthesizes facial movement or reads audio.
-export default function MyCoachMotionMedia({personaId,phase='idle',context='card',className='',scene}){
+export default function MyCoachMotionMedia({personaId,phase='idle',context='card',className='',scene,reactionIntent}){
   const containerRef=useRef(null)
   const videoRef=useRef(null)
   const [motionAllowed,setMotionAllowed]=useState(false)
@@ -26,9 +29,14 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
-  const state=PHASES.has(phase)?phase:'idle'
+  const directorActive=context==='session'&&Boolean(reactionIntent)
+  const released=useMemo(()=>directorActive?releasedReactionMedia(personaId,REACTION_V4_RELEASED):null,[directorActive,personaId])
+  const phaseState=PHASES.has(phase)?phase:'idle'
+  const state=directorActive&&phaseState==='listening'&&reactionIntent.speaker==='none'?'idle':phaseState
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
-  const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
+  const visualScene=directorActive?normalizeCoachVisualScene(reactionIntent.scene,fallbackScene):
+    state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
+  const protectedHold=directorActive&&['hold','empathy'].includes(reactionIntent.kind)
   const clip=personaId==='harry'?coachVisualClip(state,visualScene):coachNaturalTake(state,visualScene)
   const samirTake=isGenie?samirMotionTake(state,visualScene):null
   const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':personaId==='caesar'?MEDIA_ROOT+'caesar-emblem.svg':MEDIA_ROOT+personaId+'-still.webp'):null
@@ -41,7 +49,9 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     coachNaturalVideoPath(personaId,state,visualScene))):null
 
   const framePoster = coachVideoPosterPath(src)
-  const poster = framePoster && framePoster !== missingPoster ? framePoster : fallbackPoster
+  const preferredPoster=released?.poster||framePoster
+  const poster=preferredPoster&&preferredPoster!==missingPoster?preferredPoster:fallbackPoster
+  const mediaIdentity=released?.anchorHash||src
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -73,8 +83,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     observer.observe(node)
     return()=>observer.disconnect()
   },[personaId,supported])
-  useEffect(()=>{setVideoReady(false)},[src,personaId])
-  const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible
+  useEffect(()=>{setVideoReady(false)},[mediaIdentity,personaId])
+  const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible&&(Boolean(released)||!protectedHold)
   useEffect(()=>{
     const video=videoRef.current
     if(!video)return
@@ -85,19 +95,22 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
-    data-coach-motion-state={state} data-coach-motion-clip={isGenie?samirTake:hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v2':personaId==='harry'?harryClip:clip):'still'}
-    data-coach-natural-performance={isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
+    data-coach-motion-state={state} data-coach-motion-clip={released?'reaction-v4':isGenie?samirTake:hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v2':personaId==='harry'?harryClip:clip):'still'}
+    data-coach-reaction-mode={directorActive?(released?'v4':'legacy'):undefined}
+    data-coach-reaction-kind={directorActive?reactionIntent.kind:undefined}
+    data-coach-reaction-speaker={directorActive?reactionIntent.speaker:undefined}
+    data-coach-natural-performance={released?'reaction-v4':isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={isGenie&&context==='greeting'?'high':undefined}
-      onError={poster===framePoster?()=>setMissingPoster(framePoster):undefined} />
-    {shouldPlay&&(isGenie
+      onError={poster===preferredPoster?()=>setMissingPoster(preferredPoster):undefined} />
+    {released?<CoachReactionDirectorMedia key={released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={setVideoReady} />:shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={state==='idle'||state==='greeting'} onReady={setVideoReady} />
       : <video key={src} ref={videoRef} className={styles.video}
           src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
           controls={false} disablePictureInPicture
           onPlaying={()=>setVideoReady(true)} onError={()=>setVideoReady(false)} />)}
-    {motionAllowed&&hasVideo&&(isGenie||!['greeting','session','hero'].includes(context))&&<span className={styles.sceneGraphics}>
+    {motionAllowed&&hasVideo&&!released&&!protectedHold&&(isGenie||!['greeting','session','hero'].includes(context))&&<span className={styles.sceneGraphics}>
       <span className={styles.sceneHalo}/><span className={styles.sceneArc}/>
       <span className={styles.scenePoint}/>
     </span>}
