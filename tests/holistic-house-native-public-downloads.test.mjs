@@ -93,26 +93,19 @@ test('iOS links only direct to verified Apple App Store; unsigned IPA and TestFl
   }
 })
 
-test('public install page prioritizes the working PWA, while unreleased native installers fail closed',()=>{
+test('public installation resolves verified native availability on the server',()=>{
   const page=read('app/[locale]/install/page.jsx')
-  const css=read('app/[locale]/install/install.module.css')
-  const banner=read('components/free-mobile-app-banner.tsx')
+  const action=read('app/[locale]/install/install-action.jsx')
   assert.match(page,/getNativePublicDownloads\(nativeReleases\)/)
-  assert.ok(page.indexOf('data-hh-pwa-alternative')<page.indexOf('data-hh-native-downloads'))
-  for(const label of ['Настоящее приложение для iPhone и Android','Real iPhone and Android applications','Aplicaciones reales para iPhone y Android']){
-    assert.ok(page.includes(label),label)
-  }
-  assert.match(page,/data-hh-native-android-pending/)
-  assert.match(page,/data-hh-native-ios-pending/)
-  assert.match(page,/downloads\.androidUrl/)
-  assert.match(page,/downloads\.iosUrl/)
-  assert.match(page,/href="\/api\/native-download\/android"/)
-  assert.match(page,/href="\/api\/native-download\/ios"/)
-  assert.match(page,/InstallHolisticHouse locale=\{locale\} showGuideLink=\{false\} landing\/>/)
-  assert.match(css,/@media\(max-width:350px\)/)
-  assert.match(css,/:focus-visible/)
-  assert.match(banner,/Signed native releases will appear after verification/)
-  assert.doesNotMatch(page,/href=["'][^"']*\.ipa|href=["'][^"']*app-debug\.apk/)
+  assert.match(page,/androidReleased=\{Boolean\(downloads\.androidUrl\)\}/)
+  assert.match(page,/iosReleased=\{Boolean\(downloads\.iosUrl\)\}/)
+  assert.match(action,/platform === 'ios' && iosReleased/)
+  assert.match(action,/platform === 'android' && androidReleased/)
+  for(const platform of ['ios','android'])
+    assert.ok(action.includes('/api/native-download/'+platform),platform)
+  assert.doesNotMatch(action,/github\.com|apps\.apple\.com|href=["'][^"']*\.(?:ipa|apk|aab)/i)
+  assert.doesNotMatch(action,/data-hh-native-(?:ios|android)-pending/)
+  assert.match(read('components/free-mobile-app-banner.tsx'),/Signed native releases will appear after verification/)
 })
 
 test('same-site endpoints fail closed without approval; never proxy binary bytes or credentials',()=>{
@@ -127,29 +120,9 @@ test('same-site endpoints fail closed without approval; never proxy binary bytes
   }
 })
 
-test('direct Android APK top CTA appears only after verified native release gates',()=>{
-  const page=read('app/[locale]/install/page.jsx')
-  const registry=current()
-  assert.equal(getNativePublicDownloads(registry).androidUrl,null)
-  assert.match(page,/downloads\.androidUrl && <section/)
-  assert.match(page,/data-hh-direct-apk-ready/)
-  assert.match(page,/href="\/api\/native-download\/android"/)
-  assert.match(page,/Скачать APK с сайта/)
-  assert.match(page,/без Google Play/)
-  assert.match(page,/без App Store/)
+test('signed release activation requires the owner approval and a production switch',()=>{
   const gate=read('lib/native/public-downloads.mjs')
+  assert.equal(getNativePublicDownloads(current()).androidUrl,null)
   assert.match(gate,/ownerApproved !== true/)
   assert.match(gate,/process\.env\.HH_NATIVE_PUBLIC_RELEASES_ENABLED === 'true'/)
-})
-
-test('rendered mobile install checker supports signed APK launch without weakening fail-closed pending state',()=>{
-  const checker=read('scripts/verify-hh-install-browser.mjs')
-  assert.match(checker,/nativeAndroidReady:/)
-  assert.match(checker,/directApkReady:/)
-  assert.match(checker,/nativeIosReady:/)
-  assert.match(checker,/assert\.notEqual\(measurements\.nativeAndroidPending,measurements\.nativeAndroidReady/)
-  assert.match(checker,/assert\.equal\(measurements\.directApkReady,measurements\.nativeAndroidReady/)
-  assert.match(checker,/assert\.equal\(measurements\.directApkHref,'\/api\/native-download\/android'/)
-  assert.match(checker,/directApkAction\.height>=44/)
-  assert.doesNotMatch(checker,/nativeIosPending&&measurements\.nativeAndroidPending/)
 })

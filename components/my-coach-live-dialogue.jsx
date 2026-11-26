@@ -5,7 +5,7 @@ import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
-import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -188,9 +188,9 @@ const voiceGateText={
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
 const keyInfoCopy={
-  en:{title:'Key Information',show:'Show key information',hide:'Hide key information',finish:'End session and open summary',goal:'Goal / Result',motivation:'Motivation',obstacles:'Obstacles',resources:'Resources',situation:'Current Situation',nextSteps:'Next Steps',complete:'Captured',partial:'Partly clarified',missing:'Not yet clarified'},
-  ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Завершить сессию и открыть резюме',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
-  es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Finalizar sesión y abrir resumen',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
+  en:{title:'Key Information',show:'Show key information',hide:'Hide key information',finish:'Session Insight',goal:'Goal / Result',motivation:'Motivation',obstacles:'Obstacles',resources:'Resources',situation:'Current Situation',nextSteps:'Next Steps',complete:'Captured',partial:'Partly clarified',missing:'Not yet clarified'},
+  ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Инсайт сессии',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
+  es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Insight de sesión',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
 }
 const protocolCopy={
   en:{title:'Your session protocol',subtitle:'Review and keep a private record of the conversation.',turns:'Recorded exchanges',empty:'No completed conversation turns to include yet.',download:'Download PDF',print:'Print / Open PDF',save:'Save in my private account',saving:'Saving…',saved:'Saved privately to your account',consent:'I agree to save this complete text dialogue in my private Holistic House account. Audio is not stored.',consentRequired:'Tick the box to save your protocol.',error:'Could not save this report. Download the PDF instead or try again.',pdfError:'Could not create the PDF. Your dialogue is still visible in this tab.',close:'Back to coaches',resume:'Continue conversation',privacy:'Only the conversation shown here is exported. AI suggestions are not confirmed decisions. No recording or hidden AI reasoning is included.',unsent:'There is an unfinished message or reply. Finish it before ending the session.',limit:'The dialogue is full. Finish and export the protocol before continuing.'},
@@ -235,7 +235,7 @@ const sessionRatingCopy={
   es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
 }
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
@@ -243,7 +243,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
   const [greetingAccepted,setGreetingAccepted]=useState(false)
-  const [selectedMethod,setSelectedMethod]=useState('')
+  const [selectedMethod,setSelectedMethod]=useState(()=>methodPreference&&resolveCoachMethodId(personaId,methodPreference)||'')
   const [methodSession,setMethodSession]=useState(null)
   const methodHandshake=useRef(null)
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
@@ -297,6 +297,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [resumeError,setResumeError]=useState(false)
   const [autoSaveStatus,setAutoSaveStatus]=useState('idle')
   const autoSaveRef=useRef(false),autoSaveQueueRef=useRef(null),draftMountedRef=useRef(true)
+  const headerBackPendingRef=useRef(false)
   useEffect(()=>{draftMountedRef.current=true;return()=>{draftMountedRef.current=false}},[])
   const [protocolSummary,setProtocolSummary]=useState('')
   const [protocolNextStep,setProtocolNextStep]=useState('')
@@ -589,7 +590,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
   const visibleStageIndex=meaningProgressValid?meaningProgress.index:
     progressValid?lastRecordedProgress.index:provisionalIndex
-  const visibleMethodId=restoredMethod.current||lastRecordedProgress?.methodId||methodSession?.methodId||selectedMethod||
+  const visibleMethodId=restoredMethod.current||lastRecordedProgress?.methodId||methodSession?.methodId||(protocolOwnerReady&&!greetingAccepted?selectedMethod:'')||
     ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
@@ -1022,7 +1023,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const profile=restoredProfileCheckin.current|| (profileReviewProgress?coachProfileReviewProtocolSnapshot(profileReviewProgress):
         profileProgress&&profileReviewStart===null?coachProfileProtocolSnapshot(profileProgress):null)
       if(profile){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
-    }catch{setAutoSaveStatus('error');return}
+    }catch{setAutoSaveStatus('error');return false}
     if(!autoSaveQueueRef.current)autoSaveQueueRef.current=createCoachDraftQueue(async(revision,snapshot)=>{
       const body=JSON.stringify({action:'checkpoint',consent:true,revision,value:snapshot})
       const response=await fetch('/api/app/my-coach/draft',{
@@ -1035,6 +1036,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       return result
     },state=>{if(draftMountedRef.current&&autoSaveRef.current)setAutoSaveStatus(state)},initialDraftRevision.current)
     autoSaveQueueRef.current.offer(value)
+    return true
   }
   function retainPendingClient(){
     const pendingClient=inFlightClientRef.current
@@ -1400,6 +1402,31 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(protocolOpen||ratingOpen)return
     if(!protocolSaved&&(turnsRef.current.length>0||speechRef.current?.hasLiveSession?.())){event.preventDefault();endWithProtocol()}
   }
+  // Header Back is navigation, never an entry point to the Insight dialog.
+  // With prior private-save consent, wait for the existing checkpoint ACK.
+  async function navigateBackToCoaches(event){
+    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
+    event.preventDefault()
+    if(headerBackPendingRef.current)return
+    headerBackPendingRef.current=true
+    const href=event.currentTarget.href
+    try{
+      speechRef.current?.stop?.()
+      replayControllerRef.current?.abort()
+      replayPlayerRef.current?.cancel()
+      cancelPendingCoachTurn()
+      retainPendingClient()
+      setPaused(true)
+      if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
+        const queued=queuePrivateDraft(turnsRef.current)
+        const revision=queued?await autoSaveQueueRef.current?.flush():null
+        if(!revision&&!window.confirm(({en:'Your latest private checkpoint could not be confirmed. Leave anyway? Cancel to retry.',
+          ru:'Не удалось подтвердить сохранение последних данных. Всё равно выйти? Отмените, чтобы повторить.',
+          es:'No se pudo confirmar el último guardado privado. ¿Salir de todos modos? Cancela para reintentar.'})[lang]))return
+      }
+      window.location.assign(href)
+    }finally{headerBackPendingRef.current=false}
+  }
   function resumeFromProtocol(){
     if(protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
     if(!autoSaveRef.current&&turnsRef.current.at(-1)?.unanswered===true){
@@ -1512,6 +1539,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   const ratingUi=sessionRatingCopy[lang]
   const protocolUi=protocolCopy[lang]
+  // Reuse existing normalized protocol/PDF projection, not a second AI
+  // extractor. The method overview is explicitly provisional, not verified.
+  let insightOverview=''
+  if(protocolOpen&&protocolFinishedAt&&turns.length){
+    try{insightOverview=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang}).protocolOverview||''}catch{/* show unavailable, retain original dialogue */}
+  }
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
@@ -1596,7 +1629,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
-  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Key Insights',summary:'Summary'},ru:{transcript:'Диалог',insights:'Ключевое',summary:'Резюме'},es:{transcript:'Diálogo',insights:'Claves',summary:'Resumen'}}[lang]
+  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Progress',summary:'Insight'},ru:{transcript:'Диалог',insights:'Прогресс',summary:'Инсайт'},es:{transcript:'Diálogo',insights:'Progreso',summary:'Insight'}}[lang]
   function showSessionPanel(panel){
     const root=sessionRootRef.current
     const progress=root?.querySelector('[data-coach-progress-accordion]')
@@ -1615,7 +1648,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
-      <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} aria-label="Holistic House">
+      <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} onClick={keepCoachTab?pauseForNavigation:navigateBackToCoaches} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
       <div className={styles.sessionTopbarActions}>
@@ -1635,7 +1668,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </select>
           </span>
         </label>
-        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={interceptSessionExit} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
+        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={navigateBackToCoaches} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
           <ArrowLeft size={16} aria-hidden="true"/>
           <span className={styles.chooseCoachFull}>{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
           <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
@@ -1881,7 +1914,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <small>{restoredDraft?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
         </button>
         <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
-          <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
+          <FileText size={19} aria-hidden="true"/><span>{lang==='ru'?'Инсайт':lang==='es'?'Insight':'Insight'}</span>
         </button>
       </div>
       {!restoredDraft&&!selectedGeminiEngine&&!liveVoiceSelected&&
@@ -2211,11 +2244,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
-    {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={protocolUi.title} data-my-coach-protocol>
+    {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={keyInfoUi.finish} data-my-coach-protocol>
       <div className={styles.protocolCard}>
-        <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{protocolUi.title}</h2><p>{protocolUi.subtitle}</p></div></div>
+        <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
         <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>
+        {insightOverview?<section className={styles.protocolReview} data-coach-insight-overview>
+          <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
+        </section>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
         {turns.length===0?<p>{protocolUi.empty}</p>:
+          <details data-coach-insight-transcript>
+          <summary>{({en:'View conversation history',ru:'История разговора',es:'Ver historial de conversación'})[lang]}</summary>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
@@ -2226,7 +2264,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {turn.role==='assistant'&&turn.interrupted===true&&<small>{lang==='ru'?'Ответ коуча перебит':lang==='es'?'Respuesta interrumpida':'Coach reply interrupted'}</small>}
               {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
             </article>)}
-          </div>}
+          </div></details>}
         <label className={styles.protocolTextLabel}>{{ru:'Мой итог сессии (необязательно)',en:'My takeaway (optional)',es:'Mi conclusión (opcional)'}[lang]}
           <textarea rows={2} maxLength={1000} value={protocolSummary} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolSummary(e.target.value)} placeholder={{ru:'Что стало яснее?',en:'What is clearer now?',es:'¿Qué quedó más claro?'}[lang]}/>
         </label>

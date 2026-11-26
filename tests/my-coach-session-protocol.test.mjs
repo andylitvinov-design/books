@@ -156,7 +156,7 @@ test('a client topic correction resets old checkmarks and partial evidence is no
   assert.equal(rows.situation.status,'missing')
   assert.ok(!JSON.stringify(rows).includes('change jobs'))
 })
-test('owner mobile design keeps voice controls, back and end-call summary while overlaying the transcript',()=>{
+test('owner mobile design keeps voice controls, back and explicit Insight while overlaying the transcript',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   assert.match(ui,/data-coach-progress-accordion/)
@@ -164,8 +164,8 @@ test('owner mobile design keeps voice controls, back and end-call summary while 
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
   assert.match(ui,/onClick=\{endWithProtocol\}/)
-  assert.match(ui,/<PhoneOff size=\{19\}/)
-  assert.match(ui,/Summary/)
+  assert.match(ui,/<FileText size=\{19\}/)
+  assert.match(ui,/Session Insight/)
   assert.match(ui,/<ArrowLeft size=\{16\}/)
   assert.match(ui,/data-coach-live-wave/)
   assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
@@ -347,4 +347,21 @@ test('active coach browsing preserves original tab; coach profile pauses voice',
   assert.match(profile,/const kept=speechRef\.current\?\.pauseSession\?\.\(\)===true/)
   assert.match(profile,/if\(!kept&&!speechRef\.current\?\.hasLiveSession/)
   assert.match(ui,/if\(!speechRef\.current\?\.hasLiveSession\?\.\(\)\)setVoiceState/)
+})
+
+
+test('introductory protocol uses seven canonical report blocks without fabricating outer ratings',()=>{
+ const obj={...sample(),courseSessionId:'introductory'}
+ const report=myCoachProtocolPdfOptions(obj,{locale:'en'})
+ for(const label of ['Personal Information','Current Situation','Emotional State','Personal Profile','Goals & Motivation','Obstacles & Resources','Conclusions & Next Steps']){
+  assert.ok(report.protocolOverview.includes(label),label)
+ }
+ assert.match(report.protocolOverview,/no verified outer ratings/)
+ assert.match(report.protocolOverview,/Needs confirmation/)
+ assert.doesNotMatch(report.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+})
+test('saved protocol displays the shared normalized PDF overview',()=>{
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/myCoachProtocolPdfOptions\(protocol,\{locale\}\)\.protocolOverview/)
+ assert.match(ui,/data-coach-saved-protocol-overview/)
 })
