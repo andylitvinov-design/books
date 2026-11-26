@@ -52,6 +52,7 @@ import {coachProfileTrackForCourse} from '@/lib/coaching/coach-profile-session-v
 import {coachSavedProfileV3,coachSavedProfileV3Text} from '@/lib/coaching/coach-profile-report-v3.mjs'
 import {recoverPrivateOpeningScope} from '@/lib/personal-coaching/private-draft-resume.mjs'
 import {createCoachDraftQueue} from '@/lib/personal-coaching/protocol-draft-queue.mjs'
+import {coachProtocolCanAppend,coachProtocolRoomForExchange} from '@/lib/personal-coaching/protocol-capture.mjs'
 
 const copy={
   en:{
@@ -281,7 +282,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
-  turnsRef.current=turns
+  // Every transcript mutation updates this ref synchronously before React renders.
   const turnRequestRef=useRef(0)
   const inFlightClientRef=useRef(null) // client message awaiting a genuine coach reply
   const [protocolOpen,setProtocolOpen]=useState(false)
@@ -1030,7 +1031,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
         opening,...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:{}),
         turns:rows.map((row,index)=>({role:row.role,content:row.content,
-          ...(row.role==='user'&&index===rows.length-1?{unanswered:true}:{}),
+          ...(row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}:{}),
           ...(row.role==='assistant'&&row.interrupted===true?{interrupted:true}:{}),
           ...(row.role==='assistant'&&['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
         }))
@@ -1056,12 +1057,26 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function retainPendingClient(){
     const pendingClient=inFlightClientRef.current
-    if(!pendingClient)return
+    if(!pendingClient)return true
+    const rows=turnsRef.current,entry={role:'user',content:pendingClient.message,unanswered:true}
+    if(!coachProtocolCanAppend(rows,[entry])){setError(protocolCopy[lang].limit);return false}
     inFlightClientRef.current=null
-    const rows=turnsRef.current
-    if(rows.length>=160)return
-    const next=[...rows,{role:'user',content:pendingClient.message,unanswered:true}]
+    const next=[...rows,entry]
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+    return true
+  }
+  // The last reply must be captured even if the user leaves before React
+  // commits a render. Do not rotate the archive or discard its first turns.
+  function commitCompletedClientTurn(requestId,message,reply){
+    if(turnRequestRef.current!==requestId||inFlightClientRef.current?.requestId!==requestId)return false
+    const rows=turnsRef.current,entries=[{role:'user',content:message},reply]
+    if(!coachProtocolCanAppend(rows,entries)){
+      retainPendingClient();setError(protocolCopy[lang].limit);return false
+    }
+    const next=[...rows,...entries]
+    inFlightClientRef.current=null
+    turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+    return true
   }
   async function discardPrivateDraft(){
     if(profileV3BusyRef.current)return
@@ -1109,6 +1124,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ...(role==='assistant'?{mode:'ai',inference:{
         provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
         ...(interrupted?{interrupted:true}:{})}:{})}
+    if(!coachProtocolCanAppend(turnsRef.current,[entry])){
+      setError(protocolCopy[lang].limit)
+      queueMicrotask(()=>speechRef.current?.stop?.());return
+    }
     const next=[...turnsRef.current,entry]
     turnsRef.current=next
     setTurns(next)
@@ -1127,8 +1146,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function markCoachSpeechInterrupted(spokenText){
     // The response remains in the report as visible text but is not reused as
     // something the client fully heard. Preserve the production barge-in logic.
-    turnsRef.current=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
-    setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
+    const next=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
+    if(next===turnsRef.current)return
+    turnsRef.current=next;setTurns(next)
+    const waiting=inFlightClientRef.current
+    queuePrivateDraft(waiting?[...next,{role:'user',content:waiting.message,unanswered:true}]:next)
   }
   function cancelPendingCoachTurn(){
     setStreamingPreview('')
@@ -1151,7 +1173,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!message||paused||protocolOpen||(!voiceTurn&&busy))return null
     if(voiceTurn&&pending.current)cancelPendingCoachTurn()
     // Never replace a submitted client utterance just because the previous reply failed.
-    if(inFlightClientRef.current)retainPendingClient()
+    if(inFlightClientRef.current&&!retainPendingClient())return null
     const requestId=++turnRequestRef.current
     const conversationTurns=coachAudibleTurns(turnsRef.current)
     if(turnsRef.current.length>=160){setError(protocolCopy[lang].limit);return null}
@@ -1171,6 +1193,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
     const goalEligible=openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
+    if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
     inFlightClientRef.current={requestId,message}
     queuePrivateDraft([...turnsRef.current,{role:'user',content:message,unanswered:true}])
     // A new focus requires the client to choose which saved topic to use again.
@@ -1201,8 +1224,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Never send saved axis values or unapproved goals/tests to any model.
     if(restoredDraft&&(restoredProfileCheckin.current||restoredProfileProof.current)&&profileSelected&&!localInterruption){
       const answer=({ru:'Сохранённые уточнения осей остаются в протоколе. Для новых оценок требуется отдельная проверка профиля; сейчас можно завершить и сохранить этот разговор.',en:'Your saved axis updates remain in this protocol. New ratings need a separate profile review; you can finish and save this conversation.',es:'Las actualizaciones guardadas siguen en el protocolo. Las nuevas valoraciones necesitan otra revisión; puedes terminar y guardar esta conversación.'})[responseLocale]
-      setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}))return null
       setDraft('');setSpeechPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     if(profileReviewProgress&&!localInterruption){
@@ -1214,11 +1236,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=coachProfileReviewNextReply(upcoming,{
         goals:approvedProfileAudit.goals,measurements:approvedProfileAudit.measurements,
       }).slice(0,900)
-      setTurns(previous=>[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
         role:'assistant',content:answer,locale:responseLocale,mode:'offline',
         stage:'profile_review',
-      }].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      }))return null
       setDraft('');setSpeechPreview('');setError('')
       return {reply:answer,mode:'offline',locale:responseLocale}
     }
@@ -1226,9 +1247,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=({ru:'Доступ к сохранённому профилю недоступен или отозван. Можно снова разрешить просмотр в «Памяти коуча», либо завершить беседу.',
         en:'Saved-profile access is unavailable or withdrawn. You may grant it again in Coach memory, or end the session.',
         es:'No hay acceso al perfil guardado o se revocó. Puedes autorizar de nuevo o terminar.'})[responseLocale]
-      setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',
-        content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',
+        content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}))return null
       setDraft('');setSpeechPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
@@ -1264,17 +1284,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=(offlineOpening?offlineOpening.message:interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
         requestedWrap&&sessionTimebox.offerWrapUp?reflectiveClose:offlinePrompt).slice(0,900)
       const mode=offlineReply.mode||'offline'
-      setTurns(previous=>{
-        const updated=[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
           role:'assistant',content:answer,locale:responseLocale,reflection:offlineReply.reflection||'',
           question:offlinePrompt,
           mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
           stage:offlineReply.stage||semanticStage,
           ...(offlineOpening?{openingProgress:offlineOpening.openingProgress}:{}),
-        }]
-        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
-      })
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      }))return null
       if(mode==='safety'||mode==='boundary')semanticHintsRef.current=[]
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
@@ -1330,7 +1346,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const response=useStreaming
         ?await fetch('/api/app/my-coach/stream',requestOptions)
         :await fetch('/api/app/my-coach/turn',requestOptions)
-      if(response.status===401){setAuthRequired(true);return}
+      if(response.status===401){
+        if(inFlightClientRef.current?.requestId===requestId)retainPendingClient()
+        setAuthRequired(true);return null
+      }
       const result=useStreaming?await readCoachTurnStream(response,{
         signal:controller.signal,
         onApprovedPhrase:phrase=>{
@@ -1353,9 +1372,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         semanticHintsRef.current=[...semanticHintsRef.current.filter(h=>
           h.kind!==hint.kind||h.quote!==hint.quote),hint].slice(-3)
       }
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
-      setTurns(previous=>{
-        const updated=[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
           hypothesis:result.hypothesis||'',mode:result.mode,requestedSavedContext,
           reason:result.offlineReason||'',stage:result.stage||'',
@@ -1365,9 +1382,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           inference:result.mode==='ai'&&['groq','openrouter','gemini_free','gemini_paid'].includes(result.inference?.provider)&&
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
             ?result.inference:null,
-        }]
-        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
-      })
+      }))return null
       setDraft('')
       setSpeechPreview('')
       commitGoalTurn()
@@ -1400,7 +1415,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     cancelPendingCoachTurn()
     // End may cancel a pending model call. Keep the actual last client words,
     // explicitly UNANSWERED; never manufacture an assistant message.
-    retainPendingClient()
+    if(!retainPendingClient())return
     queuePrivateDraft(turnsRef.current)
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
@@ -1414,7 +1429,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function pauseForNavigation(event){
     if(!keepCoachTab||event.defaultPrevented)return
     speechRef.current?.pauseSession?.()
-    queuePrivateDraft(turnsRef.current)
+    const waiting=inFlightClientRef.current
+    queuePrivateDraft(waiting?[...turnsRef.current,{role:'user',content:waiting.message,unanswered:true}]:turnsRef.current)
     void autoSaveQueueRef.current?.flush()
   }
   function interceptSessionExit(event){
@@ -1436,7 +1452,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
       cancelPendingCoachTurn()
-      retainPendingClient()
+      if(!retainPendingClient())return
       setPaused(true)
       if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
         const structured=profileV3Ref.current
@@ -1471,7 +1487,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
-      ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
+      ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
       ...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:
@@ -1481,7 +1497,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
       turns:turns.map((row,index)=>({
         role:row.role,content:row.content,
-        ...(row.role==='user'&&row.unanswered===true&&index===turns.length-1?{unanswered:true}:{}),
+        ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
         ...(row.role==='assistant'?{
           ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
           ...(typeof row.stage==='string'?{stage:row.stage.slice(0,64)}:{}),
@@ -1521,7 +1537,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         const structured=profileV3Ref.current
         if(structured&&!structured.step.closed)draftRevision=structured.revision
         else{
-          queuePrivateDraft(turnsRef.current)
+          if(!queuePrivateDraft(turnsRef.current))throw Error('DRAFT_NOT_SYNCED')
           draftRevision=await autoSaveQueueRef.current?.flush()
         }
         if(draftRevision===null||draftRevision===undefined)throw Error('DRAFT_NOT_SYNCED')
