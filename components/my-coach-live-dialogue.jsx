@@ -16,6 +16,8 @@ import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} 
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
+import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
@@ -612,11 +614,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const currentStage=latestCoachTurn?.stage||'clarify'
   // Read the last Director-authored milestone snapshot; model prose cannot
   // advance the bar. Safety replies with no milestone keep the last step.
-  const lastRecordedProgress=liveVoiceSelected?liveDirectorProgress:
-    [...turns].reverse().find(turn=>
-      turn.role==='assistant'&&turn.sessionProgress?.source==='director-client-evidence')
-      ?.sessionProgress
-  const progressValid=Number.isInteger(lastRecordedProgress?.index)&&
+  const storedDirectorProgress=[...turns].reverse().find(turn=>
+      turn.role==='assistant'&&turn.sessionProgress?.source==='director-client-evidence')?.sessionProgress
+  const lastRecordedProgress=liveVoiceSelected?(liveDirectorProgress||storedDirectorProgress):storedDirectorProgress
+  const progressValid=lastRecordedProgress?.source==='director-client-evidence'&&
+    ['grow','tgrow','woop','oskar','solution_focused','appreciative_inquiry'].includes(lastRecordedProgress.methodId)&&Number.isInteger(lastRecordedProgress?.index)&&
     lastRecordedProgress.index>=0&&lastRecordedProgress.index<=5
   const meaningProgress=lastRecordedProgress?.journey
   const meaningProgressValid=progressValid&&
@@ -631,10 +633,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     commitment:4,integration:4
   }
   const provisionalIndex=fallbackStageIndex[latestCoachTurn?.stage]??0
-  const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
   const visibleStageIndex=meaningProgressValid?meaningProgress.index:
     progressValid?lastRecordedProgress.index:provisionalIndex
-  const visibleMethodId=restoredMethod.current||lastRecordedProgress?.methodId||methodSession?.methodId||(protocolOwnerReady&&!greetingAccepted?selectedMethod:'')||
+  const visibleMethodId=(progressValid?lastRecordedProgress.methodId:null)||restoredMethod.current||methodSession?.methodId||(protocolOwnerReady&&!greetingAccepted?selectedMethod:'')||
     ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
@@ -768,30 +769,35 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{/* Sound is optional; the visual checkpoint is authoritative. */}
   },[openingProgress.lamps.invitation,openingProgress.lamps.identity,
     openingProgress.lamps.focus,openingProgress.lamps.confirmation,sessionClockStarted,paused,voiceState.phase])
-  const openingStepNames={
-    en:['Invitation','Your name','Session continuity','Choose a focus','How you feel','Ready to begin'],
-    ru:['Приглашение','Как обращаться','Продолжение или новая тема','Выбор направления','Как вы себя чувствуете','Начало работы'],
-    es:['Invitación','Tu nombre','Continuidad','Elegir un enfoque','Cómo te sientes','Comenzar']
-  }
-  const openingDescription=openingStepNames[lang][Math.min(5,openingProgress.step-1)]
-  const visibleProgressStep=openingActive?openingProgress.step:profileActive?profileProgress.step:visibleStageIndex+1
-  const visibleProgressTotal=openingActive?6:profileActive?profileProgress.total:visibleStageTotal
-  const visibleProgressName=openingActive?(
-    {ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):profileActive?(
-    {ru:'Личный профиль',en:'Personal profile',es:'Perfil personal'}[lang]):visibleMethodName
-  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
-    legacy:progressValid&&!meaningProgressValid
-  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
+  const openingPosition=openingStagePosition(openingProgress,lang)
+  const profilePosition=profileStagePosition(profileProgress,COACH_PROFILE_AXES,lang)
+  const stageIds=coachSessionVisibleStageIds(visibleMethodId,{legacy:progressValid&&!meaningProgressValid})
+  const stageChecklistTitles=stageIds.map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
     methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
-  const stageDescription=meaningProgressValid
-    ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
-      methodStepTitles[lang]?.[meaningProgress.stageId]||
-      stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
-    :progressValid
-      ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||
-        stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
-      :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
-  const visibleProgressDescription=openingActive?openingDescription:profileActive?(profileProgress?.completed?({ru:'Профиль заполнен',en:'Profile completed',es:'Perfil completado'}[lang]):profileProgress.axisTitle):stageDescription
+  const methodPosition=methodStagePosition(stageIds,stageChecklistTitles,
+    Math.max(0,Math.min(stageIds.length-1,visibleStageIndex)),progressValid,lastRecordedProgress?.completed)
+  const courseRows=openingProgress.completed&&!profileSelected
+    ?coachCourseProtocolRows(selectedCourseId,turns,courseGate?.step.review??courseFieldReview,lang):[]
+  const coursePosition=courseStagePosition(courseRows,{promptId:courseGate?.step.prompt?.fieldId,
+    paused:courseGate?.step.paused,completed:courseGate?.step.completed,
+    allowProvisional:!courseGate&&!courseGateRequired})
+  const savedProfile=profileV3?coachSavedProfileV3(profileV3.protocol,lang):null
+  const savedProfilePosition=savedProfileStagePosition(savedProfile,profileV3?.step,lang)
+  const progressMode=openingActive?'opening':savedProfile?'profile-v3':profileActive?'profile':courseRows.length?'course':'method'
+  const stagePosition=progressMode==='opening'?openingPosition:progressMode==='profile-v3'?savedProfilePosition:
+    progressMode==='profile'?profilePosition:progressMode==='course'?coursePosition:methodPosition
+  const visibleProgressStep=stagePosition.step
+  const visibleProgressTotal=stagePosition.total
+  const visibleProgressName=progressMode==='opening'?({ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):
+    progressMode==='profile-v3'?savedProfile.title:progressMode==='profile'?({ru:'Личный профиль',en:'Personal profile',es:'Perfil personal'}[lang]):
+    progressMode==='course'?({ru:'Пункты протокола',en:'Session checkpoints',es:'Puntos de la sesión'}[lang]):visibleMethodName
+  const stageDescription=methodPosition.rows[methodPosition.index]?.label||methodPosition.rows.at(-1)?.label||''
+  const plannedCourse=progressMode==='course'&&!courseGate&&stagePosition.index>=0
+  const visibleProgressDescription=stagePosition.index>=0?
+    (plannedCourse?({ru:'Ориентир: ',en:'Suggested checkpoint: ',es:'Punto orientativo: '}[lang]):'')+stagePosition.rows[stagePosition.index].label:
+    stagePosition.finished?({ru:'Пункты обработаны',en:'Steps reviewed',es:'Pasos revisados'}[lang]):
+    openingProgress.declined?({ru:'Сессия не начата',en:'Session not started',es:'Sesión no iniciada'}[lang]):
+    ({ru:'Ожидание следующего этапа',en:'Waiting for next step',es:'En espera del siguiente paso'}[lang])
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
@@ -2224,38 +2230,29 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
         aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleProgressStep}
-        data-coach-stage-source={openingActive?'client-evidence-opening':profileActive?'client-evidence-profile':progressValid?'director-client-evidence':'local-provisional'}
+        data-coach-stage-source={progressMode==='opening'?'client-evidence-opening':progressMode==='profile'?'client-evidence-profile':progressMode==='profile-v3'?'saved-profile':progressMode==='course'?(courseGate?'saved-course-gate':'course-review-provisional'):progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
         <summary className={styles.sessionProgressSummary}>
           <div className={styles.sessionProgressText} aria-live="polite">
-            <strong>{ui.step} {visibleProgressStep} {ui.of} {visibleProgressTotal} · {visibleProgressName}</strong>
+            <strong>{visibleProgressStep>0?ui.step+' '+visibleProgressStep+' '+ui.of+' '+visibleProgressTotal+' · ':''}{visibleProgressName}</strong>
             <span>{visibleProgressDescription}</span>
           </div>
           <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-            aria-valuemin={1} aria-valuemax={visibleProgressTotal} aria-valuenow={visibleProgressStep}
-            aria-valuetext={ui.step+' '+visibleProgressStep+' '+ui.of+' '+visibleProgressTotal+' · '+visibleProgressDescription}>
-            {openingActive?(['invitation','identity','focus','confirmation'].map((key,index)=><span key={key}
-              data-complete={openingProgress.lamps[key]?'true':undefined}
-              data-current={(openingProgress.step===1&&index===0)||
-                ([2,3].includes(openingProgress.step)&&index===1)||
-                (openingProgress.step===4&&index===2)||
-                (openingProgress.step===6&&index===3)?'true':undefined}/>)):
-              profileActive?Array.from({length:profileProgress.total},(_,index)=><span key={index}
-                data-complete={(profileReviewProgress?
-                  profileReviewProgress.ratings[index]?.kind==='rated':
-                  index<profileProgress.ratings.length)?'true':undefined}
-                data-current={index===profileProgress.step-1?'true':undefined}/>):
-              Array.from({length:visibleStageTotal},(_,index)=><span key={index}
-                data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
-                data-current={index===visibleStageIndex?'true':undefined}/>)}
+            aria-valuemin={0} aria-valuemax={Math.max(1,visibleProgressTotal)} aria-valuenow={visibleProgressStep}
+            aria-valuetext={visibleProgressDescription}>
+            {stagePosition.rows.map(row=><span key={row.id} data-stage-id={row.id}
+              data-stage-status={row.status} title={row.label}
+              data-complete={row.status==='done'?'true':undefined}
+              data-current={row.active?'true':undefined}/>)}
+
           </div>
           <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
         </summary>
         <MyCoachSessionStateCard locale={lang} turns={turns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
-          stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
-          stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
-        {openingProgress.completed&&!profileSelected&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang}/>}
+          opening={openingProgress} profile={profileProgress} openingPosition={openingPosition}
+          profilePosition={profilePosition} stagePosition={stagePosition} progressMode={progressMode}/>
+        {progressMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={coursePosition} provisional={plannedCourse}/>}
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
