@@ -44,7 +44,7 @@ import MyCoachCourseJourney from './my-coach-course-journey'
 import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
-import {coachReactionIntent} from '@/lib/coaching/coach-reaction-director.mjs'
+import {coachReactionIntent,coachExplicitFarewell} from '@/lib/coaching/coach-reaction-director.mjs'
 import useCoachReactionActivity from './use-coach-reaction-activity'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
@@ -1773,8 +1773,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const reactionReplyScene=selectCoachVisualScene({phase:motionPhase,text:reactionReplyText,stage:reactionStage})
   const reactionIntent=coachReactionIntent({
     phase:voiceState.phase==='loading'?'loading':motionPhase,micActive:reactionActivity.micActive,
-    clientText:reactionClientText,coachScene:reactionReplyScene,stage:reactionStage,
-    paused:paused||voicePaused,opening:!introComplete,
+    clientText:reactionClientText,coachText:reactionReplyText,coachScene:reactionReplyScene,stage:reactionStage,
+    paused:paused||voicePaused,opening:!restoredDraft&&(!introComplete||(!turns.length&&!inFlightClientRef.current)),
+    closing:reactionStage==='closing'||reactionStage==='farewell'||coachExplicitFarewell(reactionClientText),
     turnKey:turns.filter(turn=>turn.role==='user').length+(inFlightClientRef.current?1:0)
   })
   const visualScene=reactionIntent.scene

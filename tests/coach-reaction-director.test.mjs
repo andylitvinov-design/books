@@ -2,9 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
-import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart} from '../lib/coaching/coach-reaction-director.mjs'
+import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -34,7 +34,7 @@ test('distress and safety take precedence over positive cues in supported langua
   assert.equal(classifyClientReactionText(text),'distress')
   assert.equal(coachReactionIntent({phase:'speaking',clientText:text,coachScene:'encourage'}).kind,'empathy')
  }
- assert.equal(coachReactionIntent({phase:'speaking',stage:'safety',coachScene:'encourage'}).kind,'empathy')
+ assert.equal(coachReactionIntent({phase:'speaking',stage:'safety',coachScene:'encourage'}).kind,'hold')
  assert.equal(coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'I did it'}).kind,'encouragement')
  assert.equal(coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'I am not happy'}).kind,'empathy')
  assert.equal(coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:'Maybe'}).kind,'speaking')
@@ -92,7 +92,7 @@ test('double buffer: retain outgoing frame until current clip ends and candidate
  player.update(smile(),true);assert.equal(videos[1].getAttribute('src'),'/media/HAR-02.mp4')
  videos[0].end();assert.equal(visible(),'HAR-01')
  videos[1].ready();assert.equal(visible(),'HAR-02')
- videos[1].end();assert.equal(visible(),'HAR-01')
+ videos[1].end();videos[0].ready();assert.equal(visible(),'HAR-01')
  player.update(smile(),true);assert.equal(player.snapshot().used.length,1)
  player.dispose();assert.ok(videos.every(v=>v.getAttribute('src')===null))
 })
@@ -101,15 +101,17 @@ test('preloaded media does not cut a current action; stale request is discarded 
  player.update(listening(),true);videos[0].ready()
  player.update(smile(),true);videos[1].ready()
  assert.equal(visible(),'HAR-01');assert.equal(videos[1].playCount,0)
- player.update(listening(),true);videos[0].end()
+ player.update({...listening(),turnKey:2},true);videos[0].end()
  assert.equal(visible(),'HAR-01');assert.equal(videos[1].playCount,0)
+ videos[1].ready();assert.equal(visible(),'HAR-01')
  player.dispose()
 })
 test('distress, hidden tab and invalid resolution hold the contact frame without restarting audio',()=>{
  const {player,videos,visible}=fixture()
  player.update(listening(),true);videos[0].ready()
  player.update(coachReactionIntent({phase:'listening',micActive:true,clientText:'I am afraid'}),true)
- assert.equal(visible(),null);assert.equal(player.snapshot().active,null)
+ assert.equal(visible(),'HAR-01');assert.equal(player.snapshot().active,'HAR-01')
+ videos[0].end();assert.equal(visible(),null);assert.equal(player.snapshot().active,null)
  player.update(listening(),true);assert.equal(visible(),'HAR-01')
  player.update(listening(),false);assert.equal(visible(),null)
  player.dispose()
@@ -154,10 +156,11 @@ test('enabled V4 groups have all byte-verified first-party media and anchors, no
   if(size)assert.equal(data.length,size)
   assert.equal(createHash('sha256').update(data).digest('hex'),sha,name)
  }
- for(const coach of REACTION_V4_RELEASED){
-  const a=REACTION_V4_ANCHORS[coach];assert.ok(a)
-  verify(reactionV4Poster(coach),a.pngSha256)
-  for(const [id,b] of Object.entries(REACTION_V4_BLOCKS))if(b.coach===coach)verify(reactionV4File(id),b.sha256,b.size)
+ for(const token of REACTION_V4_RELEASED){
+  const [group,coach]=token.includes(':')?token.split(':'):['primary',token]
+  const selected=reactionCameraGroup(coach,group);assert.ok(selected)
+  verify(reactionV4Poster(coach,group),selected.anchor.pngSha256)
+  for(const [id,b] of selected.entries)verify(reactionV4File(id),b.sha256,b.size)
  }
 })
 test('canonical session wires both voice engines to the same local director, without changing voice ownership',()=>{
@@ -169,9 +172,69 @@ test('canonical session wires both voice engines to the same local director, wit
  assert.ok(session.includes('reactionIntent={reactionIntent}'))
  assert.ok(session.includes('onVoiceStateChange={setVoiceState}'))
  assert.ok(session.includes('turnKey:turns.filter(turn=>turn.role==='))
- assert.ok(motion.includes('releasedReactionMedia(personaId,REACTION_V4_RELEASED)'))
+ assert.ok(motion.includes('releasedReactionMedia(personaId,REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS'))
  assert.ok(motion.includes('data-coach-reaction-mode'))
  assert.ok(player.includes('createReactionPlayback'))
  assert.ok(player.includes('muted playsInline preload="none"'))
  assert.doesNotMatch(player,/getUserMedia|fetch\(|speechSynthesis|AudioContext/)
+})
+
+test('every one of 31 active blocks has an explicit role in exactly its camera group',()=>{
+ const covered=new Set()
+ for(const [group,profiles] of Object.entries(COACH_REACTION_PROFILES)){
+  for(const [coach,profile] of Object.entries(profiles)){
+   const media=releasedReactionMedia(coach,[group+':'+coach],group)
+   assert.ok(media)
+   const ids=new Set(media.blocks.map(b=>b.id))
+   for(const kind of ['presence','listening','speaking','greeting','farewell','thinking','interest','understanding','encouragement','closure']){
+    assert.ok(Array.isArray(profile[kind]),coach+':'+kind)
+    for(const id of profile[kind]){
+     assert.ok(ids.has(id),group+':'+coach+':'+id)
+     covered.add(id)
+    }
+   }
+   for(const b of media.blocks)assert.ok(Object.values(profile).flat().includes(b.id),b.id)
+  }
+ }
+ assert.equal(Object.keys(REACTION_V5_ALL_BLOCKS).length,31)
+ assert.equal(covered.size,31)
+ assert.equal(releasedReactionMedia('harry',['primary:harry'],'alternate'),null)
+})
+test('fallback depends on speech ownership; opening and farewell are explicit and one-shot',()=>{
+ const ids=['HAR-01','HAR-02','HAR-03A','HAR-03B','HAR-03C']
+ const intents=[coachReactionIntent({phase:'listening',micActive:true}),coachReactionIntent({phase:'speaking'}),coachReactionIntent({phase:'greeting'}),coachReactionIntent({phase:'speaking',coachText:'Спасибо за разговор. До встречи!'})]
+ assert.deepEqual(intents.map(x=>x.kind),['listening','speaking','greeting','farewell'])
+ assert.deepEqual(intents.map(x=>chooseCoachReaction('harry',x,ids).id),['HAR-01','HAR-01','HAR-03A','HAR-02'])
+ assert.equal(coachReactionIntent({phase:'speaking',coachScene:'closure'}).kind,'closure')
+ assert.equal(coachReactionIntent({phase:'speaking',closing:true}).kind,'farewell')
+ for(const text of ['Goodbye.','До свидания!','Hasta luego.'])assert.ok(coachExplicitFarewell(text))
+ assert.equal(coachExplicitFarewell('What does goodbye mean?'),false)
+ const farewell=chooseCoachReaction('harry',intents[3],ids)
+ assert.equal(chooseCoachReaction('harry',intents[3],ids,[farewell.key]),null)
+})
+test('short farewell remains queued after coach audio ends, but never delays audio or cuts the current take',()=>{
+ const {player,videos,visible}=fixture()
+ player.update({...listening(),turnKey:4},true);videos[0].ready()
+ const close=coachReactionIntent({phase:'speaking',coachText:'Goodbye.',turnKey:4})
+ player.update(close,true);videos[1].ready()
+ assert.equal(player.snapshot().queued,'farewell')
+ player.update(coachReactionIntent({phase:'idle',turnKey:4}),true)
+ assert.equal(visible(),'HAR-01');assert.equal(videos[1].playCount,0)
+ videos[0].end();assert.equal(visible(),'HAR-02')
+ assert.equal(player.snapshot().queued,null);player.dispose()
+})
+test('repeated neutral blocks preload on the hidden layer, ordinary discomfort waits for the boundary',()=>{
+ const {player,videos,visible}=fixture();player.update(listening(),true);videos[0].ready()
+ assert.equal(videos[1].getAttribute('src'),'/media/HAR-01.mp4')
+ videos[1].ready()
+ assert.equal(videos[1].playCount,0)
+ videos[0].end();assert.equal(videos[1].playCount,1);assert.equal(visible(),'HAR-01')
+ player.update(coachReactionIntent({phase:'speaking',coachScene:'empathy'}),true)
+ assert.equal(visible(),'HAR-01');videos[1].end();assert.equal(visible(),null)
+ player.dispose()
+})
+test('hard safety hold overrides a queued celebration immediately',()=>{
+ const {player,videos,visible}=fixture();player.update(listening(),true);videos[0].ready();player.update(smile(),true)
+ player.update(coachReactionIntent({phase:'speaking',stage:'safety'}),true)
+ assert.equal(visible(),null);assert.equal(player.snapshot().queued,null);player.dispose()
 })

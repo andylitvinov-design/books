@@ -7,7 +7,7 @@ import styles from './my-coach-motion-media.module.css'
 import SamirMotionVideos from './samir-motion-videos'
 import {samirMotionTake} from '@/lib/coaching/samir-motion.mjs'
 import {releasedReactionMedia} from '@/lib/coaching/coach-reaction-v4-registry.mjs'
-import {REACTION_V4_RELEASED} from '@/lib/coaching/coach-reaction-v4-release.mjs'
+import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coach-reaction-v4-release.mjs'
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
@@ -30,7 +30,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
   const directorActive=context==='session'&&Boolean(reactionIntent)
-  const released=useMemo(()=>directorActive?releasedReactionMedia(personaId,REACTION_V4_RELEASED):null,[directorActive,personaId])
+  const released=useMemo(()=>directorActive?releasedReactionMedia(personaId,REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS[personaId]||'primary'):null,[directorActive,personaId])
   const phaseState=PHASES.has(phase)?phase:'idle'
   const state=directorActive&&phaseState==='listening'&&reactionIntent.speaker==='none'?'idle':phaseState
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
@@ -97,6 +97,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     data-coach-motion-media={personaId} data-coach-motion-context={context}
     data-coach-motion-state={state} data-coach-motion-clip={released?'reaction-v4':isGenie?samirTake:hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v2':personaId==='harry'?harryClip:clip):'still'}
     data-coach-reaction-mode={directorActive?(released?'v4':'legacy'):undefined}
+    data-coach-reaction-group={released?.group}
     data-coach-reaction-kind={directorActive?reactionIntent.kind:undefined}
     data-coach-reaction-speaker={directorActive?reactionIntent.speaker:undefined}
     data-coach-natural-performance={released?'reaction-v4':isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
