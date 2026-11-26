@@ -301,19 +301,19 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home: three program cards with three benefits each.
+          // Approved Home: four program cards with three benefits each.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           const choices=entry.locator('[data-home-intent-option]')
           const programs={
-            en:['Clarity & Stress Relief','Achieving My Goal','Business Support'],
-            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса'],
-            es:["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"],
+            en:['Clarity & Stress Relief','Achieving My Goal','Business Support','Reiki Practic'],
+            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса','Reiki Practic'],
+            es:["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"],
           }
-          await expect(choices).toHaveCount(3)
-          const ids=['clarity','goal','business']
+          await expect(choices).toHaveCount(4)
+          const ids=['clarity','goal','business','reiki']
           assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),ids,label+': approved program order')
           for(const [index,intention] of ids.entries()){
             const button=entry.locator('[data-home-intent-option="'+intention+'"]')
@@ -322,6 +322,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             await expect(button).toHaveAttribute('aria-label',programs[locale][index])
             await expect(button).toHaveAccessibleName(programs[locale][index])
             await expect(button).toBeVisible()
+            await expect(button.locator('img')).toHaveCount(1)
             await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
             const box=await button.boundingBox()
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
@@ -334,7 +335,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(journeyLink).toHaveCount(1)
           await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
           await expect(journeyLink).toBeHidden()
-          // Same-frame geometry: keep hero, composer, three programs and
+          // Same-frame geometry: keep hero, composer, four programs and
           // methods in order; cards never overlap or overflow at any viewport.
           const homeLayout=await entry.evaluate(root=>{
             const nodes=['[data-home-dialogue-hero]','[data-home-intent-form]',
@@ -347,12 +348,12 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
                 nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
               noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
               inWidth:[...boxes,...cards].every(box=>box.left>=-1&&box.right<=innerWidth+1),
-              cardsSeparate:cards.length===3&&cards.every((a,i)=>cards.slice(i+1).every(b=>
+              cardsSeparate:cards.length===4&&cards.every((a,i)=>cards.slice(i+1).every(b=>
                 a.right<=b.left+1||b.right<=a.left+1||a.bottom<=b.top+1||b.bottom<=a.top+1)),
             }
           })
           assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth&&homeLayout.cardsSeparate,
-            label+': hero → composer → three programs → methods '+JSON.stringify(homeLayout))
+            label+': hero → composer → four programs → methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.

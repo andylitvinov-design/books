@@ -254,7 +254,7 @@ test('owner Messenger preserves one chat, Get Support plus six choices and local
  assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
  assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>[\s\S]*?<MessengerAiLanding/)
  assert.match(chat,/homeHandoffPreview&&messages\.length===0&&[\s\S]*?data-home-handoff-user-preview/)
- assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
+ assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={id=>{closeComposerMenu();startProject(id);}}/>'))
  assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
  assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
@@ -344,7 +344,11 @@ test('hidden private dialogs never hide navigation in another folder',()=>{
 test('AI long messages auto-grow safely and scrollback exposes explicit new-reply navigation',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const css=source('components/holistic-agent-chat.module.css')
- assert.match(agent,/input\.style\.height='44px'|const baseHeight=ongoing\?40:44;\s*input\.style\.height=baseHeight\+"px"/)
+ // The approved compact conversation uses 40px; the untouched landing uses 44px.
+ assert.match(agent,/const ongoing=messengerView&&Boolean\(messages\.length\|\|homeHandoffPreview\)/)
+ assert.match(agent,/const baseHeight=ongoing\?40:44/)
+ assert.match(agent,/input\.style\.height=baseHeight\+"px"/)
+ assert.match(agent,/Math\.max\(baseHeight,Math\.min\(100,input\.scrollHeight\)\)/)
  assert.match(agent,/Math\.min\(100,input\.scrollHeight\)/)
  assert.match(agent,/followTail\.current/)
  assert.match(agent,/setNewBelow\(true\)/)

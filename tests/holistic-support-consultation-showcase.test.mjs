@@ -75,7 +75,7 @@ test("genuine service request preserves published service ID through Google sign
   assert.match(gallery, /encodeURIComponent\(offer.serviceId\)/);
   assert.match(gallery, /href=\{consultationRequestHref\(selectedOffer, locale\)\}/);
   assert.match(gallery, /href=\{selectedOffer.href\}/);
-  assert.match(workspace, /serviceId: searchParams.get\('service'\) \|\| null/);
+  assert.match(workspace, /serviceId: daybookProgram \? null : searchParams\.get\('service'\) \|\| null/);
   assert.match(workspace, /initialServiceId=\{searchParams.get\('service'\) \|\| ''\}/);
   assert.match(workspace, /setSelected\(service\)/);
   assert.match(workspace, /<RequestForm/);

@@ -1899,3 +1899,288 @@
   border-radius:.25em;
   background:rgba(12,23,19,.82);
 }
+
+
+/* V5: approved portrait-first live conversation. Only the accepted-session
+   surface changes; the shared media, audio controls and privacy gates stay mounted. */
+.root[data-session-visual-v5][data-coach-greeting-stage='session']{
+  background:#f8f3e8;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHero{
+  height:clamp(360px,54dvh,640px);min-height:0;max-height:none;
+  border-radius:28px;box-shadow:0 8px 26px #13352a21;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait[data-persona]{
+  background:#172a23!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait :global([data-coach-motion-context='session']){
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  max-width:none!important;aspect-ratio:auto!important;border-radius:inherit;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait :global([data-coach-motion-context='session']) :is(img,video){
+  object-fit:cover!important;object-position:center 32%!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait + .sessionHeroShade{
+  background:linear-gradient(180deg,#081d184d 0%,transparent 25%,transparent 52%,#081c18e8 100%);
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHeroCopy{
+  position:absolute;inset:0;display:block;width:auto;pointer-events:none;
+  padding:0;text-shadow:0 2px 8px #000a;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionHeroBadge{
+  position:absolute;top:15px;left:15px;max-width:calc(100% - 82px);
+  padding:8px 12px;font:750 10px/1.2 system-ui;
+  background:#0b4d3dd9;border:1px solid #e2d6b3ac;color:#fff;white-space:normal;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait ~ .sessionHeroCopy h1{
+  position:absolute;left:18px;bottom:38px;margin:0;padding:0;max-width:calc(100% - 36px);
+  width:auto;border-radius:0;background:none;color:#fff;
+  font:650 clamp(32px,8vw,55px)/1.03 Georgia,serif;letter-spacing:-.035em;
+  overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPortrait ~ .sessionHeroCopy p{
+  position:absolute;left:18px;bottom:16px;right:18px;margin:0;padding:0;
+  width:auto;max-width:calc(100% - 36px);border-radius:0;background:none;
+  font:650 clamp(12px,3.3vw,17px)/1.2 system-ui;color:#f3e1b6;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] :is(.sessionHeroCopy>small,.coachStyleChip,.sessionAvatar,.quickGoals){
+  display:none!important;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .heroPlayControl{left:50%;top:50%}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .heroSubtitle{
+  left:12px;right:12px;bottom:90px;max-width:calc(100% - 24px);margin:0;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls[data-coach-inline-voice]{
+  box-sizing:border-box;display:grid;grid-template-columns:50px minmax(0,1fr) 72px 58px 54px;
+  grid-template-rows:60px;align-items:center;gap:8px;
+  height:84px;min-height:84px;max-height:84px;flex:0 0 84px;
+  padding:5px 10px 19px;margin:0 auto;width:100%;max-width:100%;
+  border:1px solid #285c4b;border-radius:22px;background:linear-gradient(120deg,#153e32,#0b3027);
+  color:#fff;box-shadow:0 4px 14px #102a2420;overflow:visible;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .keyboardControl{grid-column:1;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .microphoneWave{
+  grid-column:2;grid-row:1;min-width:0;border:0;overflow:hidden;height:44px
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter{
+  grid-column:3;grid-row:1;width:100%;min-width:0;max-width:72px;
+  height:60px;min-height:0;max-height:60px;overflow:visible;color:#fff;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice]){
+  width:100%;min-width:0;max-width:72px;height:60px;min-height:0;max-height:60px;
+  overflow:visible;display:flex;align-items:center;justify-content:center;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice] button){
+  width:56px;min-width:56px;max-width:56px;height:56px;min-height:56px;max-height:56px;
+  border:2px solid #e0f5e7;border-radius:50%;background:linear-gradient(145deg,#209f7d,#00634f);
+  box-shadow:0 0 0 4px #a6f0cf30;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .voiceCenter :global([data-my-coach-voice] [data-coach-voice-status]){
+  position:absolute;left:50%;top:100%;bottom:auto;transform:translateX(-50%);margin:0;
+  width:max-content;max-width:108px;height:auto;max-height:15px;line-height:15px;
+  text-align:center;font-size:10px;color:#e7f9ef;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .experienceModeControl{grid-column:4;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .endControl{grid-column:5;grid-row:1}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls :is(.keyboardControl,.experienceModeControl,.endControl){
+  width:100%;min-width:0;max-width:none;height:48px;min-height:44px;padding:4px 2px;
+  gap:3px;border-radius:16px;border:1px solid #ffffff4d;background:#ffffff12;color:#f3fff8;
+  font-size:10px;box-shadow:none;overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .experienceModeControl[aria-pressed=true]{background:#b0e5c92b;border-color:#b0e5c999;color:#e0fff0}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls .endControl{background:#a9393a;border-color:#f7c4b8;color:white}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceWorkspace>.voicePlayNotice{
+  display:block;margin:2px 6px;padding:0;font:500 11px/1.35 system-ui;color:#466254;
+  overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionProgress{
+  border-radius:18px;background:#fffcf5;border-color:#e0dccd;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionProgressText strong{
+  white-space:normal;overflow-wrap:anywhere;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav{
+  order:-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  width:100%;min-width:0;flex:0 0 auto;margin:0 0 4px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button{
+  display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;
+  padding:6px 4px;border:1px solid #e0ddd0;border-radius:22px;background:#fffcf5;color:#174e42;
+  font:650 clamp(11px,2.8vw,14px)/1.2 system-ui;overflow-wrap:anywhere;cursor:pointer;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button svg{flex:none}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button:disabled{opacity:.55;cursor:not-allowed}
+.root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has([data-coach-progress-accordion][open])) .sessionPanelNav button[data-coach-panel='transcript'],
+.root[data-session-visual-v5][data-coach-greeting-stage='session']:has([data-coach-progress-accordion][open]) .sessionPanelNav button[data-coach-panel='insights']{
+  color:#fff;background:#08644f;border-color:#08644f;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .sessionPanelNav button:focus-visible{
+  outline:2px solid #9e7938;outline-offset:2px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .conversationPanel{
+  background:transparent;border:0;box-shadow:none;padding:4px 0;gap:8px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .conversationPanel .liveTranscript{
+  border:0;background:transparent;box-shadow:none;padding:0 3px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptFeed{
+  gap:9px;min-width:0;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptCoach,
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptUser{
+  border-radius:17px;padding:10px 12px;border:1px solid #e2ded0;
+  background:#fffcf5;color:#173e39;max-width:92%;box-shadow:0 2px 7px #213c2c0a;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptCoach{align-self:flex-start}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptUser{
+  align-self:flex-end;background:#e1eee5;border-color:#cfe3d7;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .transcriptFeed p{
+  color:#173e39;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.45;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer{
+  background:#fffcf5;border:1px solid #e0ddd0;border-radius:22px;padding:7px 9px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer{
+  display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:7px;align-items:center;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer textarea{
+  border-radius:18px;min-height:46px;padding:10px 11px;font-size:16px;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer .send{
+  display:grid;place-items:center;min-height:46px;width:46px;border-radius:50%;padding:0;background:#08644f;
+}
+.root[data-session-visual-v5][data-coach-greeting-stage='session'] .textComposer .composer .send span{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;
+}
+/* Large portrait intentionally scrolls with the session on short phones;
+   no clipped transcript or invisible privacy text. Existing keyboard mode
+   remains fixed to the actual visual viewport. */
+@media(max-width:699px){
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)){
+    height:var(--hh-coach-visible-height,100dvh);max-height:var(--hh-coach-visible-height,100dvh);
+    min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+    gap:7px;padding-bottom:max(10px,env(safe-area-inset-bottom));
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(260px,52dvh,510px);width:calc(100% - 20px);min-height:0;max-height:none;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'][data-coach-view-expanded='true']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(300px,76dvh,720px);
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace{
+    display:flex;flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+    width:calc(100% - 20px);gap:7px;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'] .voiceControls[data-coach-inline-voice]{
+    grid-template-columns:44px minmax(0,1fr) 60px 50px 49px;gap:5px;padding-inline:7px;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel{
+    flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .liveTranscript{
+    flex:0 0 auto;min-height:0;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptFeed{
+    flex:0 0 auto;min-height:100px;max-height:clamp(160px,28dvh,260px);overflow-y:auto;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .textComposer{
+    flex:0 0 auto;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .voiceWorkspace>.voicePlayNotice{display:none}
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .sessionPanelNav{display:none}
+  .root[data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .conversationPanel .textComposer{
+    padding:5px 6px;border-radius:16px;
+  }
+}
+@media(min-width:700px){
+  .root[data-session-visual-v5][data-coach-greeting-stage='session'][data-coach-view-expanded='true'] .sessionHero{
+    height:clamp(460px,76dvh,820px);
+  }
+}
+
+
+/* Approved live-dialogue composition, 26 Nov. The portrait, text and real
+   voice controls form ONE card. All media and provider handlers remain mounted.
+   Geometry deliberately uses the existing visual viewport measurement on iOS. */
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']{--coach-dock-height:78px;--coach-card-gap:7px;--coach-card-width:min(calc(100% - 20px),850px);gap:var(--coach-card-gap)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionScroll{flex:0 0 auto;min-height:0;max-height:none;overflow:visible;padding:0;margin:0}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero{box-sizing:border-box;width:var(--coach-card-width);height:clamp(310px,54dvh,620px);min-height:0;max-height:none;margin:0 auto;border:0;border-radius:27px;overflow:hidden;isolation:isolate;background:#13271e}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPortrait[data-persona]{inset:0;width:100%;height:100%;background:#172a23!important}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPortrait :global([data-coach-motion-context='session']){inset:0!important;width:100%!important;height:100%!important;max-width:none!important;aspect-ratio:auto!important}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPortrait :global([data-coach-motion-context='session']) :is(img,video){object-fit:cover!important;object-position:center top!important}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPortrait + .sessionHeroShade{z-index:-1;background:linear-gradient(90deg,#091a14c7 0%,#091a1466 31%,transparent 60%),linear-gradient(0deg,#08251ff2 0%,#08251f75 18%,transparent 43%)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy{position:absolute;inset:0;box-sizing:border-box;width:auto;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:8px;padding:48px 20px calc(var(--coach-dock-height) + 10px);pointer-events:none;text-shadow:0 2px 8px #0009}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy>.sessionHeroBadge{position:absolute;top:14px;left:16px;max-width:calc(100% - 76px);padding:8px 11px;border:1px solid #e3d4acaa;border-radius:99px;background:#064b38e0;color:#fff;font:750 10px/1.15 system-ui;white-space:nowrap;letter-spacing:.02em}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy>.sessionHeroBadge:after{content:'';flex:none;width:7px;height:7px;border-radius:50%;background:#9aaca4}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero[data-voice-phase='listening'] .sessionHeroBadge:after,
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero[data-voice-phase='speaking'] .sessionHeroBadge:after,
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero[data-voice-phase='thinking'] .sessionHeroBadge:after{background:#35d6a0}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy > :is(h1,p,small){position:static;inset:auto;width:auto;max-width:44%;margin:0;padding:0;border-radius:0;background:none!important;overflow-wrap:normal;white-space:normal;text-overflow:clip}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>h1{display:block;color:#fff;font:650 clamp(29px,8vw,56px)/1.02 Georgia,serif;letter-spacing:-.04em}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>p{display:block;color:#f4dc9e;font:650 clamp(15px,3.9vw,23px)/1.16 Georgia,serif}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>small{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;color:#fff;font:italic 500 clamp(12px,3.2vw,16px)/1.35 system-ui}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy>small:before{content:'';display:block;width:68px;height:1px;margin:2px 0 8px;background:linear-gradient(90deg,#d9b969,transparent)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .heroViewToggle{background:#13251bc2;color:#fff;border:1px solid #f7eedb88;box-shadow:none;backdrop-filter:blur(9px)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .heroSubtitle{bottom:calc(var(--coach-dock-height) + 7px);z-index:8}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:var(--coach-card-width);max-width:850px;min-width:0;margin:calc(-1 * var(--coach-dock-height) - var(--coach-card-gap)) auto 0;gap:var(--coach-card-gap);overflow:visible}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls[data-coach-inline-voice]{position:relative;z-index:6;order:-5;box-sizing:border-box;display:grid;grid-template-columns:44px minmax(0,1fr) 66px minmax(0,1fr) 44px;grid-template-rows:55px;align-items:center;gap:6px;flex:0 0 var(--coach-dock-height);height:var(--coach-dock-height);min-height:var(--coach-dock-height);max-height:var(--coach-dock-height);width:100%;max-width:none;margin:0;padding:0 12px 20px;border:0;border-radius:0 0 27px 27px;background:linear-gradient(0deg,#092c24e8,transparent);box-shadow:none;overflow:visible}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .keyboardControl{grid-column:1;grid-row:1}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .microphoneWave{grid-column:2;grid-row:1;width:100%;height:44px;min-width:0;border:0;overflow:hidden}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter{grid-column:3;grid-row:1;position:relative;width:66px;max-width:66px;min-width:0;height:55px;min-height:55px;max-height:55px;overflow:visible;align-self:center}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice]){position:relative;display:grid;place-items:center;box-sizing:border-box;width:66px;max-width:66px;min-width:0;height:55px;min-height:55px;max-height:55px;margin:0;padding:0;gap:0;overflow:visible}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice] > button){position:relative;display:grid;place-items:center;width:57px;min-width:57px;max-width:57px;height:57px;min-height:57px;max-height:57px;padding:0;border:2px solid #edfff5;border-radius:50%;background:radial-gradient(circle at 40% 30%,#198b6c,#004737);color:#fff;box-shadow:0 0 0 4px #86e8c437,0 0 17px #9aefc65e}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice] > button > svg:first-child){width:26px;height:26px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice] > button > svg:not(:first-child)){position:absolute;right:5px;bottom:5px;width:13px;height:13px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice] > span[role=status]){position:absolute;top:59px;bottom:auto;left:50%;transform:translateX(-50%);box-sizing:border-box;width:max-content;max-width:min(180px,48vw);height:14px;max-height:14px;margin:0;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:650 10px/14px system-ui;text-align:center;color:#e9fff3;pointer-events:none}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .voiceCenter :global([data-my-coach-voice] > p[role=status]){position:absolute;top:auto;bottom:62px;left:50%;transform:translateX(-50%);width:min(300px,calc(100vw - 40px));max-width:none;height:auto;max-height:86px;overflow:auto;white-space:normal;margin:0;padding:8px 10px;border-radius:12px;background:#0b3027f5;color:#fff;font:500 12px/1.35 system-ui;text-align:center;box-sizing:border-box}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .experienceModeControl{grid-column:4;grid-row:1;justify-self:center}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl{grid-column:5;grid-row:1}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls :is(.keyboardControl,.experienceModeControl,.endControl){box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:44px;max-width:44px;min-width:44px;height:44px;min-height:44px;padding:3px 2px;border:1px solid #f1f1e35c;border-radius:50%;background:#1f3c32b3;color:#fff;font:650 9px/1 system-ui;box-shadow:inset 0 1px 3px #fff3;overflow:hidden}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .experienceModeControl[aria-pressed=true]{background:#164d40c9;border-color:#9ed6b8;color:#edfff6}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .experienceModeControl small{font:600 8px/1 system-ui}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl{background:#cd4448;border-color:#f4a5a5;color:#fff}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls .endControl>svg{width:21px;height:21px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .waveBars i{background:linear-gradient(180deg,#86ffe0,#23c7a1);opacity:.6}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace>.sessionProgress[data-coach-progress-accordion]{order:-4;flex:0 0 auto;box-sizing:border-box;width:100%;max-width:100%;min-height:0;max-height:none;margin:0;border-radius:19px;background:#fffcf5}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionProgressSummary{min-height:44px;padding:6px 10px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace>.voicePlayNotice{order:-3;flex:0 0 auto;display:block;margin:0 5px;padding:0;font:500 10px/1.3 system-ui;color:#466254}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voicePrivacyDetails{order:-2;flex:0 0 auto;margin:0 4px;padding:0 4px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel{order:3;flex:0 0 auto;min-height:0;max-height:none;overflow:visible;gap:5px;padding:0 0 5px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPanelNav{gap:5px;margin:0;flex:0 0 auto}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPanelNav button{min-height:40px;border-radius:999px;font-size:clamp(10px,2.8vw,13px);box-shadow:0 2px 5px #2a41300b}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .liveTranscript{flex:0 0 auto;min-height:0;max-height:none;overflow:visible;padding:0 3px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptHeading{font-size:11px;margin:0}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptFeed{flex:0 0 auto;min-height:68px;max-height:clamp(98px,19dvh,260px);overflow-y:auto;margin:0;padding:3px 0;gap:7px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptCoach,.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .transcriptUser{padding:9px 12px;border-radius:17px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .textComposer{flex:0 0 auto;min-height:0;max-height:none;overflow:visible;margin:0;padding:5px 7px;border-radius:23px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .textComposer .composer textarea{min-height:44px;max-height:86px;border-radius:24px;font-size:16px}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .conversationPanel .textComposer .composer .send{width:44px;min-height:44px;height:44px;border-radius:50%}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .goalRow,.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .goalPrivacy,.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .quickGoals{display:none!important}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus))[data-coach-view-expanded='true'] .sessionHero{height:clamp(310px,calc(var(--hh-coach-visible-height,100dvh) - 62px),880px)}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus))[data-coach-view-expanded='true'] .sessionHeroCopy>small{max-width:40%}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .voiceWorkspace{margin:0 auto;overflow:hidden}
+.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .voiceControls[data-coach-inline-voice],.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .sessionScroll,.root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:has(.textComposer textarea:focus) .voicePrivacyDetails{display:none}
+@media(max-width:699px){
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)){height:var(--hh-coach-visible-height,100dvh);max-height:var(--hh-coach-visible-height,100dvh);overflow-y:auto;overflow-x:hidden;--coach-card-width:calc(100% - 16px)}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero{height:clamp(245px,calc(var(--hh-coach-visible-height,100dvh) * .53),510px);border-radius:24px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy{padding:45px 17px calc(var(--coach-dock-height) + 7px);gap:6px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>h1{font-size:clamp(27px,7.8vw,42px)}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>p{font-size:clamp(14px,3.7vw,18px)}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>small{font-size:clamp(11px,3.05vw,14px);-webkit-line-clamp:3}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceWorkspace{flex:0 0 auto}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .voiceControls[data-coach-inline-voice]{padding-inline:10px;gap:4px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus))[data-coach-view-expanded='true'] .sessionHero{height:clamp(270px,calc(var(--hh-coach-visible-height,100dvh) - 62px),780px)}
+}
+@media(max-width:360px){
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy>.sessionHeroBadge{font-size:9px;left:11px;padding:7px 8px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHeroCopy{padding-left:12px;padding-right:12px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>h1{font-size:27px}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionHero .sessionHeroCopy>small{-webkit-line-clamp:2}
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)) .sessionPanelNav button{gap:3px;padding-inline:3px}
+}
+@media(max-height:650px) and (max-width:699px){
+  .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)):not([data-coach-view-expanded='true']) .sessionHero .sessionHeroCopy>small{-webkit-line-clamp:2}
+}

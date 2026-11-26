@@ -5,6 +5,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 import curriculum from "@/data/academy/yggdrasil-curriculum.json";
 import { yggdrasilModuleLandings } from "@/data/academy/yggdrasil-module-map";
 import styles from "./principles-of-energywork.module.css";
+import { ReikiProModuleScreens, reikiProModuleId } from "./reiki-pro-module-screens";
+import masterStyles from "./reiki-master-levels.module.css";
+import { basicStepDescriptions, basicAttunementName } from "@/data/academy/yggdrasil-basic-level-copy";
 
 export type ReikiProgram = "free" | "master" | "pro";
 
@@ -20,6 +23,7 @@ const tabs = [
 
 const content = {
   en: {
+    levelAttunements: "Attunements in this level", openLevel: "Explore this level",
     nav: "My Reiki programs", master: "Reiki Yggdrasil Master Program", pro: "Reiki Yggdrasil Pro Program",
     masterSubtitle: "Basic course · 5 levels", proSubtitle: "Advanced studies · 6 modules",
     masterLead: "Explore the five stages of the original basic program, from the first practices to Master Level.",
@@ -30,6 +34,7 @@ const content = {
     note: "Training and initiations are arranged with the teacher. Course descriptions are spiritual education, not medical advice or guaranteed outcomes.",
   },
   ru: {
+    levelAttunements: "Настройки ступени", openLevel: "Открыть ступень",
     nav: "Программы My Reiki", master: "Мастерский курс Рейки Иггдрасиль", pro: "Магистерский курс Рейки Иггдрасиль",
     masterSubtitle: "Базовая программа · 5 ступеней", proSubtitle: "Продвинутая программа · 6 модулей",
     masterLead: "Пять ступеней оригинальной базовой программы: от первых практик до уровня Мастера.",
@@ -40,6 +45,7 @@ const content = {
     note: "Обучение и инициации согласуются с преподавателем. Это духовные учебные материалы, а не медицинская рекомендация или гарантия результата.",
   },
   es: {
+    levelAttunements: "Sintonizaciones del nivel", openLevel: "Explorar este nivel",
     nav: "Programas My Reiki", master: "Programa de Maestro Reiki Yggdrasil", pro: "Programa Pro Reiki Yggdrasil",
     masterSubtitle: "Curso básico · 5 niveles", proSubtitle: "Estudios avanzados · 6 módulos",
     masterLead: "Explora las cinco etapas del programa básico original, desde las primeras prácticas hasta el nivel de maestro.",
@@ -69,8 +75,9 @@ export function ReikiAdvancedProgram({ locale, program }: { locale: PublicLocale
   const base = "/" + locale + "/academy/reiki/yggdrasil";
   const basic = curriculum.levels.find(item => item.id === 1);
   const modules = yggdrasilModuleLandings.filter(item => item.levelId > 1);
+  const masterPhotos = ["/images/holistic-house/messenger-zen-stones.svg", "/images/holistic-house/magic-mirror-lotus.webp", "/images/holistic-house/course-focus-mountain-boy.webp", "/images/holistic-house/ideas-pine-reference.webp", "/academy/reiki-yggdrasil/source/basic-program.jpg"];
   const rows = master
-    ? (basic?.steps ?? []).map(step => ({ id: step.id, number: step.number, title: step.title[locale], href: base + "/basic-course#" + step.id.toLowerCase(), photo: null as string | null }))
+    ? (basic?.steps ?? []).map(step => ({ id: step.id, number: step.number, title: step.title[locale], href: base + "/basic-course#" + step.id.toLowerCase(), photo: masterPhotos[step.number - 1] || masterPhotos[4] }))
     : modules.map((module, index) => ({ id: module.slug, number: index + 1, title: module.title[locale], href: base + "/" + module.slug, photo: module.image }));
   return <>
     <section className={styles.reikiAdvancedHero} data-reiki-advanced-hero={program} aria-labelledby="reiki-program-title">
@@ -80,19 +87,41 @@ export function ReikiAdvancedProgram({ locale, program }: { locale: PublicLocale
         <strong>{master ? t.masterSubtitle : t.proSubtitle}</strong>
         <p>{master ? t.masterLead : t.proLead}</p>
       </div>
-      <Link className={styles.reikiAdvancedCta} href={base + (master ? "/basic-course" : "/instructor-course")} prefetch={false}>{master ? t.masterCta : t.proCta}<ArrowRight size={20} aria-hidden="true" /></Link>
+      <Link className={styles.reikiAdvancedCta} href={master ? "#reiki-master-levels" : "#" + reikiProModuleId("instructor-course")} prefetch={false}>{master ? t.masterCta : t.proCta}<ArrowRight size={20} aria-hidden="true" /></Link>
     </section>
     <section className={styles.reikiSyllabus} aria-labelledby="reiki-advanced-roadmap">
       <p className={styles.sectionEyebrow}>REIKI YGGDRASIL</p>
       <h2 id="reiki-advanced-roadmap">{master ? t.masterRoadmap : t.proRoadmap}</h2>
       <nav className={styles.stepRail} aria-label={master ? t.masterRoadmap : t.proRoadmap}>
-        {rows.map(row => <Link key={row.id} href={row.href} prefetch={false} data-reiki-advanced-row={row.id}>
+        {rows.map(row => <Link key={row.id} href={master ? "#reiki-master-" + row.id.toLowerCase() : "#" + reikiProModuleId(row.id)} prefetch={false} data-reiki-advanced-row={row.id}>
           <span className={styles.reikiAdvancedPhoto} aria-hidden="true">{row.photo ? <Image src={row.photo} alt="" fill sizes="(max-width: 700px) 35vw, 260px" unoptimized /> : null}<b>{String(row.number).padStart(2,"0")}</b></span>
           <div className={styles.reikiWeekCopy}><small>{master ? t.level : t.module} {row.number}</small><strong>{row.title}</strong><p>{t.details}</p></div>
           <ArrowRight size={19} aria-hidden="true" />
         </Link>)}
       </nav>
     </section>
+    {master && basic && <div className={masterStyles.levels} id="reiki-master-levels" data-reiki-master-levels>
+      {basic.steps.map(step => (
+        <section className={masterStyles.level} id={"reiki-master-" + step.id.toLowerCase()} key={step.id}
+          data-reiki-master-level={step.number} aria-labelledby={"reiki-master-title-" + step.number}>
+          <div className={masterStyles.photo}>
+            <Image src={masterPhotos[step.number - 1] || masterPhotos[4]} alt="" fill sizes="(max-width: 700px) 90vw, 760px" unoptimized loading="lazy" />
+            <span className={masterStyles.number}>{String(step.number).padStart(2, "0")} / 05</span>
+          </div>
+          <div className={masterStyles.copy}>
+            <p className={masterStyles.eyebrow}>REIKI YGGDRASIL · {t.level} {step.number}</p>
+            <h2 id={"reiki-master-title-" + step.number}>{step.title[locale]}</h2>
+            <p className={masterStyles.lead}>{basicStepDescriptions[step.number][locale]}</p>
+          </div>
+          <div className={masterStyles.attunements}>
+            <h3>{t.levelAttunements} <span>{step.settings.length}</span></h3>
+            <ul>{step.settings.map((setting, index) => <li key={setting.id}>{basicAttunementName(locale, step, setting, index)}</li>)}</ul>
+          </div>
+          <Link className={styles.reikiAdvancedCta + " " + masterStyles.cta} href={base + "/basic-course#" + step.id.toLowerCase()} prefetch={false} data-reiki-master-full-level={step.number}>{t.openLevel}<ArrowRight size={20} aria-hidden="true" /></Link>
+        </section>
+      ))}
+    </div>}
+    {!master && <ReikiProModuleScreens locale={locale} modules={modules} base={base} />}
     <div className={styles.reikiSecondary}><div className={styles.heroQuickLinks}>
       <Link className={styles.ghostButton} href={base} prefetch={false}>{t.complete}<ArrowRight size={16} aria-hidden="true" /></Link>
       {!master && <Link className={styles.ghostButton} href={programPath(locale, "master")} prefetch={false}>{t.foundation}<ArrowRight size={16} aria-hidden="true" /></Link>}

@@ -1832,3 +1832,31 @@ test('four high-traffic specialist workflows cancel obsolete PR HEADs only',()=>
     assert.doesNotMatch(s,/^  cancel-in-progress: true$/m, 'unconditional cancellation is forbidden');
   }
 });
+
+
+test('Public Services reuses exact production compiler and scenario caches without bypassing candidate build or ancestry',()=>{
+  const s=workflow('hh-public-services-production.yml');
+  const p=workflow('hh-static-image-cost-guard.yml');
+  const local=s.indexOf('name: Restore PR-isolated Next.js compiler cache');
+  const shared=s.indexOf('name: Restore protected production compiler cache on PR-local miss');
+  const media=s.indexOf('name: Restore protected production scenario music for browser build');
+  const build=s.indexOf('name: Production build and public browser acceptance');
+  assert.ok(local>=0 && local<shared && shared<media && media<build);
+  const sharedBlock=s.slice(shared,media);
+  assert.ok(sharedBlock.includes("steps.next_cache.outputs.cache-matched-key == ''"));
+  assert.ok(sharedBlock.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  assert.match(sharedBlock,/path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+  for(const [prefix,section] of [['hh-core-next-v2-',sharedBlock],['hh-core-media-v1-',s.slice(media,build)]]){
+    const key=p.split('\n').find(line=>line.includes('key: '+prefix))?.trim();
+    assert.ok(key&&section.includes(key),'identical protected cache key '+prefix);
+    assert.match(section,/actions\/cache\/restore@v4/);
+    assert.doesNotMatch(section,/actions\/cache\/save@v4|restore-keys:/);
+  }
+  assert.ok(s.includes('npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs &&'));
+  assert.ok(s.includes('!s.preprebuild && !s.postprebuild && !s.postbuild'));
+  assert.ok(s.includes('./node_modules/.bin/next build --no-lint'));
+  assert.ok(s.includes('else\n              npm run build\n            fi'));
+  assert.ok(s.includes('if [[ "$EVENT_BASE_SHA" == "$tested_base" ]]; then\n            relation=identical\n          else'));
+  assert.ok(s.includes('x.behind_by!==0||x.base_commit?.sha!==process.env.EVENT_BASE_SHA||x.merge_base_commit?.sha!==process.env.EVENT_BASE_SHA'));
+  assert.ok(s.includes('mapfile -t tested_parents'));
+});

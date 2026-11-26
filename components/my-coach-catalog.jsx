@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck } from 'lucide-react'
 import {
-  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_RAIL_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_RAIL_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona, COACH_METHOD_CODES, resolveCoachMethodId,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
@@ -281,6 +281,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
+  const [selectedMethod,setSelectedMethod]=useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
   const [humanExpanded, setHumanExpanded] = useState(false)
@@ -323,7 +324,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
-  const startHref = coachSessionHref(lang, selected.id, safeSettings)
+  const safeMethod=selectedMethod&&resolveCoachMethodId(selected.id,selectedMethod)||''
+  const startHref = coachSessionHref(lang, selected.id, safeSettings, safeMethod)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
   // Reuse the website's service-specific, privacy-filtered messenger handoff.
@@ -336,6 +338,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     setExpandedId(open => open === id ? null : id)
     if (id !== selectedId) {
       setSelectedId(id)
+      setSelectedMethod('')
       setSettings(normalizeCoachSettings(id))
     }
   }
@@ -384,7 +387,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           </div>
           {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
-            {selected.id === 'mira'
+            {selected.id === 'mira' && !safeMethod
               ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
               : <a className={heroStyles.talkButton} href={startHref}
                   data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
@@ -416,11 +419,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             if (!persona) return null
             const stillImage = id === 'harry'
               ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
-              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp'
+              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-natural-opening-v2.webp'
               : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
-              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
+              onClick={() => { if(id!==selectedId)setSelectedMethod(''); setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} data-genie-roster-photo={id==='genie'?'webp':undefined} aria-hidden="true">
                 <picture>
                   <source media="(prefers-reduced-motion: reduce)" type="image/webp"
@@ -614,7 +617,15 @@ export default function MyCoachCatalog({ locale = 'en' }) {
            <div><h3>{t.workStyle}</h3><p>{localCoachText(selectedPassport?.workStyle,lang)}</p></div>
            <div><h3>{t.suited}</h3><p>{localCoachText(selected.suitable, lang)}</p></div>
           <div><h3>{t.about}</h3><p>{localCoachText(selected.approach, lang)}</p></div>
-          <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p></div>
+          <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p>
+            <label data-coach-catalog-method style={{display:'grid',gap:6}}>
+              <span>{({ru:'Предпочтительный метод (необязательно)',en:'Preferred method (optional)',es:'Método preferido (opcional)'})[lang]}</span>
+              <select value={safeMethod} onChange={event=>setSelectedMethod(event.target.value)} style={{minHeight:44,maxWidth:'100%',fontSize:16}}>
+                <option value="">{({ru:'Обычный диалог',en:'Standard conversation',es:'Conversación habitual'})[lang]}</option>
+                {selected.methods.map(method=><option key={method} value={COACH_METHOD_CODES[method]}>{method}</option>)}
+              </select>
+              <small>{({ru:'Подтверждается при начале сессии после входа.',en:'Confirmed when you start a session after signing in.',es:'Se confirma al iniciar una sesión tras acceder a tu cuenta.'})[lang]}</small>
+            </label></div>
         </div>
         <div className={styles.opening}>
           <span>{t.example}</span>
