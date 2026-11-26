@@ -7,6 +7,9 @@
  if(!root||!M)return;
  const API='/api/commander-pr-completion',AUTH='/api/commander-session';
  const AUTH_NEXT='/project-management-public.html',REMEMBER='hh.commander.monitor.return.v1';
+ const SSO='https://holistichouse.vercel.app/commander-connect.html?next='+encodeURIComponent(AUTH_NEXT);
+ // Non-secret tab markers only: one silent reconnect for a previously verified owner.
+ const SEEN_OWNER='hh.commander.tasks.owner-seen.v1',SSO_ATTEMPT='hh.commander.tasks.sso-attempt.v1';
  const FETCH_TIMEOUT=13500,INTERVAL=60000,MAX_ROWS=6;
  const el=id=>doc.getElementById(id);
  const list=el('pm-pr-completion-list'),form=el('pm-pr-completion-form');
@@ -15,7 +18,7 @@
  const health=el('pm-pr-completion-health'),submit=el('pm-pr-submit');
  const state={rows:[],histories:new Map(),opened:new Set(),more:false,
    signedIn:false,loading:false,posting:false,submittingId:new Map(),refreshTimer:null,
-   lastLoadedAt:null,verifiedSession:false,liveProofs:new Map()};
+   lastLoadedAt:null,verifiedSession:false,checkingSession:false,liveProofs:new Map()};
  function mk(tag,cls,text){
   const node=doc.createElement(tag);if(cls)node.className=cls;
   if(text!==undefined)node.textContent=String(text);return node;
@@ -28,7 +31,9 @@
  function note(text,kind='info'){notice.textContent=text;notice.dataset.tone=kind;}
  function reason(error){
   const code=String(error?.code||error?.message||error||'').slice(0,95);
-  if(code==='OWNER_SESSION_REQUIRED'||code==='OWNER_ACCESS_NOT_VERIFIED')return 'Требуется Google-вход владельца.';
+  if(code==='OWNER_SESSION_REQUIRED'||code==='OWNER_SESSION_EXPIRED')return 'Восстановите существующую сессию Holistic House.';
+  if(code==='OWNER_ACCESS_DENIED'||code==='OWNER_ACCESS_NOT_VERIFIED')return 'Права владельца не подтверждены.';
+  if(code==='OWNER_CHECK_UNAVAILABLE'||code==='OWNER_REFRESH_UNAVAILABLE'||code==='PRIVATE_STORE_NOT_CONFIGURED')return 'Проверка сессии временно недоступна. Обновите статусы — повторный вход не требуется.';
   if(code==='PR_NUMBER_INVALID')return 'Введите существующий номер PR (только цифры).';
   if(code==='PR_GATEWAY_NOT_CONFIGURED')return 'Шлюз Commander ещё не настроен на сервере.';
   if(code==='PR_UPSTREAM_SCHEMA_CHANGED')return 'Версия API Commander изменилась; статус не подтверждён.';
@@ -47,7 +52,9 @@
   const response=await request(AUTH,{method:'GET',credentials:'same-origin',cache:'no-store',
     redirect:'error',headers:{Accept:'application/json'}},10500);
   const data=await response.json().catch(()=>null);
-  return response.status===200&&data?.authenticated===true&&data?.owner===true;
+  if(response.status===200&&data?.authenticated===true&&data?.owner===true)return true;
+  if(response.status===401&&['OWNER_SESSION_REQUIRED','OWNER_SESSION_EXPIRED'].includes(data?.error))return false;
+  throw {code:response.status===403?'OWNER_ACCESS_DENIED':'OWNER_CHECK_UNAVAILABLE',status:response.status===403?403:503};
  }
  async function api(action,fields={},retry=true){
   let response;
@@ -55,7 +62,7 @@
   catch{return Promise.reject({code:'PR_GATEWAY_UNAVAILABLE'});}
   if(response.status===401&&retry){
    // Existing session endpoint refreshes the HttpOnly Supabase owner cookie.
-   if(await ownerSession().catch(()=>false))return api(action,fields,false);
+   if(await ownerSession())return api(action,fields,false);
   }
   let payload;try{payload=await response.json();}
   catch{throw {code:'PR_UPSTREAM_INVALID_JSON'};}
@@ -63,14 +70,27 @@
   if(payload?.schema!=='HH_COMMANDER_PR_COMPLETION_V1')throw {code:'PR_UPSTREAM_SCHEMA_CHANGED'};
   return payload;
  }
- function showSignIn(message){
+ function markOwnerSession(){
+  try{win.sessionStorage.setItem(SEEN_OWNER,'1');win.sessionStorage.removeItem(SSO_ATTEMPT);}catch{}
+ }
+ function showSignIn(message,reconnect=false){
   state.signedIn=false;auth.hidden=false;form.hidden=true;
   list.replaceChildren();
-  note(message||'Войдите через Google для доступа к своим PR.');
-  authLink.href='/commander-auth.html?next='+encodeURIComponent(AUTH_NEXT);
+  note(message||'Подключите существующую сессию Holistic House.');
+  authLink.href=SSO;authLink.textContent='Использовать текущую сессию';
+  if(reconnect){
+   try{
+    if(win.sessionStorage.getItem(SEEN_OWNER)==='1'&&!win.sessionStorage.getItem(SSO_ATTEMPT)){
+     win.sessionStorage.setItem(SSO_ATTEMPT,'1');
+     win.sessionStorage.setItem(REMEMBER,AUTH_NEXT);
+     note('Восстанавливаю текущую сессию Holistic House…');
+     win.location.replace(SSO);
+    }
+   }catch{} // No storage: use the explicit safe link instead.
+  }
  }
  authLink?.addEventListener('click',()=>{
-  try{win.sessionStorage.setItem(REMEMBER,AUTH_NEXT);}catch{}
+  try{win.sessionStorage.setItem(REMEMBER,AUTH_NEXT);win.sessionStorage.setItem(SSO_ATTEMPT,'1');}catch{}
  });
  function displayHealth(value){
   health.replaceChildren();health.hidden=true;
@@ -255,7 +275,7 @@
     void loadHistory([...state.opened][0]);
    }
   }catch(error){
-   if(error?.status===401){showSignIn('Сессия истекла. Войдите повторно.');return;}
+   if(error?.status===401){showSignIn('Восстановите текущую сессию Holistic House.');return;}
    note(reason(error),'error');
   }finally{state.loading=false;}
  }
@@ -288,14 +308,21 @@
    note('PR #'+n+' зарегистрирован. Автоматический ремонт и LIVE ещё не подтверждены.','success');
    void refreshStatus(true).then(()=>loadHistory(n));
   }catch(error){
-   if(error?.status===401)showSignIn('Для отправки нужна сессия владельца.');
+   if(error?.status===401)showSignIn('Для отправки восстановите текущую сессию владельца.');
    else note(reason(error),'error');
   }finally{state.posting=false;submit.disabled=!state.signedIn;}
  }
  async function bootstrap(){
-  const ok=await ownerSession().catch(()=>false);
-  if(!ok){showSignIn('Войдите через Google для управления своими PR.');return;}
-  state.signedIn=true;auth.hidden=true;form.hidden=false;
+  if(state.checkingSession)return;
+  state.checkingSession=true;
+  let ok;
+  try{ok=await ownerSession();}
+  catch(error){
+   state.signedIn=false;auth.hidden=true;form.hidden=true;list.replaceChildren();
+   note(reason(error?.code?error:{code:'OWNER_CHECK_UNAVAILABLE'}),'error');return;
+  }finally{state.checkingSession=false;}
+  if(!ok){showSignIn('Используйте действующую авторизацию Holistic House — второй Google-вход не нужен.',true);return;}
+  state.signedIn=true;state.verifiedSession=true;markOwnerSession();auth.hidden=true;form.hidden=false;
   submit.disabled=false;
   await refreshStatus();
   if(!state.refreshTimer)state.refreshTimer=win.setInterval(()=>{
@@ -310,7 +337,7 @@
  }
  form?.addEventListener('submit',event=>void create(event));
  input?.addEventListener('input',()=>input.removeAttribute('aria-invalid'));
- el('pm-pr-completion-reload')?.addEventListener('click',()=>void refreshStatus());
+ el('pm-pr-completion-reload')?.addEventListener('click',()=>void (state.signedIn?refreshStatus():bootstrap()));
  win.addEventListener('pageshow',event=>{if(event.persisted&&state.signedIn)void refreshStatus(true);});
  void bootstrap();
 })(window,document);

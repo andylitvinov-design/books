@@ -172,3 +172,46 @@ test('only exact signed historical LIVE receipt can mark LIVE as historically ve
  assert.match(client,/\/api\/pr-attribution\?pr=/);
  assert.match(client,/if\(!item\|\|item\.status!=='MERGED'/);
 });
+
+
+test('Tasks uses existing auth and distinguishes missing session from denied or unavailable verification',async()=>{
+ const {runInNewContext}=require('node:vm');
+ const source=read('pr-completion-mobile.js');
+ async function simulate(status,data,initial=[]){
+  const nodes=new Map(),store=new Map(initial),redirects=[],calls=[];
+  function node(){return {hidden:true,disabled:true,dataset:{},replaceChildren(){},append(){},setAttribute(){},addEventListener(){}}}
+  const doc={getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},createElement:node};
+  const win={HHPRCompletionMobileModel:{rowsFromStatus:()=>[],time:()=>'',needsAutoRefresh:()=>false},
+   location:{replace:url=>redirects.push(url)},sessionStorage:{getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},
+   addEventListener(){},setInterval(){return 1},
+   fetch:async(url)=>{calls.push(url);return url==='/api/commander-session'?
+     {status,ok:status===200,json:async()=>data}:
+     {status:200,ok:true,json:async()=>({schema:'HH_COMMANDER_PR_COMPLETION_V1'})}}};
+  runInNewContext(source,{window:win,document:doc,AbortController,setTimeout,clearTimeout});
+  await new Promise(resolve=>setImmediate(resolve));
+  return {nodes,store,redirects,calls};
+ }
+ const destination='https://holistichouse.vercel.app/commander-connect.html?next=%2Fproject-management-public.html';
+ const known='hh.commander.tasks.owner-seen.v1',attempt='hh.commander.tasks.sso-attempt.v1';
+ const owner=await simulate(200,{authenticated:true,owner:true});
+ assert.equal(owner.nodes.get('pm-pr-completion-form').hidden,false);
+ assert.equal(owner.nodes.get('pm-pr-completion-login').hidden,true);
+ assert.deepEqual(owner.redirects,[]);
+ assert.equal(owner.store.get(known),'1');
+ const guest=await simulate(401,{authenticated:false,error:'OWNER_SESSION_REQUIRED'});
+ assert.equal(guest.nodes.get('pm-pr-completion-signin').href,destination);
+ assert.equal(guest.nodes.get('pm-pr-completion-form').hidden,true);
+ assert.deepEqual(guest.redirects,[]);
+ const returning=await simulate(401,{authenticated:false,error:'OWNER_SESSION_EXPIRED'},[[known,'1']]);
+ assert.deepEqual(returning.redirects,[destination]);
+ assert.equal(returning.store.get(attempt),'1');
+ const loop=await simulate(401,{authenticated:false,error:'OWNER_SESSION_REQUIRED'},[[known,'1'],[attempt,'1']]);
+ assert.deepEqual(loop.redirects,[]);
+ for(const status of [403,503]){
+  const bad=await simulate(status,{authenticated:false},[[known,'1']]);
+  assert.equal(bad.nodes.get('pm-pr-completion-login').hidden,true);
+  assert.equal(bad.nodes.get('pm-pr-completion-form').hidden,true);
+  assert.deepEqual(bad.redirects,[]);
+ }
+ assert.match(read('project-management-public.html'),/Использовать текущую сессию/);
+});
