@@ -776,11 +776,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
   const methodPosition=methodStagePosition(stageIds,stageChecklistTitles,
     Math.max(0,Math.min(stageIds.length-1,visibleStageIndex)),progressValid,lastRecordedProgress?.completed)
-  const courseRows=openingProgress.completed&&!profileSelected
-    ?coachCourseProtocolRows(selectedCourseId,turns,courseGate?.step.review??courseFieldReview,lang):[]
-  const coursePosition=courseStagePosition(courseRows,{promptId:courseGate?.step.prompt?.fieldId,
-    paused:courseGate?.step.paused,completed:courseGate?.step.completed,
-    allowProvisional:!courseGate&&!courseGateRequired})
+  // Use acknowledged server review when present. Never allow a stale local
+  // review or temporarily inconsistent turn snapshot to crash the session.
+  let courseRows=[],courseReviewInvalid=false
+  if(openingProgress.completed&&!profileSelected){
+    try{
+      const review=courseGate?courseGate.step.review:courseFieldReview
+      courseRows=coachCourseProtocolRows(selectedCourseId,turns,review?.courseSessionId===selectedCourseId?review:null,lang)
+    }catch{
+      courseReviewInvalid=true
+      courseRows=(coachCourseProtocolSchema(selectedCourseId,lang)?.checkpoints||[]).map(row=>({...row,status:'not_explored',turnIndex:null,quote:''}))
+    }
+  }
+  const coursePosition=courseStagePosition(courseRows,{promptId:courseReviewInvalid?null:courseGate?.step.prompt?.fieldId,
+    paused:courseReviewInvalid||courseGate?.step.paused,completed:courseGate?.step.completed,
+    allowProvisional:!courseGate&&!courseGateRequired&&!courseReviewInvalid})
   const savedProfile=profileV3?coachSavedProfileV3(profileV3.protocol,lang):null
   const savedProfilePosition=savedProfileStagePosition(savedProfile,profileV3?.step,lang)
   const progressMode=openingActive?'opening':savedProfile?'profile-v3':profileActive?'profile':courseRows.length?'course':'method'
@@ -795,6 +805,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const plannedCourse=progressMode==='course'&&!courseGate&&stagePosition.index>=0
   const visibleProgressDescription=stagePosition.index>=0?
     (plannedCourse?({ru:'Ориентир: ',en:'Suggested checkpoint: ',es:'Punto orientativo: '}[lang]):'')+stagePosition.rows[stagePosition.index].label:
+    courseReviewInvalid&&progressMode==='course'?({ru:'Ожидаем подтверждённый протокол',en:'Waiting for the verified protocol',es:'Esperando el protocolo verificado'}[lang]):
     stagePosition.finished?({ru:'Пункты обработаны',en:'Steps reviewed',es:'Pasos revisados'}[lang]):
     openingProgress.declined?({ru:'Сессия не начата',en:'Session not started',es:'Sesión no iniciada'}[lang]):
     ({ru:'Ожидание следующего этапа',en:'Waiting for next step',es:'En espera del siguiente paso'}[lang])
@@ -2241,7 +2252,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             aria-valuemin={0} aria-valuemax={Math.max(1,visibleProgressTotal)} aria-valuenow={visibleProgressStep}
             aria-valuetext={visibleProgressDescription}>
             {stagePosition.rows.map(row=><span key={row.id} data-stage-id={row.id}
-              data-stage-status={row.status} title={row.label}
+              data-stage-status={row.active?'current':row.status} data-stage-resolution={row.status} title={row.label}
               data-complete={row.status==='done'?'true':undefined}
               data-current={row.active?'true':undefined}/>)}
 
