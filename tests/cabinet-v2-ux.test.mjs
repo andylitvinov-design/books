@@ -339,11 +339,12 @@ test('verified practitioner account exposes existing client and document tools o
 
 
 test('signed-in and guest test runners expose equivalent Quick and Guided modes', async () => {
-  const [workspace, landing, workspaceCss, ia] = await Promise.all([
+  const [workspace, landing, workspaceCss, ia, cabinetCss] = await Promise.all([
     readFile('components/app/app-workspace.jsx', 'utf8'),
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('app/[locale]/app/[[...path]]/workspace.css', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
+    readFile('app/[locale]/client/cabinet-landing.css', 'utf8'),
   ])
 
   for (const source of [workspace, landing]) {
@@ -374,13 +375,13 @@ test('signed-in and guest test runners expose equivalent Quick and Guided modes'
   assert.match(landing, /guidedMinutes = Math\.max/)
   assert.match(workspace, /hh-runner-methodology/)
   assert.match(workspaceCss, /\.hh-app \.hh-runner--guided \.hh-scale-words button/)
-  assert.match(ia, /\.cabinet-landing-shell \.cabinet-guided-question \.cabinet-answer-list button/)
+  assert.match(cabinetCss, /\.cabinet-landing-shell \.cabinet-guided-question \.cabinet-answer-list button/)
   assert.ok(landing.includes("phase === 'questions'"))
   assert.ok(!landing.includes("phase === 'mode'"))
   assert.ok(workspaceCss.includes('Test runner v2 — two equivalent completion modes'))
   assert.ok(ia.includes('Cabinet test runner v2 — shared Quick / Guided interaction model'))
   assert.ok(workspaceCss.includes('@media (prefers-reduced-motion:reduce)'))
-  assert.ok(ia.includes('@media (prefers-reduced-motion:reduce)'))
+  assert.ok(cabinetCss.includes('@media (prefers-reduced-motion:reduce)'))
 })
 
 

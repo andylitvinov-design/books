@@ -20,7 +20,7 @@ import "./holistic-light-tokens.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
 import "./unified-mobile-dock.css";
-import "./reader-responsive.css";
+import "./reader-shared.css";
 import "./ia-v2.css";
 import "./sitewide-capture.css";
 import "./public-wide-layout.css";

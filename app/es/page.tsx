@@ -5,7 +5,7 @@ import { HomeDeferredSections } from '@/components/home-deferred-sections';
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import Link from 'next/link';
-import { PublicConsultationCta } from '@/components/public-consultation-cta';
+import { HomeSpanishConsultationCta as PublicConsultationCta } from '@/components/home-spanish-consultation-cta';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y en línea | Holistic House', 'Explora tus preguntas sobre relaciones, trabajo y decisiones con Andrey Litvinov. Sesiones personales desde €50 y revisión escrita gratuita opcional.');
 export default function SpanishHomePage() {
