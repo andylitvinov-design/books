@@ -25,4 +25,6 @@ test('only unambiguous verified notes count; older reflection, drafts and foreig
  assert.equal(clarityPracticeProgress([...full,note(3,{id:'other'})]).complete,false)
  assert.equal(clarityPracticeNotes([note(1,{revision:0}),note(1,{goalId:'foreign'}),note(1,{tags:['clarity-v2-day-1']})],1).length,0)
  assert.equal(clarityPracticeProgress([note(7)]).done,0)
+ assert.equal(clarityPracticeProgress([note(1,{tags:[clarityPracticeTag(1),clarityPracticeTag(2)]})]).done,0)
+ assert.equal(clarityPracticeSteps('constructor').length,7)
 })

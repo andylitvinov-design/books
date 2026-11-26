@@ -31,18 +31,19 @@ function ReadyPractice({accountId,lang,t,entries,onSaved,onSessionLost,onClose,o
  const slide=steps[step-1],notes=clarityPracticeNotes(entries,step),entry=notes.length===1?notes[0]:null
  const text=drafts[step]??entry?.text??''
  const duplicate=notes.length>1,final=step===CLARITY_PRACTICE_COUNT
- const done=final&&progress.complete&&!editingFinal
+ const done=final&&progress.complete&&!editingFinal&&!Object.hasOwn(drafts,step)
  const root='/'+lang
  const tools={vectors:root+'/development-vectors',profile:root+'/app/portrait'}
  const dirty=Object.entries(drafts).some(([n,value])=>value.trim()!==(clarityPracticeNotes(entries,Number(n))[0]?.text||''))
- function close(){
+ function leave(action){
   if(inFlight.current)return
   if((dirty||failed)&&!window.confirm(t.unsaved))return
-  onClose()
+  action()
  }
+ function close(){leave(onClose)}
  function go(number){
   if(inFlight.current||failed||number<1||number>progress.firstMissing)return
-  setStep(number);setEditingFinal(false)
+  setStep(number);setEditingFinal(number===CLARITY_PRACTICE_COUNT&&Object.hasOwn(drafts,number))
  }
  async function save(){
   if(inFlight.current||!saver.current||duplicate||!text.trim()||step>progress.firstMissing)return
@@ -79,7 +80,7 @@ function ReadyPractice({accountId,lang,t,entries,onSaved,onSessionLost,onClose,o
   <div className={css.course}><Flower2 size={28}/><div><small>{t.course}</small><strong>{t.session}</strong><span>{t.topic}</span></div></div>
   <nav className={css.rail} aria-label={t.savedCount}>{steps.map(s=><button type="button" key={s.number} aria-current={s.number===step?'step':undefined} aria-label={t.step+' '+s.number+' '+s.title} data-verified={progress.valid[s.number-1]&&(s.number!==7||progress.complete)?'true':undefined} disabled={busy||failed||s.number>progress.firstMissing} onClick={()=>go(s.number)}>{progress.valid[s.number-1]&&(s.number!==7||progress.complete)?<Check size={19}/>:s.number}</button>)}</nav>
   <div className={css.stepLabel} aria-live="polite">{complete?t.complete:t.step+' '+step+' '+t.of+' '+CLARITY_PRACTICE_COUNT+' · '+slide.title}</div>
-  <main className={css.paper} ref={paper}>
+  <section className={css.paper} ref={paper} aria-label={slide.title}>
    {complete?<><div className={css.celebrate} data-practice-art="sunrise"><span><Check size={48}/></span><h2 ref={heading} tabIndex={-1}>{t.complete}</h2></div><p className={css.center}>{t.congrats}</p><div className={css.tip}><Flower2 size={29}/><p>{t.more}</p></div><details className={css.review}><summary>{t.review}</summary>{steps.map(s=><div key={s.number}><b>{s.title}</b><p>{clarityPracticeNotes(entries,s.number)[0]?.text}</p></div>)}</details><button type="button" className={css.secondary} onClick={()=>{setDrafts(old=>({...old,[step]:entry.text}));setEditingFinal(true)}}>{t.reviewTitle} <BookOpen size={18}/></button></>:
    <>
     <h2 ref={heading} tabIndex={-1}>{final?t.reviewTitle:slide.title}</h2>
@@ -92,11 +93,11 @@ function ReadyPractice({accountId,lang,t,entries,onSaved,onSessionLost,onClose,o
     {entry&&!duplicate&&<p className={css.saved} role="status"><CheckCircle2 size={17}/>{t.saved}</p>}
     {failed&&<p role="alert">{t.error}</p>}
    </>}
-   {oldNotes.length>0&&step===1&&<details className={css.review}><summary>{t.old}</summary>{oldNotes.map(e=><p key={e.id}>{e.text}</p>)}</details>}
+   {oldNotes.length>0&&step===1&&<details className={css.review}><summary>{t.old}</summary>{oldNotes.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'} target="_blank" rel="noopener noreferrer" prefetch={false}>{t.journal}</Link></details>}
    <p className={css.privacy}>{t.privacy}</p>
-  </main>
+  </section>
   <footer className={css.footer}><div className={css.progressLabel}><span>{t.savedCount}: {progress.done}/{progress.total}</span><strong>{Math.round(progress.done/progress.total*100)}%</strong></div><progress value={progress.done} max={progress.total} aria-label={t.savedCount}/>
-   {complete?<><button type="button" className={css.primary} onClick={onNextDay}>{t.nextDay}<ArrowRight size={22}/></button><button type="button" className={css.secondary} onClick={close}>{t.finishToday}<BookOpen size={19}/></button></>:<div className={css.actions}><button type="button" className={css.secondary} onClick={()=>step===1?close():go(step-1)} disabled={busy||failed}><ArrowLeft size={21}/>{t.back}</button><button type="button" className={css.primary} disabled={busy||duplicate||!text.trim()||step>progress.firstMissing} onClick={()=>void save()}>{busy?t.saving:failed?t.retry:final?t.finish:entry?.text===text.trim()?t.continue:t.next}<ArrowRight size={22}/></button></div>}
+   {complete?<><button type="button" className={css.primary} onClick={()=>leave(onNextDay)}>{t.nextDay}<ArrowRight size={22}/></button><button type="button" className={css.secondary} onClick={close}>{t.finishToday}<BookOpen size={19}/></button></>:<div className={css.actions}><button type="button" className={css.secondary} onClick={()=>step===1?close():go(step-1)} disabled={busy||failed}><ArrowLeft size={21}/>{t.back}</button><button type="button" className={css.primary} disabled={busy||duplicate||!text.trim()||step>progress.firstMissing} onClick={()=>void save()}>{busy?t.saving:failed?t.retry:final?t.finish:entry?.text===text.trim()?t.continue:t.next}<ArrowRight size={22}/></button></div>}
   </footer>
  </div>
 }
