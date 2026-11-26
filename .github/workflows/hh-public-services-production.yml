@@ -283,12 +283,18 @@ jobs:
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
-          compare_json="$(curl --fail --silent --show-error --max-time 20 \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}")"
-          relation="$(printf '%s' "$compare_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const x=JSON.parse(s);if(typeof x.status!=="string")process.exit(2);process.stdout.write(x.status)}catch{process.exit(2)}})')"
+          # Equality of the verified immutable first parent and event SHA is
+          # itself ancestry proof: avoid a redundant GitHub Compare request.
+          if [[ "$EVENT_BASE_SHA" == "$tested_base" ]]; then
+            relation=identical
+          else
+            compare_json="$(curl --fail --silent --show-error --max-time 20 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}")"
+            relation="$(printf '%s' "$compare_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const x=JSON.parse(s);if(x.status!=="ahead"||x.behind_by!==0||x.base_commit?.sha!==process.env.EVENT_BASE_SHA||x.merge_base_commit?.sha!==process.env.EVENT_BASE_SHA)process.exit(2);process.stdout.write(x.status)}catch{process.exit(2)}})')"
+          fi
           [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
             echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
@@ -373,6 +379,22 @@ jobs:
           key: hh-public-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
           restore-keys: |
             hh-public-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-pr-${{ github.event.pull_request.number }}-
+      # A fresh PR has no PR-local cache. Reuse only compiler state produced
+      # on the protected production branch; never reuse a served build.
+      - name: Restore protected production compiler cache on PR-local miss
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.scope.outputs.build == 'true' && steps.scope.outputs.pr_heavy == 'true' && steps.next_cache.outputs.cache-matched-key == '' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+      - name: Restore protected production scenario music for browser build
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.scope.outputs.build == 'true' && steps.scope.outputs.pr_heavy == 'true' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       # Chromium + WebKit and system dependencies are provided by the exact
       # Playwright 1.63.0 image, so no repeated apt install/download is needed.
       # Still launch each required real browser; never waive missing evidence.
@@ -429,10 +451,10 @@ jobs:
           # bypass unknown/new package prebuild steps or standalone QA.
           build_public_candidate() {
             if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]] &&
-                node -e 'const s=require("./package.json").scripts; process.exit(s.build==="next build" && s.prebuild==="node scripts/ensure-owner-video-renderer.mjs && node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs && node scripts/prepare-my-coach-natural-mp4.mjs" ? 0 : 1)'; then
+                node -e 'const s=require("./package.json").scripts; process.exit(s.build==="next build" && !s.preprebuild && !s.postprebuild && !s.postbuild && s.prebuild==="node scripts/ensure-owner-video-renderer.mjs && node scripts/cache-ancient-coaching-photos.mjs && node --test tests/psychic-alchemy-featured-video.test.mjs && npm run test:coaching:release && node --test tests/public-coaching-discovery.test.mjs && node --test tests/tests-coaching-switchboard.test.mjs && node scripts/generate-soft-ocean-melody.mjs && node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs && node scripts/prepare-my-coach-natural-mp4.mjs" ? 0 : 1)'; then
               node scripts/ensure-owner-video-renderer.mjs &&
               node scripts/cache-ancient-coaching-photos.mjs &&
-              node scripts/generate-soft-ocean-melody.mjs &&
+              npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs &&
               node scripts/build-public-card-artwork.mjs &&
               node scripts/build-report-pdf-art.mjs &&
               node scripts/prepare-my-coach-natural-mp4.mjs &&

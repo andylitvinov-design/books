@@ -45,9 +45,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - name: Load original checksum-verified FFmpeg for npm ci
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
-      - run: npm ci --no-audit --no-fund
+      - name: Install dependencies for standalone practitioner compile
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --no-audit --no-fund
       - name: Install SHA-verified FFmpeg into package after npm ci
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
