@@ -12,7 +12,7 @@ import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  geminiLiveContextMessage,geminiLiveDirectorMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
-import {GEMINI_COACH_VOICE_OPTIONS} from '../lib/coaching/gemini-voice-catalog.mjs'
+import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice,MERLIN_VOCAL_DELIVERY} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
 
 const key='AIza'+'A'.repeat(36)
@@ -47,7 +47,7 @@ test('all twelve personas, locked voice candidates, RU/EN/ES and separate audio-
   const setup=geminiFreeLiveSetup(input)
   assert.equal(input.policy.personaId,personaId)
   assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
-  assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voiceName)
+  assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,lockedCoachSessionVoice(personaId,locale)||voiceName)
   assert.match(setup.systemInstruction.parts[0].text,/the server owns coaching method/)
   assert.match(setup.systemInstruction.parts[0].text,/never replace a profile rating or completed profile with a GROW question/)
   assert.equal(setup.responseModalities[0],'AUDIO')
@@ -446,6 +446,7 @@ test('Play emits one marked app cue but never fabricated visitor consent',()=>{
  assert.match(speech,/APPLICATION START EVENT/)
  assert.match(speech,/NOT HUMAN SPEECH OR CONSENT/)
  assert.match(speech,/first invitation question/)
+  assert.match(speech,/Do not repeat your name, biography or public introduction/)
  assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
  const client=load('components/my-coach-gemini-live.jsx')
  assert.match(client,/if\(!r\.introSent\)/)
@@ -691,4 +692,13 @@ test('self-saved owner profile scores require specific Gemini Live axes opt-in',
  assert.equal(coachLiveApprovedAxes({...personal.profileAudit,axes:axes.map(a=>
   a.id==='anchor'?{...a,source:'ai_only'}:a)}),null)
  assert.equal(coachLiveApprovedAxes({...personal.profileAudit,completeArchive:false}),null)
+})
+
+test('Merlin Live retains the recorded RU/EN voice identity and calm speaking direction',()=>{
+  for(const [locale,voice] of [['ru','Sadaltager'],['en','Algenib']]){
+    const setup=geminiFreeLiveSetup(normalizeGeminiFreeLiveStart({...start,personaId:'merlin',locale,voiceName:'Gacrux'}))
+    assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice)
+    assert.ok(setup.systemInstruction.parts[0].text.includes(MERLIN_VOCAL_DELIVERY))
+    assert.match(setup.systemInstruction.parts[0].text,/Never repeat your name, biography/)
+  }
 })

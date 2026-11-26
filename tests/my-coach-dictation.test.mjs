@@ -287,8 +287,8 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
- assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
  assert.ok(ui.includes('locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang)'))
@@ -318,7 +318,7 @@ test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES ov
   assert.ok(css.includes('font:800 12px/1.2 system-ui'))
   assert.ok(loop.includes('selection:speechLocaleRef.current'),
     'the explicit locale is forwarded to speech recognition')
-  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'),
+  assert.ok(loop.includes('coachSessionOpeningAudioPath(personaId,lang)'),
     'the introduction MP3 path follows the selected locale')
   assert.ok(loop.includes('locale:replyLocale,personaId'),
     'TTS receives the same locale as the coach reply')

@@ -16,7 +16,7 @@ import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} 
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
-import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
   coachProfileReviewProtocolSnapshot} from '@/lib/coaching/coach-profile-review.mjs'
@@ -33,9 +33,9 @@ import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/pe
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
 import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
-import {coachGeminiVoiceOptions,approvedGeminiVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachGeminiVoiceOptions,approvedGeminiVoice,lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
-import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
+import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
@@ -540,7 +540,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
   const sessionTimebox=coachTimeboxState(sessionClockStarted?Math.floor(activeSessionSeconds):null)
-  const introduction=coachOpeningIntro(personaId,conversationLang)
+  const introduction=coachSessionOpeningLine(personaId,conversationLang)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
@@ -552,9 +552,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const geminiVoices=coachGeminiVoiceOptions(personaId)
   const voiceSelectionKey=personaId+':'+conversationLang
   const ownerApprovedGeminiVoice=approvedGeminiVoice(personaId,conversationLang)
-  const selectedGeminiVoice=geminiVoices.includes(geminiVoiceByLocale[voiceSelectionKey])
+  const lockedSessionVoice=lockedCoachSessionVoice(personaId,conversationLang)
+  const selectedGeminiVoice=lockedSessionVoice||(geminiVoices.includes(geminiVoiceByLocale[voiceSelectionKey])
     ?geminiVoiceByLocale[voiceSelectionKey]
-    :geminiVoices.includes(ownerApprovedGeminiVoice)?ownerApprovedGeminiVoice:geminiVoices[0]
+    :geminiVoices.includes(ownerApprovedGeminiVoice)?ownerApprovedGeminiVoice:geminiVoices[0])
   const geminiVoiceReady=geminiVoiceTier!=='existing'&&
     geminiCapabilities[geminiVoiceTier]===true&&geminiVoiceConsent
   // A selected Gemini voice is a vendor decision, not a preference hint:
@@ -878,7 +879,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setPlaybackNotice(voiceGate.naturalUnavailable)
     }
     if(replayingIntro){
-      const introUrl=coachIntroAudioPath(personaId,conversationLang)
+      const introUrl=coachSessionOpeningAudioPath(personaId,conversationLang)
       if(!introUrl){fail();return}
       try{
         replayPlayerRef.current=startDirectCoachIntroAudio(introUrl,{
@@ -1992,7 +1993,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>
       {((!introComplete&&['idle','loading'].includes(voiceState.phase))||voiceState.phase==='paused')&&
         <button type="button" className={styles.heroPlayControl}
-          data-coach-hero-play aria-label={voiceState.phase==='paused'?({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]:lang==='ru'?'Начать голосовую сессию с презентацией коуча':lang==='es'?'Iniciar la sesión y escuchar al coach':'Play coach introduction and start session'}
+          data-coach-hero-play aria-label={voiceState.phase==='paused'?({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]:lang==='ru'?'Начать голосовую сессию':lang==='es'?'Iniciar sesión de voz':'Start coaching session'}
           title={voiceState.phase==='paused'?({ru:'Продолжить разговор',en:'Continue conversation',es:'Continuar conversación'})[lang]:lang==='ru'?'Начать сессию':lang==='es'?'Iniciar sesión':'Start session'}
           disabled={voiceState.phase==='loading'||busy||paused||replaying||(selectedGeminiEngine&&!geminiEngineReady)}
           onClick={startSessionFromPortrait}>
@@ -2480,7 +2481,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {liveVoiceSelected&&<>
           <label className={styles.coachEnginePicker} data-gemini-live-free-voice>
             <span>{({ru:'Голос живого коуча',en:'Live coach voice',es:'Voz del coach en vivo'})[lang]}</span>
-            <select value={selectedGeminiVoice} disabled={voiceState.phase!=='idle'}
+            <select value={selectedGeminiVoice} disabled={Boolean(lockedSessionVoice)||voiceState.phase!=='idle'}
               onChange={event=>{setGeminiVoiceByLocale(prev=>({...prev,
                 [voiceSelectionKey]:event.target.value}));setGeminiLiveConsent(false)}}>
               {geminiVoices.map(v=><option value={v} key={v}>{v}</option>)}
@@ -2508,7 +2509,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {!liveVoiceSelected&&geminiVoiceTier!=='existing'&&<>
           <label className={styles.coachEnginePicker} data-gemini-voice-name>
             <span>{conversationLang.toUpperCase()} · {({ru:'Выбор тембра',en:'Choose voice',es:'Elegir voz'})[lang]}</span>
-            <select value={selectedGeminiVoice} disabled={busy||replaying} onChange={event=>
+            <select value={selectedGeminiVoice} disabled={Boolean(lockedSessionVoice)||busy||replaying} onChange={event=>
               setGeminiVoiceByLocale(prev=>({...prev,[voiceSelectionKey]:event.target.value}))}>
               {geminiVoices.map(name=><option value={name} key={name}>{name}</option>)}
             </select>
