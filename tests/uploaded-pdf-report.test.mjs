@@ -56,3 +56,17 @@ test('uploaded PDF placement is validated and sealed, never exposed by guest pro
  assert.match(read('lib/app/daybook-report-index.js'),/session\.reportFormat==='pdf'\?'pdf'/)
  assert.match(read('app/[locale]/app/sessions/[id]/page.jsx'),/record\?\.programPlacement\?\?pdfPlacement/)
 })
+
+
+test('legacy cabinet cannot expose original PDF content or direct asset bytes',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const page=read('app/[locale]/client/[selector]/sessions/[sessionId]/page.js')
+ const route=read('app/api/client/[selector]/sessions/[sessionId]/media/[assetId]/route.js')
+ assert.ok(page.indexOf("if(session.reportFormat==='pdf')return")>=0)
+ assert.ok(page.indexOf("if(session.reportFormat==='pdf')return")<page.indexOf('<ClientSessionPage'))
+ const gate=route.indexOf("if(session.reportFormat==='pdf')return privateJson")
+ assert.ok(gate>=0&&gate<route.indexOf('const library='))
+ assert.match(route,/export const HEAD=handle/)
+ assert.match(route,/export const GET=handle/)
+ assert.match(route,/export const POST=handle/)
+})
