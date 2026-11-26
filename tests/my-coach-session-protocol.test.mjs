@@ -532,3 +532,18 @@ test('chronological checkpoint and reviewed report preserve prior unanswered utt
  assert.ok(ui.includes("row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}"))
  assert.ok(ui.includes("row.role==='user'&&row.unanswered===true?{unanswered:true}"))
 })
+
+
+test('legacy business coaching IDs retain the original four-session checkpoints after Daybook v2 expansion',async()=>{
+ const {LEGACY_BUSINESS_SYLLABUS,BUSINESS_SYLLABUS}=await import('../lib/app/business-daybook.mjs')
+ const ids=['business_strategy','business_design','business_transformation','business_execution']
+ for(const lang of ['en','ru','es']){
+  assert.equal(BUSINESS_SYLLABUS[lang].length,8)
+  assert.equal(LEGACY_BUSINESS_SYLLABUS[lang].length,4)
+  for(const [index,id] of ids.entries()){
+   const original=LEGACY_BUSINESS_SYLLABUS[lang][index]
+   assert.equal(COACH_PROGRAM_SESSIONS.find(item=>item.id===id)?.title[lang],original[0])
+   assert.deepEqual(coachCourseProtocolSchema(id,lang).checkpoints.map(row=>[row.label,row.instruction]),original[2])
+  }
+ }
+})
