@@ -125,9 +125,9 @@ for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
  try{
   for(const [locale,path,labels] of [
-   ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support"]],
-   ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса"]],
-   ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"]]
+   ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support","Reiki Practic"]],
+   ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса","Reiki Practic"]],
+   ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"]]
   ]){
    for(const width of [320,354,390,430]){
     const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
@@ -146,8 +146,8 @@ for(const engine of [chromium,webkit]){
      assert.equal(await root.locator('[data-home-mode-button]').count(),0,name+": no audience tabs");
      assert.equal(await root.locator("[data-home-intent-form]").count(),1,name+": one composer");
      assert.equal(await root.locator("[data-home-stage-option]").count(),0,name+": no homepage seven-step panel");
-     assert.equal(await root.locator("[data-home-intent-option]").count(),3,name+": three program entries");
-     for(const [i,id] of ["clarity","goal","business"].entries()){
+     assert.equal(await root.locator("[data-home-intent-option]").count(),4,name+": four program entries");
+     for(const [i,id] of ["clarity","goal","business","reiki"].entries()){
        const card=root.locator('[data-home-intent-option="'+id+'"]');
        assert.equal(await card.count(),1,name+": "+id);
        assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
@@ -168,7 +168,7 @@ for(const engine of [chromium,webkit]){
 
      assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
      const cards=await root.locator('[data-home-intent-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}}));
-     assert.equal(cards.length,3,name+": three rows");
+     assert.equal(cards.length,4,name+": four rows");
      assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
      const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
      assert.ok(copyFits,name+": no clipped copy");
@@ -191,6 +191,21 @@ for(const engine of [chromium,webkit]){
      assert.deepEqual(errors,[],name+": no script errors");
      evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
      if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
+     if(width===390){
+      for(const [id,count] of [["clarity",3],["goal",8],["business",4],["reiki",5]]){
+       await root.locator('[data-home-intent-option="'+id+'"]').click();
+       await page.waitForURL(origin+"/"+locale+"/programs/"+id);
+       const overview=page.locator('[data-public-program="'+id+'"]');
+       await overview.waitFor({state:"visible"});
+       assert.equal(await overview.locator("[data-program-session]").count(),count,name+": "+id+" sessions");
+       const start=overview.locator(id==="reiki"?"[data-reiki-start-free]":"[data-program-start]");
+       assert.equal(await start.count(),1,name+": "+id+" primary start");
+       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": "+id+" no overflow");
+       if(engine===webkit)await page.screenshot({path:output+"/program-"+id+"-"+locale+"-webkit-390.png",fullPage:true});
+       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+       await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]').waitFor({state:"visible",timeout:20000});
+      }
+     }
      if(dictationCalls){
       await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
       assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
