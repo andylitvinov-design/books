@@ -10,9 +10,9 @@ import {GENIE_OPENING_QUESTIONS,GENIE_OPENING_REASSURANCE,GENIE_BEHAVIOR_STANDAR
 const progress=(turns,options={})=>coachOpeningProgress({locale:'ru',personaId:'mira',...options,
   turns:turns.map(content=>({role:'user',content}))})
 
-test('all eleven personas, including seven published coaches, have exactly four unique RU/EN/ES questions at every opening gate',()=>{
-  assert.equal(COACH_OPENING_PUBLIC_IDS.length,7)
-  assert.equal(Object.keys(COACH_OPENING_QUESTION_BANK).length,11)
+test('all twelve personas, including eight published coaches, have exactly four unique RU/EN/ES questions at every opening gate',()=>{
+  assert.equal(COACH_OPENING_PUBLIC_IDS.length,8)
+  assert.equal(Object.keys(COACH_OPENING_QUESTION_BANK).length,12)
   for(const id of Object.keys(COACH_OPENING_QUESTION_BANK)){
     for(const step of COACH_OPENING_IDS){
       for(const lang of ['ru','en','es']){
@@ -113,12 +113,12 @@ test('existing six public coaches keep their independent localized introductions
   }
  }
  // Existing identity is preserved; the new question architecture does not rewrite their first step.
- assert.match(coachOpeningQuestion('mira','invitation','ru'),/^Бережно спрошу:/)
- assert.match(coachOpeningQuestion('max','invitation','ru'),/^Коротко и по делу:/)
- assert.match(coachOpeningQuestion('sofia','invitation','ru'),/^С уважением к вашим границам:/)
- assert.match(coachOpeningQuestion('alex','invitation','ru'),/^Для ясной структуры:/)
- assert.match(coachOpeningQuestion('merlin','invitation','ru'),/^На этом повороте пути:/)
- assert.match(coachOpeningQuestion('harry','invitation','ru'),/^Первый маленький смелый шаг:/)
+
+
+
+
+
+
 })
 test('Samir has 72 original full questions — four for each of six steps in RU/EN/ES',()=>{
  let count=0
@@ -222,4 +222,31 @@ test('speech repair requests do not complete the name gate, including capitalize
  }
  const p=coachOpeningProgress({allowPrior:true,priorSession:{name:'Say again',topic:'Work'},turns:['Yes','Yes']})
  assert.equal(p.checkmarks.name,false)
+})
+
+test('all eight public coaches have 576 original full opening questions, not a shared stem with a cadence prefix',()=>{
+ const publicQuestions=[]
+ for(const id of COACH_OPENING_PUBLIC_IDS)for(const gate of COACH_OPENING_IDS)for(const locale of ['en','ru','es']){
+  const variants=COACH_OPENING_QUESTION_BANK[id][gate][locale]
+  assert.equal(variants.length,4)
+  assert.ok(Object.isFrozen(variants))
+  for(const question of variants){
+   assert.ok(question.length>12&&question.length<230,id+'/'+gate+'/'+locale)
+   assert.equal(question.split('?').length,2,question)
+   assert.ok(question.endsWith('?'))
+   assert.doesNotMatch(question,/^(Бережно спрошу|Коротко и по делу|С уважением к вашим границам|Для ясной структуры|На этом повороте пути|Первый маленький смелый шаг|Straight to the point|For a clear structure):/u)
+   publicQuestions.push(question)
+  }
+ }
+ assert.equal(publicQuestions.length,576)
+ assert.equal(new Set(publicQuestions).size,576)
+})
+
+test('Gemini Live receives the same six localized personality questions without authorizing progression',()=>{
+ for(const id of COACH_OPENING_PUBLIC_IDS)for(const lang of ['ru','en','es']){
+  const live=coachOpeningLiveInstruction(id,lang)
+  for(const gate of COACH_OPENING_IDS)assert.ok(live.includes(coachOpeningQuestion(id,gate,lang)),id+'/'+lang+'/'+gate)
+  assert.match(live,/One question per spoken turn/)
+  assert.match(live,/Wait for a clear client yes/)
+ }
 })

@@ -41,14 +41,25 @@ import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
 import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
-import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
+import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel,COACH_PROGRAM_GROUPS} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
+import {coachReactionIntent,coachExplicitFarewell} from '@/lib/coaching/coach-reaction-director.mjs'
+import useCoachReactionActivity from './use-coach-reaction-activity'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
+import MyCoachCourseFieldReview from './my-coach-course-field-review'
+import MyCoachCourseGateVoice from './my-coach-course-gate-voice'
+import MyCoachResultPreview from './my-coach-result-preview'
+import {coachCourseProtocolRows,coachCourseProtocolSchema,normalizeCoachCourseFieldReview,coachCourseGateHandoffRequired} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
+import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
+import {coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
+import MyCoachCourseProgress from './my-coach-course-progress'
+import {coachSavedProfileV3,coachSavedProfileV3Text} from '@/lib/coaching/coach-profile-report-v3.mjs'
 import {recoverPrivateOpeningScope} from '@/lib/personal-coaching/private-draft-resume.mjs'
 import {createCoachDraftQueue} from '@/lib/personal-coaching/protocol-draft-queue.mjs'
+import {coachProtocolCanAppend,coachProtocolRoomForExchange} from '@/lib/personal-coaching/protocol-capture.mjs'
 
 const copy={
   en:{
@@ -100,7 +111,7 @@ const copy={
 // Speech services receive only their minimum necessary data after a real
 // Play gesture. Keep full disclosures in the optional Privacy details.
 const avatarVisuals={
-  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',genie:'warm',caesar:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
@@ -235,7 +246,7 @@ const sessionRatingCopy={
   es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
 }
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
@@ -278,10 +289,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
-  turnsRef.current=turns
+  // Every transcript mutation updates this ref synchronously before React renders.
   const turnRequestRef=useRef(0)
   const inFlightClientRef=useRef(null) // client message awaiting a genuine coach reply
   const [protocolOpen,setProtocolOpen]=useState(false)
+  const [protocolEditing,setProtocolEditing]=useState(false)
   const [ratingOpen,setRatingOpen]=useState(false)
   const [rating,setRating]=useState({stars:0,character:3,intelligence:3,impression:3})
   const [ratingSaving,setRatingSaving]=useState(false)
@@ -289,8 +301,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [ratingError,setRatingError]=useState(false)
   const [autoSaveEnabled,setAutoSaveEnabled]=useState(false)
   const [restoredDraft,setRestoredDraft]=useState(false)
+  const [freshPrivateProfile,setFreshPrivateProfile]=useState(false)
+  const [courseGate,setCourseGate]=useState(null),courseGateRef=useRef(null)
+  const [courseGateEnabled,setCourseGateEnabled]=useState(false),[courseGateBusy,setCourseGateBusy]=useState(false),courseGateBusyRef=useRef(false)
+  const [courseGateError,setCourseGateError]=useState(false),courseGateAttemptRef=useRef(null)
+  const [courseGateAnswer,setCourseGateAnswer]=useState('')
+  const privateTextOnly=restoredDraft||freshPrivateProfile||Boolean(courseGate)||courseGateBusy||Boolean(courseGateAttemptRef.current)
   const initialDraftRevision=useRef(0)
   const restoredOpeningScope=useRef(null),restoredProfileCheckin=useRef(null),restoredMethod=useRef(null)
+  // Only the existing server-verified archive may supply a structured result.
+  // Keep the opaque proof in the local private-save path, never model context.
+  const restoredProfileProof=useRef(null)
+  const [profileV3,setProfileV3]=useState(null),profileV3Ref=useRef(null)
+  const [profileV3Enabled,setProfileV3Enabled]=useState(false)
+  const [profileV3CanStart,setProfileV3CanStart]=useState(false)
+  const [profileV3Busy,setProfileV3Busy]=useState(false),profileV3BusyRef=useRef(false)
+  const [profileV3Fault,setProfileV3Fault]=useState(false),profileV3FaultRef=useRef(false)
+  const [profileV3Error,setProfileV3Error]=useState(false)
+  const [profileV3Answer,setProfileV3Answer]=useState(''),[profileV3Correction,setProfileV3Correction]=useState('')
   const resumeInFlight=useRef(false)
   const [resumeList,setResumeList]=useState(null)
   const [resumeBusy,setResumeBusy]=useState(false)
@@ -299,6 +327,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const autoSaveRef=useRef(false),autoSaveQueueRef=useRef(null),draftMountedRef=useRef(true)
   const headerBackPendingRef=useRef(false)
   useEffect(()=>{draftMountedRef.current=true;return()=>{draftMountedRef.current=false}},[])
+  const [courseFieldReview,setCourseFieldReview]=useState(null)
   const [protocolSummary,setProtocolSummary]=useState('')
   const [protocolNextStep,setProtocolNextStep]=useState('')
   const [protocolSaving,setProtocolSaving]=useState(false)
@@ -328,10 +357,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
   const [voiceState,setVoiceState]=useState({phase:'idle',beat:0})
+  const reactionActivity=useCoachReactionActivity(voiceState.phase,personaId)
   const voicePaused=voiceState.phase==='paused'
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
-  const [selectedCourseId,setSelectedCourseId]=useState(DEFAULT_COACH_COURSE_SESSION_ID)
+  const [selectedCourseId,setSelectedCourseId]=useState(()=>COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===initialGoalCourseId)?initialGoalCourseId:DEFAULT_COACH_COURSE_SESSION_ID)
   const lastSharedGoalRef=useRef('')
   const modelProbeRef=useRef({lastAttempt:0,inFlight:false})
   const semanticHintsRef=useRef([]) // short-lived in-tab hints only; not persisted or exported
@@ -425,6 +455,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }).catch(()=>{}) // Guest/offline dialogue and local PDF still work.
     return()=>{active=false}
   },[])
+  useEffect(()=>{
+    if(!protocolOwnerReady||greetingAccepted)return
+    const owner=protocolOwnerRef.current,controller=new AbortController()
+    fetch('/api/app/my-coach/draft?view=capabilities',{credentials:'same-origin',cache:'no-store',signal:controller.signal,
+      headers:{'X-HH-Account-ID':owner}}).then(async response=>{
+        if(!response.ok)return
+        const result=await response.json()
+        if(!controller.signal.aborted&&protocolOwnerRef.current===owner&&!protocolStartedRef.current){
+          setProfileV3Enabled(result.profileV3Enabled===true)
+          setCourseGateEnabled(result.courseGateEnabled===true)
+        }
+      }).catch(()=>{})
+    return()=>controller.abort()
+  },[protocolOwnerReady,greetingAccepted])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
     // The client's message and history remain untouched until consent + Send.
@@ -526,7 +570,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
-    if(restoredDraft){toggleComposer();return}
+    if(privateTextOnly||courseGateRequired){toggleComposer();return}
     if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
@@ -617,7 +661,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const confirmedClientTurns=turns.filter(turn=>turn.role==='user'&&turn.unanswered!==true)
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
-  const localOpeningScope=restoredDraft?(restoredOpeningScope.current||{allowPrior:false,priorSession:null}):{allowPrior:allowOpeningPrior,priorSession:openingPrior}
+  const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||{allowPrior:false,priorSession:null}):{allowPrior:allowOpeningPrior,priorSession:openingPrior}
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,...localOpeningScope})
   const openingActive=!openingProgress.completed
@@ -626,13 +670,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const profileSelected=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
   const profileEvidence=confirmedClientTurns.map(turn=>String(turn.content||'').slice(0,300))
   const profileHistory=profileEvidence.slice(openingProgress.consumedTurns)
-  const newProfileProgress=profileSelected
+  const newProfileProgress=profileSelected&&!freshPrivateProfile&&!profileV3&&!restoredProfileProof.current
     ?coachProfileProgress({locale:conversationLang,turns:profileHistory}):null
   const approvedProfileAudit=memoryReady&&stagedMemory?.allowProfile===true&&
     stagedMemory?.personal?.stage==='personal'
       ?stagedMemory.personal.profileAudit:null
   useEffect(()=>{
-    if(!profileSelected||approvedProfileAudit?.status!=='available'||
+    if(freshPrivateProfile||!profileSelected||approvedProfileAudit?.status!=='available'||
        !stagedMemory?.stageToken)return
     // Once a new profile already started, do not retroactively reinterpret
     // those spoken numbers as updates against saved profile fields.
@@ -641,7 +685,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        profileReviewStart?.provider!==memoryProvider){
       setProfileReviewStart({from:profileEvidence.length,token:stagedMemory.stageToken,provider:memoryProvider})
     }
-  },[profileSelected,approvedProfileAudit,stagedMemory?.stageToken,memoryProvider,
+  },[freshPrivateProfile,profileSelected,approvedProfileAudit,stagedMemory?.stageToken,memoryProvider,
     newProfileProgress?.ratings.length,profileEvidence.length,profileReviewStart])
   const reviewAvailable=profileSelected&&profileReviewStart!==null&&
     approvedProfileAudit?.status==='available'&&
@@ -656,7 +700,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       completed:false,finished:false,ratings:[],total:8,step:1,
       current:'permission',axisTitle:({ru:'Проверка доступа',en:'Access review',es:'Revisión de acceso'})[lang]}:
       newProfileProgress)
-  const profileActive=Boolean(profileSelected)
+  const courseGateRequired=!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveEnabled,courseSessionId:selectedCourseId,locale:conversationLang,opening:openingProgress})
+  const courseGateCanStart=Boolean(courseGateRequired&&!courseGate&&!courseGateAttemptRef.current&&voiceState.phase==='idle'&&!busy&&!paused&&!protocolOpen)
+  // Never let the free dialogue ask another core question while the server gate is required.
+  useEffect(()=>{
+    if(courseGateRequired&&!courseGate&&!busy&&voiceState.phase!=='idle')speechRef.current?.stop?.()
+  },[courseGateRequired,courseGate,busy,voiceState.phase])
+  const profileV3Active=Boolean(profileV3&&!profileV3.step.closed)
+  const freshProfileAwaiting=Boolean(freshPrivateProfile&&profileSelected&&!profileV3&&!profileV3Fault)
+  const structuredProfileCanStart=freshPrivateProfile?Boolean(freshProfileAwaiting&&autoSaveEnabled&&profileV3Enabled&&coachProfileTrackForCourse(selectedCourseId)):restoredDraft&&profileV3CanStart
+  const profileActive=Boolean(profileSelected&&profileProgress&&!profileV3&&!restoredProfileProof.current)
   const continuityChoice=openingProgress.answers.continuity?.kind||''
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
     openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
@@ -792,7 +845,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    if(restoredDraft)return
+    if(privateTextOnly)return
     // Dynamic replies preserve their consented remote provider. Fixed public
     // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
@@ -935,7 +988,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   async function send(event){
     event.preventDefault()
-    if(restoredDraft)return await sendMessage(draft.trim(),{forceLocal:true})
+    if(courseGateRequired||courseGateRef.current||courseGateBusyRef.current)return null
+    if(privateTextOnly)return await sendMessage(draft.trim(),{forceLocal:true})
     if(liveVoiceSelected){
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
       // text-model + WAV-TTS pipeline. Do not charge another provider.
@@ -997,6 +1051,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // The first-party archive and provider consent remain separate. Save the
   // actual finalized client words even when the model never replies.
   function queuePrivateDraft(rows){
+    if(courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return false
+    if(profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed))return false
     const owner=protocolOwnerRef.current
     if(!autoSaveRef.current||!owner||protocolSaved||!rows.some(row=>row.role==='user'))return
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
@@ -1008,13 +1064,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }))
     let value
     try{
-      value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,protocol:{
-        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+      value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,...(freshPrivateProfile?{privateProfileV3Requested:true}:{}),protocol:{
+        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeSessionSeconds),turnLayout:'chronological',
-        opening,turns:rows.map((row,index)=>({role:row.role,content:row.content,
-          ...(row.role==='user'&&index===rows.length-1?{unanswered:true}:{}),
+        opening,...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:{}),
+        turns:rows.map((row,index)=>({role:row.role,content:row.content,
+          ...(row.role==='user'&&(row.unanswered===true||index===rows.length-1)?{unanswered:true}:{}),
           ...(row.role==='assistant'&&row.interrupted===true?{interrupted:true}:{}),
           ...(row.role==='assistant'&&['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
         }))
@@ -1022,7 +1079,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // A malformed derived profile candidate cannot erase the raw conversation.
       const profile=restoredProfileCheckin.current|| (profileReviewProgress?coachProfileReviewProtocolSnapshot(profileReviewProgress):
         profileProgress&&profileReviewStart===null?coachProfileProtocolSnapshot(profileProgress):null)
-      if(profile){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
+      if(profile&&!restoredProfileProof.current){try{value=normalizeMyCoachDraft({...value,protocol:{...value.protocol,profileCheckin:profile}})}catch{/* retain the transcript */}}
     }catch{setAutoSaveStatus('error');return false}
     if(!autoSaveQueueRef.current)autoSaveQueueRef.current=createCoachDraftQueue(async(revision,snapshot)=>{
       const body=JSON.stringify({action:'checkpoint',consent:true,revision,value:snapshot})
@@ -1040,14 +1097,29 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function retainPendingClient(){
     const pendingClient=inFlightClientRef.current
-    if(!pendingClient)return
+    if(!pendingClient)return true
+    const rows=turnsRef.current,entry={role:'user',content:pendingClient.message,unanswered:true}
+    if(!coachProtocolCanAppend(rows,[entry])){setError(protocolCopy[lang].limit);return false}
     inFlightClientRef.current=null
-    const rows=turnsRef.current
-    if(rows.length>=160)return
-    const next=[...rows,{role:'user',content:pendingClient.message,unanswered:true}]
+    const next=[...rows,entry]
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+    return true
+  }
+  // The last reply must be captured even if the user leaves before React
+  // commits a render. Do not rotate the archive or discard its first turns.
+  function commitCompletedClientTurn(requestId,message,reply){
+    if(turnRequestRef.current!==requestId||inFlightClientRef.current?.requestId!==requestId)return false
+    const rows=turnsRef.current,entries=[{role:'user',content:message},reply]
+    if(!coachProtocolCanAppend(rows,entries)){
+      retainPendingClient();setError(protocolCopy[lang].limit);return false
+    }
+    const next=[...rows,...entries]
+    inFlightClientRef.current=null
+    turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+    return true
   }
   async function discardPrivateDraft(){
+    if(profileV3BusyRef.current||courseGateBusyRef.current)return
     if(autoSaveRef.current&&!window.confirm(({ru:'Остановить автосохранение и удалить незавершённую запись?',en:'Stop autosaving and discard this unfinished record?',es:'¿Detener el guardado automático y eliminar este borrador?'})[lang]))return
     autoSaveRef.current=false;setAutoSaveEnabled(false);autoSaveQueueRef.current?.stop()
     const owner=protocolOwnerRef.current,id=protocolIdRef.current
@@ -1058,10 +1130,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         body:JSON.stringify({action:'discard',confirmed:true,id})})
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.deleted!==true)throw Error('DRAFT_DISCARD_FAILED')
+      profileV3Ref.current=null;setProfileV3(null);setProfileV3CanStart(false)
+      profileV3FaultRef.current=false;setProfileV3Fault(false);restoredProfileProof.current=null
       // Explicit discard tombstones the old ID. A later voluntary manual
       // report is a new save decision, never a retry of the erased record.
       protocolSaveSnapshotRef.current=null
       setProtocolSaveLocked(false)
+      courseGateRef.current=null;courseGateAttemptRef.current=null;setCourseGate(null);setCourseGateError(false);setCourseFieldReview(null)
       setAutoSaveStatus('discarded')
     }catch{setAutoSaveStatus('discard_error')}
   }
@@ -1081,6 +1156,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return()=>{window.clearInterval(timer);window.removeEventListener('online',retry);window.removeEventListener('pagehide',retry);document.removeEventListener('visibilitychange',hidden)}
   },[autoSaveEnabled])
   function appendLiveTranscript(role,text,{interrupted=false}={}){
+    if(courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return
     const value=String(text||'').trim().slice(0,1200)
     if(!value)return
     // The transport emits final utterances once; identical consecutive words
@@ -1090,6 +1166,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ...(role==='assistant'?{mode:'ai',inference:{
         provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
         ...(interrupted?{interrupted:true}:{})}:{})}
+    if(!coachProtocolCanAppend(turnsRef.current,[entry])){
+      setError(protocolCopy[lang].limit)
+      queueMicrotask(()=>speechRef.current?.stop?.());return
+    }
     const next=[...turnsRef.current,entry]
     turnsRef.current=next
     setTurns(next)
@@ -1104,12 +1184,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setError(protocolCopy[lang].limit)
       queueMicrotask(()=>speechRef.current?.stop?.())
     }
+    return true
   }
   function markCoachSpeechInterrupted(spokenText){
     // The response remains in the report as visible text but is not reused as
     // something the client fully heard. Preserve the production barge-in logic.
-    turnsRef.current=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
-    setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
+    const next=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
+    if(next===turnsRef.current)return
+    turnsRef.current=next;setTurns(next)
+    const waiting=inFlightClientRef.current
+    queuePrivateDraft(waiting?[...next,{role:'user',content:waiting.message,unanswered:true}]:next)
   }
   function cancelPendingCoachTurn(){
     setStreamingPreview('')
@@ -1117,9 +1201,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
+  function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
+  function courseGateOpeningAfter(rows,locale){
+    const history=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32).map(row=>String(row.content||'').slice(0,160))
+    const opening=coachOpeningProgress({turns:history,locale,personaId,...localOpeningScope})
+    return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
+  }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
-    if(restoredDraft&&voiceTurn)return null
+    if(courseGateRequired||courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return null
+    if(profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed))return null
+    if(privateTextOnly&&voiceTurn)return null
     if(restoredDraft)forceLocal=true
+    if(freshPrivateProfile)forceLocal=true
+    if(freshProfileAwaiting)return null
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
     // re-infer it from potentially mis-scripted browser ASR output.
@@ -1131,7 +1225,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!message||paused||protocolOpen||(!voiceTurn&&busy))return null
     if(voiceTurn&&pending.current)cancelPendingCoachTurn()
     // Never replace a submitted client utterance just because the previous reply failed.
-    if(inFlightClientRef.current)retainPendingClient()
+    if(inFlightClientRef.current&&!retainPendingClient())return null
     const requestId=++turnRequestRef.current
     const conversationTurns=coachAudibleTurns(turnsRef.current)
     if(turnsRef.current.length>=160){setError(protocolCopy[lang].limit);return null}
@@ -1151,6 +1245,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
     const goalEligible=openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
+    if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
     inFlightClientRef.current={requestId,message}
     queuePrivateDraft([...turnsRef.current,{role:'user',content:message,unanswered:true}])
     // A new focus requires the client to choose which saved topic to use again.
@@ -1177,12 +1272,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
+    // The last opening turn is answered locally before any generative provider
+    // can race ahead into the next protocol question. Safety and stop still win.
+    if(courseGateOpeningAfter([...turnsRef.current,{role:'user',content:message}],responseLocale)&&
+       !coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
+      const answer=courseGateHandoffText(responseLocale)
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'opening'}))return null
+      setDraft('');setSpeechPreview('');setStreamingPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
+    }
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
-    if(restoredDraft&&restoredProfileCheckin.current&&profileSelected&&!localInterruption){
+    if(privateTextOnly&&(restoredProfileCheckin.current||restoredProfileProof.current)&&profileSelected&&!localInterruption){
       const answer=({ru:'Сохранённые уточнения осей остаются в протоколе. Для новых оценок требуется отдельная проверка профиля; сейчас можно завершить и сохранить этот разговор.',en:'Your saved axis updates remain in this protocol. New ratings need a separate profile review; you can finish and save this conversation.',es:'Las actualizaciones guardadas siguen en el protocolo. Las nuevas valoraciones necesitan otra revisión; puedes terminar y guardar esta conversación.'})[responseLocale]
-      setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}))return null
       setDraft('');setSpeechPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     if(profileReviewProgress&&!localInterruption){
@@ -1194,11 +1296,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=coachProfileReviewNextReply(upcoming,{
         goals:approvedProfileAudit.goals,measurements:approvedProfileAudit.measurements,
       }).slice(0,900)
-      setTurns(previous=>[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
         role:'assistant',content:answer,locale:responseLocale,mode:'offline',
         stage:'profile_review',
-      }].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      }))return null
       setDraft('');setSpeechPreview('');setError('')
       return {reply:answer,mode:'offline',locale:responseLocale}
     }
@@ -1206,9 +1307,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=({ru:'Доступ к сохранённому профилю недоступен или отозван. Можно снова разрешить просмотр в «Памяти коуча», либо завершить беседу.',
         en:'Saved-profile access is unavailable or withdrawn. You may grant it again in Coach memory, or end the session.',
         es:'No hay acceso al perfil guardado o se revocó. Puedes autorizar de nuevo o terminar.'})[responseLocale]
-      setTurns(previous=>[...previous,{role:'user',content:message},{role:'assistant',
-        content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}].slice(-160))
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',
+        content:answer,locale:responseLocale,mode:'offline',stage:'profile_review'}))return null
       setDraft('');setSpeechPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
@@ -1230,7 +1330,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
       const stage=legacyStage[semanticStage]||'goal'
       const offlineOpening=!interruption?coachOpeningTurn({locale:responseLocale,
-        message,openingHistory,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior},personaId):null
+        message,openingHistory,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,
+        deferProfileToPrivateDirector:freshPrivateProfile},personaId):null
       const offlineReply=interruption||offlineOpening||
         offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
       const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
@@ -1244,17 +1345,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=(offlineOpening?offlineOpening.message:interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
         requestedWrap&&sessionTimebox.offerWrapUp?reflectiveClose:offlinePrompt).slice(0,900)
       const mode=offlineReply.mode||'offline'
-      setTurns(previous=>{
-        const updated=[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
           role:'assistant',content:answer,locale:responseLocale,reflection:offlineReply.reflection||'',
           question:offlinePrompt,
           mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
           stage:offlineReply.stage||semanticStage,
           ...(offlineOpening?{openingProgress:offlineOpening.openingProgress}:{}),
-        }]
-        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
-      })
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
+      }))return null
       if(mode==='safety'||mode==='boundary')semanticHintsRef.current=[]
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
@@ -1284,6 +1381,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json',...(methodSession?{'X-HH-Account-ID':methodSession.accountId}:{})},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          courseSessionId:selectedCourseId,
           ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
           ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
           ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
@@ -1310,7 +1408,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const response=useStreaming
         ?await fetch('/api/app/my-coach/stream',requestOptions)
         :await fetch('/api/app/my-coach/turn',requestOptions)
-      if(response.status===401){setAuthRequired(true);return}
+      if(response.status===401){
+        if(inFlightClientRef.current?.requestId===requestId)retainPendingClient()
+        setAuthRequired(true);return null
+      }
       const result=useStreaming?await readCoachTurnStream(response,{
         signal:controller.signal,
         onApprovedPhrase:phrase=>{
@@ -1333,9 +1434,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         semanticHintsRef.current=[...semanticHintsRef.current.filter(h=>
           h.kind!==hint.kind||h.quote!==hint.quote),hint].slice(-3)
       }
-      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
-      setTurns(previous=>{
-        const updated=[...previous,{role:'user',content:message},{
+      if(!commitCompletedClientTurn(requestId,message,{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
           hypothesis:result.hypothesis||'',mode:result.mode,requestedSavedContext,
           reason:result.offlineReason||'',stage:result.stage||'',
@@ -1345,9 +1444,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           inference:result.mode==='ai'&&['groq','openrouter','gemini_free','gemini_paid'].includes(result.inference?.provider)&&
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
             ?result.inference:null,
-        }]
-        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
-      })
+      }))return null
       setDraft('')
       setSpeechPreview('')
       commitGoalTurn()
@@ -1373,19 +1470,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // End is not navigation: stop the microphone, then let the client review and
   // download a complete local PDF, independently of optional account retention.
   function endWithProtocol(){
+    if(profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return
     speechRef.current?.stop?.()
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
     cancelPendingCoachTurn()
     // End may cancel a pending model call. Keep the actual last client words,
     // explicitly UNANSWERED; never manufacture an assistant message.
-    retainPendingClient()
+    if(!retainPendingClient())return
     queuePrivateDraft(turnsRef.current)
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
     setProtocolFinishedAt(new Date().toISOString())
     setProtocolError('')
     setPaused(true)
+    setProtocolEditing(false)
     setProtocolOpen(true)
   }
   // Keep the active coach document across navigation, including the existing
@@ -1393,7 +1492,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function pauseForNavigation(event){
     if(!keepCoachTab||event.defaultPrevented)return
     speechRef.current?.pauseSession?.()
-    queuePrivateDraft(turnsRef.current)
+    const waiting=inFlightClientRef.current
+    queuePrivateDraft(waiting?[...turnsRef.current,{role:'user',content:waiting.message,unanswered:true}]:turnsRef.current)
     void autoSaveQueueRef.current?.flush()
   }
   function interceptSessionExit(event){
@@ -1407,7 +1507,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function navigateBackToCoaches(event){
     if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
     event.preventDefault()
-    if(headerBackPendingRef.current)return
+    if(headerBackPendingRef.current||profileV3BusyRef.current||courseGateBusyRef.current)return
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
@@ -1415,11 +1515,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
       cancelPendingCoachTurn()
-      retainPendingClient()
+      if(!retainPendingClient())return
       setPaused(true)
       if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
-        const queued=queuePrivateDraft(turnsRef.current)
-        const revision=queued?await autoSaveQueueRef.current?.flush():null
+        const structured=profileV3Ref.current
+        // Typed profile writes are already acknowledged by the existing draft CAS.
+        const queued=!profileV3FaultRef.current&&!(structured&&!structured.step.closed)&&queuePrivateDraft(turnsRef.current)
+        const revision=courseGateAttemptRef.current?null:courseGateRef.current?courseGateRef.current.revision:profileV3FaultRef.current?null:structured&&!structured.step.closed?structured.revision:queued?await autoSaveQueueRef.current?.flush():null
         if(!revision&&!window.confirm(({en:'Your latest private checkpoint could not be confirmed. Leave anyway? Cancel to retry.',
           ru:'Не удалось подтвердить сохранение последних данных. Всё равно выйти? Отмените, чтобы повторить.',
           es:'No se pudo confirmar el último guardado privado. ¿Salir de todos modos? Cancela para reintentar.'})[lang]))return
@@ -1436,6 +1538,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(recovered)
       setDraft(previous=>previous.trim()?previous:last.content)
     }
+    setCourseFieldReview(courseGateRef.current?.step.review||null) // preserve acknowledged thematic answers on continuation
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setPaused(false)
@@ -1443,21 +1546,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
+      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
-      ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
+      ...(courseFieldReview?.courseSessionId===selectedCourseId?{courseFieldReview}:{}),
+      ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
-      opening:coachOpeningProtocolSnapshot(openingProgress),
-      ...(restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
+      opening:courseGateRef.current?.protocol.opening||coachOpeningProtocolSnapshot(openingProgress),
+      ...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:
+        restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
           (profileReviewStart!==null?{}:
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
       turns:turns.map((row,index)=>({
         role:row.role,content:row.content,
-        ...(row.role==='user'&&row.unanswered===true&&index===turns.length-1?{unanswered:true}:{}),
+        ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
         ...(row.role==='assistant'?{
           ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
           ...(typeof row.stage==='string'?{stage:row.stage.slice(0,64)}:{}),
@@ -1467,21 +1572,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })),
     })
   }
-  function exportProtocol(print=false){
+  function exportProtocol(print=false,documentKind='protocol'){
     try{
-      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang})
+      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang,documentKind})
       if(print)openCoachingSessionPdf(options)
       else downloadCoachingSessionPdf(options)
       setProtocolError('')
     }catch{setProtocolError(protocolCopy[lang].pdfError)}
   }
   async function saveProtocol(){
-    if(protocolSaving||protocolSaved)return
+    if(protocolSaving||protocolSaved||profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return false
     const owner=protocolOwnerRef.current
     if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
     try{
-      if(!protocolSaveSnapshotRef.current&&autoSaveStatus==='discarded')protocolIdRef.current=crypto.randomUUID()
+      if(!protocolSaveSnapshotRef.current&&autoSaveStatus==='discarded'){
+        // Explicitly erased record cannot authorize a new logical ID.
+        restoredProfileProof.current=null
+        protocolIdRef.current=crypto.randomUUID()
+      }
       protocol=protocolSaveSnapshotRef.current||currentProtocol()
       protocolSaveSnapshotRef.current=protocol // idempotent retry even after timeout
       setProtocolSaveLocked(true)
@@ -1490,8 +1599,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       let draftRevision
       if(autoSaveRef.current){
-        queuePrivateDraft(turnsRef.current)
-        draftRevision=await autoSaveQueueRef.current?.flush()
+        const structured=profileV3Ref.current
+        if(courseGateRef.current)draftRevision=courseGateRef.current.revision
+        else if(structured&&!structured.step.closed)draftRevision=structured.revision
+        else{
+          if(!queuePrivateDraft(turnsRef.current))throw Error('DRAFT_NOT_SYNCED')
+          draftRevision=await autoSaveQueueRef.current?.flush()
+        }
         if(draftRevision===null||draftRevision===undefined)throw Error('DRAFT_NOT_SYNCED')
       }
       const response=await fetch('/api/app/my-coach/protocol',{
@@ -1502,17 +1616,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.saved!==true||result.id!==protocol.id)throw Error(result?.error||'SAVE_FAILED')
       autoSaveQueueRef.current?.stop();autoSaveRef.current=false;setAutoSaveEnabled(false)
+      profileV3Ref.current=null;setProfileV3(null);setProfileV3CanStart(false)
+      courseGateRef.current=null;setCourseGate(null)
       setProtocolSaved(true)
+      setProtocolEditing(false)
       return true
     }catch{setProtocolError(protocolCopy[lang].error);return false}
     finally{setProtocolSaving(false)}
   }
 
   async function closeProtocolToRating(){
-    if(protocolSaving)return
-    if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
-      // Closing the reviewed summary finalizes the already private session.
-      if(!await saveProtocol())return
+    // Cancel is not Save. An uncertain attempted save must be retried
+    // against the same snapshot; never claim it did not commit.
+    if(protocolSaving||(protocolSaveLocked&&!protocolSaved))return
+    setProtocolEditing(false)
+    if(!protocolSaved){
+      resumeFromProtocol()
+      setPaused(true)
+      return // retain separately consented draft; never finalize or publish
     }
     setProtocolOpen(false)
     setRatingError(false)
@@ -1541,9 +1662,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const protocolUi=protocolCopy[lang]
   // Reuse existing normalized protocol/PDF projection, not a second AI
   // extractor. The method overview is explicitly provisional, not verified.
-  let insightOverview=''
+  let insightOverview='',insightResult=null,insightRows=[],insightProfile=null
   if(protocolOpen&&protocolFinishedAt&&turns.length){
-    try{insightOverview=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang}).protocolOverview||''}catch{/* show unavailable, retain original dialogue */}
+    try{
+      insightResult=protocolSaveSnapshotRef.current||currentProtocol()
+      insightOverview=myCoachProtocolPdfOptions(insightResult,{locale:conversationLang}).protocolOverview||''
+      insightRows=coachCourseProtocolRows(insightResult.courseSessionId,insightResult.turns,insightResult.courseFieldReview,lang)
+      insightProfile=coachSavedProfileV3(insightResult,lang)
+    }catch{/* show unavailable, retain original dialogue */}
   }
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
@@ -1562,6 +1688,108 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
+  }
+  function readProfileV3Step(item,protocol){
+    if(!item.profileStep)return null
+    const step=item.profileStep,q=step.pending
+    if(!Number.isInteger(item.revision)||item.revision<1||item.revision>9999||
+       step.track!==coachProfileTrackForCourse(protocol.courseSessionId)||typeof step.closed!=='boolean'||
+       (q!==null&&(!q||typeof q.id!=='string'||typeof q.turnId!=='string'||typeof q.text!=='string'||
+       !['current','desired','pair','priority'].includes(q.slot))))throw Error('PROFILE_READBACK_INVALID')
+    return {step,revision:item.revision,protocol}
+  }
+  // This is the existing private resumed dialogue, not a second coach or
+  // provider. The draft CAS row owns the outstanding question and all ratings.
+  async function runProfileV3(action,extra={}){
+    const owner=protocolOwnerRef.current,id=protocolIdRef.current
+    const start=action==='profile-start'
+    if(!privateTextOnly||!profileV3Enabled||!autoSaveRef.current||!owner||!id||busy||
+       paused||protocolOpen||profileV3BusyRef.current||profileV3FaultRef.current)return false
+    if(start){
+      if(!structuredProfileCanStart||profileV3Ref.current||!profileSelected||draft.trim()||
+         profileProgress?.ratings?.length||restoredProfileProof.current)return false
+      queuePrivateDraft(turnsRef.current)
+    }else if(!profileV3Ref.current||profileV3Ref.current.step.closed)return false
+    profileV3BusyRef.current=true;setProfileV3Busy(true);setProfileV3Error(false)
+    let attempted=false
+    try{
+      let revision=profileV3Ref.current?.revision
+      if(start){
+        revision=await autoSaveQueueRef.current?.flush()
+        if(!Number.isInteger(revision))throw Error('DRAFT_NOT_SYNCED')
+        autoSaveQueueRef.current?.stop();autoSaveQueueRef.current=null
+      }
+      if(!Number.isInteger(revision)||revision<1||revision>=9999)throw Error('PROFILE_REVISION_INVALID')
+      attempted=true
+      const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
+        body:JSON.stringify({action,id,revision,consent:true,...extra})})
+      const result=await response.json().catch(()=>null),item=result?.draft
+      if(!response.ok||item?.id!==id||item.revision!==revision+1)throw Error('PROFILE_STEP_NOT_ACKNOWLEDGED')
+      const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
+      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==personaId||
+         recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
+      const next=readProfileV3Step(item,p)
+      if(!next)throw Error('PROFILE_READBACK_INVALID')
+      restoredProfileProof.current=coachProfileArchiveEnvelope(p);restoredProfileCheckin.current=null
+      initialDraftRevision.current=item.revision;profileV3Ref.current=next;turnsRef.current=p.turns
+      setProfileV3(next);setProfileV3CanStart(false);setTurns(p.turns);setAutoSaveStatus('saved')
+      setProfileV3Answer('');setProfileV3Correction('')
+      return true
+    }catch{
+      // A lost response may have committed; never send another write with
+      // an assumed revision or fall back to an unbound legacy profile.
+      if(attempted){profileV3FaultRef.current=true;setProfileV3Fault(true)}
+      if(draftMountedRef.current){setProfileV3Error(true);setAutoSaveStatus('error')}
+      return false
+    }finally{profileV3BusyRef.current=false;if(draftMountedRef.current)setProfileV3Busy(false)}
+  }
+  function readCourseGateStep(item,protocol){
+    if(!item.courseGateStep)return null
+    const step=item.courseGateStep,q=step.prompt
+    if(!Number.isInteger(item.revision)||item.revision<1||item.revision>9999||
+       typeof step.paused!=='boolean'||typeof step.completed!=='boolean'||
+       (q!==null&&(!q||typeof q.id!=='string'||typeof q.fieldId!=='string'||typeof q.text!=='string'||
+       !['answer','confirm'].includes(q.kind))))throw Error('COURSE_GATE_READBACK')
+    const review=normalizeCoachCourseFieldReview(step.review,protocol.courseSessionId,protocol.turns)
+    return {step:{...step,review},revision:item.revision,protocol}
+  }
+  async function runCourseGate(action,extra={}){
+    const owner=protocolOwnerRef.current,id=protocolIdRef.current
+    if(!courseGateEnabled||!autoSaveRef.current||!owner||!id||courseGateBusyRef.current||
+       paused||protocolOpen||busy||profileV3Ref.current)return false
+    const retry=action==='retry',start=action==='course-gate-start'
+    if(retry&&!courseGateAttemptRef.current)return false
+    if(!retry&&courseGateAttemptRef.current)return false
+    if(start){
+      if(!courseGateCanStart||courseGateRef.current||inFlightClientRef.current)return false
+      if(!queuePrivateDraft(turnsRef.current)){setCourseGateError(true);return false}
+    }else if(!retry&&(!courseGateRef.current||courseGateRef.current.step.paused))return false
+    courseGateBusyRef.current=true;setCourseGateBusy(true);setCourseGateError(false)
+    try{
+      let payload=courseGateAttemptRef.current
+      if(!payload){
+        const revision=start?await autoSaveQueueRef.current?.flush():courseGateRef.current?.revision
+        if(!Number.isInteger(revision)||revision<1)throw Error('COURSE_GATE_NOT_SYNCED')
+        if(start){autoSaveQueueRef.current?.stop();autoSaveQueueRef.current=null;speechRef.current?.stop?.()}
+        payload={action,id,revision,consent:true,requestId:crypto.randomUUID(),...extra}
+        courseGateAttemptRef.current=payload
+      }
+      const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},body:JSON.stringify(payload)})
+      const result=await response.json().catch(()=>null),item=result?.draft
+      if(!response.ok||item?.id!==id||item.revision!==payload.revision+1)throw Error('COURSE_GATE_NOT_ACKNOWLEDGED')
+      const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
+      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==personaId||
+         recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
+      const next=readCourseGateStep(item,p);if(!next)throw Error('COURSE_GATE_READBACK')
+      initialDraftRevision.current=item.revision
+      courseGateRef.current=next;courseGateAttemptRef.current=null;turnsRef.current=p.turns
+      setCourseGate(next);setCourseFieldReview(next.step.review);setTurns(p.turns)
+      setCourseGateAnswer(start?draft.trim():'');if(start)setDraft('');setAutoSaveStatus('saved')
+      return true
+    }catch{if(draftMountedRef.current){setCourseGateError(true);setAutoSaveStatus('error')}return false}
+    finally{courseGateBusyRef.current=false;if(draftMountedRef.current)setCourseGateBusy(false)}
   }
   async function restorePrivateDraft(item){
     const owner=protocolOwnerRef.current
@@ -1585,10 +1813,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       restoredMethod.current=p.methodId
       // Sparse historical-review ratings cannot be replayed against a new
       // baseline. Keep the saved updates and require a fresh review later.
+      restoredProfileProof.current=coachProfileArchiveEnvelope(p)
+      const thematic=readCourseGateStep(result.draft,p)
+      courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
+      setCourseFieldReview(thematic?.step.review||null);setCourseGateEnabled(result.courseGateEnabled===true)
+      const structured=readProfileV3Step(result.draft,p)
+      profileV3Ref.current=structured;setProfileV3(structured)
+      setProfileV3Enabled(result.profileV3Enabled===true)
+      setProfileV3CanStart(Boolean(!structured&&!restoredProfileProof.current&&!p.profileCheckin?.ratings?.length&&
+        coachProfileTrackForCourse(recovered.courseSessionId)&&p.opening?.completed&&p.opening.focus==='profile'))
+      profileV3FaultRef.current=false;setProfileV3Fault(false)
       restoredProfileCheckin.current=p.profileCheckin?.version===COACH_PROFILE_REVIEW_VERSION?p.profileCheckin:null
       autoSaveRef.current=true;engineManuallySelectedRef.current=true;turnsRef.current=p.turns
       flushSync(()=>{
-        setRestoredDraft(true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
+        setRestoredDraft(true);setFreshPrivateProfile(recovered.privateProfileV3Requested===true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
         setTurns(p.turns);setSelectedCourseId(recovered.courseSessionId);setSpeechLocale(p.locale)
         setSelectedGoal('')
         if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
@@ -1604,12 +1842,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const keepCoachTab=liveVoiceSelected&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
-  function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID){
+  function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
     if(resumeInFlight.current)return
+    if(privateProfile&&(!profileV3Enabled||!protocolOwnerRef.current||!coachProfileTrackForCourse(id)))return
+    if(id===MEANING_AXES_COACH_SESSION_ID&&!privateProfile)return
     // Commit the chosen topic before the synchronous iOS activation gesture.
     // Gemini reads the current courseSessionId from its mounted props ref;
     // opening or dismissing the topic menu never calls this function.
-    const focus=id===INTRODUCTORY_COACH_SESSION_ID?'':coachCourseFocusLabel(id,conversationLang)
+    const focus=id===INTRODUCTORY_COACH_SESSION_ID||privateProfile?'':coachCourseFocusLabel(id,conversationLang)
     const method=selectedMethod&&resolveCoachMethodId(personaId,selectedMethod)
     const locked=method&&protocolOwnerRef.current?{methodId:method,methodSessionId:crypto.randomUUID(),accountId:protocolOwnerRef.current}:null
     // Starting a session after the private-storage notice enables first-party archival only.
@@ -1617,18 +1857,42 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     autoSaveRef.current=saveToAccount
     flushSync(()=>{
       setAutoSaveEnabled(saveToAccount)
-      setMethodSession(locked)
+      setFreshPrivateProfile(privateProfile)
+      if(privateProfile){
+        engineManuallySelectedRef.current=true
+        setCoachEngine('groq_stream');setGeminiLiveConsent(false);setGeminiConsent(false);setGeminiVoiceConsent(false)
+        setAllowOpeningPrior(false);setStagedMemory(null);setContextPaused(true)
+      }
+      setMethodSession(privateProfile?null:locked)
       setSelectedCourseId(id)
       setSelectedGoal(focus)
       setGreetingAccepted(true)
     })
+    if(privateProfile){toggleComposer();return}
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
       speechRef.current?.startSession?.()
   }
   const motionPhase=paused||voiceState.phase==='paused'?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
-  const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
+  // The visual director observes real speech ownership and the current turn only.
+  // Existing turn, microphone and playback handlers remain authoritative.
+  const reactionLastTurn=turns[turns.length-1]
+  const reactionReplyText=streamingPreview||
+    (!inFlightClientRef.current&&reactionLastTurn?.role==='assistant'&&!reactionLastTurn.interrupted?reactionLastTurn.content:(!introComplete?introduction:''))
+  const reactionStage=!inFlightClientRef.current&&reactionLastTurn?.role==='assistant'&&!reactionLastTurn.interrupted?reactionLastTurn.stage||'':''
+  const reactionClientText=motionPhase==='listening'?speechPreview:
+    ['thinking','speaking'].includes(motionPhase)?
+      (inFlightClientRef.current?.message||[...turns].reverse().find(turn=>turn.role==='user')?.content||''):''
+  const reactionReplyScene=selectCoachVisualScene({phase:motionPhase,text:reactionReplyText,stage:reactionStage})
+  const reactionIntent=coachReactionIntent({
+    phase:voiceState.phase==='loading'?'loading':motionPhase,micActive:reactionActivity.micActive,
+    clientText:reactionClientText,coachText:reactionReplyText,coachScene:reactionReplyScene,stage:reactionStage,
+    paused:paused||voicePaused,opening:!restoredDraft&&(!introComplete||(!turns.length&&!inFlightClientRef.current)),
+    closing:reactionStage==='closing'||reactionStage==='farewell'||coachExplicitFarewell(reactionClientText),
+    turnKey:turns.filter(turn=>turn.role==='user').length+(inFlightClientRef.current?1:0)
+  })
+  const visualScene=reactionIntent.scene
   const sessionPanelCopy={en:{transcript:'Transcript',insights:'Progress',summary:'Insight'},ru:{transcript:'Диалог',insights:'Прогресс',summary:'Инсайт'},es:{transcript:'Diálogo',insights:'Progreso',summary:'Insight'}}[lang]
   function showSessionPanel(panel){
     const root=sessionRootRef.current
@@ -1680,6 +1944,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       methodId={visibleMethodId} onStart={enterCoachingFromGreeting} accountSaving={protocolOwnerReady}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
+      privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         <button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume()}>{({ru:'Продолжить сохранённую сессию',en:'Continue a saved session',es:'Continuar una sesión guardada'})[lang]}</button>
         {resumeList&&<p>{({ru:'Приватное текстовое продолжение без нового голосового токена.',en:'Private text continuation without a new voice token.',es:'Continuación privada por texto sin un nuevo token de voz.'})[lang]}</p>}
@@ -1702,7 +1967,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.sessionPortrait} data-persona={personaId}
         data-coach-motion-video={['mira','max','sofia','alex','merlin','harry','genie'].includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
-        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
+        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} reactionIntent={reactionIntent} />
       </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <button type="button" className={styles.heroViewToggle} data-coach-view-toggle
@@ -1757,19 +2022,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>}
       <div className={styles.voiceControls} data-coach-inline-voice>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
-          {restoredDraft?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
+          {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
-            enabled={liveVoiceReady} canStart={!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
+            enabled={liveVoiceReady} canStart={!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             localRecoveryTurns={turns}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
+              reactionActivity.observe(level)
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))
@@ -1778,7 +2044,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             }}
             onInputInterim={setSpeechPreview}
             onInputFinal={text=>{
-              appendLiveTranscript('user',text)
+              const captured=appendLiveTranscript('user',text)
               // Current client corrections/topic changes outrank all old memory.
               if(['correction','topic_shift'].includes(
                 understandCoachingTurn({locale:conversationLang,message:text}).act)){
@@ -1786,6 +2052,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 setContextAssessments(false)
                 setContextPaused(true)
               }
+              if(captured&&courseGateOpeningAfter(turnsRef.current,conversationLang)){
+                const guard={locale:conversationLang,message:text,turns:turnsRef.current.filter(row=>row.role==='user')}
+                if(coachingBrainSafety(guard)||coachingBrainBoundary(guard))return false
+                const handoff={role:'assistant',content:courseGateHandoffText(conversationLang),mode:'offline',locale:conversationLang}
+                if(!coachProtocolCanAppend(turnsRef.current,[handoff]))return false
+                const next=[...turnsRef.current,handoff];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+                setStreamingPreview('');return true // transport stops before accepting this model response
+              }
+              return false
             }}
             onOutputInterim={setStreamingPreview}
             onOutputFinal={(text,details)=>appendLiveTranscript('assistant',text,{interrupted:details?.interrupted===true})}
@@ -1797,9 +2072,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
+            canStart={!courseGateRequired&&!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
+              reactionActivity.observe(level)
               const wave=micWaveRef.current
               if(!wave)return
               const rms=Math.min(1,Math.max(0,Number(level)||0))
@@ -1824,7 +2100,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
           aria-pressed={selectedGeminiEngine||liveVoiceSelected}
-          disabled={restoredDraft||replaying||paused||protocolOpen}
+          disabled={privateTextOnly||replaying||paused||protocolOpen}
           onClick={async ()=>{
             // Leaving Pro immediately cancels its in-flight model/audio, but
             // simply opening Pro must NEVER silence a healthy Basic microphone.
@@ -1910,20 +2186,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             })[lang])
           }}>
           <Zap size={17} aria-hidden="true"/>
-          <span>{restoredDraft?'Private':selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
-          <small>{restoredDraft?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
+          <span>{privateTextOnly?'Private':selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
+          <small>{privateTextOnly?'Text':selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
         </button>
         <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
           <FileText size={19} aria-hidden="true"/><span>{lang==='ru'?'Инсайт':lang==='es'?'Insight':'Insight'}</span>
         </button>
       </div>
-      {!restoredDraft&&!selectedGeminiEngine&&!liveVoiceSelected&&
+      {!privateTextOnly&&!selectedGeminiEngine&&!liveVoiceSelected&&
         <p className={styles.voicePlayNotice} data-coach-pro-same-tap-disclosure>{({
           ru:'Нажатие Pro включает Gemini Free и голос. Текст диалога и озвучки передаётся Google и может использоваться для улучшения моделей. Возврат к Basic — одним нажатием.',
           en:'Tap Pro to enable Gemini Free text and speech. Dialogue and speech text go to Google, which may use Free data to improve models. Tap Basic to stop.',
           es:'Pulsa Pro para activar texto y voz de Gemini gratuito. Google puede usar el texto para mejorar modelos. Pulsa Basic para salir.',
         })[lang]}</p>}
-      <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{restoredDraft?({ru:'Восстановлен приватный черновик. Продолжайте текстом без передачи истории внешнему ИИ; неясные сведения уточняются.',en:'Private draft restored. Continue in text without sharing history with an external AI; clarify uncertain details.',es:'Borrador privado restaurado. Continúa en texto sin compartir el historial con IA externa.'})[lang]:liveVoiceSelected?({
+      <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{freshPrivateProfile?({ru:'Приватная текстовая сессия. Ответы не передаются внешнему ИИ. После знакомства выберите исследование профиля.',en:'Private text session. Answers are not sent to an external AI. Choose personal profile during the introduction.',es:'Sesión privada de texto. Las respuestas no se envían a una IA externa. Elige el perfil personal durante la introducción.'})[lang]:restoredDraft?({ru:'Восстановлен приватный черновик. Продолжайте текстом без передачи истории внешнему ИИ; неясные сведения уточняются.',en:'Private draft restored. Continue in text without sharing history with an external AI; clarify uncertain details.',es:'Borrador privado restaurado. Continúa en texto sin compartir el historial con IA externa.'})[lang]:liveVoiceSelected?({
         ru:'Play отправляет голос и текст Google Gemini Free (возможно обучение моделей). Говорите в любой момент, чтобы перебить коуча.',
         en:'Play sends voice and transcripts to Google Gemini Free (may train models). Speak anytime to interrupt the coach.',
         es:'Play envía voz y texto a Google Gemini Free (puede entrenar modelos). Habla cuando quieras para interrumpir.',
@@ -1938,7 +2214,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           es:{idle:'Guardado privado activo',pending:'Guardando borrador…',saved:'Borrador guardado en tu perfil',error:'Sincronización incompleta. Mantén la página abierta.',discard_error:'No se pudo eliminar el borrador.'}})[lang][autoSaveStatus]}
         {' '}<button type="button" onClick={discardPrivateDraft}>{({ru:'Отключить и удалить',en:'Stop and discard',es:'Detener y eliminar'})[lang]}</button>
       </p>}
-      {!sessionHasStarted&&<MyCoachCourseJourney locale={conversationLang}
+      {!sessionHasStarted&&!freshPrivateProfile&&<MyCoachCourseJourney locale={conversationLang}
         value={selectedCourseId} onSelect={id=>{
           setSelectedCourseId(id)
           setSelectedGoal(coachCourseFocusLabel(id,conversationLang))
@@ -1979,6 +2255,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
+        {openingProgress.completed&&!profileSelected&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang}/>}
+        {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
@@ -2070,7 +2348,62 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <summary>{ui.type}</summary>
         {authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20} aria-hidden="true"/>
           <span>{t.login}</span><Link href={'/'+lang+'/my-coach'} onClick={interceptSessionExit}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
-        {!paused&&<form className={styles.composer} onSubmit={send}>
+        {privateTextOnly&&(profileV3Active||profileV3Fault||freshProfileAwaiting||(profileV3Enabled&&structuredProfileCanStart&&profileSelected&&!profileProgress?.ratings?.length))&&
+          <section className={styles.protocolReview} data-coach-private-profile-v3>
+            <strong>{({ru:'Приватное исследование профиля',en:'Private profile check-in',es:'Revisión privada del perfil'})[lang]}</strong>
+            {freshProfileAwaiting&&(!profileV3Enabled||!autoSaveEnabled)&&<p role="status">{({ru:'Приватное исследование сейчас недоступно. Можно сохранить или завершить текущий разговор.',en:'Private check-in is not available right now. You can save or finish the current conversation.',es:'La revisión privada no está disponible ahora. Puedes guardar o terminar la conversación.'})[lang]}</p>}
+            <p>{({ru:'Ответы сохраняются в этой сессии и не отправляются внешнему ИИ. Можно пропустить вопрос или завершить исследование.',en:'Answers stay in this session and are not sent to an external AI. You can skip a question or finish.',es:'Las respuestas quedan en esta sesión y no se envían a una IA externa. Puedes omitir una pregunta o terminar.'})[lang]}</p>
+            {profileV3Fault?<><p role="alert">{({ru:'Не удалось подтвердить ревизию. Откройте сохранённую сессию заново.',en:'The saved revision could not be confirmed. Reopen the saved session.',es:'No se pudo confirmar la revisión. Vuelve a abrir la sesión guardada.'})[lang]}</p>
+              <button type="button" onClick={()=>window.location.reload()}>{({ru:'Открыть заново',en:'Reopen',es:'Volver a abrir'})[lang]}</button></>:
+            profileV3Active?<div>
+              {profileV3.step.pending?<form onSubmit={event=>{event.preventDefault();const q=profileV3Ref.current?.step.pending
+                if(q&&profileV3Answer.trim())void runProfileV3('profile-answer',{questionId:q.id,questionTurnId:q.turnId,content:profileV3Answer.trim()})}}>
+                <label><span>{profileV3.step.pending.text}</span><textarea rows={2} maxLength={1200} value={profileV3Answer} disabled={profileV3Busy||!profileV3Enabled||paused}
+                  onChange={event=>setProfileV3Answer(event.target.value)}/></label>
+                <button type="submit" disabled={!profileV3Answer.trim()||profileV3Busy||!profileV3Enabled||paused}>{t.send}</button>
+                <button type="button" disabled={profileV3Busy||!profileV3Enabled||paused} onClick={()=>{const q=profileV3Ref.current?.step.pending
+                  if(q)void runProfileV3('profile-answer',{questionId:q.id,questionTurnId:q.turnId,content:({ru:'пропустить',en:'skip',es:'omitir'})[lang]})}}>{({ru:'Пропустить',en:'Skip',es:'Omitir'})[lang]}</button>
+              </form>:<p>{({ru:'Оценки собраны; можно завершить или уточнить.',en:'Ratings collected; finish or correct a rating.',es:'Valoraciones recogidas; termina o corrige una valoración.'})[lang]}</p>}
+              {profileV3.step.canPrioritize&&<button type="button" disabled={profileV3Busy||!profileV3Enabled||paused} onClick={()=>void runProfileV3('profile-priority')}>{({ru:'Перейти к приоритетам',en:'Choose priorities',es:'Elegir prioridades'})[lang]}</button>}
+              {coachSavedProfileV3Text(profileV3.protocol,lang)&&<p style={{whiteSpace:'pre-wrap'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
+              {coachSavedProfileV3(profileV3.protocol,lang)&&<label>{({ru:'Уточнить оценку',en:'Correct a rating',es:'Corregir valoración'})[lang]}
+                <select value={profileV3Correction} onChange={event=>setProfileV3Correction(event.target.value)} disabled={profileV3Busy||!profileV3Enabled||paused}>
+                  <option value="">—</option>
+                  {coachSavedProfileV3(profileV3.protocol,lang).rows.flatMap(row=>['current','desired'].filter(slot=>row[slot].status==='confirmed').map(slot=><option key={row.id+':'+slot} value={row.id+':'+slot}>{row.label} · {slot==='current'?({ru:'Сейчас',en:'Now',es:'Ahora'})[lang]:({ru:'Желаемое',en:'Desired',es:'Deseado'})[lang]}</option>))}
+                </select>
+                <button type="button" disabled={!profileV3Correction||profileV3Busy||!profileV3Enabled||paused} onClick={()=>{const [axis,slot]=profileV3Correction.split(':');void runProfileV3('profile-correct',{axis,slot})}}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}</button>
+              </label>}
+              <button type="button" disabled={profileV3Busy||!profileV3Enabled||paused} onClick={()=>void runProfileV3('profile-close')}>{({ru:'Завершить исследование',en:'Finish check-in',es:'Terminar revisión'})[lang]}</button>
+            </div>:<button type="button" disabled={!structuredProfileCanStart||profileV3Busy||busy||paused||Boolean(draft.trim())} onClick={()=>void runProfileV3('profile-start')}>{({ru:'Начать приватное исследование',en:'Start private check-in',es:'Iniciar revisión privada'})[lang]}</button>}
+            {profileV3Error&&!profileV3Fault&&<p role="alert">{({ru:'Не удалось подтвердить сохранение. Повторите попытку.',en:'Saving could not be confirmed. Please retry.',es:'No se pudo confirmar el guardado. Inténtalo de nuevo.'})[lang]}</p>}
+          </section>}
+        {(courseGateRequired||courseGateCanStart||courseGate||courseGateBusy||courseGateError)&&!protocolOpen&&<section className={styles.protocolReview} data-coach-course-gate>
+          <strong>{({ru:'Проверка ответов протокола',en:'Verify session answers',es:'Verificar respuestas de la sesión'})[lang]}</strong>
+          <p>{({ru:'Ответ будет принят только после проверки и записи. В этом режиме используется голосовой ввод браузера или текст, а не непрерывный Gemini Live.',en:'Answers advance only after validation and saving. This mode uses browser voice input or text, not continuous Gemini Live.',es:'Las respuestas avanzan solo tras verificarse y guardarse. Este modo usa voz del navegador o texto, no Gemini Live continuo.'})[lang]}</p>
+          {courseGateError&&<p role="alert">{({ru:'Запись не подтверждена. Следующий вопрос заблокирован. Повторите тот же запрос или откройте сохранённую сессию заново.',en:'Save not acknowledged. The next question is blocked. Retry the same request or reopen the saved session.',es:'Guardado sin confirmar. La siguiente pregunta está bloqueada. Reintenta la misma solicitud o reabre la sesión guardada.'})[lang]}</p>}
+          {courseGateError&&courseGateAttemptRef.current?<><button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('retry')}>{({ru:'Повторить',en:'Retry',es:'Reintentar'})[lang]}</button>
+            <button type="button" onClick={()=>window.location.reload()}>{({ru:'Открыть сохранённую сессию',en:'Reopen saved session',es:'Reabrir sesión guardada'})[lang]}</button></>:
+          courseGate?<div>
+            <p role="status">{courseGate.step.acceptedCount}/{courseGate.step.total} {({ru:'пунктов обработано',en:'checkpoints reviewed',es:'puntos revisados'})[lang]}</p>
+            {courseGate.step.prompt&&!courseGate.step.paused?<form onSubmit={event=>{event.preventDefault();const q=courseGateRef.current?.step.prompt
+              if(q&&courseGateAnswer.trim())void runCourseGate('course-gate-answer',{promptId:q.id,content:courseGateAnswer.trim()})}}>
+              <label><span>{courseGate.step.prompt.text}</span><textarea rows={2} maxLength={900} value={courseGateAnswer} disabled={courseGateBusy||!courseGateEnabled||paused} onChange={event=>setCourseGateAnswer(event.target.value)}/></label>
+              <button type="submit" disabled={!courseGateAnswer.trim()||courseGateBusy||!courseGateEnabled||paused}>{t.send}</button>
+              <MyCoachCourseGateVoice prompt={courseGate.step.prompt} locale={conversationLang}
+                disabled={courseGateBusy||!courseGateEnabled||paused||Boolean(courseGateAnswer.trim())}
+                onDraft={setCourseGateAnswer}
+                onSubmit={(promptId,content)=>{if(courseGateRef.current?.step.prompt?.id===promptId&&!courseGateAttemptRef.current)
+                  void runCourseGate('course-gate-answer',{promptId,content})}}/>
+              <button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
+                if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'пропустить вопрос',en:'skip this question',es:'omitir la pregunta'})[lang]})}}>{({ru:'Пропустить',en:'Skip',es:'Omitir'})[lang]}</button>
+              {courseGate.step.prompt.kind==='confirm'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
+                if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'да',en:'yes',es:'sí'})[lang]})}}>{({ru:'Подтверждаю',en:'Confirm',es:'Confirmar'})[lang]}</button>}
+            </form>:<p>{courseGate.step.paused?({ru:'Проверка приостановлена. Можно завершить сессию.',en:'Review paused. You can finish the session.',es:'Revisión pausada. Puedes terminar la sesión.'})[lang]:({ru:'Проверка пунктов завершена. Можно уточнить ответ или завершить.',en:'Checkpoint review complete. Correct an answer or finish.',es:'Revisión completa. Corrige una respuesta o termina.'})[lang]}</p>}
+            {!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)).map(row=>
+              <button key={row.id} type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-correct',{fieldId:row.id})}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}: {row.label}</button>)}
+          </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}
+        </section>}
+        {!courseGateRequired&&!courseGate&&!courseGateBusy&&!courseGateAttemptRef.current&&!paused&&!freshProfileAwaiting&&!profileV3Active&&!profileV3Busy&&!profileV3Fault&&<form className={styles.composer} onSubmit={send}>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
           <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
             placeholder={t.placeholder} disabled={busy||authRequired}
@@ -2111,7 +2444,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
-          <select value={coachEngine} disabled={busy||restoredDraft} onChange={event=>{
+          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired} onChange={event=>{
             engineManuallySelectedRef.current=true
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)
@@ -2248,12 +2581,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.protocolCard}>
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
         <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>
-        {insightOverview?<section className={styles.protocolReview} data-coach-insight-overview>
+        {insightResult&&<MyCoachResultPreview locale={lang} courseSessionId={insightResult.courseSessionId} title={coachCourseFocusLabel(selectedCourseId,lang)} rows={insightRows} profile={insightProfile} summary={insightResult.clientSummary} nextStep={insightResult.clientNextStep}/>}
+        {insightOverview?<details><summary>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</summary><section className={styles.protocolReview} data-coach-insight-overview>
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
-        </section>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
+        </section></details>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
+        {protocolEditing&&!courseGate&&<MyCoachCourseFieldReview expanded courseSessionId={selectedCourseId} turns={turns} locale={lang} value={courseFieldReview} onChange={setCourseFieldReview} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>} 
         {turns.length===0?<p>{protocolUi.empty}</p>:
           <details data-coach-insight-transcript>
           <summary>{({en:'View conversation history',ru:'История разговора',es:'Ver historial de conversación'})[lang]}</summary>
+          <div className={styles.protocolActions}><button type="button" disabled={protocolSaving} onClick={()=>exportProtocol(false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button></div>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
@@ -2265,26 +2601,26 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
             </article>)}
           </div></details>}
-        <label className={styles.protocolTextLabel}>{{ru:'Мой итог сессии (необязательно)',en:'My takeaway (optional)',es:'Mi conclusión (opcional)'}[lang]}
+        {protocolEditing&&<><label className={styles.protocolTextLabel}>{{ru:'Мой итог сессии (необязательно)',en:'My takeaway (optional)',es:'Mi conclusión (opcional)'}[lang]}
           <textarea rows={2} maxLength={1000} value={protocolSummary} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolSummary(e.target.value)} placeholder={{ru:'Что стало яснее?',en:'What is clearer now?',es:'¿Qué quedó más claro?'}[lang]}/>
         </label>
         <label className={styles.protocolTextLabel}>{{ru:'Мой следующий шаг (необязательно)',en:'My next step (optional)',es:'Mi siguiente paso (opcional)'}[lang]}
           <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
-        </label>
-        <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
-        <div className={styles.protocolActions}>
-          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{protocolUi.download}</button>
+        </label></>}
+        <small className={styles.protocolPrivacy}>{({en:'The protocol PDF contains checkpoints and client statements; the full transcript is a separate export. AI suggestions are not confirmed decisions. Audio is not stored.',ru:'PDF протокола содержит контрольные пункты и слова клиента; полная стенограмма скачивается отдельно. Предложения ИИ не являются подтверждёнными решениями. Аудио не хранится.',es:'El PDF contiene puntos de sesión y palabras del cliente; la transcripción completa se descarga por separado. Las sugerencias de IA no son decisiones confirmadas. No se guarda audio.'})[lang]}</small>
+        <details><summary>{({en:'Export protocol',ru:'Экспорт протокола',es:'Exportar protocolo'})[lang]}</summary><div className={styles.protocolActions}>
+          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{({en:'Download protocol PDF',ru:'Скачать протокол PDF',es:'Descargar protocolo PDF'})[lang]}</button>
           <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(true)}><Printer size={16}/>{protocolUi.print}</button>
+        </div></details>
+        <div className={styles.protocolActions} data-coach-result-actions style={{position:'sticky',bottom:0,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6,padding:'8px 0',background:'inherit'}}>
+          <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolOwnerReady||protocolSaved||protocolSaving} onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
+          <button type="button" data-coach-edit-result disabled={protocolSaved||protocolSaving||protocolSaveLocked} onClick={()=>setProtocolEditing(value=>!value)}>{protocolEditing?({en:'Done',ru:'Готово',es:'Listo'})[lang]:({en:'Edit',ru:'Редактировать',es:'Editar'})[lang]}</button>
+          <button type="button" data-coach-close-protocol disabled={protocolSaving||(protocolSaveLocked&&!protocolSaved)} onClick={closeProtocolToRating}>{protocolSaved?protocolUi.close:({en:'Cancel',ru:'Отменить',es:'Cancelar'})[lang]}</button>
         </div>
-        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolOwnerReady||protocolSaved||protocolSaving}
-          onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
         {!protocolOwnerReady&&<p role="status">{({ru:'Сохранение в аккаунт недоступно: аккаунт не подтверждён до начала беседы. PDF доступен.',en:'Account saving is unavailable because the account was not verified before the conversation. PDF is available.',es:'No se puede guardar en la cuenta porque no se verificó antes del diálogo. El PDF está disponible.'})[lang]}</p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
-        <div className={styles.protocolActions}>
-          {!protocolSaved&&!protocolSaveLocked&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
-          <button type="button" data-coach-close-protocol onClick={closeProtocolToRating} disabled={protocolSaving}>{autoSaveEnabled&&!protocolSaved&&turns.some(row=>row.role==='user')?({en:'Finish and save',ru:'Завершить и сохранить',es:'Finalizar y guardar'})[lang]:protocolUi.close}<ArrowRight size={16}/></button>
-        </div>
+
       </div>
     </section>}
     {ratingOpen&&<section className={styles.ratingOverlay} role="dialog" aria-modal="true"
@@ -2292,7 +2628,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.ratingCard}>
         <div className={styles.ratingCoachHeader}>
           <img className={styles.ratingCoachPortrait}
-            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
+            src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId==='caesar'?'caesar-emblem.svg':personaId+'-still.webp')}
             alt="" width={78} height={78}/>
           <div><h2>{ratingUi.title}</h2><strong>{name}</strong><p>{ratingUi.subtitle}</p></div>
         </div>

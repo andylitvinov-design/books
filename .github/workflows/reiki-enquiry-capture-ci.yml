@@ -25,6 +25,7 @@ on:
       - "components/principles-of-energywork.tsx"
       - "tests/kundalini-reiki-course.test.mjs"
       - "tests/reiki-unified-order-capture.test.mjs"
+      - ".github/workflows/reiki-enquiry-capture-ci.yml"
 
 permissions:
   contents: read
@@ -47,7 +48,79 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Plan exact reviewed Reiki capture dependency closure
+        id: capture-deps
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          minimal=true
+          while read -r expected file; do
+            actual="$(git hash-object -- "$file" 2>/dev/null || true)"
+            if [[ "$actual" != "$expected" ]]; then minimal=false; fi
+          done <<'HH_CAPTURE_REVIEWED'
+          5022d51a774bbe33a4dac42b0d9760d1759d7811 tests/kundalini-reiki-course.test.mjs
+          7796675fff5ddd20a9f0db008ca8051b6e557e13 tests/reiki-unified-order-capture.test.mjs
+          a7041d4468a7927a55cd00111c0a6c9cf137e1dc tests/academy-course-capture.test.mjs
+          f393c9981869f23e30aa610311c04421dd0056cf tests/reiki-landing-conversion.test.mjs
+          bc586bd4f4de00d92498b04e70a8fcef29e34594 tests/contact-channel-chooser.test.mjs
+          d5d942c2511cdb504a0a6045fb9845c72dff4c9c tests/reiki-mobile-order-crm.test.mjs
+          3432f75cf6401749b60fb6fcc5feae830554a2a5 tests/remote-energy-support-booking.test.mjs
+          38668214339e992969afdeb03d55fd715a289d44 tests/energywork-kundalini-ygg-study.test.mjs
+          a83f4c669f68c8b77cb4713b84459c410470cf10 tests/holistic-support-consultation-tests-separation.test.mjs
+          027a736b38aa10b9b86ae604075a81b15414869b lib/whatsapp-enquiry.js
+          2c0dde59ac04d39e6434e1ff8678fcb253ce9865 lib/practitioners/remote-energy-support.js
+          2fafc9149267725afb86ee3ce7266aa88ae00361 lib/practitioners/public-service-enquiry-input.mjs
+          7e75f9353bdf6fdef0bce58771d61d241bf124d9 lib/assist/telegram-business-request.mjs
+          5dc80adfd94cac477859d1977e404e3801c9599c lib/assist/telegram-service-options.mjs
+          8ff8f28f6322ae7ec9a958e880665c27fd474770 lib/assist/telegram-ai-secretary-intake.mjs
+          631428af89beedeec7c16b6984a1dedd454a38f2 lib/practitioners/taoist-talismans.js
+          0d527df6a02d47797b83475583071e219582a6f4 lib/crm/consent.js
+          c7584b74d897007614c9a1572e18e21762297714 lib/crm/workflow.js
+          a40fe093e4a226af2f88286427d1cbf722166055 lib/assessments/contracts.js
+          64bb0ce28e0a8c5d6ed3bbd59fbe2c6e1f36b706 lib/coaching/diagnostic-enquiry.mjs
+          112bdd5eb263f0ca661ce3aaf4a95813ee77b5ed lib/coaching/intake-model.js
+          e185f5026d6c944f810df702a29cc57483213192 lib/practitioners/public-session-booking.mjs
+          42f761aff2a64cb96a36b8b533d30076dd016bae data/academy/energywork-ai-schema.js
+          ccc3d92c8cd710522160825ae543a0c361b2a924 data/academy/reiki-initiation-request.js
+          255a27be9c8535d0ecc8ae46b2e41619d0e14d35 package.json
+          1ccb123b37ee9f74052a421babd2b41945075917 package-lock.json
+          HH_CAPTURE_REVIEWED
+          printf 'minimal=%s\n' "$minimal" >> "$GITHUB_OUTPUT"
+      - name: Install only locked TypeScript for reviewed capture contracts
+        if: steps.capture-deps.outputs.minimal == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d "${RUNNER_TEMP}/hh-contract-deps.XXXXXX")"
+          if node --input-type=commonjs - "$tmp" <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const entry = lock.packages?.['node_modules/typescript'];
+          // Only the standalone compiler, at the exact repository-locked integrity.
+          if (lock.lockfileVersion !== 3 || !entry ||
+              !/^\d+\.\d+\.\d+$/.test(entry.version || '') ||
+              entry.resolved !== `https://registry.npmjs.org/typescript/-/typescript-${entry.version}.tgz` ||
+              !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(entry.integrity || '') ||
+              entry.link || entry.hasInstallScript ||
+              ['dependencies','optionalDependencies','peerDependencies','bundleDependencies','bundledDependencies'].some(k => Object.keys(entry[k] || {}).length)) process.exit(1);
+          const manifest = {name:'hh-ci-contract-deps',version:'1.0.0',devDependencies:{typescript:entry.version}};
+          const dir = process.argv[2];
+          fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({...manifest,private:true}));
+          fs.writeFileSync(path.join(dir,'package-lock.json'),JSON.stringify({...manifest,lockfileVersion:3,requires:true,packages:{'':manifest,'node_modules/typescript':{...entry,dev:true}}}));
+          NODE
+          then
+            npm ci --prefix "$tmp" --include=dev --ignore-scripts --no-audit --no-fund
+            mkdir -p node_modules
+            ln -s "$tmp/node_modules/typescript" node_modules/typescript
+          else
+            # Unknown lockfile/compiler dependency shape: retain the full install.
+            npm ci --include=dev --no-audit --no-fund
+          fi
+      - name: Install complete dependencies for changed or standalone inputs
+        if: steps.capture-deps.outputs.minimal != 'true'
+        run: npm ci --no-audit --no-fund
       - name: Confirm Kundalini and Reiki course capture behaviour
         run: >-
           node --test

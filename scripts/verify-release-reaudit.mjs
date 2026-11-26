@@ -291,7 +291,22 @@ async function exercise(engine, browserType, width) {
     } finally {
       if (frameTimer !== null) clearTimeout(frameTimer);
     }
-    await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    try {
+      await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    } catch (error) {
+      // Keep the full settlement gate. Emit bounded, query-free request
+      // diagnostics so a real stalled resource can be repaired, not waived.
+      const pending = [...publicPageState.pendingPublicRequests].slice(0, 25).map(request => ({
+        path: new URL(request.url()).pathname,
+        method: request.method(), resourceType: request.resourceType(),
+        prefetch: request.headers()['next-router-prefetch'] === '1' || request.headers().purpose === 'prefetch',
+      }));
+      console.error('[release-reaudit] PUBLIC_REQUEST_SETTLEMENT_FAILED ' + JSON.stringify({
+        engine, width, stage, path: publicPhase, total: publicPageState.pendingPublicRequests.size, pending,
+        quietForMs: Date.now() - publicPageState.lastPublicRequestActivity,
+      }));
+      throw error;
+    }
     publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };
   try {

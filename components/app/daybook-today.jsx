@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createDailyEditorSession} from '@/lib/app/daybook-daily-client.mjs'
 import DaybookDailyExport from './daybook-daily-export'
+import DaybookMicroCoaching from './daybook-micro-coaching'
 import css from './daybook-today.module.css'
 const COPY={
  en:{title:'What matters today?',day:'Plan date',focus:'My focus for this week (optional)',none:'No selected focus',actions:'Choose up to three realistic steps',empty:'No confirmed open actions yet. You can review your goals and coaching actions in your plan.',plan:'Open my goals and actions',previous:'A previous day to review',review:'Review unfinished steps',carry:'Choose steps to carry into this day',nothing:'No confirmed open steps from that day.',save:'Save my daily plan',reload:'Reload saved plan',discard:'Discard this unsaved selection and read the saved plan?',clear:'Clear this saved daily plan',confirm:'Clear this daily plan? Your goals, actions and journal entries will remain.',saving:'Saving…',saved:'Saved and verified',failed:'Save not confirmed. Your selection remains here. Retry or reload before editing.',invalid:'Check your selection. Nothing has been confirmed as saved.',limit:'Choose at most three steps.',loading:'Opening your daily plan…',error:'Could not load your daily plan.',unavailable:'Previously selected item is unavailable. Remove it to update the plan.',privacy:'Choosing a step does not complete it. This plan is private and is not shared with a coach automatically.',timezone:'Saved time zone',clearing:'Clearing…',deleted:'Daily plan deletion verified','delete-failed':'Deletion not confirmed. Retry clearing or reload.','carry-error':'Could not review that earlier day. Your selection remains here.'},
@@ -51,6 +52,7 @@ export default function DaybookToday({accountId,locale,initialDay,memory,onSessi
   <button disabled={view.busy} onClick={reload}>{c.reload}</button>
   {draft.revision>0&&<button disabled={view.busy||view.status==='failed'} onClick={()=>{if(view.status==='delete-failed'||window.confirm(c.confirm))void session.remove()}}>{c.clear}</button>}
   <p role="status">{c[view.status]||''}</p><Link href={'/'+locale+'/app/my-coaching-plan'}>{c.plan}</Link>
+  <DaybookMicroCoaching key={accountId+':'+day} accountId={accountId} locale={locale} day={day} goals={goals} preferredGoalId={draft.weeklyGoalId} onSessionLost={onSessionLost}/>
   <DaybookDailyExport accountId={accountId} locale={locale} disabled={view.busy} onSessionLost={onSessionLost}/>
  </section>
 }

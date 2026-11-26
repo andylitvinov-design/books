@@ -420,13 +420,14 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             const stillImage = id === 'harry'
               ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
               : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-natural-opening-v2.webp'
+              : id === 'caesar' ? '/images/holistic-house/my-coach-motion/caesar-emblem.svg'
               : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
               onClick={() => { if(id!==selectedId)setSelectedMethod(''); setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} data-genie-roster-photo={id==='genie'?'webp':undefined} aria-hidden="true">
                 <picture>
-                  <source media="(prefers-reduced-motion: reduce)" type="image/webp"
+                  <source media="(prefers-reduced-motion: reduce)" type={id==='caesar'?'image/svg+xml':'image/webp'}
                     srcSet={stillImage} />
                   <img
                     className={heroStyles.railPhoto}
@@ -601,7 +602,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
           <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">
-            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="avatar" />
+            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="avatar" presentationLoop />
             {selected.symbol}
           </div>
           <div>
