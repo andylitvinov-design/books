@@ -191,3 +191,12 @@ test('v4 creates immutable keys for seven English and two Russian coaches',()=>{
   }
   for(const id of ['lea','noah','iris','ray','meditations'])assert.equal(coachGreetingObjectKey(id,'en','v4'),null)
 })
+
+
+test('Harry v6 preserves historical keys and is exclusive to Harry',()=>{
+ for(const locale of ['en','ru','es']){
+  assert.equal(coachGreetingObjectKey('harry',locale,'v6'),'v6/'+locale+'/harry.mp3')
+  assert.equal(coachGreetingObjectKey('mira',locale,'v6'),null)
+  assert.equal(coachGreetingObjectKey('harry',locale),'v2/'+locale+'/harry.mp3')
+ }
+})

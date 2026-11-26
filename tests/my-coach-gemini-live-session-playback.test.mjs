@@ -705,6 +705,21 @@ test('watchdog follows real reply boundaries without minting another credential'
   assert.match(component,/!r\.bargeDetector\.userActive&&Date\.now\(\)-\(r\.lastHumanAudioAt\|\|0\)>900/)
 })
 
+test('capture graph never attaches after a pause invalidates an in-flight worklet load',async()=>{
+  let finish
+  const events=[]
+  const r={ended:false,stream:{},captureEpoch:0,context:{
+    audioWorklet:{addModule:()=>new Promise(resolve=>{finish=resolve})},
+    createMediaStreamSource(){assert.fail('obsolete microphone graph attached')},
+  }}
+  const install=runInNewContext('('+section('  async function installCapture(','  function connect(')+')',
+    {window:{AudioWorkletNode:class{constructor(){events.push('created')}}},capture(){assert.fail('obsolete PCM delivered')}})
+  const loading=install(r)
+  r.captureEpoch++
+  finish()
+  assert.equal(await loading,false)
+  assert.deepEqual(events,[])
+})
 test('background capture and playback are gated while the same session is paused',()=>{
   const h=session()
   h.r.paused=true
@@ -744,6 +759,7 @@ test('visibility pause parks microphone and preserves same socket, token and his
   assert.equal(methods.pauseSession(),true)
   assert.equal(r.paused,true)
   assert.equal(track.enabled,false)
+  assert.equal(track.readyState,'ended','every pause releases the possibly zombie iOS track')
   assert.equal(r.socket,socket)
   assert.equal(r.liveToken,token)
   assert.equal(r.history,history)
@@ -763,36 +779,110 @@ test('visibility pause parks microphone and preserves same socket, token and his
   assert.equal(closed.length,1)
   assert.equal(phases.at(-1),'paused')
 })
-test('Play resumes a paused session on its existing connection without minting or greeting',async()=>{
-  const track={enabled:false,readyState:'live'}
-  const token={token:'auth_tokens/existing',expiresAt:'2099-01-01T00:00:00Z'}
+function pausedMicrophoneHarness({muted=false,frames=true,pending=false}={}){
+  const makeTrack=()=>({enabled:false,readyState:'live',muted:false,stop(){this.readyState='ended'}})
+  const makeStream=track=>({getAudioTracks:()=>[track],getTracks:()=>[track]})
+  const oldTrack=makeTrack(),track=makeTrack()
+  track.muted=muted
+  const oldStream=makeStream(oldTrack),stream=makeStream(track)
   const socket={readyState:1},history=[{role:'user',content:'My name is Jane'}]
-  const r={paused:true,pauseEpoch:1,ready:true,stream:{getAudioTracks:()=>[track]},
-    context:{state:'running',resume:()=>Promise.resolve()},player:{setVolume(){}},
-    socket,liveToken:token,history,pausedPhase:'listening'}
-  const phases=[],notices=[]
-  const methods=runInNewContext(section('  async function resumePausedSession(','  function interrupt(){')+
-    '\n({resumePausedSession})',{
-    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},
-    navigator:{},prepareCoachIos27LiveDuplex(){},activateCoachIos27LiveDuplex(){},
+  const token={token:'auth_tokens/existing',expiresAt:'2099-01-01T00:00:00Z'}
+  const r={paused:true,pauseEpoch:1,ready:true,stream:oldStream,
+    context:{state:'running',resume:()=>Promise.resolve(),suspend:()=>Promise.resolve(),sampleRate:48000},
+    player:{setVolume(){}},socket,liveToken:token,history,pausedPhase:'listening'}
+  const phases=[],notices=[],timers=new Map()
+  let calls=0,installations=0,releaseMic,emitFrame
+  const document={visibilityState:'visible'}
+  const methods=runInNewContext(section('  function pauseSession(','  function interrupt(){')+
+    '\n({resumePausedSession,pauseSession})',{
+    runtime:{current:r},propsRef:{current:{enabled:true,canStart:true}},document,
+    navigator:{mediaDevices:{getUserMedia(){
+      calls++
+      return pending?new Promise(resolve=>{releaseMic=()=>resolve(stream)}):Promise.resolve(stream)
+    }}},prepareCoachIos27LiveDuplex(){},activateCoachIos27LiveDuplex(){},
+    GeminiLivePcmResampler,GeminiLiveBargeDetector,Date,
     phaseChange:value=>phases.push(value),notify:value=>notices.push(value),
-    flushPendingAudio(){},flushSideband(){},t:{resumeUnavailable:'unavailable'},
+    t:{resumeUnavailable:'unavailable',micRecovering:'restoring mic',micResumeFailed:'mic failed'},
+    watchMicrophone(){},installCapture:async(_r,onFrame)=>{
+      installations++;emitFrame=()=>onFrame(new Float32Array([.1]))
+      return true
+    },setTimeout(fn,ms){const id={};timers.set(id,{fn,ms});return id},
+    clearTimeout:id=>timers.delete(id),setAudioNeedsGesture(){},
+    flushPendingAudio(){},flushSideband(){},
     scheduleReconnect(){assert.fail('healthy socket must not reconnect')},
     getToken(){assert.fail('resume must never mint a token')},
-    handleAudio(){assert.fail('greeting must not replay')}
+    handleAudio(){assert.fail('greeting must not replay')},
   })
-  assert.equal(await methods.resumePausedSession(r),true)
-  assert.equal(r.paused,false)
-  assert.equal(track.enabled,true)
-  assert.equal(r.socket,socket)
-  assert.equal(r.liveToken,token)
-  assert.equal(r.history,history)
-  assert.equal(phases.at(-1),'listening')
-  r.paused=true;r.resumePending=true;r.resumeUnavailable=true;track.enabled=false
-  assert.equal(await methods.resumePausedSession(r),false)
-  assert.equal(r.paused,true)
-  assert.equal(track.enabled,false)
-  assert.equal(notices.at(-1),'unavailable')
+  return {r,oldTrack,track,stream,socket,token,history,phases,notices,document,
+    methods,frames,get calls(){return calls},get installations(){return installations},
+    releaseMic:()=>releaseMic?.(),frame:()=>emitFrame?.(),expire:()=>{
+      for(const [id,timer] of [...timers]){timers.delete(id);timer.fn()}
+    }}
+}
+test('Play replaces a formally live but silent iOS mic and waits for real frames on the same socket',async()=>{
+  const h=pausedMicrophoneHarness()
+  const result=h.methods.resumePausedSession(h.r)
+  await settleResume()
+  assert.equal(h.calls,1)
+  assert.equal(h.oldTrack.readyState,'ended')
+  assert.equal(h.installations,1)
+  assert.equal(h.r.paused,true,'no Listening before capture delivers a frame')
+  assert.equal(h.track.enabled,true)
+  assert.ok(!h.phases.includes('listening'))
+  h.frame()
+  assert.equal(await result,true)
+  assert.equal(h.r.paused,false)
+  assert.equal(h.r.stream,h.stream)
+  assert.equal(h.r.socket,h.socket)
+  assert.equal(h.r.liveToken,h.token)
+  assert.equal(h.r.history,h.history)
+  assert.equal(h.phases.at(-1),'listening')
+})
+test('muted or stalled replacement capture remains paused, releases hardware and offers retry',async()=>{
+  for(const muted of [false,true]){
+    const h=pausedMicrophoneHarness({muted})
+    const result=h.methods.resumePausedSession(h.r)
+    await settleResume()
+    if(muted)h.frame()
+    h.expire()
+    assert.equal(await result,false)
+    assert.equal(h.r.paused,true)
+    assert.equal(h.track.readyState,'ended')
+    assert.ok(!h.phases.includes('listening'))
+    assert.equal(h.notices.at(-1),'mic failed')
+    assert.equal(h.r.history,h.history)
+    assert.equal(h.r.socket,h.socket)
+    assert.equal(h.r.resumeInFlight,false)
+  }
+})
+test('a second hide invalidates a pending microphone permission and stops its late stream',async()=>{
+  const h=pausedMicrophoneHarness({pending:true})
+  const result=h.methods.resumePausedSession(h.r)
+  h.document.visibilityState='hidden'
+  h.methods.pauseSession()
+  h.releaseMic()
+  assert.equal(await result,false)
+  assert.equal(h.track.readyState,'ended')
+  assert.equal(h.installations,0)
+  assert.equal(h.r.paused,true)
+  assert.equal(h.r.resumeInFlight,false)
+  assert.ok(!h.phases.includes('listening'))
+  assert.equal(h.r.socket,h.socket)
+  assert.equal(h.r.history,h.history)
+})
+test('a stalled permission prompt times out and its late stream is stopped',async()=>{
+  const h=pausedMicrophoneHarness({pending:true})
+  const result=h.methods.resumePausedSession(h.r)
+  h.expire()
+  assert.equal(await result,false)
+  assert.equal(h.r.resumeInFlight,false)
+  h.releaseMic()
+  await settleResume()
+  assert.equal(h.track.readyState,'ended')
+  assert.equal(h.installations,0)
+  assert.equal(h.r.paused,true)
+  assert.equal(h.notices.at(-1),'mic failed')
+  assert.equal(h.r.history,h.history)
 })
 test('page lifecycle routes visibility and pagehide to pause, retaining explicit stop on unmount',()=>{
   const lifecycle=section('  useEffect(()=>{\n    const onHidden=', '  useEffect(()=>{\n    const r=runtime.current')
@@ -980,4 +1070,75 @@ test('a completed reply drains after the old socket closes and before resumption
   assert.deepEqual(h.events.final,[{text:'Tail before reconnect',interrupted:false}])
   assert.equal(reconnects.length,1)
   assert.equal(reconnects[0],h.r)
+})
+
+
+test('post-barge reply deadline preempts an existing 18-second timer and follows real speech',()=>{
+  let now=0,serial=0,stalls=0
+  const timers=new Map()
+  const watch=new GeminiLiveReplyWatchdog({
+    now:()=>now,schedule:(fn,ms)=>{const id=++serial;timers.set(id,{fn,at:now+ms});return id},
+    cancel:id=>timers.delete(id),canFire:()=>true,onStall:()=>stalls++,
+  })
+  function advance(to){
+    while(true){
+      const next=[...timers].filter(([,v])=>v.at<=to).sort((a,b)=>a[1].at-b[1].at)[0]
+      if(!next)break
+      now=next[1].at;timers.delete(next[0]);next[1].fn()
+    }
+    now=to
+  }
+  watch.touch();advance(1000);watch.touch(5000)
+  advance(3000);watch.touch(5000)
+  advance(7999);assert.equal(stalls,0)
+  advance(8000);assert.equal(stalls,1,'five seconds from last real speech, not 18 seconds from the old reply')
+  advance(60000);assert.equal(stalls,1,'never loop a provider recovery')
+  watch.touch(5000);watch.clear();advance(70000);assert.equal(stalls,1)
+})
+
+test('old post-barge PCM and empty turn boundaries cannot commit the human turn or return to idle',()=>{
+  const h=session(),watch=[]
+  h.r.replyWatch={touch:ms=>watch.push(ms??18000),clear:()=>watch.push('clear')}
+  h.receive({audio:[pcm(2)],output:'Old reply'})
+  h.interrupt()
+  h.receive({input:'I meant next week.'})
+  assert.equal(watch.at(-1),5000)
+  const before=watch.length
+  h.receive({audio:[pcm(.5)],output:'Old tail',turnComplete:true})
+  h.receive({turnComplete:true})
+  assert.equal(watch.length,before,'old audio/boundaries cannot postpone recovery')
+  assert.equal(h.r.lastAssistantTurnFinished,false)
+  assert.equal(h.r.awaitingBargeReply,true)
+  assert.equal(h.r.inputText,'I meant next week.')
+  assert.deepEqual(h.events.input,[])
+  assert.equal(h.r.player.playing,false)
+  h.receive({audio:[pcm(.5)],output:'Understood, next week.',turnComplete:true})
+  assert.equal(h.r.awaitingBargeReply,false)
+  assert.equal(h.r.postBarge,false)
+  h.clock.advanceTo(3)
+  assert.deepEqual(h.events.input,['I meant next week.'])
+  assert.deepEqual(h.events.final,[
+    {text:'Old reply',interrupted:true},
+    {text:'Understood, next week.',interrupted:false},
+  ])
+  assert.equal(watch.at(-1),'clear')
+  h.assertLive()
+})
+
+test('provider acknowledgement without PCM retains the short deadline; delayed ASR cannot extend it',()=>{
+  const h=session(),watch=[]
+  h.r.replyWatch={touch:ms=>watch.push(ms??18000),clear:()=>watch.push('clear')}
+  h.receive({audio:[pcm(2)],output:'Old reply'})
+  h.interrupt()
+  h.receive({interrupted:true,input:'No,'})
+  assert.equal(watch.at(-1),5000)
+  const before=watch.length
+  h.receive({input:'next week'})
+  h.receive({turnComplete:true})
+  assert.equal(watch.length,before)
+  assert.equal(h.r.awaitingBargeReply,true)
+  assert.equal(h.r.inputText,'No, next week')
+  assert.equal(h.r.lastAssistantTurnFinished,false)
+  assert.deepEqual(h.events.input,[])
+  h.assertLive()
 })

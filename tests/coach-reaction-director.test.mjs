@@ -2,10 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
-import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
+import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell,selectCoachReactionCameraGroup} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches} from '../lib/coaching/coach-reaction-v4-registry.mjs'
-import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
  let s=initialCoachMicActivity()
@@ -106,12 +106,12 @@ test('preloaded media does not cut a current action; stale request is discarded 
  videos[1].ready();assert.equal(visible(),'HAR-01')
  player.dispose()
 })
-test('distress, hidden tab and invalid resolution hold the contact frame without restarting audio',()=>{
+test('distress retains neutral motion; hidden tab and invalid resolution hold without restarting audio',()=>{
  const {player,videos,visible}=fixture()
  player.update(listening(),true);videos[0].ready()
  player.update(coachReactionIntent({phase:'listening',micActive:true,clientText:'I am afraid'}),true)
  assert.equal(visible(),'HAR-01');assert.equal(player.snapshot().active,'HAR-01')
- videos[0].end();assert.equal(visible(),null);assert.equal(player.snapshot().active,null)
+ videos[1].ready();videos[0].end();assert.equal(visible(),'HAR-01');assert.equal(player.snapshot().active,'HAR-01')
  player.update(listening(),true);assert.equal(visible(),'HAR-01')
  player.update(listening(),false);assert.equal(visible(),null)
  player.dispose()
@@ -170,9 +170,11 @@ test('canonical session wires both voice engines to the same local director, wit
  const player=read('components/coach-reaction-director-media.jsx')
  assert.equal((session.match(/reactionActivity\.observe\(level\)/g)||[]).length,2)
  assert.ok(session.includes('reactionIntent={reactionIntent}'))
- assert.ok(session.includes('onVoiceStateChange={setVoiceState}'))
+ assert.equal((session.match(/onVoiceStateChange=\{handleVoiceStateChange\}/g)||[]).length,2)
+ assert.match(session,/function handleVoiceStateChange\(next\)\{[\s\S]*?setVoiceState\(next\)/)
+ assert.match(session,/function handleVoiceStateChange\(next\)\{[\s\S]*?freezeActiveClock\(\)/)
  assert.ok(session.includes('turnKey:turns.filter(turn=>turn.role==='))
- assert.ok(motion.includes('releasedReactionMedia(personaId,REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS'))
+ assert.ok(motion.includes('releasedReactionMedia(personaId,REACTION_V4_RELEASED,cameraGroup)'))
  assert.ok(motion.includes('data-coach-reaction-mode'))
  assert.ok(player.includes('createReactionPlayback'))
  assert.ok(player.includes('muted playsInline preload="none"'))
@@ -223,14 +225,14 @@ test('short farewell remains queued after coach audio ends, but never delays aud
  videos[0].end();assert.equal(visible(),'HAR-02')
  assert.equal(player.snapshot().queued,null);player.dispose()
 })
-test('repeated neutral blocks preload on the hidden layer, ordinary discomfort waits for the boundary',()=>{
+test('repeated neutral blocks preload on the hidden layer, ordinary discomfort continues neutral motion',()=>{
  const {player,videos,visible}=fixture();player.update(listening(),true);videos[0].ready()
  assert.equal(videos[1].getAttribute('src'),'/media/HAR-01.mp4')
  videos[1].ready()
  assert.equal(videos[1].playCount,0)
  videos[0].end();assert.equal(videos[1].playCount,1);assert.equal(visible(),'HAR-01')
  player.update(coachReactionIntent({phase:'speaking',coachScene:'empathy'}),true)
- assert.equal(visible(),'HAR-01');videos[1].end();assert.equal(visible(),null)
+ assert.equal(visible(),'HAR-01');videos[0].ready();videos[1].end();assert.equal(visible(),'HAR-01')
  player.dispose()
 })
 test('hard safety hold overrides a queued celebration immediately',()=>{
@@ -277,14 +279,14 @@ test('presentation contexts use a stable source independent of greeting audio an
  assert.ok(gate.includes('phase="greeting" context="greeting"'))
  assert.ok(catalog.includes('phase="greeting" context="hero"'))
  assert.ok(catalog.includes('phase="greeting" context="avatar" presentationLoop'))
- assert.ok(motion.includes('const src=presentationActive?(presentation?.src||null):legacySrc'))
+ assert.ok(motion.includes('const src=presentationActive?(activePresentation?.src||null):reserveSrc'))
  assert.ok(motion.includes('[presentationActive,personaId]'))
- assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop playsInline autoPlay'))
- assert.ok(motion.includes('presentationActive?(shouldPlay&&<video'))
+ assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop={!openingActive} playsInline autoPlay={shouldPlay}'))
+ assert.ok(motion.includes('presentationActive?((shouldPlay||keepOriginalVideo)&&<video'))
  assert.ok(motion.includes('onLoadedMetadata={event=>validatePresentation(event.currentTarget)}'))
  assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
- assert.ok(motion.includes('presentation?.poster||framePoster'))
- assert.ok(motion.includes('},[shouldPlay,src])'))
+ assert.ok(motion.includes('activePresentation?.poster||(presentationActive?opening?.poster:null)||framePoster'))
+ assert.ok(motion.includes('},[shouldPlay,src,presentationActive])'))
 })
 
 test('shared personality empathy veto prevents cheerful reaction to explicit shame, anger, exhaustion or mixed progress',()=>{
@@ -292,8 +294,127 @@ test('shared personality empathy veto prevents cheerful reaction to explicit sha
   assert.equal(classifyClientReactionText(text),'distress',text)
   const intent=coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:text})
   assert.equal(intent.kind,'empathy',text)
-  assert.equal(chooseCoachReaction('harry',intent,['HAR-02','HAR-01']),null)
+  assert.equal(chooseCoachReaction('harry',intent,['HAR-02','HAR-01']).id,'HAR-01')
  }
  for(const text of ["If I did it?","Maybe I did it.","She said I did it.","I never said I did it.","Я думал, что у меня получилось.","Может быть, я справился.","Она сказала: «Я справилась».","Quizá lo logré.","Si yo lo logré.","Dijo que lo logré."])assert.notEqual(classifyClientReactionText(text),'progress',text)
  for(const text of ["I did it","Я справился","Lo logré","У меня получилось","I made it"])assert.equal(classifyClientReactionText(text),'progress',text)
+})
+
+
+test('Harry plays only the exact original greeting once then the calm primary loop',()=>{
+ const loop=releasedCoachPresentationLoop('harry',['primary:harry'])
+ assert.equal(loop.id,'HAR-01')
+ const opening=coachPresentationOpening('harry',loop)
+ assert.equal(opening,HARRY_PRESENTATION_OPENING)
+ assert.match(opening.src,/harry-greeting-real-v2\.mp4$/)
+ assert.ok(coachPresentationMetadataMatches(opening,{videoWidth:768,videoHeight:1344,duration:5.25}))
+ assert.equal(coachPresentationOpening('harry',null),opening)
+ assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),opening)
+ assert.equal(coachPresentationOpening('mira',loop),COACH_ORIGINAL_OPENINGS.mira)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('openingActive?opening:presentation'))
+ assert.ok(source.includes('onEnded={finishPresentationOpening}'))
+ assert.ok(source.includes('loop={!openingActive}'))
+ assert.ok(source.includes('keepOriginalVideo'))
+ assert.ok(source.includes('[personaId,presentationActive]'))
+})
+
+
+test('all public personas have protected original or explicit neutral-only/still policy; immutable original bytes',()=>{
+ const coaches=['mira','max','sofia','alex','merlin','harry','genie','caesar']
+ const pinned=['mira','max','sofia','alex','merlin','harry']
+ assert.deepEqual(Object.keys(COACH_ORIGINAL_OPENINGS),pinned)
+ const blob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ for(const coach of coaches){
+  const original=coachPresentationOpening(coach)
+  const presence=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  if(pinned.includes(coach)){
+   assert.ok(Object.isFrozen(original))
+   for(const [path,hash] of [[original.src,original.videoBlob],[original.poster,original.posterBlob]]){
+    const bytes=readFileSync(new URL('../public'+path,import.meta.url))
+    assert.equal(blob(bytes),hash,coach+' protected original replaced')
+   }
+   assert.ok(coachPresentationMetadataMatches(original,{videoWidth:original.width,videoHeight:original.height,duration:5.25}))
+  }else assert.equal(original,null)
+  if(coach==='caesar'){assert.equal(presence,null);continue}
+  assert.equal(presence.id,COACH_PROTECTED_PRESENCE[coach].id)
+  assert.equal(protectedCoachPresence(coach,[]),null)
+  assert.doesNotMatch(presence.id,/HAR-02|HAR-03|MER-01|SAM-03/)
+ }
+ assert.equal(protectedCoachPresence('merlin',['primary:merlin']),null)
+ assert.equal(protectedCoachPresence('harry',['alternate:harry']),null)
+ assert.equal(coachPresentationOpening('unknown'),null)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
+ assert.ok(source.includes('presentationActive?coachPresentationOpening(personaId):null'))
+ assert.ok(source.includes('openingDone!==personaId'))
+ assert.ok(source.includes('setOpeningDone(personaId)'))
+})
+
+test('Merlin uses a released conversation-capable camera during dialogue',()=>{
+ const group=REACTION_V5_CAMERA_GROUPS.merlin
+ assert.equal(group,'alternate')
+ const media=releasedReactionMedia('merlin',REACTION_V4_RELEASED,group)
+ const presentation=releasedCoachPresentationLoop('merlin',REACTION_V4_RELEASED,group)
+ assert.ok(media&&presentation)
+ assert.equal(media.anchorHash,presentation.anchorHash)
+ const ids=media.blocks.map(b=>b.id)
+ for(const phase of ['idle','listening','thinking','speaking']){
+  const intent=coachReactionIntent({phase,micActive:phase==='listening'})
+  assert.ok(chooseCoachReaction('merlin',intent,ids,[],{group}),phase)
+ }
+ assert.equal(chooseCoachReaction('merlin',coachReactionIntent({phase:'speaking',stage:'safety'}),ids,[],{group}),null)
+ assert.equal(chooseCoachReaction('merlin',coachReactionIntent({phase:'speaking',coachScene:'empathy'}),ids,[],{group}).id,'MER-A01')
+})
+test('mobile microphone meter uses capture input only, not Gemini player output; dock fits the bars',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const live=read('components/my-coach-gemini-live.jsx')
+ const capture=live.slice(live.indexOf('function capture(r,chunk)'),live.indexOf('async function installCapture(r)'))
+ assert.match(capture,/onMicLevel\?\.\(Math\.max\(0,Math\.min\(1,micLevel\*4\)\)\)/)
+ const player=live.slice(live.indexOf('r.player=new GeminiLivePcmPlayer'),live.indexOf('runtime.current=r',live.indexOf('r.player=new GeminiLivePcmPlayer')))
+ assert.ok(player.length>0)
+ assert.doesNotMatch(player,/onMicLevel/)
+ const css=read('components/my-coach-live-dialogue.module.css')
+ assert.ok(css.includes('var(--coach-mic-level,0) * var(--wave-gain,1) * 4'))
+ assert.ok(css.includes('grid-template-rows:60px 17px'))
+ assert.ok(css.includes('flex:1 1 2px;min-width:1px;max-width:3px'))
+})
+
+test('all seven released coaches choose exact or neutral scene, never another persona or camera',()=>{
+ for(const coach of ['mira','alex','sofia','max','merlin','harry','genie']){
+  const group=selectCoachReactionCameraGroup(coach,REACTION_V4_RELEASED,'primary')
+  assert.ok(group,coach)
+  const media=releasedReactionMedia(coach,REACTION_V4_RELEASED,group)
+  const ids=media.blocks.map(b=>b.id)
+  const profile=COACH_REACTION_PROFILES[group][coach]
+  const neutral=new Set([...profile.presence,...profile.listening])
+  for(const speaker of ['none','client','coach']){
+   const missing=chooseCoachReaction(coach,{kind:'future_unmapped_stage',speaker},ids,[],{group})
+   assert.ok(missing&&ids.includes(missing.id),coach+':'+speaker)
+   const empathy=chooseCoachReaction(coach,{kind:'empathy',speaker},ids,[],{group})
+   assert.ok(empathy&&neutral.has(empathy.id),coach)
+  }
+  assert.equal(chooseCoachReaction(coach,{kind:'hold',speaker:'none'},ids,[],{group}),null)
+ }
+ assert.equal(selectCoachReactionCameraGroup('merlin',REACTION_V4_RELEASED,'primary'),'alternate')
+ assert.equal(selectCoachReactionCameraGroup('merlin',REACTION_V4_RELEASED,'primary',['alternate']),null)
+ assert.equal(selectCoachReactionCameraGroup('harry',REACTION_V4_RELEASED,'primary',['primary']),'alternate')
+ assert.equal(selectCoachReactionCameraGroup('caesar',REACTION_V4_RELEASED),null)
+})
+test('missing or failed stage falls back to same-camera presence; report exhaustion only once',()=>{
+ const {player,videos,visible}=fixture()
+ player.update(smile(),true)
+ assert.equal(videos[0].getAttribute('src'),'/media/HAR-02.mp4')
+ videos[0].emit('error')
+ assert.equal(videos[0].getAttribute('src'),'/media/HAR-01.mp4')
+ videos[0].ready()
+ assert.equal(visible(),'HAR-01')
+ player.dispose()
+ const v=[new FakeVideo(),new FakeVideo()]
+ let unavailable=0
+ const p=createReactionPlayback({media:{coach:'harry',width:1080,height:1890,anchorHash:'hash',blocks:[{id:'HAR-01',src:'/media/HAR-01.mp4',width:1080,height:1890,anchorHash:'hash',duration:5}]},videos:v,onUnavailable:()=>unavailable++})
+ p.update(listening(),true);v[0].emit('error')
+ p.update(listening(),true)
+ assert.equal(unavailable,1)
+ p.dispose()
 })

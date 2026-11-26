@@ -201,8 +201,8 @@ test('v4 records all seven exact English coach voices, leaves historical bytes i
   const expected={mira:'Sulafat',sofia:'Gacrux',alex:'Orus',max:'Charon',genie:'Achird',harry:'Orus',merlin:'Algenib'}
   for(const [id,voiceName] of Object.entries(expected)){
     h.objects.set('v2/en/'+id+'.mp3',original)
-    const path=coachIntroAudioPath(id,'en')
-    assert.equal(path,'/api/coaching/intro/en/'+id+'?v=4')
+    const path='/api/coaching/intro/en/'+id+'?v=4'
+    assert.equal(coachIntroAudioPath(id,'en'),id==='harry'?path.replace('v=4','v=6'):path)
     const request=new Request('https://holistichouse.vercel.app'+path)
     const first=await h.GET(request)
     assert.equal(first.status,200,id)
@@ -213,8 +213,8 @@ test('v4 records all seven exact English coach voices, leaves historical bytes i
     assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),Buffer.from(await first.arrayBuffer()))
     assert.equal(h.syntheses.length,before)
     assert.deepEqual(h.objects.get('v2/en/'+id+'.mp3'),original)
-    assert.equal(coachIntroAudioPath(id,'ru'),'/api/coaching/intro/ru/'+id+'?v='+(id==='genie'?3:['alex','max'].includes(id)?4:2))
-    assert.equal(coachIntroAudioPath(id,'es'),'/api/coaching/intro/es/'+id+'?v=2')
+    assert.equal(coachIntroAudioPath(id,'ru'),'/api/coaching/intro/ru/'+id+'?v='+(id==='harry'?6:id==='genie'?3:['alex','max'].includes(id)?4:2))
+    assert.equal(coachIntroAudioPath(id,'es'),'/api/coaching/intro/es/'+id+'?v='+(id==='harry'?6:2))
   }
   assert.equal(h.syntheses.length,7)
   assert.equal(h.writes,7)
@@ -256,4 +256,29 @@ test('Russian Alex and Max record new immutable v4 tracks while old v2 retains h
     assert.equal((await disabled.GET(request)).status,503)
     assert.equal(disabled.fishCalls,0)
   }
+})
+
+
+test('Harry v6 uses the short name and current voice without replacing old recordings',async()=>{
+ const h=harness(),original=await encodedFixture()
+ for(const locale of ['en','ru']){
+  const oldKey=(locale==='en'?'v4':'v2')+'/'+locale+'/harry.mp3'
+  h.objects.set(oldKey,original)
+  const path=coachIntroAudioPath('harry',locale)
+  assert.equal(path,'/api/coaching/intro/'+locale+'/harry?v=6')
+  const request=new Request('https://holistichouse.vercel.app'+path)
+  assert.equal((await h.GET(request)).status,200)
+  assert.equal(h.syntheses.at(-1).voiceName,approvedGeminiVoice('harry',locale))
+  assert.doesNotMatch(h.syntheses.at(-1).text,/Harry Potter|Гарри Поттер/)
+  assert.ok(h.objects.has('v6/'+locale+'/harry.mp3'))
+  const before=h.syntheses.length
+  assert.equal((await h.GET(request)).status,200)
+  assert.equal(h.syntheses.length,before)
+  assert.deepEqual(h.objects.get(oldKey),original)
+ }
+ assert.equal((await h.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/ru/mira?v=6'))).status,400)
+ assert.equal(h.fishCalls,0)
+ const disabled=harness({env:{}})
+ assert.equal((await disabled.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/ru/harry?v=6'))).status,503)
+ assert.equal(disabled.fishCalls,0)
 })
