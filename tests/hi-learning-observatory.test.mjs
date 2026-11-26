@@ -115,3 +115,5 @@ test('same existing dialogue state respects explicit correction, refusal and top
     assert.equal(state.topic.value,'relationships');
   }
 });
+
+import './ali-learning-cases.test.mjs';
