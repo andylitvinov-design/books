@@ -1,5 +1,6 @@
 import test from 'node:test'
 import './coach-session-director.test.mjs'
+import './coach-signature-speech.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
 import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
@@ -226,7 +227,8 @@ test('PCM analysis remains bounded but cannot deform the photographic face',()=>
   assert.doesNotMatch(hero,/onVoiceLevel=\{setPortraitLevel\}|ref=\{portraitHeroRef\}/)
   assert.ok(hero.includes('phase={motionPhase} context="session" scene={visualScene}'))
   assert.ok(media.includes('onPlaying={()=>setVideoReady(true)}'))
-  assert.ok(media.includes('onError={()=>setVideoReady(false)}'))
+  assert.ok(media.includes('onError={()=>{setVideoReady(false);if(src)setFailedLegacy'))
+  assert.ok(media.includes('onUnavailable={failCamera}'))
 })
 
 test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{

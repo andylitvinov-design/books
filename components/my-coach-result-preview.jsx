@@ -1,9 +1,9 @@
 import ClaritySemanticResult from './clarity-semantic-result'
 // Projection only: a report shows existing reviewed evidence, never invents scores.
 const COPY={
- en:{result:'Session result',partial:'Partial result — open or unverified checkpoints remain',verified:'Verified',reviewed:'Reviewed by you',skipped:'Skipped',missing:'Not explored',current:'Current',desired:'Desired',takeaway:'My takeaway',step:'Next step',empty:'No structured result recorded yet'},
- ru:{result:'Результат сессии',partial:'Промежуточный результат — остались открытые или неподтверждённые пункты',verified:'Подтверждено',reviewed:'Проверено вами',skipped:'Пропущено',missing:'Не исследовано',current:'Сейчас',desired:'Желаемое',takeaway:'Мой итог',step:'Следующий шаг',empty:'Структурированный результат пока не записан'},
- es:{result:'Resultado de la sesión',partial:'Resultado parcial: quedan puntos abiertos o no verificados',verified:'Verificado',reviewed:'Revisado por ti',skipped:'Omitido',missing:'No explorado',current:'Actual',desired:'Deseado',takeaway:'Mi conclusión',step:'Siguiente paso',empty:'Todavía no hay un resultado estructurado'}
+ en:{result:'Session result',partial:'Partial result — open or unverified checkpoints remain',verified:'Verified',reviewed:'Reviewed by you',skipped:'Skipped',missing:'Not explored',current:'Current',desired:'Desired',takeaway:'My takeaway',step:'Next step',question:'Question',confirmation:'Your confirmation',empty:'No structured result recorded yet'},
+ ru:{result:'Результат сессии',partial:'Промежуточный результат — остались открытые или неподтверждённые пункты',verified:'Подтверждено',reviewed:'Проверено вами',skipped:'Пропущено',missing:'Не исследовано',current:'Сейчас',desired:'Желаемое',takeaway:'Мой итог',step:'Следующий шаг',question:'Вопрос',confirmation:'Ваше подтверждение',empty:'Структурированный результат пока не записан'},
+ es:{result:'Resultado de la sesión',partial:'Resultado parcial: quedan puntos abiertos o no verificados',verified:'Verificado',reviewed:'Revisado por ti',skipped:'Omitido',missing:'No explorado',current:'Actual',desired:'Deseado',takeaway:'Mi conclusión',step:'Siguiente paso',question:'Pregunta',confirmation:'Tu confirmación',empty:'Todavía no hay un resultado estructurado'}
 }
 const label={
  life_direction:{en:'Life direction map',ru:'Карта жизненного направления',es:'Mapa de dirección'},
@@ -46,7 +46,7 @@ export default function MyCoachResultPreview({locale='en',courseSessionId,title,
   {partial&&<small role="status">{t.partial}</small>}
   {['clarity_day_1','clarity_day_2','clarity_day_3'].includes(courseSessionId)&&<ClaritySemanticResult day={Number(courseSessionId.slice(-1))} rows={rows} locale={lang}/>}
   {activeProfile&&<><Wheel profile={activeProfile}/><ol style={{margin:0,paddingInlineStart:20}}>{activeProfile.rows.map(row=><li key={row.id}><strong>{row.label}</strong> — {t.current}: <Rating field={row.current} t={t}/>{(row.priority||activeProfile.track==='inner'||isScore(row.desired))&&<> · {t.desired}: <Rating field={row.desired} t={t}/></>}</li>)}</ol></>}
-  {rows.length>0&&<dl style={{margin:0,display:'grid',gap:8}}>{rows.map(row=><div key={row.id}><dt><strong>{row.label}</strong></dt><dd style={{margin:0}}>{isReviewed(row)?<>{row.quote}<br/><small>{row.source==='server_verified'?t.verified:t.reviewed}</small></>:row.status==='skipped_by_client'?t.skipped:t.missing}</dd></div>)}</dl>}
+  {rows.length>0&&<dl style={{margin:0,display:'grid',gap:8}}>{rows.map(row=><div key={row.id}><dt><strong>{row.label}</strong></dt><dd style={{margin:0}}>{isReviewed(row)?<>{row.questionTurnIndex!=null&&<small style={{display:'block'}}>{t.question}: {row.question}</small>}{row.quote}<br/><small>{row.source==='server_verified'?t.verified:t.reviewed}{row.confirmationQuote&&<> · {t.confirmation}: {row.confirmationQuote}</>}</small></>:row.status==='skipped_by_client'?t.skipped:t.missing}</dd></div>)}</dl>}
   {!activeProfile&&!rows.length&&<p>{t.empty}</p>}
   {summary&&<div><strong>{t.takeaway}</strong><p style={{margin:'4px 0',whiteSpace:'pre-wrap'}}>{summary}</p></div>}
   {nextStep&&<div><strong>{t.step}</strong><p style={{margin:'4px 0',whiteSpace:'pre-wrap'}}>{nextStep}</p></div>}

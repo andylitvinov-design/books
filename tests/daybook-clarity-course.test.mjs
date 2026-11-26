@@ -75,7 +75,9 @@ test('homework answers are saved separately, scoped to the exact report and fiel
  assert.notEqual(await clarityHomeworkEntryId(report,report,'request'),id)
  assert.match(id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
  assert.match(read('components/app/clarity-program.jsx'),/homework=\{<section data-clarity-personal-homework/)
- assert.match(read('components/my-coach-live-dialogue.jsx'),/clarityOpeningReady&&activeSessionSeconds>=CLARITY_COURSE_SECONDS/)
+ assert.match(read('components/my-coach-live-dialogue.jsx'),/clarityOpeningReady&&clarityVoiceActive&&speechRef\.current\?\.isConnected/)
+ assert.doesNotMatch(read('components/my-coach-live-dialogue.jsx'),/clarityTimeLimit\.current=true/)
+ assert.match(read('lib/app/clarity-course-access.js'),/CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=false/)
 })
 test('proposed voice grant is account and day scoped and feature gated',()=>{
  const sql=read('docs/coaching/clarity-course-voice-grants.proposal.sql')
