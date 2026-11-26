@@ -40,12 +40,6 @@ const copy={
     privacy:'Esta ficha sigue en la pestaña. Guardarla a largo plazo requiere consentimiento aparte.'
   }
 }
-const openingTitles={
-  ru:['Согласие на сессию','Как обращаться','Прошлая или новая тема','Тип работы','Чувства сегодня','Подтверждение начала'],
-  en:['Session invitation','Preferred name','Previous or new topic','Working focus','Feelings today','Ready to begin'],
-  es:['Invitación','Nombre preferido','Tema anterior o nuevo','Tipo de trabajo','Cómo te sientes','Confirmación'],
-}
-const openingKeys=['invitation','name','continuity','focus','feelings','confirmation']
 const openingLampKey={invitation:'invitation',name:'identity',focus:'focus',confirmation:'confirmation'}
 const radarPoint=(index,value)=>{
   const angle=-Math.PI/2+index*Math.PI/4
@@ -102,14 +96,12 @@ function ReadOnlyCheckbox({checked}){
  */
 export default function MyCoachSessionStateCard({
   locale='en',turns=[],progress=null,stageLabel='',
-  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null,profile=null
+  opening=null,profile=null,openingPosition,profilePosition,stagePosition,progressMode
 }){
   const language=copy[locale]?locale:'en'
   const t=copy[language]
   const card=useMemo(()=>coachSessionStateView({locale:language,turns,progress}),[language,turns,progress])
-  const verified=stageProgressVerified&&card.stageVerifiedByDirector
   const review=profile?.version===COACH_PROFILE_REVIEW_VERSION
-  const selectedStage=Math.max(0,Math.min(stageNames.length-1,stageIndex))
   const fields=[
     {id:'topic',label:t.topic,Icon:Target,mentioned:!!card.workingTopicQuote,
       value:<QuoteValue value={card.workingTopicQuote} unknown={t.unknown}/>},
@@ -134,19 +126,18 @@ export default function MyCoachSessionStateCard({
         {language==='ru'?'Начало сессии · 6 шагов':language==='es'?'Inicio de sesión · 6 pasos':'Session opening · 6 steps'}
       </h3>
       <ol className={styles.stageList}>
-        {openingKeys.map((key,index)=>{
-          const done=opening.checkmarks?.[key]===true
-          const active=!opening.completed&&!opening.declined&&opening.current===key
+        {openingPosition.rows.map(({id:key,label,status,active},index)=>{
+          const done=status==='done'
           const state=done?t.done:active?t.current:t.waiting
           const lamp=openingLampKey[key]
           const value=key==='name'?opening.answers?.name?.value:
             key==='continuity'?opening.answers?.continuity?.kind:
             key==='focus'?opening.answers?.focus?.kind:''
           return <li key={key} className={styles.stageRow}
-            data-opening-step={key} data-stage-status={done?'done':active?'current':'pending'}>
+            data-opening-step={key} data-stage-id={key} data-stage-status={done?'done':active?'current':'pending'} aria-current={active?'step':undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>
-              {openingTitles[language][index]}
+              {label}
               {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
                 aria-hidden="true"/>}
               {value&&<small className={styles.openingValue}>{String(value).slice(0,55)}</small>}
@@ -157,24 +148,23 @@ export default function MyCoachSessionStateCard({
         })}
       </ol>
     </section>}
-    {profile&&<section className={styles.stageSection} data-coach-profile-checklist
+    {profile&&progressMode==='profile'&&<section className={styles.stageSection} data-coach-profile-checklist
       aria-label={language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
-        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {review?profile.ratings.filter(x=>x.kind==='rated').length:profile.ratings.length}/{COACH_PROFILE_AXES.length}
+        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {profilePosition.rows.filter(row=>row.status==='done').length}/{COACH_PROFILE_AXES.length}
       </h3>
       <ol className={styles.stageList}>
-        {COACH_PROFILE_AXES.map((axis,index)=>{
-          const rating=review?profile.ratings.find(item=>item.axis===axis.id):profile.ratings[index]
-          const done=review?rating?.kind==='rated':Boolean(rating)
-          const active=!profile.completed&&index===profile.step-1
-          const state=done?t.done:active?t.current:t.waiting
+        {profilePosition.rows.map(({id,label,status,active},index)=>{
+          const rating=profile.ratings.find(item=>item.axis===id)
+          const done=status==='done'
+          const state=done?t.done:status==='skipped'?({ru:'Пропущено',en:'Skipped',es:'Omitido'}[language]):active?t.current:t.waiting
           const value=(rating?.kind==='rated'||rating?.kind==='partial')
             ?(rating.current===null?'—':rating.current)+' → '+(rating.desired===null?'—':rating.desired):
             rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
-          return <li key={axis.id} className={styles.stageRow} data-profile-axis={axis.id}
-            data-stage-status={done?'done':active?'current':'pending'}>
+          return <li key={id} className={styles.stageRow} data-profile-axis={id} data-stage-id={id}
+            data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
-            <span className={styles.stageName}>{axis.name[language]}
+            <span className={styles.stageName}>{label}
               {value&&<small className={styles.openingValue}>{value}</small>}
             </span>
             <span className={styles.stageStatus}>{state}</span>
@@ -196,14 +186,13 @@ export default function MyCoachSessionStateCard({
         </Link></p>
       </div>}
     </section>}
-    {(!opening||opening.completed)&&!profile&&<section className={styles.stageSection} aria-label={t.stages}>
+    {(progressMode==='method'||progressMode==='profile-v3')&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
-        {stageNames.map((label,index)=>{
-          const done=verified&&(index<selectedStage||(progress?.completed===true&&index===selectedStage))
-          const active=index===selectedStage&&!done
-          const state=done?t.done:active?t.current:t.waiting
-          return <li key={index} className={styles.stageRow} data-stage-status={done?'done':active?'current':'pending'}>
+        {stagePosition.rows.map(({id,label,status,active},index)=>{
+          const done=status==='done'
+          const state=done?t.done:status==='skipped'?({ru:'Пропущено',en:'Skipped',es:'Omitido'}[language]):active?t.current:status==='needs_confirmation'?t.mentioned:t.waiting
+          return <li key={id} className={styles.stageRow} data-stage-id={id} data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>{label}</span>
             <span className={styles.stageStatus}>{state}</span>
