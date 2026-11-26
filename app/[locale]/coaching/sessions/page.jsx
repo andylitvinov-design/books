@@ -1,3 +1,4 @@
+import {clarityDay} from '@/lib/coaching/clarity-course.mjs'
 import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import PublicCoachingDiscovery from '@/components/public-coaching-discovery'
@@ -29,7 +30,9 @@ export async function generateMetadata({params}){
 export default async function PublicCoachingPage({params,searchParams}){
  const {locale}=await params
  if(!locales.includes(locale))notFound()
- const personaSelection=resolveCoachSelection(await searchParams)
+ const query=await searchParams
+ const selection=resolveCoachSelection(query)
+ const personaSelection=selection?{...selection,clarityDay:clarityDay(query?.clarityDay)}:null
  let catalog=null
  try{
    // Read exactly the same published, reviewed Supabase reference catalog used

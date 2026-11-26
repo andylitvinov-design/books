@@ -1,4 +1,6 @@
 'use client'
+import {clarityDay,clarityCoachHref} from '@/lib/coaching/clarity-course.mjs'
+import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
@@ -207,10 +209,11 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
   <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
  </div>
 }
-export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children}){
+export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
  const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries)
- const [selected,setSelected]=useState(null)
+ const [selected,setSelected]=useState(()=>clarityDay(initialDay))
+ const resultState=useClarityResults(accountId,lang,onSessionLost)
  const day=selected??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
@@ -244,6 +247,7 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
        <summary><span className={css.stepNum}>{index+1}</span><strong>{name}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16} aria-hidden="true"/></Link>}</div>
       </details>)}
+      <details className={css.practice} data-clarity-course-report><summary><BookOpen size={19} aria-hidden="true"/><strong>{({en:'Session result & homework',ru:'Результат сессии и домашнее задание',es:'Resultado y tarea de la sesión'})[lang]}</strong><ChevronDown size={17} aria-hidden="true"/></summary><ClarityCourseResults state={resultState} day={number} locale={lang}/></details>
       <details className={css.practice} data-clarity-reflection>
        <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
        <div className={css.practiceBody}>
@@ -266,8 +270,8 @@ export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll
    </details>
   </div>
   <footer className={css.courseFooter}>
-   <Link href={root+'/my-coach'} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
-   <small>{g.availability}</small>
+   <Link href={clarityCoachHref(root+'/my-coach',day)} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
+   <ClarityCourseStatus state={resultState} day={day} locale={lang}/>
   </footer>
  </section>
 }

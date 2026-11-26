@@ -1,4 +1,5 @@
 'use client'
+import {clarityCoachHref} from '@/lib/coaching/clarity-course.mjs'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -263,7 +264,7 @@ const categoryIcon = {
 const FAVORITES_KEY = 'hh-my-coach-favorites-v1'
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ё/g, 'е').trim()
 
-export default function MyCoachCatalog({ locale = 'en' }) {
+export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
   const lang = words[locale] ? locale : 'en'
   const t = words[lang]
   const categories = topicText[lang]
@@ -325,7 +326,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
   const safeMethod=selectedMethod&&resolveCoachMethodId(selected.id,selectedMethod)||''
-  const startHref = coachSessionHref(lang, selected.id, safeSettings, safeMethod)
+  const startHref = clarityCoachHref(coachSessionHref(lang, selected.id, safeSettings, safeMethod),clarityDay)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
   // Reuse the website's service-specific, privacy-filtered messenger handoff.
@@ -587,7 +588,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
                   <a className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}>
+                    href={clarityCoachHref(coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id)),clarityDay)}>
                     {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
                 </div>
               </div>
