@@ -6,7 +6,7 @@ export function snapshot(html) {
   const sheets=[...html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,"").matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/gi)].map(x=>x[0]);
   const href=tag=>tag.match(/\bhref=["']([^"']+)/i)?.[1];
   const links=sheets.map(href).filter(Boolean);
-  const blockingCssLinks=sheets.filter(tag=>!/\bmedia\s*=\s*["']print["']/i.test(tag)).map(href).filter(Boolean);
+  const blockingCssLinks=sheets.filter(tag=>!/\bmedia\s*=\s*["']print["']/i.test(tag)&&!/(?:^|\s)disabled(?:\s|=|\/?>)/i.test(tag)).map(href).filter(Boolean);
   const preloads=[...html.matchAll(/<link\b[^>]*\brel=["']preload["'][^>]*>/gi)].map(x=>x[0]);
   // The approved guide can change: validate the ACTUAL first SSR hero image
   // rather than accepting any preloaded asset or the old Max-only directory.
@@ -51,7 +51,7 @@ async function main(){
       heroImage:data.heroImage,
       highPriorityImages:data.highPriorityImages});
   }
-  console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; blockingCssFiles excludes print-media sheets and noscript fallbacks; these are not Lighthouse times",pages:list},null,2));
+  console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; blockingCssFiles excludes disabled, print-media sheets and noscript fallbacks; these are not Lighthouse times",pages:list},null,2));
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)
   main().catch(e=>{console.error(e);process.exitCode=1});

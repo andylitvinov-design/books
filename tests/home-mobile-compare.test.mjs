@@ -80,3 +80,11 @@ test("network audit requires a cacheable preloaded portrait and distinguishes sc
   assert.ok(entry.includes(image));
   assert.match(entry,/<link rel="preload" as="image" href=\{picture\} fetchPriority="high"\/>/);
 });
+
+test("network audit distinguishes genuinely disabled styles from blocking CSS", () => {
+  const result = snapshot('<link rel="stylesheet" href="/blocking.css">' +
+    '<link disabled data-home-full-style="" rel="stylesheet" href="/deferred.css">' +
+    '<noscript><link rel="stylesheet" href="/deferred.css"></noscript>');
+  assert.deepEqual(result.cssLinks, ["/blocking.css", "/deferred.css"]);
+  assert.deepEqual(result.blockingCssLinks, ["/blocking.css"]);
+});

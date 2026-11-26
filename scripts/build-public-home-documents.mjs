@@ -6,12 +6,10 @@ import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import Beasties from 'beasties';
 import { parse, serialize } from 'parse5';
+import { restoreStyles } from './home-deferred-css.mjs';
 
 const locales = { en: '/', ru: '/ru', es: '/es' };
 const digest = source => 'sha256-' + createHash('sha256').update(source).digest('base64');
-// Apply the full cascade in one frame, not once per arriving stylesheet.
-// A failed sheet must not strand the remaining styles in print mode.
-const restoreStyles = "addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const links=[...document.querySelectorAll('link[data-home-full-style]')];const activate=()=>links.forEach(link=>{link.media='all'});Promise.all(links.map(link=>new Promise(resolve=>{if(link.sheet){resolve();return}link.addEventListener('load',resolve,{once:true});link.addEventListener('error',resolve,{once:true});if(link.sheet)resolve()}))).then(activate);setTimeout(activate,2500)})),{once:true});";
 
 function* descendants(root) {
   yield root;
@@ -73,6 +71,8 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   if (!nonce || !csp.includes("'strict-dynamic'")) throw new Error('Expected the strict renderer policy');
   const normalized = source.replaceAll(nonce, '');
   const cssInputEdits = [];
+  const deferredStylesheets = new Set();
+  const stylesheetPreloads = [];
   const edits = [];
   const hashes = new Set([digest(restoreStyles)]);
   let styles = 0;
@@ -109,16 +109,23 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
       // The same script is already in this head with its integrity attribute.
       edits.push([loc.startOffset, loc.endOffset, '']);
     }
-    if (attrs.rel !== 'stylesheet') continue;
+    if (attrs.rel === 'preload' && attrs.as === 'style') stylesheetPreloads.push({href: attrs.href, loc});
+    if (attrs.rel !== 'stylesheet' || 'disabled' in attrs) continue;
     firstStylesheet ??= loc.startOffset;
     const path = localAsset(attrs.href, 'css', origin);
     await access(resolve(buildDir, path.slice('/_next/'.length)));
     const originalTag = source.slice(loc.startOffset, loc.endOffset);
-    // Preserve cascade order and offer the full stylesheet without JavaScript.
-    edits.push([loc.startOffset, loc.endOffset, originalTag.replace('<link ', '<link media="print" fetchpriority="low" data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
+    // Disabled links retain Next's href/precedence and DOM order, but unlike
+    // print-media links do not fetch full CSS during the initial paint.
+    deferredStylesheets.add(attrs.href);
+    edits.push([loc.startOffset, loc.endOffset, originalTag.replace('<link ', '<link disabled data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
     const href = loc.attrs.href;
     cssInputEdits.push([href.startOffset, href.endOffset, 'href="' + path + '"']);
     styles++;
+  }
+  // Do not let a redundant stylesheet preload defeat the on-demand fetch.
+  for (const {href, loc} of stylesheetPreloads) {
+    if (deferredStylesheets.has(href)) edits.push([loc.startOffset, loc.endOffset, '']);
   }
   if (!Object.hasOwn(locales, locale) || documentLocale !== locale || !foundHome || !foundHeading || !styles || !source.includes('</head>') || normalized.includes(origin)) {
     throw new Error('Source is not the public production home document');
@@ -132,7 +139,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   const headEnd = source.indexOf('</head>');
   // Put critical rules before every original sheet, so later state changes
   // always obey the full production cascade.
-  edits.push([firstStylesheet, firstStylesheet, '<style>' + css + '</style>']);
+  edits.push([firstStylesheet, firstStylesheet, '<style data-home-critical-css="">' + css + '</style>']);
   edits.push([headEnd, headEnd, '<script>' + restoreStyles + '</script>']);
   const policy = csp.replace("'nonce-" + nonce + "'", [...hashes].map(h => "'" + h + "'").join(' '));
   if (policy.includes(nonce) || policy.length > 12_000) throw new Error('Invalid static script policy');

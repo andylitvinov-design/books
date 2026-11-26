@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
+import { restoreStyles } from '../scripts/home-deferred-css.mjs';
 import { compilePublicDocument } from '../scripts/build-public-home-documents.mjs';
 
 const nonce = 'a'.repeat(32);
@@ -12,7 +14,8 @@ const csp = "default-src 'self'; script-src 'self' 'nonce-" + nonce + "' 'strict
 const source = '<!DOCTYPE html><html lang="en"><head>' +
   '<style>.original-inline-fixture{color:teal}</style>' +
   '<link rel="preload" as="image" fetchpriority="high" href="/images/holistic-house/hero.webp">' +
-  '<link rel="stylesheet" href="/_next/static/css/home.css?dpl=fixture">' +
+  '<link rel="preload" as="style" href="/_next/static/css/home.css?dpl=fixture">' +
+  '<link rel="stylesheet" href="/_next/static/css/home.css?dpl=fixture" data-precedence="next">' +
   '<script src="/_next/static/chunks/app.js" nonce="' + nonce + '" async></script>' +
   '</head><body><section data-home-dialogue-entry><h1 class="mast">Home</h1><details><summary class="visible-summary">Menu</summary><p class="closed-menu">Menu content</p></details><div hidden><p class="hidden-stream">Hidden content</p></div></section><section class="service-home-about"><p class="below-fold-copy">Below the fold</p></section>' +
   '<script nonce="' + nonce + '">self.initial="' + nonce + '"</script></body></html>';
@@ -34,19 +37,22 @@ test('the build pins only authorized scripts, preserves the public React documen
     assert.ok(result.policy.includes("'" + hash('self.initial=""') + "'"));
     assert.ok(result.policy.includes("object-src 'none'; base-uri 'none'; frame-ancestors 'none'"));
     assert.ok(!result.html.includes(nonce) && !result.policy.includes(nonce));
-    assert.match(result.html, /<style>[^<]*\.mast\{/);
+    assert.match(result.html, /<style data-home-critical-css="">[^<]*\.mast\{/);
     assert.doesNotMatch(result.html, /\.admin-editor/);
-    assert.match(result.html, /<style>[^<]*\.service-home-about\{/);
+    assert.match(result.html, /<style data-home-critical-css="">[^<]*\.service-home-about\{/);
     assert.doesNotMatch(result.html, /\.below-fold-copy\{/);
     assert.ok(result.html.includes('<p class="below-fold-copy">Below the fold</p>'));
     assert.match(await readFile(join(dir, 'static/css/home.css'), 'utf8'), /\.below-fold-copy\{color:purple\}/);
     assert.match(result.html, /<noscript><link rel="stylesheet"/);
+    assert.doesNotMatch(result.html, /rel="preload" as="style"/);
+    assert.match(result.html, /<link disabled data-home-full-style="" rel="stylesheet" href="\/_next\/static\/css\/home\.css\?dpl=fixture" data-precedence="next">/);
     assert.match(result.html, /data-home-full-style/);
     assert.equal(result.html.split('.original-inline-fixture{color:teal}').length - 1, 1, 'original inline styles must not be copied into critical CSS');
-    assert.match(result.html, /Promise\.all\(links\.map/);
-    assert.match(result.html, /setTimeout\(activate,2500\)/);
-    assert.match(result.html, /<link media="print" fetchpriority="low" data-home-full-style/);
-    assert.match(result.html, /<style>[^<]*\.visible-summary\{/);
+    assert.match(result.html, /Promise\.all\(pending\)/);
+    assert.match(result.html, /setTimeout\(activate, 2500\)/);
+    assert.match(result.html, /<link disabled data-home-full-style/);
+    assert.ok(result.policy.includes("'" + hash(restoreStyles) + "'"));
+    assert.match(result.html, /<style data-home-critical-css="">[^<]*\.visible-summary\{/);
     assert.doesNotMatch(result.html, /\.closed-menu\{|\.hidden-stream\{/);
     assert.ok(result.html.includes('<p class="closed-menu">Menu content</p>'));
     assert.ok(result.html.includes('<p class="hidden-stream">Hidden content</p>'));
@@ -58,4 +64,71 @@ test('the build pins only authorized scripts, preserves the public React documen
   } finally {
     await rm(dir, {recursive: true, force: true});
   }
+});
+
+function deferredFixture() {
+  const events = {}, frames = [], timers = new Map(), requests = [];
+  let decoded, removed = false, count = 0;
+  const links = [null, 'screen'].map(media => ({
+    media, sheet: null, handlers: {},
+    getAttribute(k) { return this[k]; },
+    setAttribute(k, v) { this[k] = v; },
+    removeAttribute(k) { this[k] = null; },
+    addEventListener(k, fn) { this.handlers[k] = fn; },
+    fire(k) { if (k === 'load') this.sheet = {}; this.handlers[k](); },
+  }));
+  links.forEach((link, i) => Object.defineProperty(link, 'disabled', {
+    get() { return this.off ?? true; },
+    set(v) { this.off = v; if (!v) requests.push(i); },
+  }));
+  const portrait = {decode: () => new Promise(resolve => { decoded = resolve; })};
+  const document = {
+    readyState: 'loading',
+    querySelectorAll: () => links,
+    querySelector: s => s.startsWith('style') ? {remove() { removed = true; }} : portrait,
+  };
+  vm.runInNewContext(restoreStyles, {
+    document, addEventListener: (k, f) => { events[k] = f; },
+    requestAnimationFrame: f => frames.push(f),
+    setTimeout: (f, ms) => { timers.set(++count, {f, ms}); return count; },
+    clearTimeout: id => timers.delete(id),
+  });
+  return {links, requests, frames, events, document, decode: () => decoded(),
+    removed: () => removed, tick(ms) {
+      for (const [id, timer] of [...timers]) if (timer.ms === ms) {
+        timers.delete(id); timer.f();
+      }
+    }};
+}
+const flush = () => new Promise(resolve => setImmediate(resolve));
+test('defers full-sheet requests until portrait decode and two frames; restores the cascade as a group', async () => {
+  const f = deferredFixture();
+  f.document.readyState = 'interactive'; f.events.DOMContentLoaded();
+  assert.deepEqual(f.requests, []);
+  f.decode(); await flush();
+  f.frames.shift()(); f.frames.shift()();
+  assert.deepEqual(f.requests, []);
+  f.tick(0);
+  assert.deepEqual(f.requests, [0, 1]);
+  assert.equal(f.links[0].media, 'print');
+  f.links[0].fire('load'); await flush();
+  assert.equal(f.links[0].media, 'print');
+  f.links[1].fire('load'); await flush();
+  assert.equal(f.links[0].media, null); assert.equal(f.links[1].media, 'screen');
+  assert.equal(f.removed(), true);
+  f.events.scroll(); assert.deepEqual(f.requests, [0, 1]);
+});
+test('early interaction enables CSS and stylesheet errors keep the critical fallback', async () => {
+  const f = deferredFixture();
+  f.document.readyState = 'interactive'; f.events.DOMContentLoaded(); f.events.pointerdown();
+  assert.deepEqual(f.requests, [0, 1]);
+  f.links[0].fire('error'); f.links[1].fire('load'); await flush();
+  assert.equal(f.links[1].media, 'screen'); assert.equal(f.removed(), false);
+});
+test('bounded fallback loads complete CSS even without portrait decode', () => {
+  const f = deferredFixture();
+  f.document.readyState = 'interactive'; f.events.DOMContentLoaded(); f.tick(1200);
+  assert.deepEqual(f.requests, [0, 1]); f.tick(2500);
+  assert.equal(f.links[0].media, null); assert.equal(f.links[1].media, 'screen');
+  assert.equal(f.removed(), false);
 });
