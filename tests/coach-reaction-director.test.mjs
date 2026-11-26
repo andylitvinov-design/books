@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -239,6 +239,53 @@ test('hard safety hold overrides a queued celebration immediately',()=>{
  assert.equal(visible(),null);assert.equal(player.snapshot().queued,null);player.dispose()
 })
 
+test('every public presentation uses one released, short, contact-sealed MP4 with matching poster',()=>{
+ const coaches=['mira','alex','sofia','max','merlin','harry','genie']
+ for(const group of ['primary','alternate']){
+  assert.equal(Object.keys(COACH_PRESENTATION_LOOPS[group]).length,7)
+  for(const coach of coaches){
+   const released=[group+':'+coach]
+   const m=releasedCoachPresentationLoop(coach,released,group)
+   const b=REACTION_V5_ALL_BLOCKS[m.id]
+   assert.equal(b.coach,coach)
+   assert.equal(m.anchorHash,b.anchorHash)
+   assert.equal(m.anchorHash,reactionCameraGroup(coach,group).anchor.hash)
+   assert.equal(m.poster,REACTION_V4_ROOT+reactionV4Poster(coach,group))
+   assert.ok(m.src.startsWith(REACTION_V4_ROOT)&&m.src.endsWith('.mp4'))
+   assert.ok(coachReactionDurationAllowed(m.duration))
+   assert.ok(coachPresentationMetadataMatches(m,{videoWidth:m.width,videoHeight:m.height,duration:m.duration+.001}))
+   assert.equal(coachPresentationMetadataMatches(m,{videoWidth:480,videoHeight:672,duration:m.duration}),false)
+   assert.equal(coachPresentationMetadataMatches(m,{videoWidth:m.width,videoHeight:m.height,duration:10.21}),false)
+   assert.equal(releasedCoachPresentationLoop(coach,[],group),null)
+  }
+ }
+ assert.equal(releasedCoachPresentationLoop('merlin',['primary:merlin']).id,'MER-01')
+ assert.equal(releasedCoachPresentationLoop('caesar',['primary:caesar']),null)
+ assert.equal(releasedCoachPresentationLoop('merlin',['alternate:merlin'],'primary'),null)
+})
+test('presentation contexts use a stable source independent of greeting audio and fail closed',()=>{
+ assert.ok(isCoachPresentationContext('greeting'))
+ assert.ok(isCoachPresentationContext('hero'))
+ assert.ok(isCoachPresentationContext('avatar',true))
+ assert.equal(isCoachPresentationContext('avatar'),false)
+ assert.equal(isCoachPresentationContext('card'),false)
+ assert.equal(isCoachPresentationContext('session',true),false)
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const motion=read('components/my-coach-motion-media.jsx')
+ const gate=read('components/my-coach-greeting-gate.jsx')
+ const catalog=read('components/my-coach-catalog.jsx')
+ assert.ok(gate.includes('phase="greeting" context="greeting"'))
+ assert.ok(catalog.includes('phase="greeting" context="hero"'))
+ assert.ok(catalog.includes('phase="greeting" context="avatar" presentationLoop'))
+ assert.ok(motion.includes('const src=presentationActive?(presentation?.src||null):legacySrc'))
+ assert.ok(motion.includes('[presentationActive,personaId]'))
+ assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop playsInline autoPlay'))
+ assert.ok(motion.includes('presentationActive?(shouldPlay&&<video'))
+ assert.ok(motion.includes('onLoadedMetadata={event=>validatePresentation(event.currentTarget)}'))
+ assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
+ assert.ok(motion.includes('presentation?.poster||framePoster'))
+ assert.ok(motion.includes('},[shouldPlay,src])'))
+})
 
 test('shared personality empathy veto prevents cheerful reaction to explicit shame, anger, exhaustion or mixed progress',()=>{
  for(const text of ["I feel ashamed.","I am furious.","I feel drained.","Мне стыдно.","Я злюсь.","Я выжат.","Me da vergüenza.","Estoy enojado.","Me siento agotado.","I did it, but I feel ashamed.","Я справился, но мне стыдно.","Lo logré, pero estoy enojado."]){

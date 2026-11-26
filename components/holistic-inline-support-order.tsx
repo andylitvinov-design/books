@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { RemoteEnergySupportBooking, type EnergySupportMaster, type SupportRequestKind } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
 import { matchesHolisticEuroBudget, matchesHolisticGoal } from "@/lib/practitioners/holistic-search-budgets.js";
@@ -34,6 +34,7 @@ const copy = {
     note: "Prices from published offers only · Enquiries are not bookings or payments.",
     currencyNote: "Euro budgets compare EUR prices only. Other currencies are shown under Any.",
     results: "Matching consultations",
+    unpricedTalisman: "Talisman prices are not published. Select Any to ask a practitioner without assuming a price.",
   },
   ru: {
     title: "Подобрать поддержку", catalogTitle: "Заказать выбранный талисман", topic: "Тема", kind: "Услуга", budget: "Бюджет",
@@ -48,6 +49,7 @@ const copy = {
     note: "Только опубликованные цены · Заявка ещё не запись и не оплата.",
     currencyNote: "Лимиты в евро действуют для цен в EUR. Другие валюты — в категории «Любой».",
     results: "Подходящие консультации",
+    unpricedTalisman: "Цены на талисманы не опубликованы. Выберите «Любой», чтобы обсудить цену с мастером.",
   },
   es: {
     title: "Encontrar apoyo personal", catalogTitle: "Solicitar este talismán", topic: "Tema", kind: "Servicio", budget: "Presupuesto",
@@ -62,6 +64,7 @@ const copy = {
     note: "Solo precios publicados · La solicitud no es reserva ni pago.",
     currencyNote: "Los límites en euros solo comparan precios EUR. Otras monedas se muestran en Cualquiera.",
     results: "Consultas disponibles",
+    unpricedTalisman: "Los talismanes no tienen precio publicado. Elige Cualquiera para consultar sin suponer un precio.",
   },
 } as const;
 
@@ -90,8 +93,10 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   // directory is slow or unavailable. Any still loads verified practitioners.
   const unpricedTalisman = choice === "talisman" && budget !== "any";
 
-  useEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
-  useEffect(() => { setTopic(initialGoal); setSearched(Boolean(initialTalismanId)); }, [initialGoal, initialTalismanId]);
+  // Synchronize external picker changes before paint; a delayed passive reset
+  // could erase the next explicit Search after a quick kind/budget selection.
+  useLayoutEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
+  useLayoutEffect(() => { setTopic(initialGoal); setSearched(Boolean(initialTalismanId)); }, [initialGoal, initialTalismanId]);
 
   useEffect(() => {
     if (!searched || unpricedTalisman) return;
@@ -181,8 +186,15 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
           <p>{t.failed}</p>
           <button className={styles.retry} type="button" onClick={() => setAttempt(n => n + 1)}>{t.retry}</button>
         </div>}
-        {searched && choice !== "consultation" && (unpricedTalisman || masters) && (
-          <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={unpricedTalisman ? [] : (masters || [])}
+        {searched && unpricedTalisman && (
+          <section id="remote-results" className={styles.empty} aria-label={t.kind}>
+            <p role="status" data-unpriced-talisman>{t.unpricedTalisman}</p>
+            <button type="button" className={styles.retry} onClick={() => setBudget("any")}>{t.clear}</button>
+            <Link href={"/" + locale + "/masters"} prefetch={false}>{t.explore}</Link>
+          </section>
+        )}
+        {searched && choice !== "consultation" && !unpricedTalisman && masters && (
+          <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={masters}
             preferredPractitioner="" mode="inline" selectedKind={choice} initialGoal={topic}
             initialTalismanId={initialTalismanId} compactFinder priceBudget={budget} onClearBudget={() => setBudget("any")}/>
         )}

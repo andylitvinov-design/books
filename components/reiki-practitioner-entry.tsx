@@ -59,6 +59,7 @@ export function ReikiDaybookStart({ locale, className }: { locale: PublicLocale;
       const native = isNativeHolisticHouse();
       const response = await appFetch("auth/start", {
         locale: language, continueTo: "energywork-daybook", ...(native ? { native: true } : {}),
+        reikiRegistration: locale,
       }, "POST");
       if (!response?.redirectUrl || new URL(response.redirectUrl).protocol !== "https:") {
         throw new Error("BAD_OAUTH_URL");

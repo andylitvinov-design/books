@@ -2618,3 +2618,85 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
 test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
   await import('../scripts/verify-agent-memory-rls-ci.mjs')
 })
+
+
+// Use the existing isolated App R1 PostgreSQL runner, no additional service or
+// production data. Replay the exact released CRM schema and candidate SQL.
+test('Reiki verified registration creates a single operational CRM contact; preserves existing suppression and RLS', async () => {
+  const {readFile}=await import('node:fs/promises')
+  const {syncReikiRegistration}=await import('../lib/academy/reiki-registration-store.js')
+  const {operationHash,openSealed}=await import('../lib/app/crypto.js')
+  const {PRACTITIONER_ID}=await import('../data/app-services.js')
+  const db=await adminClient()
+  const owner=actor(randomUUID(),randomUUID())
+  const learner={...actor(randomUUID(),randomUUID()),email:'reiki-fresh@example.invalid'}
+  const existing={...actor(randomUUID(),randomUUID()),email:'reiki-existing@example.invalid'}
+  const outsider={...actor(randomUUID(),randomUUID()),email:'reiki-denied@example.invalid'}
+  const authFor=(who,verified=true)=>({auth:{getUserIdentities:async()=>({data:{identities:[{provider:'google',identity_data:{email:who.email,email_verified:verified}}]},error:null})}})
+  const run=(who,verified=true)=>syncReikiRegistration(config,who,authFor(who,verified),'es',{transact:(_config,acting,fn)=>rawAs(acting,'hh_app_backend',fn)})
+  let previousOwner
+  try{
+    // The earlier memory RLS test creates the same NOLOGIN CRM role. Reuse
+    // that verified role in this isolated database; replay every schema grant,
+    // table and policy from the original historical migration unchanged.
+    const priorRole=(await db.query("select rolcanlogin,rolsuper,rolbypassrls from pg_roles where rolname='hh_crm_backend'")).rows[0]
+    if(priorRole)assert.deepEqual(priorRole,{rolcanlogin:false,rolsuper:false,rolbypassrls:false})
+    for(const filename of [
+      '20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql',
+      '20261018123830_hh_crm_contact_lifecycle.sql',
+      '20261018183403_hh_crm_followups_activity_sources_20261018.sql',
+      '20261018184529_hh_crm_phone_first_contacts_20261018.sql',
+      '20261125215204_hh_reiki_crm_registration.sql',
+    ]){
+      let sql=await readFile(new URL('../supabase/migrations/'+filename,import.meta.url),'utf8')
+      if(priorRole&&filename==='20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql'){
+        const declaration='create role hh_crm_backend nologin nobypassrls;'
+        assert.equal(sql.split(declaration).length,2,'exact historical role declaration')
+        sql=sql.replace(declaration,'-- verified isolated role already exists')
+      }
+      await db.query(sql)
+    }
+    for(const who of [owner,learner,existing,outsider]){
+      await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,who.email])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+      await repo.ensureAccount(who)
+    }
+    previousOwner=(await db.query('select trusted_auth_user_id from app.practitioners where id=$1',[PRACTITIONER_ID])).rows[0].trusted_auth_user_id
+    await db.query('update app.practitioners set trusted_auth_user_id=$2 where id=$1',[PRACTITIONER_ID,owner.id])
+    const formerId=randomUUID()
+    const formerHash=operationHash({scope:'crm-email',owner:owner.id,email:existing.email},config)
+    const formerCipher=seal({displayName:'Existing suppressed contact',email:existing.email,phone:''},{accountId:owner.id,recordId:formerId,field:'crm.contact'},config)
+    await db.query("insert into app.crm_contacts(id,owner_id,contact_ciphertext,email_hash,locale,lifecycle,source,suppressed) values($1,$2,$3,$4,'en','archived','manual',true)",[formerId,owner.id,formerCipher,formerHash])
+    assert.equal(await run(outsider,false),false)
+    await Promise.all([run(learner),run(learner)])
+    assert.equal(await run(learner),true)
+    assert.equal(await run(existing),true)
+    const contacts=(await db.query('select * from app.crm_contacts where owner_id=$1 order by created_at',[owner.id])).rows
+    assert.equal(contacts.length,2)
+    const preserved=contacts.find(c=>c.id===formerId)
+    assert.equal(preserved.suppressed,true)
+    assert.equal(preserved.lifecycle,'archived')
+    assert.equal(preserved.contact_ciphertext,formerCipher)
+    const fresh=contacts.find(c=>c.id!==formerId)
+    assert.equal(fresh.locale,'es')
+    assert.equal(fresh.source,'academy')
+    assert.equal(fresh.email_verified,false)
+    assert.equal(openSealed(fresh.contact_ciphertext,{accountId:owner.id,recordId:fresh.id,field:'crm.contact'},config).email,learner.email)
+    const links=(await db.query('select account_id,contact_id,locale from app_private.crm_reiki_registrations where owner_id=$1',[owner.id])).rows
+    assert.equal(links.length,2)
+    assert.equal(links.find(x=>x.account_id===learner.id).contact_id,fresh.id)
+    assert.equal(links.find(x=>x.account_id===existing.id).contact_id,formerId)
+    assert.equal((await db.query('select count(*)::int as n from app.crm_consent_ledger where owner_id=$1',[owner.id])).rows[0].n,0)
+    assert.equal((await rawAs(outsider,'hh_app_backend',c=>c.query('select contact_id from app_private.crm_reiki_registrations'))).rowCount,0)
+    assert.equal((await rawAs(learner,'hh_app_backend',c=>c.query('select contact_id from app_private.crm_reiki_registrations'))).rowCount,1)
+    assert.equal((await rawAs(outsider,'hh_app_backend',c=>c.query('select id from app.crm_contacts where owner_id=$1',[owner.id]))).rowCount,0)
+    await assert.rejects(rawAs(outsider,'hh_app_backend',c=>c.query("insert into app.crm_contacts(id,owner_id,contact_ciphertext,email_hash,locale,lifecycle,source) values($1,$2,'invalid',$3,'en','lead','academy')",[randomUUID(),owner.id,'a'.repeat(64)])),err=>err.code==='42501')
+    assert.equal((await db.query("select has_column_privilege('hh_app_backend','app.crm_contacts','contact_ciphertext','SELECT') as allowed")).rows[0].allowed,false)
+    assert.equal((await db.query("select has_table_privilege('authenticated','app_private.crm_reiki_registrations','SELECT') as allowed")).rows[0].allowed,false)
+    await db.query('delete from auth.sessions where id=$1',[learner.claims.session_id])
+    await assert.rejects(run(learner),err=>err.code==='ACCOUNT_UNAVAILABLE'||err.code==='SIGN_IN_REQUIRED')
+  }finally{
+    if(previousOwner!==undefined)await db.query('update app.practitioners set trusted_auth_user_id=$2 where id=$1',[PRACTITIONER_ID,previousOwner])
+    await db.end()
+  }
+})
