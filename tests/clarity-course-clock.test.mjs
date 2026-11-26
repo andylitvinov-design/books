@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {createClarityCourseClock,advanceClarityCourseClock,clarityClockSummary,clarityClockTimedEnd,validateClarityCourseClock,CLARITY_LOGICAL_SESSION_MS,CLARITY_CLOCK_MAX_GAP_MS} from '../lib/coaching/clarity-course-clock.mjs'
+import {createClarityCourseClock,advanceClarityCourseClock,clarityClockSummary,clarityClockDailySlot,clarityClockTimedEnd,validateClarityCourseClock,CLARITY_LOGICAL_SESSION_MS,CLARITY_CLOCK_MAX_GAP_MS} from '../lib/coaching/clarity-course-clock.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const e=(clock,day,type,atMs,{protocolId=id(day),segmentId=id(day+10),connectionId=id(day+20),...extra}={})=>
  ({expectedRevision:clock.revision,day,type,atMs,protocolId,segmentId,connectionId,...extra})
@@ -76,7 +76,7 @@ test('three logical windows of twenty minutes; no automatic day start or overrun
   assert.equal(clock.days[day-1].endedAt,now+1200000)
   assert.equal(clarityClockTimedEnd(clock,day,id(day)),true)
   if(day<3)assert.equal(clock.days[day].status,'not_started')
-  now+=1210000
+  now+=86400000
  }
  assert.equal(clarityClockSummary(clock).totalElapsedMs,3600000)
  assert.equal(clarityClockSummary(clock).complete,true)
@@ -91,8 +91,51 @@ test('only the canonical server clock is readable; prototype browser mutations a
  const route=read('app/api/app/clarity-course/clock/route.js')
  assert.match(route,/await auth\.verified\(\)/)
  assert.match(route,/request\.headers\.get\('x-hh-account-id'\)!==actor\.id/)
- assert.match(route,/clarityClockSummary\(clock\)/)
+ assert.match(route,/clarityClockSummary\(clock,Date\.now\(\)\)/)
  assert.doesNotMatch(route,/export (?:const|async function|function) POST|writeClarityClock|applyTrustedClarityClockEvent|readBody/)
  assert.match(read('lib/app/clarity-logical-clock-store.js'),/clarityLogicalClockEnabled=\(\)=>false/)
  assert.match(read('lib/app/clarity-course-access.js'),/CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=false/)
+})
+
+test('one free logical session per UTC date regardless of coach; same-day continuation retains remainder',()=>{
+ const dayMs=86400000
+ let clock=begin(createClarityCourseClock(),1,0)
+ clock=tickUntil(clock,1,0,300000)
+ clock=stop(clock,1,300100,'disconnect')
+ assert.equal(clarityClockDailySlot(clock,400000).occupied,true)
+ assert.equal(clarityClockDailySlot(clock,400000).newLogicalSessionBlocked,false)
+ const segmentId=id(91),connectionId=id(92)
+ clock=begin(clock,1,400000,{segmentId,connectionId,coachId:'caesar',turnId:'resume:1',decision:'continue'})
+ clock=tickUntil(clock,1,400000,900000,{segmentId,connectionId})
+ assert.equal(clarityClockDailySlot(clock,1300000).newLogicalSessionBlocked,true)
+ assert.throws(()=>begin(clock,2,1300001,{coachId:'sofia'}),/CLARITY_DAILY_SESSION_LIMIT/)
+ assert.equal(clarityClockSummary(clock,dayMs).dailySlot.occupied,false)
+ clock=begin(clock,2,dayMs,{coachId:'sofia'})
+ assert.equal(clock.days[1].elapsedMs,0)
+ assert.equal(clarityClockDailySlot(clock,dayMs).courseDay,2)
+})
+test('credited time across midnight occupies both dates; disconnect does not',()=>{
+ const midnight=86400000
+ let clock=begin(createClarityCourseClock(),1,midnight-10000)
+ clock=observe(clock,1,midnight)
+ assert.equal(clarityClockDailySlot(clock,midnight).occupied,false)
+ clock=observe(clock,1,midnight+10000)
+ assert.equal(clarityClockDailySlot(clock,midnight).courseDay,1)
+ clock=tickUntil(clock,1,midnight+10000,1180000)
+ assert.equal(clock.days[0].status,'time_limit')
+ assert.throws(()=>begin(clock,2,midnight+1200001),/CLARITY_DAILY_SESSION_LIMIT/)
+ let interrupted=begin(createClarityCourseClock(),1,midnight-10000)
+ interrupted=stop(interrupted,1,midnight+10000,'disconnect')
+ assert.equal(clarityClockDailySlot(interrupted,midnight+10000).occupied,false)
+ assert.equal(interrupted.days[0].elapsedMs,0)
+})
+test('corrupt persisted ledger cannot assign the same date to distinct protocols',()=>{
+ let clock=begin(createClarityCourseClock(),1,0)
+ clock=tickUntil(clock,1,0,1200000)
+ clock=begin(clock,2,86400000)
+ const corrupt=structuredClone(clock)
+ const segment=corrupt.days[1].segments[0]
+ segment.startedAt=segment.observedAt=1300000
+ corrupt.lastEventAt=1300000
+ assert.throws(()=>validateClarityCourseClock(corrupt),/CLARITY_CLOCK_INVALID/)
 })
