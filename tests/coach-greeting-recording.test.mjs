@@ -281,3 +281,10 @@ test('short in-session audio is cached separately, uses the approved voice and n
   assert.equal(h.objects.size,16)
   assert.equal((await harness({env:{}}).GET(new Request('https://holistichouse.vercel.app'+coachSessionOpeningAudioPath('merlin','ru')))).status,503)
 })
+
+test('Merlin missing approved greeting never substitutes a different provider',async()=>{
+  const h=harness({env:{}})
+  const response=await h.GET(h.request('merlin','ru'))
+  assert.equal(response.status,503)
+  assert.equal(h.fishCalls,0)
+})

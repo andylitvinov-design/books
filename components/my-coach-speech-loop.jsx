@@ -993,6 +993,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     const replyLocale=['en','ru','es'].includes(result.locale)?result.locale:
       ['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current:
       detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
+    const preserveMerlinVoice=personaId==='merlin'&&['ru','en'].includes(replyLocale)
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
       if(!live())return
@@ -1094,7 +1095,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       cloudPlayerRef.current?.cancel()
       cloudPlayerRef.current=null
       // Natural Google/Fish stays first; disclose the temporary OS voice.
-      if(playDeviceFallback())return
+      if(!preserveMerlinVoice&&playDeviceFallback())return
       if(earlySegment)earlyPhraseEnded(generation)
       else startListening()
       setNotice(t.fallback)
@@ -1134,6 +1135,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
       cloudProvider:voiceProvider,voiceName:selectedVoice}=voiceConfigRef.current
+    if(preserveMerlinVoice&&!['gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)){
+      showTextOnly();return
+    }
     if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller

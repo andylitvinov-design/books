@@ -860,7 +860,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
     const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
-    const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&
+    const dynamicAllowed=(!lockedSessionVoice||chosenCloudProvider?.startsWith('gemini_tts_'))&&chosenCloudAgreed&&chosenCloudAvailable&&
       ['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(chosenCloudProvider)
     if(!replayingIntro&&!dynamicAllowed){
       setPlaybackNotice(voiceGate.naturalUnavailable)
@@ -2501,7 +2501,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <select value={geminiVoiceTier} disabled={busy||replaying} onChange={event=>{
             setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(event.target.value==='gemini_tts_free')
           }}>
-            <option value="existing">{({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
+            <option value="existing">{lockedSessionVoice?({ru:'Текст без подмены голоса',en:'Text without voice substitution',es:'Texto sin sustituir la voz'})[lang]:({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
             <option value="gemini_tts_free" disabled={!geminiCapabilities.gemini_tts_free}>Gemini TTS · Free</option>
             <option value="gemini_tts_paid" disabled={!geminiCapabilities.gemini_tts_paid}>Gemini TTS · Paid</option>
           </select>

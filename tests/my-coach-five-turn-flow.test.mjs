@@ -6,6 +6,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
@@ -19,7 +20,7 @@ const end=source.indexOf("  const active=phase!=='idle'",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
+function createSession({personaId='mira',cloudProvider='fish_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
   const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
@@ -80,8 +81,9 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
-    coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
+    coachSessionOpeningAudioPath,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
+      assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=6','only the short session opening, never the full presentation')
       intros++
       queueMicrotask(()=>{onStart?.();onEnd?.()})
       return {cancel(){}}
@@ -103,8 +105,8 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
   const reply=respond||((text,index)=>({reply:'Мира отвечает на ход '+index,mode:'ai'}))
   Component({
     locale:'ru',speechLocale:'ru',initialDraft:'',enabled:true,canStart:true,
-    cloudAvailable:true,cloudAgreed:true,cloudProvider:'fish_free',
-    personaId:'mira',introduction:'Здравствуйте! Я Мира.',
+    cloudAvailable:true,cloudAgreed:true,cloudProvider,
+    personaId,introduction:'Я рядом. Готовы начать?',
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
@@ -395,4 +397,18 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
   assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef\.current/)
   assert.match(source,/\},\[sessionClockStarted,paused,voicePaused\]\)/)
+})
+
+test('Merlin retains approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
+  for(const provider of ['fish_free','gemini_tts_free']){
+    const session=createSession({personaId:'merlin',cloudProvider:provider,ttsFailures:[1]})
+    assert.equal(session.ref.current.startSession('Я рядом и внимательно вас слушаю. Готовы начать?',{naturalVoice:true}),true)
+    const mic=await nextMic(session,1)
+    mic.hear('Да, я готов начать')
+    await nextMic(session,2)
+    assert.equal(session.ttsCalls,provider==='gemini_tts_free'?1:0)
+    assert.equal(session.deviceSpoken,0)
+    assert.equal(session.intros,1)
+    session.ref.current.stop()
+  }
 })
