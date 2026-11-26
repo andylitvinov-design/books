@@ -2,6 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { MandatoryMessengerActions } from '@/components/mandatory-messenger-actions'
+import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
+import { telegramBusinessServiceTitle, telegramServiceRequestUrl } from '@/lib/assist/telegram-business-request.mjs'
+import { BUSINESS_SYLLABUS, BUSINESS_REPORT_ROOT, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
   Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness, Film,
@@ -108,22 +113,69 @@ const CLARITY = {
 const BUSINESS = {
   en:{
     label:'BUSINESS PROGRAM',title:'My Business',intro:'Find direction, build structure and grow your business with clarity and support.',
-    start:'Start Program',details:'Request Details',question:'What do you need for your business?',program:'4-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
+    start:'Start Program',details:'Request Details',question:'What do you need for your business?',program:'8-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
     topics:[['Strategy & Direction','Clarify your vision and growth path'],['Structure & Team','Build an effective organization'],['Growth & Resources','Activate resources and opportunities'],['Execution & Results','Turn your plan into real progress']],
-    sessions:[['Strategic Choice','Analyze your situation and define your goal','Review your current business, identify growth opportunities, and choose a measurable strategic goal.'],['Organizational Design','Build the right structure and key roles','Map business functions, define the target structure, and assign owners and KPIs.'],['Business Transformation','Design the change plan and growth steps','Gather feedback from leaders, prioritize organizational changes, and define resources and milestones.'],['Strategic Execution','Implement, measure and achieve results','Assign responsibility, establish a review rhythm, and monitor implementation and KPIs.']],
+    sessions:BUSINESS_SYLLABUS.en,
   },
   ru:{
     label:'БИЗНЕС-ПРОГРАММА',title:'Мой бизнес',intro:'Найдите направление, выстройте структуру и развивайте бизнес с поддержкой.',
-    start:'Начать программу',details:'Запросить детали',question:'Что нужно вашему бизнесу?',program:'4 сессии для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
+    start:'Начать программу',details:'Запросить детали',question:'Что нужно вашему бизнесу?',program:'8 сессий для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
     topics:[['Стратегия и направление','Видение и путь роста'],['Структура и команда','Эффективная организация'],['Рост и ресурсы','Ресурсы и возможности'],['Реализация и результаты','От плана к результату']],
-    sessions:[['Стратегический выбор','Анализ ситуации и определение цели','Проанализируйте бизнес, выявите возможности роста и выберите измеримую стратегическую цель.'],['Организационная архитектура','Функции, структура и ключевые роли','Опишите функции бизнеса, целевую структуру, ответственных и KPI.'],['Трансформация бизнеса','План изменений и этапы роста','Соберите обратную связь руководителей, определите изменения, ресурсы и этапы.'],['Стратегическое исполнение','Ответственность, контроль и KPI','Назначьте ответственных, задайте ритм контроля и отслеживайте исполнение и KPI.']],
+    sessions:BUSINESS_SYLLABUS.ru,
   },
   es:{
     label:'PROGRAMA EMPRESARIAL',title:'Mi negocio',intro:'Define tu rumbo, construye una estructura y haz crecer tu negocio con claridad y apoyo.',
-    start:'Iniciar programa',details:'Solicitar detalles',question:'¿Qué necesita tu negocio?',program:'4 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
+    start:'Iniciar programa',details:'Solicitar detalles',question:'¿Qué necesita tu negocio?',program:'8 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
     topics:[['Estrategia y rumbo','Aclara tu visión y crecimiento'],['Estructura y equipo','Crea una organización eficaz'],['Crecimiento y recursos','Activa recursos y oportunidades'],['Ejecución y resultados','Convierte tu plan en avances']],
-    sessions:[['Elección estratégica','Analiza tu situación y define tu meta','Revisa el negocio, identifica oportunidades y elige una meta estratégica medible.'],['Diseño organizativo','Funciones, estructura y roles clave','Define las funciones, la estructura objetivo, los responsables y los KPI.'],['Transformación empresarial','Plan de cambios y etapas de crecimiento','Recoge opiniones de líderes y define prioridades, recursos e hitos.'],['Ejecución estratégica','Responsabilidad, seguimiento y KPI','Asigna responsables, establece revisiones y monitoriza la ejecución y los KPI.']],
+    sessions:BUSINESS_SYLLABUS.es,
   },
+}
+
+const BUSINESS_PROGRAM_COPY={
+  "en": {
+    "report": "Business development report",
+    "phases": [
+      "I · Strategic design",
+      "II · Practical transformation"
+    ],
+    "book": "Arrange a session",
+    "request": "I would like details and to arrange the 8-session business coaching programme.",
+    "preview": "Session overview",
+    "previewLanguage": "",
+    "note": "Please send your message in the messenger to request a session."
+  },
+  "ru": {
+    "report": "Программа развития бизнеса · PDF",
+    "phases": [
+      "I · Стратегическое проектирование",
+      "II · Практическая трансформация"
+    ],
+    "book": "Записаться на сессию",
+    "request": "Хочу узнать подробности и записаться на программу бизнес-коучинга из 8 сессий.",
+    "preview": "Описание сессии",
+    "previewLanguage": "",
+    "note": "Отправьте сообщение в мессенджере, чтобы запросить запись."
+  },
+  "es": {
+    "report": "Programa de desarrollo empresarial · PDF",
+    "phases": [
+      "I · Diseño estratégico",
+      "II · Transformación práctica"
+    ],
+    "book": "Reservar una sesión",
+    "request": "Quiero conocer los detalles y solicitar una sesión del programa empresarial de 8 sesiones.",
+    "preview": "Descripción de la sesión",
+    "previewLanguage": "Vista del PDF en inglés",
+    "note": "Envía el mensaje en la aplicación para solicitar una sesión."
+  }
+}
+const businessTopicSessions=[0,1,3,7]
+
+function BusinessReportDownloads({locale,position}) {
+  return <section className={styles.businessReports} data-business-report-links={position} aria-label={BUSINESS_PROGRAM_COPY[locale].report}>
+    <strong><BookOpen size={19} aria-hidden="true"/>{BUSINESS_PROGRAM_COPY[locale].report}</strong>
+    <div><a href={BUSINESS_REPORT_ROOT+'/ru.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="ru">Русский · PDF</a><a href={BUSINESS_REPORT_ROOT+'/en.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="en">English · PDF</a></div>
+  </section>
 }
 
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
@@ -136,8 +188,13 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const c = CLARITY[selected]
   const b = BUSINESS[selected]
   const [businessStage, setBusinessStage] = useState(null)
-  const businessContact = '/' + selected + '/services/business-consulting#request-session'
-  const businessIcons = [Compass, BriefcaseBusiness, BarChart3, Target]
+  const [businessContactOpen, setBusinessContactOpen] = useState(false)
+  const bp = BUSINESS_PROGRAM_COPY[selected]
+  const businessIcons = [Compass, BriefcaseBusiness, UserRound, BarChart3, Settings2, Target, Sparkles, CalendarDays]
+  function requestBusinessSession() {
+    setBusinessContactOpen(true)
+    requestAnimationFrame(() => document.getElementById('business-contact-options')?.scrollIntoView({block:'center',behavior:'smooth'}))
+  }
   function openBusinessStage(index) {
     setBusinessStage(index)
     if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
@@ -196,12 +253,18 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <p className={styles.businessIntro}>{b.intro}</p>
         <div className={styles.businessActions}>
           <Link href={root+'/daybook/business'} prefetch={false} data-business-start>{b.start}<ArrowRight size={19} aria-hidden="true"/></Link>
-          <Link href={businessContact} prefetch={false} data-business-details>{b.details}</Link>
+          <button type="button" data-business-details aria-expanded={businessContactOpen} aria-controls="business-contact-options" onClick={()=>setBusinessContactOpen(open=>!open)}>{b.details}<ChevronDown size={17} aria-hidden="true"/></button>
+        </div>
+        <div id="business-contact-options" className={styles.businessContactOptions} data-business-contact-options hidden={!businessContactOpen}>
+          {businessContactOpen&&<><MandatoryMessengerActions locale={selected} compact label={bp.book}
+            whatsappUrl={whatsappEnquiryUrl({locale:selected,service:telegramBusinessServiceTitle('business',selected),request:bp.request,option:b.program})}
+            telegramUrl={telegramServiceRequestUrl('business',selected)}/><p>{bp.note}</p></>}
         </div>
       </header>
+      <BusinessReportDownloads locale={selected} position="top"/>
       <h2 className={styles.businessHeading}>{b.question}</h2>
       <div className={styles.businessTopics}>{b.topics.map(([title,detail],index)=>
-        <button key={index} type="button" className={styles.businessTopic} data-business-topic={index} aria-pressed={businessStage===index} onClick={()=>openBusinessStage(index)}>
+        <button key={index} type="button" className={styles.businessTopic} data-business-topic={index} aria-pressed={businessStage===businessTopicSessions[index]} onClick={()=>openBusinessStage(businessTopicSessions[index])}>
           <span className={styles.businessPhoto} data-business-photo={index} aria-hidden="true"/>
           <span className={styles.businessTopicCopy}><strong>{title}</strong><small>{detail}</small></span>
           <ArrowRight size={16} aria-hidden="true"/>
@@ -209,18 +272,26 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       )}</div>
       <h2 className={styles.businessHeading}>{b.program}</h2>
       <p className={styles.businessHint}>{b.hint}</p>
-      <div className={styles.businessSessions}>{b.sessions.map(([title,detail,instruction],index)=>{
+      <div className={styles.businessSessions}>{b.sessions.map(([title,detail,practices],index)=>{
         const Icon=businessIcons[index], expanded=businessStage===index
-        return <article key={index} className={styles.businessSession} data-business-session={index} id={'business-session-'+index}>
+        return <div key={index} className={styles.businessSessionGroup}>
+          {(index===0||index===4)&&<h3 className={styles.businessPhase}>{bp.phases[index===0?0:1]}</h3>}
+          <article className={styles.businessSession} data-business-session={index} id={'business-session-'+index}>
           <button type="button" className={styles.businessStep} aria-expanded={expanded} aria-controls={'business-content-'+index} onClick={()=>openBusinessStage(expanded?null:index)}>
             <span className={styles.businessNumber}>{index+1}</span><Icon size={23} aria-hidden="true"/>
             <span className={styles.businessStepCopy}><strong>{title}</strong><small>{detail}</small></span><ChevronDown size={19} aria-hidden="true"/>
           </button>
           <div className={styles.businessInstruction} id={'business-content-'+index} hidden={!expanded}>
-            <p>{instruction}</p><Link href={businessContact} prefetch={false}>{b.next}<ArrowRight size={18} aria-hidden="true"/></Link>
+            {expanded&&<div className={styles.businessSessionScreen} data-business-session-screen={index+1}>
+              {bp.previewLanguage&&<p>{bp.previewLanguage}</p>}
+              <Image src={businessSessionScreenshot(selected,index+1)} alt={bp.preview+' '+(index+1)+': '+title} width={780} height={1387} unoptimized loading="lazy"/>
+              <div className={styles.businessScreenText}>{practices.map(([name,description])=><p key={name}><strong>{name}.</strong> {description}</p>)}</div>
+              <button type="button" className={styles.businessSessionBook} onClick={requestBusinessSession}>{b.next}<ArrowRight size={18} aria-hidden="true"/></button>
+            </div>}
           </div>
-        </article>
+        </article></div>
       })}</div>
+      <BusinessReportDownloads locale={selected} position="bottom"/>
       <Link href={'/' + selected + '/shamanica/business'} className={styles.profileInsight} prefetch={false}>
         <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
