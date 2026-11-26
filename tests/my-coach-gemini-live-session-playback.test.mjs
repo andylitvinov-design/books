@@ -226,6 +226,21 @@ test('speaker loopback and an isolated sound leave the full greeting audible and
   h.assertLive()
 })
 
+test('a 192 ms sneeze-like noise does not cancel the greeting or reach the provider',()=>{
+  const h=session()
+  h.receive({audio:[coachVoicePcm(2)],output:'Full greeting',turnComplete:true})
+  for(let i=0;i<12;i++)captureBlock(h,{echo:true})
+  for(let i=0;i<6;i++)captureBlock(h,{echo:true,person:t=>.28*Math.sin(2*Math.PI*(750+i*50)*t)})
+  for(let i=0;i<8;i++)captureBlock(h,{echo:true})
+  assert.deepEqual(h.events.interruptions,[])
+  assert.equal(h.r.player.output.gain.value,1)
+  assert.ok(transmittedFrames(h).every(frame=>geminiLiveAudioRms(frame)<.005))
+  h.clock.advanceTo(3)
+  assert.equal(h.clock.heardSamples,48000)
+  assert.deepEqual(h.events.final,[{text:'Full greeting',interrupted:false}])
+  h.assertLive()
+})
+
 test('real overlapping speech retains its first mic block and the next answer uses the original Gemini connection',()=>{
   const h=session()
   h.receive({audio:[coachVoicePcm(2)],output:'Reply in progress'})

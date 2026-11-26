@@ -298,6 +298,12 @@ async function exercise(engine, browserType, width) {
       // diagnostics so a real stalled resource can be repaired, not waived.
       const pending = [...publicPageState.pendingPublicRequests].slice(0, 25).map(request => ({
         path: new URL(request.url()).pathname,
+        // Only report a validated local public image path, never arbitrary query data.
+        imageSource: (() => {
+          const url = new URL(request.url());
+          const image = url.pathname === '/_next/image' ? url.searchParams.get('url') : null;
+          return image && /^\/(?:images|academy|videos)\/[a-zA-Z0-9_./-]+$/.test(image) && !image.includes('..') ? image : null;
+        })(),
         method: request.method(), resourceType: request.resourceType(),
         prefetch: request.headers()['next-router-prefetch'] === '1' || request.headers().purpose === 'prefetch',
       }));

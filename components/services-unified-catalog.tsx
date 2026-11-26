@@ -43,6 +43,16 @@ const panelMedia: Record<ServicesPanelId, string> = {
   mytube: "/images/holistic-house/assist-video-botanical.svg",
   directory: "/images/holistic-house/messenger-zen-stones.svg",
 };
+// Direct delivery for already-small first-party artwork only (4–43 KB).
+// Keep Next optimization for the large portraits and scenic photographs.
+const directPanelImages = new Set([
+  "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  "/images/holistic-house/distance-homeopathy.webp",
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/homepage-constellations.svg",
+  "/images/holistic-house/assist-video-botanical.svg",
+  "/images/holistic-house/messenger-zen-stones.svg",
+]);
 type PriceKind = "free" | "someFree" | "quote" | "mixed" | "session" | "from";
 const panelPriceKind: Record<ServicesPanelId, PriceKind> = {
   reiki: "quote", browse: "mixed", reading: "quote", consultation: "from",
@@ -292,7 +302,7 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
       <button type="button" className={styles.preview} data-support-uniform-preview
         aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
         <span className={styles.icon} data-support-uniform-photo aria-hidden="true">
-          <Image src={panelMedia[id]} alt="" fill loading="lazy" sizes="(max-width: 760px) 34vw, 120px" />
+          <Image src={panelMedia[id]} alt="" fill loading="lazy" unoptimized={directPanelImages.has(panelMedia[id])} sizes="(max-width: 760px) 34vw, 120px" />
           <span className={styles.iconOverlay}><Icon size={19} strokeWidth={1.8} /></span>
         </span>
         <span className={styles.previewText} data-support-uniform-copy><strong>{title}</strong><small>{description}</small></span>

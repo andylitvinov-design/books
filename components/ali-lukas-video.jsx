@@ -7,21 +7,23 @@ import {createLukasPlaybackGate} from '@/lib/coaching/lukas-playback-gate.mjs'
 import {watchLukasVideo} from '@/lib/coaching/lukas-video-evidence.mjs'
 
 const endpoint='/api/admin/coach-live-avatar'
+const ownerEndpoint='/api/holistic-agent/lukas-owner-check'
 const consent={freeOnly:true,nonSensitiveTest:true,privacyConsent:true}
 const copy={
   ru:{title:'Lukas · AI-помощник Ali',ready:'Начать видеообщение',stop:'Завершить видео',idle:'Видеопортрет появится при подключении',connecting:'Подключение…',connected:'Видео подключено',speaking:'Лукас отвечает…',sound:'Включить звук',failed:'Видео недоступно. Чат продолжает работать.',ended:'Видео завершено. Чат сохранён.',stopping:'Отключение…',unconfirmed:'Остановка не подтверждена. Проверьте минуты Simli.',consent:'Только личный неперсональный тест: разрешаю передачу озвученных ответов в Simli и текста ответа в бесплатный Gemini TTS (возможно использование для обучения). Без личных, медицинских данных и истории клиентов.',limit:'До 55 секунд. Пишите или отправляйте голосовые сообщения в обычном чате.',greeting:'Привет! Я Лукас, видеоаватар помощника Ali. Чем могу помочь?'},
   en:{title:'Lukas · Ali AI assistant',ready:'Start video conversation',stop:'End video',idle:'Live portrait appears on connection',connecting:'Connecting…',connected:'Video connected',speaking:'Lukas is replying…',sound:'Enable sound',failed:'Video unavailable. Chat still works.',ended:'Video ended. Chat is preserved.',stopping:'Disconnecting…',unconfirmed:'Stop unconfirmed. Check Simli minutes.',consent:'Personal, non-sensitive test only: I allow assistant speech to Simli and reply text to free Gemini TTS (possible training use). No personal, health or customer history data.',limit:'Up to 55 seconds. Type or send voice messages in the usual chat.',greeting:'Hello! I am Lukas, Ali’s video avatar. How can I help?'},
   es:{title:'Lukas · asistente IA Ali',ready:'Iniciar conversación en vídeo',stop:'Finalizar vídeo',idle:'El retrato aparece al conectar',connecting:'Conectando…',connected:'Vídeo conectado',speaking:'Lukas responde…',sound:'Activar sonido',failed:'Vídeo no disponible. El chat sigue funcionando.',ended:'Vídeo finalizado. Chat conservado.',stopping:'Desconectando…',unconfirmed:'Cierre no confirmado. Revisa los minutos de Simli.',consent:'Solo prueba personal sin datos sensibles: autorizo el audio de las respuestas a Simli y su texto a Gemini TTS gratis (posible entrenamiento). Sin datos personales, médicos ni historial de clientes.',limit:'Hasta 55 segundos. Escribe o envía mensajes de voz en el chat.',greeting:'¡Hola! Soy Lukas, el avatar de vídeo de Ali. ¿En qué puedo ayudarte?'}
 }
-async function post(body,signal){
-  const r=await fetch(endpoint,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal})
-  if(!r.ok)throw Error('AVATAR_UNAVAILABLE')
+async function post(body,signal,path=endpoint){
+  const r=await fetch(path,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal})
+  if(!r.ok){const error=await r.json().catch(()=>null);throw Error(error?.error==='LUKAS_VIDEO_BUSY'?'LUKAS_VIDEO_BUSY':'AVATAR_UNAVAILABLE')}
   return r
 }
 const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='alex',blocked=false,checkBlocked=false,audioAvailable=false,audioActive=false,audioPaused=false,onAudioMode,onActivate,onSpeaking,onSpeechEnd,onStop,onSpeakInput},ref){
   const t=copy[locale]||copy.en
-  const [mode,setMode]=useState('off'),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
-  const checkOnly=mode==='check',available=mode!=='off'
+  const [mode,setMode]=useState('checking'),[agreed,setAgreed]=useState(false),[state,setState]=useState('idle')
+  const checkOnly=mode==='check',available=mode==='check'||mode==='dialogue'
+  const endpointRef=useRef(endpoint)
   const video=useRef(null),audio=useRef(null),run=useRef(null),mounted=useRef(false),blockedRef=useRef(blocked)
   const currentBlocked=checkOnly?checkBlocked:blocked
   blockedRef.current=currentBlocked
@@ -74,7 +76,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     report('speaking')
     callbacks.current.onSpeaking?.()
     try{
-      const response=await post(current.checkOnly?{action:'lukas-check-audio',target:'chatbot',locale,syntheticOnly:true,freeOnly:true}:{action:'ali-audio',target:'chatbot',locale,personaId,text:ticket.text,...consent,trainingConsent:true},ac.signal)
+      const response=await post(current.checkOnly?{action:'lukas-check-audio',target:'chatbot',locale,syntheticOnly:true,freeOnly:true}:{action:'ali-audio',target:'chatbot',locale,personaId,text:ticket.text,...consent,trainingConsent:true},ac.signal,current.endpoint)
       const sample=await current.context.decodeAudioData(await response.arrayBuffer())
       if(current.stopped||!current.gate.isCurrent(ticket)||ac.signal.aborted||blockedRef.current)return
       if(sample.numberOfChannels!==1||sample.duration>35||sample.sampleRate<16000||sample.sampleRate>192000)throw Error('AVATAR_SAMPLE_INVALID')
@@ -122,8 +124,16 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
     mounted.current=true
     const ac=new AbortController()
     // Owner readiness only. No allocation, autoplay or billing during page mount.
-    fetch(endpoint,{credentials:'same-origin',cache:'no-store',signal:ac.signal}).then(r=>r.ok?r.json():null)
-      .then(d=>{if(!ac.signal.aborted)setMode(d?.chatbot===true?'dialogue':d?.videoCheck===true?'check':'off')}).catch(()=>{})
+    const read=path=>fetch(path,{credentials:'same-origin',cache:'no-store',signal:ac.signal}).then(r=>r.ok?r.json():null).catch(()=>null)
+    void (async()=>{
+      const admin=await read(endpoint)
+      if(ac.signal.aborted)return
+      if(admin?.chatbot===true){endpointRef.current=endpoint;setMode('dialogue');return}
+      const owner=await read(ownerEndpoint)
+      if(ac.signal.aborted)return
+      if(owner?.videoCheck===true){endpointRef.current=ownerEndpoint;setMode('check');return}
+      endpointRef.current=endpoint;setMode(admin?.videoCheck===true?'check':'off')
+    })()
     const hide=()=>{if(document.hidden)stop()}
     const leave=()=>stop()
     document.addEventListener('visibilitychange',hide);window.addEventListener('pagehide',leave)
@@ -134,7 +144,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
   async function start(){
     if(!available||!agreed||blockedRef.current||checkBlocked||run.current||document.hidden||!video.current||!audio.current)return
     let settle
-    const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),checkOnly,stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
+    const current={controller:new AbortController(),gate:createLukasTurnGate(),playback:createLukasPlaybackGate(),endpoint:endpointRef.current,checkOnly,stopped:false,ready:false,sound:false,pending:t.greeting,settled:new Promise(resolve=>{settle=resolve})}
     run.current=current;report('connecting')
     current.deadline=setTimeout(()=>stop(current,current.checkOnly?'failed':'ended'),55000)
     try{
@@ -146,7 +156,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       const sdk=await import('simli-client')
       if(current.stopped||blockedRef.current)return
       current.tokenRequested=true
-      const response=await post(current.checkOnly?{action:'start',provider:'simli',target:'chatbot',syntheticOnly:true,freeOnly:true}:{action:'start-dialogue',provider:'simli',target:'chatbot',...consent},current.controller.signal)
+      const response=await post(current.checkOnly?{action:'start',provider:'simli',target:'chatbot',syntheticOnly:true,freeOnly:true}:{action:'start-dialogue',provider:'simli',target:'chatbot',...consent},current.controller.signal,current.endpoint)
       const session=await response.json()
       if(current.stopped)return
       if(session.target!=='chatbot'||typeof session.sessionToken!=='string')throw Error('AVATAR_ROLE_MISMATCH')
@@ -169,12 +179,16 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       if(current.stopped)return
       current.ready=true
       void enableSound(current)
-    }catch{
-      if(current.tokenRequested&&!current.renderer)current.cleanupUnconfirmed=true
-      stop(current,'failed')
+    }catch(error){
+      const busy=error?.message==='LUKAS_VIDEO_BUSY'
+      if(current.tokenRequested&&!current.renderer&&!busy)current.cleanupUnconfirmed=true
+      stop(current,busy?'busy':'failed')
     }finally{settle()}
   }
-  if(!available)return null
+  if(!available)return <div data-hh-lukas-unavailable role="status" style={{padding:12,color:'#173d33',background:'#f7faf7',borderRadius:10}}>
+    <p>{mode==='checking'?(locale==='ru'?'Проверяем доступ к видео…':locale==='es'?'Comprobando acceso al vídeo…':'Checking video access…'):(locale==='ru'?'Видео пока недоступно для этого аккаунта. Можно продолжить аудиоразговор.':locale==='es'?'El vídeo aún no está disponible para esta cuenta. Puedes hablar por audio.':'Video is not available for this account yet. You can continue by audio.')}</p>
+    {mode==='off'&&audioAvailable&&<button type="button" onClick={()=>onAudioMode?.(false)}>{locale==='ru'?'Аудиозвонок':locale==='es'?'Llamada de audio':'Audio call'}</button>}
+  </div>
   const live=['connecting','connected','speaking','sound'].includes(state)
   const locked=live||state==='stopping'||state==='unconfirmed'
   const audioLabel=locale==='ru'?(audioActive?'Аудио · пауза':audioPaused?'Продолжить аудио':'Аудиозвонок'):locale==='es'?(audioActive?'Audio · pausa':audioPaused?'Reanudar audio':'Llamada de audio'):(audioActive?'Audio · pause':audioPaused?'Resume audio':'Audio call')
@@ -199,7 +213,7 @@ const AliLukasVideo=forwardRef(function AliLukasVideo({locale='en',personaId='al
       {!checkOnly&&state==='connected'&&<button type="button" onClick={()=>callbacks.current.onSpeakInput?.()}>{locale==='ru'?'🎙 Говорить':locale==='es'?'🎙 Hablar':'🎙 Speak'}</button>}
     </div>
     {!locked&&<label style={{fontSize:11,lineHeight:1.3}}><input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}/> {checkOnly?(locale==='ru'?'Только фиксированное приветствие, без данных из чата.':locale==='es'?'Solo saludo fijo, sin datos del chat.':'Fixed greeting only; no chat data.'):t.consent}</label>}
-    <small role="status">{state==='idle'?(checkOnly?(locale==='ru'?'Проверка видеоканала владельцем; живой диалог пока не включён.':locale==='es'?'Prueba del propietario; el diálogo aún no está habilitado.':'Owner video check; live dialogue is not yet enabled.'):t.limit):(state==='check-passed'?(locale==='ru'?'Видеодорожка, движущиеся кадры и воспроизведение речи подтверждены.':locale==='es'?'Pista de vídeo, fotogramas y reproducción de voz confirmados.':'Video track, advancing frames and speech playback confirmed.'):t[state]||t.failed)}</small>
+    <small role="status">{state==='idle'?(checkOnly?(locale==='ru'?'Проверка видеоканала владельцем; живой диалог пока не включён.':locale==='es'?'Prueba del propietario; el diálogo aún no está habilitado.':'Owner video check; live dialogue is not yet enabled.'):t.limit):(state==='busy'?(locale==='ru'?'Лукас сейчас занят. Можно продолжить голосом.':locale==='es'?'Lukas está ocupado. Puedes hablar por voz.':'Lukas is busy. You can continue by voice.'):state==='check-passed'?(locale==='ru'?'Видеодорожка, движущиеся кадры и воспроизведение речи подтверждены.':locale==='es'?'Pista de vídeo, fotogramas y reproducción de voz confirmados.':'Video track, advancing frames and speech playback confirmed.'):t[state]||t.failed)}</small>
   </section>
 })
 export default AliLukasVideo

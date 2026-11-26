@@ -2379,7 +2379,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </section>}
         {(courseGateRequired||courseGateCanStart||courseGate||courseGateBusy||courseGateError)&&!protocolOpen&&<section className={styles.protocolReview} data-coach-course-gate>
           <strong>{({ru:'Проверка ответов протокола',en:'Verify session answers',es:'Verificar respuestas de la sesión'})[lang]}</strong>
-          <p>{({ru:'Ответ будет принят только после проверки и записи. В этом режиме используется голосовой ввод браузера или текст, а не непрерывный Gemini Live.',en:'Answers advance only after validation and saving. This mode uses browser voice input or text, not continuous Gemini Live.',es:'Las respuestas avanzan solo tras verificarse y guardarse. Este modo usa voz del navegador o texto, no Gemini Live continuo.'})[lang]}</p>
+          <p>{({ru:'Ответ будет принят только после проверки и записи. Можно включить непрерывный голосовой режим устройства или отвечать текстом. Это не Gemini Live.',en:'Answers advance only after validation and saving. Use continuous device voice or text. This is not Gemini Live.',es:'Las respuestas avanzan solo tras verificarse y guardarse. Usa voz continua del dispositivo o texto. No es Gemini Live.'})[lang]}</p>
           {courseGateError&&<p role="alert">{({ru:'Запись не подтверждена. Следующий вопрос заблокирован. Повторите тот же запрос или откройте сохранённую сессию заново.',en:'Save not acknowledged. The next question is blocked. Retry the same request or reopen the saved session.',es:'Guardado sin confirmar. La siguiente pregunta está bloqueada. Reintenta la misma solicitud o reabre la sesión guardada.'})[lang]}</p>}
           {courseGateError&&courseGateAttemptRef.current?<><button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('retry')}>{({ru:'Повторить',en:'Retry',es:'Reintentar'})[lang]}</button>
             <button type="button" onClick={()=>window.location.reload()}>{({ru:'Открыть сохранённую сессию',en:'Reopen saved session',es:'Reabrir sesión guardada'})[lang]}</button></>:
@@ -2390,10 +2390,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               <label><span>{courseGate.step.prompt.text}</span><textarea rows={2} maxLength={900} value={courseGateAnswer} disabled={courseGateBusy||!courseGateEnabled||paused} onChange={event=>setCourseGateAnswer(event.target.value)}/></label>
               <button type="submit" disabled={!courseGateAnswer.trim()||courseGateBusy||!courseGateEnabled||paused}>{t.send}</button>
               <MyCoachCourseGateVoice prompt={courseGate.step.prompt} locale={conversationLang}
-                disabled={courseGateBusy||!courseGateEnabled||paused||Boolean(courseGateAnswer.trim())}
+                waiting={courseGateBusy}
+                disabled={!courseGateEnabled||paused||courseGateError||Boolean(courseGateAnswer.trim())}
                 onDraft={setCourseGateAnswer}
                 onSubmit={(promptId,content)=>{if(courseGateRef.current?.step.prompt?.id===promptId&&!courseGateAttemptRef.current)
-                  void runCourseGate('course-gate-answer',{promptId,content})}}/>
+                  return runCourseGate('course-gate-answer',{promptId,content});return false}}/>
               <button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'пропустить вопрос',en:'skip this question',es:'omitir la pregunta'})[lang]})}}>{({ru:'Пропустить',en:'Skip',es:'Omitir'})[lang]}</button>
               {courseGate.step.prompt.kind==='confirm'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
