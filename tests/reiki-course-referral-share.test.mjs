@@ -55,10 +55,11 @@ test("existing private save, Google first-lesson consent, reload and teacher app
   assert.match(learner, /data-reiki-private-save-status/);
   assert.match(learner, /\{sync === "ready" \? <>[\s\S]*?t\.saved/);
   assert.match(learner, /className=\{styles\.saveSettings\}/);
-  assert.match(learner, /action: "start", consent: true, teacherConsent: false/);
+  assert.match(learner, /reikiFlow\?: string, teacherConsent = false/);
+  assert.match(learner, /data-reiki-start-sharing/);
   assert.match(learner, /data-reiki-final-share-consent/);
-  assert.match(learner, /onClick=\{shareWithTeacher\}/);
+  assert.match(learner, /onClick=\{\(\) => shareWithTeacher\(\)\}/);
   assert.match(learner, /onClick=\{reloadProgress\}/);
-  assert.doesNotMatch(share, /onClick=\{shareWithTeacher\}|t\.teacherShareAction/);
+  assert.doesNotMatch(share, /onClick=\{\(\) => shareWithTeacher\(\)\}|t\.teacherShareAction/);
   assert.match(learnerCss, /\.savedLine/);
 });

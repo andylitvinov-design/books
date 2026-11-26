@@ -5587,3 +5587,19 @@
 .finalPhotoLink{display:flex;align-items:center;gap:8px;margin:8px 0;color:#684832}
 .finalPhotoLink button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;text-align:left;font:inherit;font-size:.89rem;padding:8px;min-height:44px}
 .finalPhotoLink button:focus-visible{outline:3px solid #b1814e;outline-offset:2px;border-radius:6px}
+
+.page .courseSharingChoice {
+  position: relative;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fffcf7;
+  color: #214c49;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.page .courseSharingChoice label { margin: 0; color: inherit; }
+.page .courseSharingChoice summary, .page .courseSharingChoice button { cursor: pointer; }
+.page .courseSharingChoice button { margin-top: 8px; padding: 8px; }
+.page .courseSharingChoice a { text-decoration: underline; }
+.page .courseSharingChoice p { margin: 0 0 6px; }
