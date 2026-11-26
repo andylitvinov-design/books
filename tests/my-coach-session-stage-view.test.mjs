@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,coachCapturedClientTurns,coachStageCounts,coachEvidenceMarks,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
+import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,coachCapturedClientTurns,coachStageCounts,coachEvidenceMarks,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview} from '../lib/coaching/coach-session-stage-view.mjs'
 const keys=["invitation","name","continuity","focus","feelings","confirmation"]
 test('every opening gate maps to exactly one of six rows in all locales',()=>{for(const locale of ['en','ru','es'])for(let i=0;i<6;i++){const p=openingStagePosition({current:keys[i],checkmarks:Object.fromEntries(keys.slice(0,i).map(k=>[k,true]))},locale);assert.equal(p.total,6);assert.equal(p.step,i+1);assert.equal(p.rows.filter(r=>r.active).length,1);assert.equal(p.rows[i].id,keys[i]);assert.equal(p.rows.filter(r=>r.status==='done').length,i)}assert.equal(openingStagePosition({declined:true,current:'invitation'}).index,-1)})
 test('method completion and provisional progression share one state',()=>{assert.equal(methodStagePosition(['a','b'],['A','B'],1,true,true).finished,true);assert.equal(methodStagePosition(['a','b'],['A','B'],1,false,true).finished,false)})
@@ -61,4 +61,25 @@ test('every existing thematic field and future Clarity day field remains represe
   assert.deepEqual(p.rows.slice(1).flatMap(g=>g.children.map(r=>r.id)).sort(),[...ids].sort());
   assert.equal(p.rows[0].id,'contact');assert.equal(p.rows.every(g=>g.children.length>0),true);
  }
+});
+
+test('native transcript review requires exact four-turn evidence; restore and explicit corrections remain conservative',()=>{
+ const courseId='goal_result',fields=[{id:'goal'},{id:'success'}];
+ const turn=(role,content,extra={})=>({role,content,...extra});
+ const turns=[turn('assistant','goal?'),turn('user','My concrete goal'),turn('assistant','echo: My concrete goal'),turn('user','yes')];
+ const normalize=(value,id,rows)=>{for(const e of value.events){if(e.binding&&rows[e.turnIndex].content!==e.quote)throw Error('invalid')}return value};
+ const get=(t,extra={})=>boundTranscriptReview({courseId,turns:t,fields,matchQuestion:(f,q)=>q===f.id+'?',matchEcho:(f,q,a,e)=>e==='echo: '+a,answerClass:x=>x==='yes'?'affirm':x==='no'?'deny':'candidate',normalize,...extra});
+ const r=get(turns);
+ assert.equal(r.events.length,1);assert.deepEqual(r.events[0].binding,{questionTurnIndex:0,confirmationTurnIndex:3});assert.equal(r.events[0].quote,'My concrete goal');
+ assert.deepEqual(get(JSON.parse(JSON.stringify(turns))),r);
+ assert.equal(get(turns.slice(0,3)),null);
+ assert.equal(get(turns.map((x,i)=>i===3?turn('user','no'):x)),null);
+ assert.equal(get(turns.map((x,i)=>i===3?{...x,unanswered:true}:x)),null);
+ assert.equal(get(turns.map((x,i)=>i===2?{...x,interrupted:true}:x)),null);
+ assert.equal(get(turns.map((x,i)=>i===2?turn('assistant','different echo'):x)),null);
+ assert.equal(get(turns,{afterIndex:0}),null);
+ assert.equal(get([...turns,turn('assistant','goal?')]),null);
+ assert.equal(get(turns,{normalize:()=>{throw Error('invalid')}}),null);
+ const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
+ assert.deepEqual(get(turns,{existing:manual}),manual);
 });

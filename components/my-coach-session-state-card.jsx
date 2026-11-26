@@ -227,7 +227,7 @@ export default function MyCoachSessionStateCard({
         {stagePosition.rows.map(({id,label,status,active,recorded,value},index)=>{
           const done=status==='done'
           const state=done?t.done:status==='skipped'?({ru:'Пропущено',en:'Skipped',es:'Omitido'}[language]):active?t.current:status==='needs_confirmation'?t.mentioned:t.waiting
-          return <li key={id} className={styles.stageRow} data-stage-id={id} data-stage-status={active?'current':status} aria-current={active?'step':undefined}>
+          return <li key={id} className={styles.stageRow} data-stage-id={id} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row={progressMode==='profile-v3'||undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>{label}{value&&<small className={styles.openingValue}>{value}</small>}</span>
             <span className={styles.stageStatus}>{state}</span>

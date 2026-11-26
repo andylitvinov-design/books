@@ -16,8 +16,9 @@ import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} 
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
-import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition} from '@/lib/coaching/coach-session-stage-view.mjs'
-import {checkpointQuestionMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
+import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
+import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
@@ -786,27 +787,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Use acknowledged server review when present. Never allow a stale local
   // review or temporarily inconsistent turn snapshot to crash the session.
   let courseRows=[],courseReviewInvalid=false
-  if(openingProgress.completed&&!profileSelected){
-    try{
-      const review=courseGate?courseGate.step.review:courseFieldReview
-      courseRows=coachCourseProtocolRows(selectedCourseId,turns,review?.courseSessionId===selectedCourseId?review:null,lang)
-    }catch{
-      courseReviewInvalid=true
-      courseRows=(coachCourseProtocolSchema(selectedCourseId,lang)?.checkpoints||[]).map(row=>({...row,status:'not_explored',turnIndex:null,quote:''}))
-    }
-  }
+  let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
   const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang)
   // Do not use opening answers as core field candidates. Retain original indices.
   let openingEnd=-1,openingCount=0
   for(let i=0;i<turns.length&&openingCount<openingProgress.consumedTurns;i++){
     if(turns[i].role==='user'&&turns[i].unanswered!==true){openingCount++;openingEnd=i}
   }
-  if(openingProgress.completed&&!profileSelected&&courseRows.length&&!courseReviewInvalid){
-    const schemas=['ru','en','es'].map(locale=>({locale,schema:coachCourseProtocolSchema(selectedCourseId,locale)}))
-    courseRows=courseCapturedRows(courseRows,protocolDisplayTurns,(row,text)=>schemas.some(({locale,schema})=>{
-      const field=schema?.checkpoints.find(x=>x.id===row.id)
-      return field&&typeof text==='string'&&checkpointQuestionMatches(field,locale,text.trim())
-    }),{afterIndex:openingEnd,livePrompt:courseGate?.step.prompt})
+  if(openingProgress.completed&&!profileSelected&&courseSchema){
+    try{
+      const schemas=['ru','en','es'].map(locale=>({locale,schema:coachCourseProtocolSchema(selectedCourseId,locale)}))
+      const across=(row,test)=>schemas.some(({locale,schema})=>{
+        const field=schema?.checkpoints.find(x=>x.id===row.id)
+        return field&&test(field,locale)
+      })
+      const matches=(row,text)=>typeof text==='string'&&across(row,(field,locale)=>checkpointQuestionMatches(field,locale,text.trim()))
+      if(!courseGate&&!courseGateRequired){
+        // Existing explicit review events win. Reconstruct only exact spoken/
+        // typed question + literal answer + exact echo + explicit assent.
+        // No inference from the currently suggested field and no new provider.
+        effectiveCourseReview=boundTranscriptReview({courseId:selectedCourseId,turns,fields:courseSchema.checkpoints,
+          existing:courseFieldReview,afterIndex:openingEnd,matchQuestion:matches,
+          matchEcho:(row,q,quote,echo)=>typeof echo==='string'&&across(row,(field,locale)=>
+            checkpointQuestionMatches(field,locale,q)&&checkpointConfirmationMatches(field,q,quote,locale,echo)),
+          answerClass:protocolAnswerClass,normalize:normalizeCoachCourseFieldReview})
+      }
+      courseRows=coachCourseProtocolRows(selectedCourseId,turns,effectiveCourseReview?.courseSessionId===selectedCourseId?effectiveCourseReview:null,lang)
+      courseRows=courseCapturedRows(courseRows,protocolDisplayTurns,matches,{afterIndex:openingEnd,livePrompt:courseGate?.step.prompt})
+    }catch{
+      courseReviewInvalid=true
+      courseRows=courseSchema.checkpoints.map(row=>({...row,status:'not_explored',turnIndex:null,quote:''}))
+    }
   }
   const coursePosition=courseStagePosition(courseRows,{promptId:courseReviewInvalid?null:courseGate?.step.prompt?.fieldId,
     paused:courseReviewInvalid||courseGate?.step.paused,completed:courseGate?.step.completed,
@@ -817,7 +828,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const coreMode=progressMode==='opening'?(profileSelected?'profile':courseSchema?'course':'method'):progressMode
   const detailPosition=coreMode==='profile-v3'?savedProfilePosition:coreMode==='profile'?profilePosition:
     coreMode==='course'?(openingActive?courseStagePosition((courseSchema?.checkpoints||[]).map(row=>({...row,status:'not_explored',quote:'',turnIndex:null})),{allowProvisional:false}):coursePosition):methodPosition
-  const stagePosition=groupedSessionPosition(openingPosition,detailPosition,{mode:coreMode,courseId:selectedCourseId,locale:lang,openingActive})
+  const stagePosition=groupedSessionPosition(openingPosition,detailPosition,{mode:coreMode,courseId:selectedCourseId,locale:lang,openingActive:openingActive&&!openingProgress.declined})
   const visibleProgressStep=stagePosition.step
   const visibleProgressTotal=stagePosition.total
   const visibleProgressName=progressMode==='opening'?({ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):
@@ -1590,7 +1601,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
-      ...(courseFieldReview?.courseSessionId===selectedCourseId?{courseFieldReview}:{}),
+      ...(effectiveCourseReview?.courseSessionId===selectedCourseId?{courseFieldReview:effectiveCourseReview}:{}),
       ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:courseGateRef.current?.protocol.opening||coachOpeningProtocolSnapshot(openingProgress),
@@ -2617,7 +2628,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {insightOverview?<details><summary>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</summary><section className={styles.protocolReview} data-coach-insight-overview>
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
         </section></details>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
-        {protocolEditing&&!courseGate&&<MyCoachCourseFieldReview expanded courseSessionId={selectedCourseId} turns={turns} locale={lang} value={courseFieldReview} onChange={setCourseFieldReview} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>} 
+        {protocolEditing&&!courseGate&&<MyCoachCourseFieldReview expanded courseSessionId={selectedCourseId} turns={turns} locale={lang} value={effectiveCourseReview} onChange={setCourseFieldReview} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>} 
         {turns.length===0?<p>{protocolUi.empty}</p>:
           <details data-coach-insight-transcript>
           <summary>{({en:'View conversation history',ru:'История разговора',es:'Ver historial de conversación'})[lang]}</summary>
