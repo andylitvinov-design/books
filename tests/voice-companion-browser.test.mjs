@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareSpeechText,speechSegments,browserSpeechLanguage,chooseVoiceRoute,createRecognitionGate} from '../lib/voice-companion/browser-voice.mjs';
+import {prepareSpeechText,speechSegments,browserSpeechLanguage,chooseVoiceRoute,createRecognitionGate,resolveSpokenMenuChoice} from '../lib/voice-companion/browser-voice.mjs';
 
 test('Web speech is always off without a deliberate playback opt-in',()=>{
  assert.equal(chooseVoiceRoute({channel:'web'}),'text');
@@ -60,4 +60,14 @@ test('abort and replacement instance must discard late errors and words',()=>{
  assert.equal(gate.accept('old recording'),null);
  generation++;
  assert.equal(gate.accept('late result'),null);
+});
+
+test('voice chooses explicit menu ordinals in RU/EN/ES only when an actual menu exists',()=>{
+ const choices=['Talk','Understand','Goal','Resources','Plan','Obstacles','Momentum'];
+ for(const value of ['Первый вариант','first','opción uno','1.'])assert.equal(resolveSpokenMenuChoice(value,choices),'Talk');
+ for(const value of ['вторую','second','opción dos'])assert.equal(resolveSpokenMenuChoice(value,choices),'Understand');
+ assert.equal(resolveSpokenMenuChoice('третий',choices),'Goal');
+ assert.equal(resolveSpokenMenuChoice('седьмой пункт',choices),'Momentum');
+ for(const value of ['раз','I have one problem','первый раз','3 things','второй', '8'])assert.equal(resolveSpokenMenuChoice(value,[]),value);
+ for(const value of ['раз','I have one problem','первый раз','3 things','8','седьмой'])assert.equal(resolveSpokenMenuChoice(value,choices.slice(0,3)),value);
 });

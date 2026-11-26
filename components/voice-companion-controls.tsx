@@ -7,11 +7,12 @@ import {browserSpeechLanguage,speechSegments,chooseVoiceRoute,createRecognitionG
 import {normalizeDeviceVoiceId,normalizeSpeechRate,publicPreviewText} from "@/lib/voice-companion/voice-catalog.mjs";
 import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
 import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from "@/lib/personal-coaching/coach-ios-audio-route.mjs";
 
 type RecognitionResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
 type VoiceRecognition={lang:string;continuous:boolean;interimResults:boolean;
   onresult:((event:RecognitionResult)=>void)|null;onerror:((event:{error:string})=>void)|null;
-  onend:(()=>void)|null;start:()=>void;abort:()=>void};
+  onend:(()=>void)|null;onstart?:(()=>void)|null;start:()=>void;abort:()=>void};
 type RecognitionConstructor=new()=>VoiceRecognition;
 type SpeechWindow=Window & {SpeechRecognition?:RecognitionConstructor;webkitSpeechRecognition?:RecognitionConstructor};
 type MicPolicyDocument=Document & {permissionsPolicy?:{allowsFeature:(feature:string)=>boolean};
@@ -80,6 +81,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const [conversing,setConversing]=useState(false);
  const [paused,setPaused]=useState(false);
  const pauseOnHide=useRef(false);
+ const phoneCall=useRef(false);
+ const emptyListenRetries=useRef(0);
+ const idleTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const dialogueActive=useRef(false);
  const dialogueOnTurn=useRef<((text:string)=>void)|null>(null);
  const resumeDialogue=useRef<(()=>void)|null>(null);
@@ -95,6 +99,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const mounted=useRef(true);
  const stop=useCallback(()=>{
   if(resumeTimer.current!==null){clearTimeout(resumeTimer.current);resumeTimer.current=null;}
+  if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}
   generation.current++;
   // Reuse Emotional Avatar's single browser speech adapter. It only cancels
   // utterances that it actually owns, never unrelated coaching/site audio.
@@ -106,8 +111,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const stopDialogue=useCallback(()=>{
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   pauseOnHide.current=false;
+  const wasPhone=phoneCall.current;phoneCall.current=false;
   if(mounted.current){setConversing(false);setPaused(false);setNotice('');}
   stop();
+  if(wasPhone&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
  },[stop]);
  const pauseDialogue=useCallback(()=>{
   if(!dialogueActive.current)return;
@@ -115,6 +122,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   if(mounted.current){setConversing(false);setPaused(true);setNotice('');}
   stop();
+  if(phoneCall.current&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
  },[stop]);
  const setVoiceId=useCallback((value:string)=>{
   stopDialogue();setVoiceIdState(value);
@@ -174,10 +182,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const setRecognitionConsent=useCallback((value:boolean)=>{
   if(!value)stopDialogue();setSttConsent(value);setNotice('');
  },[stopDialogue]);
- const speak=useCallback((text:string,explicitPlay=false)=>{
+ const speak=useCallback((text:string,explicitPlay=false,openingConsent=false)=>{
   if(!enabled)return;
   // Explicit Read aloud is an immediate user gesture, not automatic playback.
-  if(chooseVoiceRoute({channel:'web',playbackConsent:playbackConsent||explicitPlay})!=='browser-speech'){
+  if(chooseVoiceRoute({channel:'web',playbackConsent:playbackConsent||explicitPlay||openingConsent})!=='browser-speech'){
    setNotice(t.permission);return;
   }
   if(document.hidden)return;
@@ -193,7 +201,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   else stop();
   setNotice('');lastSpoken.current=text;
   const seq=generation.current;
-  let index=0;
+  const phone=phoneCall.current&&dialogueActive.current;
+  let index=0,busyRetries=0;
   const playNext=()=>{
    if(seq!==generation.current)return;
    if(index>=parts.length){
@@ -206,11 +215,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     }
     return;
    }
+   let segmentStarted=false;
    const result=speaker.current?.speak(parts[index++],speechLocale,{
-    onStart:()=>{if(seq===generation.current)setSpeaking(true);},
+    onStart:()=>{if(seq===generation.current){segmentStarted=true;setSpeaking(true);}},
     onEnd:(reason)=>{
      if(seq!==generation.current)return;
-     if(reason==='ended'){
+     if(reason==='ended'&&(!phone||segmentStarted)){
+      busyRetries=0;
       // Safari can keep speechSynthesis.speaking true until after onend.
       // Leave the event stack before scheduling the next spoken segment.
       resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},100);
@@ -223,13 +234,25 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
      setNotice(t.error);
     },
    },{rate:normalizeSpeechRate(rate),voiceURI:normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
-   if(!result?.ok){
+   if(!result?.ok&&seq===generation.current){
+    // iOS can briefly retain the old synthesis queue between spoken chunks.
+    if(phone&&result?.reason==='busy'&&busyRetries++<2){
+     index--;resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},180);return;
+    }
     setSpeaking(false);
     if(dialogueActive.current)stopDialogue();
     setNotice(t.error);
    }
   };
-  playNext();
+  // Release the capture route before output. A newly opened call speaks
+  // on the original user gesture; subsequent iOS replies reset its route.
+  if(phone&&ios27NeedsSpeechRecovery(window.navigator)){
+   if(openingConsent){setCoachIos27AudioSession(window.navigator,'playback');playNext();}
+   else{
+    refreshCoachIos27PlaybackRoute(window.navigator);
+    resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},50);
+   }
+  }else playNext();
  },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
  const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
@@ -237,6 +260,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   const Ctor=(window as SpeechWindow).SpeechRecognition||(window as SpeechWindow).webkitSpeechRecognition;
   if(!Ctor){stopDialogue();setNotice(t.inputUnavailable);return;}
   stop();setNotice('');
+  if(phoneCall.current)setCoachIos27AudioSession(window.navigator,'auto');
   try{
    const instance=new Ctor();recognition.current=instance;
    // Safari can deliver a final result/error after abort, route change or
@@ -248,18 +272,34 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
     const text=capture.accept(event.results?.[0]?.[0]?.transcript);
-    if(text){hadSpeech=true;const live=dialogueActive.current;
-    setNotice(live?'':t.captured);onTranscript(text);}
+    if(text){hadSpeech=true;emptyListenRetries.current=0;
+    if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}
+    const live=dialogueActive.current;
+    setRecording(false);setNotice(live?'':t.captured);onTranscript(text);}
    };
-   instance.onerror=()=>{if(!capture.isActive()||hadSpeech)return;
-     stopDialogue();setNotice(t.error);setRecording(false);recognition.current=null;};
+   instance.onerror=event=>{if(!capture.isActive()||hadSpeech)return;
+     // A quiet browser capture ends normally; the call gets one local
+     // restart, not an endless cloud recognition retry loop.
+     if(phoneCall.current&&event.error==='no-speech')return;
+     stopDialogue();setNotice(event.error==='not-allowed'?t.micDenied:t.error);setRecording(false);recognition.current=null;};
    instance.onend=()=>{if(!capture.isActive())return;
      setRecording(false);recognition.current=null;
      if(dialogueActive.current&&!hadSpeech){
-      stopDialogue();setNotice(t.inputUnavailable);
+      if(phoneCall.current&&emptyListenRetries.current++<1){
+       resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;if(dialogueActive.current&&!document.hidden)resumeDialogue.current?.();},600);
+      }else{stopDialogue();setNotice(t.micSilent);}
      }
    };
-   instance.start();setRecording(true);
+   instance.onstart=()=>{
+    if(!capture.isActive()||hadSpeech)return;
+    setRecording(true);
+    if(phoneCall.current){
+     if(idleTimer.current!==null)clearTimeout(idleTimer.current);
+     idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.micSilent);}},90000);
+    }
+   };
+   if(phoneCall.current)idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.inputUnavailable);}},30000);
+   instance.start();if(!phoneCall.current)setRecording(true);
   }catch{stopDialogue();recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
  },[enabled,speechLocale,sttConsent,stop,stopDialogue,t]);
  // iOS Safari 27 can report a live WebSpeech session without delivering text.
@@ -267,6 +307,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const dictateRecorded=useCallback((onTranscript:(text:string)=>void)=>{
   if(!enabled||!recordedSupported){stopDialogue();setNotice(t.inputUnavailable);return;}
   stop();setNotice('');
+  if(phoneCall.current)setCoachIos27AudioSession(window.navigator,'auto');
   const epoch=generation.current;
   const capture=startCoachRecordedTurn({
    locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,
@@ -274,13 +315,18 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
      setRecording(true);setNotice(state==='hearing'?t.recording:'');
+     if(phoneCall.current&&state==='listening'){
+      if(idleTimer.current!==null)clearTimeout(idleTimer.current);
+      idleTimer.current=setTimeout(()=>{if(epoch===generation.current){stopDialogue();setNotice(t.micSilent);}},90000);
+     }
     }else if(state==='transcribing'){
+     if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}
      setRecording(false);setNotice(t.transcribing);
     }else if(state==='recovering')setNotice(t.recording);
    },
    onResult:text=>{
     if(epoch!==generation.current)return;
-    recordedTurn.current=null;setRecording(false);setNotice('');
+    recordedTurn.current=null;emptyListenRetries.current=0;setRecording(false);setNotice('');
     if(dialogueActive.current)onTranscript(text);
    },
    onFailure:code=>{
@@ -291,10 +337,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
       code==='MIC_NO_SIGNAL'?t.micSilent:t.error);
    },
   });
-  if(capture){recordedTurn.current=capture;setRecording(true);}
+  if(capture){recordedTurn.current=capture;
+   if(!phoneCall.current)setRecording(true);
+   else if(idleTimer.current===null)idleTimer.current=setTimeout(()=>{if(epoch===generation.current){stopDialogue();setNotice(t.inputUnavailable);}},30000);
+  }
   else{stopDialogue();setNotice(t.inputUnavailable);}
  },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean}={})=>{
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string}={})=>{
   if(!enabled||document.hidden)return false;
   const consentOnStart=options.consentOnStart===true;
   if(!supported||(!consentOnStart&&(!playbackConsent||!sttConsent))){setNotice(t.permission);return false;}
@@ -310,13 +359,17 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   useRecordedDialogue.current=recordedNeeded;
   recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
   pauseOnHide.current=options.pauseOnHide===true;
+  phoneCall.current=options.phoneCall===true;emptyListenRetries.current=0;
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setPaused(false);setConversing(true);
   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
-  if(recordedNeeded)dictateRecorded(receive);
+  // Opening speech is local and audible before capture begins. The normal
+  // completion path automatically starts listening, without a Send action.
+  if(phoneCall.current&&options.opening?.trim())speak(options.opening,false,consentOnStart);
+  else if(recordedNeeded)dictateRecorded(receive);
   else dictate(receive,consentOnStart);
   return true;
  },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
-   recordedSupported,prefersRecorded,sttConsent,supported,t]);
+   recordedSupported,prefersRecorded,sttConsent,supported,t,speak]);
  resumeDialogue.current=()=>{
   if(dialogueActive.current&&dialogueOnTurn.current){
    const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
