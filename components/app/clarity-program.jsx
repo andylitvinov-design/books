@@ -3,19 +3,120 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {reportDaybookWeek} from '@/lib/consultations/report-program.mjs'
-import {ArrowRight,BookOpen,CheckCircle2,Compass,LockKeyhole} from 'lucide-react'
+import DaybookWeekReports from './daybook-week-reports'
+import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,ChevronDown,Compass,MessageCircle,NotebookPen,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {isNativeHolisticHouse} from '@/lib/native/client'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
-import {CLARITY_SYLLABUS,CLARITY_FREE_REFLECTION_TAG,clarityLocale,clarityDaybookPath,clarityOnboardingPath,savedClarityReflection} from '@/lib/app/clarity-program.mjs'
+import {CLARITY_SYLLABUS,CLARITY_TASKS,CLARITY_DAY_COUNT,clarityDayTag,clarityDayNotes,clarityRecordedDays,clarityLegacyNotes,clarityLocale,clarityDaybookPath} from '@/lib/app/clarity-program.mjs'
 import {programContinuation,programDaybookPath,programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './clarity-program.module.css'
-import DaybookWeekReports from './daybook-week-reports'
 const COPY={
- en:{title:'Find Clarity & Support',details:'Program details',start:'Start Free Program',week:'Week',free:'Free',paid:'Paid session',intro:'Four sessions to understand yourself, find support and choose a clear direction.',terms:'The first session is free. Later sessions require completion of the previous session and confirmed payment for that week.',progress:'Saved sessions',locked:'Locked · payment required',notYet:'Complete the first session before continuing.',payment:'Payment for this session is not configured yet. No payment is taken and access remains locked.',steps:'Your instructions',tasks:[['Life Balance Wheel','Rate each area now and as you would like it to be. Notice the largest gap.'],['My wishes & meaning','Explore the meaning axes and choose one area you want to understand better. You do not need to choose a goal yet.'],['Personal reflection','Write what you noticed, why it matters and one thing you want to observe this week.']],reflection:'My private reflection',placeholder:'What did I notice? What matters most now? What will I observe this week?',save:'Save and finish session',saved:'Your free-session reflection is saved.',edit:'Update reflection',retry:'Retry saving',error:'Could not confirm the save. Your draft is retained; retry before editing.',authError:'Could not open Google sign-in. Try again.',working:'Opening…',load:'Load saved progress',loadError:'Could not read all saved progress. Retry.',privacy:'Your reflections are private. These practices are not medical diagnosis or treatment.',back:'Back to Profile',goals:'My Goal'},
- ru:{title:'Ясность и поддержка',details:'Программа курса',start:'Начать бесплатно',week:'Неделя',free:'Бесплатно',paid:'Платная сессия',intro:'Четыре сессии, чтобы лучше понять себя, найти опору и выбрать направление.',terms:'Первая сессия бесплатна. Следующие требуют завершения предыдущей сессии и подтверждённой оплаты соответствующей недели.',progress:'Сохранённые сессии',locked:'Закрыто · нужна оплата',notYet:'Завершите первую сессию, чтобы продолжить.',payment:'Оплата этой сессии ещё не настроена. Деньги не списываются, доступ закрыт.',steps:'Что нужно сделать',tasks:[['Колесо баланса','Оцените каждую сферу сейчас и в желаемом состоянии. Заметьте наибольшую разницу.'],['Мои желания и смыслы','Исследуйте смысловые оси и выберите область, которую хотите лучше понять. Не обязательно уже выбирать цель.'],['Личная рефлексия','Запишите, что заметили, почему это важно и за чем хотите понаблюдать на этой неделе.']],reflection:'Моя личная рефлексия',placeholder:'Что я заметил? Что для меня важно сейчас? За чем я буду наблюдать на этой неделе?',save:'Сохранить и завершить сессию',saved:'Рефлексия первой сессии сохранена.',edit:'Обновить рефлексию',retry:'Повторить сохранение',error:'Сохранение не подтверждено. Черновик сохранён на экране; повторите попытку перед редактированием.',authError:'Не удалось открыть вход через Google. Повторите попытку.',working:'Открываем…',load:'Загрузить сохранённый прогресс',loadError:'Не удалось прочитать весь прогресс. Повторите попытку.',privacy:'Ваши записи конфиденциальны. Эти практики не заменяют медицинскую диагностику и лечение.',back:'В профиль',goals:'Моя цель'},
- es:{title:'Claridad y apoyo',details:'Detalles del programa',start:'Empezar gratis',week:'Semana',free:'Gratis',paid:'Sesión de pago',intro:'Cuatro sesiones para conocerte, encontrar apoyo y elegir tu rumbo.',terms:'La primera sesión es gratis. Las siguientes requieren finalizar la sesión anterior y confirmar el pago de esa semana.',progress:'Sesiones guardadas',locked:'Bloqueada · requiere pago',notYet:'Completa la primera sesión antes de continuar.',payment:'El pago de esta sesión aún no está configurado. No se cobra nada y el acceso sigue bloqueado.',steps:'Tus instrucciones',tasks:[['Rueda de equilibrio','Valora cada área ahora y como te gustaría que fuera. Observa la mayor diferencia.'],['Mis deseos y sentido','Explora los ejes de significado y elige un área que quieras comprender mejor. No necesitas elegir una meta todavía.'],['Reflexión personal','Escribe qué observaste, por qué importa y qué quieres observar esta semana.']],reflection:'Mi reflexión privada',placeholder:'¿Qué observé? ¿Qué importa ahora? ¿Qué observaré esta semana?',save:'Guardar y terminar sesión',saved:'Tu reflexión de la sesión gratuita está guardada.',edit:'Actualizar reflexión',retry:'Reintentar guardado',error:'No se confirmó el guardado. Conservamos el borrador en pantalla; reintenta antes de editar.',authError:'No se pudo abrir el acceso de Google. Reintenta.',working:'Abriendo…',load:'Cargar progreso guardado',loadError:'No se pudo leer todo el progreso. Reintenta.',privacy:'Tus reflexiones son privadas. Estas prácticas no sustituyen el diagnóstico ni el tratamiento médico.',back:'Volver al perfil',goals:'Mi meta'}
+ "en": {
+  "title": "Find Clarity & Support",
+  "details": "Program details",
+  "start": "Start Free Program",
+  "day": "Day",
+  "free": "Free",
+  "intro": "Three free days to understand yourself, find support and choose a goal.",
+  "terms": "All three workbook days are free. The planned coaching format is 20 minutes per day; AI session access and availability are handled separately in My Coach.",
+  "progress": "Days with saved reflections",
+  "steps": "Your practices",
+  "reflection": "My private reflection and next action",
+  "placeholder": "What did I notice? What will I do next?",
+  "save": "Save reflection",
+  "saved": "Your reflection is saved.",
+  "edit": "Update reflection",
+  "retry": "Retry saving",
+  "error": "Could not confirm the save. Retry the same draft before editing.",
+  "authError": "Could not open Google sign-in. Try again.",
+  "working": "Working…",
+  "load": "Load all saved entries before editing",
+  "loadError": "Could not read all saved progress. Retry.",
+  "privacy": "Your reflections are private and do not mark an AI session complete. These practices are not medical diagnosis or treatment.",
+  "back": "Back to Profile",
+  "goals": "My Goal",
+  "coach": "Choose an AI coach",
+  "coachHint": "Planned session: 20 min. This opens the existing coach selection; it does not reserve a free session.",
+  "homework": "Independent practice",
+  "homeworkHint": "Use the exercises above for independent work. Coach-assigned homework is separate and is not generated by this workbook.",
+  "duplicate": "Several saved notes exist for this day. Review them in your journal; nothing is overwritten here.",
+  "journal": "Open private journal",
+  "legacy": "Previous Clarity notes (archive)",
+  "open": "Open tool"
+ },
+ "ru": {
+  "title": "Ясность и поддержка",
+  "details": "Программа курса",
+  "start": "Начать бесплатно",
+  "day": "День",
+  "free": "Бесплатно",
+  "intro": "Три бесплатных дня, чтобы понять себя, найти опору и определить цель.",
+  "terms": "Все три дня дневника бесплатны. Плановый формат коучинга — 20 минут в день; доступность ИИ-сессий определяется отдельно в My Coach.",
+  "progress": "Дней с сохранённой рефлексией",
+  "steps": "Практики дня",
+  "reflection": "Моя личная рефлексия и следующий шаг",
+  "placeholder": "Что я заметил? Что сделаю дальше?",
+  "save": "Сохранить рефлексию",
+  "saved": "Рефлексия сохранена.",
+  "edit": "Обновить рефлексию",
+  "retry": "Повторить сохранение",
+  "error": "Сохранение не подтверждено. Повторите сохранение того же черновика перед редактированием.",
+  "authError": "Не удалось открыть вход через Google. Повторите попытку.",
+  "working": "Выполняем…",
+  "load": "Загрузить все записи перед редактированием",
+  "loadError": "Не удалось прочитать весь прогресс. Повторите попытку.",
+  "privacy": "Записи приватны и не означают завершения ИИ-сессии. Практики не заменяют медицинскую диагностику и лечение.",
+  "back": "В профиль",
+  "goals": "Моя цель",
+  "coach": "Выбрать ИИ-коуча",
+  "coachHint": "Плановая сессия: 20 мин. Открывается существующий выбор коуча; бесплатная сессия не резервируется.",
+  "homework": "Самостоятельная практика",
+  "homeworkHint": "Выполните упражнения выше самостоятельно. Домашнее задание от коуча — отдельный результат сессии; дневник не назначает его сам.",
+  "duplicate": "За этот день есть несколько записей. Просмотрите их в дневнике; здесь ничего не перезаписывается.",
+  "journal": "Открыть личный дневник",
+  "legacy": "Предыдущие записи Clarity (архив)",
+  "open": "Открыть инструмент"
+ },
+ "es": {
+  "title": "Claridad y apoyo",
+  "details": "Detalles del programa",
+  "start": "Empezar gratis",
+  "day": "Día",
+  "free": "Gratis",
+  "intro": "Tres días gratuitos para conocerte, encontrar apoyo y definir una meta.",
+  "terms": "Los tres días del diario son gratuitos. El formato previsto de coaching es de 20 minutos al día; el acceso a las sesiones de IA se gestiona por separado en My Coach.",
+  "progress": "Días con reflexiones guardadas",
+  "steps": "Prácticas del día",
+  "reflection": "Mi reflexión privada y próximo paso",
+  "placeholder": "¿Qué observé? ¿Qué haré después?",
+  "save": "Guardar reflexión",
+  "saved": "Tu reflexión está guardada.",
+  "edit": "Actualizar reflexión",
+  "retry": "Reintentar",
+  "error": "No se confirmó el guardado. Reintenta el mismo borrador antes de editar.",
+  "authError": "No se pudo abrir el acceso de Google. Reintenta.",
+  "working": "Procesando…",
+  "load": "Cargar todas las notas antes de editar",
+  "loadError": "No se pudo leer todo el progreso. Reintenta.",
+  "privacy": "Las notas son privadas y no completan una sesión de IA. Las prácticas no sustituyen el diagnóstico ni el tratamiento médico.",
+  "back": "Volver al perfil",
+  "goals": "Mi meta",
+  "coach": "Elegir un coach de IA",
+  "coachHint": "Sesión prevista: 20 min. Abre la selección de coach; no reserva una sesión gratuita.",
+  "homework": "Práctica autónoma",
+  "homeworkHint": "Realiza los ejercicios de arriba por tu cuenta. Las tareas asignadas por el coach son un resultado separado de la sesión.",
+  "duplicate": "Hay varias notas para este día. Revísalas en tu diario; aquí no se sobrescribe nada.",
+  "journal": "Abrir diario privado",
+  "legacy": "Notas anteriores de Claridad (archivo)",
+  "open": "Abrir herramienta"
+ }
+}
+const GOLDEN={
+ en:{overview:'Course overview',duration:'3 days · Free workbook',about:'About the day',notes:'Reflection',resources:'Course resources',help:'Open iHelp',progress:'Saved reflections',recorded:'Saved',notRecorded:'Not saved',availability:'Session availability in My Coach'},
+ ru:{overview:'Описание курса',duration:'3 дня · Бесплатный дневник',about:'О занятии',notes:'Личная рефлексия',resources:'Материалы курса',help:'Открыть iHelp',progress:'Сохранённые записи',recorded:'Сохранено',notRecorded:'Нет записи',availability:'Доступность сессии — в My Coach'},
+ es:{overview:'Descripción del curso',duration:'3 días · Diario gratuito',about:'Sobre el día',notes:'Reflexión personal',resources:'Recursos del curso',help:'Abrir iHelp',progress:'Notas guardadas',recorded:'Guardado',notRecorded:'Sin nota',availability:'Disponibilidad en My Coach'}
 }
 function useProgramStart(locale,program){
  const lang=clarityLocale(locale),t=COPY[lang]
@@ -76,11 +177,11 @@ export function ClarityDetails({locale='en'}){
   <Link href={'/'+lang+'/app/portrait'} className={css.back}>{t.back}</Link>
   <header className={css.hero}><span>{t.details}</span><h1>{t.title}</h1><p>{t.intro}</p><ClarityStartButton locale={lang}/></header>
   <p className={css.terms}>{t.terms}</p>
-  {CLARITY_SYLLABUS[lang].map(([title,description],index)=><article className={css.card} key={title}><span className={css.eyebrow}>{t.week} {index+1} · {index===0?t.free:t.paid}</span><h2>{title}</h2><p>{description}</p></article>)}
+  {CLARITY_SYLLABUS[lang].map(([title,description],index)=><article className={css.card} key={title}><span className={css.eyebrow}>{t.day} {index+1} · {t.free}</span><h2>{title}</h2><p>{description}</p></article>)}
   <p className={css.notice}>{t.privacy}</p>
  </main>
 }
-function FreeReflection({accountId,locale,entry,onSaved,onSessionLost}){
+function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
  const t=COPY[locale]
  const [text,setText]=useState(entry?.text||''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
  const saver=useRef(null),draft=useRef(null),alive=useRef(true),inFlight=useRef(false)
@@ -88,14 +189,14 @@ function FreeReflection({accountId,locale,entry,onSaved,onSessionLost}){
  async function save(){
   if(inFlight.current||!saver.current||!text.trim())return
   inFlight.current=true;setBusy(true)
-  if(!draft.current){
-   const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone
-   draft.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:[CLARITY_FREE_REFLECTION_TAG],kind:'note',locale,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null}
-  }
   try{
+   if(!draft.current){
+    const timezone=entry?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone
+    draft.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||[clarityDayTag(day)],kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
+   }
    const saved=await saver.current.save(draft.current)
    if(!alive.current)return
-   draft.current=null;setFailed(false);onSaved(saved)
+   draft.current=null;setText(saved.text);setFailed(false);onSaved(saved)
   }catch(error){
    if(!alive.current)return
    if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')onSessionLost()
@@ -103,32 +204,78 @@ function FreeReflection({accountId,locale,entry,onSaved,onSessionLost}){
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  <label>{t.reflection}<textarea rows={6} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
+  <label>{t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
   {entry&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
   {failed&&<p role="alert">{t.error}</p>}
-  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
+  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
  </div>
 }
-export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost}){
- const lang=clarityLocale(locale),t=COPY[lang],weeks=CLARITY_SYLLABUS[lang]
- const entry=savedClarityReflection(entries)
+export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children}){
+ const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
+ const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries)
  const searchParams=useSearchParams()
  const requestedWeek=searchParams?.getAll('week')
  const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
- const [selected,setSelected]=useState(null),week=selected??routeWeek??(entry?2:1)
+ const [selected,setSelected]=useState(null)
+ const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!recorded.includes(n))||CLARITY_DAY_COUNT)
  const root='/'+lang
- return <section className={css.shell} data-clarity-daybook>
-  <header className={css.hero}><span>CLARITY · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></header>
-  <div className={css.progress}><span>{t.progress}</span><strong>{entry?1:0} / 4</strong><progress max={4} value={entry?1:0} aria-label={t.progress}/></div>
-  <nav className={css.weeks} aria-label={t.details}>{weeks.map(([title],i)=><button key={title} type="button" aria-pressed={week===i+1} onClick={()=>setSelected(i+1)}>{i===0?(entry?<CheckCircle2 size={18}/>:<BookOpen size={18}/>):<LockKeyhole size={17}/>}<span>{t.week} {i+1}</span></button>)}</nav>
-  <article className={css.card}><span className={css.eyebrow}>{t.week} {week} · {week===1?t.free:t.locked}</span><h2>{weeks[week-1][0]}</h2><p>{weeks[week-1][1]}</p>
-  {week===1?<><h3>{t.steps}</h3><ol className={css.tasks}>{t.tasks.map(([title,body],index)=><li key={title}><strong>{title}</strong><p>{body}</p>{index<2&&<Link href={root+'/development-vectors'} prefetch={false}>{title}<ArrowRight size={16}/></Link>}</li>)}</ol>
-  {hasMore&&!entry?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:<FreeReflection key={entry?entry.id+':'+entry.revision:'new'} accountId={accountId} locale={lang} entry={entry} onSaved={onSaved} onSessionLost={onSessionLost}/>}</>:
-  <div className={css.locked}><LockKeyhole size={22}/><p>{!entry?t.notYet:t.payment}</p><p>{t.terms}</p></div>}
-  </article>
-  <DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={week}/>
-  <p className={css.notice}>{t.privacy}</p>
-  <Link href={root+'/coaching/clarity'} prefetch={false} className={css.back}>{t.details}</Link>
-  <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+ const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
+ const sheet=useRef(null)
+ function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
+ return <section className={css.golden} data-clarity-daybook data-clarity-design="golden-one-screen-v3">
+  <div className={css.topbar}>
+   <Link href={root+'/coaching/clarity'} prefetch={false} className={css.courseBack}><ArrowLeft size={18} aria-hidden="true"/>{g.overview}</Link>
+   <button type="button" className={css.help} data-daybook-inline-help aria-label={g.help} aria-haspopup="dialog" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={18} aria-hidden="true"/>iHelp</button>
+  </div>
+  <header className={css.cover}>
+   <h1>{t.title}</h1><p>{g.duration}</p><span className={css.ribbon}><Sparkles size={14} aria-hidden="true"/>CLARITY · DAYBOOK</span>
+  </header>
+  <nav className={css.dayTabs} aria-label={t.details}>{days.map(([title],i)=>{
+   const done=recorded.includes(i+1)
+   return <button key={i} type="button" aria-pressed={day===i+1} aria-controls={'clarity-day-'+(i+1)} onClick={()=>chooseDay(i+1)} title={title+' · '+(done?g.recorded:g.notRecorded)}><span>{t.day}</span><b>{i+1}</b><small>{done?<CheckCircle2 size={13} aria-hidden="true"/>:<BookOpen size={13} aria-hidden="true"/>}{done?'1/1':'0/1'}</small></button>
+  })}</nav>
+  <div className={css.dayBanner} data-clarity-progress>
+   <span>{t.day} {day} / {CLARITY_DAY_COUNT}</span><h2>{days[day-1][0]}</h2>
+   <div className={css.dayProgress}><progress max={CLARITY_DAY_COUNT} value={recorded.length} aria-label={t.progress}/><strong>{recorded.length}/{CLARITY_DAY_COUNT}</strong></div>
+   <small>{g.progress}</small>
+  </div>
+  <div className={css.sheet} ref={sheet} data-clarity-sheet tabIndex={0} aria-label={t.steps}>
+   {days.map(([title,description],i)=>{
+    const number=i+1,notes=clarityDayNotes(entries,number)
+    return <article className={css.dayCard} key={number} id={'clarity-day-'+number} hidden={day!==number} data-clarity-day={number}>
+     <div className={css.about}><h3>{g.about}</h3><p>{description}</p></div>
+     <div className={css.practiceHeading}>{t.steps}<span>{CLARITY_TASKS[lang][i].length}</span></div>
+     <div className={css.practiceList}>
+      {CLARITY_TASKS[lang][i].map(([name,body,tool],index)=><details className={css.practice} key={name} data-clarity-practice>
+       <summary><span className={css.stepNum}>{index+1}</span><strong>{name}</strong><ChevronDown size={17} aria-hidden="true"/></summary>
+       <div className={css.practiceBody}><p>{body}</p>{tool&&<Link href={toolPaths[tool]} prefetch={false}>{t.open}<ArrowRight size={16} aria-hidden="true"/></Link>}</div>
+      </details>)}
+      <details className={css.practice} data-clarity-reflection>
+       <summary><NotebookPen size={19} aria-hidden="true"/><strong>{g.notes}</strong>{recorded.includes(number)&&<CheckCircle2 size={17} aria-label={g.recorded}/>}<ChevronDown size={17} aria-hidden="true"/></summary>
+       <div className={css.practiceBody}>
+        {hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:notes.length>1?<><p role="status">{t.duplicate}</p><Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></>:<FreeReflection key={notes[0]?.id||'new'} accountId={accountId} locale={lang} day={number} entry={notes[0]} onSaved={entry=>{setSelected(current=>current??number);onSaved(entry)}} onSessionLost={onSessionLost}/>}
+        {number===CLARITY_DAY_COUNT&&<Link href={toolPaths.goal} className={css.back}>{t.goals}<ArrowRight size={16}/></Link>}
+       </div>
+      </details>
+     </div>
+    </article>
+   })}
+   <DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day}/>
+   <details className={css.resources} open={routeWeek===4?true:undefined}>
+    <summary><BookOpen size={16} aria-hidden="true"/><strong>{g.resources}</strong><ChevronDown size={16} aria-hidden="true"/></summary>
+    <div className={css.resourceBody}>
+     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
+     {legacy.length>0&&<details><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
+     <details open={routeWeek===4?true:undefined}><summary>{({en:'Earlier report placement · week 4 (archive)',ru:'Прежние отчёты · неделя 4 (архив)',es:'Informes anteriores · semana 4 (archivo)'})[lang]}</summary><DaybookWeekReports key={accountId+':clarity:legacy'} locale={lang} accountId={accountId} program="clarity" week={4}/></details>
+     {children}
+     <p className={css.notice}>{t.privacy}</p>
+     <Link href={root+'/app/portrait'} prefetch={false} className={css.back}>{t.back}</Link>
+    </div>
+   </details>
+  </div>
+  <footer className={css.courseFooter}>
+   <Link href={root+'/my-coach'} prefetch={false} className={css.coachCta}><MessageCircle size={21} aria-hidden="true"/><span>{t.coach}</span><ArrowRight size={20} aria-hidden="true"/></Link>
+   <small>{g.availability}</small>
+  </footer>
  </section>
 }
