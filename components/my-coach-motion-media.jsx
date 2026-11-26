@@ -31,7 +31,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=personaId==='harry'?coachVisualClip(state,visualScene):coachNaturalTake(state,visualScene)
   const samirTake=isGenie?samirMotionTake(state,visualScene):null
-  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':MEDIA_ROOT+personaId+'-still.webp'):null
+  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':personaId==='caesar'?MEDIA_ROOT+'caesar-emblem.svg':MEDIA_ROOT+personaId+'-still.webp'):null
   const harryClip=state==='listening'?'attentive':'calm'
   const greetingSrc=state==='greeting'&&(personaId==='merlin'||personaId==='harry')
     ?MEDIA_ROOT+personaId+'-greeting-real-v2.mp4':null

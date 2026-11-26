@@ -8,7 +8,7 @@ const actor={id:'99999999-0000-4000-8000-000000000001',claims:{session_id:'11111
 const otherActor={id:'99999999-0000-4000-8000-000000000002',claims:{session_id:'11111111-0000-4000-8000-000000000001'}}
 const config={encryptionKey:Buffer.alloc(32,15)}
 test('all registered personas allow only two canonical method choices',()=>{
- assert.equal(PUBLIC_COACH_PERSONA_IDS.length,7)
+ assert.equal(PUBLIC_COACH_PERSONA_IDS.length,8)
  assert.ok(COACH_PERSONAS.length>=PUBLIC_COACH_PERSONA_IDS.length)
  assert.equal(new Set(Object.values(COACH_METHOD_CODES)).size,6)
  for(const p of COACH_PERSONAS){

@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react'
 import {coachIsNameRepairUtterance} from '@/lib/coaching/coach-opening-protocol.mjs'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
+import MyCoachCourseFieldReview from '../my-coach-course-field-review'
 import styles from './my-coaching-plan.module.css'
 
 const copy={
@@ -11,13 +12,15 @@ const copy={
 }
 function DraftRow({item,t,lang,onAction,busy}){
  const [checked,setChecked]=useState(false),[name,setName]=useState(''),[goal,setGoal]=useState(''),[summary,setSummary]=useState(''),[step,setStep]=useState('')
+ const [courseFieldReview,setCourseFieldReview]=useState(null)
  const p=item.protocol,opening=p.opening
  const nameValid=!name.trim()||(!coachIsNameRepairUtterance(name)&&/^[\p{L}][\p{L}'’ -]{0,59}$/u.test(name.trim()))
  function reviewed(){
   // User may explicitly confirm the preferred name and new summary; never
   // carry forward an unchecked inferred opening, profile score or AI goal.
-  const {opening:ignored,profileCheckin:ignoredProfile,provenance:ignoredProvenance,...transcript}=p
+  const {opening:ignored,profileCheckin:ignoredProfile,provenance:ignoredProvenance,courseFieldReview:ignoredReview,...transcript}=p
   return {...transcript,courseSessionId:item.courseSessionId,goal:goal.trim(),clientSummary:summary.trim(),clientNextStep:step.trim(),
+    ...(courseFieldReview?{courseFieldReview}:{}),
     ...(name.trim()?{opening:{version:'hh-coach-opening-v1-20261122',completed:false,declined:false,
       name:name.trim(),continuity:'',focus:'',feelings:'',invitationQuote:'',confirmedQuote:'',
       checkmarks:{invitation:false,name:true,continuity:false,focus:false,feelings:false,confirmation:false}}}:{})}
@@ -27,6 +30,7 @@ function DraftRow({item,t,lang,onAction,busy}){
   <details className={styles.reportDetails}><summary>{t.review}</summary>
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
    <MyCoachSavedProfileV3 protocol={p} locale={lang}/>
+   <MyCoachCourseFieldReview courseSessionId={item.courseSessionId} turns={p.turns} locale={lang} value={courseFieldReview} onChange={value=>{setCourseFieldReview(value);setChecked(false)}} disabled={busy}/>
    {p.turns.map((row,i)=><div className={styles.reportSection} key={i}><b>{row.role==='user'?t.you:t.coach}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.content}</p></div>)}
    <label>{t.name}<input value={name} maxLength={60} onChange={e=>{setName(e.target.value);setChecked(false)}}/></label>
    <label>{t.goal}<textarea rows={2} value={goal} maxLength={180} onChange={e=>{setGoal(e.target.value);setChecked(false)}}/></label>
