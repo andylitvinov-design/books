@@ -7,7 +7,6 @@ const dialogue = readFileSync(new URL("../components/home-dialogue-entry.tsx", i
 
 test("approved homepage first-screen artwork exists at its cacheable public paths", () => {
   for (const path of [
-    "public/images/holistic-house/ali-inner-alchemist-hero.webp",
     "public/images/holistic-house/my-coach-motion/max-living.webp",
     "public/images/holistic-house/ideas-pine-reference.webp",
     ...["stress", "love", "growth", "energy"].map(name => `public/images/video-goal-art/${name}.webp`),
@@ -16,7 +15,6 @@ test("approved homepage first-screen artwork exists at its cacheable public path
 
 test("homepage first-screen photography is CDN/browser cached without HTML or private routes", () => {
   for (const source of [
-    "/images/holistic-house/ali-inner-alchemist-hero.webp",
     "/images/holistic-house/my-coach-motion/:path*",
     "/images/holistic-house/ideas-pine-reference.webp",
     "/images/video-goal-art/:path*",
@@ -28,28 +26,21 @@ test("homepage first-screen photography is CDN/browser cached without HTML or pr
 });
 
 test("the first screen has a native localized booking link before the program choices", () => {
-  assert.match(dialogue, /<Link className=\{styles\.sessionLink\} href=\{`\/\$\{locale\}\/services#consultation`\} prefetch=\{false\} scroll=\{false\} data-home-request-session>/);
-  for (const label of ["Request a session · from €50", "Запросить сессию · от €50", "Solicitar sesión · desde 50 €"]) {
-    assert.ok(dialogue.includes(label));
-  }
+  assert.ok(dialogue.includes('<a className={styles.sessionLink} href={`/${locale}/services?consultation=1#consultation`} data-home-request-session>'));
+  for (const label of ["Request a session · from €50", "Запросить сессию · от €50", "Solicitar sesión · desde 50 €"]) assert.ok(dialogue.includes(label));
   assert.ok(dialogue.indexOf("data-home-request-session") < dialogue.indexOf("data-home-focus-grid"));
 });
-
-
-test("consultation deep links open the actual booking section on mobile and desktop",()=>{
-  const catalog=readFileSync(new URL("../components/services-unified-catalog.tsx",import.meta.url),"utf8");
-  const effect=catalog.slice(catalog.indexOf("const revealLinkedService ="),catalog.indexOf('window.addEventListener("hashchange"'));
-  assert.doesNotMatch(effect, /max-width|if\s*\(!window\.matchMedia/);
-  assert.match(effect,/Object\.hasOwn\(panelFromHash, hash\)/);
-  assert.match(catalog,/consultation: "consultation"/);
-  assert.match(effect,/setExpanded\(previous => new Set\(previous\)\.add\(id\)\)/);
-  assert.match(effect,/hash === "consultation" \? document\.getElementById\(hash\)/);
-  assert.match(effect,/if \(booking && panel\?\.contains\(booking\)\)/);
-  assert.match(effect,/\(booking\.querySelector\("h2"\) \?\? booking\)\.scrollIntoView\(\{ block: "center", behavior: "instant" \}\)/);
-  assert.match(effect,/else panel\?\.scrollIntoView\(options\)/);
-  assert.match(catalog,/\(id === "consultation" \|\| id === "directory"\) && !expanded \? null : children/);
-  for(const path of ["app/[locale]/services/page.tsx","app/es/services/page.tsx"]){
-    const page=readFileSync(new URL("../"+path,import.meta.url),"utf8");
-    assert.match(page,/<ServicesCompactPanel id="consultation">[\s\S]*?<PublicConsultationCta[^>]*id="consultation" serviceBooking/);
+test("booking URL opens the paid consultation in the initial document; legacy hashes still resolve", () => {
+  const catalog = readFileSync(new URL("../components/services-unified-catalog.tsx", import.meta.url), "utf8");
+  assert.ok(catalog.includes('initialConsultationOpen ? ["consultation"] : []'));
+  assert.ok(catalog.includes('Object.hasOwn(panelFromHash, hash)'));
+  assert.ok(catalog.includes('booking.querySelector("h2") ?? booking'));
+  assert.ok(catalog.includes('panel?.getAttribute("data-expanded") === "true"'));
+  assert.ok(catalog.includes('window.cancelAnimationFrame(frame)'));
+  assert.ok(catalog.includes('(id === "consultation" || id === "directory") && !expanded ? null : children'));
+  for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
+    const page = readFileSync(new URL("../" + path, import.meta.url), "utf8");
+    assert.ok(page.includes('initialConsultationOpen={query?.consultation === "1"}'));
+    assert.ok(page.includes('id="consultation" serviceBooking'));
   }
 });

@@ -96,6 +96,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const SupportGoalCabinet = dynamic(() => import('@/components/app/support-goal-cabinet'), { ssr: false })
 const DreamPathMap = dynamic(() => import('@/components/app/dream-path-map'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
@@ -395,6 +396,8 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'progress' ? { continueTo: 'progress' } : {}),
+        ...(page === 'settings' ? { continueTo: 'settings' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
@@ -683,14 +686,19 @@ export default function AppWorkspace({ locale, path = [] }) {
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
             ? (locale === 'ru' ? 'ОПОРА — Антистресс: сначала тесты' : 'OPORA Stress Relief: assessments first')
             : page === 'course'
-              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course')
+              : page === 'progress'
+                ? (locale === 'ru' ? 'Мой прогресс и история' : 'My Progress & History') : c.welcome}</h1>
           <p>{state === 'unavailable' ? c.unavailableText : stressSignup
             ? (locale === 'ru'
               ? 'После входа: основной исходный HH Weekly Pulse (8 вопросов) до урока 1, дополнительные GAD-7 и Resource Pulse — по желанию. Уже пройденный совместимый результат учитывается.'
               : 'After sign-in: complete HH Weekly Pulse (8 questions) before lesson 1. GAD-7 and Resource Pulse are optional; recent compatible results count.')
             : page === 'course'
               ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
-                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
+                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : page === 'progress'
+                ? (locale === 'ru'
+                  ? 'Ваши сохранённые тесты, курсы, видео, мандалы и заявки откроются здесь после входа.'
+                  : 'Sign in to see your saved tests, courses, videos, mandalas and orders together.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <>
@@ -839,6 +847,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portrait' && (
              <>
                {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
+                 <SupportGoalCabinet key={'support-goals:'+data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
                  <DreamPathMap locale={locale} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
@@ -1279,6 +1288,8 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
             adult: values.adult,
             necessary: values.necessary,
             marketing: false,
+            displayName: values.displayName || '',
+            goal: values.goal,
             uiLocale: locale,
             timezone: localZone(),
           }
@@ -1299,6 +1310,23 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
       <h1>{onboarding ? c.continue : c.settings}</h1>
       <p>{c.privacy}</p>
       <form className="hh-form" onSubmit={submit}>
+        {onboarding && (
+          <>
+            <label>
+              {c.name}
+              <input value={values.displayName || ''} maxLength={120}
+                onChange={(e) => change('displayName', e.target.value)} autoComplete="name" />
+            </label>
+            <label>
+              {c.goal}
+              <select value={values.goal} onChange={(e) => change('goal', e.target.value)}>
+                {['explore','body','relationships','resource','business'].map(key => (
+                  <option value={key} key={key}>{c[key]}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         {!onboarding && (
           <>
             <label>

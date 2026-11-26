@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { HolisticHouseLoadingScene } from "@/components/holistic-house-loading-scene";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
@@ -19,5 +21,9 @@ export default async function HomePage({ searchParams }: Props) {
     const requestedFull = Array.isArray(full) ? full[0] : full;
     redirect(`/${requested}${requestedFull === "1" ? "?full=1" : ""}`);
   }
-  return <HolisticHouseHome locale="en" />;
+  return (
+    <Suspense fallback={<HolisticHouseLoadingScene />}>
+      <HolisticHouseHome locale="en" />
+    </Suspense>
+  );
 }

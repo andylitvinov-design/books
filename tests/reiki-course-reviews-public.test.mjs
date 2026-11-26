@@ -61,7 +61,7 @@ test('Private encrypted student journal can be revisited and edited in My Course
   assert.match(my,/action:'save',slideId:item\.id,nextSlideId:item\.id,answer:draft/)
   assert.match(my,/!enough\(draft\)\|\|!changed/)
   assert.match(repo,/revokePublicReviewOnEdit\(db,actor,body\.slideId\)/)
-  assert.match(repo,/await updateSharedReikiJournal\(db,actor,config,updated,answers\)/)
+  assert.match(repo,/await updateSharedReikiJournal\(db,actor,config,updated,answers,committed\)/)
   assert.match(repo,/answers_ciphertext/)
   assert.match(my,/action:'share',consent:true,teacherConsent:true/)
   assert.doesNotMatch(my,/localStorage|sessionStorage|sendBeacon/)
@@ -87,7 +87,11 @@ test('Public review requires separate learner opt-in, owner approval and no PII 
   assert.match(pub,/openSealed\(row\.body_ciphertext/)
   assert.match(publicEndpoint,/Cache-Control':'no-store/)
   assert.match(listing,/data-reiki-public-reviews/)
-  assert.match(landing,/<ReikiPublicReviews locale=\{locale\}/)
+  // Owner replaced the landing review widget with original Yggdrasil introductions; consent and moderation remain intact.
+  assert.doesNotMatch(landing,/<ReikiPublicReviews/)
+  assert.match(landing,/data-reiki-yggdrasil-intro-videos/)
+  assert.match(landing,/youtubeId="lOo93GuzeJ0"/)
+  assert.match(landing,/youtubeId="XvMdX5czoOc"/)
   assert.doesNotMatch(listing,/review\.accountId|review\.email|review\.displayName/)
 })
 

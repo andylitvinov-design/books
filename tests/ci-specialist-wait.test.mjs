@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance } from '../lib/ci/production-base-impact.mjs';
 
@@ -1037,4 +1037,51 @@ test('specialist leaf-trigger scope can reuse exact-HEAD green checks over two i
     {files:[{filename:video[0],status:'renamed',previous_filename:'old.json'}]},
     {files:[{filename:video[0],status:'modified'},{filename:video[0],status:'modified'}]},
   ]) assert.equal(check(diff(video,invalid)),false,'must reject incomplete or ambiguous protected Compare');
+});
+
+test('pending mergeability refresh is bounded, exact-head and fail-closed',async()=>{
+  const target='c'.repeat(40);
+  const pending={...pr,base:{...pr.base,sha:target},mergeable:null};
+  const good={...pending,mergeable:true};
+  let reads=0,waits=[];
+  const api={pr:async()=>++reads===1?pending:good,target:async()=>target};
+  assert.equal(await awaitPositiveMergeability(api,ctx,target,async ms=>{waits.push(ms);}),good);
+  assert.deepEqual(waits,[1000,2000]);
+  waits=[];
+  assert.equal(await awaitPositiveMergeability({...api,pr:async()=>pending},ctx,target,async ms=>{waits.push(ms);}),null);
+  assert.deepEqual(waits,[1000,2000,4000]);
+  assert.equal(await awaitPositiveMergeability({...api,pr:async()=>good,target:async()=>base},ctx,target,async()=>{}),null);
+  assert.equal(await awaitPositiveMergeability({...api,pr:async()=>({...good,base:{...good.base,sha:base}})},ctx,target,async()=>{}),null);
+  for(const [next,error] of [
+    [{...good,mergeable:false},/MERGE_CONFLICT/],
+    [{...good,head:{...good.head,sha:target}},/PR_HEAD_CHANGED/],
+    [{...good,draft:true},/PR_DRAFT/],
+  ]) await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>next},ctx,target,async()=>{}),error);
+});
+
+test('positive-only detached CI proof refreshes transient null without rerun, but unsafe changes stay blocked',async()=>{
+  const latest='c'.repeat(40);
+  const candidate=['lib/ci/production-base-impact.mjs','tests/ci-specialist-wait.test.mjs'];
+  const target=[
+    {filename:'components/mandala-video-idea-goal.tsx',status:'modified'},
+    {filename:'components/shamanica-mobile.tsx',status:'modified'},
+    {filename:'lib/crm/telegram-secretary-service.js',status:'modified'},
+    {filename:'tests/crm-telegram-shamanica-course-intake.test.mjs',status:'added'},
+  ];
+  const diff=(rows=target)=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],files:rows});
+  const pending={...pr,mergeable:null,base:{...pr.base,sha:latest}};
+  const good={...pending,mergeable:true};
+  let ready=false, waits=[];
+  const api={pr:async()=>ready?good:pending,target:async()=>latest,compare:async()=>diff(),
+    runs:async()=>[],jobs:async()=>[]};
+  const files={base:new Map(),current:new Map(),
+    changedRows:candidate.map(filename=>({filename,status:'M'}))};
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:10000,sleep:async ms=>{waits.push(ms);ready=true;}})).head,head);
+  assert.deepEqual(waits,[1000]);
+  ready=false;waits=[];
+  await assert.rejects(()=>verify({...api,compare:async()=>diff([...target,{filename:'package-lock.json',status:'modified'}])},
+    ctx,files,{maxWaitMs:10000,sleep:async ms=>{waits.push(ms);}}),/PRODUCTION_BASE_CHANGED/);
+  assert.deepEqual(waits,[]);
 });

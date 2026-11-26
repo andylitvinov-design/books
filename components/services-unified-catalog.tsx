@@ -216,48 +216,47 @@ type CatalogContextValue = {
 };
 const CatalogContext = createContext<CatalogContextValue | null>(null);
 
-export function ServicesCompactCatalog({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
-  const [expanded, setExpanded] = useState<ReadonlySet<ServicesPanelId>>(() => new Set());
+export function ServicesCompactCatalog({ locale, children, initialConsultationOpen = false }: {
+  locale: PublicLocale; children: ReactNode; initialConsultationOpen?: boolean;
+}) {
+  // Explicit booking links have the paid target in the initial server document.
+  const [expanded, setExpanded] = useState<ReadonlySet<ServicesPanelId>>(
+    () => new Set<ServicesPanelId>(initialConsultationOpen ? ["consultation"] : []),
+  );
   useEffect(() => {
-    let firstFrame = 0;
-    let secondFrame = 0;
+    let frame = 0;
     const revealLinkedService = () => {
-      // Compact panels now exist at desktop widths too. Follow recognized
-      // deep links at every viewport, opening only the requested group.
       const hash = window.location.hash.slice(1);
       const id = Object.hasOwn(panelFromHash, hash) ? panelFromHash[hash] : undefined;
+      window.cancelAnimationFrame(frame);
       if (!id) return;
-      setExpanded(previous => new Set(previous).add(id));
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      // Wait for React to reveal the panel before scrolling to a hidden anchor.
-      firstFrame = window.requestAnimationFrame(() => {
-        secondFrame = window.requestAnimationFrame(() => {
-          const panel = document.querySelector<HTMLElement>(
-            '[data-services-unified-panel="' + id + '"]'
-          );
-          // The session link lands on its actual paid choices once mounted.
-          // Other legacy hashes retain their existing panel-level scroll.
-          const booking = hash === "consultation" ? document.getElementById(hash) : null;
-          const options: ScrollIntoViewOptions = {
-            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-            block: "start",
-          };
-          if (booking && panel?.contains(booking)) {
-            // Next hash scrolling must not compete with the newly mounted paid offer.
-            // The heading, rather than the tall panel, must enter the viewport.
-            (booking.querySelector("h2") ?? booking).scrollIntoView({ block: "center", behavior: "instant" });
-          }
-          else panel?.scrollIntoView(options);
-        });
-      });
+      setExpanded(previous => previous.has(id) ? previous : new Set(previous).add(id));
+      // Legacy fragment links may have to wait for the expanded React panel.
+      let attempts = 0;
+      const scrollWhenReady = () => {
+        const panel = document.querySelector<HTMLElement>(
+          '[data-services-unified-panel="' + id + '"]'
+        );
+        const booking = hash === "consultation" ? document.getElementById(hash) : null;
+        const target = hash === "consultation"
+          ? (booking && panel?.contains(booking) ? booking.querySelector("h2") ?? booking : null)
+          : panel;
+        if (target && target.getClientRects().length && panel?.getAttribute("data-expanded") === "true") {
+          target.scrollIntoView({
+            behavior: hash === "consultation" || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+            block: hash === "consultation" ? "center" : "start",
+          });
+          return;
+        }
+        if (++attempts < 120) frame = window.requestAnimationFrame(scrollWhenReady);
+      };
+      frame = window.requestAnimationFrame(scrollWhenReady);
     };
     revealLinkedService();
     window.addEventListener("hashchange", revealLinkedService);
     return () => {
       window.removeEventListener("hashchange", revealLinkedService);
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
+      window.cancelAnimationFrame(frame);
     };
   }, []);
   return (
