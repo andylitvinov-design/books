@@ -1,4 +1,5 @@
 'use client'
+import {clarityCoachHref} from '@/lib/coaching/clarity-course.mjs'
 
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -606,11 +607,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session||liveChat?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id} data-coach-session-layout={liveChat?'true':undefined}>
-        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id+':'+(personaSelection?.methodId||'standard')} locale={lang}
-          personaId={selectedPersona.id} methodPreference={personaSelection?.methodId} settings={personaSelection?.settings} initialGoalCourseId={goalCourseId}
+        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id+':'+(personaSelection?.methodId||'standard')+':'+(personaSelection?.clarityDay||goalCourseId||'general')} locale={lang}
+          personaId={selectedPersona.id} methodPreference={personaSelection?.methodId} settings={personaSelection?.settings} initialGoalCourseId={goalCourseId} clarityDay={personaSelection?.clarityDay}
           onClose={()=>setLiveChat(false)}
           onGuided={starterScheme?()=>{setLiveChat(false);start(starterScheme,true)}:null}/> : <>
-        <Link className={styles.personaWelcomeChange} href={'/'+lang+'/my-coach'} prefetch={false}>
+        <Link className={styles.personaWelcomeChange} href={clarityCoachHref('/'+lang+'/my-coach',personaSelection?.clarityDay)} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true"/>{personaBridgeText.edit}
         </Link>
         <div className={styles.personaWelcomeArt}>

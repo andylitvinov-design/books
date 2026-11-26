@@ -1,4 +1,5 @@
 'use client'
+import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityHomeworkCandidates,CLARITY_COURSE_SECONDS} from '@/lib/coaching/clarity-course.mjs'
 
 import {useEffect,useRef,useState} from 'react'
 import {flushSync} from 'react-dom'
@@ -246,7 +247,7 @@ const sessionRatingCopy={
   es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
 }
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null,clarityDay=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
@@ -361,7 +362,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const voicePaused=voiceState.phase==='paused'
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
-  const [selectedCourseId,setSelectedCourseId]=useState(()=>COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===initialGoalCourseId)?initialGoalCourseId:DEFAULT_COACH_COURSE_SESSION_ID)
+  const [selectedCourseId,setSelectedCourseId]=useState(()=>clarityCourseId(clarityDay)||(COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===initialGoalCourseId)?initialGoalCourseId:DEFAULT_COACH_COURSE_SESSION_ID))
+  const clarityTimeLimit=useRef(false)
+  const [clarityHomeworkAccepted,setClarityHomeworkAccepted]=useState(false)
   const lastSharedGoalRef=useRef('')
   const modelProbeRef=useRef({lastAttempt:0,inFlight:false})
   const semanticHintsRef=useRef([]) // short-lived in-tab hints only; not persisted or exported
@@ -398,24 +401,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const micWaveRef=useRef(null)
   const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
-  // The 20-minute format counts active foreground seconds, not wall-clock
-  // time while Safari is backgrounded. No stored state or forced cutoff.
-  useEffect(()=>{
-    if(!sessionClockStarted)return
-    let last=window.performance.now()
-    const tick=()=>{
-      const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef.current){
-        const delta=Math.min(15,Math.max(0,(now-last)/1000))
-        setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
-      }
-      last=now
-    }
-    const onVisibility=()=>{last=window.performance.now()}
-    const timer=window.setInterval(tick,15000)
-    document.addEventListener('visibilitychange',onVisibility)
-    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted,paused,voicePaused])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -506,9 +491,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         setGeminiCapabilities(status.capabilities)
         // A late metadata response must not undo an explicit provider choice.
         if(!engineManuallySelectedRef.current)
-          setCoachEngine(status.capabilities.gemini_live_free?'gemini_live_free':'groq_stream')
+          setCoachEngine(clarityDay?'gemini_live_free':status.capabilities.gemini_live_free?'gemini_live_free':'groq_stream')
       }else if(status.kind==='login')setAuthRequired(true)
-      else if(!engineManuallySelectedRef.current)setCoachEngine('groq_stream')
+      else if(!engineManuallySelectedRef.current&&!clarityDay)setCoachEngine('groq_stream')
     })
     return ()=>controller.abort()
   },[])
@@ -665,6 +650,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,...localOpeningScope})
   const openingActive=!openingProgress.completed
+  const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
+  const clarityOpeningReady=openingProgress.completed&&!openingProgress.declined&&Boolean(openingProgress.answers?.confirmation?.quote)
+  const clarityVoiceActive=['listening','thinking','speaking'].includes(voiceState.phase)
+  // Count only confirmed, connected foreground coaching for Clarity.
+  // This local timer cannot authorize a new provider window or billing.
+  useEffect(()=>{
+    if(!sessionClockStarted||(clarityCourseActive&&(!clarityOpeningReady||!clarityVoiceActive)))return
+    let last=window.performance.now()
+    const tick=()=>{
+      const now=window.performance.now()
+      if(document.visibilityState==='visible'&&!paused&&!voicePaused&&!coachProfileOpenRef.current&&
+        (!clarityCourseActive||speechRef.current?.isConnected?.()===true)){
+        const delta=Math.min(clarityCourseActive?1.5:15,Math.max(0,(now-last)/1000))
+        setActiveSessionSeconds(seconds=>Math.min(clarityCourseActive?CLARITY_COURSE_SECONDS:7200,seconds+delta))
+      }
+      last=now
+    }
+    const onVisibility=()=>{last=window.performance.now()}
+    const timer=window.setInterval(tick,clarityCourseActive?1000:15000)
+    document.addEventListener('visibilitychange',onVisibility)
+    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
+  },[sessionClockStarted,paused,voicePaused,clarityCourseActive,clarityOpeningReady,clarityVoiceActive])
+  useEffect(()=>{
+    if(!clarityCourseActive||!clarityOpeningReady||!clarityVoiceActive||paused||protocolOpen||
+       clarityTimeLimit.current||activeSessionSeconds<CLARITY_COURSE_SECONDS||
+       speechRef.current?.isConnected?.()!==true)return
+    clarityTimeLimit.current=true
+    endWithProtocol()
+    // Only state changes may trigger logical closing, not a provider timeout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[clarityCourseActive,clarityOpeningReady,clarityVoiceActive,paused,protocolOpen,activeSessionSeconds])
   // Session 0 is distinct from method coaching. Existing saved values are
   // consulted ONLY in an owner-authorized preview, never from model prose.
   const profileSelected=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
@@ -1538,6 +1554,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(recovered)
       setDraft(previous=>previous.trim()?previous:last.content)
     }
+    clarityTimeLimit.current=false
+    setClarityHomeworkAccepted(false)
     setCourseFieldReview(courseGateRef.current?.step.review||null) // preserve acknowledged thematic answers on continuation
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
@@ -1550,6 +1568,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
+      ...(clarityTimeLimit.current&&clarityCourseDay(selectedCourseId)?{clarityTimeLimitReached:true,clarityHomeworkAccepted}:{}),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
       ...(courseFieldReview?.courseSessionId===selectedCourseId?{courseFieldReview}:{}),
       ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
@@ -1684,7 +1703,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null)
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
-      const items=result.drafts.filter(row=>row?.personaId===personaId&&Number.isInteger(row.turnCount)&&row.turnCount>0)
+      const items=result.drafts.filter(row=>row?.personaId===personaId&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!clarityDay||row.courseSessionId===clarityCourseId(clarityDay)))
       setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
@@ -1843,7 +1862,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
-    if(resumeInFlight.current)return
+    if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
+    clarityTimeLimit.current=false
+    setClarityHomeworkAccepted(false)
+    if(clarityCourseDay(id)){engineManuallySelectedRef.current=true;setCoachEngine('gemini_live_free')}
     if(privateProfile&&(!profileV3Enabled||!protocolOwnerRef.current||!coachProfileTrackForCourse(id)))return
     if(id===MEANING_AXES_COACH_SESSION_ID&&!privateProfile)return
     // Commit the chosen topic before the synchronous iOS activation gesture.
@@ -1941,7 +1963,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} accountSaving={protocolOwnerReady}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} accountSaving={protocolOwnerReady} clarityDay={clarityDay}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
@@ -2033,6 +2055,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             localRecoveryTurns={turns}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
+            onTimeLimit={()=>{if(clarityCourseDay(selectedCourseId)&&clarityOpeningReady&&activeSessionSeconds>=CLARITY_COURSE_SECONDS&&turnsRef.current.some(row=>row.role==='user')&&!clarityTimeLimit.current){clarityTimeLimit.current=true;endWithProtocol()}}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               reactionActivity.observe(level)
@@ -2444,7 +2467,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
-          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired} onChange={event=>{
+          <select value={coachEngine} disabled={busy||privateTextOnly||courseGateRequired||Boolean(clarityCourseDay(selectedCourseId))} onChange={event=>{
             engineManuallySelectedRef.current=true
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)
@@ -2582,6 +2605,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
         <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>
         {insightResult&&<MyCoachResultPreview locale={lang} courseSessionId={insightResult.courseSessionId} title={coachCourseFocusLabel(selectedCourseId,lang)} rows={insightRows} profile={insightProfile} summary={insightResult.clientSummary} nextStep={insightResult.clientNextStep}/>}
+        {insightResult&&clarityHomeworkCandidates(insightResult,insightRows).length>0&&<details open data-clarity-homework-preview><summary>{({en:'Homework from your personal coach',ru:'Домашнее задание от личного коуча',es:'Tarea de tu coach personal'})[lang]}</summary><p>{({en:'Would you like to explore these remaining topics at your own pace in Daybook?',ru:'Хотите исследовать оставшиеся темы самостоятельно в своём Daybook?',es:'¿Quieres explorar estos temas pendientes a tu ritmo en Daybook?'})[lang]}</p><ul>{clarityHomeworkCandidates(insightResult,insightRows).map(row=><li key={row.id}>{row.question}</li>)}</ul><label><input type="checkbox" checked={clarityHomeworkAccepted} onChange={event=>setClarityHomeworkAccepted(event.target.checked)} disabled={protocolSaved||protocolSaving||protocolSaveLocked}/>{({en:'Add this optional practice to day 1',ru:'Добавить эту практику в первый день',es:'Añadir esta práctica opcional al día 1'})[lang]}</label></details>}
         {insightOverview?<details><summary>{({en:'Session protocol',ru:'Протокол сессии',es:'Protocolo de sesión'})[lang]}</summary><section className={styles.protocolReview} data-coach-insight-overview>
           <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:0}}>{insightOverview}</p>
         </section></details>:<p>{({en:'No structured checkpoints available yet.',ru:'Структурированные контрольные точки пока недоступны.',es:'Aún no hay puntos estructurados disponibles.'})[lang]}</p>}
@@ -2617,6 +2641,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <button type="button" data-coach-edit-result disabled={protocolSaved||protocolSaving||protocolSaveLocked} onClick={()=>setProtocolEditing(value=>!value)}>{protocolEditing?({en:'Done',ru:'Готово',es:'Listo'})[lang]:({en:'Edit',ru:'Редактировать',es:'Editar'})[lang]}</button>
           <button type="button" data-coach-close-protocol disabled={protocolSaving||(protocolSaveLocked&&!protocolSaved)} onClick={closeProtocolToRating}>{protocolSaved?protocolUi.close:({en:'Cancel',ru:'Отменить',es:'Cancelar'})[lang]}</button>
         </div>
+        {protocolSaved&&clarityCourseDay(selectedCourseId)&&<Link href={clarityReturnHref(lang,clarityCourseDay(selectedCourseId))} data-clarity-return>{({en:'Return to course day',ru:'Вернуться в день курса',es:'Volver al día del curso'})[lang]}</Link>}
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
         {!protocolOwnerReady&&<p role="status">{({ru:'Сохранение в аккаунт недоступно: аккаунт не подтверждён до начала беседы. PDF доступен.',en:'Account saving is unavailable because the account was not verified before the conversation. PDF is available.',es:'No se puede guardar en la cuenta porque no se verificó antes del diálogo. El PDF está disponible.'})[lang]}</p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
