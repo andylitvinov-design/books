@@ -30,7 +30,8 @@ test('four localized public program routes have exact complete outlines and sepa
  assert.deepEqual(getProgramOverview('ru','goal').rows.map(row=>row[0]),[
   'Найти свою цель','Зажечь свою мечту','Построить путь к цели','Открыть свою силу','Снять внутренние препятствия','Открыть новые возможности','Ускорить движение к цели','Итоги и новые перспективы'
  ])
- assert.match(getProgramOverview('ru','clarity').intro,/Бесплатное знакомство/)
+ assert.match(getProgramOverview('ru','clarity').intro,/Три бесплатных дня/)
+ for(const locale of PROGRAM_LOCALES)assert.equal(getProgramOverview(locale,'clarity').rows.length,3)
 })
 test('home program controls open public detail pages, composer and real Daybook entry are retained',()=>{
  const home=read('components/home-dialogue-entry.tsx')

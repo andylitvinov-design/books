@@ -352,12 +352,13 @@ await import('./app-telegram-oidc-login.test.mjs')
 test('Commander owner login check always ends and exposes a retry action when auth provider is slow', async () => {
   const source = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
   const page = await readFile(new URL('../public/commander-connect.html', import.meta.url), 'utf8')
-  assert.ok(page.includes('commander-connect.js?v=20261109-owner-timeout-v1'))
+  assert.ok(page.includes('commander-connect.js?v=20261125-director-single-sso-v1'))
   assert.match(source, /fetchWithTimeout/)
   assert.match(source, /8000, 'Проверка сессии'/)
   assert.match(source, /10000, 'Проверка владельца'/)
   assert.match(source, /12000, 'Google-вход'/)
-  assert.match(source, /showAction\(String\(error\.message \|\| error\) \+ ' Войдите повторно через Google\.'/)
+  assert.match(source, /Повторите проверку существующей сессии\./)
+  assert.match(source, /response\.status !== 401/)
   assert.match(source, /Повторить проверку/)
   assert.match(source, /button\.addEventListener\('click'/)
   assert.doesNotMatch(source, /addEventListener\('click', startGoogle, \{ once: true \}\)/)
@@ -377,7 +378,7 @@ test('Commander login document is rewritten through the nonce-aware page under s
   assert.ok(page.includes("const requestHeaders = await headers()"))
   assert.ok(page.includes("requestHeaders.get('x-nonce')"))
   assert.ok(page.includes("nonce={nonce}"))
-  assert.ok(page.includes('/commander-connect.js?v=20261109-owner-csp-nonce-v2'))
+  assert.ok(page.includes('/commander-connect.js?v=20261125-director-single-sso-v1'))
 })
 
 
@@ -408,4 +409,45 @@ test('Commander owner handoff accepts 12-character provider refresh tokens witho
   assert.match(client, /method: 'POST'/)
   assert.match(client, /credentials: 'same-origin'/)
   assert.match(client, /target\.hash = new URLSearchParams/)
+})
+
+
+test('Tasks handoff reuses the verified Holistic House login and returns only to trusted Director', async () => {
+  const { runInNewContext } = await import('node:vm')
+  const source = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
+  async function simulate(next, sessionStatus, sessionData) {
+    const calls = [], redirects = [], store = new Map(), status = {}, button = { hidden: true, addEventListener() {} }
+    runInNewContext(source, {
+      URL, URLSearchParams, AbortController, setTimeout, clearTimeout,
+      document: { getElementById: id => id === 'status' ? status : button },
+      location: { search: '?next=' + encodeURIComponent(next), replace: url => redirects.push(url) },
+      sessionStorage: { getItem: key => store.get(key), setItem: (key, value) => store.set(key, value), removeItem: key => store.delete(key) },
+      fetch: async (url) => {
+        calls.push(url)
+        if (url === '/api/app/session') return { ok: sessionStatus === 200, status: sessionStatus, json: async () => sessionData }
+        return { ok: true, status: 200, json: async () => ({ owner: true, privateStoreConfigured: true, accessToken: 'a'.repeat(128), refreshToken: 'r'.repeat(24) }) }
+      },
+    })
+    await new Promise(resolve => setImmediate(resolve))
+    return { calls, redirects, store, button }
+  }
+  const valid = await simulate('/project-management-public.html', 200, { authenticated: true })
+  assert.deepEqual(valid.calls, ['/api/app/session', '/api/app/commander/session'])
+  assert.equal(valid.redirects.length, 1)
+  const target = new URL(valid.redirects[0])
+  assert.equal(target.origin, 'https://holistic-house-agents-director.vercel.app')
+  assert.equal(target.pathname, '/commander-auth.html')
+  assert.equal(target.searchParams.get('next'), '/project-management-public.html')
+  assert.equal(target.searchParams.has('token'), false)
+  assert.equal(new URLSearchParams(target.hash.slice(1)).get('refresh_token'), 'r'.repeat(24))
+  assert.equal(valid.store.size, 0)
+  assert.equal(valid.button.hidden, true)
+  const guest = await simulate('/project-management-public.html', 401, {})
+  assert.equal(guest.redirects.length, 0)
+  assert.equal(guest.button.textContent, 'Продолжить через Google')
+  const outage = await simulate('/project-management-public.html', 503, {})
+  assert.equal(outage.redirects.length, 0)
+  assert.equal(outage.button.textContent, 'Повторить проверку')
+  const forged = await simulate('https://evil.example/project-management-public.html', 200, { authenticated: true })
+  assert.equal(new URL(forged.redirects[0]).origin, 'https://holistic-house-pr-monitor.vercel.app')
 })

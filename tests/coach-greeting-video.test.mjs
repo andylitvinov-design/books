@@ -52,7 +52,13 @@ test('verified-account coaching archives automatically from the existing start a
   assert.match(session, /const saveToAccount=Boolean\(protocolOwnerRef.current\)/)
   assert.match(session, /autoSaveRef.current=saveToAccount/)
   assert.match(session, /setAutoSaveEnabled\(saveToAccount\)/)
-  assert.match(session, /if\(!await saveProtocol\(\)\)return/)
+  // Private draft checkpointing starts automatically, but the final report
+  // is promoted only by explicit Save; Cancel must not finalize it.
+  assert.match(session, /onClick=\{saveProtocol\}/)
+  const cancel=session.slice(session.indexOf('async function closeProtocolToRating()'),session.indexOf('async function submitSessionRating()'))
+  assert.match(cancel,/if\(protocolSaving\|\|\(protocolSaveLocked&&!protocolSaved\)\)return/)
+  assert.match(cancel,/if\(!protocolSaved\)\{[\s\S]*?resumeFromProtocol\(\)[\s\S]*?return/)
+  assert.doesNotMatch(cancel,/\bsaveProtocol\s*\(/)
   assert.match(session, /X-HH-Account-ID/)
   assert.match(session, /setGeminiLiveConsent\(false\);setGeminiConsent\(false\)/)
 })
