@@ -1,3 +1,4 @@
+import ClaritySemanticResult from './clarity-semantic-result'
 // Projection only: a report shows existing reviewed evidence, never invents scores.
 const COPY={
  en:{result:'Session result',partial:'Partial result — open or unverified checkpoints remain',verified:'Verified',reviewed:'Reviewed by you',skipped:'Skipped',missing:'Not explored',current:'Current',desired:'Desired',takeaway:'My takeaway',step:'Next step',empty:'No structured result recorded yet'},
@@ -43,6 +44,7 @@ export default function MyCoachResultPreview({locale='en',courseSessionId,title,
  return <section data-coach-result-preview style={{display:'grid',gap:10,overflowWrap:'anywhere'}}>
   <h3 style={{margin:0}}>{activeProfile?.title||label[courseSessionId]?.[lang]||title||t.result}</h3>
   {partial&&<small role="status">{t.partial}</small>}
+  {['clarity_day_1','clarity_day_2','clarity_day_3'].includes(courseSessionId)&&<ClaritySemanticResult day={Number(courseSessionId.slice(-1))} rows={rows} locale={lang}/>}
   {activeProfile&&<><Wheel profile={activeProfile}/><ol style={{margin:0,paddingInlineStart:20}}>{activeProfile.rows.map(row=><li key={row.id}><strong>{row.label}</strong> — {t.current}: <Rating field={row.current} t={t}/>{(row.priority||activeProfile.track==='inner'||isScore(row.desired))&&<> · {t.desired}: <Rating field={row.desired} t={t}/></>}</li>)}</ol></>}
   {rows.length>0&&<dl style={{margin:0,display:'grid',gap:8}}>{rows.map(row=><div key={row.id}><dt><strong>{row.label}</strong></dt><dd style={{margin:0}}>{isReviewed(row)?<>{row.quote}<br/><small>{row.source==='server_verified'?t.verified:t.reviewed}</small></>:row.status==='skipped_by_client'?t.skipped:t.missing}</dd></div>)}</dl>}
   {!activeProfile&&!rows.length&&<p>{t.empty}</p>}

@@ -4,7 +4,10 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {CLARITY_COURSE_IDS,CLARITY_COURSE_SECONDS,CLARITY_COURSE_GROUP,clarityDay,clarityCourseDay,clarityCourseId,clarityCoachHref,clarityReturnHref,clarityHomeworkRows,clarityHomeworkCandidates,clarityHomeworkTags,clarityHomeworkNotes,clarityHomeworkEntryId} from '../lib/coaching/clarity-course.mjs'
 import {clarityCourseResult,clarityResultProjection} from '../lib/coaching/clarity-course-results.mjs'
-import {coachCourseProtocolRows} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolRows,coachCourseProtocolSchema,appendCoachCourseFieldReview,coachCourseFieldReviewQuotes} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {claritySemanticResult,clarityRatingPair} from '../lib/coaching/clarity-session-fields.mjs'
+import {validClarityHomeworkAnswer} from '../lib/coaching/clarity-course.mjs'
+import {checkpointAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('three localized course days and bounded duration',()=>{
  assert.equal(CLARITY_COURSE_SECONDS,1200)
@@ -32,15 +35,15 @@ test('homework requires a matching server clock, reviewed ending and separate ac
  const opening={completed:true,declined:false,checkmarks:{confirmation:true},confirmedQuote:'Yes'}
  const record={id:'00000000-0000-4000-8000-000000000001',courseSessionId:'clarity_day_1',provenance:'client_reviewed_dialogue',savedAt:'2026-11-26T12:00:00Z',turns:[],clientSummary:'Reflection',clientNextStep:'Next',durationSeconds:1200,opening}
  for(const locale of ['en','ru','es']){
-  assert.equal(coachCourseProtocolRows(record.courseSessionId,[],null,locale).length,5)
+  assert.equal(coachCourseProtocolRows(record.courseSessionId,[],null,locale).length,10)
   assert.deepEqual(clarityCourseResult(record,locale).homework,[])
   const timed={...record,clarityTimeLimitReached:true}
-  assert.equal(clarityHomeworkCandidates(timed,coachCourseProtocolRows(record.courseSessionId,[],null,locale)).length,5)
+  assert.equal(clarityHomeworkCandidates(timed,coachCourseProtocolRows(record.courseSessionId,[],null,locale)).length,10)
   assert.deepEqual(clarityCourseResult(timed,locale).homework,[])
   assert.deepEqual(clarityCourseResult({...timed,clarityHomeworkAccepted:true},locale).homework,[])
   const result=clarityCourseResult({...timed,clarityHomeworkAccepted:true},locale,{clock})
   assert.equal(result.day,1);assert.equal(result.summary,'Reflection')
-  assert.equal(result.homework.length,5);assert.ok(result.homework.every(r=>r.question))
+  assert.equal(result.homework.length,10);assert.ok(result.homework.every(r=>r.question))
  }
  const accepted={...record,clarityTimeLimitReached:true,clarityHomeworkAccepted:true}
  assert.equal(clarityCourseResult({...record,courseSessionId:'clarity_support'}),null)
@@ -49,8 +52,8 @@ test('homework requires a matching server clock, reviewed ending and separate ac
  for(const bad of [{clarityTimeLimitReached:false},{durationSeconds:1199},{opening:null},{opening:{...opening,completed:false}},{courseSessionId:'clarity_day_2'},{clarityHomeworkAccepted:false},{turns:[{role:'assistant',mode:'safety'}]}]){
   assert.deepEqual(clarityCourseResult({...accepted,...bad},'en',{clock}).homework,[])
  }
- const rows=[['request','not_explored'],['life_balance','needs_confirmation'],['needs','confirmed'],['strengths','skipped_by_client'],['symptoms','not_explored']].map(([id,status])=>({id,status,label:'L',question:'Q'}))
- assert.deepEqual(clarityHomeworkRows(accepted,rows,clock).map(r=>r.id),['request','life_balance'])
+ const rows=[['request','not_explored'],['outer_body_health','needs_confirmation'],['needs','confirmed'],['strengths','skipped_by_client'],['symptoms','not_explored']].map(([id,status])=>({id,status,label:'L',question:'Q'}))
+ assert.deepEqual(clarityHomeworkRows(accepted,rows,clock).map(r=>r.id),['request','outer_body_health'])
  assert.deepEqual(clarityHomeworkRows(accepted,rows),[])
  assert.deepEqual(clarityHomeworkRows({...accepted,id:'00000000-0000-4000-8000-000000000009'},rows,clock),[])
  assert.deepEqual(clarityHomeworkRows({...accepted,clarityHomeworkAccepted:false},rows,clock),[])
@@ -123,9 +126,55 @@ test('every Clarity day uses the exact schema and matching trusted time-limit pr
   for(let dt=10000;dt<=1200000;dt+=10000)clock=advanceClarityCourseClock(clock,{...event,type:'observe',expectedRevision:clock.revision,atMs:start+dt,evidence:'server_observed_connected'})
   for(const locale of ['en','ru','es']){
    const result=clarityCourseResult(record,locale,{clock})
-   assert.equal(result.rows.length,day===1?5:6)
+   assert.equal(result.rows.length,[10,13,8][day-1])
    assert.deepEqual(result.homework.map(x=>x.id),result.rows.map(x=>x.id))
    assert.ok(result.homework.every(x=>x.question&&clarityHomeworkTags(protocolId,x.id)))
   }
  }
+})
+
+test('canonical axes, exact bound score pairs, legacy review and living semantic results',()=>{
+ for(const locale of ['en','ru','es']){
+  const a=coachCourseProtocolSchema('clarity_day_1',locale),b=coachCourseProtocolSchema('clarity_day_2',locale),c=coachCourseProtocolSchema('clarity_day_3',locale)
+  assert.equal(a.checkpoints.filter(x=>x.id.startsWith('outer_')).length,8)
+  assert.equal(b.checkpoints.filter(x=>x.id.startsWith('inner_')).length,8)
+  assert.ok(c.checkpoints.some(x=>x.id==='dream_image'));assert.ok(c.checkpoints.some(x=>x.id==='why'))
+  assert.equal(new Set(a.checkpoints.map(x=>x.question)).size,10)
+  assert.equal(new Set(b.checkpoints.map(x=>x.question)).size,13)
+ }
+ const course='clarity_day_1',schema=coachCourseProtocolSchema(course,'ru'),field='outer_body_health'
+ const question=schema.checkpoints.find(x=>x.id===field).question
+ const turns=[{role:'assistant',content:question},{role:'user',content:'0/8'}]
+ assert.deepEqual(clarityRatingPair(field,'0/8'),{current:0,desired:8})
+ assert.deepEqual(clarityRatingPair(field,'сейчас пять, хочу девять'),{current:5,desired:9})
+ for(const invalid of ['','да','7','11/8','-1/8','в 2026 году 5 и 7','6.5/8','пропустим']){assert.equal(clarityRatingPair(field,invalid),null);assert.equal(checkpointAnswerMismatch(field,invalid),true)}
+ assert.equal(coachCourseFieldReviewQuotes(course,'outer_finance',turns).length,0)
+ assert.equal(coachCourseFieldReviewQuotes(course,field,turns).length,1)
+ assert.throws(()=>appendCoachCourseFieldReview(null,course,turns,'outer_finance','turn:1'))
+ const review=appendCoachCourseFieldReview(null,course,turns,field,'turn:1')
+ const rows=coachCourseProtocolRows(course,turns,review,'ru')
+ const before=claritySemanticResult(1,rows,'ru')
+ assert.equal(before.axes[0].current,0);assert.equal(before.axes[0].desired,8)
+ assert.equal(before.axes[1].current,null)
+ const report={id:'00000000-0000-4000-8000-000000000001',rows,homework:rows.filter(x=>x.status==='not_explored')}
+ const independent='outer_finance',note={kind:'note',revision:1,goalId:null,text:'3/9',tags:clarityHomeworkTags(report.id,independent)}
+ const view=entries=>clarityResultProjection(report,entries,{journalComplete:true})
+ assert.equal(view([note]).homeworkDone,1)
+ const after=claritySemanticResult(1,view([note]).rows,'ru')
+ assert.equal(after.axes.find(x=>x.id===independent).current,3)
+ assert.equal(after.axes.find(x=>x.id===independent).source,'daybook')
+ assert.equal(after.axes[0].current,0)
+ assert.equal(view([{...note,text:'not sure'}]).homeworkDone,0)
+ assert.equal(view([{...note,text:'not sure'}]).rows.find(x=>x.id===independent).homeworkState,'invalid')
+ assert.equal(claritySemanticResult(1,view([]).rows,'ru').axes.find(x=>x.id===independent).current,null)
+ const oldTurns=[{role:'user',content:'My earlier general balance answer'}]
+ const legacy=appendCoachCourseFieldReview(null,course,oldTurns,'life_balance','turn:0')
+ const oldRows=coachCourseProtocolRows(course,oldTurns,legacy,'en')
+ assert.equal(oldRows.find(x=>x.id==='life_balance').archived,true)
+ assert.equal(clarityResultProjection({id:report.id,rows:oldRows,homework:[]},[],{journalComplete:true}).total,10)
+ assert.equal(claritySemanticResult(2,[{id:'inner_anchor',status:'self_reported',quote:'5/9',source:'daybook'}]).axes[0].current,5)
+ const dream=claritySemanticResult(3,[{id:'dream_image',status:'confirmed',quote:'A creative life',source:'client_reviewed_quote'},{id:'goal',status:'self_reported',quote:'Make a studio',source:'daybook'}])
+ assert.equal(dream.dream.value,'A creative life');assert.equal(dream.nodes[0].value,'Make a studio');assert.equal(dream.nodes[1].value,null)
+ assert.equal(validClarityHomeworkAnswer('goal','yes'),false)
+ assert.equal(validClarityHomeworkAnswer('goal','Build a studio'),true)
 })

@@ -1,7 +1,8 @@
 'use client'
-import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId} from '@/lib/coaching/clarity-course.mjs'
+import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId,validClarityHomeworkAnswer} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
+import {clarityRatingDefinition,clarityRatingPair} from '@/lib/coaching/clarity-session-fields.mjs'
 import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
@@ -192,15 +193,21 @@ export function ClarityDetails({locale='en'}){
 function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homework}){
  const t=COPY[locale]
  const [text,setText]=useState(entry?.text||''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
+ const rating=homework&&clarityRatingDefinition(homework.row.id)
+ const [current,setCurrent]=useState(()=>rating?String(clarityRatingPair(homework.row.id,entry?.text)?.current??''):'')
+ const [desired,setDesired]=useState(()=>rating?String(clarityRatingPair(homework.row.id,entry?.text)?.desired??''):'')
+ const answer=rating?(current!==''&&desired!==''?current+'/'+desired:''):text.trim()
+ const valid=homework?validClarityHomeworkAnswer(homework.row.id,answer):Boolean(answer)
+ const labels=({ru:{current:'Сейчас',desired:'Желаемое',select:'Выберите 0–10',invalid:'Уточните ответ на этот вопрос.'},en:{current:'Current',desired:'Desired',select:'Choose 0–10',invalid:'Please clarify your answer to this question.'},es:{current:'Actual',desired:'Deseado',select:'Elige 0–10',invalid:'Aclara tu respuesta a esta pregunta.'}})[locale]
  const saver=useRef(null),draft=useRef(null),alive=useRef(true),inFlight=useRef(false)
  useEffect(()=>{alive.current=true;saver.current=createJournalSaver(appFetch,accountId);return()=>{alive.current=false;saver.current?.discard()}},[accountId])
  async function save(){
-  if(inFlight.current||!saver.current||!text.trim())return
+  if(inFlight.current||!saver.current||!valid)return
   inFlight.current=true;setBusy(true)
   try{
    if(!draft.current){
     const timezone=entry?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone
-    draft.current={id:entry?.id||(homework?await clarityHomeworkEntryId(accountId,homework.reportId,homework.row.id):crypto.randomUUID()),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||(homework?clarityHomeworkTags(homework.reportId,homework.row.id):[clarityDayTag(day)]),kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
+    draft.current={id:entry?.id||(homework?await clarityHomeworkEntryId(accountId,homework.reportId,homework.row.id):crypto.randomUUID()),revision:entry?.revision||0,text:answer,tags:entry?.tags||(homework?clarityHomeworkTags(homework.reportId,homework.row.id):[clarityDayTag(day)]),kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
    }
    const saved=await saver.current.save(draft.current)
    if(!alive.current)return
@@ -212,10 +219,11 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  <label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
-  {entry&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
+  {rating?<fieldset disabled={busy||failed} style={{border:0,padding:0,margin:0}}><legend>{homework.row.question}</legend><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[[labels.current,current,setCurrent],[labels.desired,desired,setDesired]].map(([label,value,change])=><label key={label}>{label}<select value={value} onChange={e=>change(e.target.value)} style={{width:'100%',minHeight:44}}><option value="">{labels.select}</option>{Array.from({length:11},(_,i)=><option key={i} value={i}>{i}</option>)}</select></label>)}</div></fieldset>:<label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={homework?1200:20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>}
+  {entry&&(!homework||validClarityHomeworkAnswer(homework.row.id,entry.text))&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
+  {homework&&answer&&!valid&&<p role="status">{labels.invalid}</p>}
   {failed&&<p role="alert">{t.error}</p>}
-  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
+  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!valid||(!failed&&entry?.text===answer)}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
  </div>
 }
 export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
