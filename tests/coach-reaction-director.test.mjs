@@ -238,3 +238,15 @@ test('hard safety hold overrides a queued celebration immediately',()=>{
  player.update(coachReactionIntent({phase:'speaking',stage:'safety'}),true)
  assert.equal(visible(),null);assert.equal(player.snapshot().queued,null);player.dispose()
 })
+
+
+test('shared personality empathy veto prevents cheerful reaction to explicit shame, anger, exhaustion or mixed progress',()=>{
+ for(const text of ["I feel ashamed.","I am furious.","I feel drained.","Мне стыдно.","Я злюсь.","Я выжат.","Me da vergüenza.","Estoy enojado.","Me siento agotado.","I did it, but I feel ashamed.","Я справился, но мне стыдно.","Lo logré, pero estoy enojado."]){
+  assert.equal(classifyClientReactionText(text),'distress',text)
+  const intent=coachReactionIntent({phase:'speaking',coachScene:'encourage',clientText:text})
+  assert.equal(intent.kind,'empathy',text)
+  assert.equal(chooseCoachReaction('harry',intent,['HAR-02','HAR-01']),null)
+ }
+ for(const text of ["If I did it?","Maybe I did it.","She said I did it.","I never said I did it.","Я думал, что у меня получилось.","Может быть, я справился.","Она сказала: «Я справилась».","Quizá lo logré.","Si yo lo logré.","Dijo que lo logré."])assert.notEqual(classifyClientReactionText(text),'progress',text)
+ for(const text of ["I did it","Я справился","Lo logré","У меня получилось","I made it"])assert.equal(classifyClientReactionText(text),'progress',text)
+})
