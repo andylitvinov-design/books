@@ -38,8 +38,8 @@ test('Free Live cannot use Paid key or be enabled without all the privacy gates'
  assert.equal(geminiFreeLiveConfig(free).model,GEMINI_FREE_LIVE_MODEL)
  assert.equal(GEMINI_FREE_LIVE_MAX_SECONDS,1200)
 })
-test('all eleven personas, four locked voices, RU/EN/ES and separate audio-training consent',()=>{
- assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,11)
+test('all twelve personas, locked voice candidates, RU/EN/ES and separate audio-training consent',()=>{
+ assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,12)
  for(const personaId of Object.keys(GEMINI_COACH_VOICE_OPTIONS))
  for(const locale of ['ru','en','es'])
  for(const voiceName of GEMINI_COACH_VOICE_OPTIONS[personaId]){
