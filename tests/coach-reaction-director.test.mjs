@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,coachReactionIntent,chooseCoachReaction,coachReactionCanStart,COACH_REACTION_PROFILES,coachExplicitFarewell} from '../lib/coaching/coach-reaction-director.mjs'
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
-import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING} from '../lib/coaching/coach-reaction-v4-registry.mjs'
+import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED} from '../lib/coaching/coach-reaction-v4-release.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
@@ -280,10 +280,10 @@ test('presentation contexts use a stable source independent of greeting audio an
  assert.ok(motion.includes('const src=presentationActive?(activePresentation?.src||null):legacySrc'))
  assert.ok(motion.includes('[presentationActive,personaId]'))
  assert.ok(motion.includes('data-coach-presentation-video src={src} poster={poster} muted loop={!openingActive} playsInline autoPlay={shouldPlay}'))
- assert.ok(motion.includes('presentationActive?((shouldPlay||keepHarryVideo)&&<video'))
+ assert.ok(motion.includes('presentationActive?((shouldPlay||keepOriginalVideo)&&<video'))
  assert.ok(motion.includes('onLoadedMetadata={event=>validatePresentation(event.currentTarget)}'))
  assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
- assert.ok(motion.includes('activePresentation?.poster||framePoster'))
+ assert.ok(motion.includes('activePresentation?.poster||(presentationActive?opening?.poster:null)||framePoster'))
  assert.ok(motion.includes('},[shouldPlay,src])'))
 })
 
@@ -305,14 +305,46 @@ test('Harry plays only the exact original greeting once then the calm primary lo
  const opening=coachPresentationOpening('harry',loop)
  assert.equal(opening,HARRY_PRESENTATION_OPENING)
  assert.match(opening.src,/harry-greeting-real-v2\.mp4$/)
- assert.ok(coachPresentationMetadataMatches(opening,{videoWidth:768,videoHeight:1344,duration:124/24}))
- assert.equal(coachPresentationOpening('harry',null),null)
- assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),null)
- assert.equal(coachPresentationOpening('mira',loop),null)
+ assert.ok(coachPresentationMetadataMatches(opening,{videoWidth:768,videoHeight:1344,duration:5.25}))
+ assert.equal(coachPresentationOpening('harry',null),opening)
+ assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),opening)
+ assert.equal(coachPresentationOpening('mira',loop),COACH_ORIGINAL_OPENINGS.mira)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('openingActive?opening:presentation'))
  assert.ok(source.includes('onEnded={finishPresentationOpening}'))
  assert.ok(source.includes('loop={!openingActive}'))
- assert.ok(source.includes('keepHarryVideo'))
+ assert.ok(source.includes('keepOriginalVideo'))
  assert.ok(source.includes('[personaId,presentationActive]'))
+})
+
+
+test('all public personas have protected original or explicit neutral-only/still policy; immutable original bytes',()=>{
+ const coaches=['mira','max','sofia','alex','merlin','harry','genie','caesar']
+ const pinned=['mira','max','sofia','alex','merlin','harry']
+ assert.deepEqual(Object.keys(COACH_ORIGINAL_OPENINGS),pinned)
+ const blob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ for(const coach of coaches){
+  const original=coachPresentationOpening(coach)
+  const presence=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  if(pinned.includes(coach)){
+   assert.ok(Object.isFrozen(original))
+   for(const [path,hash] of [[original.src,original.videoBlob],[original.poster,original.posterBlob]]){
+    const bytes=readFileSync(new URL('../public'+path,import.meta.url))
+    assert.equal(blob(bytes),hash,coach+' protected original replaced')
+   }
+   assert.ok(coachPresentationMetadataMatches(original,{videoWidth:original.width,videoHeight:original.height,duration:5.25}))
+  }else assert.equal(original,null)
+  if(coach==='caesar'){assert.equal(presence,null);continue}
+  assert.equal(presence.id,COACH_PROTECTED_PRESENCE[coach].id)
+  assert.equal(protectedCoachPresence(coach,[]),null)
+  assert.doesNotMatch(presence.id,/HAR-02|HAR-03|MER-01|SAM-03/)
+ }
+ assert.equal(protectedCoachPresence('merlin',['primary:merlin']),null)
+ assert.equal(protectedCoachPresence('harry',['alternate:harry']),null)
+ assert.equal(coachPresentationOpening('unknown'),null)
+ const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
+ assert.ok(source.includes('presentationActive?coachPresentationOpening(personaId):null'))
+ assert.ok(source.includes('openingDone!==personaId'))
+ assert.ok(source.includes('setOpeningDone(personaId)'))
 })
