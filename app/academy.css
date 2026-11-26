@@ -5138,6 +5138,7 @@
   border: 1px solid #d8c9b5;
   background: #fffaf3;
 }
+.yggdrasil-school-story__item--text-only { grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .yggdrasil-school-story__item:nth-child(even) .yggdrasil-source-visual { order: 2; }
 .yggdrasil-school-story__item .yggdrasil-source-visual { min-height: 250px; background-position: center; }
 .yggdrasil-school-story__copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(20px, 3.5vw, 34px); }
