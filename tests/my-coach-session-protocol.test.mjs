@@ -648,3 +648,45 @@ test('server thematic draft adapter binds typed prompts, retains reviewed quote 
  assert.equal(coachCourseGateRetry(previous,{revision:0}),false)
  assert.throws(()=>coachCourseGateTransition(previous,{action:'course-gate-answer',id:protocol.id,revision:1,consent:true,requestId:'bad',promptId:'other',content:'да'},new Date().toISOString()))
 })
+
+import {coachOpeningProgress,coachOpeningProtocolSnapshot} from '../lib/coaching/coach-opening-protocol.mjs'
+import {courseGateVoiceDecision} from '../lib/coaching/coach-course-gate-voice.mjs'
+test('all eight coaches and three languages: real opening, server-issued field, explicit confirmation, durable revision, skip and correction',()=>{
+ const fixtures={ru:{history:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],answer:'работа',yes:'да',ambiguous:'да, но нет',skip:'пропустить вопрос'},
+  en:{history:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],answer:'work',yes:'yes',ambiguous:'yes, but no',skip:'skip this question'},
+  es:{history:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí'],answer:'trabajo',yes:'sí',ambiguous:'sí, pero no',skip:'omitir la pregunta'}}
+ for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const [locale,f] of Object.entries(fixtures)){
+  const opening=coachOpeningProgress({turns:f.history,locale,personaId})
+  assert.equal(opening.completed,true)
+  const course='goal_result'
+  let value={courseSessionId:course,revision:1,protocol:{...sample(),personaId,locale,courseSessionId:course,turnLayout:'chronological',
+   opening:coachOpeningProtocolSnapshot(opening),turns:f.history.map(content=>({role:'user',content}))}}
+  let n=0
+  const request=(action,extra={})=>({action,id:value.protocol.id,revision:value.revision,consent:true,requestId:'00000000-0000-4000-8000-'+String(++n).padStart(12,'0'),...extra})
+  const step=(action,extra={})=>{const input=request(action,extra);const old=value;
+   const next=coachCourseGateTransition(value,input,'2026-11-26T18:12:00.000Z');
+   value={...value,...next,revision:value.revision+1};assert.equal(coachCourseGateRetry(value,input),true);assert.equal(coachCourseGateRetry(old,input),false);return coachCourseGateView(value)}
+  let view=step('course-gate-start'),first=view.prompt.fieldId
+  const answer=content=>step('course-gate-answer',{promptId:view.prompt.id,content})
+  assert.equal(view.acceptedCount,0)
+  assert.throws(()=>coachCourseGateTransition(value,request('course-gate-answer',{promptId:'stale',content:f.yes}),'2026-11-26T18:12:00.000Z'))
+  view=answer(f.answer);assert.equal(view.prompt.kind,'confirm');assert.equal(view.review,null)
+  view=answer(f.ambiguous);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0)
+  view=answer(f.answer);view=answer(f.yes)
+  assert.notEqual(view.prompt.fieldId,first);assert.equal(view.acceptedCount,1);assert.equal(view.review.events[0].quote,f.answer)
+  assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}),true)
+  assert.equal(coachCourseGateArchiveMatches(value,value.protocol),false)
+  view=answer(f.skip);assert.equal(view.acceptedCount,2);assert.equal(view.review.events.at(-1).status,'skipped_by_client')
+  view=step('course-gate-correct',{fieldId:first});assert.equal(view.prompt.fieldId,first);assert.equal(view.review.events.at(-1).status,'not_explored');assert.equal(view.acceptedCount,1)
+ }
+})
+test('course gate voice ignores stale/partial/failed recognition and never auto-submits low confidence',()=>{
+ const base={promptId:'p1',currentPromptId:'p1',final:true,text:'да',confidence:.98}
+ assert.deepEqual(courseGateVoiceDecision(base),{action:'submit',text:'да'})
+ assert.equal(courseGateVoiceDecision({...base,confidence:.4}).action,'review')
+ assert.equal(courseGateVoiceDecision({...base,confidence:undefined}).action,'review')
+ assert.equal(courseGateVoiceDecision({...base,currentPromptId:'p2'}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,final:false}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,failed:true}).action,'ignore')
+ assert.equal(courseGateVoiceDecision({...base,text:'github_pat_secret'}).action,'ignore')
+})
