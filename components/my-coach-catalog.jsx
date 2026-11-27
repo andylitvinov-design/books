@@ -409,9 +409,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
             {selected.id === 'mira' && !safeMethod
-              ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
-              : <a className={heroStyles.talkButton} href={startHref}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
+              ? <MyCoachExpressStart locale={lang} href={startHref} embedded data-my-coach-hero-start={selected.id} />
+              : <MyCoachExpressStart locale={lang} className={heroStyles.talkButton} href={startHref}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></MyCoachExpressStart>}
           </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
             <div className={heroStyles.programActions}>
@@ -463,7 +463,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={heroStyles.benefitTiles}>
           <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
-          <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
+          <MyCoachExpressStart locale={lang} className="" href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></MyCoachExpressStart>
         </div>
         </>}
       </section>
@@ -602,9 +602,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
-                  <a className={styles.cardButton}
+                  <MyCoachExpressStart locale={lang} className={styles.cardButton}
                     href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}>
-                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
+                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></MyCoachExpressStart>
                 </div>
               </div>
               <button type="button" className={styles.heart}
@@ -673,8 +673,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={styles.preview}>
           <span>{t.preview}</span><p>{followupPreview}</p>
         </div>
-        <a className={styles.primary} href={startHref}
-          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></a>
+        <MyCoachExpressStart locale={lang} className={styles.primary} href={startHref}
+          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></MyCoachExpressStart>
         <p className={styles.sessionNote}>{t.sessionNote}</p>
         <p className={styles.privacy}>{t.privacy}</p>
       </section>

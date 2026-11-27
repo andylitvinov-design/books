@@ -1,11 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useGooglePageAction } from "./use-google-page-action";
 import { ReikiJoinDialog } from "./reiki-join-dialog";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
-import { appFetch } from "@/lib/app/client-fetch";
-import { isNativeHolisticHouse } from "@/lib/native/client";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./principles-of-energywork.module.css";
 
@@ -23,67 +21,18 @@ export function ReikiDaybookStart({ locale, className }: { locale: PublicLocale;
   const t = copy[locale] || copy.en;
   const language = locale === "ru" ? "ru" : "en";
   const destination = reikiLandingPath(language) + "/daybook";
-  const pending = useRef(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
-  const [joinOpen, setJoinOpen] = useState(false);
-  async function begin() {
-    if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    setError(false);
-    try {
-      try {
-        // A verified existing account must not be asked to register again.
-        await appFetch("bootstrap?view=portrait");
-        window.location.assign(destination);
-        return;
-      } catch (failure: unknown) {
-        if ((failure as { status?: number })?.status !== 401) throw failure;
-      }
-      // Only a verified 401 opens the user-invoked sign-in dialog.
-      setJoinOpen(true);
-    } catch {
-      setError(true);
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
-  async function signIn() {
-    if (pending.current || !joinOpen) return;
-    pending.current = true;
-    setBusy(true);
-    setError(false);
-    try {
-      const native = isNativeHolisticHouse();
-      const response = await appFetch("auth/start", {
-        locale: language, continueTo: "energywork-daybook", ...(native ? { native: true } : {}),
-        reikiRegistration: locale,
-      }, "POST");
-      if (!response?.redirectUrl || new URL(response.redirectUrl).protocol !== "https:") {
-        throw new Error("BAD_OAUTH_URL");
-      }
-      if (native) {
-        const { Browser } = await import("@capacitor/browser");
-        await Browser.open({ url: response.redirectUrl });
-      } else {
-        window.location.assign(response.redirectUrl);
-      }
-    } catch {
-      setError(true);
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
+  const {busy,error,open:joinOpen,begin,signIn,dismiss} = useGooglePageAction({
+    locale: language, continuation: "energywork-daybook", kind: "reiki",
+    check: "bootstrap?view=portrait", reikiRegistration: locale,
+    onAuthorized: () => window.location.assign(destination),
+  });
   return <div className={styles.reikiEntry}>
-    <button type="button" className={className || styles.primaryButton} onClick={() => void begin()} disabled={busy} data-reiki-start-free aria-busy={busy}>
+    <button type="button" className={className || styles.primaryButton} onClick={() => void begin({})} disabled={busy} data-reiki-start-free aria-busy={busy}>
       <BookOpen size={20} aria-hidden="true" />{busy ? t.wait : t.start}<ArrowRight size={19} aria-hidden="true" />
     </button>
     <small>{t.note}</small>
     {error && !joinOpen && <p role="alert" className={styles.reikiEntryError}>{t.error}</p>}
-    {joinOpen && <ReikiJoinDialog locale={locale} busy={busy} error={error ? t.error : ""} onGoogle={() => void signIn()} onDismiss={() => { if (!pending.current) { setJoinOpen(false); setError(false); } }} />}
+    {joinOpen && <ReikiJoinDialog locale={locale} busy={busy} error={error ? t.error : ""} onGoogle={() => void signIn()} onDismiss={dismiss} />}
   </div>;
 }
 
