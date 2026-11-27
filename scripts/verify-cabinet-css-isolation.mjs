@@ -35,13 +35,15 @@ try {
       assert.equal(state.cabinet, isCabinet, path + ": Cabinet content");
       assert.equal(state.cabinetStyles, isCabinet, path + ": Cabinet stylesheet");
       if (path === "/en/client") {
-        const stress = page.getByRole("button", { name: "Stress", exact: true });
-        await stress.waitFor();
-        await page.waitForTimeout(3000); // Allow the production client to hydrate.
-        assert.equal(await stress.getAttribute("aria-pressed"), "false");
-        await stress.click();
-        await page.waitForFunction(() => [...document.querySelectorAll("button")]
-          .some(button => button.textContent?.trim() === "Stress" && button.getAttribute("aria-pressed") === "true"));
+        const topic = page.locator('[data-prelogin-test-picker] section[aria-labelledby="hh-simple-topic-title"] [role="group"] button[aria-pressed]').first();
+        await topic.waitFor({ state: "visible" });
+        await page.waitForFunction(() => history.pushState.toString().includes("__NA"));
+        const initial = await topic.getAttribute("aria-pressed");
+        assert.ok(initial === "true" || initial === "false");
+        await topic.click();
+        await page.waitForFunction(expected => document.querySelector('[data-prelogin-test-picker] section[aria-labelledby="hh-simple-topic-title"] [role="group"] button[aria-pressed]')?.getAttribute("aria-pressed") === expected, initial === "true" ? "false" : "true");
+        await topic.click();
+        await page.waitForFunction(expected => document.querySelector('[data-prelogin-test-picker] section[aria-labelledby="hh-simple-topic-title"] [role="group"] button[aria-pressed]')?.getAttribute("aria-pressed") === expected, initial);
       }
       console.log(path + ": OK");
     } finally {
