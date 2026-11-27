@@ -50,3 +50,15 @@ test('unrelated component cannot consume pending action and arbitrary navigation
  assert.deepEqual(takePageAuthAction(input,b,now+2),input.action)
  assert.throws(()=>rememberPageAuthAction({...input,kind:'coach-link',action:{href:'//evil.test'}},b,now))
 })
+
+test('Clarity day survives Google continuation without allowing private run identifiers or out-of-range days',()=>{
+ const input={continuation:'my-coach-action',locale:'ru',kind:'coach-link',action:{href:'/ru/coaching/sessions?coach=genie&clarityDay=2'}}
+ const b=browser('/ru/my-coach?clarityDay=2')
+ const path=rememberPageAuthAction(input,b,now)
+ assert.equal(path,'/ru/my-coach?clarityDay=2')
+ b.location=new URL('https://holistichouse.vercel.app'+pageAuthSuccessPath(path,input.continuation,input.locale))
+ assert.deepEqual(takePageAuthAction(input,b,now+1),input.action)
+ for(const day of ['0','4','02','-1'])assert.equal(safePageAuthReturnPath('/ru/my-coach?clarityDay='+day,input.continuation,input.locale),false)
+ assert.equal(safePageAuthReturnPath('/ru/my-coach?clarityDay=1&clarityDay=2',input.continuation,input.locale),false)
+ assert.equal(safePageAuthReturnPath('/ru/my-coach?courseRunId=private',input.continuation,input.locale),false)
+})
