@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import ProfileProgramRequest from './profile-program-request'
-import { BUSINESS_SYLLABUS, BUSINESS_REPORT_ROOT, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
+import { BUSINESS_SYLLABUS, businessReportPdf, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
   Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness, Film,
@@ -86,44 +86,104 @@ const TEXT = {
 
 const CLARITY = {
   en: {
-    tab:'Clarity & Support', start:'START HERE', intro:'Find direction, restore your energy and create a clear next step.',
-    clarity:'Start Free Program', question:'Where would you like to begin?', program:'3-Step Clarity Program', programHint:'A practical path to understanding, support and your next goal.', planButton:'Get My Plan Now',
+    tab:'Express Support', start:'START HERE', intro:'Understand your situation, explore support and choose your next step.',
+    clarity:'Start Free Program', question:'Where would you like to begin?', program:'3-Step Express Program', programHint:'A practical path to understanding, support and your next goal.', planButton:'Get My Plan Now',
     needs:[['I don’t know my goal','Clarify wishes and direction'],['Low energy & health','Check body, stress and vitality'],['Emotional support','Anxiety, overwhelm, relationships'],['Need clarity','Understand your situation and next step']],
-    stages:[['Clarify Your Situation','Understand what’s happening now: needs, challenges and resources.'],['Support Your State & Energy','Restore balance, release tension and recharge your vitality.'],['Analyze & Choose Your Goal','Define a clear direction, set your goal and create a simple plan.']],
+    stages:[['Express Diagnostics','Understand your situation, needs and resources.'],['Homeopathy & Personal Support','Discuss wellbeing concerns and optional complementary support.'],['Business Constellations','Explore your goal, relationships and practical next steps.']],
     practices:'Free guided practices', freeReiki:'Free Reiki practices & learning', allTests:'Explore tests', goal:'Create a new goal', plan:'My coaching plan', consultation:'Explore personal support', personal:'Get Personal Guidance', personalHint:'Get personal guidance and recommendations', account:'My library & account', notice:'Self-reflection and wellbeing tools are not medical diagnosis or treatment. For health concerns, seek qualified medical care.'
   },
   ru: {
-    tab:'Ясность и поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Проясните ситуацию, восстановите силы и найдите свой следующий шаг.',
-    clarity:'Начать бесплатно', question:'С чего хотите начать?', program:'3 шага к ясности', programHint:'Путь к пониманию, поддержке и новой цели.', planButton:'Получить мой план',
+    tab:'Экспресс-поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Проясните ситуацию, найдите подходящую поддержку и определите следующий шаг.',
+    clarity:'Начать бесплатно', question:'С чего хотите начать?', program:'Экспресс-программа: 3 шага', programHint:'Путь к пониманию, поддержке и новой цели.', planButton:'Получить мой план',
     needs:[['Не знаю свою цель','Понять желания и направление'],['Энергия и здоровье','Тело, стресс и жизненные силы'],['Эмоциональная поддержка','Тревога, напряжение, отношения'],['Нужна ясность','Понять ситуацию и следующий шаг']],
-    stages:[['Прояснение ситуации','Понять происходящее: потребности, трудности и ресурсы.'],['Поддержка состояния и энергии','Снизить напряжение и восстановить внутренние ресурсы.'],['Анализ и выбор цели развития','Определить направление, сформулировать цель и план.']],
+    stages:[['Экспресс-диагностика','Понять ситуацию, потребности и ресурсы.'],['Гомеопатия и личная поддержка','Обсудить самочувствие и варианты дополнительной поддержки.'],['Бизнес-расстановки','Исследовать цель, связи и практические шаги.']],
     practices:'Бесплатные практики', freeReiki:'Бесплатное обучение и практики Рейки', allTests:'Все тесты', goal:'Создать новую цель', plan:'Мой план коучинга', consultation:'Подобрать личную поддержку', personal:'Персональная поддержка', personalHint:'Персональный анализ и рекомендации', account:'Мои материалы и аккаунт', notice:'Инструменты самопознания не заменяют медицинскую диагностику и лечение. При проблемах со здоровьем обратитесь к медицинскому специалисту.'
   },
   es: {
-    tab:'Claridad y apoyo', start:'EMPIEZA AQUÍ', intro:'Comprende tu situación, recupera energía y elige tu siguiente paso.',
-    clarity:'Empezar gratis', question:'¿Por dónde quieres empezar?', program:'3 pasos hacia la claridad', programHint:'Un camino hacia la comprensión, el apoyo y tu próxima meta.', planButton:'Obtener mi plan',
+    tab:'Apoyo exprés', start:'EMPIEZA AQUÍ', intro:'Comprende tu situación, explora opciones de apoyo y elige tu siguiente paso.',
+    clarity:'Empezar gratis', question:'¿Por dónde quieres empezar?', program:'Programa exprés en 3 pasos', programHint:'Un camino hacia la comprensión, el apoyo y tu próxima meta.', planButton:'Obtener mi plan',
     needs:[['No conozco mi meta','Aclara tus deseos y rumbo'],['Energía y salud','Cuerpo, estrés y vitalidad'],['Apoyo emocional','Ansiedad, agobio y relaciones'],['Necesito claridad','Comprende tu situación y próximo paso']],
-    stages:[['Aclara tu situación','Comprende tus necesidades, retos y recursos.'],['Apoya tu estado y energía','Recupera el equilibrio y reduce la tensión.'],['Analiza y elige tu meta','Define tu rumbo, tu meta y un plan sencillo.']],
+    stages:[['Evaluación exprés','Comprende tu situación, necesidades y recursos.'],['Homeopatía y apoyo personal','Habla de tu bienestar y de opciones complementarias.'],['Constelaciones empresariales','Explora tu meta, tus relaciones y los próximos pasos.']],
     practices:'Prácticas guiadas gratuitas', freeReiki:'Prácticas y aprendizaje Reiki gratuitos', allTests:'Explorar tests', goal:'Crear una nueva meta', plan:'Mi plan de coaching', consultation:'Explorar apoyo personal', personal:'Solicitar orientación personal', personalHint:'Orientación y recomendaciones personales', account:'Mi biblioteca y cuenta', notice:'Estas herramientas de reflexión no sustituyen el diagnóstico ni el tratamiento médico. Para problemas de salud, consulta a un profesional sanitario.'
   }
+}
+
+
+/* Express Support is the public-facing name. Keep persisted clarity IDs, routes,
+   the three-day independent workbook and all existing coaching grants unchanged. */
+const EXPRESS_PARTS = {
+  en: {
+    step:'SESSION', includes:'What we explore', result:'Your takeaway', details:'Explore this session',
+    terms:'The three-day self-guided Daybook is free. Individual consultations and complementary services are arranged separately.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Express Diagnostics',subtitle:'Understand where you are now',intro:'A focused review of your situation, priorities and the changes you would like to make.',points:['Review your current life situation and main concerns','Explore your needs, strengths and available resources','Identify a priority and a practical direction for support'],outcome:'A clear situation map and next step.',action:'Explore situation review'},
+      {key:'homeopathy',group:'homeopathy',title:'Homeopathy',subtitle:'A personal conversation about wellbeing',intro:'Discuss your individual concerns and preferences, and explore homeopathy as an optional complementary approach.',points:['Discuss physical and emotional experiences','Review what support and care you already receive','Clarify options and questions for your healthcare professional'],outcome:'An informed plan for discussing your support options.',notice:'Homeopathy has no reliable evidence of effectiveness beyond placebo and must not replace or delay medical care.',action:'Explore homeopathy'},
+      {key:'constellations',group:'business',title:'Business Constellations',subtitle:'See your goal in a wider system',intro:'Explore a work, money or business goal through a reflective systemic exercise, considering the relationships and factors around it.',points:['Identify a goal or current business challenge','Map relevant roles, relationships and resources','Choose a realistic next action to test'],outcome:'A visual understanding of the situation and a practical next step.',action:'Explore business support'}
+    ]
+  },
+  ru: {
+    step:'СЕССИЯ', includes:'Что исследуем', result:'Ваш результат', details:'Подробнее об этапе',
+    terms:'Трёхдневный дневник для самостоятельной работы бесплатный. Индивидуальные консультации и дополнительные услуги согласовываются отдельно.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Экспресс-диагностика',subtitle:'Понять, где вы сейчас',intro:'Сфокусированный анализ вашей ситуации, приоритетов и изменений, к которым вы стремитесь.',points:['Обзор жизненной ситуации и основных вопросов','Исследование потребностей, сильных сторон и доступных ресурсов','Выбор приоритета и направления поддержки'],outcome:'Понятная карта ситуации и следующий шаг.',action:'Перейти к анализу ситуации'},
+      {key:'homeopathy',group:'homeopathy',title:'Гомеопатия',subtitle:'Личный разговор о самочувствии',intro:'Обсуждение индивидуальных особенностей и предпочтений, знакомство с гомеопатией как необязательным дополнительным подходом.',points:['Обсуждение физических и эмоциональных ощущений','Обзор уже получаемой помощи и поддержки','Уточнение вариантов и вопросов для медицинского специалиста'],outcome:'Понимание вариантов поддержки и вопросов для обсуждения.',notice:'Эффективность гомеопатии сверх плацебо надёжно не доказана. Она не должна заменять или откладывать медицинскую помощь.',action:'Подробнее о гомеопатии'},
+      {key:'constellations',group:'business',title:'Бизнес-расстановки',subtitle:'Увидеть цель в системе',intro:'Исследование рабочей, финансовой или бизнес-цели с помощью системной рефлексивной практики, учитывающей связи и контекст.',points:['Выбор цели или текущей задачи бизнеса','Исследование ролей, связей и ресурсов','Выбор реалистичного действия для проверки'],outcome:'Наглядная карта ситуации и практический следующий шаг.',action:'Перейти к бизнес-поддержке'}
+    ]
+  },
+  es: {
+    step:'SESIÓN', includes:'Qué exploramos', result:'Tu resultado', details:'Explorar esta sesión',
+    terms:'El diario de tres días para el trabajo autónomo es gratuito. Las consultas individuales y los servicios complementarios se acuerdan por separado.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Evaluación exprés',subtitle:'Comprende tu situación actual',intro:'Una revisión centrada en tu situación, tus prioridades y los cambios que deseas realizar.',points:['Revisar tu situación y tus principales inquietudes','Explorar tus necesidades, fortalezas y recursos','Elegir una prioridad y una dirección de apoyo'],outcome:'Un mapa claro de tu situación y un próximo paso.',action:'Explorar el análisis de situación'},
+      {key:'homeopathy',group:'homeopathy',title:'Homeopatía',subtitle:'Una conversación personal sobre bienestar',intro:'Habla de tus inquietudes y preferencias y conoce la homeopatía como opción complementaria no obligatoria.',points:['Hablar de experiencias físicas y emocionales','Revisar la atención y el apoyo que ya recibes','Aclarar opciones y preguntas para tu profesional sanitario'],outcome:'Una visión informada de tus opciones de apoyo.',notice:'No hay evidencia fiable de que la homeopatía sea eficaz más allá del placebo. No debe sustituir ni retrasar la atención médica.',action:'Explorar la homeopatía'},
+      {key:'constellations',group:'business',title:'Constelaciones empresariales',subtitle:'Observa tu meta dentro de un sistema',intro:'Explora una meta laboral, económica o empresarial mediante una práctica reflexiva sistémica que tiene en cuenta las relaciones y el contexto.',points:['Elegir una meta o un reto empresarial','Representar roles, relaciones y recursos','Elegir una acción realista para poner a prueba'],outcome:'Un mapa visual de la situación y un próximo paso práctico.',action:'Explorar el apoyo empresarial'}
+    ]
+  }
+}
+
+function ExpressProgramOverview({locale,copy}) {
+  const t = EXPRESS_PARTS[locale]
+  return <section className={styles.expressOverview} data-express-overview aria-label={copy.program}>
+    {t.items.map((part,index) => {
+      const Icon = [BarChart3,Leaf,BriefcaseBusiness][index]
+      return <article key={part.key} className={styles.expressScreen} data-express-part={part.key}
+        id={'express-'+part.key} aria-labelledby={'express-title-'+part.key}>
+        <div className={styles.expressArtwork} data-express-art={part.key} aria-hidden="true"/>
+        <div className={styles.expressBody}>
+          <div className={styles.expressEyebrow}><span>{index+1}</span>{t.step} {index+1} / 3</div>
+          <h2 id={'express-title-'+part.key}><Icon size={28} aria-hidden="true"/>{part.title}</h2>
+          <p className={styles.expressSubtitle}>{part.subtitle}</p>
+          <p className={styles.expressIntro}>{part.intro}</p>
+          <div className={styles.expressIncludes}>
+            <h3>{t.includes}</h3>
+            <ul>{part.points.map((point,i)=><li key={point}><span aria-hidden="true">{i+1}</span>{point}</li>)}</ul>
+          </div>
+          <div className={styles.expressResult}><strong>{t.result}</strong><p>{part.outcome}</p></div>
+          {part.notice && <p className={styles.expressNotice}>{part.notice}</p>}
+          <Link className={styles.expressLink} href={'/'+locale+'/services#service-group-'+part.group} prefetch={false}>{part.action}<ArrowRight size={18} aria-hidden="true"/></Link>
+        </div>
+      </article>
+    })}
+    <p className={styles.expressTerms}>{t.terms}</p>
+  </section>
 }
 
 const BUSINESS = {
   en:{
     label:'BUSINESS PROGRAM',title:'My Business',intro:'Find direction, build structure and grow your business with clarity and support.',
-    start:'Start Program',details:'Request Details',question:'What do you need for your business?',program:'8-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
+    start:'Start Program',details:'Details: PDF',question:'What do you need for your business?',program:'8-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
     topics:[['Strategy & Direction','Clarify your vision and growth path'],['Structure & Team','Build an effective organization'],['Growth & Resources','Activate resources and opportunities'],['Execution & Results','Turn your plan into real progress']],
     sessions:BUSINESS_SYLLABUS.en,
   },
   ru:{
     label:'БИЗНЕС-ПРОГРАММА',title:'Мой бизнес',intro:'Найдите направление, выстройте структуру и развивайте бизнес с поддержкой.',
-    start:'Начать программу',details:'Запросить детали',question:'Что нужно вашему бизнесу?',program:'8 сессий для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
+    start:'Начать программу',details:'Подробнее: PDF',question:'Что нужно вашему бизнесу?',program:'8 сессий для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
     topics:[['Стратегия и направление','Видение и путь роста'],['Структура и команда','Эффективная организация'],['Рост и ресурсы','Ресурсы и возможности'],['Реализация и результаты','От плана к результату']],
     sessions:BUSINESS_SYLLABUS.ru,
   },
   es:{
     label:'PROGRAMA EMPRESARIAL',title:'Mi negocio',intro:'Define tu rumbo, construye una estructura y haz crecer tu negocio con claridad y apoyo.',
-    start:'Iniciar programa',details:'Solicitar detalles',question:'¿Qué necesita tu negocio?',program:'8 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
+    start:'Iniciar programa',details:'Detalles: PDF (EN)',question:'¿Qué necesita tu negocio?',program:'8 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
     topics:[['Estrategia y rumbo','Aclara tu visión y crecimiento'],['Estructura y equipo','Crea una organización eficaz'],['Crecimiento y recursos','Activa recursos y oportunidades'],['Ejecución y resultados','Convierte tu plan en avances']],
     sessions:BUSINESS_SYLLABUS.es,
   },
@@ -131,7 +191,6 @@ const BUSINESS = {
 
 const BUSINESS_PROGRAM_COPY={
   "en": {
-    "report": "Business development report",
     "phases": [
       "I · Strategic design",
       "II · Practical transformation"
@@ -143,7 +202,6 @@ const BUSINESS_PROGRAM_COPY={
     "note": "Please send your message in the messenger to request a session."
   },
   "ru": {
-    "report": "Программа развития бизнеса · PDF",
     "phases": [
       "I · Стратегическое проектирование",
       "II · Практическая трансформация"
@@ -155,7 +213,6 @@ const BUSINESS_PROGRAM_COPY={
     "note": "Отправьте сообщение в мессенджере, чтобы запросить запись."
   },
   "es": {
-    "report": "Programa de desarrollo empresarial · PDF",
     "phases": [
       "I · Diseño estratégico",
       "II · Transformación práctica"
@@ -169,18 +226,12 @@ const BUSINESS_PROGRAM_COPY={
 }
 const businessTopicSessions=[0,1,3,7]
 
-function BusinessReportDownloads({locale,position}) {
-  return <section className={styles.businessReports} data-business-report-links={position} aria-label={BUSINESS_PROGRAM_COPY[locale].report}>
-    <strong><BookOpen size={19} aria-hidden="true"/>{BUSINESS_PROGRAM_COPY[locale].report}</strong>
-    <div><a href={BUSINESS_REPORT_ROOT+'/ru.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="ru">Русский · PDF</a><a href={BUSINESS_REPORT_ROOT+'/en.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="en">English · PDF</a></div>
-  </section>
-}
-
-export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
+export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null, embeddedSection = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const videoHint = {en:'Create videos for yourself, loved ones and work.',ru:'Создавайте видео для себя, близких и работы.',es:'Crea vídeos para ti, tus seres queridos y el trabajo.'}[selected]
-  const [section, setSection] = useState('clarity')
+  const [localSection, setSection] = useState('clarity')
+  const section = embeddedSection || localSection
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
   const c = CLARITY[selected]
@@ -198,9 +249,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
   }
   const navigation = {
-    en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
-    ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
-    es: { label: 'Mi espacio', clarity: 'Claridad', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
+    en: { label: 'My Space', clarity: 'Express', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
+    ru: { label: 'Моё пространство', clarity: 'Экспресс', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
+    es: { label: 'Mi espacio', clarity: 'Exprés', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
   }[selected]
   const tabs = [
     { id: 'clarity', title: navigation.clarity, icon: Compass },
@@ -215,7 +266,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   ]
   const cards = [
     { id: 'state', icon: Target, href: root + '/my-coaching-plan', title: t.state, detail: t.stateDetail },
-    { id: 'courses', icon: BookOpen, href: root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
+    { id: 'courses', icon: BookOpen, href: accountId ? '/'+selected+'/my-page#my-courses' : root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
     { id: 'reports', icon: Brain, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
     { id: 'sessions', icon: CalendarDays, href: root + '/portrait?space=sessions', title: t.sessions, detail: t.sessionsDetail },
   ]
@@ -236,22 +287,25 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     if (index !== null) requestAnimationFrame(()=>document.getElementById('clarity-stage-'+index)?.scrollIntoView({block:'nearest',behavior:'smooth'}))
   }
 
-  return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
-    <nav className={styles.profileTabs} aria-label={navigation.label} data-goal-profile-tabs data-profile-mode-switch>
+  // Signed-in course management lives only in My Page. Guest discovery remains available.
+  if (accountId && !embeddedSection) return <Link href={profile+'#my-courses'} className={styles.profileInsight} prefetch={false} data-profile-my-page-courses-entry><BookOpen size={23} aria-hidden="true"/>{t.courses}<ArrowRight size={19} aria-hidden="true"/></Link>
+  return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section} data-my-page-embedded-program={embeddedSection || undefined}>
+    {!embeddedSection && <nav className={styles.profileTabs} aria-label={navigation.label} data-goal-profile-tabs data-profile-mode-switch>
       {tabs.map(({ id, title, icon: Icon }) => <button key={id} type="button"
         className={section === id ? styles.profileTabActive : styles.profileTab}
         onClick={() => setSection(id)} aria-pressed={section === id} data-goal-profile-tab={id}>
         <Icon size={23} aria-hidden="true"/><strong>{title}</strong>
       </button>)}
-    </nav>
+    </nav>}
     {section === 'business' && <section className={styles.businessProgram} aria-label={b.title} data-profile-business>
       <header className={styles.businessHero}>
         <p className={styles.businessEyebrow}><BriefcaseBusiness size={19} aria-hidden="true"/>{b.label}</p>
         <h1>{b.title}</h1>
         <p className={styles.businessIntro}>{b.intro}</p>
-        <ProfileProgramRequest locale={selected} program="business" open={businessContactOpen} onOpenChange={setBusinessContactOpen} request={bp.request} option={b.program}/>
+        <div className={styles.businessActions}>
+          <a href={businessReportPdf(selected)} hrefLang={selected==='ru'?'ru':'en'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-business-details data-business-report-pdf>{b.details}</a>
+        </div>
       </header>
-      <BusinessReportDownloads locale={selected} position="top"/>
       <h2 className={styles.businessHeading}>{b.question}</h2>
       <div className={styles.businessTopics}>{b.topics.map(([title,detail],index)=>
         <button key={index} type="button" className={styles.businessTopic} data-business-topic={index} aria-pressed={businessStage===businessTopicSessions[index]} onClick={()=>openBusinessStage(businessTopicSessions[index])}>
@@ -281,7 +335,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           </div>
         </article></div>
       })}</div>
-      <BusinessReportDownloads locale={selected} position="bottom"/>
+      <ProfileProgramRequest locale={selected} program="business" open={businessContactOpen} onOpenChange={setBusinessContactOpen} request={bp.request} option={b.program} showTrigger={false}/>
       <Link href={'/' + selected + '/shamanica/business'} className={styles.profileInsight} prefetch={false}>
         <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
@@ -312,6 +366,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
             <span className={styles.clarityStagePhoto} data-stage-photo={index} aria-hidden="true"><b>{index+1}</b></span><span className={styles.clarityStageCopy}><strong><Icon size={22} aria-hidden="true"/>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
+            <a href={'#express-'+EXPRESS_PARTS[selected].items[index].key}>{EXPRESS_PARTS[selected].details}<ArrowRight size={17} aria-hidden="true"/></a>
             {stages[index].map((tool)=>tool.action ?
               <Link key={tool.title} href={root+'/daybook?start=vector'} prefetch={false}>{tool.title}<ArrowRight size={17} aria-hidden="true"/></Link> :
               <Link key={tool.title} href={tool.href} prefetch={false} data-goal-diagnostic={tool.id}>{tool.title}<ArrowRight size={17} aria-hidden="true"/></Link>)}
@@ -321,9 +376,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <ClarityStartLink locale={selected} className={styles.clarityPersonal}>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
       </ClarityStartLink>
-      <ReikiProfileCourseCard locale={selected} />
+      <ExpressProgramOverview locale={selected} copy={c}/>
+      {!embeddedSection && <ReikiProfileCourseCard locale={selected} />}
       <p className={styles.clarityNotice}>{c.notice}</p>
-      <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
+      {!embeddedSection && <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
         <UserRound size={23} aria-hidden="true"/>{t.insights}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
@@ -358,15 +414,15 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       </Link>
     </nav>
     <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false} data-profile-space-work><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
-      </details>
+      </details>}
     </section>}
     {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
       <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
     </Link>}
-    <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
+    {!embeddedSection && <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
       <span className={styles.myVideoIcon}><Film size={25} strokeWidth={1.8} aria-hidden="true"/></span>
       <span className={styles.myVideoCopy}><strong>MyVideo</strong><small>{videoHint}</small></span>
       <ArrowRight size={20} aria-hidden="true"/>
-    </Link>
+    </Link>}
   </div>
 }

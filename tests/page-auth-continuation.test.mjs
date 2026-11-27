@@ -62,3 +62,9 @@ test('Clarity day survives Google continuation without allowing private run iden
  assert.equal(safePageAuthReturnPath('/ru/my-coach?clarityDay=1&clarityDay=2',input.continuation,input.locale),false)
  assert.equal(safePageAuthReturnPath('/ru/my-coach?courseRunId=private',input.continuation,input.locale),false)
 })
+
+
+test('selected greeting program survives Google return without accepting arbitrary program values',()=>{
+ assert.equal(safePageAuthReturnPath('/en/coaching/sessions?coach=mira&greetingProgram=business','my-coach-action','en'),true)
+ assert.equal(safePageAuthReturnPath('/en/coaching/sessions?coach=mira&greetingProgram=unknown','my-coach-action','en'),false)
+})
