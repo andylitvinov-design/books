@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import {createAntiStressCourseClock,validateAntiStressCourseClock} from '../lib/coaching/anti-stress-clock.mjs'
 import {ANTI_STRESS_SESSION_IDS} from '../lib/coaching/coach-program-mode.mjs'
-import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact} from '../lib/coaching/anti-stress-runs.mjs'
+import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact,expireAntiStressRunObservation,antiStressRunCredentialWindow} from '../lib/coaching/anti-stress-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n=1,access='free')=>({id:id(n),protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0,access})
 function event(run,day,type,atMs,{seg=50,decision='start',coachId='mira',...extra}={}){
@@ -98,4 +98,32 @@ test('separate meditation requires safe completion, preserves client edits and r
  assert.equal(antiStressMeditationArtifact(run,pid,revoked,saved,{type:'view'},'ru').body,null)
  const declined=antiStressMeditationArtifact(run,pid,revoked,saved,{type:'decline',expectedRevision:2,atMs:900002})
  assert.equal(declined.status,'declined');assert.equal(declined.body,null)
+})
+
+test('abandoned connection cannot credit lost time; remint is bounded by trusted remaining time and old expiry',()=>{
+ let run=createAntiStressRun(input())
+ const sid=ANTI_STRESS_SESSION_IDS[0],pid=id(2)
+ const window=(now,previousCredentialExpiresAt=null)=>antiStressRunCredentialWindow(run,{sessionId:sid,protocolId:pid,now,previousCredentialExpiresAt})
+ assert.equal(window(0).expiresAt,new Date(900000).toISOString())
+ assert.throws(()=>window(0,1),/CREDENTIAL_BUSY/)
+ run=advanceAntiStressRun(run,event(run,1,'begin',0));run=tick(run,1,0,300000)
+ assert.throws(()=>window(300000),/CONFLICT/)
+ assert.equal(expireAntiStressRunObservation(run,315000),run)
+ assert.throws(()=>expireAntiStressRunObservation(run,299999),/CONFLICT/)
+ run=expireAntiStressRunObservation(run,315001)
+ assert.equal(run.clock.days[0].status,'paused')
+ assert.equal(run.clock.days[0].elapsedMs,300000)
+ assert.equal(run.clock.days[0].segments[0].reason,'lost_observation')
+ assert.throws(()=>window(315001),/CREDENTIAL_BUSY/)
+ assert.throws(()=>window(315001,900000),/CREDENTIAL_BUSY/)
+ assert.throws(()=>window(900000,299999),/CREDENTIAL_BUSY/)
+ assert.equal(window(900000,900000).expiresAt,new Date(1500000).toISOString())
+ assert.equal(window(900000,900000).newSessionExpireTime,new Date(945000).toISOString())
+ assert.throws(()=>antiStressRunCredentialWindow(run,{sessionId:ANTI_STRESS_SESSION_IDS[1],protocolId:id(3),now:900000,previousCredentialExpiresAt:900000}),/CONFLICT/)
+ assert.throws(()=>advanceAntiStressRun(run,event(run,1,'begin',900000,{seg:51})),/NOT_AUTHORIZED/)
+ run=advanceAntiStressRun(run,event(run,1,'begin',900000,{seg:51,decision:'continue',coachId:'caesar'}))
+ assert.equal(run.clock.days[0].elapsedMs,300000)
+ run=tick(run,1,900000,600000,51)
+ assert.equal(run.clock.days[0].status,'time_limit')
+ assert.throws(()=>window(1500000,1500000),/CONFLICT/)
 })
