@@ -1,0 +1,15 @@
+# Clarity express: independent course runs — 26 Nov 2026
+Owner decision: first explicit, connected session starts the personal first Daybook; 3 logical sessions of 20 active minutes, not 3 calls. Resume and coach change keep exact protocol UUID and accumulated time. Every repeat is paid and independent, even if a previous course is unfinished. Do not charge to resume; do not replace history.
+
+## Storage and authority
+- Separate courseRunId, ordinal and three immutable session protocol IDs. The encrypted run clock is bound by account+run AAD, CAS revision, account lock, partial unique live-call index. The existing draft/review archive remains the text authority. Never copy another course's transcript into a new run. Original dialogue immutable; client amendments are separate dated/versioned notes.
+- Free run creation is atomic with trusted first begin; retries use the same ID/consent/connection. Free grant is once per account, plus global one-free-logical-session/day (existing UTC proposal still to be reconciled). Paid run is allocated only after verified settlement; unique order reference prevents duplicate purchase delivery. Price, currency/offer, refund and paid day rules not approved; proposed paid time does not use the free daily quota, still one live call/account.
+- Paid run may be purchased while old course active; does not consume old minutes. Each resume requires fresh consent. No direct browser timer or payment status can authorize a grant.
+- Exact run+day joins select the three existing protocol IDs; no "latest report for day" lookup. Homework keyed by exact report/field; games and independent journal notes need the 39-character cr:UUID scope, no ambiguous legacy notes. Old archives remain separate pending deterministic migration; never invent ownership or merge by date.
+- New table proposal is intentionally not a registered migration; no production writes. Both adapter readiness constants remain false.
+
+## Remaining release gates
+Trusted server/provider/Director observations and consent, shared quota across all free entries, replace legacy one-shot mint and storage callsites, verified existing billing checkout/receipt+refund adapter and approved price, real client journal/edit and protocol binding, migration rehearsal with RLS/owner export and deletion, native CI, signed-in iPhone EN/RU/ES end-to-end incl. two devices and changed coach, normal protected merge and hourly publisher. No flag activation or extra paid service/build.
+
+## Acceptance
+Free: no run on greeting/preview; first accepted connected begin creates exactly one run even with retries/two tabs; 7min+13min = same day+protocol; no time on disconnect; 3×20min maximum and no fourth logical session. Paid: duplicate webhook gives one run, new payment gives a new independent run, no other account can read/run it, incomplete previous remains available, no mixing of notes/results or transcript; one live call/account. Historical courses retain original data and may be opened. Explicitly test missing/corrupt binding, stale revision, account switch, refund, failed payment, and account deletion/export. 
