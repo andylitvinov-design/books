@@ -168,7 +168,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>
        {error&&<p className={styles.error} role="status">{error}</p>}
      </div>}
-     <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
+     {entryPending&&<p role="status">{({ru:'Проверяем ваш профиль…',en:'Checking your profile…',es:'Comprobando tu perfil…'})[lang]}</p>}
+      <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
      {phase!=='complete'&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
