@@ -68,7 +68,7 @@ test('hands-free fail-closed preserves unsent speech on busy or no model consent
  const speech=source('components/voice-companion-controls.tsx');
  assert.match(chat,/if\(busy\|\|mode==="owned"&&!agree\)\{setDraft\(text\);voice\.stopDialogue\(\);return;\}/);
  assert.match(speech,/if\(!parts.length\)\{if\(dialogueActive\.current\)stopDialogue\(\);return;\}/);
- assert.match(speech,/if\(!result\?\.ok&&seq===generation\.current\)\{[\s\S]*?if\(dialogueActive\.current\)stopDialogue\(\);/);
+ assert.match(speech,/if\(!result\?\.ok&&seq===generation\.current\)\{[\s\S]*?if\(!phone&&dialogueActive\.current\)stopDialogue\(\);/);
  assert.match(speech,/if\(!supported\|\|!speaker\.current\)\{[\s\S]*?stopDialogue\(\);/);
 });
 
@@ -80,7 +80,7 @@ test('every deliberate conversation exit terminates hands-free audio before cont
  assert.match(chat,/<select value=\{mode\} onChange=\{event=>\{voice\.stopDialogue\(\);setMode\(/);
  assert.match(chat,/\{busy&&<button type="button" onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);\}\}/);
  assert.match(controls,/const stopDialogue=useCallback\(\(\)=>\{\s*dialogueActive\.current=false;dialogueOnTurn\.current=null;/);
- assert.match(controls,/if\(mounted\.current\)\{setConversing\(false\);setPaused\(false\);setNotice\(''\);\}\s*stop\(\);/);
+ assert.match(controls,/if\(mounted\.current\)\{setConversing\(false\);setPaused\(false\);setNotice\(''\);setPhoneReplayAvailable\(false\);\}\s*stop\(\);/);
 });
 
 test('Voice Companion is fail-closed in production unless an explicit verified build flag enables it',()=>{
@@ -146,4 +146,24 @@ test('iPhone Safari can use the same ephemeral recorded microphone capture as My
  assert.match(chat,/data-hh-ai-voice-status/);
  assert.match(chat,/voice\.interruptReply\(\)/);
  assert.doesNotMatch(chat,/data-hh-conversation-mic[\s\S]{0,100}disabled=\{!voiceEnabled\|\|/);
+});
+
+test('phone replay is a user-gesture recovery of the same answer without a new AI turn',()=>{
+ const voice=source('components/voice-companion-controls.tsx');
+ const call=source('components/ali-audio-call.tsx');
+ assert.match(call,/voice\.conversing&&voice\.phoneReplayAvailable&&!busy/);
+ assert.match(call,/onClick=\{voice\.replayPhoneReply\}/);
+ assert.match(voice,/phoneRetryVoice\.current=true;[\s\S]*?speak\(lastSpoken\.current,false,true\)/);
+ assert.match(voice,/voiceURI:retryVoice\?'':normalizeDeviceVoiceId/);
+ assert.match(voice,/if\(phone&&dialogueActive\.current\)\{[\s\S]*?setPhoneReplayAvailable\(true\)/);
+ assert.match(voice,/if\(text\)\{hadSpeech=true;emptyListenRetries\.current=0;setPhoneReplayAvailable\(false\)/);
+ assert.match(voice,/recordedTurn\.current=null;emptyListenRetries\.current=0;setRecording\(false\);setNotice\(''\);setPhoneReplayAvailable\(false\)/);
+ assert.match(voice,/setPhoneReplayAvailable\(false\);stop\(\);\s*resumeDialogue\.current\?\.\(\)/);
+});
+test('shorter latency is scoped to phone conversation and preserves public dictation timing',()=>{
+ const voice=source('components/voice-companion-controls.tsx');
+ const recorder=source('lib/personal-coaching/coach-recorded-turn.mjs');
+ assert.match(voice,/fastConversation:phoneCall\.current/);
+ assert.match(voice,/\},phone\?160:450\)/);
+ assert.match(recorder,/fastConversation\?\{silenceMs:750,longSilenceMs:1050,longSpeechAfterMs:6500\}:\{silenceMs:1050\}/);
 });
