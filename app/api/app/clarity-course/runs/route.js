@@ -7,7 +7,7 @@ import {AppError} from '@/lib/assessments/contracts'
 import {readClarityRun,listClarityRuns,clarityRunStorageEnabled} from '@/lib/app/clarity-course-runs.js'
 import {readClarityRunDraft} from '@/lib/app/my-coach-protocol-drafts.js'
 import {readMyCoachProtocol} from '@/lib/app/personal-coaching'
-import {clarityRunProtocolId,clarityRunTranscript,isClarityRunId} from '@/lib/coaching/clarity-course-runs.mjs'
+import {clarityRunProtocolId,clarityRunTranscript,isClarityRunId,clarityRunSummary} from '@/lib/coaching/clarity-course-runs.mjs'
 import {clarityCourseResult} from '@/lib/coaching/clarity-course-results.mjs'
 import {claritySessionProtocol} from '@/lib/coaching/clarity-course-protocol.mjs'
 export const runtime='nodejs'
@@ -27,7 +27,10 @@ export async function GET(request){
   if([...q.keys()].some(k=>!['id','day','before','locale'].includes(k)||q.getAll(k).length!==1))throw new AppError('INVALID_QUERY',400)
   const locale=['en','ru','es'].includes(q.get('locale'))?q.get('locale'):'en'
   let data
-  if(q.has('id')||q.has('day')){
+  if(q.has('id')&&!q.has('day')){
+   if(!isClarityRunId(q.get('id'))||q.has('before'))throw new AppError('INVALID_QUERY',400)
+   data={run:clarityRunSummary(await readClarityRun(config,actor,q.get('id')))}
+  }else if(q.has('id')||q.has('day')){
    if(!isClarityRunId(q.get('id'))||!['1','2','3'].includes(q.get('day'))||q.has('before'))throw new AppError('INVALID_QUERY',400)
    const run=await readClarityRun(config,actor,q.get('id')),day=Number(q.get('day')),protocolId=clarityRunProtocolId(run,day)
    // Read draft first, then reviewed archive; an atomic promotion cannot be
