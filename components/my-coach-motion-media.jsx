@@ -1,14 +1,15 @@
 'use client'
-import {useEffect,useMemo,useRef,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {coachNaturalTake,coachNaturalVideoPath,coachVideoPosterPath} from '@/lib/coaching/coach-natural-motion.mjs'
 import styles from './my-coach-motion-media.module.css'
 import SamirMotionVideos from './samir-motion-videos'
 import {samirMotionTake} from '@/lib/coaching/samir-motion.mjs'
-import {releasedReactionMedia,protectedCoachPresence,isCoachPresentationContext,coachPresentationMetadataMatches,coachPresentationOpening} from '@/lib/coaching/coach-reaction-v4-registry.mjs'
+import {releasedReactionMedia,protectedCoachPresence,isCoachPresentationContext,coachPresentationOpening} from '@/lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coach-reaction-v4-release.mjs'
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
+import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
@@ -27,11 +28,9 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [pageVisible,setPageVisible]=useState(true)
   const [videoReady,setVideoReady]=useState(false)
   const [missingPoster,setMissingPoster]=useState(null)
-  const [failedPresentationSrc,setFailedPresentationSrc]=useState(null)
   const [failedCameras,setFailedCameras]=useState({})
   const [failedLegacy,setFailedLegacy]=useState([])
   const [openingDone,setOpeningDone]=useState(null)
-  const [openingStarted,setOpeningStarted]=useState(null)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
@@ -75,9 +74,10 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const reserveSrc=[neutralOnly||(directorActive&&personaId==='merlin'&&state!=='greeting')?calmSrc:legacySrc,calmSrc,attentiveSrc].find(path=>path&&!failedLegacy.includes(path))||null
   const src=presentationActive?(activePresentation?.src||null):reserveSrc
   const framePoster = presentationActive?null:coachVideoPosterPath(src)
-  const preferredPoster=released?.poster||activePresentation?.poster||(presentationActive?opening?.poster:null)||framePoster
+  // Keep the initial poster stable beneath the two presentation layers.
+  const preferredPoster=presentationActive?(opening?.poster||presentation?.poster):released?.poster||framePoster
   const poster=preferredPoster&&preferredPoster!==missingPoster?preferredPoster:fallbackPoster
-  const mediaIdentity=released?.anchorHash||src
+  const mediaIdentity=presentationActive?personaId+'-presentation':released?.anchorHash||src
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -110,13 +110,11 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     return()=>observer.disconnect()
   },[personaId,supported])
   useEffect(()=>{setVideoReady(false)},[mediaIdentity,personaId])
-  useEffect(()=>{setOpeningDone(null);setOpeningStarted(null)},[personaId,presentationActive])
+  useEffect(()=>{setOpeningDone(null)},[personaId,presentationActive])
   const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible&&
-    (presentationActive?Boolean(activePresentation&&failedPresentationSrc!==src):(Boolean(released)||(!protectedHold&&(isGenie||Boolean(src)))))
-  // Keep a started original mounted during temporary visibility/motion pauses.
-  // Never restart a one-shot just because the user returns to the screen.
-  const keepOriginalVideo=Boolean(opening&&openingStarted===personaId&&activePresentation&&failedPresentationSrc!==src)
+    (presentationActive?Boolean(opening||presentation):(Boolean(released)||(!protectedHold&&(isGenie||Boolean(src)))))
   useEffect(()=>{
+    if(presentationActive)return
     const video=videoRef.current
     if(!video)return
     if(!shouldPlay){video.pause();setVideoReady(false);return}
@@ -127,18 +125,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
       if(!presentationActive&&src)setFailedLegacy(previous=>previous.includes(src)?previous:[...previous,src])
     })
   },[shouldPlay,src,presentationActive])
-  function failPresentation(){
-    setVideoReady(false)
-    if(openingActive){setOpeningDone(personaId);return}
-    setFailedPresentationSrc(src)
-  }
-  function validatePresentation(video){
-    if(coachPresentationMetadataMatches(activePresentation,video))return true
-    video.pause();failPresentation();return false
-  }
-  function finishPresentationOpening(){
-    if(openingActive){setVideoReady(false);setOpeningDone(personaId)}
-  }
+  const finishPresentationOpening=useCallback(()=>setOpeningDone(personaId),[personaId])
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
@@ -155,13 +142,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={isGenie&&context==='greeting'?'high':undefined}
       onError={poster===preferredPoster?()=>setMissingPoster(preferredPoster):undefined} />
-    {presentationActive?((shouldPlay||keepOriginalVideo)&&<video key={src} ref={videoRef} className={styles.video}
-        data-coach-presentation-video src={src} poster={poster} muted loop={!openingActive} playsInline autoPlay={shouldPlay} preload="auto"
-        controls={false} disablePictureInPicture
-        onLoadedMetadata={event=>validatePresentation(event.currentTarget)}
-        onPlaying={event=>{if(validatePresentation(event.currentTarget)){if(openingActive)setOpeningStarted(personaId);setVideoReady(shouldPlay)}}}
-        onEnded={finishPresentationOpening}
-        onError={failPresentation} />):released?<CoachReactionDirectorMedia key={released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={setVideoReady} onUnavailable={failCamera} />:shouldPlay&&(isGenie
+    {presentationActive?<CoachPresentationLayers key={personaId} opening={opening} presence={presentation}
+        openingActive={openingActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={setVideoReady} onUnavailable={failCamera} />:shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={!neutralOnly&&(state==='idle'||state==='greeting')} onReady={setVideoReady} />
       : <video key={src} ref={videoRef} className={styles.video}
           src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
