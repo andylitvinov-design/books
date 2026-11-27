@@ -1,7 +1,8 @@
 'use client'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
-import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting.mjs'
+import {beginPrivateCoachSalutation,beginPrivateCoachRecallSpeech} from '@/lib/coaching/coach-private-greeting.mjs'
+import {coachExplicitRecall,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn,coachHasReviewedRecallPermission,coachApprovedRecallMatches} from '@/lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
 import {Mic,Play,Volume2} from 'lucide-react'
@@ -16,7 +17,7 @@ import {
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupForToken,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
-  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,
+  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,geminiLiveReviewedRecallMessage,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
 const ui={
@@ -126,7 +127,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
-  privateGreetingText='',onPrivateGreeting,
+  privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
   methodSession=null,prepareMethodSession,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
@@ -140,7 +141,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest}
 
   const notify=text=>{
     setNotice(text)
@@ -176,9 +177,101 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.pendingAudioChars=0
     propsRef.current.onOutputInterim?.('')
   }
+  function cancelPrivateRecall(r){
+    const turn=r.privateRecallTurn
+    if(!turn)return
+    r.privateRecallTurn=null
+    clearTimeout(turn.deadline);clearTimeout(turn.tail)
+    turn.speech?.cancel()
+    turn.request?.abort()
+    turn.reply=null;turn.record=null;turn.owner=null
+  }
+  async function tryReviewedVoiceRecall(r,turn){
+    const p=propsRef.current,key=p.liveContextAccess,version=p.contextRevision
+    if(!turn.record||!turn.owner||r.paused||p.outputMuted||!coachHasReviewedRecallPermission(key))return false
+    // Never send owner-only recall text or unreviewed drafts. Re-read the
+    // existing signed context, with the initiating account binding, at use.
+    const controller=new AbortController();turn.request=controller
+    const timeout=setTimeout(()=>controller.abort(),5000)
+    let data
+    try{
+      const response=await fetch('/api/app/my-coach/live-context',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':turn.owner},body:key})
+      if(response.ok)data=await response.json()
+    }catch{}finally{clearTimeout(timeout);turn.request=null}
+    if(r.ended||r.privateRecallTurn!==turn||r.paused||propsRef.current.outputMuted)return false
+    const valid=key===propsRef.current.liveContextAccess&&version===propsRef.current.contextRevision&&r.contextVersion===version
+    if(r.contextSentKey&&(!valid||r.contextSentKey!==key||data?.fingerprint!==r.contextSentFingerprint)){
+      notify(t.contextRevoked);stop();return false
+    }
+    if(!valid||!coachApprovedRecallMatches(data,turn.record)||!r.ready||r.socket?.readyState!==1)return false
+    if(!r.contextSentKey){
+      try{if(!sendSocket(r,geminiLiveContextMessage(data.note)))return false}catch{return false}
+      r.contextSentKey=key;r.contextSentFingerprint=data.fingerprint
+    }
+    r.contextRequestKey=key;r.pendingContext='';r.pendingContextFingerprint=''
+    scheduleContextFreshnessCheck(r)
+    if(!sendSocket(r,geminiLiveReviewedRecallMessage()))return false
+    r.privateRecallTurn=null
+    turn.record=null;turn.owner=null;turn.reply=null
+    r.audioGate=new GeminiLiveBargeGate();r.bargeDetector=new GeminiLiveBargeDetector()
+    r.resampler=new GeminiLivePcmResampler(r.context.sampleRate);r.pendingMic=[]
+    r.lastAssistantTurnFinished=false;r.lastHumanAudioAt=Date.now()
+    phaseChange('thinking');r.replyWatch?.touch()
+    return true
+  }
+  async function finishPrivateRecall(r,turn){
+    if(r.ended||r.privateRecallTurn!==turn||!turn.loaded||!turn.drained||turn.playing)return
+    clearTimeout(turn.deadline)
+    turn.playing=true
+    // The microphone capture path stays blocked through playback and its tail.
+    // Archive text is never written to socket, Director, recovery or telemetry.
+    const reply=turn.reply;turn.reply=null
+    if(await tryReviewedVoiceRecall(r,turn))return
+    if(r.ended||r.privateRecallTurn!==turn)return
+    turn.record=null;turn.owner=null
+    const release=()=>{
+      if(r.ended||r.privateRecallTurn!==turn)return
+      r.privateRecallTurn=null
+      r.audioGate=new GeminiLiveBargeGate()
+      r.bargeDetector=new GeminiLiveBargeDetector()
+      r.resampler=new GeminiLivePcmResampler(r.context.sampleRate)
+      r.pendingMic=[];r.lastHumanAudioAt=Date.now()
+      r.lastAssistantTurnFinished=true
+      if(r.paused)return
+      phaseChange('listening')
+      if(r.reconnectSoon)maybeReconnectOnGoAway(r)
+      flushSideband(r)
+    }
+    if(!reply||r.paused||propsRef.current.outputMuted){release();return}
+    phaseChange('speaking')
+    turn.speech=beginPrivateCoachRecallSpeech({text:reply,locale:r.locale,muted:propsRef.current.outputMuted,
+      synthesis:window.speechSynthesis,Utterance:window.SpeechSynthesisUtterance,schedule:setTimeout,clear:clearTimeout})
+    void turn.speech.done.then(()=>{if(r.privateRecallTurn===turn)turn.tail=setTimeout(release,350)})
+  }
+  function startPrivateRecall(r,replyPromise,waitForBoundary){
+    const turn=createPrivateCoachRecallTurn(waitForBoundary)
+    r.privateRecallTurn=turn
+    r.replyWatch?.clear();silence(r)
+    r.inputText='';r.pendingMic=[];r.modelTurnComplete=false;r.hadAudio=false;r.outputWithoutAudio=false
+    r.postBarge=false;r.awaitingBargeReply=false;r.lastAssistantTurnFinished=false
+    r.pendingDirectorHint=''
+    phaseChange('thinking')
+    // An unknown provider boundary is never treated as a safe next turn.
+    // Timeout is a transport failure, not a normal recall-induced end.
+    turn.deadline=setTimeout(()=>{if(r.privateRecallTurn===turn){notify(t.replyStalled);stop()}},15000)
+    void Promise.resolve(replyPromise).then(reply=>{
+      if(r.ended||r.privateRecallTurn!==turn)return
+      if(resolvePrivateCoachRecallTurn(turn,reply))finishPrivateRecall(r,turn)
+    },()=>{
+      if(r.ended||r.privateRecallTurn!==turn)return
+      if(resolvePrivateCoachRecallTurn(turn,null))finishPrivateRecall(r,turn)
+    })
+  }
   function teardown(r){
     if(!r||r.ended)return
     r.ended=true
+    cancelPrivateRecall(r)
     r.privateGreeting?.cancel()
     r.replyWatch?.clear()
     try{r.abort?.abort()}catch{}
@@ -233,6 +326,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r.paused){
       r.paused=true
       r.privateGreeting?.cancel()
+      r.privateRecallTurn?.speech?.cancel()
+      r.privateRecallTurn?.request?.abort()
       r.routePrimed=false
       r.audioResumeAttempt=null
       r.pausedPhase=r.currentPhase||(r.speaking?'speaking':r.ready?'listening':'loading')
@@ -247,7 +342,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.pendingMic=[]
       r.bargeDetector=new GeminiLiveBargeDetector()
       // Automatic VAD: flush the already-sent input, not a fabricated turn.
-      if(r.ready&&r.introSent)sendSocket(r,{realtimeInput:{audioStreamEnd:true}})
+      if(r.ready&&r.introSent&&!r.privateRecallTurn)sendSocket(r,{realtimeInput:{audioStreamEnd:true}})
     }
     // iOS can leave a formally live track permanently silent after backgrounding.
     // Release capture on every pause; Play will open a fresh local microphone.
@@ -417,6 +512,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function interrupt(){
     const r=runtime.current
     if(!r||r.ended)return
+    if(r.privateRecallTurn){r.privateRecallTurn.speech?.cancel();return}
     if(r.player?.playing||r.speaking||r.pendingAudio?.length){
       const partial=r.outputText
       r.interrupted=true
@@ -505,15 +601,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputInterim?.('')
     if(text)propsRef.current.onUnconfirmedInput?.(text)
   }
-  function commitInput(r){
+  function commitInput(r,atBoundary=false){
     const value=audioTranscription(r.inputText)
     r.inputText=''
     propsRef.current.onInputInterim?.('')
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
+    const decision=propsRef.current.onInputFinal?.(value)
+    if(decision?.privateRecall){startPrivateRecall(r,decision.privateRecall,!atBoundary);return true}
+    if(decision===true){stop();return true}
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
-    if(propsRef.current.onInputFinal?.(value)===true){stop();return true}
     r.openingHistory.push(value)
     r.openingHistory=r.openingHistory.slice(0,33)
     r.lastAssistantTurnFinished=false
@@ -528,15 +626,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
-    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
+    if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
+    // Once approved memory reaches this socket, treat model replies as possibly
+    // archive-bearing. Never replay them into another model or Director history.
+    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})
     r.interrupted=false
   }
   // Deliver server-rechecked references and Director hints ONLY after the
   // previous audible assistant turn ends and the human microphone is idle.
   // clientContent can interrupt a Google model, even with turnComplete:false.
   function canSendSideband(r){
-    return !r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
+    return !r.ended&&!r.paused&&!r.privateRecallTurn&&r.ready&&r.socket?.readyState===1&&
       r.lastAssistantTurnFinished&&!r.speaking&&!r.player?.playing&&
       !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&!r.postBarge&&
       !r.bargeDetector.userActive&&!r.reconnectSoon&&
@@ -641,6 +741,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
          typeof result.note!=='string'||
          (result.note&&!/^[a-f0-9]{64}$/.test(result.fingerprint||'')))
         throw Error('LIVE_CONTEXT_INVALID')
+      if(r.contextSentKey===key){
+        if(result.fingerprint!==r.contextSentFingerprint){notify(t.contextRevoked);stop()}
+        return
+      }
       if(result.note){
         r.pendingContext=result.note
         r.pendingContextFingerprint=result.fingerprint
@@ -900,6 +1004,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       return
     }
     if(!r.ready)return
+    if(r.privateRecallTurn){
+      // Drain the ungrounded answer without playing or committing any of it.
+      if(frame.goAway)r.reconnectSoon=true
+      if(observePrivateCoachRecallFrame(r.privateRecallTurn,frame))finishPrivateRecall(r,r.privateRecallTurn)
+      return
+    }
     if(frame.input||frame.interim){
       const value=frame.input||frame.interim
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
@@ -950,12 +1060,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // short reply deadline. Its PCM and captions remain discarded.
     if(!allowAudio&&r.postBarge)return
     if(frame.output&&allowAudio){
-      if(r.inputText&&commitInput(r))return
+      if(r.inputText&&commitInput(r,frame.turnComplete))return
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
       propsRef.current.onOutputInterim?.(r.outputText)
     }
     if(frame.audio?.length){
-      if(r.inputText&&commitInput(r))return
+      if(r.inputText&&commitInput(r,frame.turnComplete))return
       if(allowAudio){
         let outcome='dropped'
         for(const part of frame.audio){
@@ -980,14 +1090,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     if(frame.turnComplete){
       if(r.awaitingBargeReply&&!r.hadAudio&&!r.outputText&&!r.outputWithoutAudio)return
-      if(r.inputText&&commitInput(r))return
+      if(r.inputText&&commitInput(r,frame.turnComplete))return
       r.modelTurnComplete=true
       finishAudibleTurn(r)
     }
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
   function capture(r,chunk){
-    if(r.ended||r.paused||!r.ready||r.socket?.readyState!==1)return
+    if(r.ended||r.paused||r.privateRecallTurn||!r.ready||r.socket?.readyState!==1)return
     const audio=chunk instanceof Float32Array?chunk:new Float32Array(chunk)
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
@@ -1135,6 +1245,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ended||r.socket!==socket)return
       r.ready=false
       r.replyWatch?.clear()
+      cancelPrivateRecall(r)
       r.reconnectSoon=false
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.
@@ -1382,7 +1493,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   function sendText(text){
     const r=runtime.current,body=String(text||'').trim()
-    if(!r||r.ended||r.paused||!r.ready||!body||body.length>1200)return false
+    if(!r||r.ended||r.paused||r.privateRecallTurn||!r.ready||!body||body.length>1200)return false
+    if(coachExplicitRecall(body)){
+      // Typed recall never reaches the provider; require an idle turn first.
+      if(!canSendSideband(r))return false
+      const decision=propsRef.current.onPrivateRecallRequest?.(body)
+      if(decision?.privateRecall){startPrivateRecall(r,decision.privateRecall,false);return true}
+      if(decision===true){stop();return true}
+    }
     interrupt()
     if(!sendSocket(r,geminiLiveTextMessage(body)))return false
     if(r.postBarge)r.awaitingBargeReply=true
@@ -1405,7 +1523,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
-    if(outputMuted)runtime.current?.privateGreeting?.cancel()
+    if(outputMuted){runtime.current?.privateGreeting?.cancel();runtime.current?.privateRecallTurn?.speech?.cancel();runtime.current?.privateRecallTurn?.request?.abort()}
   },[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
