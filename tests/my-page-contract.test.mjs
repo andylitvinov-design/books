@@ -76,3 +76,9 @@ test('diary entries cannot be made public, including previously shared notes',()
  assert.match(ui,/posts\.map\(renderItem\)/)
  assert.match(ui,/data-my-page-private-feed/)
 })
+
+test('auto-created diary page handle fits the existing database check',()=>{
+ const addPost=api.slice(api.indexOf("a==='addPost'"),api.indexOf("a==='editPost'"))
+ const bytes=Number(addPost.match(/'member-'\+randomBytes\((\d+)\)\.toString\('hex'\)/)?.[1])
+ assert.match('member-'+'a'.repeat(bytes*2),/^[a-z][a-z0-9-]{2,29}$/)
+})
