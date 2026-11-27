@@ -66,17 +66,19 @@ test('route preserves owner authentication, origin, rate, CAS and hides private 
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  for(const marker of ['auth.verified()','requireSameOrigin(request,config)','x-hh-account-id','HH_MY_COACH_PROFILE_V3_ENABLED','my-coach-profile-step','stepCoachProfileDraft(config,actor,input)'])assert.ok(route.includes(marker),marker)
- for(const marker of ['pg_advisory_xact_lock','row.revision!==input.revision','state=\'active\' and revision=$5','coachProfileDraftActiveV3(old))throw conflict()','issueCoachProfileArchiveProof(config,actor,step.serverLedger)','const {profileDirectorV3,courseGate,...visible}=value','selected.map(item=>publicDraft(item))'])assert.ok(store.includes(marker),marker)
+ for(const marker of ['pg_advisory_xact_lock','row.revision!==input.revision','state=\'active\' and revision=$5','coachProfileDraftActiveV3(old))throw conflict()','issueCoachProfileArchiveProof(config,actor,step.serverLedger)','const {profileDirectorV3,courseGate,draftCourseReview,...visible}=value','selected.map(item=>publicDraft(item))'])assert.ok(store.includes(marker),marker)
 })
 
 
 test('public draft projection strips both private Director ledgers and exposes only explicit step projections',()=>{
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const projection=store.slice(store.indexOf('function publicDraft('),store.indexOf('export async function saveCoachDraft'))
- assert.match(projection,/const \{profileDirectorV3,courseGate,\.\.\.visible\}=value/)
+ assert.match(projection,/const \{profileDirectorV3,courseGate,draftCourseReview,\.\.\.visible\}=value/)
  assert.match(projection,/includeProfile&&profileDirectorV3\?\{profileStep:coachProfileDraftViewV3\(value\)\}/)
  assert.match(projection,/includeProfile&&courseGate\?\{courseGateStep:coachCourseGateView\(value\)\}/)
- assert.doesNotMatch(projection,/\.\.\.(?:profileDirectorV3|courseGate|value)\b/)
+ assert.match(projection,/const review=includeProfile&&!courseGate\?deriveCoachDraftReview\(value\.protocol,value\.courseSessionId\):null/)
+ assert.match(projection,/\.\.\.\(review\?\{draftCourseReview:review\}:\{\}\)/)
+ assert.doesNotMatch(projection,/\.\.\.(?:profileDirectorV3|courseGate|draftCourseReview|value)\b/)
 })
 
 test('private resume UI keeps typed profile actions and normal checkpoints mutually exclusive',()=>{
