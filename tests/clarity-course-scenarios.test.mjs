@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {clarityScenarioVersion,clarityScenarioReviewVersion,clarityVersionedScenario,clarityScenarioGateFields,clarityScenarioReviewOf,clarityScenarioGuidance,clarityScenarioTimeGuidance,clarityMetricScore} from '../lib/coaching/clarity-course-scenarios.mjs'
+import {clarityScenarioVersion,clarityScenarioReviewVersion,clarityVersionedScenario,clarityScenarioGateFields,clarityScenarioReviewOf,clarityScenarioGuidance,clarityScenarioTimeGuidance,clarityMetricScore,clarityPracticeStatus} from '../lib/coaching/clarity-course-scenarios.mjs'
 import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview,clarityDayOneReviewPrompt,coachCourseProtocolGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
@@ -117,4 +117,18 @@ test('historical B/C remain versionless and do not reclassify past answers',()=>
   assert.ok(old.checkpoints.some(r=>r.id===(course===ids[0]?'inner_anchor':'dream_image')))
   assert.equal(coachCourseProtocolSchema(course,'en',{scenarioVersion:clarityScenarioVersion(course===ids[0]?ids[1]:ids[0])}),null)
  }
+})
+
+test('explicit practice status is not inferred from a suggestion or plan',()=>{
+ assert.equal(clarityPracticeStatus('tried: asked one question'),'attempted')
+ assert.equal(clarityPracticeStatus('Запланировала: на завтра'),'planned')
+ assert.equal(clarityPracticeStatus('solo conversamos'),'listening_only')
+ assert.equal(clarityPracticeStatus('I might try tomorrow'),null)
+ assert.equal(clarityPracticeStatus('The coach told me to try'),null)
+ assert.ok(checkpointLiveAnswerMismatch('test_status','I might try tomorrow'))
+ const f=fixture(ids[0]);f.add('practice_consent','yes','consent','accepted')
+ f.add('test_status','planned for later')
+ const result=claritySemanticResult(2,coachCourseProtocolRows(ids[0],f.turns,f.review()))
+ assert.equal(result.practiceStatus,'planned')
+ assert.equal(result.nodes.find(r=>r.id==='test_observation'),undefined)
 })

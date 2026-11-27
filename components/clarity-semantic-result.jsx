@@ -5,6 +5,11 @@ const copy={
  ru:{support:'Моя карта поддержки и ресурсов',goal:'Моя цель и первые шаги',outer:'Колесо жизненного баланса',inner:'Оси смысла и внутренние ресурсы',dream:'Моя вдохновляющая мечта',current:'Сейчас',desired:'Желаемое',missing:'Нет ответа',self:'Самостоятельный ответ',coach:'Подтверждено в протоколе',hint:'Самооценки, не диагноз.',dreamEmpty:'Образ мечты пока не записан.'},
  es:{support:'Mi plan de apoyo y energía',goal:'Mi meta y orientación personal',outer:'Rueda de la vida',inner:'Ejes de sentido y recursos internos',dream:'Mi sueño inspirador',current:'Actual',desired:'Deseado',missing:'Sin respuesta',self:'Respuesta autónoma',coach:'Protocolo revisado',hint:'Autoevaluaciones, no un diagnóstico.',dreamEmpty:'Todavía no has registrado tu sueño.'}
 }
+const outcomeCopy={
+ en:{goal:{chosen:'Goal chosen and reviewed',exploring:'Exploring a direction; no goal chosen',deferred:'Goal choice postponed',unknown:'Goal not yet confirmed'},practice:{attempted:'Tried (client self-report)',planned:'Planned for later, not yet tried',stopped:'Stopped (client self-report)',declined:'Practice declined',listening_only:'Conversation only',unknown:'Practice status not yet recorded'}},
+ ru:{goal:{chosen:'Цель выбрана и сверена',exploring:'Исследование направления — цель ещё не выбрана',deferred:'Выбор цели отложен',unknown:'Цель ещё не подтверждена'},practice:{attempted:'Проба выполнена (со слов клиента)',planned:'Запланировано, ещё не пробовали',stopped:'Проба остановлена (со слов клиента)',declined:'Отказ от практики',listening_only:'Только разговор',unknown:'Статус практики пока не записан'}},
+ es:{goal:{chosen:'Meta elegida y revisada',exploring:'Explorando un rumbo; sin meta elegida',deferred:'Elección de la meta aplazada',unknown:'Meta aún no confirmada'},practice:{attempted:'Probado (autoinforme)',planned:'Planificado, aún no probado',stopped:'Interrumpido (autoinforme)',declined:'Práctica rechazada',listening_only:'Solo conversación',unknown:'Estado de la práctica aún no registrado'}}
+}
 const point=(i,score)=>[110+score*8*Math.cos(-Math.PI/2+i*Math.PI/4),110+score*8*Math.sin(-Math.PI/2+i*Math.PI/4)]
 const color={current:'#427969',desired:'#b18a51'}
 function Radar({axes,t}){
@@ -21,9 +26,11 @@ function Radar({axes,t}){
 export default function ClaritySemanticResult({day,rows,locale='en'}){
  const t=copy[locale]||copy.en,model=claritySemanticResult(day,rows,locale)
  if(!model)return null
- const nodes=model.nodes
+ const nodes=model.nodes,outcome=outcomeCopy[locale]||outcomeCopy.en
  return <section data-clarity-semantic-result={model.kind} style={{display:'grid',gap:12,overflowWrap:'anywhere'}}>
   <h3 style={{margin:0}}>{t[model.kind]}</h3>
+  {model.kind==='goal'&&<p data-clarity-goal-outcome>{outcome.goal[model.goalStatus||'unknown']}</p>}
+  {model.kind==='support'&&<p data-clarity-practice-outcome>{outcome.practice[model.practiceStatus||'unknown']}</p>}
   {model.axes&&<Radar axes={model.axes} t={t}/>}
   {model.dream&&<div style={{border:'1px solid #b79565',borderRadius:14,padding:16,textAlign:'center'}}><strong style={{whiteSpace:'pre-wrap'}}>{model.dream.value||t.dreamEmpty}</strong>{model.dream.source&&<p><small>{model.dream.source==='daybook'?t.self:t.coach}</small></p>}</div>}
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,135px),1fr))',gap:8}}>{nodes.map(node=><div key={node.id} style={{border:'1px solid #d5c7b4',borderRadius:10,padding:10}}><strong>{node.label}</strong><p style={{whiteSpace:'pre-wrap'}}>{node.value||t.missing}</p>{node.source&&<small>{node.source==='daybook'?t.self:t.coach}</small>}</div>)}</div>

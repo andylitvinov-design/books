@@ -826,7 +826,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // review or temporarily inconsistent turn snapshot to crash the session.
   let courseRows=[],courseReviewInvalid=false
   let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
-  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateRequired&&!effectiveCourseReview?clarityScenarioVersion(selectedCourseId):null)
+  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?clarityScenarioVersion(selectedCourseId):null)
   const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang,{scenarioVersion:courseScenarioVersion})
   // Do not use opening answers as core field candidates. Retain original indices.
   let openingEnd=-1,openingCount=0
