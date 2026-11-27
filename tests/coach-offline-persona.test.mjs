@@ -98,7 +98,7 @@ test('20-minute user-controlled wrap-up remains possible for every persona and d
   const d=s.directive
   if(d.interventionId!=='invite_reflective_close')continue
   const out=reply(s)
-  assert.match(out.question,/итог|продолжить/u)
+  assert.match(out.question,/вынести из нашего разговора/u)
   assert.equal(out.planSuggestion,'')
  }
 })

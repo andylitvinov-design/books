@@ -279,7 +279,7 @@ test('20-minute Director moves toward an optional wrap-up without silencing ques
     assert.equal(fb.mode,'offline')
     assert.equal(fb.method,d.methodId)
     assert.equal(fb.stage,d.stage)
-    assert.match(fb.question,/итог|продолжить/u)
+    assert.match(fb.question,/вынести из нашего разговора/u)
     assert.equal(fb.planSuggestion,'')
   }
   const clientQuestion=inputFor('alex','Что ты предлагаешь?',[],'ru')
@@ -446,7 +446,8 @@ test('At minute 17 the Director invites wrap-up instead of another stage',()=>{
   assert.equal(d.interventionId,'invite_reflective_close')
   assert.equal(d.canOfferAction,false)
   const safe=enforceCoachSessionDirective({mode:'ai',message:'Какие варианты вы сами видите?',planSuggestion:'',evidenceQuote:''},d)
-  assert.equal(safe.message,'Хотите подвести итог, сделать паузу или продолжить?')
+  assert.equal(safe.message,'Что вы хотели бы вынести из нашего разговора?')
+  assert.doesNotMatch(safe.message,/пауза|отложить/u)
 })
 
 test('Director v4 exposes six genuinely different method step workflows',()=>{

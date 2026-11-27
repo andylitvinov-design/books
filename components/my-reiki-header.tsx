@@ -5,7 +5,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { ReikiProgram } from "./reiki-programs";
 import profile from "./app/profile-hub-tabs.module.css";
 
-export function MyReikiHeader({ locale, program, modulePath }: { locale: PublicLocale; program: ReikiProgram; modulePath?: "/academy/reiki/yggdrasil/higher-magic" }) {
+export function MyReikiHeader({ locale, program, modulePath }: { locale: PublicLocale; program: ReikiProgram; modulePath?: `/academy/reiki/yggdrasil/${string}` }) {
   const label = locale === "ru" ? "Выбрать язык сайта" : locale === "es" ? "Elegir idioma" : "Choose site language";
   return <div className={profile.hub} data-profile-active="today" data-my-reiki-header>
     <header className={profile.heading}>
