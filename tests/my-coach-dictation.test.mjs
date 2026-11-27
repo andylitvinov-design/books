@@ -169,7 +169,9 @@ test('hands-free voice uses live consent and never ends on a natural TTS outage'
   assert.ok(fallback.includes("if(result.mode==='safety'||result.mode==='boundary')"),
     'safety and boundary stops retain their original guard')
   assert.ok(fallback.includes('afterSpeech()'))
-  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('afterSpeech()'))
+  const handoff=liveLoopForFallback(loop)
+  assert.ok(handoff.includes('continueAfterCoach?.()')&&handoff.includes('startListening()'))
   assert.ok(fallback.includes('setNotice(t.fallback)'))
   assert.doesNotMatch(fallback,/silence\(\)|changePhase\('idle'\)|introStartedRef\.current=false/)
   assert.ok(live.includes('afterSpeech()'),'a successful spoken reply must also auto-listen')
@@ -211,7 +213,9 @@ test('provider status changes during a natural voice reply preserve the active m
   const fallback=speech.slice(speech.indexOf('function showTextOnly(){'),
     speech.indexOf('// Never synthesize'))
   assert.ok(fallback.includes('providerUnavailableRef.current=null'))
-  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('afterSpeech()'))
+  const handoff=liveLoopForFallback(loop)
+  assert.ok(handoff.includes('continueAfterCoach?.()')&&handoff.includes('startListening()'))
   assert.ok(speech.includes('providerUnavailableRef.current=null\n            cloudControllerRef.current=null'))
   for(const marker of ["if(result.mode==='safety'||result.mode==='boundary')",
     'recognition.continuous=false','cue.onend=finishCue'])
@@ -287,8 +291,8 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
- assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
  assert.ok(ui.includes('locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang)'))
@@ -318,7 +322,7 @@ test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES ov
   assert.ok(css.includes('font:800 12px/1.2 system-ui'))
   assert.ok(loop.includes('selection:speechLocaleRef.current'),
     'the explicit locale is forwarded to speech recognition')
-  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'),
+  assert.ok(loop.includes('coachSessionOpeningAudioPath(personaId,lang)'),
     'the introduction MP3 path follows the selected locale')
   assert.ok(loop.includes('locale:replyLocale,personaId'),
     'TTS receives the same locale as the coach reply')
@@ -328,21 +332,25 @@ test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES ov
       'the route/manual selection wins over device language and old text')
 })
 
-test('approved one-row mobile voice: manual language in header, real volume, Text and End only',()=>{
+test('approved call dock: header language, real microphone, video, speaker and end',()=>{
  const ui=source('components/my-coach-live-dialogue.jsx')
  const css=source('components/my-coach-live-dialogue.module.css')
  const speech=source('components/my-coach-speech-loop.jsx')
  const recorded=source('lib/personal-coaching/coach-recorded-turn.mjs')
  const header=ui.slice(ui.indexOf('<header className={styles.sessionTopbar}>'),ui.indexOf('</header>'))
- const row=ui.slice(ui.indexOf('<div className={styles.voiceControls} data-coach-inline-voice>'),
+ const row=ui.slice(ui.indexOf('data-coach-inline-voice data-coach-call-dock'),
    ui.indexOf('<p className={styles.voicePlayNotice}',ui.indexOf('data-coach-inline-voice')))
  assert.match(header,/data-coach-language-control/)
  assert.match(header,/value=\{speechLocale\}/)
  assert.doesNotMatch(header,/<option value="auto">/)
  assert.match(row,/data-coach-live-wave/)
  assert.match(row,/onMicLevel=\{level=>\{/)
- assert.match(row,/className=\{styles.keyboardControl\}/)
- assert.match(row,/className=\{styles.endControl\}/)
+ assert.match(row,/data-coach-dock-video/)
+ assert.match(row,/data-coach-dock-speaker/)
+ assert.match(row,/<PhoneOff size=\{24\}/)
+ assert.match(row,/onClick=\{endWithProtocol\}/)
+ assert.match(row,/\['left','right'\]\.map/)
+ assert.doesNotMatch(row,/data-coach-basic-pro-toggle/)
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
  assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
  assert.match(css,/\.voicePlayNotice\{display:none\}/)
@@ -354,8 +362,8 @@ test('approved one-row mobile voice: manual language in header, real volume, Tex
 
 test('Gemini Free retry preserves Basic audio until readiness and prefers duplex Live over separate text TTS',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
-  const toggle=ui.slice(ui.indexOf('data-coach-basic-pro-toggle'),
-    ui.indexOf('data-coach-pro-same-tap-disclosure'))
+  const toggleStart=ui.indexOf('data-coach-basic-pro-toggle')
+  const toggle=ui.slice(toggleStart,ui.indexOf('</button>',toggleStart))
   assert.match(ui,/async function readGeminiEngineStatus\(signal\)/)
   assert.match(ui,/if\(response\.status===401\)return \{kind:'login'\}/)
   assert.match(toggle,/onClick=\{async \(\)=>\{/)
@@ -388,3 +396,5 @@ test('iPhone 27 STT outage uses bounded recorded-mic recovery, never silent Web 
  assert.match(recovery,/phaseRef\.current==='starting'\)startListening\(\)/)
  assert.doesNotMatch(loop,/recordedSttUnavailableRef/)
 })
+
+function liveLoopForFallback(loop){return loop.slice(loop.indexOf('const afterSpeech=()=>{'),loop.indexOf('function playDeviceFallback(){'))}

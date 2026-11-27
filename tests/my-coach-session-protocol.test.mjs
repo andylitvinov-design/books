@@ -1,3 +1,4 @@
+import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
 import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
@@ -175,7 +176,10 @@ test('owner mobile design keeps voice controls, back and explicit Insight while 
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
   assert.match(ui,/onClick=\{endWithProtocol\}/)
-  assert.match(ui,/<FileText size=\{19\}/)
+  assert.match(ui,/<PhoneOff size=\{24\}/)
+  assert.match(ui,/data-coach-dock-speaker/)
+  assert.doesNotMatch(ui,/data-coach-panel=/)
+  assert.match(ui,/data-coach-finish-with-protocol/)
   assert.match(ui,/Session Insight/)
   assert.match(ui,/<ArrowLeft size=\{16\}/)
   assert.match(ui,/data-coach-live-wave/)

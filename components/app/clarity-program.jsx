@@ -15,6 +15,7 @@ import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {CLARITY_SYLLABUS,CLARITY_TASKS,CLARITY_DAY_COUNT,clarityDayTag,clarityDayNotes,clarityRecordedDays,clarityLegacyNotes,clarityLocale,clarityDaybookPath} from '@/lib/app/clarity-program.mjs'
 import {programContinuation,programDaybookPath,programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
+import {stageCoachCourseChoice} from '@/lib/app/coach-course-choice.mjs'
 import css from './clarity-program.module.css'
 const COPY={
  "en": {
@@ -127,13 +128,14 @@ function useProgramStart(locale,program){
  const [busy,setBusy]=useState(false),[error,setError]=useState(false)
  const live=useRef(true),pending=useRef(false)
  useEffect(()=>{live.current=true;return()=>{live.current=false}},[])
- async function begin(){
+ async function begin(coachId=null){
   if(pending.current)return
   pending.current=true;setBusy(true);setError(false)
   try{
    try{
     const boot=await appFetch('bootstrap?view=portrait')
     if(!live.current)return
+    if(program==='clarity'&&coachId)stageCoachCourseChoice(program,coachId,boot.account.id)
     window.location.assign(boot.account.onboardingState==='active'?programDaybookPath(lang,program):programOnboardingPath(lang,program))
     return
    }catch(e){if(e.status!==401)throw e}
@@ -141,6 +143,7 @@ function useProgramStart(locale,program){
    const native=isNativeHolisticHouse()
    const result=await appFetch('auth/start',{locale:lang,continueTo:programContinuation(program),...(native?{native:true}:{})})
    if(!live.current)return
+   if(program==='clarity'&&coachId)stageCoachCourseChoice(program,coachId)
    if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:result.redirectUrl})}
    else window.location.assign(result.redirectUrl)
   }catch{if(live.current)setError(true)}
@@ -154,14 +157,14 @@ export function ClarityStartButton({locale='en',children}){
 }
 // Keep the approved guidance card's link layout while using the same Google
 // continuation as the hero. Modified clicks still open the protected Daybook.
-export function ClarityStartLink({locale='en',className,children}){
+export function ClarityStartLink({locale='en',className,children,coachId=null}){
  const {lang,t,busy,error,begin}=useProgramStart(locale,'clarity')
  return <><Link href={clarityDaybookPath(lang)} className={className} prefetch={false}
-  data-clarity-start data-clarity-personal aria-busy={busy}
+  data-clarity-start data-clarity-personal data-course-selected-coach={coachId||undefined} aria-busy={busy}
   onClick={event=>{
    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
    event.preventDefault()
-   if(!busy)void begin()
+   if(!busy)void begin(coachId)
   }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
 }
 // All public program starts use fixed first-party destinations, never a supplied URL.

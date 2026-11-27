@@ -61,7 +61,7 @@ test("Spanish Services shares the concise personal studio with EN/RU and origina
   // The same real Studio offers are present once inside the owner-approved
   // compact catalogue; nested course/coach/video shelves split out to avoid
   // duplicate services while preserving all Spanish routes and actions.
-  assert.match(es, /<ServicesCompactCatalog locale="es">/);
+  assert.match(es, /<ServicesCompactCatalog locale="es" initialConsultationOpen=\{query\?\.consultation === "1"\}>/);
   assert.match(es, /<ServicesCompactPanel id="services"><ServicesStudioOffers locale="es" splitExtras \/><\/ServicesCompactPanel>/);
   assert.match(studio, /splitExtras = false/);
   assert.match(studio, /!splitExtras \? <ServicesCoursesShelf/);

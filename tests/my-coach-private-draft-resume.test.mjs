@@ -60,17 +60,17 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 })
 
 
-import {coachDraftListSummary,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+import {coachDraftListSummary,draftTranscriptPrefix,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
  const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1})
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null})
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
  assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
- assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId"))
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',...(cursor||{})})"))
  assert.ok(ui.includes("action:'resume',id:item.id,revision:item.revision,confirmed:true"))
 })
 test('checkpoint cannot erase a known interruption but may append an answer or record a new interruption',()=>{
@@ -79,4 +79,32 @@ test('checkpoint cannot erase a known interruption but may append an answer or r
  assert.equal(draftTranscriptPrefix(a,b),false)
  assert.equal(draftTranscriptPrefix(b,a),true)
  assert.equal(draftTranscriptPrefix(a,{...a,turns:[...a.turns,{role:'user',content:'Next'}]}),true)
+})
+
+test('time-only progress is persisted, timestamps alone are deduplicated, revisions continue',async()=>{
+ const calls=[],queue=createCoachDraftQueue(async(revision,value)=>{calls.push([revision,value.protocol.durationSeconds]);return {saved:true,id:value.protocol.id,revision}},()=>{},4)
+ const draft=n=>({courseSessionId:'introductory',protocol:{id:'test',durationSeconds:n,turns:[{role:'user',content:'saved'}]}})
+ queue.offer(draft(420));assert.equal(await queue.flush(),5)
+ queue.offer({...draft(420),protocol:{...draft(420).protocol,completedAt:'later'}});assert.equal(await queue.flush(),5)
+ queue.offer(draft(451));assert.equal(await queue.flush(),6)
+ assert.deepEqual(calls,[[5,420],[6,451]])
+})
+test('duration never decreases and unknown old time is not fabricated',()=>{
+ assert.equal(coachDraftDurationExtends({durationSeconds:420},{durationSeconds:419}),false)
+ assert.equal(coachDraftDurationExtends({durationSeconds:420},{durationSeconds:null}),false)
+ assert.equal(coachDraftDurationExtends({durationSeconds:null},{durationSeconds:0}),true)
+ assert.equal(coachDraftDurationExtends({durationSeconds:420},{durationSeconds:420}),true)
+ assert.equal(coachDraftDurationExtends({durationSeconds:420},{durationSeconds:451}),true)
+ assert.equal(coachDraftMinuteLabel(451,'ru'),'7:31 / 20:00 пройдено')
+ assert.equal(coachDraftMinuteLabel(null,'ru'),'Время не записано')
+})
+test('explicit continuation after private restore freezes the active clock and keeps provider locks',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const gate=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('setResumePending(true);setPaused(true)'))
+ assert.ok(ui.includes('!resumePending&&document.visibilityState'))
+ assert.ok(ui.includes('setResumePending(false);setPaused(false);toggleComposer()'))
+ assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
+ assert.ok(ui.includes('data-coach-resume-minutes'))
+ assert.ok(gate.includes("Начать заново"))
 })

@@ -268,7 +268,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
     'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
-    'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
+    'data-coach-finish-with-protocol','className={styles.liveTranscript}','data-coach-inline-voice data-coach-call-dock',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
     'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
@@ -397,7 +397,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.doesNotMatch(ui,/replayCoachReplyOnDevice|new Utterance\(spokenText/)
 
   assert.ok(media.includes('onBlocked'))
-  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume}'))
+  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume,setMuted}'))
+  assert.match(media,/const setMuted=value=>\{userMuted=Boolean\(value\);setVolume\(requestedVolume\)\}/)
  assert.ok(media.includes('const setVolume=volume=>'),'voice interruption must mute speaker only')
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
@@ -467,12 +468,12 @@ test('quality-first coach never offers the old robotic wizard/device voice',()=>
  assert.ok(!loop.includes('speakOnDevice()'))
  assert.ok(!loop.includes('new Utterance(reply)'))
  assert.ok(loop.includes('cue.volume=0'),'silent Safari recognition cue is not spoken to visitor')
- assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'))
+ assert.ok(loop.includes('coachSessionOpeningAudioPath(personaId,lang)'))
  assert.ok(loop.includes("mode:'intro'"))
  assert.ok(loop.includes('startCoachingMp3Playback'))
 })
 
-test('spoken My Coach reply retains the reflection and start introduction',()=>{
+test('spoken My Coach reply retains the reflection and short session opening',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const ui=source('components/my-coach-live-dialogue.jsx')
  assert.match(loop,/const speakable=coachSpokenText\(reply\)\.text/)
@@ -480,7 +481,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
- assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
  assert.ok(ui.includes('introduction={introduction}'))
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
@@ -488,9 +489,9 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
  assert.ok(ui.includes("const usingExistingVoice=geminiVoiceTier==='existing'"))
  assert.ok(ui.includes('const chosenCloudAgreed=usingExistingVoice?cloudAgreed:geminiVoiceReady'))
- assert.ok(ui.includes('const chosenCloudProvider=usingExistingVoice?cloudProvider:'))
+ assert.ok(ui.includes('const chosenCloudProvider=usingExistingVoice?(lockedSessionVoice?(matchingFreeVoice?\'gemini_tts_free\':null):cloudProvider):'))
  assert.ok(ui.includes('geminiVoiceReady?geminiVoiceTier:null'))
- assert.ok(ui.includes('const chosenCloudAvailable=usingExistingVoice?cloudAvailable:geminiVoiceReady'))
+ assert.ok(ui.includes('const chosenCloudAvailable=usingExistingVoice?(lockedSessionVoice?matchingFreeVoice:cloudAvailable):geminiVoiceReady'))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -640,7 +641,9 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  const ui=source('components/my-coach-live-dialogue.jsx')
  const start=ui.indexOf('data-coach-basic-pro-toggle')
  assert.ok(start>0)
- const toggle=ui.slice(start,ui.indexOf('data-coach-pro-same-tap-disclosure',start))
+ const toggle=ui.slice(start,ui.indexOf('</button>',start))
+ assert.ok(ui.indexOf('data-coach-pro-same-tap-disclosure')<start,'provider disclosure must precede engine switch')
+ assert.match(toggle,/aria-describedby=\{[^\n]*'hh-coach-pro-disclosure'/)
  assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
  assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|voicePaused\|\|protocolOpen\}/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
@@ -676,7 +679,8 @@ test('iOS 27 output routing yields the receiver to the speaker, restores mic, an
  assert.equal(desktop.audioSession.type,'auto')
  assert.equal(setCoachIos27AudioSession(ios,'invalid'),false)
  const loop=source('components/my-coach-speech-loop.jsx')
- assert.match(loop,/ios27NeedsSpeechRecovery\(window\.navigator\)\|\|/)
+ assert.match(loop,/if\(!setCoachIos27DuplexRoute\(window\.navigator\)\)/)
+ assert.match(loop,/result\?\.mode!=='intro'&&!recordedTurnRef\.current/)
  assert.match(loop,/if\(!ios27NeedsSpeechRecovery\(window\.navigator\)\)primeMicrophonePermission\(\)/)
  assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'playback'\)/)
  assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'auto'\)/)

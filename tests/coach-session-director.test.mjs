@@ -176,7 +176,7 @@ test('The large photo, avatar style and low-distraction closure remain in the si
   assert.match(ui,/if\(voiceState.phase==='loading'\|\|voiceState.phase==='listening'\)setSessionClockStarted\(true\)/)
   assert.match(ui,/elapsedSeconds:sessionClockStarted\?Math\.floor\(activeClockRef\.current\.sample\(window\.performance\.now\(\)\)\):0/
   ) 
-  assert.match(ui,/sessionClockStarted&&document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current/) 
+  assert.match(ui,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&!resumePending&&document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current/) 
   assert.match(ui,/function freezeActiveClock\(\)\{\s*const seconds=activeClockRef\.current\.setRunning\(window\.performance\.now\(\),false\)/)
   assert.match(ui,/sessionTimebox\.offerWrapUp&&turns\.length>0/)
   assert.match(ui,/requestedWrap&&sessionTimebox\.offerWrapUp\?reflectiveClose:offlinePrompt/)

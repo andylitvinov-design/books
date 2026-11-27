@@ -4,7 +4,7 @@ import {consumeRate} from '@/lib/app/database'
 import {safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
-import {coachOpeningIntro} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachOpeningIntro,coachSessionOpeningLine} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {myCoachFishConfig,myCoachFishVoice,myCoachFishProsody} from '@/lib/coaching/my-coach-fish-voice.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
@@ -73,21 +73,24 @@ export async function GET(request){
     if(request.headers.get('sec-fetch-site')==='cross-site')
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
+    const archiveOnly=url.searchParams.get('archive')==='1'
+    // The explicit archive-only query is read-only: no rate grant, provider call or storage write on miss.
+    if(archiveOnly){if(!/^[?]v=[2-7]&archive=1$/.test(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400);url.searchParams.delete('archive')}
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|caesar|lea|noah|iris|ray)\/?$/.exec(url.pathname)
-    if(!match||!['','?v=2','?v=3','?v=4','?v=5','?v=6'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!match||!['','?v=2','?v=3','?v=4','?v=5','?v=6','?v=7'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
-    const version=url.search==='?v=6'?'v6':url.search==='?v=5'?'v5':url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
+    const version=url.search==='?v=7'?'v7':url.search==='?v=6'?'v6':url.search==='?v=5'?'v5':url.search==='?v=4'?'v4':url.search==='?v=3'?'v3':'v2'
     if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
     if(version==='v4'&&!((locale==='en'&&/^(?:mira|max|sofia|alex|merlin|harry|genie)$/.test(personaId))||(locale==='ru'&&/^(?:alex|max)$/.test(personaId))))throw new AppError('MY_COACH_INTRO_INVALID',400)
     if(version==='v5'&&(personaId!=='caesar'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
     if(version==='v6'&&personaId!=='harry')throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
     // Record the same authored greeting shown on the coach's introduction card.
-    const introduction=intro?.text||coachOpeningIntro(personaId,locale)
+    const introduction=version==='v7'?coachSessionOpeningLine(personaId,locale):(intro?.text||coachOpeningIntro(personaId,locale))
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
-    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'||url.search==='?v=5'||url.search==='?v=6'
+    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'||url.search==='?v=4'||url.search==='?v=5'||url.search==='?v=6'||url.search==='?v=7'
     if(useRecordedGreeting){
       // Storage failure must not be interpreted as a cache miss: that would
       // trigger paid TTS again on every transient outage.
@@ -96,22 +99,23 @@ export async function GET(request){
         request.headers.get('range'),version)}
       catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
       if(saved)return storedAudioResponse(saved)
+      if(archiveOnly)throw new AppError('MY_COACH_INTRO_RECORDING_UNAVAILABLE',404)
     }
 
     // Never record a new voice into Caesar's obsolete v2 cache key.
-    if(personaId==='caesar'&&version!=='v5')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    if(personaId==='caesar'&&!['v5','v7'].includes(version))throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
     // Freeze each selected public RU/EN Gemini voice into a real MP3. Only the
     // fixed editorial greeting leaves the server, never a visitor's words.
     // Reuse the existing Free-tier approval/key and shared 24/day TTS budget;
     // no Paid fallback, voice substitution, or repeated synthesis on cache hits.
-    const voiceName=useRecordedGreeting?(locale==='en'&&!['v4','v6'].includes(version)&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:locale==='ru'&&version==='v2'&&personaId==='alex'?'Alnilam':locale==='ru'&&version==='v2'&&personaId==='max'?'Orus':approvedGeminiVoice(personaId,locale)):null
+    const voiceName=useRecordedGreeting?(locale==='en'&&!['v4','v6','v7'].includes(version)&&Object.hasOwn(LEGACY_EN_GREETING_VOICES,personaId)?LEGACY_EN_GREETING_VOICES[personaId]:locale==='ru'&&version==='v2'&&personaId==='alex'?'Alnilam':locale==='ru'&&version==='v2'&&personaId==='max'?'Orus':approvedGeminiVoice(personaId,locale)):null
     const gemini=voiceName?geminiCoachTtsConfig(process.env,'gemini_tts_free'):null
     if(gemini){
       let input
       try{
         input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',locale,personaId,
           voiceName,text:coachSpokenText(introduction).text,
-          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+          voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true},{preserveRecordedVoice:true})
       }catch{throw new AppError('MY_COACH_INTRO_INVALID',400)}
       await consumeRate(config,{op:'my-coach-gemini-public-intro-minute'},3,60)
       await consumeRate(config,{op:'my-coach-gemini_tts_free-global-day'},24,86400)
@@ -124,7 +128,7 @@ export async function GET(request){
       return await persistGreeting(config,personaId,locale,audio,version)
     }
     // New approved versioned greetings must be Gemini, never a substituted voice.
-    if(personaId==='caesar'||version==='v3'||version==='v4'||version==='v5'||version==='v6')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
+    if(voiceName||(personaId==='caesar'&&version!=='v7')||version==='v3'||version==='v4'||version==='v5'||version==='v6')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.
@@ -148,7 +152,7 @@ export async function GET(request){
         audio=await synthesizeGoogleChirp({config:chirp,input,
           signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])})
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
-      if(useRecordedGreeting)return await persistGreeting(config,personaId,locale,audio)
+      if(useRecordedGreeting)return await persistGreeting(config,personaId,locale,audio,version)
       return new NextResponse(audio,{status:200,headers:{
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
@@ -182,7 +186,7 @@ export async function GET(request){
       let audio
       try{audio=Buffer.from(await upstream.arrayBuffer())}
       catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
-      return await persistGreeting(config,personaId,locale,audio)
+      return await persistGreeting(config,personaId,locale,audio,version)
     }
     // Keep existing legacy v=1 streaming untouched.
     return new NextResponse(upstream.body,{status:200,headers:CACHE_HEADERS})

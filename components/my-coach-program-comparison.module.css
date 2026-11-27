@@ -1,0 +1,101 @@
+.page{
+ min-height:100vh;width:100%;min-width:0;box-sizing:border-box;
+ background:radial-gradient(ellipse at top left,#fff9ed 0%,transparent 55%),var(--hh-light-canvas,#fbf5e9);
+ color:#103d30;padding:0 14px calc(112px + env(safe-area-inset-bottom,0px));overflow-x:clip;
+}
+.frame{width:100%;max-width:790px;margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:65px;padding:6px 1px;box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;color:inherit;text-decoration:none;font:700 clamp(17px,4.7vw,26px)/1 Georgia,'Times New Roman',serif;letter-spacing:-.045em}
+.brand sup{font:500 9px/1 system-ui;align-self:flex-start;margin-left:-5px}
+.brandMark{width:31px;height:31px;flex:none;border-radius:7px;background:#0c5946 url('/images/holistic-house/assessment-lotus.svg') center/83% no-repeat}
+.headerActions{display:flex;align-items:center;gap:5px;flex:none}
+.languages{position:relative}
+.languages summary,.help,.back{
+ min-height:44px;border:1px solid #d9bc86;border-radius:999px;background:#fffaf0;color:#123f34;
+ display:flex;align-items:center;justify-content:center;gap:5px;padding:0 9px;
+ font:700 13px/1 system-ui;box-shadow:0 3px 7px #5e401512;cursor:pointer;text-decoration:none
+}
+.languages summary,.summary{list-style:none}
+.languages summary::-webkit-details-marker,.summary::-webkit-details-marker{display:none}
+.languages>div{position:absolute;top:calc(100% + 5px);right:0;z-index:10;display:grid;min-width:70px;background:#fffaf1;border:1px solid #dbc89f;border-radius:12px;padding:4px;box-shadow:0 5px 12px #3a2a1526}
+.languages:not([open])>div{display:none}
+.languages a{min-height:44px;display:grid;place-items:center;color:#153f33;text-decoration:none;border-radius:8px}
+.languages a[aria-current=page]{background:#e7eee0}
+.heading{display:flex;align-items:flex-start;gap:12px;margin:8px 2px 16px}
+.back{width:44px;padding:0;flex:none;box-sizing:border-box}
+.heading h1{font:700 clamp(27px,7.1vw,44px)/1.04 Georgia,'Times New Roman',serif;color:#103d30;letter-spacing:-.035em;margin:0 0 5px}
+.heading p{font:500 14px/1.25 system-ui;margin:0;color:#514b41;text-wrap:pretty}
+.cards{display:grid;gap:9px}
+.card{min-width:0;background:var(--hh-light-surface,#fffcf7);border:1px solid #dfc69a;border-radius:21px;box-shadow:0 4px 10px #60401c13;overflow:hidden}
+.card[data-coach-comparison-program=clarity]{border:1.5px solid #d8aa43;background:linear-gradient(145deg,#fff7e7,#fffbf2);box-shadow:0 5px 16px #6b4d241b}
+.summary{display:grid;align-items:center;grid-template-columns:72px minmax(0,1fr) minmax(72px,auto) 18px;gap:9px;min-height:88px;padding:6px 9px;box-sizing:border-box;cursor:pointer}
+.art{display:block;align-self:stretch;min-height:62px;border-radius:12px;background:#e7d6b7 center/cover no-repeat}
+.art[data-art=clarity]{background-image:url('/images/holistic-house/messenger-zen-stones.svg');background-color:#efe3c9;background-size:contain}
+.art[data-art=business]{background-image:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.art[data-art=love]{background-image:url('/images/holistic-house/magic-mirror-lotus.webp')}
+.art[data-art=health]{background-image:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.intro,.meta{display:flex;flex-direction:column;min-width:0;gap:4px}
+.name{font:700 clamp(16px,4.25vw,24px)/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.025em;color:#103d30;overflow-wrap:anywhere}
+.description{font:italic 450 clamp(11px,3vw,14px)/1.25 system-ui;color:#52483b;text-wrap:pretty}
+.meta{border-left:1px solid #e4cfaa;padding-left:7px;align-items:center;justify-content:center;align-self:center}
+.count{display:flex;align-items:center;justify-content:center;gap:4px;font:600 11px/1.15 system-ui;white-space:nowrap;color:#3a493e}
+.count svg{flex:none;color:#174d3b}
+.price{border-radius:999px;background:#e4e8d0;padding:4px 9px;color:#124737;font:700 clamp(17px,4.6vw,22px)/1 Georgia,'Times New Roman',serif;white-space:nowrap}
+.chevron{color:#164735;transition:transform .2s ease}
+.card[open] .chevron{transform:rotate(180deg)}
+.card[data-coach-comparison-program=clarity] .summary{grid-template-columns:88px minmax(0,1fr) 18px;grid-template-rows:auto auto;gap:4px 10px;min-height:122px;padding:8px 10px}
+.card[data-coach-comparison-program=clarity] .art{grid-row:1/3;min-height:108px}
+.card[data-coach-comparison-program=clarity] .intro{grid-column:2;grid-row:1}
+.card[data-coach-comparison-program=clarity] .meta{grid-column:2;grid-row:2;flex-direction:row;align-items:center;justify-content:flex-start;border:0;padding:0;gap:9px}
+.card[data-coach-comparison-program=clarity] .chevron{grid-column:3;grid-row:1/3}
+.card[data-coach-comparison-program=clarity] .name{font-size:clamp(22px,5.9vw,32px)}
+.card[data-coach-comparison-program=clarity] .description{font-size:clamp(12px,3.4vw,15px)}
+.startHere{display:flex;align-items:center;gap:4px;align-self:flex-start;background:#f6ce65;border-radius:99px;padding:3px 8px;font:700 11px/1.2 system-ui}
+.expanded{padding:0 10px 10px}
+.sessions{list-style:none;display:grid;gap:5px;margin:0 0 8px;padding:0}
+.sessions li{display:flex;align-items:center;gap:10px;min-width:0;border:1px solid #ebd8b6;border-radius:13px;padding:6px 9px;background:rgba(255,250,240,.65)}
+.sessionArt{width:58px;min-height:43px;align-self:stretch;flex:none;border-radius:9px;background:center/cover no-repeat}
+.sessionArt[data-session-art='1']{background-image:url('/images/holistic-house/reiki-week-sunrise-approved.webp')}
+.sessionArt[data-session-art='2']{background-image:url('/images/holistic-house/reiki-week-lotus-approved.webp')}
+.sessionArt[data-session-art='3']{background-image:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.sessionText{display:grid;gap:2px;min-width:0}
+.sessionText strong{font:700 clamp(14px,3.9vw,20px)/1.14 Georgia,'Times New Roman',serif;color:#103d30}
+.sessionText>span{font:450 11.5px/1.25 system-ui;color:#433e35;text-wrap:pretty}
+.start{display:flex;justify-content:center;align-items:center;gap:10px;min-height:49px;box-sizing:border-box;padding:8px 12px;border-radius:999px;border:1.5px solid #fce6aa;background:linear-gradient(105deg,#ffdf82,#ffbb22);box-shadow:0 3px 8px #8d622526;font:700 clamp(16px,4.5vw,23px)/1.14 Georgia,'Times New Roman',serif;text-align:center;color:#153829;text-decoration:none}
+.start svg{flex:none}
+.status,.terms,.priceNote{font:450 11px/1.35 system-ui;color:#5e5547;margin:7px 1px 0;text-wrap:pretty}
+.status{margin:1px 0 8px;font-weight:600}
+.priceNote{margin:12px 4px 0}
+.page :is(a,button,summary):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+:global(body):has(.page) :global([data-hh-ihelp-trigger]){display:none!important}
+:global(body):has(.page) :global([data-hh-unified-dock]){background:linear-gradient(145deg,#0b6246,#03372a)!important;border-color:#d4b16a!important}
+:global(body):has(.page) :global([data-hh-unified-dock] a){color:#fff8e8!important}
+:global(body):has(.page) :global([data-hh-unified-dock] a[aria-current=page]:not([data-unified-dock-item=ai])){background:#2a7753!important;color:#fff8e8!important}
+@media(max-width:355px){
+ .page{padding-inline:9px}
+ .brand{font-size:16px;gap:4px}
+ .brandMark{width:27px;height:27px}
+ .headerActions{gap:4px}
+ .languages summary,.help{padding:0 6px;font-size:12px}
+ .summary{grid-template-columns:54px minmax(0,1fr) 71px 16px;gap:6px;padding:6px}
+ .card[data-coach-comparison-program=clarity] .summary{grid-template-columns:67px minmax(0,1fr) 16px;gap:4px 7px}
+ .count{font-size:10px;gap:3px}
+ .count svg{width:12px}
+ .meta{padding-left:5px}
+ .sessionArt{width:43px}
+ .heading{gap:8px}
+}
+@media(min-width:600px){
+ .page{padding-inline:24px}
+ .summary{grid-template-columns:128px minmax(0,1fr) 140px 24px;gap:18px;min-height:120px;padding:12px 16px}
+ .card[data-coach-comparison-program=clarity] .summary{grid-template-columns:175px minmax(0,1fr) 24px;gap:6px 20px;padding:14px 16px}
+ .card[data-coach-comparison-program=clarity] .art{min-height:150px}
+ .expanded{padding:0 16px 14px}
+ .sessionArt{width:94px;min-height:56px}
+ .sessionText>span{font-size:14px}
+ .count,.terms,.status,.priceNote{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){.chevron{transition:none}}
+
+.programPreviewLink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #c9ae73;border-radius:999px;color:#103d30;background:#fffaf2;text-decoration:none;font:650 13px/1.2 system-ui;text-align:center;padding:6px 10px}
+.programPreviewLink svg{flex-shrink:0}
