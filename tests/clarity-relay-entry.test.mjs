@@ -383,3 +383,10 @@ test('committed relay visits preserve authorship across the same protocol and re
  assert.match(ui,/item\.relayHandoff===true&&result\.relayHandoff===true/)
  assert.match(store,/clarityRelayArchiveMatches\(relayBinding,value\.protocol,\{from:old\.protocol\.turns\.length\}\)/)
 })
+
+test('Clarity permits only a single consented memory fingerprint on an exact existing run',()=>{
+ const memorySelection={provider:'gemini_live_free',consent:true,fingerprint:'a'.repeat(64)}
+ assert.deepEqual(normalizeClarityRelayEntry(frame({runId:id(10),memorySelection}),owner).memorySelection,memorySelection)
+ for(const bad of [null,{...memorySelection,consent:false},{...memorySelection,provider:'groq'},{...memorySelection,value:'raw'},{...memorySelection,fingerprint:'bad'}])assert.throws(()=>normalizeClarityRelayEntry(frame({runId:id(10),memorySelection:bad}),owner),invalid)
+ assert.throws(()=>normalizeClarityRelayEntry(frame({memorySelection}),owner),invalid)
+})

@@ -132,7 +132,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
-  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,therapyRelaySelection=null,onTherapyRelayClock,onTherapyRelayClosed,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,therapyRelaySelection=null,onTherapyRelayClock,onTherapyRelayClosed,onClarityRelayClosed,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -147,7 +147,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,therapyRelaySelection,onTherapyRelayClock,onTherapyRelayClosed}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,therapyRelaySelection,onTherapyRelayClock,onTherapyRelayClosed,onClarityRelayClosed}
 
   const notify=text=>{
     setNotice(text)
@@ -637,9 +637,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
+    if(!r.interrupted&&!r.contextSentKey&&!r.claritySelection?.memorySelection){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
     // An archive-bearing reply is not reusable provider history.
-    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})
+    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)||Boolean(r.claritySelection?.memorySelection)})
     r.interrupted=false
   }
   // Deliver server-rechecked references and Director hints ONLY after the
@@ -1422,6 +1422,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         if(!verified)relayStopUnverified.current=true
         r.resolveCourseStop?.(verified)
         if(r.therapyMode)propsRef.current.onTherapyRelayClosed?.(receipt)
+        else propsRef.current.onClarityRelayClosed?.(receipt)
         if(current){
           finishCourseMedia(r,receipt.status==='time_limit'?'idle':'paused')
           if(!receipt.terminalVerified)notify(receipt.status==='not_started'?t.failure:t.resumeUnavailable)

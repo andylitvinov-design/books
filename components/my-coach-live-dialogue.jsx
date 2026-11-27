@@ -411,6 +411,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [greetingIdentity,setGreetingIdentity]=useState({status:'loading',name:''})
   const [privateRecall,setPrivateRecall]=useState(null)
+  const [crossModeChoice,setCrossModeChoice]=useState(null)
   const recallRequestRef=useRef(null)
   useEffect(()=>()=>recallRequestRef.current?.abort(),[])
   const namePreferenceVersion=useRef(null),nameCorrectionRef=useRef(null),confirmedNameRef=useRef('')
@@ -2529,8 +2530,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
-            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,personaId,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
+            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,personaId,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0,...(activeCourseRunId&&crossModeChoice?.owner===protocolOwnerRef.current&&crossModeChoice.protocolId===protocolIdRef.current&&crossModeChoice.personaId===personaId&&crossModeChoice.locale===conversationLang?{memorySelection:crossModeChoice.selection}:{})}:null}
             onClarityRelayClock={acceptClarityRelayClock}
+            onClarityRelayClosed={()=>setCrossModeChoice(null)}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
@@ -2705,7 +2707,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={approvedClarity?.core||detailPosition} groups={stagePosition.rows.filter(row=>row.coreChildren.length>0).map(row=>({...row,children:row.coreChildren}))} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
-      {protocolOwnerReady&&process.env.NEXT_PUBLIC_HH_ANTI_STRESS_MEMORY_ENABLED==='true'&&<AntiStressMemoryPanel key={'shared-memory:'+protocolOwnerRef.current+':'+(protocolIdRef.current||'')} accountId={protocolOwnerRef.current} exclude={protocolIdRef.current} locale={conversationLang}/>}
+      {protocolOwnerReady&&process.env.NEXT_PUBLIC_HH_ANTI_STRESS_MEMORY_ENABLED==='true'&&<AntiStressMemoryPanel key={'shared-memory:'+protocolOwnerRef.current+':'+(protocolIdRef.current||'')} accountId={protocolOwnerRef.current} exclude={protocolIdRef.current} locale={conversationLang} allowShare={Boolean(clarityCourseActive&&activeCourseRunId&&protocolIdRef.current&&liveVoiceSelected&&!privateTextOnly&&['idle','paused'].includes(voiceState.phase))} shareFingerprint={crossModeChoice?.selection?.fingerprint||''} onShare={selection=>setCrossModeChoice(selection?{owner:protocolOwnerRef.current,protocolId:protocolIdRef.current,personaId,locale:conversationLang,selection}:null)}/>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
         identityConfirmed={openingProgress.checkmarks.name&&openingProgress.checkmarks.continuity}

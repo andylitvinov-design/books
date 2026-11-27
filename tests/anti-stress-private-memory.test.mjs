@@ -113,3 +113,16 @@ test('provider memory shares only one fresh explicitly selected reference, never
  assert.equal(resolveCrossModeShare(edited,owner,current,selection),null)
  assert.ok(!crossModeShareOptions(m,owner,c.protocolId).some(v=>v.mode==='coaching'))
 })
+
+test('Clarity uses the same one-record memory gate only for an exact resumed protocol',async()=>{
+ const {readFileSync}=await import('node:fs')
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const ui=read('components/my-coach-live-dialogue.jsx'),panel=read('components/app/anti-stress-memory-panel.jsx'),relay=read('lib/app/clarity-live-relay.js'),ctrl=read('lib/coaching/clarity-trusted-live-connection.mjs'),voice=read('components/my-coach-gemini-live.jsx')
+ assert.match(ui,/crossModeChoice\.protocolId===protocolIdRef\.current/)
+ assert.match(ui,/onClarityRelayClosed=\{\(\)=>setCrossModeChoice\(null\)\}/)
+ assert.match(panel,/checked=\{shareFingerprint===selected\}/)
+ assert.match(relay,/readApprovedCrossModeReference\(config,actor,selection\.protocolId,memorySelection,start\.locale\)/)
+ assert.match(ctrl,/if\(reference\)sendProvider\(reference\)/)
+ assert.match(ctrl,/!started\|\|!mediaReady/)
+ assert.match(voice,/requestedSavedContext:Boolean\(r\.contextSentKey\)\|\|Boolean\(r\.claritySelection\?\.memorySelection\)/)
+})
