@@ -1,0 +1,7 @@
+# Signature Speech v2 — owner feedback, 26 November 2026
+
+Extend #5719 in place: 160 original items (480 RU/EN/ES localized variants), including 16 aphorisms and 16 short fictional parables. Samir is warm, light and encouraging, not preachy or solemn. Reflect a concrete detail of the user's actual words rather than formulaic empathy. No guaranteed outcome, mind-reading, imposed positivity or new clinical claim.
+
+The Director prioritizes a catalog item at the first suitable move after consent, selecting an aphorism by default, a parable when welcomed, or gentle support for uncertainty/closing. A completed assistant turn containing a catalog line suppresses the once-per-session priority in the bounded recent window. The priority cannot authorize an extra question, stage, plan, consent, or action. Refusal, distress, safety, direct answer and incomplete opening win. Gemini setup has localized originals; the checkpoint prioritizes the due cue only within optional 620-character space, and suppresses it during incomplete opening and profile intake.
+
+Limitations: existing bounded conversation history is not a durable logical-session receipt; paraphrases and older turns can be missed. Gemini may ignore instructions or speak imperfectly; real authenticated RU/EN/ES voice acceptance, pause/reconnect and interruption verification are mandatory before claiming a guaranteed audible signature or LIVE. No extra provider calls, migrations, paid resources or independent deployments.

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {COACH_SIGNATURE_SPEECH,COACH_SIGNATURE_CONTEXTS,getCoachSignatureSpeech,coachSignatureContext,selectCoachSignatureReply,coachSignatureReplyGuidance} from '../lib/coaching/coach-signature-speech.mjs'
+import {COACH_SIGNATURE_SPEECH,COACH_SIGNATURE_CONTEXTS,getCoachSignatureSpeech,coachSignatureContext,selectCoachSignatureReply,coachSignatureReplyGuidance,hasCoachSignatureSpeech,coachSessionSignatureReply} from '../lib/coaching/coach-signature-speech.mjs'
 import {coachPersonalityProfile,coachPersonalityTurn,coachPersonalityTurnGuidance,coachPersonalityBaseInstruction} from '../lib/coaching/coach-personality-dialogue.mjs'
 import {getCoachStylePassport} from '../lib/coaching/coach-style-passports.mjs'
 import {coachLivePersonalityGuidance,withCoachLivePersonality} from '../lib/coaching/coach-personality-live.mjs'
@@ -8,7 +8,7 @@ import {coachLivePersonalityGuidance,withCoachLivePersonality} from '../lib/coac
 const ids=['mira','max','sofia','alex','merlin','harry','genie','caesar']
 const locales=['en','ru','es']
 const mood=emotion=>({emotion,evidence:'explicit_current_self_report',certainty:'explicit'})
-test('128 original supporting and inspiring statements, 384 localized variants, shared immutable passports',()=>{
+test('160 original statements and mini-parables, 480 localized variants, shared immutable passports',()=>{
  assert.deepEqual(Object.keys(COACH_SIGNATURE_SPEECH),ids)
  for(const locale of locales){
   const seen=new Set()
@@ -29,7 +29,7 @@ test('128 original supporting and inspiring statements, 384 localized variants, 
     }
    }
   }
-  assert.equal(seen.size,128)
+  assert.equal(seen.size,160)
  }
  for(const id of ['__proto__','lea','noah','iris','ray','unknown'])assert.equal(getCoachSignatureSpeech(id),null)
 })
@@ -90,4 +90,30 @@ test('Director mode governs supportive versus inspirational voice; no unsolicite
   assert.equal(exhausted.signatureReply,null)
   assert.doesNotMatch(coachPersonalityTurnGuidance(exhausted),/Fictional style-only example|SIGNATURE SPEECH \(optional/)
  }
+})
+
+
+test('once-per-session signature opportunity is localized, history-aware and never overrides distress, refusal or opening',()=>{
+ for(const personaId of ids)for(const locale of locales){
+  const p={personaId,locale,stage:'reality',sessionSignature:true};
+  const t=coachPersonalityTurn(p)
+  assert.equal(t.signatureDue,true);assert.equal(t.signatureKind,'aphorism');assert.ok(coachPersonalityTurnGuidance(t).includes(t.signatureReply.text))
+  const heard=[{role:'assistant',content:t.signatureReply.text}]
+  assert.equal(hasCoachSignatureSpeech(personaId,heard),true)
+  assert.equal(hasCoachSignatureSpeech(personaId,[{role:'user',content:t.signatureReply.text}]),false)
+  assert.equal(coachPersonalityTurn({...p,recentTurns:heard}).signatureDue,false)
+  assert.equal(coachPersonalityTurn({...p,storyWelcome:true}).signatureKind,'parable')
+  assert.equal(coachPersonalityTurn({...p,empathy:mood('fear')}).signatureDue,false)
+  for(const interventionId of ['answer_first','respect_no','repair_misunderstanding','allow_close','respond_socially','reflect_without_question'])assert.equal(coachPersonalityTurn({...p,interventionId}).signatureDue,false)
+  assert.equal(coachPersonalityTurn({...p,noAdvice:true}).signatureDue,false)
+  const mandatory='Director: keep consent, method and stage.'
+  const spoken=coachLivePersonalityGuidance(mandatory,t)
+  assert.ok(spoken.startsWith(mandatory)&&spoken.includes(t.signatureReply.text)&&spoken.length<=620)
+  assert.doesNotMatch(withCoachLivePersonality({guidance:mandatory,openingProgress:{completed:false}},t).guidance,/Due once/)
+  assert.doesNotMatch(withCoachLivePersonality({guidance:mandatory,openingProgress:{completed:true},profileProgress:{}},t).guidance,/Due once/)
+  assert.equal(coachLivePersonalityGuidance('X'.repeat(620),t),'X'.repeat(620))
+  assert.ok(coachPersonalityBaseInstruction(personaId,locale).includes(getCoachSignatureSpeech(personaId).aphorism[0][locale]))
+ }
+ const samir=coachPersonalityTurn({personaId:'genie',stage:'goal',settings:{warmth:1,directness:5,depth:'deep'}})
+ assert.ok(samir.style.warmth>=4&&samir.style.directness<=3&&samir.style.depth==='balanced')
 })
