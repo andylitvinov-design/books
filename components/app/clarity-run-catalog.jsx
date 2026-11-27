@@ -6,6 +6,7 @@ import {clarityRunNotes} from '@/lib/coaching/clarity-course-runs.mjs'
 import {CLARITY_SYLLABUS,clarityDayNotes} from '@/lib/app/clarity-program.mjs'
 import Link from 'next/link'
 import {clarityCoachHref,clarityHomeworkNotes} from '@/lib/coaching/clarity-course.mjs'
+import {coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
 import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
 import {gameProgress} from '@/lib/app/daybook-games.mjs'
 import DaybookGames from './daybook-games'
@@ -39,10 +40,15 @@ function SessionData({run,day,accountId,locale,entries,hasMore,loadingAll,loadEr
  if(state.phase==='loading')return <p role="status">{t.loading}</p>
  if(state.phase==='error')return <><p role="alert">{t.error}</p><button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></>
  const {transcript,sessionProtocol,result}=state.data
+ // A finished clock and an acknowledged saved transcript are different facts.
+ // Reopen the exact original coach/day for report review, never a new course.
+ const completedUnreviewed=Boolean(transcript&&!transcript.reviewed&&day.status==='time_limit'&&day.elapsedMs===1200000&&day.remainingMs===0)
+ const reviewHref=completedUnreviewed?coachSessionHref(locale,transcript.personaId):null
  const projection=result?clarityResultProjection(result,entries,{journalComplete:!hasMore}):null
  return <div className={css.practiceBody}>
-  {transcript?<><p>{new Date(transcript.updatedAt).toLocaleDateString(locale)}{!transcript.reviewed?' · '+t.draft:''}</p>
-   <ClarityProtocolDocuments sessionProtocol={sessionProtocol} log={transcript} locale={locale}/>
+  {transcript?<><p>{new Date(transcript.updatedAt).toLocaleDateString(locale)}{!transcript.reviewed?' · '+(completedUnreviewed?({en:'Protocol saved · results awaiting review',ru:'Протокол сохранён · итоги ожидают проверки',es:'Protocolo guardado · resultados pendientes de revisión'})[locale]:t.draft):''}</p>
+   <ClarityProtocolDocuments sessionProtocol={sessionProtocol} log={transcript} locale={locale} timedEnd={completedUnreviewed}/>
+   {reviewHref&&<Link prefetch={false} data-clarity-review-completed href={clarityCoachHref(reviewHref,day.day,run.id)}>{({en:'Open saved session results',ru:'Открыть итоги сохранённой сессии',es:'Abrir resultados de la sesión guardada'})[locale]}</Link>}
    {!transcript.reviewed&&day.status==='paused'&&run.currentDay===day.day&&<Link prefetch={false} href={clarityCoachHref('/'+locale+'/my-coach',day.day,run.id)}>{({en:'Continue saved session by text',ru:'Продолжить сохранённую сессию текстом',es:'Continuar sesión guardada por texto'})[locale]}</Link>}</>:<p>{t.empty}</p>}
   {result&&<section><h3>{t.results}</h3><ClaritySemanticResult day={day.day} rows={projection.rows} locale={locale}/>
    <dl>{projection.rows.map(row=><div key={row.id}><dt>{row.label}</dt><dd>{row.quote||'—'}</dd></div>)}</dl>
