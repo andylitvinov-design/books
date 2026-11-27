@@ -17,6 +17,8 @@ on:
       - 'tests/billing-*.mjs'
       - 'tests/square-*.mjs'
       - 'tests/service-*.mjs'
+      # Static ES route/markup contract is executed by required Core, not payment DB.
+      - '!tests/service-spanish-entry-regression.test.mjs'
       - 'tests/paypal-*.mjs'
       - 'tests/consultation-cart*.mjs'
       - 'tests/personal-cart*.mjs'
@@ -25,6 +27,7 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      - '.github/workflows/hh-billing-isolated.yml'
 permissions:
   contents: read
 concurrency:
