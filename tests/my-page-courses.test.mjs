@@ -54,6 +54,17 @@ test('My Page keeps public navigation available during private API errors withou
  assert.ok(profile.includes("data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}"))
 })
 
+
+test('Spanish public program discovery stays localized without changing private cabinet bookmarks',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const route=read('app/[locale]/app/portrait/page.jsx')
+ assert.ok(route.includes("query.discover === 'programs' && Object.keys(query).length === 1"))
+ assert.ok(route.includes('<ProfileSpaceDashboard locale="es" root="/en/app" accountId={null}/>'))
+ assert.ok(route.includes("englishCabinetTarget(['portrait'], query)"))
+ assert.ok(read('components/app/my-page-client.jsx').includes("locale==='es'?'/es/app/portrait?discover=programs'"))
+ assert.ok(read('components/app/clarity-program.jsx').includes("lang==='es'?'/es/app/portrait?discover=programs'"))
+})
+
 import {summarizeAntiStressRuns} from '../lib/app/my-page-courses.mjs'
 test('therapy run progress uses only exact verified 45-minute course records',()=>{
  const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),sessions=['anti_stress_ground','anti_stress_calm','anti_stress_resource']

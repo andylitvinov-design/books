@@ -18,6 +18,7 @@ import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {downloadCoachQualityTranscript} from '@/lib/personal-coaching/protocol-quality.mjs'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
+import {goalReviewedResult,isGoalReviewedResult} from '@/lib/coaching/goal-reviewed-results.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 
 const protocolCopy={
@@ -150,6 +151,13 @@ function savedMeaningRows(checkin,locale){
   return {id:axis.id,label:axis.name[locale]||axis.name.en,status,
    current:status==='skipped'?null:current,desired:status==='skipped'?null:desired}
  })
+}
+function SavedGoalResults({protocol,locale,onDownload}){
+ let result
+ try{result=goalReviewedResult(protocol,locale)}catch{return <p role="status">{({en:'Results could not be verified.',ru:'Не удалось проверить итоги.',es:'No se pudieron verificar los resultados.'})[locale]}</p>}
+ if(!result)return null
+ const c=({en:{download:'Download results PDF',missing:'Not confirmed',skip:'Skipped'},ru:{download:'Скачать итоги PDF',missing:'Не подтверждено',skip:'Пропущено'},es:{download:'Descargar resultados PDF',missing:'Sin confirmar',skip:'Omitido'}})[locale]
+ return <section data-goal-reviewed-results className={styles.reportSection}><h3>{result.title}</h3><p>{result.caption}</p><progress max={result.total||1} value={result.confirmed} aria-label={result.caption}/>{result.rows.map(row=><div className={styles.reportSection} key={row.id}><b>{row.label}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.answer??(row.status==='skipped'?c.skip:c.missing)}</p></div>)}<small>{result.note}</small><button type="button" className={styles.primaryButton} onClick={onDownload}><Download size={16}/>{c.download}</button></section>
 }
 function SavedProtocolOverview({protocol,locale}){
  let overview
@@ -482,7 +490,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
-    <SavedProtocolOverview protocol={protocol} locale={lang}/>
+    {isGoalReviewedResult(protocol.courseSessionId)?<><SavedGoalResults protocol={protocol} locale={lang} onDownload={()=>exportProtocol(protocol,false,'results')}/><details className={styles.reportDetails}><summary>{protocolCopy[lang].title} <ChevronDown size={16}/></summary><SavedProtocolOverview protocol={protocol} locale={lang}/></details></>:<SavedProtocolOverview protocol={protocol} locale={lang}/>} 
    <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}

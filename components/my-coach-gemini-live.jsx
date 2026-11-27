@@ -222,6 +222,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function pauseSession({disconnect=false}={}){
     const r=runtime.current
     if(!r||r.ended)return false
+    // Parent and transport both observe lifecycle events. A duplicate pause
+    // must not repeatedly release hardware or invalidate a stable parked socket.
+    if(r.paused&&!r.resumeInFlight&&!disconnect)return true
     r.pauseEpoch=(r.pauseEpoch||0)+1
     // Invalidate an outstanding Play even when iOS delays its permission promise.
     r.resumeInFlight=false
@@ -302,6 +305,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r||r.ended||!r.paused||r.resumeInFlight||
        !propsRef.current.enabled||!propsRef.current.canStart||
        document.visibilityState==='hidden')return false
+    // Safari can delay close events while the page is suspended. Do not
+    // report Listening on a socket that has already started closing.
+    if(r.socket?.readyState>=2)parkPausedSocket(r)
     if(r.resumeUnavailable||(r.resumePending&&(!r.resumeHandle||r.reconnects>=3||
        !(Date.parse(r.liveToken?.expiresAt)>Date.now())))){
       r.resumeUnavailable=true
@@ -1380,7 +1386,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   useEffect(()=>{runtime.current?.player?.setMuted(outputMuted)},[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
-    const onPageHide=()=>pauseSession({disconnect:true})
+    const onPageHide=event=>pauseSession({disconnect:event?.persisted!==true})
     document.addEventListener('visibilitychange',onHidden)
     window.addEventListener('pagehide',onPageHide)
     return()=>{

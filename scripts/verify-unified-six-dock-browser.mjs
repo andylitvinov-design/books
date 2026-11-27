@@ -1563,6 +1563,22 @@ try{
  await page.locator('[data-profile-my-video]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/,{timeout:45000});
  results.push({journey:"Profile → private My Page guest gate → explicit program discovery → OAuth choice → public MyVideo",passed:true});
+ // Spanish discovery is public and localized, while ordinary private bookmarks retain their EN bridge.
+ await page.goto(origin+"/es/app/portrait?discover=programs",{waitUntil:"domcontentloaded",timeout:75000});
+ const esPrograms=page.locator('[data-es-public-programs]');
+ await expect(esPrograms).toBeVisible({timeout:30000});
+ await expect(esPrograms.locator('[data-profile-clarity-support] h1')).toHaveText("Apoyo exprés");
+ assert.deepEqual(await esPrograms.locator('[data-express-part]').evaluateAll(nodes=>nodes.map(n=>n.dataset.expressPart)),["diagnostics","homeopathy","constellations"]);
+ for(const group of ["consultation","homeopathy","business"]){
+   await expect(esPrograms.locator('a[href="/es/services#service-group-'+group+'"]')).toHaveCount(1);
+ }
+ await esPrograms.locator('[data-goal-profile-tab="business"]').click();
+ const pdf=esPrograms.locator('[data-business-report-pdf]');
+ await expect(pdf).toHaveText("Detalles: PDF (EN)");
+ await expect(pdf).toHaveAttribute("href","/reports/business-program/en.pdf");
+ await expect(esPrograms.locator('[data-business-report-links]')).toHaveCount(0);
+ await expect(esPrograms.locator('[data-my-page-courses]')).toHaveCount(0);
+ results.push({journey:"Spanish public program discovery and Business PDF without private data",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
