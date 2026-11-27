@@ -1,0 +1,8 @@
+# Support — approved cream layout and free analysis (27 Nov 2026)
+
+Real mobile Support route /{en,ru,es}/services, inspired by owner-approved Rituals & Artifacts layout: dark brand, two ivory audience pills, cream panel, framed photographic hero, yellow Get Free Analyses and ivory Learn more, existing four illustrated quiz choices and one goal input with Next below them. Existing global dock and services catalog remain. The hero reuses the currently published first-party therapy-room artwork rather than baking a screenshot into the UI.
+
+- Get Free Analyses toggles two compact existing messenger actions underneath the hero. Draft requests are localized free written situation reviews, not a paid offer or a medical diagnosis; no automatic message, account creation, CRM write, or private goal text in the URL. Actual public Support source path remains accurate. Existing verified Telegram/WhatsApp handoff component reused.
+- Learn more opens the canonical localized homepage (/; /ru; /es). PR #5787 is the dependency for the three-program homepage (Express/My Goal/My Business). Do not claim complete LIVE until both protected changes are deployed and the click lands on actual three-program tabs. No duplicate course/cabinet implementation.
+- Preserve four-question state, existing business menu, keyboard dictation, ranker, service catalog and global dock.
+- Acceptance: Core and Specialist, protected merge gate, real mobile Chromium/WebKit widths 320–430 across languages; click both buttons, collapse/reopen, verify drafts without sending, verify homepage real tabs and canonical Vercel production SHA. No manual deployment outside established 90-minute routine.

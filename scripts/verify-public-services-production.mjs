@@ -234,7 +234,7 @@ try {
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
     await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
     await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
-    const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    const luxuryBackground = await quiz.locator("[data-support-luxe-room]").evaluate(el=>getComputedStyle(el).backgroundImage);
     assert.ok(luxuryBackground.includes("support-therapy-cabinet-hd.webp"),"Real two-chair therapy room image is painted");
     const hdPhotoDimensions=await page.evaluate(async()=>{
       const img=new Image();
@@ -258,8 +258,8 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
-      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
+      assert.ok(sizes.hero>=215 && sizes.hero<=350,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=108 && height<=174),
         "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
     await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
@@ -293,23 +293,32 @@ try {
           dockTop:dock.getBoundingClientRect().top,
           viewport:innerHeight};
       });
-      assert.ok(firstScreenFit && firstScreenFit.goalBottom<firstScreenFit.questionTop &&
+      assert.ok(firstScreenFit &&
         firstScreenFit.nextLeft>=firstScreenFit.goalRight-3 &&
         Math.abs(firstScreenFit.goalTop-firstScreenFit.nextTop)<12 &&
-        firstScreenFit.goalBottom<firstScreenFit.dockTop-16,
-        "390x844 goal and right-side Next must appear ABOVE four quiz buttons: "+JSON.stringify(firstScreenFit));
+        firstScreenFit.questionTop<firstScreenFit.entryTop,
+        "Goal and right-side Next follow the four quiz cards: "+JSON.stringify(firstScreenFit));
       assert.ok(firstScreenFit &&
-        firstScreenFit.roomBottom<=firstScreenFit.entryTop+4 &&
-        firstScreenFit.entryBottom<=firstScreenFit.audienceTop+3 &&
-        firstScreenFit.audienceBottom<firstScreenFit.questionTop &&
-        firstScreenFit.progressTop>=firstScreenFit.audienceBottom-3,
-        "Approved order must be room → frosted input/Next → For Me/Business → quiz: "+JSON.stringify(firstScreenFit));
-      assert.ok(firstScreenFit?.glassBlur?.includes("blur(") &&
-        firstScreenFit.glassBackground?.includes("linear-gradient"),
-        "Goal composer must have real semi-transparent backdrop blur, not opaque cream or a flattened mock: "+
-          JSON.stringify(firstScreenFit));
+        firstScreenFit.audienceBottom<=firstScreenFit.roomBottom &&
+        firstScreenFit.roomBottom<=firstScreenFit.progressTop+4 &&
+        firstScreenFit.progressTop<firstScreenFit.questionTop,
+        "Approved order is audience → inset photo hero → progress → quiz → goal: "+JSON.stringify(firstScreenFit));
     }
-    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    const reviewButton=quiz.locator("[data-support-free-analyses]");
+    const reviewPanel=quiz.locator("[data-support-free-channels]");
+    await expect(reviewButton).toHaveAttribute("aria-expanded","false");
+    await expect(reviewPanel).toBeHidden();
+    await reviewButton.click();
+    await expect(reviewPanel).toBeVisible();
+    await expect(reviewPanel.locator("[data-messenger-only-channel]")).toHaveCount(2);
+    const reviewWA=await reviewPanel.locator('[data-messenger-only-channel="whatsapp"]').getAttribute("href");
+    const reviewTG=await reviewPanel.locator('[data-messenger-only-channel="telegram"]').getAttribute("href");
+    assert.equal(new URL(reviewWA).hostname,"wa.me");
+    assert.equal(new URL(reviewTG).hostname,"t.me");
+    assert.ok(!new URL(reviewWA).searchParams.get("text").includes("Calm and clear decisions"),"Do not transfer private goal text");
+    await reviewButton.click();
+    await expect(reviewPanel).toBeHidden();
+    await expect(quiz.locator("[data-support-learn-more]")).toHaveAttribute("href",locale==="en"?"/":"/"+locale);    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
     await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
@@ -402,7 +411,7 @@ try {
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business is a separate two-step format + offer selector; For Me keeps 4 questions.
     await quiz.locator("[data-services-audience] button").nth(1).click();
-    const businessBackground=await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    const businessBackground=await quiz.locator("[data-support-luxe-room]").evaluate(el=>getComputedStyle(el).backgroundImage);
     assert.equal(businessBackground,luxuryBackground,"For Business and For Me must share exactly one therapy room image");
 
     const business = quiz.locator("[data-services-business-menu]");
