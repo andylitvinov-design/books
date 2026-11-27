@@ -906,3 +906,25 @@ test('capture guidance requests the exact canonical question and localized echo 
   assert.ok(!coachCourseCheckpointGuidance(course,locale,opening,{},[{role:'assistant',content:field.question,interrupted:true}],words).includes(checkpointConfirmation(field.question,words,locale)))
  }
 })
+
+
+test('consented legacy draft reconstructs only exact confirmed fields after the opening',async()=>{
+ const {deriveCoachDraftReview}=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const {checkpointConfirmation}=await import('../lib/coaching/coach-course-question-binding.mjs')
+ const fixtures={en:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],ru:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],es:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí']}
+ for(const [locale,history] of Object.entries(fixtures)){
+  const course='goal_result',opening=coachOpeningProgress({turns:history,locale,personaId:'mira'})
+  assert.equal(opening.completed,true)
+  const q=coachCourseProtocolSchema(course,locale).checkpoints.find(f=>f.id==='goal').question
+  const words=({en:'I want to open a new studio',ru:'Хочу открыть новую студию',es:'Quiero abrir un estudio nuevo'})[locale]
+  const turns=[...history.map(content=>({role:'user',content})),{role:'assistant',content:q},{role:'user',content:words},{role:'assistant',content:checkpointConfirmation(q,words,locale)},{role:'user',content:history[0]}]
+  const protocol={...sample(),personaId:'mira',locale,courseSessionId:course,opening:coachOpeningProtocolSnapshot(opening),turns}
+  const review=deriveCoachDraftReview(protocol,course)
+  assert.equal(review.events.length,1);assert.equal(review.events[0].quote,words)
+  assert.deepEqual(deriveCoachDraftReview({...protocol,turns:[...turns,{role:'assistant',content:q}]},course),review)
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-1)},course),null)
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.map((t,i)=>i===turns.length-2?{...t,interrupted:true}:t)},course),null)
+  assert.equal(deriveCoachDraftReview({...protocol,opening:{...protocol.opening,name:'Different name'}},course),null)
+  assert.equal(deriveCoachDraftReview(protocol,'goal_plan'),null)
+ }
+})
