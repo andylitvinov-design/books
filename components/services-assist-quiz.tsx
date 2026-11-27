@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown,
   Brain, CircleHelp, ClipboardCheck, Compass, CreditCard, Flower2, Gift, GraduationCap,
-  HandHeart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
+  HandHeart, Heart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
   ChevronRight, Mic, MonitorPlay, Sparkles, Target, UserRound, UsersRound, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -14,6 +14,9 @@ import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { serviceGroupAnchor, servicesCategoryTargets } from "@/lib/services-quick-categories";
 import { ServicesBusinessMenu, suggestBusinessCategory, type BusinessKey } from "./services-business-menu";
+import { ProfileSpaceDashboard } from "@/components/app/profile-space-dashboard";
+import { MandatoryMessengerActions } from "@/components/mandatory-messenger-actions";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-assist-quiz.module.css";
 
 type QuestionKey = "topic" | "need" | "mode" | "budget";
@@ -675,28 +678,28 @@ const supportVisualCopy: Record<PublicLocale, {
 }> = {
  ru:{heading:"Коучинг, консалтинг и психотерапевтическая поддержка",
  tagline:"Выберите подходящий метод и мастера.",
- prompt:"Ответьте на 4 вопроса:",audience:"Кому нужна поддержка",
+ prompt:"Получить бесплатный разбор",audience:"Кому нужна поддержка",
  forMe:"Для себя",forBusiness:"Для бизнеса",
  goal:"Опишите вашу цель или ситуацию…",dictation:"Открыть поле для диктовки с клавиатуры",
  next:"Далее",or:"ИЛИ",of:"из",help:"Спросить Ali"},
  en:{heading:"Coaching, Consulting & Therapy Support",
  tagline:"Choose the right method & master.",
- prompt:"Answer 4 questions:",audience:"Who needs support",
- forMe:"For Me",forBusiness:"For Business",
+ prompt:"Get Free Analyses",audience:"Who needs support",
+ forMe:"For myself",forBusiness:"For business",
  goal:"Describe your goal or situation…",dictation:"Focus field for keyboard dictation",
  next:"Next",or:"OR",of:"of",help:"Ask Ali"},
  es:{heading:"Coaching, consultoría y apoyo terapéutico",
  tagline:"Elige el método y profesional adecuados.",
- prompt:"Responde 4 preguntas:",audience:"Para quién es el apoyo",
+ prompt:"Obtener análisis gratuito",audience:"Para quién es el apoyo",
  forMe:"Para mí",forBusiness:"Para mi negocio",
  goal:"Describe tu meta o situación…",dictation:"Abrir campo para dictar con el teclado",
  next:"Siguiente",or:"O",of:"de",help:"Preguntar a Ali"}
 };
-const businessPrompt: Record<PublicLocale,string> = {
-  en:"Choose your support in 2 steps",
-  ru:"Выберите поддержку за 2 шага",
-  es:"Elige apoyo en 2 pasos",
-};
+const reviewCopy = {
+  en:{eyebrow:"COACHING, CONSULTING & THERAPY",learn:"Learn more",service:"Free written situation review",request:"I would like to request a free personal written review.",channel:"Choose a messenger",note:"Send the message in your chosen app to request the free written review. No automatic submission."},
+  ru:{eyebrow:"КОУЧИНГ, КОНСАЛТИНГ И ТЕРАПИЯ",learn:"Подробнее",service:"Бесплатный письменный разбор ситуации",request:"Хочу запросить бесплатный личный письменный разбор.",channel:"Выберите мессенджер",note:"Отправьте сообщение в выбранном приложении, чтобы запросить бесплатный письменный разбор. Автоматической отправки нет."},
+  es:{eyebrow:"COACHING, CONSULTORÍA Y TERAPIA",learn:"Más información",service:"Revisión personal gratuita por escrito",request:"Quiero solicitar una revisión personal gratuita por escrito.",channel:"Elige una aplicación",note:"Envía el mensaje en la aplicación elegida para solicitar la revisión gratuita. No se envía automáticamente."},
+} as const;
 // The free-text entry offers a lightweight on-device topic hint; the visitor
 // always sees and can change the actual quiz choices before recommendations.
 function suggestPersonalTopic(text:string):QuizTopic|null {
@@ -710,6 +713,10 @@ function suggestPersonalTopic(text:string):QuizTopic|null {
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const v = supportVisualCopy[locale];
+  const review = reviewCopy[locale];
+  const [reviewOpen,setReviewOpen] = useState(false);
+  const homeHref = locale === "en" ? "/" : "/" + locale;
+  const reviewWhatsApp = whatsappEnquiryUrl({locale,service:review.service,request:review.request,pagePath:"/"+locale+"/services"});
   const [audience,setAudience]=useState<"personal"|"business">("personal");
   const [topicTouched,setTopicTouched]=useState(false);
   const [businessCategory,setBusinessCategory]=useState<BusinessKey|null>(null);
@@ -816,9 +823,9 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   return <section className={styles.root} data-services-quiz data-services-quiz-questions="4"
     data-services-quiz-step={step + 1} data-quiz-route={topic} lang={locale} aria-labelledby="services-quiz-title">
     <div className={styles.brandBar}>
-      <Link href={"/" + locale} prefetch={false} className={styles.brand} aria-label="Holistic House">
-        <Leaf size={38} strokeWidth={1.5} aria-hidden="true" />
-        <span><strong>Holistic House</strong><small>S U P P O R T</small></span>
+      <Link href={homeHref} prefetch={false} className={styles.brand} aria-label="Holistic House">
+        <span className={styles.brandEmblem}><Sparkles size={24} aria-hidden="true" /></span>
+        <span><strong>Holistic House</strong></span>
       </Link>
       <div className={styles.brandActions}>
         <details className={styles.languageMenu}>
@@ -834,46 +841,42 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
       </div>
     </div>
 
-    <header className={styles.hero}>
-      <svg className={styles.lotusMark} viewBox="0 0 84 48" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
+      <button type="button" aria-pressed={audience === "personal"} onClick={() => {
+        setAudience("personal");setAnswers({topic:"stress_energy"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
+      }}><Heart size={23} aria-hidden="true" />{v.forMe}</button>
+      <button type="button" aria-pressed={audience === "business"} onClick={() => {
+        setAudience("business");setAnswers({topic:"business_support"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
+      }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
+    </div>
+
+    <div className={styles.paper} data-support-cream-panel>
+    <header className={styles.hero} data-support-luxe-room>
+      <div className={styles.heroEyebrow}><svg className={styles.lotusMark} viewBox="0 0 84 48" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M42 42C29 29 31 15 42 4c11 11 13 25 0 38Z"/>
         <path d="M41 41C25 40 17 29 18 14c13 4 22 12 23 27Z"/>
         <path d="M43 41C59 40 67 29 66 14c-13 4-22 12-23 27Z"/>
         <path d="M40 41C24 47 10 38 6 26c11-4 25 1 34 15Z"/>
         <path d="M44 41C60 47 74 38 78 26c-11-4-25 1-34 15Z"/>
         <path d="M27 44h30"/>
-      </svg>
+      </svg><span>{review.eyebrow}</span></div>
       <h1 id="services-quiz-title">{v.heading}</h1>
       <p className={styles.heroTagline}>{v.tagline}</p>
-      <p className={styles.heroPrompt}>{audience === "business" ? businessPrompt[locale] : v.prompt}</p>
-      <div className={styles.heroStage} data-support-luxe-room aria-hidden="true" />
-    </header>
-    <div className={styles.goalEntry} data-services-goal-entry>
-      <div className={styles.goalComposer}>
-        <Sparkles size={22} aria-hidden="true" />
-        <input ref={goalFieldRef} data-services-quiz-goal value={goal} maxLength={300}
-          onChange={event => setGoal(event.target.value)}
-          onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();advanceFromGoal();}}}
-          autoComplete="off" enterKeyHint="go" placeholder={v.goal} aria-label={v.goal} />
-        <button type="button" className={styles.dictation} aria-label={v.dictation} title={v.dictation}
-          onClick={() => goalFieldRef.current?.focus()}><Mic size={22} aria-hidden="true" /></button>
+      <div className={styles.heroActions}>
+        <button type="button" className={styles.freeReview} data-support-free-analyses
+          aria-expanded={reviewOpen} aria-controls="support-free-review-channels" onClick={()=>setReviewOpen(open=>!open)}>
+          {v.prompt}<ArrowRight size={18} aria-hidden="true"/>
+        </button>
+        <a className={styles.learnMore} data-support-learn-more href="#support-programs">
+          {review.learn}<ChevronDown size={18} aria-hidden="true"/>
+        </a>
       </div>
-      <button type="button" className={styles.goalNext} data-services-quiz-next
-        disabled={audience==="personal" ? (step===questionKeys.length-1?!ready:!answers[currentKey])
-          : (!businessCategory&&!goal.trim()) || (Boolean(businessCategory)&&businessOption===null&&!goal.trim())}
-        onClick={advanceFromGoal} aria-label={v.next}>
-        <span>{v.next}</span><ArrowRight size={19} aria-hidden="true" />
-      </button>
-    </div>
-    <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
-      <button type="button" aria-pressed={audience === "personal"} onClick={() => {
-        setAudience("personal");setAnswers({topic:"stress_energy"});setStep(0);setSubmitted(false);
-        setTopicTouched(false);changeBusinessCategory(null);
-      }}><UserRound size={23} aria-hidden="true" />{v.forMe}</button>
-      <button type="button" aria-pressed={audience === "business"} onClick={() => {
-        setAudience("business");setAnswers({topic:"business_support"});setStep(0);setSubmitted(false);
-        setTopicTouched(false);changeBusinessCategory(null);
-      }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
+    </header>
+    <div id="support-free-review-channels" className={styles.reviewChannels} hidden={!reviewOpen} data-support-free-channels>
+      {reviewOpen && <><MandatoryMessengerActions locale={locale} whatsappUrl={reviewWhatsApp} label={review.channel} compact />
+        <p>{review.note}</p></>}
     </div>
 
     {audience === "business" ? <ServicesBusinessMenu locale={locale} goal={goal}
@@ -919,7 +922,30 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
           {t.button}<ArrowRight size={20} aria-hidden="true" />
         </button> : null}
     </form>}
+    <div className={styles.goalEntry} data-services-goal-entry>
+      <div className={styles.goalComposer}>
+        <Sparkles size={22} aria-hidden="true" />
+        <input ref={goalFieldRef} data-services-quiz-goal value={goal} maxLength={300}
+          onChange={event => setGoal(event.target.value)}
+          onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();advanceFromGoal();}}}
+          autoComplete="off" enterKeyHint="go" placeholder={v.goal} aria-label={v.goal} />
+        <button type="button" className={styles.dictation} aria-label={v.dictation} title={v.dictation}
+          onClick={() => goalFieldRef.current?.focus()}><Mic size={22} aria-hidden="true" /></button>
+      </div>
+      <button type="button" className={styles.goalNext} data-services-quiz-next
+        disabled={audience==="personal" ? (step===questionKeys.length-1?!ready:!answers[currentKey])
+          : (!businessCategory&&!goal.trim()) || (Boolean(businessCategory)&&businessOption===null&&!goal.trim())}
+        onClick={advanceFromGoal} aria-label={v.next}>
+        <span>{v.next}</span><ArrowRight size={19} aria-hidden="true" />
+      </button>
+    </div>
 
+    </div>
+    <section id="support-programs" className={styles.programScreen} data-support-program-screen
+      aria-label={locale==="ru"?"Программы поддержки":locale==="es"?"Programas de apoyo":"Support programs"}>
+      <ProfileSpaceDashboard locale={locale} root={"/"+(locale==="es"?"en":locale)+"/app"} homeDiscovery={true} />
+    </section>
+    <div className={styles.paper} data-support-catalog-panel>
     {audience === "personal" ? <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
       <div className={styles.categoryHeader}>
         <h2 id="services-quiz-categories-title">{t.section}</h2>
@@ -973,5 +999,6 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
         }} />
     </div> : null}
     {audience === "personal" ? <p className={styles.privacy}>{t.privacy}</p> : null}
+    </div>
   </section>;
 }
