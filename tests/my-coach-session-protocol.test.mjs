@@ -1,3 +1,4 @@
+import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
@@ -570,9 +571,19 @@ test('next-turn voice course guidance uses exact checkpoints only after opening 
  let checked=0
  for(const course of [...COACH_COURSE_SESSIONS,...COACH_PROGRAM_SESSIONS])for(const lang of ['en','ru','es']){
   const hint=coachCourseCheckpointGuidance(course.id,lang,opening,{conversationAct:'substantive_reply'})
-  for(const checkpoint of coachCourseProtocolSchema(course.id,lang).checkpoints)assert.ok(hint.includes(checkpoint.label),checkpoint.id)
-  assert.match(hint,/If client still confirms this topic/)
-  assert.match(hint,/never repeat answered questions/)
+  if(course.id.startsWith('goal_')){
+   assert.match(hint,/Active time unverified/)
+   assert.match(hint,/after consent/)
+   assert.match(hint,/Do not assume a minute/)
+   const timed=coachCourseCheckpointGuidance(course.id,lang,opening,{conversationAct:'substantive_reply',timebox:{elapsedSeconds:300}})
+   assert.match(timed,/Goal active phase:/)
+   assert.match(timed,/one relevant unanswered eligible point/)
+   assert.ok(timed.length<=450)
+  }else{
+   for(const checkpoint of coachCourseProtocolSchema(course.id,lang).checkpoints)assert.ok(hint.includes(checkpoint.label),checkpoint.id)
+   assert.match(hint,/If client still confirms this topic/)
+   assert.match(hint,/never repeat answered questions/)
+  }
   assert.ok(hint.length<=360)
   for(const conversationAct of ['topic_shift','correction','negation','clarification_request','question_to_coach','gratitude'])
    assert.equal(coachCourseCheckpointGuidance(course.id,lang,opening,{conversationAct}),'')
