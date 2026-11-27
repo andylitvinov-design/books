@@ -19,7 +19,7 @@ export default function AntiStressDaybook(props){
  const day=selected??([1,2,3].find(n=>!gameProgress(props.entries,n).complete)||3)
  const onClose=()=>window.location.assign('/'+lang+'/my-page')
  return <section data-anti-stress-daybook style={{display:'flex',flexDirection:'column',height:'100%',maxWidth:640,margin:'0 auto',padding:'max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom))',boxSizing:'border-box'}}>
- {props.hasMore?<div className={css.flow}><button className={css.secondary} onClick={onClose}>{labels.back}</button><section className={css.paper}><h2>{labels.title}</h2><button className={css.primary} disabled={props.loadingAll} onClick={props.onLoadAll}>{t[9]}</button>{props.loadError&&<p role="alert">{t[10]}</p>}</section></div>:<Games key={props.accountId+':'+day} {...props} day={day} lang={lang} t={t} labels={labels} onSelect={setSelected} onClose={onClose} onNextDay={()=>setSelected(Math.min(day+1,3))}/>}
+ {props.hasMore?<div className={css.flow}><button className={css.secondary} onClick={onClose}>{labels.back}</button><section className={css.paper}><h2>{labels.title}</h2><button className={css.primary} disabled={props.loadingAll} onClick={props.onLoadAll}>{t[9]}</button>{props.loadError&&<p role="alert">{t[10]}</p>}</section></div>:<Games key={props.accountId+':'+day} {...props} day={day} lang={lang} t={t} labels={labels} onSaved={entry=>{setSelected(day);props.onSaved(entry)}} onSelect={setSelected} onClose={onClose} onNextDay={()=>setSelected(Math.min(day+1,3))}/>}
  </section>
 }
 function PracticeTimer({seconds,x}){
