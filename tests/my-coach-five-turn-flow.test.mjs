@@ -534,3 +534,17 @@ test('personalized greeting is local-only, never the generic public MP3 or cloud
   assert.equal(mic.aborted,true)
  }
 })
+
+
+test('manual replay reads committed opening evidence before any cloud request',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const start=ui.indexOf('function replayCoachReply(overrideText)')
+ const end=ui.indexOf("void fetch('/api/app/my-coach/voice/synthesize'",start)
+ assert.ok(start>=0&&end>start)
+ const guard=ui.slice(start,end)
+ assert.match(guard,/const replayTurn=\[\.\.\.turnsRef\.current\]\.reverse\(\)\.find/)
+ assert.match(guard,/const publicOpening=spokenText===coachSessionOpeningLine\(personaId,conversationLang\)/)
+ assert.match(guard,/replayTurn\.content===spokenText&&\(replayTurn\.stage==='opening'\|\|Boolean\(replayTurn\.openingProgress\)\)/)
+ assert.match(guard,/if\(privateOpening\)\{[\s\S]*?setPlaybackNotice\([\s\S]*?\n\s*return\n\s*\}/)
+ assert.ok(guard.indexOf('if(privateOpening)')<guard.indexOf('startDirectCoachIntroAudio(introUrl'))
+})
