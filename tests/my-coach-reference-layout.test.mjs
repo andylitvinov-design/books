@@ -16,7 +16,8 @@ test('My Coach reference layout uses compact scenic design and actual persona/se
     assert.ok(css.includes('.' + part + '{'), part + ' styled')
   }
   assert.match(component, /data-my-coach-program-panel/)
-  assert.match(component, /aria-expanded=\{showPrograms\}/)
+  assert.match(component, /data-my-coach-program-details/)
+  assert.ok(component.includes("'/my-coach/programs'"))
   assert.match(css, /my-coach-portraits\.avif/)
   assert.match(css, /reiki-approved-sunrise-v3\.webp/)
   assert.match(css, /@media\(max-width:540px\)/)
