@@ -129,3 +129,14 @@ test('incident: unrelated interface replies and bare no are transcript only, not
   assert.equal(coachCapturedClientTurns(turns).length,1)
  }
 })
+
+
+test('confirmed preferred name shows the normalized value independently of the literal assent',()=>{
+ for(const locale of ['en','ru','es']){
+  const name={kind:'confirmed_previous',value:'Alex',quote:({en:'Yes',ru:'Да',es:'Sí'})[locale]}
+  const confirmed=openingStagePosition({fieldStatus:{name:'confirmed'},checkmarks:{name:true},answers:{name}},locale).rows.find(r=>r.id==='name')
+  assert.equal(confirmed.value,'Alex');assert.equal(confirmed.quote,name.quote);assert.equal(confirmed.status,'done')
+  const pending=openingStagePosition({current:'name',fieldStatus:{name:'needs_confirmation'},answers:{name}},locale).rows.find(r=>r.id==='name')
+  assert.equal(pending.value,undefined);assert.equal(pending.status,'needs_confirmation')
+ }
+})
