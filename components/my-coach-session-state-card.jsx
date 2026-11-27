@@ -127,7 +127,7 @@ function ReadOnlyCheckbox({checked}){
  */
 export default function MyCoachSessionStateCard({
   locale='en',turns=[],progress=null,stageLabel='',
-  opening=null,profile=null,openingPosition,profilePosition,stagePosition,progressMode,stageGroups=[]
+  opening=null,profile=null,openingPosition,profilePosition,stagePosition,progressMode,stageGroups=[],courseProtocol=false
 }){
   const language=copy[locale]?locale:'en'
   const t=copy[language]
@@ -155,7 +155,7 @@ export default function MyCoachSessionStateCard({
   ]
   return <div className={styles.body} data-coach-session-state-card>
     <p className={styles.intro}><BookOpenCheck size={16} aria-hidden="true"/>{t.subtitle}</p>
-    <CapturedStatements items={captured} t={captureT}/>
+    {courseProtocol?<details><summary>{captureT.title} ({captured.length})</summary><CapturedStatements items={captured} t={captureT}/></details>:<CapturedStatements items={captured} t={captureT}/>}
     {opening&&<section className={styles.stageSection} data-coach-opening-checklist
       aria-label={language==='ru'?'Начало сессии':language==='es'?'Inicio de sesión':'Session opening'}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
@@ -174,6 +174,7 @@ export default function MyCoachSessionStateCard({
               {label}
               {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
                 aria-hidden="true"/>}
+              {key==='name'&&status==='done'&&opening.answers?.name?.value&&<small className={styles.openingValue} data-coach-preferred-name>{opening.answers.name.value}</small>}
               {quote&&<small className={styles.openingValue} data-coach-opening-answer>{captureT.quote}: «{quote}»</small>}
               {automatic&&<small className={styles.openingValue}>{captureT.automatic}</small>}
             </span>
@@ -238,7 +239,7 @@ export default function MyCoachSessionStateCard({
         })}
       </ol>
     </section>}
-    <section className={styles.informationSection} aria-label={t.information}>
+    {!courseProtocol&&<section className={styles.informationSection} aria-label={t.information}>
       <h3 className={styles.sectionTitle}><BookOpenCheck size={18} aria-hidden="true"/>{t.information}</h3>
       <dl className={styles.fieldList}>
         {fields.map(({id,label,Icon,mentioned,value})=>{
@@ -256,7 +257,7 @@ export default function MyCoachSessionStateCard({
           <dd>{value}</dd>
         </div>})}
       </dl>
-    </section>
+    </section>}
     <p className={styles.note}><BookOpenCheck size={15} aria-hidden="true"/>{t.notice}</p>
     <p className={styles.note}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>
   </div>
