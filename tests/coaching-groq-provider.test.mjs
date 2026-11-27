@@ -1,3 +1,4 @@
+import './coach-supervisor-groq.test.mjs'
 import test from 'node:test'
 import './coach-semantic-evidence.test.mjs'
 import assert from 'node:assert/strict'
