@@ -85,6 +85,8 @@ if(!isolated){
       // Real SQL executes BEGIN/COMMIT. This test owns its disposable DB.
       const source = await readFile(new URL('../supabase/migrations/20261106203000_hh_client_memory_care_journey_v1.sql',import.meta.url),'utf8')
       await db.query(source)
+      await db.query(await readFile(new URL('../supabase/migrations/20261122133522_hh_my_coach_durable_protocol_archive_v1_20261122.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../docs/coaching/PERSONAL_MEMORY_PROTOCOL_REFS_DRAFT.sql',import.meta.url),'utf8'))
       const force = await db.query(`select relname,relrowsecurity,relforcerowsecurity from pg_class
         where oid in ('app_private.client_ai_memory_settings'::regclass,
         'app_private.client_ai_memory_items'::regclass,
@@ -163,6 +165,39 @@ if(!isolated){
         values('40000000-0000-4000-8000-000000000002',$1,$2,$3,$4,
           'view_one_item','client-ai-share-v2',$5,now()+interval '7 days')`,
         [A,REC,REQ,M2,op(5)])))
+
+      // Source-backed PME extension: same account settings, no duplicated text.
+      const protocolA='81000000-0000-4000-8000-000000000001'
+      const protocolB='81000000-0000-4000-8000-000000000002'
+      const refA='82000000-0000-4000-8000-000000000001'
+      const refB='82000000-0000-4000-8000-000000000002'
+      const fingerprint='a'.repeat(64)
+      await as(A,d=>d.query('update app_private.client_ai_memory_settings set memory_enabled=true,sensitive_enabled=true where account_id=$1',[A]))
+      await as(B,d=>d.query('insert into app_private.client_ai_memory_settings(account_id,memory_enabled,sensitive_enabled) values($1,true,true)',[B]))
+      for(const [owner,protocol] of [[A,protocolA],[B,protocolB]])await as(owner,d=>d.query(
+        'insert into app_private.my_coach_protocol_records(account_id,protocol_id,protocol_ciphertext) values($1,$2,$3)',[owner,protocol,'synthetic-ciphertext']))
+      const insertRef=(owner,ref,protocol)=>as(owner,d=>d.query(
+        "insert into app_private.client_ai_memory_protocol_refs(account_id,id,protocol_id,field_id,field_revision,turn_index,source_hash) values($1,$2,$3,'resources',1,0,$4)",[owner,ref,protocol,fingerprint]))
+      await insertRef(A,refA,protocolA)
+      await insertRef(B,refB,protocolB)
+      await assert.rejects(()=>insertRef(B,'82000000-0000-4000-8000-000000000003',protocolA))
+      await assert.rejects(()=>insertRef(A,'82000000-0000-4000-8000-000000000004',protocolA))
+      assert.equal((await as(B,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_refs where account_id=$1',[A]))).rows[0].n,0)
+      assert.equal((await as(B,d=>d.query("update app_private.client_ai_memory_protocol_refs set status='blocked',source_hash=null,revision=revision+1 where account_id=$1 and id=$2",[A,refA]))).rowCount,0)
+      await as(A,d=>d.query("insert into app_private.client_ai_memory_protocol_ref_ops(account_id,operation_id,action,request_hash,ref_id) values($1,$2,'save',$3,$4)",[A,op(99),fingerprint,refA]))
+      assert.equal((await as(B,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_ref_ops'))).rows[0].n,0)
+      await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=false where account_id=$1',[A]))
+      assert.deepEqual((await as(A,d=>d.query('select status,revision,source_hash from app_private.client_ai_memory_protocol_refs where id=$1',[refA]))).rows[0],
+        {status:'blocked',revision:1,source_hash:null})
+      assert.equal((await as(B,d=>d.query('select status from app_private.client_ai_memory_protocol_refs where id=$1',[refB]))).rows[0].status,'active')
+      await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=true where account_id=$1',[A]))
+      assert.equal((await as(A,d=>d.query('select status from app_private.client_ai_memory_protocol_refs where id=$1',[refA]))).rows[0].status,'blocked')
+      await assert.rejects(()=>as(A,d=>d.query("update app_private.client_ai_memory_protocol_refs set status='active',source_hash=$2,revision=revision+1 where id=$1",[refA,fingerprint])))
+      await as(A,d=>d.query('delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2',[A,protocolA]))
+      assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_refs'))).rows[0].n,0)
+      assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_ref_ops'))).rows[0].n,1)
+      const pmeRls=await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid in ('app_private.client_ai_memory_protocol_refs'::regclass,'app_private.client_ai_memory_protocol_ref_ops'::regclass)")
+      assert.equal(pmeRls.rowCount,2);assert.ok(pmeRls.rows.every(row=>row.relrowsecurity&&row.relforcerowsecurity))
 
       // Re-enabling sharing and then deleting settings must revoke every live grant.
       await as(A,db=>db.query(`update app_private.client_ai_memory_settings
