@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,BarChart3,LockKeyhole,Pencil,Play,Target,UserRound,Video} from 'lucide-react'
+import {ArrowRight,BarChart3,LockKeyhole,Pencil,Play,Target,UserRound,Video,BookOpen,Heart,CalendarDays,MessageCircle,NotebookPen,Sparkles,Settings} from 'lucide-react'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import {buildProfileAssessmentView} from '@/lib/profile/profile-assessment-view'
 import styles from './profile-personal-summary.module.css'
@@ -17,6 +17,11 @@ const formatNumber=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2}
 export default function ProfilePersonalSummary({locale='en',profile={},data={},onEdit,onAddVideo,busy=false}){
  const language=Object.hasOwn(COPY,locale)?locale:'en'
  const t=COPY[language]
+ const dashboard=({
+ en:{goals:'My Goals',well:'Well-being',progress:'My Progress',journal:'My Journal',resources:'My Resources',guidance:'Personal Guidance',guideText:'Explore your next step with your AI coach.',guideAction:'Open My Coach',today:'My Today',todayText:'Open your Daybook and continue your personal practices.',todayAction:'Open Daybook',sessions:'My Sessions',sessionsText:'Review your saved sessions and reports.',settings:'Settings & More'},
+ ru:{goals:'Мои цели',well:'Самочувствие',progress:'Мой прогресс',journal:'Мой дневник',resources:'Мои ресурсы',guidance:'Личная поддержка',guideText:'Определите следующий шаг вместе с ИИ-коучем.',guideAction:'Открыть коуча',today:'Мой день',todayText:'Откройте Daybook и продолжите личные практики.',todayAction:'Открыть Daybook',sessions:'Мои сессии',sessionsText:'Просмотрите сохранённые сессии и отчёты.',settings:'Настройки и другое'},
+ es:{goals:'Mis metas',well:'Bienestar',progress:'Mi progreso',journal:'Mi diario',resources:'Mis recursos',guidance:'Orientación personal',guideText:'Explora tu próximo paso con tu coach IA.',guideAction:'Abrir mi coach',today:'Mi día',todayText:'Abre Daybook y continúa tus prácticas personales.',todayAction:'Abrir Daybook',sessions:'Mis sesiones',sessionsText:'Consulta tus sesiones e informes guardados.',settings:'Ajustes y más'}
+ })[language]
  const appLocale=language==='es'?'en':language
  const [privateState,setPrivateState]=useState({loading:true,bootstrap:null,goals:null,failed:false})
  const [playing,setPlaying]=useState(null)
@@ -64,7 +69,16 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
        <Link href={'/'+appLocale+'/app/portrait?space=path'} className={styles.outline}>{t.goalLink}<ArrowRight size={18} aria-hidden="true"/></Link>
      </div>
    </section>
+   <nav className={styles.shortcuts} aria-label={dashboard.resources} data-my-page-dashboard-shortcuts>
+    {[[Target,dashboard.goals,'/'+appLocale+'/app/my-coaching-plan'],[Heart,dashboard.well,'#my-wellbeing'],[BarChart3,dashboard.progress,'#my-progress'],[NotebookPen,dashboard.journal,'#my-page-entry'],[BookOpen,dashboard.resources,'#my-resources']].map(([Icon,label,href])=>href.startsWith('#')?<a key={href} href={href}><Icon size={24} aria-hidden="true"/><span>{label}</span></a>:<Link key={href} href={href} prefetch={false}><Icon size={24} aria-hidden="true"/><span>{label}</span></Link>)}
+   </nav>
    <MyPageCourses locale={language} accountId={data?.accountId||data?.page?.account_id}/>
+   <section className={styles.guidance} data-my-page-personal-guidance>
+    <div className={styles.guidancePhoto} aria-hidden="true"/>
+    <div className={styles.guidanceBody}><h2><Sparkles size={23} aria-hidden="true"/>{dashboard.guidance}</h2><p>{dashboard.guideText}</p><Link href={'/'+language+'/my-coach'} prefetch={false}>{dashboard.guideAction}<ArrowRight size={18} aria-hidden="true"/></Link></div>
+   </section>
+   <section className={styles.card} data-my-page-today><header className={styles.heading}><CalendarDays size={23} aria-hidden="true"/><h2>{dashboard.today}</h2></header><p className={styles.goalEmpty}>{dashboard.todayText}</p><Link className={styles.more} href={'/'+appLocale+'/app/daybook'} prefetch={false}>{dashboard.todayAction}<ArrowRight size={18}/></Link></section>
+   <section className={styles.card} data-my-page-sessions><header className={styles.heading}><MessageCircle size={23} aria-hidden="true"/><h2>{dashboard.sessions}</h2></header><p className={styles.goalEmpty}>{dashboard.sessionsText}</p><Link className={styles.more} href={'/'+appLocale+'/app/portrait?space=sessions'} prefetch={false}>{dashboard.sessions}<ArrowRight size={18}/></Link></section>
    <section className={styles.card} aria-label={language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}>
     <header className={styles.heading}><UserRound size={23} aria-hidden="true"/><h2>{language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}</h2></header>
     <div className={styles.measures}>{[
@@ -75,7 +89,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
      ['/'+appLocale+'/app/settings',language==='ru'?'Настройки':language==='es'?'Ajustes':'Settings']
     ].map(([href,title])=><Link key={href} href={href} prefetch={false} className={styles.measure} data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}><span className={styles.measureTop}><strong>{title}</strong><ArrowRight size={16} aria-hidden="true"/></span></Link>)}</div>
    </section>
-   <section className={styles.card} aria-label={t.goal}>
+   <section className={styles.card} id="my-wellbeing" aria-label={t.goal}>
      <header className={styles.heading}><Target size={23} aria-hidden="true"/><h2>{t.goal}</h2><Link href={'/'+appLocale+'/app/portrait?space=path'} aria-label={t.goalLink}><ArrowRight size={20}/></Link></header>
      <p className={styles.goalEmpty}>{t.goalEmpty}</p>
      {checkin?.values?<div className={styles.ratings}>
@@ -96,7 +110,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
        {appLocale==='ru'?'Заполнить самостоятельно или с коучем':appLocale==='es'?'Completar con preguntas guiadas':'Fill in alone or with guided questions'}
        <ArrowRight size={16}/></Link>
    </section>
-   <section className={styles.card} aria-label={t.tests}>
+   <section className={styles.card} id="my-progress" aria-label={t.tests}>
      <header className={styles.heading}><BarChart3 size={23} aria-hidden="true"/><h2>{t.tests}</h2><Link href={'/'+appLocale+'/app/tests'} aria-label={t.allTests}><ArrowRight size={20}/></Link></header>
      {privateState.loading?<p className={styles.hint} role="status">{t.wait}</p>:
       privateState.failed?<p className={styles.empty}>{t.resultError}</p>:
@@ -109,7 +123,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
      <p className={styles.hint}>{t.testsNote}</p>
      <Link href={'/'+appLocale+'/app/tests'} className={styles.more}>{t.allTests}<ArrowRight size={16}/></Link>
    </section>
-   <section className={styles.card} aria-label={t.videos}>
+   <section className={styles.card} id="my-resources" aria-label={t.videos}>
      <header className={styles.heading}><Video size={23} aria-hidden="true"/><h2>{t.videos}</h2><Link href={'/'+appLocale+'/app/videos'} aria-label={t.allVideos}><ArrowRight size={20}/></Link></header>
      {videoError?<p className={styles.alert} role="alert">{videoError}</p>:null}
      {!videos.length?<p className={styles.empty}>{t.videosEmpty}</p>:
@@ -127,5 +141,6 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
       </article>)}</div>}
      <Link href={'/'+appLocale+'/app/videos'} className={styles.more}>{t.allVideos}<ArrowRight size={16}/></Link>
    </section>
+   <section className={styles.card} data-my-page-settings><header className={styles.heading}><Settings size={23} aria-hidden="true"/><h2>{dashboard.settings}</h2></header><div className={styles.measures}><button type="button" className={styles.measure} onClick={onEdit}>{t.edit}<ArrowRight size={16}/></button><Link className={styles.measure} href={'/'+appLocale+'/app/settings'} prefetch={false}>{dashboard.settings}<ArrowRight size={16}/></Link></div></section>
  </div>
 }
