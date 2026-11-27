@@ -855,3 +855,27 @@ test('cancelled streaming replies retain an approved audible prefix in the same 
  assert.match(ui,/waiting\.approvedReply=\{role:'assistant',content:phrase/)
  assert.match(ui,/capturedAt:new Date\(\)\.toISOString\(\),mode:'ai',interrupted:true/)
 })
+
+import {draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+test('long QA capture and immutable Clarity visit attribution coexist in draft, report and export',()=>{
+ const visit='8afbf841-49a0-46e1-b5c1-124a116efa29',capturedAt='2026-11-19T20:01:00.000Z'
+ const data={...sample(),courseSessionId:'clarity_day_1',turnLayout:'chronological',turns:[
+  {role:'assistant',content:'Welcome',coachId:'mira',capturedAt,locale:'en'},
+  {role:'user',content:'Original answer '+('words '.repeat(500)),coachId:'caesar',visitId:visit},
+  {role:'assistant',content:'Continue',coachId:'caesar',visitId:visit,authorPersonaId:'caesar',capturedAt,inference:{provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'}}
+ ]}
+ const normalized=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:data.courseSessionId,protocol:data}).protocol
+ assert.deepEqual(draft.turns,normalized.turns)
+ assert.equal(draft.turns[0].coachId,'mira');assert.equal(draft.turns[0].visitId,undefined)
+ assert.equal(draft.turns[1].content,data.turns[1].content)
+ assert.equal(draft.turns[1].coachId,'caesar');assert.equal(draft.turns[1].visitId,visit)
+ assert.equal(draft.turns[2].authorPersonaId,'caesar')
+ const exported=coachQualityTranscript(draft)
+ assert.equal(exported.turns[1].visitId,visit);assert.equal(exported.turns[1].coachId,'caesar')
+ assert.equal(exported.turns[2].visitId,visit);assert.equal(exported.turns[2].authorPersonaId,'caesar')
+ assert.equal(draftTranscriptPrefix(draft,normalized),true)
+ const altered={...draft,turns:draft.turns.map((row,i)=>i===2?{...row,coachId:'mira',authorPersonaId:'mira'}:row)}
+ assert.equal(draftTranscriptPrefix(draft,altered),false)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,turns:data.turns.map((row,i)=>i===2?{...row,authorPersonaId:'mira'}:row)}),/MY_COACH_PROTOCOL_INVALID/)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,courseSessionId:'introductory'}),/MY_COACH_PROTOCOL_INVALID/)
+})

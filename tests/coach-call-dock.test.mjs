@@ -94,3 +94,14 @@ test('hangup freezes the clock and only leaves after the existing private save a
  assert.ok(modal.includes('const completeTitle=reviewComplete===true'))
  assert.ok(modal.includes("change:'Choose another coach'"))
 })
+
+test('Clarity early exit is tied to trusted completion and keeps the selected logical day',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx'),modal=read('components/my-coach-early-exit.jsx')
+ assert.match(ui,/const completion=clarityCourseActive\?clarityTimeLimit\.current===true:/)
+ assert.match(ui,/choice==='switch'&&clarityCourseDay\(selectedCourseId\)\?clarityCoachHref\('\/'\+lang\+'\/my-coach',clarityCourseDay\(selectedCourseId\)\)/)
+ assert.match(ui,/verifiedTime:clarityCourseActive&&\(restoredDraft&&restoredClarityTimeKnown\|\|clarityTimeLimit\.current===true\)/)
+ assert.match(modal,/const unknown=claritySession&&!verifiedTime/)
+ assert.match(modal,/\{unknown\?clarityCopy\.unknown:/)
+ assert.match(modal,/\{!unknown&&<progress/)
+ assert.match(modal,/data-coach-exit-time-verified/)
+})

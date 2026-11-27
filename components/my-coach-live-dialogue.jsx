@@ -1726,7 +1726,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setProtocolFinishedAt(new Date().toISOString())
       setProtocolError('');setProtocolEditing(false)
     }
-    setEarlyExit({seconds,wasPaused:paused,completion,reviewComplete})
+    setEarlyExit({seconds,wasPaused:paused,completion,reviewComplete,verifiedTime:clarityCourseActive&&(restoredDraft&&restoredClarityTimeKnown||clarityTimeLimit.current===true)})
     setPaused(true)
   }
   function dismissHangupMenu(){
@@ -2923,7 +2923,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
-    {earlyExit&&<MyCoachEarlyExit locale={lang} seconds={earlyExit.seconds} completion={earlyExit.completion} reviewComplete={earlyExit.reviewComplete} saving={earlyExitBusy||protocolSaving} error={earlyExitError} privateSave={autoSaveEnabled&&protocolOwnerReady&&turns.length>0} saved={protocolSaved} locked={protocolSaveLocked&&!protocolSaved} onDismiss={dismissHangupMenu} onChoice={leaveEarlySession}/>}
+    {earlyExit&&<MyCoachEarlyExit locale={lang} seconds={earlyExit.seconds} completion={earlyExit.completion} reviewComplete={earlyExit.reviewComplete} claritySession={clarityCourseActive} verifiedTime={earlyExit.verifiedTime===true} crossCoach={courseGate?.step.crossCoach===true&&!courseGate.step.paused} saving={earlyExitBusy||protocolSaving} error={earlyExitError} privateSave={autoSaveEnabled&&protocolOwnerReady&&turns.length>0} saved={protocolSaved} locked={protocolSaveLocked&&!protocolSaved} onDismiss={dismissHangupMenu} onChoice={leaveEarlySession}/>}
     {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={keyInfoUi.finish} data-my-coach-protocol>
       <div className={styles.protocolCard}>
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
