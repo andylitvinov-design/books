@@ -335,3 +335,20 @@ test('personal topic-order veto yields only to recognized course question, never
  assert.throws(()=>enforceCoachSessionDirective({...response,message:'You must commit to a deadline.'},base))
  assert.throws(()=>enforceCoachSessionDirective(response,{...base,allowQuestion:false}))
 })
+
+test('day two support outcome requires the resource and preserves trial versus plan',()=>{
+ const v=clarityScenarioVersion('clarity_day_2'),make=(id,extra={})=>({id,scenarioVersion:v,status:'confirmed',quote:'Client answer',source:'client_reviewed_quote',...extra})
+ const rows=['episode','needs','selected_support','transfer_action','timing_or_condition','helpfulness_indicator'].map(k=>make(k))
+ rows.push(make('practice_consent',{methodDecision:'accepted'}),make('test_status',{quote:'planned'}),make('reviewed_summary',{reviewDecision:'accepted'}))
+ assert.equal(clarityMethodOutcome(2,rows).outcome,'partial')
+ assert.ok(clarityMethodOutcome(2,rows).coreMissing.includes('resources'))
+ rows.push(make('resources'))
+ assert.equal(clarityMethodOutcome(2,rows).outcome,'support_planned')
+ assert.equal(clarityMethodOutcome(2,rows.map(r=>r.id==='resources'?{...r,status:'self_reported',source:'daybook'}:r)).outcome,'partial')
+ for(const locale of locales){
+  const guide=clarityScenarioGuidance('clarity_day_2',locale)
+  assert.match(guide,/do not propose ending the session/)
+  assert.match(guide,/Comfort ratings are not the optional support-availability scale/)
+  assert.match(guide,/independent reflections are not confirmed dialogue evidence/)
+ }
+})
