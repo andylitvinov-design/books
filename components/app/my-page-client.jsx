@@ -91,6 +91,11 @@ export default function MyPageClient({locale='en'}){
     </div><p className={css.small}>{t.privacy}</p>
    </section>
    </>:null}
+   <section className={css.card} data-my-page-anti-stress-practices>
+    <h2>{({ru:'Антистресс · практики',en:'Anti-Stress · Practices',es:'Antiestrés · Prácticas'})[locale]}</h2>
+    <p>{({ru:'Три дня самостоятельных упражнений в личном Daybook.',en:'Three days of self-guided exercises in your private Daybook.',es:'Tres días de ejercicios autónomos en tu diario privado.'})[locale]}</p>
+    <Link className={css.button} href={'/'+locale+'/app/daybook?program=anti-stress'} prefetch={false}>{({ru:'Открыть практики',en:'Open practices',es:'Abrir prácticas'})[locale]}</Link>
+   </section>
    <section className={css.card} aria-label={t.feed}><h2>{t.feed}</h2>
     <label className={css.label} htmlFor="my-page-entry">{t.postType}</label>
     <textarea id="my-page-entry" className={css.area} maxLength={1200} rows={3} placeholder={t.write}
