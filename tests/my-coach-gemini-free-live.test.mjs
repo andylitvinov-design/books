@@ -733,3 +733,21 @@ test('all eight public coaches lock the recorded RU/EN voice and share TTS deliv
    assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice)))
  }
 })
+
+test('late opening checkpoint does not interpret the screenshot focus answer as refusal',()=>{
+ const question='Андрей, что вам сейчас было бы полезнее: цель, трудность или личный профиль?'
+ const packet={...start,message:'трудность',turns:[{role:'assistant',content:question}],elapsedSeconds:0}
+ const lag=geminiFreeLiveCheckpoint({...packet,openingHistory:[]})
+ assert.equal(lag.openingProgress.current,'invitation')
+ assert.equal(lag.openingProgress.declined,false)
+ assert.match(lag.guidance,/last spoken focus question: challenge/)
+ assert.match(lag.guidance,/not consent/)
+ assert.doesNotMatch(lag.guidance,/Необязательно решать сейчас/)
+ const aligned=geminiFreeLiveCheckpoint({...packet,openingHistory:['да','Андрей']})
+ assert.equal(aligned.openingProgress.answers.focus.kind,'challenge')
+ assert.equal(aligned.openingProgress.current,'feelings')
+ assert.match(aligned.guidance,/начнём с вашей трудности/)
+ const refusal=geminiFreeLiveCheckpoint({...packet,openingHistory:['нет']})
+ assert.equal(refusal.openingProgress.declined,true)
+ assert.doesNotMatch(refusal.guidance,/Acknowledge that choice now/)
+})
