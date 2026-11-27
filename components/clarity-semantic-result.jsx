@@ -10,6 +10,11 @@ const outcomeCopy={
  ru:{goal:{chosen:'Цель выбрана и сверена',exploring:'Исследование направления — цель ещё не выбрана',deferred:'Выбор цели отложен',unknown:'Цель ещё не подтверждена'},practice:{attempted:'Проба выполнена (со слов клиента)',planned:'Запланировано, ещё не пробовали',stopped:'Проба остановлена (со слов клиента)',declined:'Отказ от практики',listening_only:'Только разговор',unknown:'Статус практики пока не записан'}},
  es:{goal:{chosen:'Meta elegida y revisada',exploring:'Explorando un rumbo; sin meta elegida',deferred:'Elección de la meta aplazada',unknown:'Meta aún no confirmada'},practice:{attempted:'Probado (autoinforme)',planned:'Planificado, aún no probado',stopped:'Interrumpido (autoinforme)',declined:'Práctica rechazada',listening_only:'Solo conversación',unknown:'Estado de la práctica aún no registrado'}}
 }
+const methodCopy={
+ en:{partial:'Core result still incomplete',situation_map:'Situation and priority reviewed',support_only:'Support conversation reviewed',support_tried:'Support trial and next step reviewed',support_stopped:'Stopped trial and next step reviewed',support_planned:'Support plan reviewed; not yet tried',goal_deferred:'Decision to defer reviewed',goal_exploring:'Exploration reviewed; no goal chosen',goal_partial_plan:'Goal and first step reviewed; baseline or horizon still open',goal_plan:'Goal and action plan reviewed'},
+ ru:{partial:'Основной результат пока неполный',situation_map:'Ситуация и приоритет сверены',support_only:'Разговор о поддержке сверен',support_tried:'Проба и следующий шаг сверены',support_stopped:'Остановленная проба и следующий шаг сверены',support_planned:'План поддержки сверен; проба ещё не выполнена',goal_deferred:'Решение отложить цель сверено',goal_exploring:'Исследование сверено; цель не выбрана',goal_partial_plan:'Цель и первый шаг сверены; исходная точка или горизонт открыты',goal_plan:'Цель и план действий сверены'},
+ es:{partial:'Resultado principal aún incompleto',situation_map:'Situación y prioridad revisadas',support_only:'Conversación de apoyo revisada',support_tried:'Prueba y próximo paso revisados',support_stopped:'Prueba interrumpida y próximo paso revisados',support_planned:'Plan de apoyo revisado; aún no probado',goal_deferred:'Decisión de aplazar revisada',goal_exploring:'Exploración revisada; sin meta elegida',goal_partial_plan:'Meta y primer paso revisados; punto inicial u horizonte pendientes',goal_plan:'Meta y plan de acción revisados'}
+}
 const point=(i,score)=>[110+score*8*Math.cos(-Math.PI/2+i*Math.PI/4),110+score*8*Math.sin(-Math.PI/2+i*Math.PI/4)]
 const color={current:'#427969',desired:'#b18a51'}
 function Radar({axes,t}){
@@ -29,6 +34,7 @@ export default function ClaritySemanticResult({day,rows,locale='en'}){
  const nodes=model.nodes,outcome=outcomeCopy[locale]||outcomeCopy.en
  return <section data-clarity-semantic-result={model.kind} style={{display:'grid',gap:12,overflowWrap:'anywhere'}}>
   <h3 style={{margin:0}}>{t[model.kind]}</h3>
+  {model.methodOutcome&&<p role="status" data-clarity-method-outcome={model.methodOutcome.outcome}>{(methodCopy[locale]||methodCopy.en)[model.methodOutcome.outcome]}</p>}
   {model.kind==='goal'&&<p data-clarity-goal-outcome>{outcome.goal[model.goalStatus||'unknown']}</p>}
   {model.kind==='support'&&<p data-clarity-practice-outcome>{outcome.practice[model.practiceStatus||'unknown']}</p>}
   {model.axes&&<Radar axes={model.axes} t={t}/>}

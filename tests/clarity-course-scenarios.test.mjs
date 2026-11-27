@@ -5,7 +5,7 @@ import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFi
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
 import {courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
-import {claritySemanticResult} from '../lib/coaching/clarity-session-fields.mjs'
+import {claritySemanticResult,clarityMethodOutcome} from '../lib/coaching/clarity-session-fields.mjs'
 import {claritySessionProtocol} from '../lib/coaching/clarity-course-protocol.mjs'
 import {coachCourseHandoffEligible} from '../lib/coaching/coach-course-continuity.mjs'
 const ids=['clarity_day_2','clarity_day_3']
@@ -209,4 +209,21 @@ test('unverified time uses short scenario-order guidance; separate permissions n
    }
   }
  }
+})
+
+
+test('method outcome distinguishes confirmed core from optional coverage, independent homework and timed completion',()=>{
+ const v=clarityScenarioVersion(ids[1]),make=(id,extra={})=>({id,scenarioVersion:v,status:'confirmed',quote:'Client answer',source:'client_reviewed_quote',...extra})
+ const rows=['priority','goal','why','success','next','timing'].map(k=>make(k))
+ rows.push(make('goal_status',{methodDecision:'accepted'}),make('reviewed_summary',{reviewDecision:'accepted'}))
+ assert.equal(clarityMethodOutcome(3,rows).outcome,'goal_partial_plan')
+ rows.push(make('baseline'),make('horizon'))
+ assert.equal(clarityMethodOutcome(3,rows).outcome,'goal_plan')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='goal'?{...r,status:'self_reported',source:'daybook'}:r)).outcome,'partial')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='reviewed_summary'?{...r,reviewDecision:null}:r)).outcome,'partial')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='goal_status'?{...r,methodDecision:'deferred'}:r)).outcome,'goal_deferred')
+ const b=fixture(ids[0]);b.add('episode','Late work');b.add('needs','Time to rest');b.add('selected_support','Ask a colleague');b.add('practice_consent','yes','consent','accepted');b.add('test_status','tried');b.add('transfer_action','Ask tomorrow');b.add('timing_or_condition','Tomorrow morning');b.add('helpfulness_indicator','Finish on time');b.add('reviewed_summary','yes','review')
+ const result=claritySemanticResult(2,coachCourseProtocolRows(ids[0],b.turns,b.review()))
+ assert.equal(result.methodOutcome.outcome,'partial');assert.ok(result.methodOutcome.coreMissing.includes('test_observation'))
+ assert.equal(clarityMethodOutcome(1,[]),null)
 })
