@@ -952,3 +952,49 @@
   height:clamp(112px,17dvh,145px)
  }
 }
+
+
+/* SHAMANIC_ARTIFACT_CREAM_20261127 — approved 2x2 personal landing, real
+   featured catalogue links and two retained secondary categories. Business untouched. */
+.page[data-shamanica-audience="self"] .container{gap:8px}
+.page[data-shamanica-audience="self"] .audiences{order:1;width:100%;gap:8px;padding:0;border:0;background:none;box-shadow:none;height:auto}
+.page[data-shamanica-audience="self"] .audiences>a{min-height:40px;border:1px solid #d9b775;background:#fff1d6;color:#123e32;box-shadow:0 2px 6px #12080366}
+.page[data-shamanica-audience="self"] .audiences .audienceActive{background:linear-gradient(#087750,#00462f);color:#fff5dc}
+.page[data-shamanica-audience="self"] .hero,
+.page[data-shamanica-audience="self"][data-shamanica-expanded="true"] .hero{order:2;height:auto;min-height:0;margin:0;padding:6px;background:#fff5df;border:1px solid #dfc28b;border-radius:23px 23px 0 0;overflow:hidden;text-align:left}
+.page[data-shamanica-audience="self"] .hero:before{display:none}
+.artifactHero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:250px;padding:14px 12px 12px;border:1px solid #dcb87a;border-radius:17px;background:#281a10;color:#fff3d8}
+.artifactHeroArt{position:absolute;inset:0 0 0 36%;z-index:-2;background-image:url("/images/holistic-house/shamanic-genie-cards-personal.webp");background-size:200% 300%;background-position:100% 0%;background-repeat:no-repeat}
+.artifactHero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#26190ff5 0%,#281b10e8 27%,#291b10ad 48%,transparent 87%),linear-gradient(0deg,#21150cea,transparent 35%);pointer-events:none}
+.artifactHeroText{max-width:68%}
+.artifactEyebrow{display:flex;align-items:center;gap:6px;font:800 10px/1.15 system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase}
+.page[data-shamanica-audience="self"] .artifactHero h1{color:#fff4dc;font:700 clamp(30px,8.5vw,53px)/.98 Georgia,serif;text-align:left;letter-spacing:-.035em;margin:9px 0}
+.artifactHeroText p{font:500 clamp(12px,3.4vw,17px)/1.35 system-ui,sans-serif;margin:0;color:#fff5e3}
+.artifactActions{display:grid;grid-template-columns:1.3fr 1fr;gap:7px}
+.artifactActions button{display:flex;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:44px;padding:8px 5px;border:1px solid #fff0c7;border-radius:25px;background:linear-gradient(110deg,#ffe46b,#ffb400);color:#29200d;font:700 clamp(12px,3.7vw,17px)/1.08 Georgia,serif;cursor:pointer}
+.artifactActions button+button{background:#fff0d1;color:#123e32}
+.artifactActions svg{flex:none}
+.page[data-shamanica-audience="self"] .services{order:3;background:linear-gradient(130deg,#fff9e9,#fff0d4);margin-top:-9px;padding:8px 7px 10px;border:1px solid #dfc28b;border-top:0;border-radius:0 0 22px 22px;color:#123e32}
+.page[data-shamanica-audience="self"] .sectionTitle{position:static!important;clip:auto;width:auto;height:auto;margin:4px 0 10px;padding:0;overflow:visible;white-space:normal;text-align:center;color:#123e32;font:700 clamp(20px,5.7vw,32px)/1.1 Georgia,serif}
+.page[data-shamanica-audience="self"] .serviceGrid{grid-auto-rows:auto;gap:7px}
+.page[data-shamanica-audience="self"] .serviceCard,
+.page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+.page[data-shamanica-audience="self"] .serviceCard:last-child{display:grid;grid-template-columns:33% minmax(0,1fr);align-items:stretch;gap:0;position:relative;height:auto;min-height:94px;padding:4px;border:1px solid #e6c892;border-radius:14px;background:linear-gradient(130deg,#fff8e7,#ffedc9);box-shadow:0 2px 4px #99713e30}
+.page[data-shamanica-audience="self"] [data-shamanica-service] .servicePhoto{position:relative;inset:auto;width:100%;height:auto;min-height:82px;border-radius:10px;background-size:200% 300%}
+.page[data-shamanica-audience="self"] .serviceBody{position:relative;inset:auto;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;width:auto;height:auto;min-height:0;padding:3px 4px 10px 6px;background:none;box-shadow:none;border-radius:0}
+.page[data-shamanica-audience="self"] .serviceBody strong{color:#133e32;font:800 clamp(11px,3.05vw,16px)/1.12 system-ui,sans-serif;overflow-wrap:anywhere}
+.page[data-shamanica-audience="self"] .serviceBody>svg:not(.artifactCardArrow){display:none}
+.page[data-shamanica-audience="self"] .serviceBody>span{position:static!important;display:block;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;white-space:normal!important;color:#254c3f;font:500 clamp(9px,2.5vw,12px)/1.15 system-ui,sans-serif;overflow-wrap:anywhere}
+.page[data-shamanica-audience="self"] .artifactCardArrow{position:absolute;right:1px;bottom:0;width:13px;height:13px}
+.page[data-shamanica-audience="self"] [data-shamanica-service="energy"],.page[data-shamanica-audience="self"] [data-shamanica-service="academy"]{order:2}
+.featuredArtifacts{order:1;grid-column:1/-1;margin:4px 0 2px;padding:8px 6px 9px;border:1px solid #f0dfbc;border-radius:15px;background:#fff7e4}
+.featuredHeader{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px}
+.featuredHeader h2{display:flex;align-items:center;gap:5px;margin:0;font:800 clamp(13px,4vw,20px)/1.1 system-ui,sans-serif;color:#133e32}
+.featuredHeader a{display:flex;align-items:center;gap:4px;flex:none;padding:5px 8px;min-height:32px;border:1px solid #e1c590;border-radius:20px;font:600 11px/1.1 system-ui,sans-serif;color:#133e32;text-decoration:none}
+.featuredGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.featuredGrid>a{min-width:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #dfc18b;border-radius:12px;background:#fff6e0;color:#133e32;text-decoration:none;box-shadow:0 2px 4px #99713e22}
+.featuredPhoto{position:relative;display:block;width:100%;aspect-ratio:1.25;background:#dcc7a1}
+.featuredPhoto img{object-fit:cover}
+.featuredGrid strong{display:grid;place-items:center;min-height:38px;padding:5px 3px;font:800 clamp(10px,2.9vw,14px)/1.12 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
+.artifactActions button:focus-visible,.featuredArtifacts a:focus-visible{outline:3px solid #087750;outline-offset:2px}
+@media(min-width:760px){.artifactHero{min-height:320px;padding:24px 20px 16px}.page[data-shamanica-audience="self"] .serviceCard{min-height:124px}.page[data-shamanica-audience="self"] .serviceBody{padding:8px}.featuredGrid strong{min-height:42px}}
