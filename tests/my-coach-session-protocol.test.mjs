@@ -890,3 +890,19 @@ test('ordinary opening questions never proactively offer an exit, in all persona
   }
   assert.match(COACH_SAFETY_RULES.join(' '),/Honor client-initiated pauses/)
 })
+
+
+test('capture guidance requests the exact canonical question and localized echo for a clear answer',async()=>{
+ const {checkpointConfirmation}=await import('../lib/coaching/coach-course-question-binding.mjs')
+ const opening={completed:true,answers:{focus:{kind:'goal'}}}
+ for(const locale of ['en','ru','es']){
+  const course='clarity_discover',field=coachCourseProtocolSchema(course,locale).checkpoints[0]
+  const guidance=coachCourseProtocolGuidance(course,locale)
+  assert.ok(guidance.includes(field.question));assert.match(guidance,/exact authored question as the entire question turn/)
+  const words=({en:'I want more time for my family',ru:'Мне нужно больше времени с семьёй',es:'Quiero más tiempo con mi familia'})[locale]
+  const hint=coachCourseCheckpointGuidance(course,locale,opening,{},[{role:'assistant',content:field.question}],words)
+  assert.ok(hint.includes(checkpointConfirmation(field.question,words,locale)))
+  assert.match(hint,/wait for explicit assent/)
+  assert.ok(!coachCourseCheckpointGuidance(course,locale,opening,{},[{role:'assistant',content:field.question,interrupted:true}],words).includes(checkpointConfirmation(field.question,words,locale)))
+ }
+})
