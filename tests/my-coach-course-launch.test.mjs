@@ -87,3 +87,11 @@ test('compact course hero and accessible full coach directory do not start or re
  assert.ok(route.indexOf('if(archiveOnly)throw new AppError')<route.indexOf('const voiceName='))
  assert.doesNotMatch(directory,/getUserMedia|startSession\(|sessionStorage|localStorage/)
 })
+
+test('archive-only query accepts only exact version and archive flag',()=>{
+ const route=read('app/api/coaching/intro/[locale]/[coach]/route.js')
+ const pattern=route.split("if(archiveOnly){if(!/")[1].split("/.test(url.search)")[0]
+ const re=new RegExp(pattern)
+ for(const v of [2,3,4,5,6,7])assert.equal(re.test('?v='+v+'&archive=1'),true)
+ for(const bad of ['v=4&archive=1','?v=1&archive=1','?archive=1&v=4','?v=4&archive=2','?v=4&archive=1&archive=1','?v=4'])assert.equal(re.test(bad),false)
+})

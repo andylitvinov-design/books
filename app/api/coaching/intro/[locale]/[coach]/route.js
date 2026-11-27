@@ -75,7 +75,7 @@ export async function GET(request){
     const url=new URL(request.url)
     const archiveOnly=url.searchParams.get('archive')==='1'
     // The explicit archive-only query is read-only: no rate grant, provider call or storage write on miss.
-    if(archiveOnly){if(!/^\\?v=[2-7]&archive=1$/.test(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400);url.searchParams.delete('archive')}
+    if(archiveOnly){if(!/^[?]v=[2-7]&archive=1$/.test(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400);url.searchParams.delete('archive')}
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|caesar|lea|noah|iris|ray)\/?$/.exec(url.pathname)
     if(!match||!['','?v=2','?v=3','?v=4','?v=5','?v=6','?v=7'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
