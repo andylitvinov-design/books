@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import ProfileProgramRequest from './profile-program-request'
-import { BUSINESS_SYLLABUS, BUSINESS_REPORT_ROOT, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
+import { BUSINESS_SYLLABUS, businessReportPdf, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
   Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness, Film,
@@ -171,19 +171,19 @@ function ExpressProgramOverview({locale,copy}) {
 const BUSINESS = {
   en:{
     label:'BUSINESS PROGRAM',title:'My Business',intro:'Find direction, build structure and grow your business with clarity and support.',
-    start:'Start Program',details:'Request Details',question:'What do you need for your business?',program:'8-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
+    start:'Start Program',details:'Details: PDF',question:'What do you need for your business?',program:'8-Session Business Program',hint:'A practical path from vision to execution.',next:'Discuss this session',tools:'Business insights & energy support',
     topics:[['Strategy & Direction','Clarify your vision and growth path'],['Structure & Team','Build an effective organization'],['Growth & Resources','Activate resources and opportunities'],['Execution & Results','Turn your plan into real progress']],
     sessions:BUSINESS_SYLLABUS.en,
   },
   ru:{
     label:'БИЗНЕС-ПРОГРАММА',title:'Мой бизнес',intro:'Найдите направление, выстройте структуру и развивайте бизнес с поддержкой.',
-    start:'Начать программу',details:'Запросить детали',question:'Что нужно вашему бизнесу?',program:'8 сессий для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
+    start:'Начать программу',details:'Подробнее: PDF',question:'Что нужно вашему бизнесу?',program:'8 сессий для бизнеса',hint:'Практический путь от стратегии к результатам.',next:'Обсудить эту сессию',tools:'Анализ и энергетическая поддержка бизнеса',
     topics:[['Стратегия и направление','Видение и путь роста'],['Структура и команда','Эффективная организация'],['Рост и ресурсы','Ресурсы и возможности'],['Реализация и результаты','От плана к результату']],
     sessions:BUSINESS_SYLLABUS.ru,
   },
   es:{
     label:'PROGRAMA EMPRESARIAL',title:'Mi negocio',intro:'Define tu rumbo, construye una estructura y haz crecer tu negocio con claridad y apoyo.',
-    start:'Iniciar programa',details:'Solicitar detalles',question:'¿Qué necesita tu negocio?',program:'8 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
+    start:'Iniciar programa',details:'Detalles: PDF (EN)',question:'¿Qué necesita tu negocio?',program:'8 sesiones empresariales',hint:'Un camino práctico de la visión a la ejecución.',next:'Consultar sobre esta sesión',tools:'Análisis y apoyo energético empresarial',
     topics:[['Estrategia y rumbo','Aclara tu visión y crecimiento'],['Estructura y equipo','Crea una organización eficaz'],['Crecimiento y recursos','Activa recursos y oportunidades'],['Ejecución y resultados','Convierte tu plan en avances']],
     sessions:BUSINESS_SYLLABUS.es,
   },
@@ -191,7 +191,6 @@ const BUSINESS = {
 
 const BUSINESS_PROGRAM_COPY={
   "en": {
-    "report": "Business development report",
     "phases": [
       "I · Strategic design",
       "II · Practical transformation"
@@ -203,7 +202,6 @@ const BUSINESS_PROGRAM_COPY={
     "note": "Please send your message in the messenger to request a session."
   },
   "ru": {
-    "report": "Программа развития бизнеса · PDF",
     "phases": [
       "I · Стратегическое проектирование",
       "II · Практическая трансформация"
@@ -215,7 +213,6 @@ const BUSINESS_PROGRAM_COPY={
     "note": "Отправьте сообщение в мессенджере, чтобы запросить запись."
   },
   "es": {
-    "report": "Programa de desarrollo empresarial · PDF",
     "phases": [
       "I · Diseño estratégico",
       "II · Transformación práctica"
@@ -228,13 +225,6 @@ const BUSINESS_PROGRAM_COPY={
   }
 }
 const businessTopicSessions=[0,1,3,7]
-
-function BusinessReportDownloads({locale,position}) {
-  return <section className={styles.businessReports} data-business-report-links={position} aria-label={BUSINESS_PROGRAM_COPY[locale].report}>
-    <strong><BookOpen size={19} aria-hidden="true"/>{BUSINESS_PROGRAM_COPY[locale].report}</strong>
-    <div><a href={BUSINESS_REPORT_ROOT+'/ru.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="ru">Русский · PDF</a><a href={BUSINESS_REPORT_ROOT+'/en.pdf'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" lang="en">English · PDF</a></div>
-  </section>
-}
 
 export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null, embeddedSection = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
@@ -312,9 +302,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <p className={styles.businessEyebrow}><BriefcaseBusiness size={19} aria-hidden="true"/>{b.label}</p>
         <h1>{b.title}</h1>
         <p className={styles.businessIntro}>{b.intro}</p>
-        <ProfileProgramRequest locale={selected} program="business" open={businessContactOpen} onOpenChange={setBusinessContactOpen} request={bp.request} option={b.program}/>
+        <div className={styles.businessActions}>
+          <a href={businessReportPdf(selected)} hrefLang={selected==='ru'?'ru':'en'} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-business-details data-business-report-pdf>{b.details}</a>
+        </div>
       </header>
-      <BusinessReportDownloads locale={selected} position="top"/>
       <h2 className={styles.businessHeading}>{b.question}</h2>
       <div className={styles.businessTopics}>{b.topics.map(([title,detail],index)=>
         <button key={index} type="button" className={styles.businessTopic} data-business-topic={index} aria-pressed={businessStage===businessTopicSessions[index]} onClick={()=>openBusinessStage(businessTopicSessions[index])}>
@@ -344,7 +335,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           </div>
         </article></div>
       })}</div>
-      <BusinessReportDownloads locale={selected} position="bottom"/>
+      <ProfileProgramRequest locale={selected} program="business" open={businessContactOpen} onOpenChange={setBusinessContactOpen} request={bp.request} option={b.program} showTrigger={false}/>
       <Link href={'/' + selected + '/shamanica/business'} className={styles.profileInsight} prefetch={false}>
         <Compass size={23} aria-hidden="true"/>{b.tools}<ArrowRight size={19} aria-hidden="true"/>
       </Link>

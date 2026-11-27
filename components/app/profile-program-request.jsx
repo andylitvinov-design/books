@@ -13,7 +13,7 @@ const copy = {
   es:{details:'Solicitar detalles',book:'Solicitar una consulta',request:'Quiero conocer los detalles y solicitar una consulta.',note:'Envía tu mensaje para solicitar una consulta.',clarity:'Apoyo exprés',goal:'Mi meta',business:'Mi negocio'}
 }
 
-export default function ProfileProgramRequest({locale='en',program,open,onOpenChange,request,option}) {
+export default function ProfileProgramRequest({locale='en',program,open,onOpenChange,request,option,showTrigger=true}) {
   const lang=Object.hasOwn(copy,locale)?locale:'en'
   const t=copy[lang]
   const [localOpen,setLocalOpen]=useState(false)
@@ -21,12 +21,12 @@ export default function ProfileProgramRequest({locale='en',program,open,onOpenCh
   const toggle=onOpenChange??setLocalOpen
   const service=program==='business'?'business':'coaching'
   const id=program+'-contact-options'
+  if(!showTrigger&&!expanded)return null
   return <div className={styles.root} data-profile-program-request={program}>
-    <button type="button" className={styles.trigger} data-program-request-trigger
-      {...(program==='business'?{'data-business-details':true}:{})}
+    {showTrigger&&<button type="button" className={styles.trigger} data-program-request-trigger
       aria-expanded={expanded} aria-controls={id} onClick={()=>toggle(!expanded)}>
       {t.details}<ChevronDown size={20} aria-hidden="true"/>
-    </button>
+    </button>}
     <div className={styles.options} id={id} hidden={!expanded} data-program-contact-options>
       {expanded&&<><MandatoryMessengerActions locale={lang} compact label={t.book}
         whatsappUrl={whatsappEnquiryUrl({locale:lang,service:telegramBusinessServiceTitle(service,lang),request:request??t.request,option:option??t[program]})}

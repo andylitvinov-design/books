@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {BUSINESS_SYLLABUS,businessTag,savedBusinessTask,businessProgress,legacyBusinessTasks,businessSessionScreenshot} from '../lib/app/business-daybook.mjs'
+import {BUSINESS_SYLLABUS,businessTag,savedBusinessTask,businessProgress,legacyBusinessTasks,businessSessionScreenshot,businessReportPdf} from '../lib/app/business-daybook.mjs'
 import {readFileSync} from 'node:fs'
 const note=(week=1,step=1,extra={})=>({id:week+'-'+step,kind:'note',goalId:null,revision:1,tags:[businessTag(week,step)],text:'Result',updatedAt:'2026-11-24T00:00:00Z',...extra})
 test('eight strategic sessions and three concrete practices per locale',()=>{
@@ -42,5 +42,8 @@ test('each session screenshot and both original report PDFs are checked into the
   assert.equal(bytes.subarray(8,12).toString(),'WEBP')
   assert.ok(bytes.length<200000)
  }
- for(const locale of ['ru','en'])assert.equal(readFileSync(new URL('../public/reports/business-program/'+locale+'.pdf',import.meta.url)).subarray(0,5).toString(),'%PDF-')
+ assert.equal(businessReportPdf('ru'),'/reports/business-program/ru.pdf')
+ assert.equal(businessReportPdf('en'),'/reports/business-program/en.pdf')
+ assert.equal(businessReportPdf('es'),businessReportPdf('en'))
+ for(const locale of ['ru','en','es'])assert.equal(readFileSync(new URL('../public'+businessReportPdf(locale),import.meta.url)).subarray(0,5).toString(),'%PDF-')
 })
