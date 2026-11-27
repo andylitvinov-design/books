@@ -270,8 +270,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(entry).toHaveCount(1)
           await expect(header).toBeVisible()
           await expect(header.locator('h1')).toHaveText('Holistic House')
-          // The former top marketing ribbon, duplicate brand header and large
-          // Profile dashboard must NEVER displace the first conversation.
+          // Owner-approved public discovery precedes Ali; avoid duplicate chrome.
           await expect(page.locator('header.house-header--services')).toHaveCount(0)
           await expect(page.locator('[data-sitewide-antistress-banner]')).toHaveCount(0)
           await expect(page.locator('[data-profile-hub-tabs]')).toHaveCount(0)
@@ -301,7 +300,30 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home: four program cards with three benefits each.
+          // The owner-approved first screen contains all three public program tabs.
+          const entrance=entry.locator('[data-home-program-entrance]')
+          const dashboard=entrance.locator('[data-profile-space-dashboard]')
+          const tabs=dashboard.locator('[data-goal-profile-tab]')
+          await expect(entrance).toHaveCount(1)
+          await expect(dashboard).toHaveAttribute('data-profile-space-section','clarity')
+          await expect(tabs).toHaveCount(3)
+          assert.deepEqual(await tabs.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-goal-profile-tab'))),['clarity','goals','business'],label+': first-screen discovery order')
+          await expect(tabs.nth(0)).toHaveAttribute('aria-pressed','true')
+          for(let index=0;index<3;index++){
+            await inViewport(tabs.nth(index),label+'/discovery-tab-'+index)
+          }
+          await expect(dashboard.locator('[data-profile-clarity-support]')).toBeVisible()
+          const firstProgram=await dashboard.locator('[data-profile-clarity-support]').boundingBox()
+          assert.ok(firstProgram&&firstProgram.y>=0&&firstProgram.y<700,label+': Clarity begins in first viewport')
+          await tabs.nth(2).click()
+          await expect(dashboard).toHaveAttribute('data-profile-space-section','business')
+          await expect(dashboard.locator('[data-business-report-pdf]')).toBeVisible()
+          await tabs.nth(1).click()
+          await expect(dashboard).toHaveAttribute('data-profile-space-section','goals')
+          await tabs.nth(0).click()
+          await expect(dashboard).toHaveAttribute('data-profile-space-section','clarity')
+          await expect(dashboard.locator('[data-profile-my-video], [data-profile-my-page-courses-entry]')).toHaveCount(0)
+          // Existing four Ali program cards with three benefits each remain below.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
@@ -338,7 +360,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           // Same-frame geometry: keep hero, composer, four programs and
           // methods in order; cards never overlap or overflow at any viewport.
           const homeLayout=await entry.evaluate(root=>{
-            const nodes=['[data-home-dialogue-hero]','[data-home-intent-form]',
+            const nodes=['[data-home-program-entrance]','[data-home-dialogue-hero]','[data-home-intent-form]',
               '[data-home-focus-grid]','[data-home-methods]'].map(selector=>root.querySelector(selector))
             if(nodes.some(node=>!node))return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
@@ -365,8 +387,10 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(send).toBeEnabled()
           await expect(entry.locator('[data-home-intent-mic]')).toBeVisible()
           const hero=entry.locator('[data-home-dialogue-hero]')
+          await hero.scrollIntoViewIfNeeded()
           const rect=await hero.boundingBox()
-          assert.ok(rect&&rect.y<700,label+': hero visible in first mobile viewport')
+          assert.ok(rect&&rect.width>0&&rect.height>0&&rect.y<900&&rect.y+rect.height>0,label+': Ali hero remains reachable below discovery')
+          await page.evaluate(()=>window.scrollTo(0,0))
           await languageTrigger.click()
           await expect(language).toHaveJSProperty('open',true)
           await expect(langOptions.first()).toBeVisible()
