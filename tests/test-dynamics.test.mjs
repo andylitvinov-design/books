@@ -412,3 +412,5 @@ for (const locale of ['en', 'ru']) {
 
 // Exercise the thematic discovery catalog in the existing registered app suite.
 import './self-discovery-themes.test.mjs'
+
+import './self-discovery-vector-history.test.mjs'

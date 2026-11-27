@@ -186,6 +186,7 @@ export default function DevelopmentVectors({locale='en',selfDiscovery=false,init
     <div className={styles.delta}><span>{t.gap}</span><strong>{delta===null?'—':(delta>0?'+':'')+delta}</strong></div>
    </div>
    {previous&&<small className={styles.source}>{previous.source==='coach'?t.sourceCoach:t.sourceSelf}</small>}
+   {selfDiscovery&&previous&&a!==null&&b!==null&&<button type="button" className={styles.focus} disabled={busy} onClick={()=>{setTouched(old=>({...old,[track+':'+item.id]:true}));setDirty(true);setNotice('')}}>{{en:'Record a new measurement, even if unchanged',ru:'Зафиксировать новый замер, даже если оценка прежняя',es:'Registrar una medición nueva aunque no cambie'}[lang]}</button>}
    {goal?.desiredState&&<p className={styles.linked}>{t.linked}: {goal.desiredState}</p>}
   </article>
  }
@@ -204,7 +205,7 @@ export default function DevelopmentVectors({locale='en',selfDiscovery=false,init
    </div>
    <nav className={styles.modes} aria-label={t.title}>
     <button type="button" aria-pressed={!guided} onClick={()=>setGuided(false)}>{t.self}</button>
-    <button type="button" aria-pressed={guided} onClick={resumeGuided}>{t.guided}</button>
+    <button type="button" aria-pressed={guided} onClick={resumeGuided}>{selfDiscovery?({en:'Guided questions',ru:'С подсказками',es:'Preguntas guiadas'})[lang]:t.guided}</button>
    </nav>
    <p className={styles.help}>{guided?t.guide:t.help}</p>
    <DevelopmentVectorWheel items={items} ratings={draft[track].ratings}

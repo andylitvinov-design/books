@@ -12,6 +12,12 @@ import {Activity,ArrowLeft,ArrowRight,BarChart3,BookOpen,CheckCircle2,ChevronRig
 import SelfDiscoveryPractice from './self-discovery-practice'
 import {TestDynamics} from './test-dynamics'
 import DevelopmentVectorWheel from './development-vector-wheel'
+import SelfDiscoveryVectorHistory from './self-discovery-vector-history'
+import {TestExplorerVisual} from './test-explorer-visual'
+import {PortraitAnalyses} from './portrait-analyses'
+import {PortraitRecommendations} from './portrait-recommendations'
+import {buildPsychPortrait} from '@/lib/assessments/psych-portrait'
+import {coverageForFocus} from '@/lib/assessments/test-explorer'
 import styles from './self-discovery.module.css'
 
 const COPY={
@@ -162,7 +168,7 @@ export default function SelfDiscovery({locale='en',initialTheme='love',initialVi
    const boot=await appFetch('bootstrap',undefined,'GET',{signal:abort.signal})
    const id=boot.account?.id
    if(!id||boot.account.onboardingState!=='active'){if(token===epoch.current)clear('guest');return}
-   const saved=await appFetch('development-goals',undefined,'GET',{accountId:id,signal:abort.signal})
+   const saved=await appFetch('development-goals?history=1',undefined,'GET',{accountId:id,signal:abort.signal})
    if(token!==epoch.current)return
    if(!saved?.goals||!Number.isInteger(saved.revision))throw Error('INVALID_RESPONSE')
    const vectors=saved.goals.vectors?normalizeDevelopmentVectors(saved.goals.vectors):emptyDevelopmentVectors()
@@ -171,7 +177,8 @@ export default function SelfDiscovery({locale='en',initialTheme='love',initialVi
    if(boot.results.some(row=>row?.accountId&&row.accountId!==id))throw Error('ACCOUNT_MISMATCH')
    const results=boot.results.filter(row=>row&&typeof row.id==='string'&&row.id)
     .slice().sort((a,b)=>(Date.parse(b.measurementAt)||0)-(Date.parse(a.measurementAt)||0)||String(b.id).localeCompare(String(a.id)))
-   setState({phase:'ready',id,vectors,results,runs:boot.runs||[]})
+   if(!Array.isArray(saved.vectorHistory))throw Error('INVALID_HISTORY')
+   setState({phase:'ready',id,vectors,vectorHistory:saved.vectorHistory,results,runs:boot.runs||[]})
   }catch(e){if(token===epoch.current&&!abort.signal.aborted)clear(isAuthError(e)?'guest':'error')}
  },[clear])
  useEffect(()=>{
@@ -223,11 +230,12 @@ export default function SelfDiscovery({locale='en',initialTheme='love',initialVi
     <section id="test-history" className={styles.panel}><h2>{t.history}</h2>{results.length===0?<p>{d.noData}</p>:<ul className={styles.history}>{results.slice(0,shown).map(row=><li key={row.id}><Link href={root+'/results/'+encodeURIComponent(row.id)+'?'+sourceQuery} prefetch={false}><strong>{assessmentHistoryTitle(row,accountLocale)||row.definitionKey||t.tests}</strong><small>{t.date}: {dated(row.measurementAt,locale,t.unknown)}</small></Link></li>)}</ul>}
     {shown<results.length&&<button onClick={()=>setShown(n=>n+20)}>{t.more}</button>}<Link href={root+'/history'} prefetch={false}>{t.all}</Link></section></>}
    <button type="button" className={styles.primary} onClick={()=>{choose(next.id);setView(null)}}><Sparkles size={26} aria-hidden="true"/>{d.next} «{next.label[locale]}»<ArrowRight size={23} aria-hidden="true"/></button>
-   <section className={styles.panel}><h2>{d.overview}</h2><p>{d.wheelHint}</p><p className={styles.note}>{t.snapshot}</p>
+   <section className={styles.panel}><h2>{d.overview}</h2><p>{d.wheelHint}</p>
     {['outer','inner'].map(track=>{const items=track==='outer'?OUTER_VECTOR_ITEMS:INNER_VECTOR_ITEMS,model=state.vectors[track];return <details key={track} id={track==='outer'?'life-balance':'meaning-axes'}><summary>{track==='outer'?t.balance:t.axes} ({Object.keys(model.ratings).length}/{items.length})</summary>
      <DevelopmentVectorWheel items={items} ratings={model.ratings} focusId={model.focusId} locale={locale} track={track}/>
-     <ul className={styles.dates}>{items.map(item=><li key={item.id}><span>{item.name[locale]||item.name.en}</span><small>{model.ratings[item.id]?dated(model.ratings[item.id].recordedAt,locale,t.unknown):t.missing}</small></li>)}</ul><Link className={styles.action} href={'/'+locale+'/development-vectors?mode=self-discovery&track='+track} prefetch={false}>{t.edit}</Link></details>})}
-    <Link className={styles.action} href={root+'/portfolio'} prefetch={false}>{t.profile}</Link><Link className={styles.action} href={root+'/history'} prefetch={false}>{t.all}</Link>
+     <ul className={styles.dates}>{items.map(item=><li key={item.id}><span>{item.name[locale]||item.name.en}</span><small>{model.ratings[item.id]?dated(model.ratings[item.id].recordedAt,locale,t.unknown):t.missing}</small></li>)}</ul><Link className={styles.action} href={'/'+locale+'/development-vectors?mode=self-discovery&track='+track} prefetch={false}>{t.edit}</Link><SelfDiscoveryVectorHistory key={state.id+':'+track} snapshots={state.vectorHistory} items={items} track={track} locale={locale}/></details>})}
+    <details data-self-discovery-portrait><summary>{t.profile}</summary><TestExplorerVisual locale={accountLocale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(state.results)} compact/><PortraitAnalyses results={state.results} locale={accountLocale}/><PortraitRecommendations results={state.results} locale={accountLocale}/></details>
+   <Link className={styles.action} href={root+'/portfolio'} prefetch={false}>{t.profile}</Link><Link className={styles.action} href={root+'/history'} prefetch={false}>{t.all}</Link>
    </section>
    <p className={styles.note+' '+styles.foot}>{d.loaded} {t.privacy}</p><button className={styles.refresh} onClick={()=>void load()}>{t.retry}</button>
   </>}
