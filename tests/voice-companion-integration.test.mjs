@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createDeviceSpeech} from '../lib/assistant-avatar/device-speech.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('Web/iHelp/Client share one canonical assistant and Web Voice UI',()=>{
  const chat=source('components/holistic-agent-chat.tsx');
@@ -68,7 +69,8 @@ test('hands-free fail-closed preserves unsent speech on busy or no model consent
  const speech=source('components/voice-companion-controls.tsx');
  assert.match(chat,/if\(busy\|\|mode==="owned"&&!agree\)\{setDraft\(text\);voice\.stopDialogue\(\);return;\}/);
  assert.match(speech,/if\(!parts.length\)\{if\(dialogueActive\.current\)stopDialogue\(\);return;\}/);
- assert.match(speech,/if\(!result\?\.ok&&seq===generation\.current\)\{[\s\S]*?if\(!phone&&dialogueActive\.current\)stopDialogue\(\);/);
+ assert.match(speech,/if\(!result\?\.ok&&seq===generation\.current\)\{[\s\S]*?outputFailed\(\);/);
+ assert.match(speech,/const outputFailed=\(\)=>\{[\s\S]*?else\{if\(dialogueActive\.current\)stopDialogue\(\);/);
  assert.match(speech,/if\(!supported\|\|!speaker\.current\)\{[\s\S]*?stopDialogue\(\);/);
 });
 
@@ -166,4 +168,27 @@ test('shorter latency is scoped to phone conversation and preserves public dicta
  assert.match(voice,/fastConversation:phoneCall\.current/);
  assert.match(voice,/\},phone\?160:450\)/);
  assert.match(recorder,/fastConversation\?\{silenceMs:750,longSilenceMs:1050,longSpeechAfterMs:6500\}:\{silenceMs:1050\}/);
+});
+
+test('owned queued speech timeout is bounded and permits fresh playback',()=>{
+ let timerId=0,cancels=0,current;
+ const timers=new Map(),events=[];
+ const synth={pending:false,speaking:false,paused:false,getVoices:()=>[],
+  speak(item){current=item;this.pending=true;},
+  cancel(){cancels++;this.pending=false;current?.onerror?.();}};
+ const env={speechSynthesis:synth,SpeechSynthesisUtterance:class{constructor(text){this.text=text;}},
+  setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},
+  clearTimeout(id){timers.delete(id);}};
+ const speech=createDeviceSpeech(env);
+ assert.equal(speech.speak('first','en',{onEnd:reason=>events.push(reason)},{startTimeoutMs:4000}).ok,true);
+ const stale=current;
+ const timer=[...timers.values()].find(t=>t.ms===4000);
+ assert.ok(timer);timer.fn();
+ assert.equal(cancels,1);assert.deepEqual(events,['timeout']);assert.equal(synth.pending,false);
+ assert.equal(stale.onstart,null);
+ assert.equal(speech.speak('retry','en',{onStart:()=>events.push('start'),onEnd:reason=>events.push(reason)}).ok,true);
+ synth.pending=false;synth.speaking=true;current.onstart();
+ synth.speaking=false;current.onend();
+ assert.deepEqual(events,['timeout','start','ended']);
+ speech.destroy();
 });
