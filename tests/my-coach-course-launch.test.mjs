@@ -50,7 +50,12 @@ test('course entry, selector, details below rail and private Daybook handoff are
  assert.match(view,/data-my-coach-hero=\{selected\.id\}/)
  assert.match(view,/data-course-coach-choice=\{id\}/)
  assert.match(view,/course\.available&&course\.id==='clarity'/)
- assert.match(view,/<ClarityStartLink locale=\{lang\} coachId=\{selected\.id\}/)
+ assert.match(view,/<Link href=\{coachSessionHref\(lang,selected\.id\)\+'&greetingProgram='\+encodeURIComponent\(course\.id\)\}/)
+ assert.match(view,/data-course-greeting-start data-course-selected-coach=\{selected\.id\}/)
+ assert.doesNotMatch(view,/<ClarityStartLink/)
+ const greeting=read('components/my-coach-greeting-gate.jsx')
+ assert.match(greeting,/query\?\.get\('greetingProgram'\)/)
+ assert.match(greeting,/<ClarityStartLink locale=\{lang\} coachId=\{personaId\}/)
  assert.ok(view.indexOf('id="course-coach-rail"')<view.indexOf('data-course-session-details'))
  assert.match(start,/stageCoachCourseChoice\(program,coachId,boot\.account\.id\)/)
  assert.match(start,/continuation:programContinuation\(program\)/)
@@ -122,4 +127,15 @@ test('greeting course metadata is real and course selection wraps without changi
  assert.equal(courseLaunchNeighbor('clarity',-1),'health')
  assert.equal(courseLaunchNeighbor('clarity',1),'business')
  assert.equal(courseLaunchNeighbor('health',1),'clarity')
+})
+
+test('old personal review ribbon is excluded from program launch and greeting routes in all locales',()=>{
+ const source=read('components/sitewide-antistress-banner.tsx')
+ const policy=source.split('const isDistractionSensitivePage = (pathname: string) =>')[1].split('export function SitewideAntistressBanner')[0]
+ const rules=[...policy.matchAll(/(\/\^.*?\/)\.test\(pathname\)/g)].map(m=>new RegExp(m[1].slice(1,-1)))
+ for(const lang of ['en','ru','es']){
+  for(const suffix of ['my-coach/programs','my-coach/programs/clarity','my-coach/programs/business','my-coach/programs/love','my-coach/programs/health','coaching/sessions']){
+   assert.ok(rules.some(rule=>rule.test('/'+lang+'/'+suffix)),lang+'/'+suffix)
+  }
+ }
 })

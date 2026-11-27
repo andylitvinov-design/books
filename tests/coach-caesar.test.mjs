@@ -72,3 +72,6 @@ test('visual identity is honest and existing owner video pilot is Caesar-only',(
  assert.ok(read('public/images/holistic-house/my-coach-motion/caesar-emblem.svg').includes('<svg'))
  assert.ok(read('components/my-coach-motion-media.jsx').includes('caesar-emblem.svg'))
 })
+
+// Execute the bounded static-video checks in the existing coaching release suite.
+import './coach-caesar-static-video.test.mjs'

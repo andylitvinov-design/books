@@ -3,10 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useEffect, useRef, useState} from "react";
-import {ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
+import {ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, GraduationCap, Heart, Leaf, Menu, MessageCircle, Mic, Play, Send, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {shamanicaCategoryHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
+import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
 import { ShamanicaBusinessContent } from "./shamanica-business-content";
 
 type Goal="energy"|"relationships"|"money"|"growth";
@@ -17,10 +18,10 @@ const methods=["remedies","artifacts","energy","rituals","learning"] as const;
 const starts=["free","personal","object","course"] as const;
 const icons={energy:Zap,relationships:Heart,money:Coins,growth:TrendingUp,remedies:Sprout,artifacts:Shield,rituals:WandSparkles,learning:GraduationCap,free:Sparkles,personal:Heart,object:Shield,course:BookOpen};
 const shelfCatalog=[
- {id:"guidance",category:"guidance",image:"/images/holistic-house/shamanic-approved-hints.webp",title:{en:"Get Hints & Ideas",ru:"Подсказки и идеи",es:"Ideas y orientación"},subtitle:{en:"Fresh perspectives and guidance",ru:"Новые идеи и ориентиры",es:"Nuevas perspectivas y guía"}},
- {id:"rituals",category:"artifacts",image:"/images/holistic-house/shamanic-approved-rituals.webp",title:{en:"Rituals & Artifacts",ru:"Ритуалы и артефакты",es:"Rituales y artefactos"},subtitle:{en:"Sacred rituals, symbolic tools & change",ru:"Ритуалы и символические инструменты",es:"Rituales y herramientas simbólicas"}},
- {id:"remedies",category:"remedies",image:"/images/holistic-house/shamanic-approved-remedies.webp",title:{en:"Remedies for Heart & Mind",ru:"Средства для сердца и ума",es:"Remedios para corazón y mente"},subtitle:{en:"Clarity, calm, focus & emotional balance",ru:"Ясность, спокойствие и баланс",es:"Claridad, calma y equilibrio"}},
- {id:"mysteries",category:"mysteries",image:"/images/holistic-house/shamanic-approved-mysteries.webp",title:{en:"Mysteries & Initiations",ru:"Мистерии и инициации",es:"Misterios e iniciaciones"},subtitle:{en:"Confidence, attraction & inner strength",ru:"Уверенность и внутренняя сила",es:"Confianza y fuerza interior"}},
+ {id:"guidance",category:"guidance",image:"/images/holistic-house/shamanic-approved-hints.webp",title:{en:"Get Hints & Ideas",ru:"Подсказки и идеи",es:"Ideas y orientación"},subtitle:{en:"Inspiration, guidance and new perspectives",ru:"Новые идеи и ориентиры",es:"Nuevas perspectivas y guía"}},
+ {id:"rituals",category:"artifacts",image:"/images/holistic-house/shamanic-approved-rituals.webp",title:{en:"Rituals & Artifacts",ru:"Ритуалы и артефакты",es:"Rituales y artefactos"},subtitle:{en:"Tools, practices and sacred objects",ru:"Ритуалы и символические инструменты",es:"Rituales y herramientas simbólicas"}},
+ {id:"remedies",category:"remedies",image:"/images/holistic-house/shamanic-approved-remedies.webp",title:{en:"Remedies for Heart & Mind",ru:"Средства для сердца и ума",es:"Remedios para corazón y mente"},subtitle:{en:"Support for reflection and inner balance",ru:"Ясность, спокойствие и баланс",es:"Claridad, calma y equilibrio"}},
+ {id:"mysteries",category:"mysteries",image:"/images/holistic-house/shamanic-approved-mysteries.webp",title:{en:"Mysteries & Initiations",ru:"Мистерии и инициации",es:"Misterios e iniciaciones"},subtitle:{en:"Ancient wisdom and deep practices",ru:"Уверенность и внутренняя сила",es:"Confianza y fuerza interior"}},
  {id:"energy",category:"energy",image:"/images/holistic-house/shamanic-approved-reiki.webp",title:{en:"Reiki & Energy Support",ru:"Рейки и энергоподдержка",es:"Reiki y apoyo energético"},subtitle:{en:"Energy, protection & inner harmony",ru:"Энергия, защита и гармония",es:"Energía y armonía interior"}},
  {id:"academy",category:"learning",image:"/images/holistic-house/shamanic-approved-academy.webp",title:{en:"Shamanic & Reiki Academy",ru:"Академия шаманизма и Рейки",es:"Academia de chamanismo y Reiki"},subtitle:{en:"Courses, practices, initiations & programs",ru:"Курсы, практики, посвящения",es:"Cursos, prácticas e iniciaciones"}}
 ] as const;
@@ -195,9 +196,9 @@ const personalSubcategories:Record<ShelfId,readonly PersonalChoice[]>={
 };
 const personalUi={"ru":{"back":"Все 6 направлений","choose":"Выберите подходящее направление","all":"Все услуги категории"},"en":{"back":"All 6 categories","choose":"Choose a specific service","all":"All services in this category"},"es":{"back":"Las 6 categorías","choose":"Elige un servicio","all":"Todos los servicios de la categoría"}} as const;
 const artifactsUi={
- en:{title:"Rituals & Artifacts",lead:"Sacred tools, rituals and symbolic objects for reflection, focus and transformation.",explore:"Explore Artifacts",request:"Request Details",heading:"What will you find here?",popular:"Popular Artifacts",all:"See All",other:"More practices"},
- ru:{title:"Ритуалы и артефакты",lead:"Сакральные инструменты, ритуалы и символы для размышления, ясности и перемен.",explore:"Смотреть артефакты",request:"Узнать подробнее",heading:"Что вы найдёте здесь?",popular:"Популярные артефакты",all:"Все",other:"Другие практики"},
- es:{title:"Rituales y artefactos",lead:"Herramientas sagradas, rituales y objetos simbólicos para la reflexión, el enfoque y el cambio.",explore:"Explorar artefactos",request:"Más detalles",heading:"¿Qué encontrarás aquí?",popular:"Artefactos destacados",all:"Ver todos",other:"Más prácticas"}
+ en:{title:"Rituals & Artifacts",lead:"Sacred tools, rituals and symbolic objects for reflection, focus and transformation.",explore:"Explore Artifacts",request:"Request Session",sendNote:"Send your request in the messenger.",heading:"What will you find here?",popular:"Popular Artifacts",all:"See All",other:"More practices"},
+ ru:{title:"Ритуалы и артефакты",lead:"Сакральные инструменты, ритуалы и символы для размышления, ясности и перемен.",explore:"Смотреть артефакты",request:"Запросить сессию",sendNote:"Отправьте заявку в мессенджере.",heading:"Что вы найдёте здесь?",popular:"Популярные артефакты",all:"Все",other:"Другие практики"},
+ es:{title:"Rituales y artefactos",lead:"Herramientas sagradas, rituales y objetos simbólicos para la reflexión, el enfoque y el cambio.",explore:"Explorar artefactos",request:"Solicitar sesión",sendNote:"Envía tu solicitud en el chat.",heading:"¿Qué encontrarás aquí?",popular:"Artefactos destacados",all:"Ver todos",other:"Más prácticas"}
 } as const;
 const featuredArtifacts=[
  {id:"personal",title:{en:"Personal talisman",ru:"Личный талисман",es:"Talismán personal"},image:"/academy/reiki-yggdrasil/source/advanced-runes.png",path:"holistic-support#talismans"},
@@ -310,6 +311,9 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
  const [intention,setIntention]=useState("");
  const [videoPlaying,setVideoPlaying]=useState(false);
  const [selectedShelf,setSelectedShelf]=useState<ShelfId|null>(null);
+ const [requestOpen,setRequestOpen]=useState(false);
+ const whatsapp=whatsappEnquiryUrl({locale,service:a.title+" · "+a.request,request:a.request});
+ const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp);
  const shelfBackRef=useRef<HTMLButtonElement|null>(null);
  useEffect(()=>{if(selectedShelf)shelfBackRef.current?.focus();},[selectedShelf]);
  const inputRef=useRef<HTMLInputElement|null>(null);
@@ -345,6 +349,14 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
   :step===1?methods.map((id,i)=>({id,label:t.methods[i]}))
   :starts.map((id,i)=>({id,label:t.starts[i]}));
  const chosen=step===0?goal:step===1?method:startChoice;
+ const shelfButtons=shelfCatalog.map(({id,title,subtitle})=>{
+      const Icon=shelfIcons[id];
+      return <button key={id} type="button" onClick={()=>setSelectedShelf(id)}
+       className={styles.serviceCard} data-shamanica-service={id} aria-controls="shamanica-subcategory-panel" aria-expanded={false}>
+       <span className={styles.servicePhoto} aria-hidden="true"/>
+       <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span><ArrowRight className={styles.artifactCardArrow} size={16} aria-hidden="true"/></span>
+      </button>;
+     });
  return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"} data-shamanica-business-page={business?"true":undefined} data-shamanica-expanded={selectedShelf?"true":undefined}>
   <div className={styles.container}>
    <header className={styles.header}>
@@ -378,8 +390,14 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       <p>{a.lead}</p>
      </div>
      <div className={styles.artifactActions}>
-      <button type="button" onClick={()=>setSelectedShelf("rituals")}>{a.explore}<ArrowRight size={18} aria-hidden="true"/></button>
-      <button type="button" onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}>{a.request}<ChevronDown size={17} aria-hidden="true"/></button>
+      <a href="#shamanic-artifact-list" data-shamanic-explore-artifacts>{a.explore}<ArrowRight size={18} aria-hidden="true"/></a>
+      <button type="button" aria-expanded={requestOpen} aria-controls="shamanic-session-contact" data-shamanic-request-session onClick={()=>setRequestOpen(open=>!open)}>{a.request}<ChevronDown size={17} aria-hidden="true"/></button>
+     </div>
+     <div id="shamanic-session-contact" className={styles.sessionContact} hidden={!requestOpen} data-shamanic-session-contact>
+      <div className={styles.sessionChannels}>
+       <a href={whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={16} aria-hidden="true"/>WhatsApp</a>
+       <a href={telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={16} aria-hidden="true"/>Telegram</a>
+      </div><small>{a.sendNote}</small>
      </div>
     </div>:<>
     <div className={styles.mirrorIntro}>
@@ -420,22 +438,15 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
        href={selectedShelf==="mysteries"?"/"+locale+"/academy/mysteries":shamanicaCategoryHref(locale,shelfCatalog.find(item=>item.id===selectedShelf)?.category||"guidance")}>
        {personalUi[locale].all}<ArrowRight size={17} aria-hidden="true"/>
       </Link>
-     </div>:<div className={styles.serviceGrid}>{shelfCatalog.map(({id,title,subtitle})=>{
-      const Icon=shelfIcons[id];
-      return <button key={id} type="button" onClick={()=>setSelectedShelf(id)}
-       className={styles.serviceCard} data-shamanica-service={id} aria-controls="shamanica-subcategory-panel" aria-expanded={false}>
-       <span className={styles.servicePhoto} aria-hidden="true"/>
-       <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span><ArrowRight className={styles.artifactCardArrow} size={16} aria-hidden="true"/></span>
-      </button>;
-     })}
-     <section className={styles.featuredArtifacts} data-shamanic-featured-artifacts aria-labelledby="shamanic-featured-title">
+     </div>:<div className={styles.serviceGrid}>{shelfButtons.slice(0,4)}</div>}
+     <section id="shamanic-artifact-list" className={styles.featuredArtifacts} data-shamanic-featured-artifacts aria-labelledby="shamanic-featured-title">
       <div className={styles.featuredHeader}><h2 id="shamanic-featured-title"><Sparkles size={20} aria-hidden="true"/>{a.popular}</h2>
        <Link href={shamanicaCategoryHref(locale,"artifacts")} prefetch={false}>{a.all}<ArrowRight size={15} aria-hidden="true"/></Link></div>
       <div className={styles.featuredGrid}>{featuredArtifacts.map(item=><Link key={item.id} href={"/"+locale+"/"+item.path} prefetch={false} data-shamanic-featured={item.id}>
        <span className={styles.featuredPhoto}><Image src={item.image} alt="" fill sizes="(max-width:640px) 30vw, 190px"/></span><strong>{item.title[locale]}</strong>
       </Link>)}</div>
      </section>
-     </div>}
+     {!selectedShelf&&<div className={styles.serviceGrid} data-shamanic-more-practices>{shelfButtons.slice(4)}</div>}
    </section>
    <details className={styles.toolsDrawer} data-shamanica-extras>
     <summary><Sparkles size={18} aria-hidden="true"/>{cabinetCopy[locale].open}<ChevronDown size={18} aria-hidden="true"/></summary>
