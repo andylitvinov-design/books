@@ -165,7 +165,7 @@ test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live o
   assert.match(ui,/const usingExistingVoice=geminiVoiceTier==='existing'/)
   assert.match(ui,/geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(ui,/const chosenCloudAgreed=usingExistingVoice\?cloudAgreed:geminiVoiceReady/)
-  assert.match(ui,/const chosenCloudAvailable=usingExistingVoice\?cloudAvailable:geminiVoiceReady/)
+  assert.ok(ui.includes('const chosenCloudAvailable=usingExistingVoice?(lockedSessionVoice?matchingFreeVoice:cloudAvailable):geminiVoiceReady'))
   assert.match(ui,/geminiTextPrivacyDetails/)
   assert.match(ui,/geminiVoicePrivacyDetails/)
   assert.match(ui,/data-gemini-voice-consent/)
@@ -183,4 +183,22 @@ test('current Google AI Studio AQ. auth keys pass Free text and TTS config witho
   assert.equal(geminiCoachTextConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(49)},'gemini_free'),null)
   assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(51)},'gemini_tts_free'),null)
   assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:' AQ.'+'x'.repeat(50)},'gemini_tts_free'),null)
+})
+
+test('session TTS locks every approved RU/EN voice while explicit historical recordings preserve their identity',async()=>{
+  const catalog=await import('../lib/coaching/gemini-voice-catalog.mjs')
+  for(const id of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en']){
+    const voice=catalog.approvedGeminiVoice(id,locale)
+    const alternative=catalog.GEMINI_COACH_VOICE_OPTIONS[id].find(v=>v!==voice)
+    const body={provider:'gemini_tts_free',locale,personaId:id,voiceName:alternative,text:'Test reply.',voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true}
+    assert.equal(normalizeGeminiCoachTtsInput(body).voiceName,voice)
+    assert.equal(normalizeGeminiCoachTtsInput(body,{preserveRecordedVoice:true}).voiceName,alternative)
+    const input=normalizeGeminiCoachTtsInput(body)
+    await synthesizeGeminiCoachTts({config:geminiCoachTtsConfig(free,'gemini_tts_free'),input,fetcher:async(_url,options)=>{
+      const payload=JSON.parse(options.body)
+      assert.equal(payload.generation_config.speech_config[0].voice,voice)
+      assert.equal(payload.input[0].content[0].annotations[0].style,catalog.coachVocalDelivery(id,locale,voice))
+      return {ok:true,status:200,json:async()=>({steps:[{type:'model_output',content:[{type:'audio',data:makeMonoPcmWav().toString('base64')}]}]})}
+    }})
+  }
 })

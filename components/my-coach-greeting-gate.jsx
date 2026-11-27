@@ -7,7 +7,6 @@ import {useRouter} from 'next/navigation'
 import {ArrowLeft,Play,Headphones,History,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X,Info} from 'lucide-react'
 import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,COACH_METHOD_CODES} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
-import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import {MyCoachInlineProfile} from './my-coach-compact-profile'
@@ -41,7 +40,6 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
- const presentation=getCoachPresentation(personaId,lang)
  const [phase,setPhase]=useState('preview')
  const [error,setError]=useState('')
  const [expandedGroup,setExpandedGroup]=useState(null)
@@ -99,7 +97,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    setError('');setPhase('playing')
    try{
      player.current=startDirectCoachIntroAudio(url,{
-       fallbackText:presentation?.text||localCoachText(persona?.opening,lang),locale:lang,
+       locale:lang,
        onStart:()=>{if(audioRun.current===generation)setPhase('playing')},
        onEnd:()=>{if(audioRun.current===generation){player.current=null;setPhase('complete')}},
        onBlocked:()=>{if(audioRun.current===generation){player.current=null;setError(t.failed);setPhase('complete')}},
@@ -123,11 +121,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const label=name||localCoachText(persona?.name,lang)||''
  const russianNames={mira:'Мирой',max:'Максом',sofia:'Софией',alex:'Алексом',merlin:'Мерлином',harry:'Гарри',genie:'Самиром'}
  const sessionName=lang==='ru'?(russianNames[personaId]||'«'+label+'»'):label
- const greetingText=presentation?.text||localCoachText(persona?.opening,lang)||''
- const sentences=greetingText.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)||[greetingText]
- const shortGreeting=sentences.slice(0,2).join('').trim()
- const remainingGreeting=sentences.slice(2).join('').trim()
- const compactCopy={en:{eyebrow:'AI COACH',thematic:'Thematic sessions',again:'Listen to the greeting',more:'Read full greeting'},ru:{eyebrow:'AI-КОУЧ',thematic:'Тематические сессии',again:'Послушать приветствие',more:'Читать приветствие полностью'},es:{eyebrow:'COACH DE IA',thematic:'Sesiones temáticas',again:'Escuchar la bienvenida',more:'Leer la bienvenida completa'}}[lang]
+ const compactCopy={en:{eyebrow:'AI COACH',thematic:'Thematic sessions',again:'Listen to the greeting'},ru:{eyebrow:'AI-КОУЧ',thematic:'Тематические сессии',again:'Послушать приветствие'},es:{eyebrow:'COACH DE IA',thematic:'Sesiones temáticas',again:'Escuchar la bienvenida'}}[lang]
  return <div className={styles.screen} data-my-coach-greeting-gate={personaId}
    data-greeting-phase={phase}>
    <div className={styles.firstView}>
@@ -157,13 +151,6 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
      </div>
      {phase==='complete'&&<div className={styles.completed}>
-       <div className={styles.quoteCard}>
-         <p className={styles.greetingQuote}>“{shortGreeting}{remainingGreeting?'…':'”'}</p>
-         {remainingGreeting&&<details className={styles.fullGreeting}>
-           <summary>{compactCopy.more}</summary>
-           <p>“{greetingText}”</p>
-         </details>}
-       </div>
        <button type="button" className={styles.primary} data-coach-greeting-start
          disabled={Boolean(clarityDay)&&!accountSaving} onClick={()=>chooseSession(clarityCourseId(clarityDay)||INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
          <span>{clarityDay?CLARITY_COURSE_GROUP.sessions[clarityDay-1].title[lang]+' · 20 min':t.start+' '+sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>

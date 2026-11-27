@@ -2188,12 +2188,11 @@
   .root[data-my-coach-immersive-session][data-session-visual-v5][data-coach-greeting-stage='session']:not(:has(.textComposer textarea:focus)):not([data-coach-view-expanded='true']) .sessionHero .sessionHeroCopy>small{-webkit-line-clamp:2}
 }
 
-/* Group fill is based on member fields, not active index or elapsed time.
-   Dark = verified, light = captured, neutral tail = skipped. */
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress]{
- background:linear-gradient(to right,#32846b 0 var(--verified),#a7cfbe var(--verified) var(--recorded),#e7e3dc var(--recorded) calc(100% - var(--skipped)),#b9b4a9 calc(100% - var(--skipped)) 100%);
-}
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-current=true]{outline:1px solid #32846b;outline-offset:2px}
+/* One solid color per stage; active outline never changes evidence color. */
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress]{background:#e7e3dc}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-tone=yellow]{background:#dcb877}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-tone=green]{background:#32846b}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-current=true]{outline:1px solid #8b8b83;outline-offset:2px}
 
 /* Shared six-stage ruler and twenty-minute marks occupy the same track width.
    No extra card, no additional text, and no increase in the outer card width. */
@@ -2226,9 +2225,3 @@
   .sessionProgressSummary .sessionProgressRuler{flex-basis:104px}
   .sessionProgressSummary .sessionProgressRuler .sessionProgressSegments{gap:2px}
 }
-
-/* Owner-approved evidence colors: time and evidence are independent. */
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='pending']{background:#d9d6ce}
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='needs_confirmation'],
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='skipped']{background:#d9b55b}
-.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='done']{background:#27866d}

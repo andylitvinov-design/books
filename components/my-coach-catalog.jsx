@@ -14,6 +14,7 @@ import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
+import { ClarityStartLink } from './app/clarity-program'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import { HeaderCreditProfile } from './header-credit-profile'
 import { MandatoryMessengerActions } from './mandatory-messenger-actions'
@@ -124,6 +125,12 @@ const designCopy = {
     showProfile: 'Ver perfil', clear: 'Borrar filtros',
   },
 }
+const programLandingCopy = {
+  en: { free: 'Start Free AI Coaching', details: 'Course options & details', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
+  ru: { free: 'Начать бесплатный AI-коучинг', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
+  es: { free: 'Empezar coaching IA gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
+}
+
 const miraCopy = {
   en: {
     tagline: 'Your AI consultant for clarity, balance and growth',
@@ -257,9 +264,6 @@ const visualTopics = [
   { id: 'career', image: 'goals' },
   { id: 'habits', image: 'habits' },
 ]
-const categoryIcon = {
-  resilience: Zap, relationships: Heart, clarity: Flower2, meaning: Leaf,
-}
 
 const FAVORITES_KEY = 'hh-my-coach-favorites-v1'
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ё/g, 'е').trim()
@@ -270,6 +274,7 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
   const categories = topicText[lang]
   const d = designCopy[lang]
   const hw = miraCopy[lang]
+  const programs = programLandingCopy[lang]
   const h = humanCopy[lang]
   const extra = discoveryExtras[lang]
   const [search, setSearch] = useState('')
@@ -282,6 +287,7 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
+  const [showPrograms, setShowPrograms] = useState(false)
   const [selectedMethod,setSelectedMethod]=useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
@@ -379,12 +385,9 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
           <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true">
             <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="hero" />
           </div>
-          <div className={heroStyles.stageTop}>
-            <span className={heroStyles.liveLabel}><span className={heroStyles.liveDot} />{hw.badge}</span>
-          </div>
           <div className={heroStyles.stageGreeting}>
-            <h2>{hw.hello} {selectedName}</h2>
-            <p>{hw.subtitle}</p>
+            <h2>{selectedName}</h2>
+            <p>{selected.id === 'mira' ? programs.mira : localCoachText(selected.role, lang)}</p>
           </div>
           {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
@@ -393,22 +396,25 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
               : <a className={heroStyles.talkButton} href={startHref}
                   data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
           </div>
-          <div className={heroStyles.stageTopics}>
-            <span>{hw.topic}</span>
-            <div className={[styles.quickTopics, heroStyles.quickTopics].join(' ')} role="group" aria-label={t.topics}>
-              {[
-                { id: 'resilience', label: d.energy }, { id: 'relationships', label: d.love },
-                { id: 'career', label: d.goals }, { id: 'habits', label: d.habits },
-              ].map(item => {
-                const Icon = categoryIcon[item.id] || Sparkles
-                return <button type="button" key={item.id} aria-pressed={topic === item.id}
-                  className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
-                  onClick={() => { setTopic(item.id); document.getElementById('all-coaches')?.scrollIntoView({behavior:'smooth',block:'start'}) }}>
-                  <Icon size={20} strokeWidth={1.7} aria-hidden="true" /><span>{item.label}</span>
-                </button>
-              })}
+          <div className={heroStyles.programPanel} data-my-coach-program-panel>
+            <div className={heroStyles.programArt} aria-hidden="true">
+              <Leaf size={32} strokeWidth={1.4}/>
+            </div>
+            <div className={heroStyles.programActions}>
+              <ClarityStartLink locale={lang} className={heroStyles.freeProgram}>
+                <BookOpen size={18} aria-hidden="true"/><span>{programs.free}</span><ArrowRight size={18} aria-hidden="true"/>
+              </ClarityStartLink>
+              <button type="button" className={heroStyles.programDetails} aria-expanded={showPrograms}
+                aria-controls="my-coach-program-options" onClick={() => setShowPrograms(open => !open)}>
+                <span>{programs.details}</span><ArrowRight size={17} aria-hidden="true"/>
+              </button>
             </div>
           </div>
+        </div>
+        <div id="my-coach-program-options" className={heroStyles.programOptions} hidden={!showPrograms}>
+          {['clarity','goal','business'].map(id => <Link key={id} href={'/' + lang + '/programs/' + id}>
+            {programs[id]} <ArrowRight size={17} aria-hidden="true"/>
+          </Link>)}
         </div>
         <div className={heroStyles.coachRailHeading}>
           <h2>{hw.choose}</h2>
