@@ -210,3 +210,41 @@ test('v5 private continuation retains the protocol and reissues only the unresol
  const row=coachCourseProtocolRows('clarity_day_1',value.protocol.turns,view.review).find(r=>r.id==='feelings')
  assert.equal(row.coachId,'mira');assert.equal(row.quote,'I feel calm')
 })
+
+test('v5 balance and final review show actual accepted answers, and corrections revoke stale review',()=>{
+ const openingTurns=['Yes','Alex','My problem is money','I feel sad','Yes'].map(content=>({role:'user',content}))
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns:openingTurns,locale:'en',personaId:'genie'}))
+ const id='12345678-1234-4234-8234-123456789abc'
+ let value={courseSessionId:'clarity_day_1',revision:1,protocol:{id,courseSessionId:'clarity_day_1',locale:'en',personaId:'genie',opening,turns:openingTurns}}
+ const run=(action,extra={})=>{
+  const next=coachCourseGateTransition(value,{action,id,revision:value.revision,consent:true,requestId:'87654321-4321-4321-8321-abcdefabcdef',...extra},'2026-11-26T12:00:00.000Z')
+  value={...value,...next,revision:value.revision+1}
+  return coachCourseGateView(value)
+ }
+ let view=run('course-gate-start')
+ const answer=content=>{view=run('course-gate-answer',{promptId:view.prompt.id,content})}
+ answer('I need stable income');answer('Yes')
+ answer('skip this question');answer('skip this question')
+ assert.equal(view.prompt.fieldId,'balance_consent');answer('Yes')
+ assert.equal(view.prompt.fieldId,'outer_body_health');answer('0');answer('Yes')
+ for(let i=0;i<7;i++){assert.match(view.prompt.fieldId,/^outer_/);answer('skip this question')}
+ assert.equal(view.prompt.fieldId,'balance_review')
+ assert.match(view.prompt.text,/0\/10/);assert.match(view.prompt.text,/7 fields remain/)
+ answer('No');assert.equal(view.prompt.fieldId,'balance_review')
+ answer('Yes');assert.equal(view.prompt.fieldId,'priority')
+ for(let i=0;i<6;i++)answer('skip this question')
+ assert.equal(view.prompt.fieldId,'reviewed_summary');assert.match(view.prompt.text,/stable income/)
+ answer('Yes');assert.equal(view.completed,true)
+ let rows=coachCourseProtocolRows('clarity_day_1',value.protocol.turns,view.review)
+ assert.equal(rows.find(r=>r.id==='balance_review').reviewDecision,'accepted')
+ assert.equal(rows.find(r=>r.id==='reviewed_summary').reviewDecision,'accepted')
+ assert.equal(rows.find(r=>r.id==='homework_consent').status,'not_explored')
+ view=run('course-gate-correct',{fieldId:'outer_body_health'})
+ rows=coachCourseProtocolRows('clarity_day_1',value.protocol.turns,view.review)
+ assert.equal(rows.find(r=>r.id==='balance_review').status,'not_explored')
+ assert.equal(rows.find(r=>r.id==='reviewed_summary').status,'not_explored')
+ assert.equal(view.prompt.fieldId,'outer_body_health')
+ answer('6');answer('Yes')
+ assert.equal(view.prompt.fieldId,'balance_review');assert.match(view.prompt.text,/6\/10/)
+ assert.equal(view.review.events.filter(e=>e.fieldId==='balance_review'&&e.status==='confirmed').length,1)
+})

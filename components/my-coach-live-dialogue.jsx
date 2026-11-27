@@ -858,7 +858,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const detailPosition=coreMode==='profile-v3'?savedProfilePosition:coreMode==='profile'?profilePosition:
     coreMode==='course'?(openingActive?courseStagePosition((courseSchema?.checkpoints||[]).map(row=>({...row,status:'not_explored',quote:'',turnIndex:null})),{allowProvisional:false}):coursePosition):methodPosition
   const approvedDayOne=selectedCourseId==='clarity_day_1'&&coreMode==='course'?clarityDayOneStageView(openingPosition,detailPosition,lang,openingActive&&!openingProgress.declined):null
-  const stagePosition=approvedDayOne?.position||groupedSessionPosition(openingPosition,detailPosition,{mode:coreMode,courseId:selectedCourseId,locale:lang,openingActive:openingActive&&!openingProgress.declined})
+  const stagePosition=groupedSessionPosition(openingPosition,detailPosition,{mode:coreMode,courseId:selectedCourseId,locale:lang,openingActive:openingActive&&!openingProgress.declined})
   const visibleProgressStep=stagePosition.step
   const visibleProgressTotal=stagePosition.total
   const visibleProgressName=approvedDayOne?coachCourseFocusLabel(selectedCourseId,lang):progressMode==='opening'?({ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):
@@ -2420,7 +2420,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                   return runCourseGate('course-gate-answer',{promptId,content});return false}}/>
               <button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'пропустить вопрос',en:'skip this question',es:'omitir la pregunta'})[lang]})}}>{({ru:'Пропустить',en:'Skip',es:'Omitir'})[lang]}</button>
-              {(courseGate.step.prompt.kind==='confirm'||courseGate.step.prompt.fieldId==='balance_consent')&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
+              {(courseGate.step.prompt.kind==='confirm'||['balance_consent','balance_review','reviewed_summary'].includes(courseGate.step.prompt.fieldId))&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'да',en:'yes',es:'sí'})[lang]})}}>{({ru:'Подтверждаю',en:'Confirm',es:'Confirmar'})[lang]}</button>}
               {courseGate.step.prompt.fieldId==='balance_consent'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt;if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'нет',en:'no',es:'no'})[lang]})}}>{({ru:'Нет',en:'No',es:'No'})[lang]}</button>}
             </form>:<p>{courseGate.step.paused?({ru:'Проверка приостановлена. Можно завершить сессию.',en:'Review paused. You can finish the session.',es:'Revisión pausada. Puedes terminar la sesión.'})[lang]:({ru:'Проверка пунктов завершена. Можно уточнить ответ или завершить.',en:'Checkpoint review complete. Correct an answer or finish.',es:'Revisión completa. Corrige una respuesta o termina.'})[lang]}</p>}
