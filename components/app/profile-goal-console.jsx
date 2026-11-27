@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Info, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
+import ProfileProgramRequest from './profile-program-request'
 import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
 import { collectJournalExport } from '@/lib/app/daybook-journal-export.mjs'
 import { profileDaybookHref } from '@/lib/profile/profile-daybook-route.mjs'
@@ -135,10 +136,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {showLanding && <header className={css.programHero} data-goal-program-landing data-profile-space-scenic>
       <p className={css.programEyebrow}><Target size={20} aria-hidden="true"/>{landing.label}</p>
       <h1>{landing.title}</h1><p className={css.programIntro}>{landing.intro}</p>
-      <div className={css.programActions}>
-        <Link href={startHref} prefetch={false} className={css.primaryAction} data-goal-vector-entry><PlayCircle size={23} aria-hidden="true"/><strong>{landing.start}</strong><ChevronRight size={18} aria-hidden="true"/></Link>
-        <a href="#goal-program-stages" className={css.secondaryAction}><Info size={20} aria-hidden="true"/><strong>{landing.details}</strong></a>
-      </div>
+      <ProfileProgramRequest locale={lang} program="goal"/>
     </header>}
     {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
@@ -181,6 +179,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
         <span><strong>{title}</strong><small>{detail}</small></span>
       </div>)}</div>
     </section>}
+    {showLanding && <div className={css.activeUtilities}><Link href={startHref} prefetch={false} data-goal-vector-entry><Plus size={20} aria-hidden="true"/>{t.add}</Link></div>}
     <div id="goal-program-stages" className={css.programStages}>
     <h2 className={css.stepsTitle}>{t.plan}</h2>
     <p className={css.programSubtitle}>{landing.subtitle}</p>
