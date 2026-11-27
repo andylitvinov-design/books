@@ -29,7 +29,9 @@ test('80 independently authored fictional reply examples, each localized RU/EN/E
 test('explicit distress selects a localized character reference without inventing client facts or decisions',()=>{
  const t=coachPersonalityTurn({personaId:'caesar',stage:'reality',locale:'ru',settings:{directness:5},empathy:{emotion:'fear',evidence:'explicit_current_self_report',certainty:'explicit'}})
  const guidance=coachPersonalityTurnGuidance(t)
- assert.match(guidance,/Нет необходимости принимать трудное решение/)
+ assert.equal(t.signatureKind,'support')
+ assert.ok(guidance.includes(t.signatureReply.text))
+ assert.match(coachPersonalityReferenceGuidance('caesar','support','reality','ru'),/Нет необходимости принимать трудное решение/)
  assert.match(guidance,/not client data/)
  assert.match(guidance,/No humor this turn/)
  assert.match(coachPersonalityBaseInstruction('caesar'),/only after the Director authorizes a practice/)

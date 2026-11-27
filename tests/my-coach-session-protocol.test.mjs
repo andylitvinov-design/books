@@ -175,7 +175,9 @@ test('owner mobile design keeps voice controls, back and explicit Insight while 
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
   assert.match(ui,/onClick=\{endWithProtocol\}/)
-  assert.match(ui,/<FileText size=\{19\}/)
+  assert.match(ui,/<PhoneOff size=\{24\}/)
+  assert.match(ui,/data-coach-dock-speaker/)
+  assert.match(ui,/data-coach-panel="summary"[^\n]+showSessionPanel\('summary'\)/)
   assert.match(ui,/Session Insight/)
   assert.match(ui,/<ArrowLeft size=\{16\}/)
   assert.match(ui,/data-coach-live-wave/)
@@ -680,7 +682,7 @@ test('all eight coaches and three languages: real opening, server-issued field, 
   assert.equal(b.questionTurnIndex,event.turnIndex-1);assert.equal(b.confirmationTurnIndex,event.turnIndex+2)
   assert.ok(value.protocol.turns[b.questionTurnIndex].content.includes(coachCourseProtocolSchema(course,locale).checkpoints[0].question))
   const bound=coachCourseProtocolRows(course,value.protocol.turns,view.review,locale).find(x=>x.id===first)
-  assert.equal(bound.questionTurnIndex,b.questionTurnIndex);assert.equal(bound.confirmationTurnIndex,b.confirmationTurnIndex)
+  assert.equal(bound.questionTurnIndex,b.questionTurnIndex);assert.equal(bound.confirmationTurnIndex,b.confirmationTurnIndex);assert.equal(bound.confirmationQuote,value.protocol.turns[b.confirmationTurnIndex].content)
   assert.equal(bound.question,value.protocol.turns[b.questionTurnIndex].content)
   const forged=JSON.parse(JSON.stringify(view.review));forged.events[0].binding.questionTurnIndex=0
   assert.throws(()=>normalizeCoachCourseFieldReview(forged,course,value.protocol.turns))
@@ -738,4 +740,32 @@ test('pre-upgrade bound pending echo can be reviewed without losing the actual l
  const turns=[{role:'assistant',content:question},{role:'user',content:answer},{role:'assistant',content:'По теме «'+row.label+'» я предварительно записал: «'+answer+'». Это верно?'},{role:'user',content:'Да'}]
  const review={version:'hh-coach-course-review-v1',courseSessionId:course,events:[{fieldId:'goal',status:'confirmed',turnIndex:1,quote:answer,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}}]}
  assert.equal(coachCourseProtocolRows(course,turns,review,'ru').find(x=>x.id==='goal').question,question)
+})
+
+import {checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
+import {courseGateVoiceNext} from '../lib/coaching/coach-course-gate-voice.mjs'
+test('natural-language mismatch is live-only, multilingual and does not veto a compound explanation',()=>{
+ for(const [feeling,goal,compound] of [
+  ['I feel anxious','My goal is to change jobs','I feel anxious because the deadline is close'],
+  ['Я чувствую тревогу','Моя цель сменить работу','Я чувствую тревогу, потому что срок близок'],
+  ['Me siento triste','Mi meta es cambiar de trabajo','Me siento triste porque el plazo se acerca']
+ ]){
+  assert.equal(checkpointLiveAnswerMismatch('horizon',feeling),true)
+  assert.equal(checkpointLiveAnswerMismatch('obstacle',feeling),false)
+  assert.equal(checkpointLiveAnswerMismatch('goal',goal),false)
+  assert.equal(checkpointLiveAnswerMismatch('feelings',goal),true)
+  assert.equal(checkpointLiveAnswerMismatch('horizon',compound),false)
+  assert.equal(checkpointAnswerMismatch('horizon',feeling),false)
+ }
+})
+test('continuous protocol voice rejects echo and interrupted delivery and waits for a different acknowledged prompt',()=>{
+ const base={promptId:'p1',currentPromptId:'p1',final:true,text:'Да',confidence:.98,continuous:true,playbackCompleted:true}
+ assert.equal(courseGateVoiceDecision(base).action,'submit')
+ assert.equal(courseGateVoiceDecision({...base,playbackCompleted:false}).action,'review')
+ assert.equal(courseGateVoiceDecision({...base,final:false}).action,'ignore')
+ const question='Какую конкретную цель вы хотите достичь в ближайшее время'
+ assert.equal(courseGateVoiceDecision({...base,text:question,spokenPrompt:question}).action,'ignore')
+ const next={enabled:true,waiting:false,blocked:false,promptId:'p2',submittedPromptId:'p1'}
+ assert.equal(courseGateVoiceNext(next),true)
+ for(const changes of [{waiting:true},{blocked:true},{enabled:false},{promptId:'p1'},{promptId:null}])assert.equal(courseGateVoiceNext({...next,...changes}),false)
 })
