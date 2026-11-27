@@ -12,16 +12,16 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{}}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null}={}){
  const base=1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const lease={leaseId:id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null,
   ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null})}
  let now=base,seq=20,tid=0;const timers=new Map(),events=[],retired=[]
- const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
+ const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async b=>{retired.push(b);return true},persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
- function advance(ms){now+=ms;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
+ function advance(ms,fireTimers=true){now+=ms;if(!fireTimers)return;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
  const consent=()=>client.input({type:'hh_anti_stress_consent',decision:'start'})
  return {client,provider,relay,events,retired,advance,ready,consent,base,get run(){return run}}
@@ -115,4 +115,40 @@ test('normal provider closure and durable pause retire only the exact therapy le
  k.ready();k.consent();await k.relay.settled()
  k.client.input({type:'hh_anti_stress_pause'});await k.relay.settled()
  assert.equal(k.retired.length,0)
+})
+
+test('hosting cutoff pauses the same 15-minute therapy protocol and retires only a normally closed lease',async()=>{
+ const f=fixture({segmentBudgetMs:270000})
+ f.ready();f.consent();await f.relay.settled()
+ for(let i=0;i<53;i++){f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()}
+ assert.equal(f.run.clock.days[0].elapsedMs,265000)
+ f.advance(5000);await f.relay.settled()
+ assert.equal(f.provider.readyState,3)
+ assert.equal(f.client.readyState,3)
+ assert.equal(f.run.clock.days[0].protocolId,id(2))
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,265000)
+ assert.equal(f.events.at(-1).type,'pause')
+ assert.equal(f.retired.length,1)
+ assert.equal(f.retired[0].programKind,'therapy')
+})
+test('late host timer cannot permit microphone or provider replies past the hard segment boundary',async()=>{
+ const audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ for(const sender of ['client','provider']){
+  const f=fixture({segmentBudgetMs:10000});f.ready();f.consent();await f.relay.settled()
+  f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+  const upstream=f.provider.messages.length,downstream=f.client.messages.length
+  f.advance(5000,false)
+  f[sender].input(sender==='client'?audio:{serverContent:{outputTranscription:{text:'late'}}})
+  await f.relay.settled()
+  assert.equal(f.provider.messages.length,upstream)
+  assert.equal(f.client.messages.length,downstream+1)
+  assert.equal(f.client.messages.at(-1).status,'paused')
+  assert.equal(f.run.clock.days[0].elapsedMs,5000)
+  assert.equal(f.events.at(-1).type,'pause')
+  assert.equal(f.retired.length,1)
+ }
+})
+test('invalid hosting deadline fails before a therapy socket is opened',()=>{
+ assert.throws(()=>fixture({segmentBudgetMs:0}),/ANTI_STRESS_RELAY_INVALID/)
 })
