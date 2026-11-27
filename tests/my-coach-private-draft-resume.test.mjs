@@ -70,7 +70,7 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
- assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
+ assert.ok(store.includes("view==='summary'?selected.map(item=>coachDraftListSummary(item,clock)):selected"))
  // Normal resume remains persona-scoped; a course query is explicitly
  // constrained by both coach and course on the owner-scoped server page.
  assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(cursor||{})})"))
@@ -116,4 +116,16 @@ test('course resume discovery is exact-course and permits cross-coach only for a
  assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}},'genie','clarity_day_1'),false)
  assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'genie','clarity_day_2'),false)
  assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'mira','clarity_day_2'),true)
+})
+
+test('Clarity resume does not promote a browser duration into verified minutes',()=>{
+ const item={id:'draft',courseSessionId:'clarity_day_1',protocol:{id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'ru',turns:[],durationSeconds:1199}}
+ const summary=coachDraftListSummary(item)
+ assert.equal(summary.clarityTime,undefined)
+ assert.equal(summary.durationSeconds,undefined)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(store,/clarityClockResumeTime\(clock,day,value\.protocol\.id\)/)
+ assert.match(ui,/data-clarity-resume-time/)
+ assert.match(ui,/clarityTimeUnknown\?timeUnverifiedText/)
 })

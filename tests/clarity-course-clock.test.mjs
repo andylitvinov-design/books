@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {createClarityCourseClock,advanceClarityCourseClock,clarityClockSummary,clarityClockDailySlot,clarityClockTimedEnd,validateClarityCourseClock,CLARITY_LOGICAL_SESSION_MS,CLARITY_CLOCK_MAX_GAP_MS} from '../lib/coaching/clarity-course-clock.mjs'
+import {createClarityCourseClock,advanceClarityCourseClock,clarityClockSummary,clarityClockDailySlot,clarityClockTimedEnd,clarityClockResumeTime,validateClarityCourseClock,CLARITY_LOGICAL_SESSION_MS,CLARITY_CLOCK_MAX_GAP_MS} from '../lib/coaching/clarity-course-clock.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const e=(clock,day,type,atMs,{protocolId=id(day),segmentId=id(day+10),connectionId=id(day+20),...extra}={})=>
  ({expectedRevision:clock.revision,day,type,atMs,protocolId,segmentId,connectionId,...extra})
@@ -138,4 +138,22 @@ test('corrupt persisted ledger cannot assign the same date to distinct protocols
  segment.startedAt=segment.observedAt=1300000
  corrupt.lastEventAt=1300000
  assert.throws(()=>validateClarityCourseClock(corrupt),/CLARITY_CLOCK_INVALID/)
+})
+
+test('resume time is exact-protocol, bounded, read-only, and rejects unknown or corrupt ledgers',()=>{
+ let clock=createClarityCourseClock()
+ assert.equal(clarityClockResumeTime(clock,1,id(1)),null)
+ assert.equal(clarityClockResumeTime(null,1,id(1)),null)
+ clock=begin(clock,1,1000)
+ assert.deepEqual(clarityClockResumeTime(clock,1,id(1)),{elapsedSeconds:0,remainingSeconds:1200,status:'active'})
+ clock=tickUntil(clock,1,1000,300000)
+ clock=stop(clock,1,301500,'disconnect')
+ assert.deepEqual(clarityClockResumeTime(clock,1,id(1)),{elapsedSeconds:300,remainingSeconds:900,status:'paused'})
+ assert.equal(clarityClockResumeTime(clock,1,id(2)),null)
+ assert.equal(clarityClockResumeTime(clock,2,id(1)),null)
+ assert.equal(clarityClockResumeTime(clock,0,id(1)),null)
+ assert.equal(clarityClockResumeTime(clock,1,'bad'),null)
+ const corrupt=structuredClone(clock);corrupt.days[0].elapsedMs=0
+ assert.equal(clarityClockResumeTime(corrupt,1,id(1)),null)
+ assert.equal(clarityClockTimedEnd(clock,1,id(1)),false)
 })
