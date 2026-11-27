@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useRouter,useSearchParams} from 'next/navigation'
-import {ArrowLeft,Play,Pause,Volume2,VolumeX,List,ChevronDown,ChevronLeft,ChevronRight,X,Info,BookOpen,CalendarDays,Gift,GraduationCap,RotateCcw,Maximize,Minimize,Ellipsis} from 'lucide-react'
+import {ArrowLeft,Play,Pause,Volume2,VolumeX,List,ChevronDown,ChevronLeft,ChevronRight,X,Info,BookOpen,CalendarDays,Gift,GraduationCap,RotateCcw,Maximize,Minimize} from 'lucide-react'
 import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,COACH_METHOD_CODES} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -72,9 +72,9 @@ function useCourseSessionProgress(courseId,count,available,accountSaving){
  return courseId==='clarity'&&available&&accountSaving?value:null
 }
 const screenWords={
- en:{video:'Video course',menu:'Course and session options',previousCoach:'Previous coach',nextCoach:'Next coach',previousCourse:'Previous course',nextCourse:'Next course',course:'Course',start:'Start course',resume:'Continue session',done:'Open My Daybook',progress:p=>p+'% completed',sessions:'Sessions',courses:'Courses',replay:'Replay greeting',play:'Play greeting',pause:'Pause greeting',mute:'Mute greeting',unmute:'Unmute greeting',seek:'Greeting position',expand:'Expand video',collapse:'Exit expanded view',error:'Recorded greeting unavailable. Please try again.',planned:'Planned price'},
- ru:{video:'Видеокурс',menu:'Настройки и выбор сессии',previousCoach:'Предыдущий коуч',nextCoach:'Следующий коуч',previousCourse:'Предыдущий курс',nextCourse:'Следующий курс',course:'Курс',start:'Пройти курс',resume:'Продолжить сессию',done:'Открыть дневник',progress:p=>p+'% пройдено',sessions:'Сессии',courses:'Курсы',replay:'Повторить приветствие',play:'Воспроизвести приветствие',pause:'Пауза приветствия',mute:'Выключить звук',unmute:'Включить звук',seek:'Позиция приветствия',expand:'Развернуть видео',collapse:'Свернуть видео',error:'Записанное приветствие недоступно. Повторите попытку.',planned:'Плановая цена'},
- es:{video:'Videocurso',menu:'Opciones de curso y sesión',previousCoach:'Coach anterior',nextCoach:'Coach siguiente',previousCourse:'Curso anterior',nextCourse:'Curso siguiente',course:'Curso',start:'Empezar curso',resume:'Continuar sesión',done:'Abrir Mi diario',progress:p=>p+'% completado',sessions:'Sesiones',courses:'Cursos',replay:'Repetir bienvenida',play:'Reproducir bienvenida',pause:'Pausar bienvenida',mute:'Silenciar bienvenida',unmute:'Activar sonido',seek:'Posición de bienvenida',expand:'Ampliar video',collapse:'Cerrar vista ampliada',error:'La bienvenida grabada no está disponible. Inténtalo de nuevo.',planned:'Precio previsto'}
+ en:{video:'Coaching course',previousCoach:'Previous coach',nextCoach:'Next coach',previousCourse:'Previous course',nextCourse:'Next course',course:'Course',start:'Start course',resume:'Continue session',done:'Open My Daybook',progress:p=>p+'% completed',sessions:'Sessions',courses:'Courses',replay:'Replay greeting',play:'Play greeting',pause:'Pause greeting',mute:'Mute greeting',unmute:'Unmute greeting',seek:'Greeting position',expand:'Expand video',collapse:'Exit expanded view',error:'Recorded greeting unavailable. Please try again.',planned:'Planned price'},
+ ru:{video:'Коучинг-курс',previousCoach:'Предыдущий коуч',nextCoach:'Следующий коуч',previousCourse:'Предыдущий курс',nextCourse:'Следующий курс',course:'Курс',start:'Пройти курс',resume:'Продолжить сессию',done:'Открыть дневник',progress:p=>p+'% пройдено',sessions:'Сессии',courses:'Курсы',replay:'Повторить приветствие',play:'Воспроизвести приветствие',pause:'Пауза приветствия',mute:'Выключить звук',unmute:'Включить звук',seek:'Позиция приветствия',expand:'Развернуть видео',collapse:'Свернуть видео',error:'Записанное приветствие недоступно. Повторите попытку.',planned:'Плановая цена'},
+ es:{video:'Curso de coaching',previousCoach:'Coach anterior',nextCoach:'Coach siguiente',previousCourse:'Curso anterior',nextCourse:'Curso siguiente',course:'Curso',start:'Empezar curso',resume:'Continuar sesión',done:'Abrir Mi diario',progress:p=>p+'% completado',sessions:'Sesiones',courses:'Cursos',replay:'Repetir bienvenida',play:'Reproducir bienvenida',pause:'Pausar bienvenida',mute:'Silenciar bienvenida',unmute:'Activar sonido',seek:'Posición de bienvenida',expand:'Ampliar video',collapse:'Cerrar vista ampliada',error:'La bienvenida grabada no está disponible. Inténtalo de nuevo.',planned:'Precio previsto'}
 }
 function clockText(seconds){
  if(!Number.isFinite(seconds))return '--:--'
@@ -228,7 +228,6 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        <div className={styles.cinemaShade} aria-hidden="true"/>
        <div className={styles.cinemaTop}>
          <span className={styles.videoLabel}><GraduationCap size={19} aria-hidden="true"/>{ui.video}</span>
-         <button type="button" className={styles.coachArrow} aria-label={ui.menu} aria-haspopup="dialog" onClick={()=>showTopics('options')}><Ellipsis size={22} aria-hidden="true"/></button>
        </div>
        <div className={styles.portraitSpace} data-coach-greeting-swipe={canSwitch?'true':undefined}
          onTouchStart={beginSwipe} onTouchEnd={endSwipe}
