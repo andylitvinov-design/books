@@ -11,10 +11,12 @@ test('My Coach reference layout uses compact scenic design and actual persona/se
 
   assert.ok(!page.includes('PublicSiteHeader'), 'old promotion/header must not push the catalog below the fold')
   for (const locale of ['en', 'ru', 'es']) assert.match(page, new RegExp("/" + locale + "/my-coach"))
-  for (const part of ['brandHeader', 'hero', 'quickTopics', 'controlTop', 'typePills', 'visualTopics', 'cardGrid', 'cardPortrait']) {
+  for (const part of ['brandHeader', 'hero', 'controlTop', 'typePills', 'visualTopics', 'cardGrid', 'cardPortrait']) {
     assert.ok(component.includes('styles.' + part), part + ' present')
     assert.ok(css.includes('.' + part + '{'), part + ' styled')
   }
+  assert.match(component, /data-my-coach-program-panel/)
+  assert.match(component, /aria-expanded=\{showPrograms\}/)
   assert.match(css, /my-coach-portraits\.avif/)
   assert.match(css, /reiki-approved-sunrise-v3\.webp/)
   assert.match(css, /@media\(max-width:540px\)/)
