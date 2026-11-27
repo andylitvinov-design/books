@@ -19,6 +19,7 @@ export default function AntiStressResult({result,locale='en'}){
   <h4>{t.stress}</h4><Rating label={t.before} value={result.stress?.before} missing={t.missing}/><Rating label={t.after} value={result.stress?.after} missing={t.missing}/>
   <Rating label={t.confidence} value={result.confidence} missing={t.missing}/>
   <dl>{rows.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{typeof value==='string'&&value.trim()?value:t.missing}</dd></div>)}</dl>
+  {result.meditation?.status==='draft'&&typeof result.meditation.body==='string'&&<div><h4>{result.meditation.title}</h4>{result.meditation.body.split('\n\n').map((paragraph,index)=><p key={index}>{paragraph}</p>)}</div>}
   {result.partial&&<p>{t.partial}</p>}
  </section>
 }

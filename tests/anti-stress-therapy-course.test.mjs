@@ -68,3 +68,23 @@ test('therapy Director gives priority to safety, autonomy and consent over clock
  assert.equal(act({practiceConsent:undefined}),'invite-practice-consent')
  assert.equal(act({}),'guide-one-cue-and-wait')
 })
+
+test('personal meditation is based on explicitly confirmed tried resource only',()=>{
+ const base=[row('practice_consent','accepted'),row('practice_status','attempted'),row('resource_kind','imagery'),row('resource_selected','quiet shore'),row('resource_response','comfortable'),row('meditation_consent','accepted')]
+ for(const locale of ['en','ru','es']){
+  const m=antiStressResult(id,base,locale).meditation
+  assert.equal(m.status,'draft');assert.equal(m.language,locale);assert.match(m.body,/quiet shore/)
+  assert.deepEqual(m.sourceFieldIds,['resource_selected'])
+ }
+ assert.equal(antiStressResult(id,base.filter(x=>x.fieldId!=='meditation_consent')).meditation.body,null)
+ for(const [field,value] of [['resource_response','uncomfortable'],['practice_status','stopped'],['practice_consent','declined'],['meditation_consent','declined']]){
+  assert.equal(antiStressResult(id,base.map(r=>r.fieldId===field?{...r,value}:r)).meditation.body,null)
+ }
+ assert.equal(antiStressResult(id,[...base,row('resource_selected','duplicate')]).meditation.body,null)
+ assert.equal(antiStressResult(id,base.map(r=>r.fieldId==='resource_selected'?{...r,reviewed:false}:r)).meditation.body,null)
+ const nonvisual=base.map(r=>r.fieldId==='resource_kind'?{...r,value:'nonvisual'}:r.fieldId==='resource_selected'?{...r,value:'chair contact'}:r)
+ assert.match(antiStressResult(id,nonvisual).meditation.body,/chair contact/)
+ assert.equal(antiStressResult(ANTI_STRESS_SESSION_IDS[1]).meditation,undefined)
+ assert.ok(antiStressScenario(ANTI_STRESS_SESSION_IDS[1]).fields.some(f=>f.id==='calm_steps'))
+ assert.ok(antiStressScenario(ANTI_STRESS_SESSION_IDS[2]).fields.some(f=>f.id==='low_energy_option'))
+})
