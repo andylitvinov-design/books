@@ -23,3 +23,18 @@ test('Goal result is independently identified, bound and reviewed-only',()=>{
  assert.throws(()=>createGoalResultDocument(run,1,protocol,{...options,sourceHash:'fake'}),/INVALID/)
  assert.throws(()=>validateGoalResultDocument({...doc,answers:[...doc.answers,{...doc.answers[0]}]}),/INVALID/)
 })
+
+import {readFileSync} from 'node:fs'
+test('proposed Goal result storage fails closed and retains exact-owner encrypted source binding',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/goal-course-store.js'),sql=read('docs/coaching/goal-course-storage.proposal.sql')
+ assert.match(store,/TRUSTED_GOAL_STORAGE_READY=false/)
+ assert.match(store,/await lockCourseOwner\(db,actor\)/)
+ assert.match(store,/where account_id=\$1 and protocol_id=\$2/)
+ assert.match(store,/seal\(doc,resultCtx\(actor,doc.id\),config\)/)
+ assert.match(store,/sourceHash:operationHash/)
+ assert.match(sql,/unique\(account_id,course_run_id,course_day\)/)
+ assert.match(sql,/references app_private.my_coach_protocol_records\(account_id,protocol_id\) on delete cascade/)
+ assert.match(sql,/alter table app_private.goal_course_result_records force row level security/)
+ assert.doesNotMatch(sql,/grant update[^;]*goal_course_result_records/)
+})

@@ -1220,6 +1220,9 @@ async function handle(request, { params }) {
       // A disabled course must not consume the shared free provider quota.
       // Check the server release veto before any attempt reservation or mint.
       if(clarityCourseDay(start.courseSessionId)&&!clarityCourseEnabled())throw new AppError('CLARITY_COURSE_UNAVAILABLE',503)
+      // Even after activation, Clarity never exposes a direct provider token.
+      // Only the server-owned relay can observe and persist its active time.
+      if(clarityCourseDay(start.courseSessionId))throw new AppError('CLARITY_RELAY_REQUIRED',409)
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.
       const liveQuota=geminiLiveTokenQuota(actor.id,{
