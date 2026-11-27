@@ -643,28 +643,28 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
  check([],false);
  assert.match(workflow,/target=production&limit=100/,
    'a single bounded GET covers recent production deployments');
- assert.match(workflow,/cron: '13,43 \* \* \* \*'/);
-  assert.ok(workflow.includes("github.event.schedule == '13,43 * * * *'"),
+ assert.match(workflow,/cron: '13,43 \*\/2 \* \* \*'/);
+  assert.ok(workflow.includes("github.event.schedule == '13,43 */2 * * *'"),
     'publisher schedule predicate must match its only routine cron');
-  assert.match(workflow,/cutoff_ms=.*3600000/,
-    'rolling 60-minute budget cap remains enforceable for both cron chances');
- assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+  assert.match(workflow,/cutoff_ms=.*7200000/,
+    'rolling 120-minute budget cap remains enforceable for both cron chances');
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
    'protect latest source HEAD before Vercel release');
  assert.match(workflow,/cancel-in-progress: false/);
 });
 
 
-test('normal Vercel production batch allows at most one requested deployment per UTC hour',()=>{
+test('normal Vercel production batch allows at most one requested deployment per UTC two-hour slot',()=>{
  const workflow=read('hh-hourly-vercel-production');
  const {spawnSync}=require('node:child_process');
- const marker='jq -e --argjson hour_start_ms "$hour_start_ms" \'';
+ const marker='jq -e --argjson slot_start_ms "$slot_start_ms" \'';
  const start=workflow.indexOf(marker);
- assert.ok(start>=0,'UTC-hour deployment guard must be present');
+ assert.ok(start>=0,'UTC two-hour slot deployment guard must be present');
  const filter=workflow.slice(start+marker.length).split("'")[0];
  const hour=1794765600000;
  const check=(records,expected)=>{
-  const result=spawnSync('jq',['-e','--argjson','hour_start_ms',String(hour),filter],{
+  const result=spawnSync('jq',['-e','--argjson','slot_start_ms',String(hour),filter],{
     input:JSON.stringify({deployments:records}),encoding:'utf8',timeout:5000,
   });
   assert.equal(result.error,undefined,'jq available on trusted runner');
@@ -679,7 +679,7 @@ test('normal Vercel production batch allows at most one requested deployment per
  check([{target:'production',created:hour+1,state:'ERROR'}],true);
  assert.ok(workflow.includes('type == "number"'),'unknown API timestamps must fail closed');
  // The previously accepted GitSource API request is intentionally minimal.
- // GitHub Actions provides the scheduled run / UTC-hour audit provenance.
+ // GitHub Actions provides the scheduled run / UTC two-hour slot audit provenance.
  assert.doesNotMatch(workflow,/meta:\{hhReleaseController/,
    'do not reintroduce optional POST metadata that preceded the HTTP 400 regression');
  assert.match(workflow,/payload=.*gitSource:/,
@@ -690,7 +690,7 @@ test('normal Vercel production batch allows at most one requested deployment per
    'capture bounded vendor error codes for diagnosis');
  assert.match(workflow,/No automatic retry/,
    'do not duplicate a possibly accepted production POST');
- assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/);
 });
 
 test('PR-target event consolidation keeps protected conflict, Ready stage, source prune and Core-only merge',()=>{
@@ -773,6 +773,6 @@ test('hourly Vercel skips only fully proven CI-only delta including existing CI 
  check(Array.from({length:300},()=>y),false);
  check([a],false,{ahead_by:2,total_commits:2});
  check([],false); check([a],false,{status:'diverged'});
- assert.match(workflow,/cutoff_ms=.*3600000/);
+ assert.match(workflow,/cutoff_ms=.*7200000/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/);
 });
