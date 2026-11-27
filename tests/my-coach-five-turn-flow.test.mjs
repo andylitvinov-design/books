@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '../lib/personal-coaching/session-protocol.mjs'
+import {coachSessionOpeningLine} from '../lib/coaching/coach-opening-protocol.mjs'
 import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
@@ -92,7 +93,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
-    coachSessionOpeningAudioPath,lockedCoachSessionVoice,
+    coachSessionOpeningAudioPath,coachSessionOpeningLine,lockedCoachSessionVoice,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
       assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=7','only the short session opening, never the full presentation')
       intros++
@@ -117,7 +118,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
   Component({
     locale:'ru',speechLocale:'ru',initialDraft:'',enabled:true,canStart:true,
     cloudAvailable:true,cloudAgreed:true,cloudProvider,
-    personaId,introduction:'Я рядом. Готовы начать?',
+    personaId,introduction:coachSessionOpeningLine(personaId,'ru'),
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
