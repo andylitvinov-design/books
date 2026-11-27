@@ -57,3 +57,30 @@
   min-height:44px;background:var(--hh-cabinet-selected);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);font-size:13px;
 }
 :global(:is(.hh-app, [data-universal-my-page])[data-cabinet-theme="daybook"]) .root :is(button,a):focus-visible { outline-color:var(--hh-cabinet-primary); }
+
+/* Owner-approved photo-led mobile dashboard, scoped to the private My Page. */
+:global([data-universal-my-page]) .root{gap:16px}
+:global([data-universal-my-page]) .hero,:global([data-universal-my-page]) .card{border:1px solid #cfad70;border-radius:24px;background:linear-gradient(145deg,#fffaed,#f6e4bd);box-shadow:0 6px 17px #26170838}
+:global([data-universal-my-page]) .cover{height:clamp(155px,43vw,230px);background:linear-gradient(0deg,#5b3b1c22,transparent 70%),url('/images/holistic-house/ready-save-sunrise-portrait.jpg') center 43%/cover no-repeat}
+:global([data-universal-my-page]) .identity{padding:0 16px 16px;gap:12px}
+:global([data-universal-my-page]) .identityText h1{font-size:clamp(27px,7vw,36px);color:#35261d}
+:global([data-universal-my-page]) .identityText p{font-size:16px;line-height:1.45;color:#584637}
+:global([data-universal-my-page]) .avatar{background:#f4e3b9;border-color:#fff8e6;color:#00664f;z-index:1}
+:global([data-universal-my-page]) .heroActions{padding:0 14px 16px}
+:global([data-universal-my-page]) .primary,:global([data-universal-my-page]) .outline{min-height:52px;font-size:16px;border-radius:18px}
+:global([data-universal-my-page]) .card{padding:15px;scroll-margin-top:20px}
+:global([data-universal-my-page]) .heading h2{font-size:clamp(23px,6vw,28px);color:#35261d}
+.shortcuts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;background:linear-gradient(145deg,#fff8e7,#f4dfb5);border:1px solid #cfad70;border-radius:20px;padding:8px 3px}
+.shortcuts a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:#075b47;text-align:center;min-height:65px;padding:6px 2px;overflow-wrap:anywhere;font-size:12px;font-weight:750;line-height:1.2}
+.shortcuts a+a{border-left:1px solid #d9bf91}
+.guidance{display:grid;grid-template-columns:minmax(82px,30%) minmax(0,1fr);gap:12px;padding:12px;background:linear-gradient(135deg,#08745b,#034536);color:#fff7e5;border:1px solid #d7b477;border-radius:23px;box-shadow:0 6px 17px #26170838}
+.guidancePhoto{border-radius:16px;background:url('/images/holistic-house/course-focus-mountain-boy.webp') center/cover no-repeat}
+.guidanceBody h2{display:flex;gap:6px;align-items:center;color:#fff7e5!important;font:700 24px/1.14 Georgia,serif;margin:3px 0 6px}
+.guidanceBody h2 svg{flex:none;color:#ffce54}
+.guidanceBody p{color:#fff7e5!important;font-size:15px;line-height:1.35}
+.guidanceBody a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;background:linear-gradient(110deg,#ffe583,#ffbe19);color:#302314;font-weight:800;border-radius:999px;text-decoration:none;text-align:center;padding:8px 10px}
+:global([data-universal-my-page]) .measure{min-height:48px;font:inherit;text-align:left}
+:global([data-universal-my-page]) .measureTop{font-size:15px}
+:global([data-universal-my-page]) .measureTop strong{font-size:16px}
+@media(max-width:430px){.shortcuts{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.shortcuts a{font-size:14px;min-height:62px;border:0!important}.guidanceBody h2{font-size:23px}:global([data-universal-my-page]) .heroActions{grid-template-columns:1fr 1fr}}
+@media(max-width:345px){.guidance{grid-template-columns:1fr}.guidancePhoto{min-height:110px}:global([data-universal-my-page]) .heroActions{grid-template-columns:1fr}}

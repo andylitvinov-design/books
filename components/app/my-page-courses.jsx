@@ -114,8 +114,8 @@ export default function MyPageCourses({locale='en',accountId}){
   const {Icon}=view,expanded=opened===key,region='my-course-'+encodeURIComponent(key)
   return <article key={key} className={styles.item} data-my-page-course={kind} data-my-page-course-key={key}>
    <button type="button" className={styles.row} aria-expanded={expanded} aria-controls={region} onClick={()=>toggle(key)}>
-    <span className={styles.icon}><Icon size={22} aria-hidden="true"/></span>
-    <span className={styles.description}><strong>{view.title}</strong>{view.detail&&<small>{view.detail}</small>}<span className={styles.action}>{status}<ChevronDown size={14} aria-hidden="true" className={expanded?styles.rotated:undefined}/></span></span>
+    <span className={styles.icon} data-course-art={kind==='available'?key.replace('new:',''):kind} aria-hidden="true"><Icon size={22}/></span>
+    <span className={styles.description}><strong>{view.title}</strong>{view.detail&&<small>{view.detail}</small>}<span className={styles.action}>{status}<ChevronDown size={14} aria-hidden="true" className={expanded?styles.rotated:undefined}/></span>{kind!=='available'&&Number.isInteger(percent)&&percent>=0&&percent<=100?<span className={styles.linear} aria-hidden="true"><span style={{width:percent+'%'}}/></span>:null}</span>
     {kind==='available'?<ChevronDown size={21} aria-hidden="true"/>:<ProgressRing percent={percent} label={ringLabel} unknown={t.unknown}/>}
    </button>
    <div id={region} className={styles.panel} hidden={!expanded}>{expanded&&content}</div>

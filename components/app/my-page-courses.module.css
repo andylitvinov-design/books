@@ -9,3 +9,21 @@
 @media(max-width:360px){.row{grid-template-columns:36px minmax(0,1fr) 48px;gap:7px;padding:8px}.icon{width:36px;height:36px}.ring{width:48px;height:48px}.description>strong{font-size:15px}}
 
 .item{min-width:0;border:1px solid var(--hh-cabinet-border,#d6c7a8);border-radius:16px;background:var(--hh-cabinet-surface,#fffaef);overflow:hidden}.item .row{width:100%;border:0;border-radius:0;text-align:left;font:inherit;cursor:pointer}.item .row[aria-expanded="true"]{background:var(--hh-cabinet-selected,#e5f1e5)}.item .row:focus-visible{outline-offset:-3px}.panel{padding:8px;min-width:0}.panel[hidden]{display:none}.panel>div,.panel>section{max-width:100%;min-width:0}.rotated{transform:rotate(180deg)}.resume,.secondary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:10px 12px;border-radius:12px;text-decoration:none;font-weight:750;font-size:14px;margin:0 0 8px}.resume{background:#ffcf43;border:1px solid #d7b25e;color:#332718}.secondary{background:var(--hh-cabinet-surface-soft,#f9f1df);border:1px solid var(--hh-cabinet-border,#d6c7a8);color:var(--hh-cabinet-primary,#006b53)}.discovery{display:grid;gap:8px;margin-top:14px}.discovery h3{font:700 18px/1.2 Georgia,serif;margin:2px 0;color:var(--hh-cabinet-ink,#35261d)}#my-courses{scroll-margin-top:16px}
+
+/* Photo-led, single-column course cards. Rings remain the authoritative progress display. */
+:global([data-universal-my-page]) .list{gap:9px}
+:global([data-universal-my-page]) .item{border:1px solid #d2b479;border-radius:17px;background:linear-gradient(125deg,#fffaf0,#f8e9c9)}
+:global([data-universal-my-page]) .row{grid-template-columns:72px minmax(0,1fr) 56px;gap:10px;padding:10px;min-height:98px;background:transparent}
+:global([data-universal-my-page]) .icon{width:72px;height:74px;background:linear-gradient(0deg,#104c3c55,#104c3c05),url('/images/holistic-house/course-focus-mountain-boy.webp') center/cover no-repeat;color:#fff9e9;border-radius:13px;text-shadow:0 1px 5px #000}
+:global([data-universal-my-page]) .icon svg{filter:drop-shadow(0 1px 4px #0009)}
+:global([data-universal-my-page]) .icon[data-course-art="goal"]{background-image:linear-gradient(0deg,#104c3c55,transparent),url('/images/holistic-house/ready-save-sunrise-portrait.jpg')}
+:global([data-universal-my-page]) .icon[data-course-art="reiki"]{background-image:linear-gradient(0deg,#104c3c55,transparent),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+:global([data-universal-my-page]) .icon[data-course-art="business"]{background-image:linear-gradient(0deg,#104c3c55,transparent),url('/images/holistic-house/ideas-pine-reference.webp')}
+:global([data-universal-my-page]) .icon[data-course-art="growth"]{background-image:linear-gradient(0deg,#104c3c55,transparent),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+:global([data-universal-my-page]) .description>strong{font:700 20px/1.15 Georgia,serif;color:#35261d}
+:global([data-universal-my-page]) .description>small,:global([data-universal-my-page]) .action{font-size:14px}
+:global([data-universal-my-page]) .ring{width:56px;height:56px;font-size:15px;color:#067057}
+:global([data-universal-my-page]) .track{stroke:#d9bc81}
+.linear{height:7px;border-radius:8px;background:#dec79d;overflow:hidden;display:block}
+.linear>span{height:100%;display:block;background:linear-gradient(90deg,#00664f,#25ad80);border-radius:8px}
+@media(max-width:360px){:global([data-universal-my-page]) .row{grid-template-columns:58px minmax(0,1fr) 48px;gap:7px;padding:8px}:global([data-universal-my-page]) .icon{width:58px;height:68px}:global([data-universal-my-page]) .ring{width:48px;height:48px;font-size:14px}:global([data-universal-my-page]) .description>strong{font-size:18px}}
