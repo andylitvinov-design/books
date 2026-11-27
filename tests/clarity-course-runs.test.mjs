@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata} from '../lib/coaching/clarity-course-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n,access,ordinal)=>({id:id(n),access,ordinal,protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0})
 function event(run,day,type,atMs,{seg=50,coachId='mira',decision='start',turn='consent:'+seg}={}){
@@ -102,4 +102,31 @@ test('shared quota is transactional and independent of coach, course, device, or
  assert.match(sql,/coaching_free_session_days force row level security/)
  assert.match(sql,/revoke all on app_private.coaching_free_session_days from public,anon,authenticated/)
  assert.doesNotMatch(sql,/grant update[^\n]*coaching_free_session_days/)
+})
+
+test('resume metadata is specific to the immutable course instance and day',()=>{
+ const first=input(1,'free',1),second=input(10,'paid',2)
+ let a=beginFreeClarityRun(first,event(first,1,'begin',0))
+ a=tick(a,1,0,420000)
+ a=advanceClarityRun(a,event(a,1,'disconnect',420000))
+ let b=createClarityRun(second)
+ assert.deepEqual(clarityRunResumeMetadata(a,1,first.protocolIds[0]),{courseRunId:first.id,courseOrdinal:1,day:1,clarityTime:{elapsedSeconds:420,remainingSeconds:780,status:'paused'}})
+ assert.deepEqual(clarityRunResumeMetadata(b,1,second.protocolIds[0]),{courseRunId:second.id,courseOrdinal:2,day:1,clarityTime:null})
+ assert.throws(()=>clarityRunResumeMetadata(b,1,first.protocolIds[0]),/CONFLICT/)
+ assert.throws(()=>clarityRunResumeMetadata(a,2,first.protocolIds[0]),/CONFLICT/)
+ b=advanceClarityRun(b,event(b,1,'begin',430000,{seg:61}))
+ b=tick(b,1,430000,10000,61)
+ assert.equal(clarityRunResumeMetadata(b,1,second.protocolIds[0]).clarityTime.elapsedSeconds,10)
+ assert.equal(clarityRunResumeMetadata(a,1,first.protocolIds[0]).clarityTime.elapsedSeconds,420)
+ assert.equal(clarityRunResumeMetadata(a,2,first.protocolIds[1]).clarityTime,null)
+})
+test('server reads run bindings in the same owner-scoped draft transaction',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js'),draft=read('lib/app/my-coach-protocol-drafts.js')
+ assert.match(store,/where s.account_id=\$1 and s.protocol_id=any\(\$2::uuid\[\]\)/)
+ assert.match(store,/r.account_id=s.account_id and r.id=s.course_run_id/)
+ assert.match(store,/requested.get\(id\)!=='clarity_day_'\+day/)
+ assert.match(store,/clarityRunResumeMetadata\(run,day,id\)/)
+ assert.match(draft,/day&&!binding\?await readClarityCourseClockInTransaction/)
+ assert.match(draft,/await readClarityResumeBindings\(db,actor,config,courseItems\)/)
 })

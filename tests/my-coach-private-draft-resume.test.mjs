@@ -70,7 +70,7 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
- assert.ok(store.includes("view==='summary'?selected.map(item=>coachDraftListSummary(item,clock)):selected"))
+ assert.ok(store.includes("view==='summary'?selected.map(item=>coachDraftListSummary(item,clock,bindings.get(item.id.toLowerCase()))):selected"))
  // Normal resume remains persona-scoped; a course query is explicitly
  // constrained by both coach and course on the owner-scoped server page.
  assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(cursor||{})})"))
@@ -177,4 +177,16 @@ test('explicit continuation after private restore freezes the active clock and k
  assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
  assert.ok(ui.includes('data-coach-resume-minutes'))
  assert.ok(gate.includes("Начать заново"))
+})
+
+test('a bound but unstarted course cannot inherit the legacy clock',()=>{
+ const item={id:'draft',courseSessionId:'clarity_day_1',protocol:{id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'en',turns:[]}}
+ const binding={courseRunId:'22222222-2222-4222-8222-222222222222',courseOrdinal:2,day:1,clarityTime:null}
+ const result=coachDraftListSummary(item,null,binding)
+ assert.equal(result.courseRunId,binding.courseRunId)
+ assert.equal(result.courseOrdinal,2)
+ assert.equal(result.clarityTime,undefined)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
+ assert.ok(ui.includes('result.draft.courseSessionId!==item.courseSessionId'))
 })
