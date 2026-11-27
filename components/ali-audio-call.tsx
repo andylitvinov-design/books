@@ -4,6 +4,7 @@ import {useEffect,useId,useRef,useState} from "react";
 import {Mic,Pause,Phone,PhoneOff,Volume2} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VoiceCompanion} from "./voice-companion-controls";
+import {aliOwnerAudioAvailable} from "@/lib/voice-companion/ali-owner-audio.mjs";
 import styles from "./ali-audio-call.module.css";
 
 const copy={
@@ -13,13 +14,21 @@ const copy={
 } as const;
 
 type Props={locale:PublicLocale;name:string;image:string;voice:VoiceCompanion;
- ready:boolean;busy:boolean;recorded:boolean;notice?:string;onStart:()=>void;onEnd:()=>void};
+ ready:boolean;busy:boolean;recorded:boolean;notice?:string;onStart:()=>void;onEnd:()=>void;ownerTestEligible?:boolean;onOwnerStart?:()=>void};
 
-export default function AliAudioCall({locale,name,image,voice,ready,busy,recorded,notice,onStart,onEnd}:Props){
+export default function AliAudioCall({locale,name,image,voice,ready,busy,recorded,notice,onStart,onEnd,ownerTestEligible=false,onOwnerStart}:Props){
  const t=copy[locale];
  const dialog=useRef<HTMLDialogElement|null>(null);
  const titleId=useId();
  const [seconds,setSeconds]=useState(0);
+ const [ownerReady,setOwnerReady]=useState(false);
+ useEffect(()=>{
+  setOwnerReady(false);
+  if(!ownerTestEligible||voice.conversing||voice.paused)return;
+  const ac=new AbortController();
+  void aliOwnerAudioAvailable(window,ac.signal).then(ok=>{if(!ac.signal.aborted)setOwnerReady(ok)});
+  return()=>ac.abort();
+ },[ownerTestEligible,voice.conversing,voice.paused]);
  useEffect(()=>{
   const element=dialog.current;
   if(!element)return;
@@ -59,10 +68,14 @@ export default function AliAudioCall({locale,name,image,voice,ready,busy,recorde
     {voice.conversing&&!voice.notice&&<p className={styles.hint}>{t.hint}</p>}
     {voice.conversing&&voice.phoneReplayAvailable&&!busy&&<button type="button" data-hh-ali-replay-audio onClick={voice.replayPhoneReply}
       style={{marginTop:12,border:'1px solid currentColor',borderRadius:18,padding:'10px 18px',color:'inherit',background:'transparent'}}>
-      {locale==='ru'?'Повторить звук':locale==='es'?'Repetir audio':'Replay audio'}</button>}
+      {voice.ownerAudioActive()?(locale==='ru'?'Повторить голосом устройства':locale==='es'?'Repetir con voz del dispositivo':'Replay with device voice'):(locale==='ru'?'Повторить звук':locale==='es'?'Repetir audio':'Replay audio')}</button>}
    </div>
    {!voice.conversing&&!voice.paused&&<div className={styles.disclosure} data-hh-ai-voice-disclosure>
     <p>{recorded?t.recorded:t.browser}</p><p>{t.privacy}</p>
+    {ownerReady&&ownerTestEligible&&onOwnerStart&&<div data-hh-ali-owner-audio-test>
+     <p>{locale==='ru'?'Тест владельца: разрешаю отправить текст ответов в бесплатный Gemini TTS (возможно использование для обучения). Только новая беседа без личных, медицинских данных и истории клиентов.':locale==='es'?'Prueba del propietario: autorizo enviar respuestas a Gemini TTS gratis (posible entrenamiento). Solo conversación nueva sin datos personales, médicos ni historial de clientes.':'Owner test: I allow reply text to free Gemini TTS (possible training use). New non-sensitive conversation only; no personal, health or customer history data.'}</p>
+     <button type="button" data-hh-ali-owner-audio-start disabled={!ready||busy} onClick={onOwnerStart} style={{border:'1px solid currentColor',padding:'10px 14px',borderRadius:14,background:'transparent',color:'inherit'}}>{locale==='ru'?'Согласен · тест настоящего аудио':locale==='es'?'Acepto · probar audio real':'Agree · test natural audio'}</button>
+    </div>}
    </div>}
    <div className={styles.controls}>
     {voice.conversing?<><button type="button" data-hh-ai-pause-voice onClick={voice.pauseDialogue}><Pause aria-hidden="true"/>{t.pause}</button>
