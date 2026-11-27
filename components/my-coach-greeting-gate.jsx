@@ -105,6 +105,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const muteRef=useRef(false),detachAudio=useRef(()=>{})
  const [audioActive,setAudioActive]=useState(false)
  const [phase,setPhase]=useState('preview')
+ const [greetingStarted,setGreetingStarted]=useState(false)
  const [error,setError]=useState('')
  const [expandedGroup,setExpandedGroup]=useState(null)
  const topicDialog=useRef(null)
@@ -124,7 +125,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  useEffect(()=>()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null;
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
-   setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
  useEffect(()=>{if(!expanded)return;const escape=e=>{if(e.key==='Escape')setExpanded(false)};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[expanded])
  function selectProgram(id){
    if(!COACH_COMPARISON_IDS.includes(id)||id===program||gate.busy)return
@@ -145,7 +146,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    audioRun.current++
    detachAudio.current();player.current?.cancel?.()
    player.current=null
-   setPhase('preview');setError('');setAudioActive(false)
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false)
    // Existing route remounts MyCoachLiveDialogue by persona ID. Do not start Live here.
    router.push(href+'&greetingProgram='+encodeURIComponent(program))
  }
@@ -179,7 +180,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    try{
      const active=startDirectCoachIntroAudio(url,{
        locale:lang,muted:muteRef.current,
-       onStart:()=>{if(audioRun.current===generation){setAudioActive(true);setPhase('playing')}},
+       onStart:()=>{if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setPhase('playing')}},
        onEnd:()=>{if(audioRun.current===generation){const audio=player.current?.audio;if(!audio?.ended||!Number.isFinite(audio.duration)||audio.duration<=0){fail();return}setDuration(audio.duration);setTime(audio.duration);detachAudio.current();player.current=null;setAudioActive(false);setPhase('complete')}},
        onBlocked:fail,onError:fail,
      })
@@ -187,7 +188,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      player.current=active
      const audio=active.audio
      function position(){if(audioRun.current!==generation)return;if(Number.isFinite(audio.duration)){setDuration(audio.duration);setTime(audio.currentTime)}}
-     function playing(){if(audioRun.current===generation){setAudioActive(true);setPhase('playing')}}
+     function playing(){if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setPhase('playing')}}
      audio.addEventListener('loadedmetadata',position);audio.addEventListener('timeupdate',position);audio.addEventListener('playing',playing)
      detachAudio.current=()=>{audio.removeEventListener('loadedmetadata',position);audio.removeEventListener('timeupdate',position);audio.removeEventListener('playing',playing)}
      position()
@@ -205,7 +206,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  }
  function toggleMute(){muteRef.current=!muteRef.current;player.current?.setMuted?.(muteRef.current);setMuted(muteRef.current)}
  function chooseSession(id,options){
-   if(entryPending||phase!=='complete'||chosen.current||switching.current||gate.busy)return
+   if(entryPending||!greetingStarted||chosen.current||switching.current||gate.busy)return
    if(!accountSaving){topicDialog.current?.close();void gate.begin({id});return}
    if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
    chosen.current=true
@@ -240,10 +241,12 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>
        <div className={styles.overlay}>
          <div className={styles.coachName}><h2>{label}</h2><p>{localCoachText(persona?.role,lang)}</p></div>
-         <div className={styles.ctaArea} data-coach-greeting-cta-slot data-ready={phase==='complete'?'true':'false'}>
-           {phase==='complete'&&(readyTopic?<button type="button" className={styles.mainAction} disabled={gate.busy} onClick={()=>chooseSession(readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={25} fill="currentColor" aria-hidden="true"/><span>{({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]}</span><ChevronRight size={23}/></button>:course.available&&program==='clarity'?<ClarityStartLink locale={lang} coachId={personaId} className={styles.mainAction}>
-             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{progress?.complete?ui.done:progress&&(progress.percent>0||progress.session>1)?ui.resume:ui.start}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
-           </ClarityStartLink>:<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
+         <div className={styles.ctaArea} data-coach-greeting-cta-slot data-ready={greetingStarted?'true':'false'}>
+           {greetingStarted&&(readyTopic?<button type="button" className={styles.mainAction} disabled={gate.busy||entryPending} onClick={()=>chooseSession(readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={25} fill="currentColor" aria-hidden="true"/><span>{({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]}</span><ChevronRight size={23}/></button>:course.available&&program==='clarity'?(progress?.complete?<ClarityStartLink locale={lang} coachId={personaId} className={styles.mainAction}>
+             <BookOpen size={25} aria-hidden="true"/><span className={styles.ctaCopy}><strong>{ui.done}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
+           </ClarityStartLink>:<button type="button" className={styles.mainAction} data-coach-greeting-live-start disabled={gate.busy||entryPending} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}>
+             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{ui.start}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
+           </button>):<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
          </div>
          <div className={styles.courseSelector} data-coach-greeting-course={program}>
            <button type="button" className={styles.courseArrow} data-coach-greeting-course-previous aria-label={ui.previousCourse} onClick={()=>selectProgram(courseLaunchNeighbor(program,-1))}><ChevronLeft size={19} aria-hidden="true"/></button>
@@ -270,7 +273,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
      {entryPending&&<p role="status">{({ru:'Проверяем ваш профиль…',en:'Checking your profile…',es:'Comprobando tu perfil…'})[lang]}</p>}
      <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
-     {phase==='complete'&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
+     {greetingStarted&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
