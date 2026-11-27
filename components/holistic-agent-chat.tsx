@@ -428,6 +428,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [qualityFailure,setQualityFailure]=useState(false);
   // A spoken answer and its displayed message are the SAME canonical AI turn.
   const lastSpeechTurn=useRef<Message|null>(null);
+  const ownerAudioBlocked=Boolean(supportSelection||journeyPath||projectFlow||sessionStep||contentStep)||testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected;
+  useEffect(()=>{if(ownerAudioBlocked&&voice.ownerAudioActive())voice.stopDialogue();},[ownerAudioBlocked,voice.ownerAudioActive,voice.stopDialogue]);
   useEffect(()=>{
     const latest=messages[messages.length-1]||null;
     if(latest===lastSpeechTurn.current)return;
@@ -437,7 +439,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(latest?.role==="assistant"){
       const lastUser=messages.slice(0,-1).reverse().find(row=>row.role==="user");
       if(latest.localOnly||latest.provisional||lastUser?.localOnly||lastUser?.provisional||
-         (lastUser&&requiresProtectedReply(lastUser.text,locale)))lukasRef.current?.stop();
+         (lastUser&&requiresProtectedReply(lastUser.text,locale))){
+        lukasRef.current?.stop();
+        if(voice.ownerAudioActive()){voice.stopDialogue();return;}
+      }
       else if(!voice.paused&&lukasRef.current?.isActive()&&lukasRef.current.acceptReply(latest.text))return;
     }
     if(!voiceEnabled)return;
@@ -2029,7 +2034,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setAudioCallOpen(true);
     // The first call requires informed Start; later calls reuse the consent
     // for this account/transport, on the user's original phone-button tap.
-    if(voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)
+    // A clean owner test must expose the separate provider consent first.
+    if((!authenticated||messages.length>0||ownerAudioBlocked)&&voice.playbackConsent&&voice.sttConsent&&audioConsentScope.current===audioScope)
       launchMessengerVoice(true);
   }
 
@@ -2039,8 +2045,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
 
   function beginMessengerVoice(){launchMessengerVoice(false);}
   function beginPhoneCall(){launchMessengerVoice(true);}
+  function beginOwnerAudioCall(){
+    if(!authenticated||messages.length!==0||ownerAudioBlocked||voice.conversing||voice.paused)return;
+    launchMessengerVoice(true,true);
+  }
 
-  function launchMessengerVoice(phone:boolean){
+  function launchMessengerVoice(phone:boolean,ownerAudio=false){
     if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||document.hidden)return;
     if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
       "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
@@ -2062,7 +2072,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const opening=phone&&!voice.paused?(locale==="ru"?`Привет, я ${name}. Я на связи. Что хочешь обсудить?`:locale==="es"?`Hola, soy ${name}. Te escucho. ¿De qué quieres hablar?`:`Hi, I am ${name}. I am here. What would you like to talk about?`):undefined;
     const launched=voice.startDialogue(text=>messengerVoiceTurn.current(text),{
       allowRecorded:voiceRequiresRecorded,consentOnStart:true,pauseOnHide:true,
-      phoneCall:phone,opening,recordedPurpose:authenticated?'ali_chat':'public'});
+      phoneCall:phone,opening,recordedPurpose:authenticated?'ali_chat':'public',
+      ...(ownerAudio&&phone&&authenticated&&!ownerAudioBlocked&&messages.length===0?{ownerAudioPersona:persona.id}:{})});
     if(launched){audioConsentScope.current=audioScope;setVoicePermissionOpen(false);setStatus("");}
   }
 
@@ -2847,7 +2858,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       name={persona.name[locale]||persona.name.en} image={persona.image} voice={voice}
       ready={voiceEnabled&&voice.supported&&(!voiceRequiresRecorded||voice.recordedSupported)&&(!proSelected||proReady)}
       busy={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"} recorded={voiceRequiresRecorded}
-      notice={status||undefined} onStart={beginPhoneCall} onEnd={endPhoneCall}/> }
+      notice={status||undefined} onStart={beginPhoneCall} onEnd={endPhoneCall}
+      ownerTestEligible={authenticated&&messages.length===0&&!ownerAudioBlocked} onOwnerStart={beginOwnerAudioCall}/> }
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
