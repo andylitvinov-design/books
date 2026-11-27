@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {readAntiStressSession,antiStressStorageEnabled} from '@/lib/app/anti-stress-runs'
+import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns} from '@/lib/app/anti-stress-runs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -20,6 +20,10 @@ export async function GET(request){
   await consumeRate(config,{op:'anti-stress-session-read',actor:actor.id},60,3600)
   const url=new URL(request.url),locale=url.searchParams.get('locale')||'en'
   if(!['en','ru','es'].includes(locale))throw new AppError('ANTI_STRESS_INVALID',400)
+  if(url.searchParams.get('view')==='catalog'){
+   const catalog=await listAntiStressRuns(config,actor,url.searchParams.get('before'))
+   return auth.apply(NextResponse.json(catalog,{headers:PRIVATE_HEADERS}))
+  }
   const view=url.searchParams.get('view')||'result'
   if(!['result','protocol','log'].includes(view))throw new AppError('ANTI_STRESS_INVALID',400)
   const session=await readAntiStressSession(config,actor,url.searchParams.get('runId'),url.searchParams.get('sessionId'),locale,view)

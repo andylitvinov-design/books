@@ -6,6 +6,7 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
+import AntiStressArchive from './anti-stress-archive'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import DaybookDailySettings from './daybook-daily-settings'
@@ -474,6 +475,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
+   <AntiStressArchive key={'anti-stress:'+accountId} accountId={accountId} locale={lang}/>
    {protocolPage.accountId===accountId&&!loading&&(!protocolError||visibleProtocols.length>0)&&<CourseArchiveReview key={'course-review:'+accountId} accountId={accountId} locale={lang} protocols={visibleProtocols} hasMore={protocolPage.hasMore} plan={plan}/>}
    <MyCoachDraftArchive key={accountId} accountId={accountId} locale={lang} onReviewed={()=>void load()}/>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
