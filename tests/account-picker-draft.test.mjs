@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import test from 'node:test'
+import {discoveryNavigation} from '../lib/app/self-discovery-themes.mjs'
 const require = createRequire(import.meta.url)
 const ts = require(process.env.PICKER_TYPESCRIPT || 'typescript')
 const source = readFileSync(new URL('../components/app/account-test-battery.jsx', import.meta.url), 'utf8')
@@ -105,6 +106,7 @@ function batteryHarness({ failSave = false, failCourse = null, failRun = false, 
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
       if (name === 'next/navigation') return { useRouter: () => ({ replace: path => navigation.push(['replace', path]), push: path => navigation.push(['push', path]) }), useSearchParams: () => query }
       if (name === 'next/link' || name.endsWith('.css')) return { default: name.endsWith('.css') ? {} : 'Link' }
+      if (name === '@/lib/app/self-discovery-themes.mjs') return {discoveryNavigation}
       if (name.startsWith('@/')) return lib
       if (name === 'lucide-react') return {}
       return { TestExplorer: 'TestExplorer', TestExplorerVisual: 'TestExplorerVisual', MyTestsDashboard: 'MyTestsDashboard' }
@@ -343,4 +345,14 @@ test('course selection still uses the existing explicit Save flow, not auto-run'
   const picker = h.render(props()).find(n => n.type === 'TestExplorer')
   assert.equal(picker.props.onStartSingle, null)
   assert.equal(picker.props.explicitSelectionOnly, true)
+})
+
+
+test('Self Discovery start carries only the validated theme through the ordinary saved-test runner', async () => {
+  const h = batteryHarness(); h.query('explore=1&from=self-discovery&discoveryTheme=money&discoveryLocale=en&returnTo=https://outside.example')
+  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  assert.ok(picker)
+  await picker.props.onStartSingle(target, {})
+  assert.equal(h.requests.filter(r => r.options.method === 'POST').length, 2)
+  assert.deepEqual(h.navigation[0], ['push', '/en/app/runs/run-1?mode=quick&plan=plan&from=self-discovery&discoveryTheme=money&discoveryLocale=en'])
 })
