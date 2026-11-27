@@ -59,7 +59,7 @@ test('upgrade preserves same-origin auth and shared provider quota; direct token
  const upgrade=read('lib/app/clarity-live-upgrade.js'),relay=read('lib/app/clarity-live-relay.js'),route=read('app/api/app/[...path]/route.js')
  assert.ok(upgrade.indexOf('requireSameOrigin(request,config)')<upgrade.indexOf('await auth.verified()'))
  assert.match(upgrade,/owner:actor\.id/)
- assert.match(upgrade,/readRun:id=>readClarityRun\(config,actor,id\)/)
+ assert.match(upgrade,/readRun:id=>readClarityRunForRelay\(config,actor,id\)/)
  assert.ok(relay.indexOf('await consumeRateBatch(config,quota.attempts)')<relay.indexOf('await issueGeminiFreeLiveToken'))
  assert.ok(relay.indexOf('await consumeRateBatch(config,quota.successful)')<relay.indexOf('const provider=createProviderSocket'))
  const section=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
@@ -87,4 +87,28 @@ test('Vercel SDK route verifies identity before upgrade and attaches synchronous
  assert.match(route,/perMessageDeflate:false,followRedirects:false/)
  assert.match(upgrade,/await consumeRate\(config,\{op:'clarity-live-upgrade',actor:actor\.id\},12,3600\)/)
  assert.doesNotMatch(route,/console\.|token:|access_token/)
+})
+
+test('relay restart recovers only an exact expired credential and keeps credited time',async()=>{
+ const source=readFileSync(new URL('../lib/app/clarity-course-runs.js',import.meta.url),'utf8')
+ const start=source.indexOf('export async function readClarityRunForRelay('),end=source.indexOf('export async function listClarityRuns(',start)
+ assert.ok(start>=0&&end>start)
+ const original={id:id(10),clock:{days:[{status:'active',day:1,protocolId:id(11),elapsedMs:5000,segments:[{connectionId:id(15),startedAt:1000,observedAt:6000}]}]}}
+ const row={lease_id:id(15),course_run_id:id(10),course_day:1,protocol_id:id(11),reserved_at_ms:0,possible_expires_at_ms:30000,provider_closed_at_ms:null}
+ let now=30001,credential=row,writes=0,locked=false
+ const after={...original,clock:{days:[{...original.clock.days[0],status:'paused'}]}}
+ const db={query:async(sql,params)=>{assert.equal(locked,true);assert.match(sql,/for update/);assert.deepEqual(params,[owner]);return {rows:credential?[credential]:[]}}}
+ const f=new Function('requireEnabled','transaction','lockCourseOwner','read','serverStamp','conflict','expireClarityRunObservation','writeClock',
+  source.slice(start,end).replace('export async function','async function')+'\nreturn readClarityRunForRelay')(
+  ()=>{},async(config,actor,fn)=>{assert.equal(actor.id,owner);locked=false;return fn(db)},
+  async()=>{locked=true},async(_db,actor,_config,runId,lock)=>{assert.equal(actor.id,owner);assert.equal(runId,original.id);assert.equal(lock,true);return original},
+  async()=>now,()=>Error('conflict'),(run,t)=>{assert.equal(run,original);assert.equal(t,now);return after},
+  async(_db,actor,_config,before,next)=>{assert.equal(actor.id,owner);assert.equal(before,original);assert.equal(next,after);writes++})
+ assert.equal(await f({}, {id:owner},original.id),after)
+ assert.equal(writes,1);assert.equal(after.clock.days[0].elapsedMs,5000)
+ now=29999;await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ now=30001;credential={...row,lease_id:id(99)};await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ credential=null;await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ credential={...row,provider_closed_at_ms:5000};await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ assert.equal(writes,1)
 })
