@@ -79,7 +79,9 @@ test('B: explicit consent gates inner axes and trial; zero is not missing, no in
  const review=f.review(),rows=coachCourseProtocolRows(course,f.turns,review)
  const result=claritySemanticResult(2,rows)
  assert.equal(result.kind,'support')
- assert.equal(result.axes,undefined)
+ assert.equal(result.axes.length,8)
+ assert.ok(result.axes.every(axis=>axis.current===null&&axis.desired===null))
+ assert.equal(result.innerProfile.status,'declined')
  assert.equal(rows.find(r=>r.id==='test_status').status,'not_explored')
  assert.equal(result.nodes.find(r=>r.id==='transfer_action').value,'Ask about one task')
  assert.equal(result.nodes.find(r=>r.id==='test_observation'),undefined)
@@ -135,8 +137,8 @@ test('explicit practice status is not inferred from a suggestion or plan',()=>{
 
 test('timecode guidance targets current scenario checkpoints, preserves dialogue and closing',()=>{
  const cases=[
- ['clarity_day_2',0,'situation','episode'],['clarity_day_2',240,'resources','resources'],
- ['clarity_day_2',480,'practice','practice_consent'],['clarity_day_2',840,'transfer','transfer_action'],
+ ['clarity_day_2',0,'situation','episode'],['clarity_day_2',180,'resources','inner_consent'],
+ ['clarity_day_2',660,'practice','practice_consent'],['clarity_day_2',900,'transfer','transfer_action'],
  ['clarity_day_3',0,'review','priority'],['clarity_day_3',180,'goal','goal_status'],
  ['clarity_day_3',420,'reality','baseline'],['clarity_day_3',660,'action','next']
  ]
@@ -343,6 +345,9 @@ test('day two support outcome requires the resource and preserves trial versus p
  assert.equal(clarityMethodOutcome(2,rows).outcome,'partial')
  assert.ok(clarityMethodOutcome(2,rows).coreMissing.includes('resources'))
  rows.push(make('resources'))
+ assert.equal(clarityMethodOutcome(2,rows).outcome,'partial')
+ const axisIds=clarityVersionedScenario('clarity_day_2').fields.filter(f=>f.id.startsWith('inner_')&&f.id!=='inner_consent').map(f=>f.id)
+ rows.push(make('inner_consent',{methodDecision:'accepted'}),...axisIds.map(k=>make(k,{quote:'3/8'})),make('development_focus',{quote:'Freedom'}),make('development_reason',{quote:'More choices'}))
  assert.equal(clarityMethodOutcome(2,rows).outcome,'support_planned')
  assert.equal(clarityMethodOutcome(2,rows.map(r=>r.id==='resources'?{...r,status:'self_reported',source:'daybook'}:r)).outcome,'partial')
  for(const locale of locales){
@@ -351,4 +356,22 @@ test('day two support outcome requires the resource and preserves trial versus p
   assert.match(guide,/Comfort ratings are not the optional support-availability scale/)
   assert.match(guide,/independent reflections are not confirmed dialogue evidence/)
  }
+})
+
+test('B: eight core axes precede support, radar never invents a rating or chooses the largest gap',()=>{
+ for(const locale of locales){
+  const scenario=clarityVersionedScenario(ids[0],locale),fields=scenario.fields
+  const axes=fields.filter(f=>f.id.startsWith('inner_')&&f.id!=='inner_consent')
+  assert.equal(axes.length,8)
+  assert.ok(axes.every(f=>f.priority==='P0'&&f.requiresConsent==='inner_consent'&&f.progressStage==='resources'))
+  assert.ok(fields.indexOf(axes[0])>fields.findIndex(f=>f.id==='inner_consent'))
+  assert.ok(fields.indexOf(axes.at(-1))<fields.findIndex(f=>f.id==='development_focus'))
+  assert.ok(fields.findIndex(f=>f.id==='development_reason')<fields.findIndex(f=>f.id==='resources'))
+  assert.match(clarityScenarioGuidance(ids[0],locale),/central method, not an optional extension/)
+ }
+ const f=fixture(ids[0]);f.add('inner_consent','yes','consent','accepted');f.add('inner_anchor','0/10');f.add('inner_freedom','4/6');f.add('development_focus','Freedom');f.add('development_reason','More choices')
+ const result=claritySemanticResult(2,coachCourseProtocolRows(ids[0],f.turns,f.review()))
+ assert.equal(result.innerProfile.rated,2);assert.equal(result.innerProfile.status,'partial');assert.equal(result.innerProfile.focus.value,'Freedom')
+ assert.equal(result.axes[0].current,0);assert.equal(result.axes[0].desired,10)
+ assert.equal(result.axes[1].current,null);assert.equal(result.axes[1].desired,null)
 })
