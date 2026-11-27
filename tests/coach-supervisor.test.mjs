@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {prepareSupervisorCandidate,validateSupervisorVerdict,reviewCoachCandidate,supervisorFieldCriterion} from '../lib/coaching/coach-supervisor.mjs'
+import {prepareSupervisorCandidate,validateSupervisorVerdict,reviewCoachCandidate,supervisorFieldCriterion,supervisorDirectorDisposition} from '../lib/coaching/coach-supervisor.mjs'
 import {coachQualityRubric,evaluateCoachQualityRubric} from '../lib/personal-coaching/coach-quality-rubric.mjs'
 const input={reviewId:'r1',sessionId:'private-session',questionId:'q1',candidateId:'c1',turnId:'t1',revision:2,locale:'ru',mode:'coaching',fieldId:'goal',question:'Какого результата вы хотите достичь?',quote:'Я хочу открыть студию',final:true,role:'user',context:[]}
 const answer={reviewId:'r1',fieldId:'goal',verdict:'MATCH',informationType:'goal',reasonCode:'sufficient',evidence:[{turnId:'t1',quote:'открыть студию'}]}
@@ -48,4 +48,48 @@ test('distinct rubrics withhold score without independent evidence, coverage and
   assert.equal(evaluateCoachQualityRubric({mode,turns,ratings:ratings.map(r=>({...r,evidence:[{turnIndex:0,quote:'invented'}]})),safety:'passed',privacy:'passed'}).coverage,0)
  }
  assert.equal(coachQualityRubric('unknown'),null)
+})
+
+const scoped=(courseSessionId,version,mode,fieldId)=>({...input,scenario:{courseSessionId,version},mode,fieldId})
+test('version-bound coaching and therapy criteria fail closed for wrong session, version, mode or control field',()=>{
+ const cases=[
+ ['clarity_day_1','hh-clarity-day-one-v5','coaching',['impact','priority','outer_body_health','outer_meaning_purpose'],['episode','balance_consent','balance_review']],
+ ['clarity_day_2','hh-clarity-day-two-support-v1','coaching',['episode','test_status','test_observation','optional_scale_before','inner_self-realization'],['goal','practice_consent','outer_body_health']],
+ ['clarity_day_3','hh-clarity-day-three-goal-v1','coaching',['goal','controllable_scope','dream_image','if_then','confidence'],['episode','goal_status','separate_plan_consent']],
+ ['anti_stress_ground','hh-anti-stress-v2-s1','therapy',['resource_images','resource_selected','resource_details','resource_phrase','stress_before'],['goal','meditation_consent','practice_consent','calm_variant']],
+ ['anti_stress_calm','hh-anti-stress-v2-s2','therapy',['calm_signal','calm_steps','calm_fallback','meditation_feedback','stress_after'],['resource_images','practice_status','goal']],
+ ['anti_stress_resource','hh-anti-stress-v2-s3','therapy',['available_resources','resource_plan','low_energy_option','support_threshold','skill_confidence'],['resource_details','meditation_consent','goal']]
+ ]
+ for(const [id,version,mode,valid,invalid] of cases){
+  for(const field of valid){
+   const i=scoped(id,version,mode,field),p=prepareSupervisorCandidate(i)
+   assert.ok(p, id+':'+field)
+   assert.equal(p.binding.courseSessionId,id);assert.equal(p.binding.scenarioVersion,version);assert.equal(p.binding.mode,mode)
+   assert.ok(!Object.hasOwn(p.payload,'courseSessionId')&&!Object.hasOwn(p.payload,'scenarioVersion'))
+   assert.equal(prepareSupervisorCandidate({...i,scenario:{courseSessionId:id,version:version+'-unknown'}}),null)
+   assert.equal(prepareSupervisorCandidate({...i,mode:mode==='coaching'?'therapy':'coaching'}),null)
+  }
+  for(const field of invalid)assert.equal(prepareSupervisorCandidate(scoped(id,version,mode,field)),null)
+ }
+ assert.equal(prepareSupervisorCandidate({...input,mode:'therapy'}),null)
+ for(const scenario of [null,{},[],{courseSessionId:'__proto__',version:'x'},{courseSessionId:'clarity_day_1',version:'hh-clarity-day-one-v5',extra:true}])assert.equal(prepareSupervisorCandidate({...input,scenario}),null)
+ assert.match(supervisorFieldCriterion('outer_finance',{courseSessionId:'clarity_day_1',version:'hh-clarity-day-one-v5'}),/current 0–10/)
+ assert.match(supervisorFieldCriterion('inner_love',{courseSessionId:'clarity_day_2',version:'hh-clarity-day-two-support-v1'}),/current and desired/)
+ assert.match(supervisorFieldCriterion('resource_images',{courseSessionId:'anti_stress_ground',version:'hh-anti-stress-v2-s1'},'therapy'),/no invented image/)
+})
+test('Director receives one localized clarification only for an exact validated current candidate; never a save or advance',()=>{
+ for(const locale of ['en','ru','es']){
+  const i={...scoped('clarity_day_3','hh-clarity-day-three-goal-v1','coaching','goal'),locale,context:[{turnId:'t2',quote:'I want to close the studio',reviewed:true}]}
+  const p=prepareSupervisorCandidate(i)
+  for(const [verdict,reasonCode] of [['MATCH','sufficient'],['PARTIAL','incomplete'],['MISMATCH','unrelated'],['AMBIGUOUS','uncertain_meaning'],['CONTRADICTION','conflicting_source']]){
+   const raw={...answer,verdict,reasonCode,evidence:[...answer.evidence,...(verdict==='CONTRADICTION'?[{turnId:'t2',quote:'close the studio'}]:[])]}
+   const reviewed=validateSupervisorVerdict(p,raw),d=supervisorDirectorDisposition(i,reviewed)
+   assert.equal(d.maySave,false);assert.equal(d.mayAdvance,false)
+   assert.equal(d.kind,verdict==='MATCH'?'relevant_needs_existing_confirmation_gate':'clarify_same_field')
+   assert.equal(typeof d.clarification,verdict==='MATCH'?'object':'string')
+   for(const changed of [{...i,revision:i.revision+1},{...i,turnId:'other'},{...i,quote:'another answer'},{...i,scenario:{courseSessionId:'clarity_day_2',version:'hh-clarity-day-two-support-v1'}}])assert.equal(supervisorDirectorDisposition(changed,reviewed).kind,'unverified')
+  }
+  assert.equal(supervisorDirectorDisposition(i,{...validateSupervisorVerdict(p,answer),evidence:[{turnId:'t1',quote:'invented'}]}).kind,'unverified')
+  assert.equal(supervisorDirectorDisposition(i,{status:'unavailable'}).kind,'unverified')
+ }
 })
