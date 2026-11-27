@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import {createAntiStressCourseClock,validateAntiStressCourseClock} from '../lib/coaching/anti-stress-clock.mjs'
 import {ANTI_STRESS_SESSION_IDS} from '../lib/coaching/coach-program-mode.mjs'
-import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation} from '../lib/coaching/anti-stress-runs.mjs'
+import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact} from '../lib/coaching/anti-stress-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n=1,access='free')=>({id:id(n),protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0,access})
 function event(run,day,type,atMs,{seg=50,decision='start',coachId='mira',...extra}={}){
@@ -75,4 +75,27 @@ test('trusted review append preserves provenance, rejects conflicting scope and 
  assert.equal(state.rows.length,1);assert.equal(state.reviews.length,2);assert.equal(state.turns.length,6)
  assert.equal(antiStressBoundProtocol(run,sid,pid,state).result.resources.selected,null)
  assert.throws(()=>apply({...turn(7,'client','x'),atMs:10001}),/CONFLICT/)
+})
+
+test('separate meditation requires safe completion, preserves client edits and respects revocation',()=>{
+ let run=createAntiStressRun(input())
+ run=advanceAntiStressRun(run,event(run,1,'begin',0))
+ const sid=ANTI_STRESS_SESSION_IDS[0],pid=id(2),version=antiStressRunBinding(run,sid,pid).scenarioVersion
+ const ledger={courseRunId:run.id,sessionId:sid,protocolId:pid,scenarioVersion:version,rows:Object.entries({practice_consent:'accepted',practice_status:'attempted',resource_kind:'imagery',resource_selected:'quiet shore',resource_response:'comfortable',meditation_consent:'accepted'}).map(([fieldId,value])=>({fieldId,value,status:'confirmed',reviewed:true,evidenceId:fieldId,scenarioVersion:version}))}
+ const create={type:'create',expectedRevision:0,atMs:900000,safeClosureVerified:true,storageConsentVerified:true}
+ assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,null,create),/CONFLICT/)
+ run=tick(run,1,0,900000)
+ assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,null,{...create,safeClosureVerified:false}),/CONFLICT/)
+ assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,null,{...create,storageConsentVerified:false}),/CONFLICT/)
+ const draft=antiStressMeditationArtifact(run,pid,ledger,null,create,'ru')
+ assert.equal(draft.status,'draft');assert.match(draft.body,/quiet shore/)
+ assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,draft,create),/CONFLICT/)
+ const saved=antiStressMeditationArtifact(run,pid,ledger,draft,{type:'save',expectedRevision:1,atMs:900001,body:'My own words'},'ru')
+ assert.equal(saved.body,'My own words');assert.equal(saved.revision,2)
+ assert.equal(antiStressMeditationArtifact(run,pid,ledger,saved,{type:'view'},'ru').body,'My own words')
+ assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,saved,{type:'save',expectedRevision:1,atMs:900002,body:'stale'}),/CONFLICT/)
+ const revoked={...ledger,rows:ledger.rows.map(r=>r.fieldId==='meditation_consent'?{...r,value:'declined'}:r)}
+ assert.equal(antiStressMeditationArtifact(run,pid,revoked,saved,{type:'view'},'ru').body,null)
+ const declined=antiStressMeditationArtifact(run,pid,revoked,saved,{type:'decline',expectedRevision:2,atMs:900002})
+ assert.equal(declined.status,'declined');assert.equal(declined.body,null)
 })
