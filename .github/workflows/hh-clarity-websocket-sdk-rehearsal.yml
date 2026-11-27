@@ -1,0 +1,74 @@
+name: HH Clarity WebSocket SDK rehearsal
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - '.github/workflows/hh-clarity-websocket-sdk-rehearsal.yml'
+permissions:
+  contents: read
+concurrency:
+  group: clarity-sdk-rehearsal-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  npm-lock:
+    # Disposable draft-only dependency resolution, no application secrets,
+    # production database, deployment, model call or repository write.
+    if: github.event.pull_request.number == 5701 && github.event.pull_request.draft == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Resolve and validate the exact WebSocket SDK lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset NODE_AUTH_TOKEN NPM_TOKEN
+          mkdir -p "$RUNNER_TEMP/hh-sdk-lock" "$RUNNER_TEMP/hh-sdk-smoke"
+          cp package.json package-lock.json "$RUNNER_TEMP/hh-sdk-lock/"
+          cp package-lock.json "$RUNNER_TEMP/hh-sdk-lock/before-lock.json"
+          cd "$RUNNER_TEMP/hh-sdk-lock"
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-exact @vercel/functions ws
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const before=JSON.parse(fs.readFileSync('before-lock.json','utf8'))
+          const after=JSON.parse(fs.readFileSync('package-lock.json','utf8'))
+          const manifest=JSON.parse(fs.readFileSync('package.json','utf8'))
+          const dependencies=Object.fromEntries(['@vercel/functions','ws'].map(k=>[k,manifest.dependencies[k]]))
+          for(const [name,version] of Object.entries(dependencies)){
+            if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))throw Error('SDK_VERSION_NOT_EXACT')
+            const resolved=after.packages['node_modules/'+name]
+            if(!resolved||resolved.version!==version||!resolved.integrity||!resolved.resolved?.startsWith('https://registry.npmjs.org/'))throw Error('SDK_LOCK_INVALID')
+          }
+          const changed=Object.fromEntries(Object.entries(after.packages).filter(([k,v])=>JSON.stringify(before.packages[k])!==JSON.stringify(v)))
+          const removed=Object.keys(before.packages).filter(k=>!Object.hasOwn(after.packages,k))
+          const result={dependencies,changed,removed}
+          fs.writeFileSync('sdk-lock-patch.json',JSON.stringify(result,null,2)+'\n')
+          fs.writeFileSync(process.env.RUNNER_TEMP+'/hh-sdk-smoke/package.json',JSON.stringify({private:true,type:'module',dependencies}))
+          // Public lock metadata only, bounded output for connector readback.
+          const line=JSON.stringify(result)
+          if(line.length>100000)throw Error('SDK_LOCK_DIFF_TOO_LARGE')
+          console.log('HH_CLARITY_SDK_LOCK_PATCH='+line)
+          NODE
+          cd "$RUNNER_TEMP/hh-sdk-smoke"
+          npm install --ignore-scripts --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import {experimental_upgradeWebSocket} from '@vercel/functions'
+          import WebSocket from 'ws'
+          if(typeof experimental_upgradeWebSocket!=='function'||typeof WebSocket!=='function'||typeof WebSocket.prototype.ping!=='function')throw Error('SDK_EXPORT_MISSING')
+          console.log('HH_CLARITY_SDK_EXPORTS_OK')
+          NODE
+      - name: Preserve reviewed manifest and lock patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: clarity-websocket-sdk-lock
+          path: |
+            ${{ runner.temp }}/hh-sdk-lock/package.json
+            ${{ runner.temp }}/hh-sdk-lock/package-lock.json
+            ${{ runner.temp }}/hh-sdk-lock/sdk-lock-patch.json
+          retention-days: 1
