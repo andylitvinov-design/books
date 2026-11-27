@@ -140,6 +140,10 @@ for(const engine of [chromium,webkit]){
      const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
      assert.equal(response?.status(),200,name);
      evidence.push({engine:engine.name(),...await verifyProgramHome(page,{locale,width})});
+     // Verify the complete approved mobile navigation on the actual restored home.
+     const dock=page.locator("[data-hh-unified-dock]");
+     await dock.waitFor({state:"visible"});
+     assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-unified-dock-item"))),["mytube","reiki","coach","ai","services","practice","profile"],name+": exact seven-slot mobile dock");
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      assert.deepEqual(errors,[],name+": no script errors");
      if(engine===webkit&&width===390)await page.screenshot({path:output+"/program-home-"+locale+"-webkit-390.png",fullPage:false});
