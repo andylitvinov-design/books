@@ -115,3 +115,17 @@ test('a course field mapped to contact remains in the course projection and can 
  const p=groupedSessionPosition(openingStagePosition({completed:true}),courseStagePosition([{id:'continuity_review',progressStage:'contact',label:'Continuity review',status:'not_explored'}],{promptId:'continuity_review'}),{mode:'course'});
  assert.equal(p.total,6);assert.equal(p.rows[0].coreChildren[0].id,'continuity_review');assert.equal(p.rows[0].active,true);assert.equal(p.rows[0].tone,'gray');
 });
+
+import {coachOpeningProgress} from '../lib/coaching/coach-opening-protocol.mjs'
+test('incident: unrelated interface replies and bare no are transcript only, not field captures',()=>{
+ const rows=[{role:'user',content:'Yes'},{role:'user',content:'sad'},{role:'user',content:'No, I want to check protocol of the session.'}]
+ const captured=openingCapturedAnswers(rows,h=>coachOpeningProgress({turns:h}))
+ assert.equal(captured.name,undefined)
+ assert.equal(coachCapturedClientTurns(rows).length,3)
+ const fields=[{id:'feelings',status:'not_explored'}]
+ for(const reply of ['No.','I want to check the protocol']){
+  const turns=[{role:'assistant',content:'question'},{role:'user',content:reply}]
+  assert.equal(courseCapturedRows(fields,turns,()=>true)[0].quote,undefined)
+  assert.equal(coachCapturedClientTurns(turns).length,1)
+ }
+})
