@@ -1,0 +1,15 @@
+/* Scoped to the three Profile program heroes; no change to other service CTAs. */
+.root[data-profile-program-request]{display:grid;gap:6px;width:100%;min-width:0;margin-top:14px}
+.root[data-profile-program-request] button.trigger{display:flex!important;align-items:center;justify-content:center;gap:9px;width:100%;min-width:0;min-height:52px;padding:9px 12px;box-sizing:border-box;border:2px solid #fff4ba!important;border-radius:999px;background:linear-gradient(145deg,#fff19b,#ffc520 44%,#e99000)!important;color:#2b210c!important;box-shadow:0 3px 12px #e8a33177;font:700 clamp(17px,4.6vw,22px)/1.12 Georgia,serif!important;cursor:pointer}
+.root .trigger svg{flex:none}
+.root .trigger[aria-expanded=true] svg{transform:rotate(180deg)}
+.root .options[hidden]{display:none!important}
+.root .options{min-width:0;padding:8px;border:1px solid #e8cf9e;border-radius:13px;background:#fff5df;color:#123e30;scroll-margin-top:90px}
+.root .options [data-compact-messenger=true]>div{padding:0!important;margin:0!important;gap:6px!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.root .options [data-compact-messenger=true] strong{font:650 13px/1.2 system-ui,sans-serif!important;color:#123e30!important}
+.root .options [data-compact-messenger=true] [role=group]{gap:6px!important}
+.root .options [data-messenger-only-channel]{min-height:44px!important;padding:6px 4px!important;border:0!important;border-radius:9px!important;color:#fff!important;font:700 clamp(11px,3.4vw,14px)/1.15 system-ui,sans-serif!important;box-shadow:none!important}
+.root .options [data-messenger-only-channel=whatsapp]{background:#176c4b!important}
+.root .options [data-messenger-only-channel=telegram]{background:#1575a5!important}
+.root .options .note{margin:5px 0 0!important;color:#365440!important;font:500 11px/1.25 system-ui,sans-serif!important;text-align:left}
+.root :focus-visible{outline:3px solid #e8b84b;outline-offset:2px}
