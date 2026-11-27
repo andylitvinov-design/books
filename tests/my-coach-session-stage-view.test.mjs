@@ -143,3 +143,14 @@ test('confirmed preferred name shows the normalized value independently of the l
   assert.equal(pending.value,undefined);assert.equal(pending.status,'needs_confirmation')
  }
 })
+
+
+test('restored bound evidence is not duplicated or frozen; a later explicit correction can append',()=>{
+ const t=(role,content)=>({role,content}),courseId='goal_result',fields=[{id:'goal'}]
+ const turns=[t('assistant','goal?'),t('user','Old goal'),t('assistant','echo: Old goal'),t('user','yes')]
+ const get=(turns,existing=null)=>boundTranscriptReview({courseId,turns,fields,existing,matchQuestion:(f,q)=>q===f.id+'?',matchEcho:(f,q,a,e)=>e==='echo: '+a,answerClass:x=>x==='yes'?'affirm':'candidate',normalize:v=>v})
+ const prior=get(turns);assert.equal(prior.events.length,1)
+ assert.deepEqual(get(turns,prior),prior)
+ const next=get([...turns,t('assistant','goal?'),t('user','New goal'),t('assistant','echo: New goal'),t('user','yes')],prior)
+ assert.equal(next.events.length,2);assert.equal(next.events.at(-1).quote,'New goal')
+})
