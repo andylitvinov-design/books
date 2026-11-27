@@ -116,3 +116,33 @@ test('focus is a starting point, and short contextual replies are recognized in 
  assert.equal(coachOpeningProgress({locale:'ru',turns:['трудность']}).current,'invitation')
  assert.equal(coachOpeningProgress({locale:'ru',turns:['нет','трудность']}).declined,true)
 })
+
+test('explicit continuation advances pending consent, never triggers unsolicited postponement or becomes a name',()=>{
+ const samples={
+  ru:['Давай продолжим.','Продолжим','Идём дальше','Давайте продолжать'],
+  en:["Let's continue.","Continue","Let's proceed","Resume"],
+  es:['Continuemos.','Seguimos','Sigamos','Adelante']
+ }
+ const histories={ru:['да','Анна','цель','спокойно'],en:['yes','Anna','goal','calm'],es:['sí','Ana','meta','tranquila']}
+ const unclear={ru:'не знаю',en:'maybe',es:'no sé'}
+ const refusals={ru:'Давай не будем',en:"Let's not continue",es:'No continuemos'}
+ for(const [locale,phrases] of Object.entries(samples)){
+  for(const personaId of Object.keys(COACH_OPENING_QUESTION_BANK)){
+   for(const phrase of phrases){
+    const p=coachOpeningProgress({locale,personaId,turns:[phrase]})
+    assert.equal(p.current,'name',personaId+' '+phrase)
+    assert.equal(p.answers.invitation.kind,'accepted')
+    assert.equal(coachOpeningNameCandidate(phrase),'')
+    const ready=coachOpeningProgress({locale,personaId,turns:[...histories[locale],phrase]})
+    assert.equal(ready.completed,true,personaId+' '+locale+' final confirmation')
+   }
+   const p=coachOpeningProgress({locale,personaId,turns:[unclear[locale]]})
+   assert.equal(p.current,'invitation')
+   assert.doesNotMatch(coachOpeningNextReply(p),/отлож|другой день|postpon|another day|leave it|otro d[ií]a|dejarlo/iu)
+   const no=coachOpeningProgress({locale,personaId,turns:[refusals[locale]]})
+   assert.equal(no.declined,true)
+  }
+ }
+ assert.equal(coachOpeningProgress({locale:'ru',turns:['Давай продолжим?']}).current,'invitation')
+ assert.equal(coachOpeningProgress({locale:'ru',turns:['«Давай продолжим»']}).current,'invitation')
+})
