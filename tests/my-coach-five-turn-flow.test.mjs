@@ -407,7 +407,7 @@ test('End during a recorded turn stops the track without sending any speech',asy
 });
 test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&document\.visibilityState==='visible'&&!paused/)
+  assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&!resumePending&&document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
   assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
   assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined\]\)/)
