@@ -1761,6 +1761,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         body:JSON.stringify({action:'save',consent:true,protocol,...(draftRevision!==undefined?{draftRevision}:{})}),
       })
       const result=await response.json().catch(()=>null)
+      if(response.status===409&&result?.error==='CLARITY_SESSION_STILL_OPEN'){
+        // Explicit rejected promotion: the durable draft still exists. This
+        // is distinct from an ambiguous timeout where the snapshot stays locked.
+        protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)
+        setProtocolError(({ru:'Сессия сохранена как незавершённая. Продолжите оставшееся время перед итоговым отчётом.',en:'Your unfinished session is saved. Continue its remaining time before saving the final report.',es:'La sesión pendiente está guardada. Continúa el tiempo restante antes de guardar el informe final.'})[lang])
+        return false
+      }
       if(!response.ok||result?.saved!==true||result.id!==protocol.id)throw Error(result?.error||'SAVE_FAILED')
       autoSaveQueueRef.current?.stop();autoSaveRef.current=false;setAutoSaveEnabled(false)
       profileV3Ref.current=null;setProfileV3(null);setProfileV3CanStart(false)

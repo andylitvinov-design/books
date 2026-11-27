@@ -25,3 +25,6 @@ The private greeting metadata and revision-bound resume now resolve each immutab
 
 ## Disposable PostgreSQL rehearsal (27 Nov)
 Extended the existing guarded App R1 coaching RLS integration test, without registering the proposal as a production migration. The test applies the exact proposal to the deliberately empty local CI database; checks owner/account-active isolation, immutable run/session binding, unique live-active course, concurrent daily claims through the real transaction and quota adapter, rollback, account-delete cascade and absence of anon/authenticated table grants. A native CI pass is required before claiming the rehearsal succeeded. Runtime flags remain disabled.
+
+## Preserve unfinished drafts on attempted final review (27 Nov)
+Bound Clarity session promotion now reads the exact persisted course/run clock in the existing archive transaction. Before its verified timed end it rejects permanent promotion with a distinct conflict code, retains the existing draft and unlocks the UI after an explicit rejection (not an uncertain timeout). After a trusted 1,200-second end, the archive receives canonical duration and a time-limit marker; separate homework acceptance is not inferred. Existing unbound archive behavior is unchanged; no flags activated. Actual provider and mobile acceptance remain outstanding.

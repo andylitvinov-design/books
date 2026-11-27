@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata,clarityRunReviewPatch} from '../lib/coaching/clarity-course-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n,access,ordinal)=>({id:id(n),access,ordinal,protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0})
 function event(run,day,type,atMs,{seg=50,coachId='mira',decision='start',turn='consent:'+seg}={}){
@@ -129,4 +129,27 @@ test('server reads run bindings in the same owner-scoped draft transaction',()=>
  assert.match(store,/clarityRunResumeMetadata\(run,day,id\)/)
  assert.match(draft,/day&&!binding\?await readClarityCourseClockInTransaction/)
  assert.match(draft,/await readClarityResumeBindings\(db,actor,config,courseItems\)/)
+})
+
+test('bound early archive review preserves the draft until a genuine trusted timed end',()=>{
+ const data=input(1,'free',1)
+ assert.equal(clarityRunReviewPatch(null),null) // historical unbound archive
+ let run=createClarityRun(data)
+ const binding=()=>clarityRunResumeMetadata(run,1,data.protocolIds[0])
+ assert.throws(()=>clarityRunReviewPatch(binding()),/CLARITY_SESSION_STILL_OPEN/)
+ run=beginFreeClarityRun(data,event(data,1,'begin',0))
+ assert.throws(()=>clarityRunReviewPatch(binding()),/CLARITY_SESSION_STILL_OPEN/)
+ run=tick(run,1,0,420000)
+ run=advanceClarityRun(run,event(run,1,'disconnect',420000))
+ assert.throws(()=>clarityRunReviewPatch(binding()),/CLARITY_SESSION_STILL_OPEN/)
+ run=advanceClarityRun(run,event(run,1,'begin',430000,{seg:51,decision:'continue',coachId:'caesar'}))
+ run=tick(run,1,430000,780000,51)
+ assert.deepEqual(clarityRunReviewPatch(binding()),{durationSeconds:1200,clarityTimeLimitReached:true})
+ assert.throws(()=>clarityRunReviewPatch(clarityRunResumeMetadata(run,2,data.protocolIds[1])),/CLARITY_SESSION_STILL_OPEN/)
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const server=read('lib/app/personal-coaching.js'),ui=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(server.indexOf('verifiedTime=clarityRunReviewPatch(binding)')<server.indexOf('const result=existing?{saved:true,id:protocol.id,alreadySaved:true}'))
+ assert.match(server,/if\(!existing&&draft\?\.state!=='active'\)/)
+ assert.match(ui,/response.status===409&&result\?\.error==='CLARITY_SESSION_STILL_OPEN'/)
+ assert.match(ui,/protocolSaveSnapshotRef.current=null;setProtocolSaveLocked\(false\)/)
 })

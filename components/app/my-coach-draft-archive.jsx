@@ -70,6 +70,10 @@ export default function MyCoachDraftArchive({accountId,locale='en',onReviewed}){
     method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','X-HH-Account-ID':accountId},
     body:JSON.stringify(reviewed?{action:'save',consent:true,protocol:reviewed,draftRevision:item.revision}:{action:'discard',confirmed:true,id:item.id})})
    const result=await response.json().catch(()=>null)
+   if(response.status===409&&result?.error==='CLARITY_SESSION_STILL_OPEN'){
+    if(ownerRef.current===accountId)setNotice(({ru:'Протокол сохранён. Продолжите незавершённую сессию перед сохранением итогового отчёта.',en:'The protocol is saved. Continue the unfinished session before saving its final report.',es:'El protocolo está guardado. Continúa la sesión pendiente antes de guardar su informe final.'})[lang])
+    return
+   }
    if(!response.ok||(reviewed?result?.saved!==true:result?.deleted!==true))throw Error('DRAFT_ACTION')
    if(ownerRef.current!==accountId)return
    setState(previous=>({...previous,items:previous.items.filter(x=>x.id!==item.id)}))
