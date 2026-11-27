@@ -76,8 +76,8 @@ test('Vercel SDK route verifies identity before upgrade and attaches synchronous
   assert.equal(lock.packages['node_modules/'+key].version,pkg.dependencies[key])
   assert.ok(lock.packages['node_modules/'+key].integrity)
  }
- assert.match(route,/export const maxDuration=300/)
- assert.match(route,/const segmentDeadlineMs=Date\.now\(\)\+270000/)
+ assert.match(route,/export const maxDuration=800/)
+ assert.match(route,/const segmentDeadlineMs=Date\.now\(\)\+770000/)
  assert.match(upgrade,/createProviderSocket,segmentDeadlineMs,selection/)
  const relay=read('lib/app/clarity-live-relay.js')
  assert.match(relay,/setup,segmentDeadlineMs,/)
@@ -201,7 +201,10 @@ test('an impossible fresh logical session cannot burn a provider slot',async()=>
  const {canFitNewLogicalSession}=await import('../lib/coaching/relay-session-capacity.mjs')
  const {geminiLiveTokenQuota}=await import('../lib/coaching/gemini-live-quota.mjs')
  const quota=geminiLiveTokenQuota(owner)
- for(const remainingMs of [900000,1200000])assert.equal(canFitNewLogicalSession({remainingMs,segmentMs:270000,quota}),false)
+ for(const remainingMs of [900000,1200000]){
+  assert.equal(canFitNewLogicalSession({remainingMs,segmentMs:270000,quota}),false)
+  assert.equal(canFitNewLogicalSession({remainingMs,segmentMs:770000,quota}),true)
+ }
  assert.equal(canFitNewLogicalSession({remainingMs:1200000,segmentMs:600000,quota}),true)
  assert.equal(canFitNewLogicalSession({remainingMs:1200000,segmentMs:599999,quota}),false)
  assert.equal(canFitNewLogicalSession({remainingMs:900000,segmentMs:450000,quota}),true)

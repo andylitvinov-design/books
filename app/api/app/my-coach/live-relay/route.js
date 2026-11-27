@@ -10,14 +10,15 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 export const preferredRegion='yul1'
-// Conservative compatible segment limit, not the logical 20-minute limit.
+// Existing Vercel Pro + Fluid Compute candidate, within the non-beta 800s limit.
+// Verify project eligibility in a protected deployment before activation.
 // A later connection must resume the same persisted run after explicit consent.
-export const maxDuration=300
+export const maxDuration=800
 
 export async function GET(request){
  // Reserve 30 seconds before the platform's hard limit for closing sockets
  // and durably stopping the segment. The logical course clock never resets.
- const segmentDeadlineMs=Date.now()+270000
+ const segmentDeadlineMs=Date.now()+770000
  try{
   // Verify origin, deployment veto and the signed-in owner before upgrading.
   const prepared=await prepareClarityLiveUpgrade(request,getAppConfig(),{
