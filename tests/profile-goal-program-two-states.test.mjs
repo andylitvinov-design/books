@@ -11,7 +11,9 @@ test('goal program landing and selected goal are mutually exclusive after loadin
   assert.ok(source.includes('data-goal-program-active'))
   assert.ok(source.includes('data-goal-program-landing'))
   assert.ok(source.includes('const startHref = root + \'/daybook?start=vector\''))
-  assert.ok(source.includes('href="#goal-program-stages"'))
+  assert.ok(source.includes("href={'/'+lang+'/programs/goal'}"))
+  assert.ok(source.includes('data-goal-public-details'))
+  assert.ok(source.includes('{showLanding && <GoalLandingSections locale={lang} showHeading={false}/>'))
   for(const label of ['Start Program','Начать программу','Iniciar programa','Program Details','О программе','Ver programa']) assert.ok(source.includes(label))
 })
 test('selected goal retains verified progress, exact resume and in-page accordion',()=>{
