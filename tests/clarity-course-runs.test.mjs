@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata,clarityRunReviewPatch} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata,clarityRunReviewPatch,expireClarityRunObservation} from '../lib/coaching/clarity-course-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n,access,ordinal)=>({id:id(n),access,ordinal,protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0})
 function event(run,day,type,atMs,{seg=50,coachId='mira',decision='start',turn='consent:'+seg}={}){
@@ -152,4 +152,74 @@ test('bound early archive review preserves the draft until a genuine trusted tim
  assert.match(server,/if\(!existing&&draft\?\.state!=='active'\)/)
  assert.match(ui,/response.status===409&&result\?\.error==='CLARITY_SESSION_STILL_OPEN'/)
  assert.match(ui,/protocolSaveSnapshotRef.current=null;setProtocolSaveLocked\(false\)/)
+})
+
+test('run transcript preserves legacy coach labels and exact visit attribution without inference metadata',()=>{
+ const run=createClarityRun(input(1,'free',1)),visitId=id(91),capturedAt='2026-11-27T09:00:00.000Z'
+ const record={id:run.protocolIds[0],courseSessionId:'clarity_day_1',personaId:'mira',provenance:'client_reviewed_dialogue',turns:[
+  {role:'assistant',content:'Welcome',coachId:'mira',locale:'en',capturedAt},
+  {role:'user',content:'Continue',coachId:'caesar',visitId,locale:'en',capturedAt},
+  {role:'assistant',content:'Let us continue',coachId:'caesar',authorPersonaId:'caesar',visitId,locale:'en',capturedAt,inference:{provider:'gemini_live_free',model:'private'}},
+  {role:'assistant',content:'Legacy captured reply',coachId:'sofia'}
+ ]}
+ const log=clarityRunTranscript(record,1,run,capturedAt)
+ assert.equal(log.turns[0].personaId,'mira')
+ assert.equal(log.turns[1].coachId,'caesar')
+ assert.equal(log.turns[1].visitId,visitId)
+ assert.equal(log.turns[1].capturedAt,capturedAt)
+ assert.equal(log.turns[2].personaId,'caesar')
+ assert.equal(log.turns[2].locale,'en')
+ assert.equal(log.turns[2].inference,undefined)
+ assert.equal(log.turns[3].personaId,'sofia')
+})
+
+
+test('expired observation recovery pauses the same logical session without charging the gap or making homework eligible',()=>{
+ const data=input(1,'free',1)
+ let run=beginFreeClarityRun(data,event(data,1,'begin',0))
+ run=tick(run,1,0,420000)
+ const before=run
+ assert.equal(expireClarityRunObservation(before,435000),before,'exact grace limit is not a lost observation')
+ assert.throws(()=>expireClarityRunObservation(before,419999),/CONFLICT/)
+ assert.throws(()=>expireClarityRunObservation(before,'435001'),/CONFLICT/)
+ run=expireClarityRunObservation(before,435001)
+ assert.equal(run.clock.revision,before.clock.revision+1)
+ assert.equal(run.clock.days[0].status,'paused')
+ assert.equal(run.clock.days[0].elapsedMs,420000)
+ assert.equal(run.clock.days[0].segments[0].reason,'lost_observation')
+ assert.equal(run.clock.days[0].segments[0].observedAt,420000)
+ assert.equal(run.clock.days[0].segments[0].endedAt,435001)
+ assert.equal(run.clock.days[0].protocolId,data.protocolIds[0])
+ assert.equal(run.clock.days[1].status,'not_started')
+ assert.deepEqual(clarityClockNewDailyClaims(before.clock,run.clock),[])
+ assert.equal(expireClarityRunObservation(run,440000),run,'recovery retry is a no-op')
+ assert.throws(()=>clarityRunReviewPatch(clarityRunResumeMetadata(run,1,data.protocolIds[0])),/STILL_OPEN/)
+ assert.throws(()=>advanceClarityRun(run,event(before,1,'observe',440000)),/CONFLICT/)
+ assert.throws(()=>advanceClarityRun(run,event(run,1,'observe',440000)),/CONFLICT/)
+ assert.throws(()=>advanceClarityRun(run,event(run,1,'begin',440000,{seg:51,coachId:'caesar'})),/NOT_AUTHORIZED/)
+ run=advanceClarityRun(run,event(run,1,'begin',440000,{seg:51,coachId:'caesar',decision:'continue'}))
+ assert.equal(run.clock.days[0].segments[1].coachId,'caesar')
+ assert.equal(run.clock.days[0].elapsedMs,420000)
+ run=tick(run,1,440000,780000,51)
+ assert.equal(run.clock.days[0].elapsedMs,1200000)
+ assert.equal(clarityRunSummary(run).currentDay,2)
+ assert.equal(expireClarityRunObservation(run,2000000),run)
+ assert.equal(before.clock.days[0].status,'active')
+})
+
+test('stale connection recovery uses owner lock, database time and CAS, never a browser event route',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js')
+ const recovery=store.slice(store.indexOf('export async function recoverExpiredClarityRun('),store.indexOf('// Called by existing draft/report adapters'))
+ assert.match(recovery,/recoverExpiredClarityRun\(config,actor,runId\)/)
+ assert.match(recovery,/requireEnabled\(\)/)
+ assert.match(recovery,/await lockCourseOwner\(db,actor\)/)
+ assert.match(recovery,/await read\(db,actor,config,runId,true\)/)
+ assert.match(recovery,/const now=await serverStamp\(db\)/)
+ assert.match(recovery,/expireClarityRunObservation\(before,now\)/)
+ assert.match(recovery,/if\(after!==before\)await writeClock\(db,actor,config,before,after\)/)
+ assert.doesNotMatch(recovery,/claimTrustedFreeCoachingDays|issueGeminiFreeLiveToken|fetch\(/)
+ const api=read('app/api/app/clarity-course/runs/route.js')
+ assert.doesNotMatch(api,/recoverExpiredClarityRun|export (?:const|async function|function) POST/)
+ assert.match(store,/TRUSTED_RUN_ADAPTER_READY=false/)
 })

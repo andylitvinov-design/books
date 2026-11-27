@@ -968,7 +968,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!spokenText||replaying)return
     ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
-    const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
+    // Read the synchronous transcript: typed Send can call this before React
+    // renders the newly committed local identity answer. Only the exact public
+    // editorial introduction may use its static MP3. Never replay a private
+    // opening/name correction through cloud synthesis or a generic greeting.
+    const replayTurn=[...turnsRef.current].reverse().find(turn=>turn.role==='assistant')
+    const publicOpening=spokenText===coachSessionOpeningLine(personaId,conversationLang)
+    const privateOpening=!publicOpening&&(!replayTurn||
+      (replayTurn.content===spokenText&&(replayTurn.stage==='opening'||Boolean(replayTurn.openingProgress))))
+    if(privateOpening){
+      setPlaybackNotice(({ru:'Персональное приветствие или уточнение имени доступно в тексте. Оно не отправляется в голосовой сервис.',en:'Your private greeting or name clarification remains available as text. It is not sent to a voice service.',es:'El saludo privado o la aclaración del nombre sigue disponible en texto. No se envía a un servicio de voz.'})[conversationLang])
+      return
+    }
+    const replayingIntro=publicOpening&&(!replayTurn||replayTurn.stage==='opening')
     const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&(!lockedSessionVoice||chosenCloudProvider?.startsWith('gemini_tts_'))&&
       ['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(chosenCloudProvider)
     if(!replayingIntro&&!dynamicAllowed){

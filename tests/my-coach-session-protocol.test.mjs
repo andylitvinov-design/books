@@ -864,7 +864,7 @@ test('long QA capture and immutable Clarity visit attribution coexist in draft, 
  const visit='8afbf841-49a0-46e1-b5c1-124a116efa29',capturedAt='2026-11-19T20:01:00.000Z'
  const data={...sample(),courseSessionId:'clarity_day_1',turnLayout:'chronological',turns:[
   {role:'assistant',content:'Welcome',coachId:'mira',capturedAt,locale:'en'},
-  {role:'user',content:'Original answer '+('words '.repeat(500)),coachId:'caesar',visitId:visit},
+  {role:'user',content:'Original answer '+('words '.repeat(500)).trimEnd(),coachId:'caesar',visitId:visit},
   {role:'assistant',content:'Continue',coachId:'caesar',visitId:visit,authorPersonaId:'caesar',capturedAt,inference:{provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'}}
  ]}
  const normalized=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:data.courseSessionId,protocol:data}).protocol

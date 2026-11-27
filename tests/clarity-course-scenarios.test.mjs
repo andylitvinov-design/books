@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {clarityScenarioVersion,clarityScenarioReviewVersion,clarityVersionedScenario,clarityScenarioGateFields,clarityScenarioReviewOf,clarityScenarioGuidance,clarityScenarioTimeGuidance,clarityMetricScore,clarityPracticeStatus} from '../lib/coaching/clarity-course-scenarios.mjs'
 import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview,clarityDayOneReviewPrompt,coachCourseProtocolGuidance,coachCourseCheckpointGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
-import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
+import {createCoachProtocolGate,coachProtocolGateNext,transitionCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
 import {courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
 import {claritySemanticResult,clarityMethodOutcome} from '../lib/coaching/clarity-session-fields.mjs'
 import {claritySessionProtocol} from '../lib/coaching/clarity-course-protocol.mjs'
@@ -241,4 +241,97 @@ test('resume recap prioritizes recent verified answers and the exact outstanding
  assert.ok(recap.includes('Ask about one task'));assert.ok(!recap.includes('I worked late twice'));assert.ok(recap.includes(prompt.text));assert.ok(recap.includes('Continue this same coaching session?'))
  const fallback=coachCourseResumeRecap({...value,courseGate:{...value.courseGate,prompt:null}})
  assert.ok(fallback.includes(f.schema.checkpoints.find(r=>r.id==='timing_or_condition').label))
+})
+
+test('B observation requires a confirmed attempt in the real gate and review ledger',()=>{
+ const course=ids[0]
+ for(const [status,expected] of [['planned for later',false],['just talked',false],['declined',false],['tried',true],['stopped',true]]){
+  const f=fixture(course)
+  f.add('practice_consent','yes','consent','accepted')
+  f.add('test_status',status)
+  const rows=coachCourseProtocolRows(course,f.turns,f.review())
+  assert.equal(rows.find(r=>r.id==='test_observation').status,'not_explored')
+  f.add('test_observation','No change in how I felt')
+  if(expected)assert.equal(coachCourseProtocolRows(course,f.turns,f.review()).find(r=>r.id==='test_observation').status,'confirmed')
+  else assert.throws(()=>normalizeCoachCourseFieldReview(f.review(),course,f.turns))
+  const fields=clarityScenarioGateFields(course).filter(x=>['practice_consent','test_status','test_observation','transfer_action'].includes(x.id))
+  let gate=createCoachProtocolGate({sessionId:'s1',courseSessionId:course,fields})
+  let seq=0
+  const transition=(type,fieldId,extra={})=>{gate=transitionCoachProtocolGate(gate,{id:'e:'+String(++seq),type,fieldId,sessionId:'s1',courseSessionId:course,coachId:'mira',expectedRevision:gate.revision,...extra})}
+  const answer=(id,quote,revision)=>{
+   const q='q:'+id,d='d:'+id
+   transition('issue',id,{questionId:q})
+   transition('delivery',id,{questionId:q,deliveryId:d,final:true})
+   transition('answer',id,{questionId:q,deliveryId:d,turnId:'t:'+id,text:quote,final:true,explicitFieldEntry:true})
+   transition('save_ack',id,{questionId:q,receipt:gate.pending.candidate.receipt,durableRevision:revision})
+  }
+  answer('practice_consent','yes',1)
+  answer('test_status',status,2)
+  assert.equal(coachProtocolGateNext(gate).fieldId,expected?'test_observation':'transfer_action')
+  if(expected){
+   answer('test_observation','No change in how I felt',3)
+   transition('reopen','test_status',{turnId:'correction:1',explicitCorrection:true})
+   assert.equal(gate.accepted.test_observation,undefined)
+   assert.equal(coachProtocolGateNext(gate).fieldId,'test_status')
+  }
+ }
+})
+
+import {coachCourseScenarioFirst,coachCourseLiveInstruction,COACH_PROGRAM_SESSIONS} from '../lib/coaching/coach-course-journey.mjs'
+import {coachCourseIndependentQuestion} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {coachSessionDirectivePrompt,enforceCoachSessionDirective} from '../lib/coaching/coach-session-director.mjs'
+import {vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
+import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
+
+test('registered courses own scenario, standalone sessions keep personal method',()=>{
+ const courses=[...COACH_PROGRAM_SESSIONS.map(x=>x.id),'clarity_day_1','clarity_day_2','clarity_day_3']
+ for(const id of courses)for(const locale of ['ru','en','es']){
+  assert.equal(coachCourseScenarioFirst(id),true)
+  assert.match(coachCourseLiveInstruction(id,locale),/COURSE SCENARIO FIRST/)
+  assert.match(coachCourseLiveInstruction(id,locale),/secondary toolbox/)
+ }
+ for(const id of [undefined,null,'life_direction','introductory','meaning_axes_inner_growth','goal_forged']){
+  assert.equal(coachCourseScenarioFirst(id),false)
+ }
+})
+test('course priority never authorizes dependent questions or separate permissions',()=>{
+ for(const locale of ['ru','en','es']){
+  for(const [course,id,expected] of [
+   ['clarity_day_1','situation',true],['clarity_day_1','outer_body_health',false],['clarity_day_1','homework_consent',false],
+   ['clarity_day_2','episode',true],['clarity_day_2','test_status',false],
+   ['clarity_day_3','priority',true],['clarity_day_3','goal',false]]){
+   const row=coachCourseProtocolSchema(course,locale,{scenarioVersion:clarityScenarioVersion(course)}).checkpoints.find(x=>x.id===id)
+   assert.ok(row)
+   assert.equal(coachCourseIndependentQuestion(course,locale,row.question),expected)
+  }
+ }
+ assert.equal(coachCourseIndependentQuestion('goal_forged','en','What should I do?'),false)
+})
+test('personal method remains locked as evidence but no longer supplies course roadmap or competing live checkpoint',()=>{
+ const base={version:'test',personaId:'mira',personaVersion:'test',methodId:'grow',methodShape:'Goal → Reality → Options',methodProtocolVersion:'test',provisionalPhase:'discovery',phase:'discovery',stageLimit:'goal',methodStepId:'grow:goal',interventionId:'clarify_goal',timebox:{elapsedSeconds:480,phase:'exploration'},evidence:{},readiness:{missing:[]},allowQuestion:true,locale:'en'}
+ const ordinary=coachSessionDirectivePrompt(base)
+ assert.match(ordinary,/Locked primary method=grow/)
+ assert.match(ordinary,/MANDATORY next conversational move/)
+ const course={...base,courseScenarioFirst:true,courseSessionId:'clarity_day_2'}
+ const prompt=coachSessionDirectivePrompt(course)
+ assert.match(prompt,/COURSE SCENARIO FIRST/)
+ assert.match(prompt,/Advisory active elapsed time: 480 seconds/)
+ assert.doesNotMatch(prompt,/Locked primary method=grow/)
+ assert.doesNotMatch(prompt,/Five conversational themes/)
+ assert.match(prompt,/Do NOT suggest a plan/)
+ assert.match(geminiLiveThematicCheckpointGuidance('',course,' Active phase: resources.'),/Director: course scenario first/)
+ assert.doesNotMatch(geminiLiveThematicCheckpointGuidance('',course,' Active phase: resources.'),/step grow:goal/)
+ assert.match(geminiLiveThematicCheckpointGuidance('',base,' Active phase: resources.'),/step grow:goal/)
+})
+test('personal topic-order veto yields only to recognized course question, never premature action',()=>{
+ const d={methodId:'oskar',methodStepId:'oskar:outcome'}
+ assert.equal(vetoMethodStepQuestion('On a scale of 0 to 10?',d),true)
+ assert.equal(vetoMethodStepQuestion('On a scale of 0 to 10?',d,{courseOwnedQuestion:true}),false)
+ assert.equal(vetoMethodStepQuestion('When will you start?',d,{courseOwnedQuestion:true}),true)
+ const base={methodId:'grow',methodStepId:'grow:goal',interventionId:'clarify_goal',phase:'discovery',allowQuestion:true,evidence:{},canOfferAction:false,locale:'en',courseScenarioFirst:true,courseScenarioActive:true,courseSessionId:'goal_possibilities'}
+ const row=coachCourseProtocolSchema('goal_possibilities','en').checkpoints.find(x=>x.id==='options')
+ const response={mode:'ai',message:row.question,planSuggestion:'',evidenceQuote:''}
+ assert.equal(enforceCoachSessionDirective(response,base).message,row.question)
+ assert.throws(()=>enforceCoachSessionDirective({...response,message:'You must commit to a deadline.'},base))
+ assert.throws(()=>enforceCoachSessionDirective(response,{...base,allowQuestion:false}))
 })

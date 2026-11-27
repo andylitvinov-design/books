@@ -161,8 +161,8 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   const css=source('components/my-coach-speech-loop.module.css')
   assert.match(ui,/MyCoachSpeechLoop/)
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
-  assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary'].includes(result.mode))"),
-    'typed turns use the live audio path first; unconsented safety responses never go to the vendor')
+  assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary','identity'].includes(result.mode))"),
+    'typed turns use the live audio path first; safety, boundary and private identity responses never go to the cloud replay vendor')
   assert.match(ui,/onTurn=\{\(text,spoken\)=>sendMessage\(text,\{voiceTurn:true,utteranceLocale:spoken\?\.locale,onApprovedPhrase:spoken\?\.onApprovedPhrase\}\)\}/)
   assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
