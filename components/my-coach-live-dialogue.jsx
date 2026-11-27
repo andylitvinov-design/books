@@ -1308,6 +1308,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function loadPrivateRecall(locale,{structured=false}={}){
     recallRequestRef.current?.abort()
     const controller=new AbortController();recallRequestRef.current=controller
+    let timedOut=false
+    const deadline=setTimeout(()=>{timedOut=true;controller.abort()},8000)
     const owner=protocolOwnerRef.current
     const sessionId=protocolIdRef.current
     setPrivateRecall(null)
@@ -1318,23 +1320,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const response=await fetch('/api/app/my-coach/protocol?'+query,{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'X-HH-Account-ID':owner}})
       if(response.ok)result=await response.json()
     }catch{/* failure is not absence */}
-    if(controller.signal.aborted||protocolOwnerRef.current!==owner||protocolIdRef.current!==sessionId)return null
+    clearTimeout(deadline)
+    if(recallRequestRef.current!==controller||(controller.signal.aborted&&!timedOut))return null
+    if(protocolOwnerRef.current!==owner||protocolIdRef.current!==sessionId)return null
     const reply=privateCoachRecallText(result,locale)
     setPrivateRecall({owner,sessionId,reply})
     return structured?{reply,record:result.kind==='reviewed'?result:null,owner}:reply
   }
+  function privateRecallReceipt(locale){return ({ru:'Предыдущая запись проверена в приватном архиве. Результат показан отдельно.',en:'The private archive check is displayed separately.',es:'La consulta privada se muestra por separado.'})[locale]}
   function handlePrivateLiveRecall(text){
     const guard={locale:conversationLang,message:text,turns:turnsRef.current}
     if(!coachExplicitRecall(text)||coachingBrainSafety(guard)||coachingBrainBoundary(guard))return null
     if(!appendLiveTranscript('user',text))return true
     setStreamingPreview('');setSpeechPreview('')
-    return {privateRecall:loadPrivateRecall(conversationLang,{structured:true})}
+    const owner=protocolOwnerRef.current,id=protocolIdRef.current,requestRows=turnsRef.current
+    const privateRecall=loadPrivateRecall(conversationLang,{structured:true}).then(result=>{
+      if(!result||protocolOwnerRef.current!==owner||protocolIdRef.current!==id||turnsRef.current!==requestRows)return null
+      // Keep a truthful local receipt in the same protocol, not copied archive
+      // text, generated conclusions, or a new logical session/clock.
+      const receipt={role:'assistant',content:privateRecallReceipt(conversationLang),mode:'offline',stage:'memory',requestedSavedContext:true,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
+      if(coachProtocolCanAppend(requestRows,[receipt])){
+        const next=[...requestRows,receipt];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+      }
+      return result
+    })
+    return {privateRecall}
   }
   function captureBasicIntroduction(){
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
     const content=String(introduction||'').trim()
     if(!content)return
-    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',requestedSavedContext:Boolean(greetingIdentity.name)}]
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',requestedSavedContext:Boolean(privateSalutation)}]
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
   }
@@ -1493,8 +1509,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       try{
         const reply=await loadPrivateRecall(responseLocale)
         if(!reply||turnRequestRef.current!==requestId){retainPendingClient();return null}
-        const acknowledgment=({ru:'Проверка приватного архива показана отдельно.',en:'The private archive check is displayed separately.',es:'La consulta privada se muestra por separado.'})[responseLocale]
-        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline'}))return null
+        const acknowledgment=privateRecallReceipt(responseLocale)
+        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline',stage:'memory',requestedSavedContext:true}))return null
         setDraft('');setSpeechPreview('')
         return {reply,mode:'identity',locale:responseLocale}
       }finally{setBusy(false)}

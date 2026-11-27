@@ -1244,8 +1244,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       clearTimeout(setupTimer)
       if(r.ended||r.socket!==socket)return
       r.ready=false
-      cancelPrivateRecall(r)
       r.replyWatch?.clear()
+      cancelPrivateRecall(r)
       r.reconnectSoon=false
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.

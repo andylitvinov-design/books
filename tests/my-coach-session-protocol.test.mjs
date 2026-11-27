@@ -621,8 +621,8 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
- assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
- assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted})'))
+ assert.ok(output.includes("if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value})"))
+ assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})'))
 })
 test('review dropdown distinguishes unreviewed and explicitly reopened checkpoints',()=>{
  const ui=readFileSync(new URL('../components/my-coach-course-field-review.jsx',import.meta.url),'utf8')
@@ -760,8 +760,9 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
- assert.match(native,/if\(propsRef.current.onInputFinal\?\.\(value\)===true\)\{stop\(\);return true\}/)
- assert.equal((native.match(/if\(r.inputText&&commitInput\(r\)\)return/g)||[]).length,3)
+ assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value\)/)
+  assert.match(native,/if\(decision===true\)\{stop\(\);return true\}/)
+ assert.equal((native.match(/if\(r.inputText&&commitInput\(r,frame.turnComplete\)\)return/g)||[]).length,3)
 })
 
 import {authoredCheckpointQuestion,checkpointAnswerMismatch,checkpointClarification,checkpointQuestionMatches,checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'

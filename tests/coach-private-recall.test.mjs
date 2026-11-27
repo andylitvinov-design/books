@@ -84,3 +84,29 @@ assert.ok(transport.includes('coachApprovedRecallMatches(data,turn.record)'))
 assert.ok(transport.includes('sendSocket(r,geminiLiveReviewedRecallMessage())'))
 assert.ok(transport.includes('data?.fingerprint!==r.contextSentFingerprint'))
 assert.ok(transport.includes('requestedSavedContext:Boolean(r.contextSentKey)'))
+
+import {coachTranscriptQualityFields,coachTranscriptQualityExtends} from '../lib/personal-coaching/protocol-quality.mjs'
+import {coachProtocolEvidenceVeto} from '../lib/coaching/coach-protocol-relevance.mjs'
+import {coachProviderHistory} from '../lib/coaching/coach-audible-history.mjs'
+import {geminiLiveLocalRecovery} from '../lib/coaching/gemini-live-transport.mjs'
+import {createCoachActiveClock} from '../lib/coaching/coach-active-clock.mjs'
+const privateRow={role:'assistant',content:'Owner-only archive',requestedSavedContext:true,privateGreetingPrefix:true}
+const roundTrip={role:privateRow.role,content:privateRow.content,...coachTranscriptQualityFields(privateRow)}
+assert.equal(roundTrip.requestedSavedContext,true)
+assert.equal(roundTrip.privateGreetingPrefix,true)
+assert.equal(coachTranscriptQualityExtends(privateRow,roundTrip),true)
+assert.equal(coachTranscriptQualityExtends(privateRow,{role:'assistant',content:privateRow.content}),false)
+assert.deepEqual(coachTranscriptQualityFields({role:'user',requestedSavedContext:true}),{})
+assert.deepEqual(coachProviderHistory([roundTrip]),[])
+assert.deepEqual(geminiLiveLocalRecovery([roundTrip]).history,[])
+for(const question of ['Вспомни на чём мы остановились','Where did we leave off','En qué nos quedamos'])assert.equal(coachProtocolEvidenceVeto(question),true)
+const clock=createCoachActiveClock()
+clock.restore(420);clock.setRunning(1000,true)
+assert.equal(clock.sample(4000),423)
+assert.equal(clock.setRunning(5000,false),424)
+assert.equal(clock.sample(60000),424)
+clock.setRunning(60000,true)
+assert.equal(clock.sample(63000),427)
+assert.ok(ui.includes('turnsRef.current!==requestRows'))
+assert.ok(ui.includes("stage:'memory',requestedSavedContext:true"))
+assert.ok(ui.includes('recallRequestRef.current!==controller'))
