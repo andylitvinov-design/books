@@ -1,6 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 import { englishCabinetTarget } from '@/lib/app/spanish-cabinet-bridge.mjs'
 import { AppWorkspaceNavigator } from '@/components/app/app-workspace'
+import { ProfileSpaceDashboard } from '@/components/app/profile-space-dashboard'
+import Link from 'next/link'
+import css from '@/components/app/my-page.module.css'
+import '../cabinet-theme.css'
 import '../[[...path]]/workspace.css'
 import '../[[...path]]/assessment-dashboard.css'
 import '../[[...path]]/insights-compact.css'
@@ -16,7 +20,7 @@ export const revalidate = 0
 export async function generateMetadata({ params }) {
   const { locale } = await params
   return {
-    title: (locale === 'ru' ? 'Моё пространство · Тесты' : 'My Space · Tests') + ' | Holistic House',
+    title: (locale === 'ru' ? 'Моё пространство · Тесты' : locale === 'es' ? 'Mi espacio · Programas' : 'My Space · Tests') + ' | Holistic House',
     manifest: locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : '/holistic-house-app.webmanifest',
     icons: { icon: '/icons/holistic-house-teal.svg', apple: '/holistic-house-icon/180' },
     robots: { index: false, follow: false },
@@ -28,6 +32,13 @@ export default async function ProfilePage({ params, searchParams }) {
   const { locale } = await params
   const query = (await searchParams) || {}
   if (locale === 'es') {
+    // Explicit public discovery only: never bypass the protected EN cabinet bridge.
+    if (query.discover === 'programs' && Object.keys(query).length === 1) {
+      return <main className={css.page} data-cabinet-theme="daybook" data-es-public-programs>
+        <nav className={css.top} aria-label="Mi espacio"><Link href="/es/my-page" prefetch={false}>Mi página</Link><Link href="/es/client/tests" prefetch={false}>Pruebas</Link></nav>
+        <ProfileSpaceDashboard locale="es" root="/en/app" accountId={null}/>
+      </main>
+    }
     const target = englishCabinetTarget(['portrait'], query)
     if (!target) notFound()
     redirect(target)

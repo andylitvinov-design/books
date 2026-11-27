@@ -1045,8 +1045,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       pauseActionRef.current?.()
       if(!speechRef.current?.hasLiveSession?.())setVoiceState({phase:'idle',beat:0})
     }
-    const onOffline=()=>pauseActionRef.current?.({disconnect:true})
-    const onPageHide=()=>{stopReplay();pauseActionRef.current?.({disconnect:true})}
+    // A brief radio handoff or BFCache transition is not a transport failure.
+    // Pause capture immediately, but let the socket close naturally if necessary.
+    const onOffline=()=>pauseActionRef.current?.()
+    const onPageHide=event=>{stopReplay();pauseActionRef.current?.({disconnect:event?.persisted!==true})}
     document.addEventListener('visibilitychange',onHidden)
     window.addEventListener('offline',onOffline)
     window.addEventListener('pagehide',onPageHide)
