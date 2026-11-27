@@ -768,7 +768,9 @@ test('visibility pause parks microphone and preserves same socket, token and his
   assert.equal(r.history,history)
   assert.equal(sent.length,1)
   assert.equal(sent[0].realtimeInput.audioStreamEnd,true)
+  const stableEpoch=r.pauseEpoch
   methods.pauseSession()
+  assert.equal(r.pauseEpoch,stableEpoch,'duplicate lifecycle event does not invalidate a stable pause')
   assert.equal(sent.length,1)
   assert.equal(closed.length,0)
   methods.pauseSession({disconnect:true})
@@ -890,9 +892,25 @@ test('a stalled permission prompt times out and its late stream is stopped',asyn
 test('page lifecycle routes visibility and pagehide to pause, retaining explicit stop on unmount',()=>{
   const lifecycle=section('  useEffect(()=>{\n    const onHidden=', '  useEffect(()=>{\n    const r=runtime.current')
   assert.match(lifecycle,/visibilityState==='hidden'\)pauseSession\(\)/)
-  assert.match(lifecycle,/onPageHide=\(\)=>pauseSession\(\{disconnect:true\}\)/)
+  assert.match(lifecycle,/onPageHide=event=>pauseSession\(\{disconnect:event\?\.persisted!==true\}\)/)
   assert.match(lifecycle,/removeEventListener\('pagehide',onPageHide\)[\s\S]*stop\(\)/)
   assert.match(component,/if\(runtime\.current\?\.paused\)\{[\s\S]*?void resumePausedSession\(runtime\.current\)/)
+})
+
+test('a delayed close event cannot turn a dead socket into a listening microphone',async()=>{
+  const socket={readyState:3}
+  const r={paused:true,ended:false,ready:true,socket,reconnects:0,modelTurnComplete:true}
+  const notices=[]
+  const resume=runInNewContext(section('  function parkPausedSocket(','  function interrupt(){')+'\nresumePausedSession',{
+    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},Date,
+    preserveUnconfirmedInput(){},notify:text=>notices.push(text),t:{resumeUnavailable:'unavailable'},
+    navigator:{mediaDevices:{getUserMedia(){assert.fail('must not reopen a mic on a dead socket without a checkpoint')}}}
+  })
+  assert.equal(await resume(r),false)
+  assert.equal(r.socket,null)
+  assert.equal(r.ready,false)
+  assert.equal(r.paused,true)
+  assert.equal(notices.at(-1),'unavailable')
 })
 
 test('expired parked credential remains paused and enables explicit text fallback',async()=>{
