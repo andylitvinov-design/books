@@ -213,3 +213,63 @@ test('an impossible fresh logical session cannot burn a provider slot',async()=>
  assert.ok(guard>=0&&guard<relay.indexOf('await consumeRateBatch(config,quota.attempts)'))
  assert.ok(guard<relay.indexOf('await reserveClarityRunCredential(')&&guard<relay.indexOf('await issueGeminiFreeLiveToken('))
 })
+
+
+test('browser WebSocket relay opens same-origin only and releases microphone after committed binding',async()=>{
+ const {connectClarityBrowserRelay}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const runId=id(10),protocolId=id(11),wire=JSON.stringify
+ let socket,visible=true,timerId=0
+ const timers=new Map(),clocks=[],selectionFrames=[],played=[],drained=[],closed=[]
+ class BrowserSocket {
+  constructor(url){this.url=url;this.readyState=0;this.sent=[];socket=this}
+  send(raw){this.sent.push(JSON.parse(raw))}
+  open(){this.readyState=1;this.onopen()}
+  receive(value){this.onmessage({data:wire(value)})}
+  close(){if(this.readyState===3)return;this.readyState=3;this.onclose?.()}
+ }
+ const events=new Map(),target={addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:(name,fn)=>{if(events.get(name)===fn)events.delete(name)}}
+ const opts={selection:{accountId:owner,day:1,body,runId,protocolId,minimumElapsedMs:5000},explicitPlay:true,
+  isForeground:()=>visible,origin:'https://holistichouse.vercel.app',WebSocketImpl:BrowserSocket,
+  onSelection:x=>selectionFrames.push(x),onClock:x=>{clocks.push(x);return true},onProvider:x=>played.push(x),
+  onDrainingProvider:x=>drained.push(x),onClosed:x=>closed.push(x),
+  schedule:fn=>{timers.set(++timerId,fn);return timerId},cancel:id=>timers.delete(id),documentTarget:target,windowTarget:target}
+ assert.throws(()=>connectClarityBrowserRelay({...opts,explicitPlay:false}),/INVALID/)
+ assert.throws(()=>connectClarityBrowserRelay({...opts,origin:'https://holistichouse.vercel.app/elsewhere'}),/INVALID/)
+ const h=connectClarityBrowserRelay(opts)
+ const audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ const select={type:'hh_clarity_selection',day:1,runId,protocolId}
+ const clock=(elapsedMs,status)=>({type:'hh_clarity_clock',day:1,elapsedMs,status})
+ const packet={serverContent:{outputTranscription:{text:'late reply'}}}
+ assert.equal(socket.url,'wss://holistichouse.vercel.app/api/app/my-coach/live-relay')
+ assert.equal(h.sendAudio(audio),false)
+ socket.open()
+ assert.equal(socket.sent[0].runId,runId)
+ socket.receive(select);assert.equal(selectionFrames.length,1);assert.equal(h.snapshot().committed,false)
+ socket.receive({type:'hh_clarity_ready',decision:'continue'})
+ assert.deepEqual(socket.sent.at(-1),{type:'hh_clarity_consent',decision:'continue'})
+ assert.equal(h.sendAudio(audio),false)
+ socket.receive(clock(5000,'active'))
+ assert.equal(clocks[0].binding.protocolId,protocolId);assert.equal(h.sendAudio(audio),true)
+ assert.equal(h.sendAudio({type:'observe'}),false)
+ assert.equal(h.sendAudio({clientContent:{turns:[]}}),false)
+ assert.equal(h.sendAudio({realtimeInput:{audio:{data:'AAAA',mimeType:'audio/pcm;rate=16000'}}}),false)
+ socket.receive(packet);assert.equal(played.length,1)
+ assert.equal(h.changeCoach(),true);assert.equal(socket.sent.at(-1).type,'hh_clarity_change_coach')
+ assert.equal(h.sendAudio(audio),false)
+ socket.receive(packet);assert.equal(played.length,1);assert.equal(drained.length,1)
+ socket.receive(clock(6000,'active'));assert.equal(clocks.at(-1).status,'pausing')
+ socket.receive(clock(6000,'paused'))
+ assert.equal(closed.length,1);assert.equal(closed[0].terminalVerified,true);assert.equal(closed[0].binding.protocolId,protocolId);assert.equal(closed[0].elapsedMs,6000)
+ assert.equal(h.snapshot().closed,true);assert.equal(events.size,0);assert.equal(timers.size,0)
+ const g=connectClarityBrowserRelay(opts);socket.open();socket.receive(select)
+ visible=false;events.get('visibilitychange')()
+ assert.equal(closed.at(-1).status,'not_started');assert.equal(socket.sent.length,1)
+ visible=true
+ const j=connectClarityBrowserRelay(opts);socket.open();socket.receive(select);socket.receive({type:'hh_clarity_ready',decision:'continue'})
+ socket.close();assert.equal(closed.at(-1).status,'unverified');assert.equal(closed.at(-1).binding,null)
+ assert.equal(j.snapshot().closed,true);assert.equal(events.size,0)
+ const k=connectClarityBrowserRelay(opts);socket.open();socket.receive(select);socket.receive({type:'hh_clarity_ready',decision:'continue'})
+ socket.receive(clock(5000,'active'));socket.close()
+ assert.equal(closed.at(-1).status,'unverified');assert.equal(closed.at(-1).elapsedMs,5000);assert.equal(closed.at(-1).terminalVerified,false)
+ assert.equal(k.sendAudio(audio),false)
+})
