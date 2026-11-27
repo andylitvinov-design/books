@@ -313,6 +313,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [courseGateEnabled,setCourseGateEnabled]=useState(false),[courseGateBusy,setCourseGateBusy]=useState(false),courseGateBusyRef=useRef(false)
   const [courseGateError,setCourseGateError]=useState(false),courseGateAttemptRef=useRef(null)
   const [courseGateAnswer,setCourseGateAnswer]=useState('')
+  const [courseResumeRequired,setCourseResumeRequired]=useState(false)
   const privateTextOnly=restoredDraft||freshPrivateProfile||Boolean(courseGate)||courseGateBusy||Boolean(courseGateAttemptRef.current)
   const initialDraftRevision=useRef(0)
   const restoredOpeningScope=useRef(null),restoredProfileCheckin=useRef(null),restoredMethod=useRef(null)
@@ -1662,8 +1663,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
+    const locked=courseGateRef.current?.protocol
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
+      id:protocolIdRef.current,personaId:locked?.personaId||personaId,methodId:locked?.methodId||visibleMethodId,locale:locked?.locale||restoredProfileProof.current?.value.block.locale||conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
@@ -1680,6 +1682,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{})),
       turns:turns.map((row,index)=>({
         role:row.role,content:row.content,
+        ...(row.coachId?{coachId:row.coachId,visitId:row.visitId,...(row.role==='assistant'?{authorPersonaId:row.authorPersonaId}:{})}:{}),
         ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
         ...(row.role==='assistant'?{
           ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
@@ -1797,12 +1800,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!owner||resumeBusy||protocolStartedRef.current)return
     setResumeBusy(true);setResumeError(false)
     try{
-      const query=new URLSearchParams({view:'summary',personaId,...(cursor||{})})
+      const query=new URLSearchParams({view:'summary',...(!clarityDay?{personaId}:{}),...(cursor||{})})
       const response=await fetch('/api/app/my-coach/draft?'+query.toString(),{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':owner}})
       const result=await response.json().catch(()=>null)
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
-      const items=result.drafts.filter(row=>row?.personaId===personaId&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!clarityDay||row.courseSessionId===clarityCourseId(clarityDay)))
+      const items=result.drafts.filter(row=>(row?.personaId===personaId||(clarityDay&&row?.crossCoach===true))&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!clarityDay||row.courseSessionId===clarityCourseId(clarityDay)))
       setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
@@ -1870,13 +1873,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        (q!==null&&(!q||typeof q.id!=='string'||typeof q.fieldId!=='string'||typeof q.text!=='string'||
        !['answer','confirm'].includes(q.kind))))throw Error('COURSE_GATE_READBACK')
     const review=normalizeCoachCourseFieldReview(step.review,protocol.courseSessionId,protocol.turns)
+    if(step.scenarioVersion&&(!getCoachPersona(step.activeCoachId)||(!step.paused&&typeof step.resumeText!=='string')))throw Error('COURSE_GATE_READBACK')
     return {step:{...step,review},revision:item.revision,protocol}
   }
   async function runCourseGate(action,extra={}){
     const owner=protocolOwnerRef.current,id=protocolIdRef.current
     if(!courseGateEnabled||!autoSaveRef.current||!owner||!id||courseGateBusyRef.current||
        paused||protocolOpen||busy||profileV3Ref.current)return false
-    const retry=action==='retry',start=action==='course-gate-start'
+    const retry=action==='retry',start=action==='course-gate-start',continuing=action==='course-gate-continue'
+    if(!retry&&courseResumeRequired!==continuing)return false
     if(retry&&!courseGateAttemptRef.current)return false
     if(!retry&&courseGateAttemptRef.current)return false
     if(start){
@@ -1890,7 +1895,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         const revision=start?await autoSaveQueueRef.current?.flush():courseGateRef.current?.revision
         if(!Number.isInteger(revision)||revision<1)throw Error('COURSE_GATE_NOT_SYNCED')
         if(start){autoSaveQueueRef.current?.stop();autoSaveQueueRef.current=null;speechRef.current?.stop?.()}
-        payload={action,id,revision,consent:true,requestId:crypto.randomUUID(),...extra}
+        payload={action,id,revision,consent:true,requestId:crypto.randomUUID(),...(courseGateRef.current?.step.scenarioVersion?{coachId:personaId}:{}),...(continuing?{resumeConfirmed:true}:{}),...extra}
         courseGateAttemptRef.current=payload
       }
       const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
@@ -1898,9 +1903,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null),item=result?.draft
       if(!response.ok||item?.id!==id||item.revision!==payload.revision+1)throw Error('COURSE_GATE_NOT_ACKNOWLEDGED')
       const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
-      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==personaId||
+      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==(courseGateRef.current?.protocol.personaId||personaId)||
          recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
-      const next=readCourseGateStep(item,p);if(!next)throw Error('COURSE_GATE_READBACK')
+      const next=readCourseGateStep(item,p);if(!next||(next.step.scenarioVersion&&next.step.activeCoachId!==personaId))throw Error('COURSE_GATE_READBACK')
+      if(payload.action==='course-gate-continue')setCourseResumeRequired(false)
       initialDraftRevision.current=item.revision
       courseGateRef.current=next;courseGateAttemptRef.current=null;turnsRef.current=p.turns
       setCourseGate(next);setCourseFieldReview(next.step.review);setTurns(p.turns)
@@ -1920,7 +1926,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
         body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true})})
       const result=await response.json().catch(()=>null)
-      if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==personaId)throw Error('RESUME_CONFLICT')
+      if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==item.personaId||
+         (item.personaId!==personaId&&!(clarityDay&&item.crossCoach===true&&result.draft.courseGateStep?.scenarioVersion==='hh-clarity-day-one-v5'&&!result.draft.courseGateStep.paused&&result.draft.courseSessionId===clarityCourseId(clarityDay))))throw Error('RESUME_CONFLICT')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       speechRef.current?.stop?.();cancelPendingCoachTurn()
@@ -1935,6 +1942,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const thematic=readCourseGateStep(result.draft,p)
       courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
       setCourseFieldReview(thematic?.step.review||null);setCourseGateEnabled(result.courseGateEnabled===true)
+      setCourseResumeRequired(Boolean(thematic?.step.scenarioVersion&&!thematic.step.paused))
       const structured=readProfileV3Step(result.draft,p)
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
@@ -2060,7 +2068,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {resumeList&&<p>{({ru:'Приватное текстовое продолжение без нового голосового токена.',en:'Private text continuation without a new voice token.',es:'Continuación privada por texto sin un nuevo token de voz.'})[lang]}</p>}
         {resumeList?.items.map(item=><button key={item.id} type="button" disabled={resumeBusy}
           onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8}}>
-          {new Date(item.updatedAt).toLocaleString(lang)} · {coachCourseFocusLabel(item.courseSessionId,conversationLang)} · {item.turnCount}
+          {new Date(item.updatedAt).toLocaleString(lang)} · {coachCourseFocusLabel(item.courseSessionId,conversationLang)} · {item.turnCount}{item.crossCoach?' · '+(getCoachPersona(item.activeCoachId||item.personaId)?.name?.[conversationLang]||item.personaId):''}
         </button>)}
         {resumeList&&resumeList.items.length===0&&<p>{({ru:'Нет черновиков этого коуча на данной странице.',en:'No drafts for this coach on this page.',es:'No hay borradores de este coach en esta página.'})[lang]}</p>}
         {resumeList?.cursor&&<button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume(resumeList.cursor)}>{({ru:'Ранние сессии',en:'Earlier sessions',es:'Sesiones anteriores'})[lang]}</button>}
@@ -2400,7 +2408,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <button type="button" onClick={()=>window.location.reload()}>{({ru:'Открыть сохранённую сессию',en:'Reopen saved session',es:'Reabrir sesión guardada'})[lang]}</button></>:
           courseGate?<div>
             <p role="status">{courseGate.step.acceptedCount}/{courseGate.step.total} {({ru:'пунктов обработано',en:'checkpoints reviewed',es:'puntos revisados'})[lang]}</p>
-            {courseGate.step.prompt&&!courseGate.step.paused?<form onSubmit={event=>{event.preventDefault();const q=courseGateRef.current?.step.prompt
+            {courseResumeRequired?<section data-coach-resume-consent><p style={{whiteSpace:'pre-wrap'}}>{courseGate.step.resumeText}</p><button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-continue')}>{({ru:'Да, продолжить эту сессию',en:'Yes, continue this session',es:'Sí, continuar esta sesión'})[lang]}</button></section>:courseGate.step.prompt&&!courseGate.step.paused?<form onSubmit={event=>{event.preventDefault();const q=courseGateRef.current?.step.prompt
               if(q&&courseGateAnswer.trim())void runCourseGate('course-gate-answer',{promptId:q.id,content:courseGateAnswer.trim()})}}>
               <label><span>{courseGate.step.prompt.text}</span><textarea rows={2} maxLength={900} value={courseGateAnswer} disabled={courseGateBusy||!courseGateEnabled||paused} onChange={event=>setCourseGateAnswer(event.target.value)}/></label>
               <button type="submit" disabled={!courseGateAnswer.trim()||courseGateBusy||!courseGateEnabled||paused}>{t.send}</button>
@@ -2416,7 +2424,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'да',en:'yes',es:'sí'})[lang]})}}>{({ru:'Подтверждаю',en:'Confirm',es:'Confirmar'})[lang]}</button>}
               {courseGate.step.prompt.fieldId==='balance_consent'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt;if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'нет',en:'no',es:'no'})[lang]})}}>{({ru:'Нет',en:'No',es:'No'})[lang]}</button>}
             </form>:<p>{courseGate.step.paused?({ru:'Проверка приостановлена. Можно завершить сессию.',en:'Review paused. You can finish the session.',es:'Revisión pausada. Puedes terminar la sesión.'})[lang]:({ru:'Проверка пунктов завершена. Можно уточнить ответ или завершить.',en:'Checkpoint review complete. Correct an answer or finish.',es:'Revisión completa. Corrige una respuesta o termina.'})[lang]}</p>}
-            {!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)&&(!courseScenarioVersion||!row.id.startsWith('outer_')||courseGate.step.review?.events?.findLast(e=>e.fieldId==='balance_consent')?.binding?.decision==='accepted')).map(row=>
+            {!courseResumeRequired&&!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)&&(!courseScenarioVersion||!row.id.startsWith('outer_')||courseGate.step.review?.events?.findLast(e=>e.fieldId==='balance_consent')?.binding?.decision==='accepted')).map(row=>
               <button key={row.id} type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-correct',{fieldId:row.id})}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}: {row.label}</button>)}
           </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}
         </section>}

@@ -30,7 +30,7 @@ async function handle(request,write){
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-discard',actor:actor.id},30,3600)
     result=await discardCoachDraft(config,actor,input)
-   }else if(['course-gate-start','course-gate-answer','course-gate-correct'].includes(input.action)){
+   }else if(['course-gate-start','course-gate-answer','course-gate-correct','course-gate-continue'].includes(input.action)){
     if(process.env.HH_MY_COACH_COURSE_GATE_ENABLED!=='true')throw new AppError('NOT_FOUND',404)
     await consumeRate(config,{op:'my-coach-course-gate',actor:actor.id},120,3600)
     result=await stepCoachCourseGate(config,actor,input)

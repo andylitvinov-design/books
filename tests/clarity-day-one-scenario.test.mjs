@@ -178,3 +178,35 @@ test('v5 readback rejects forged consent, wrong axis and legacy pair for current
   assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[review.events[0],{...review.events[1],quote:'5/10'}]},'clarity_day_1',pair))
  }
 })
+
+test('v5 private continuation retains the protocol and reissues only the unresolved field for a new coach',()=>{
+ const openingTurns=['Yes','Alex','My problem is money','I feel sad','Yes'].map(content=>({role:'user',content}))
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns:openingTurns,locale:'en',personaId:'genie'}))
+ const id='12345678-1234-4234-8234-123456789abc'
+ let value={courseSessionId:'clarity_day_1',revision:1,protocol:{id,courseSessionId:'clarity_day_1',locale:'en',personaId:'genie',opening,turns:openingTurns}}
+ const run=(action,extra={})=>{
+  const next=coachCourseGateTransition(value,{action,id,revision:value.revision,consent:true,requestId:'87654321-4321-4321-8321-abcdefabcdef',...extra},'2026-11-26T12:00:00.000Z')
+  value={...value,...next,revision:value.revision+1}
+  return coachCourseGateView(value)
+ }
+ let view=run('course-gate-start')
+ view=run('course-gate-answer',{promptId:view.prompt.id,content:'I am looking for stable income'})
+ view=run('course-gate-answer',{promptId:view.prompt.id,content:'Yes'})
+ assert.equal(view.prompt.fieldId,'feelings')
+ const prefix=JSON.stringify(value.protocol.turns),events=JSON.stringify(view.review.events)
+ assert.match(view.resumeText,/stable income/)
+ const oldPrompt=view.prompt.id
+ assert.throws(()=>run('course-gate-continue',{coachId:'mira',resumeConfirmed:false}))
+ view=run('course-gate-continue',{coachId:'mira',resumeConfirmed:true,requestId:'11111111-1111-4111-8111-111111111111'})
+ assert.equal(value.protocol.id,id);assert.equal(value.protocol.personaId,'genie')
+ assert.equal(view.activeCoachId,'mira');assert.equal(view.prompt.fieldId,'feelings');assert.notEqual(view.prompt.id,oldPrompt)
+ assert.equal(JSON.stringify(value.protocol.turns.slice(0,JSON.parse(prefix).length)),prefix)
+ assert.equal(JSON.stringify(view.review.events),events)
+ assert.equal(value.protocol.turns.at(-1).authorPersonaId,'mira')
+ assert.throws(()=>run('course-gate-answer',{promptId:view.prompt.id,content:'I feel calm',coachId:'genie'}))
+ view=run('course-gate-answer',{promptId:view.prompt.id,content:'I feel calm',coachId:'mira'})
+ assert.equal(view.prompt.kind,'confirm')
+ view=run('course-gate-answer',{promptId:view.prompt.id,content:'Yes',coachId:'mira'})
+ const row=coachCourseProtocolRows('clarity_day_1',value.protocol.turns,view.review).find(r=>r.id==='feelings')
+ assert.equal(row.coachId,'mira');assert.equal(row.quote,'I feel calm')
+})
