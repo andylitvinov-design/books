@@ -74,3 +74,16 @@ test('restored server-ended session opens results without restarting or silently
  assert.ok(close.includes('clarityReturnHref(lang,day,activeCourseRunId)'))
  assert.doesNotMatch(close,/saveProtocol\(/)
 })
+
+test('unreviewed checkpoints cannot assert trusted completion or homework and unbound final save requires exact server proof',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const draft=read('lib/personal-coaching/protocol-draft.mjs')
+ assert.ok(draft.includes("courseFieldReview:undefined,clarityTimeLimitReached:undefined,clarityHomeworkAccepted:undefined"))
+ const service=read('lib/app/personal-coaching.js')
+ const save=service.slice(service.indexOf('export async function saveMyCoachProtocol'),service.indexOf('export async function deleteMyCoachProtocol'))
+ assert.ok(save.includes("else if(!existing&&protocol.clarityTimeLimitReached===true)"))
+ assert.ok(save.includes('await readClarityCourseClockInTransaction(db,config,actor)'))
+ assert.ok(save.includes("draft?.state!=='active'||!clarityClockTimedEnd(legacyClock,day,protocol.id.toLowerCase())"))
+ assert.ok(save.indexOf("throw new AppError('CLARITY_SESSION_STILL_OPEN',409)",save.indexOf('const legacyClock='))<save.indexOf('await finalizeCoachDraft'))
+ assert.ok(save.includes('if (existing && !sameSavedProtocol(existing, protocol))'))
+})
