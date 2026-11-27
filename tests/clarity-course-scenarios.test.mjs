@@ -5,7 +5,7 @@ import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFi
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
 import {courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
-import {claritySemanticResult} from '../lib/coaching/clarity-session-fields.mjs'
+import {claritySemanticResult,clarityMethodOutcome} from '../lib/coaching/clarity-session-fields.mjs'
 import {claritySessionProtocol} from '../lib/coaching/clarity-course-protocol.mjs'
 import {coachCourseHandoffEligible} from '../lib/coaching/coach-course-continuity.mjs'
 const ids=['clarity_day_2','clarity_day_3']
@@ -187,4 +187,58 @@ test('a current answer is verified before a timed transition, while closing rema
    assert.equal(coachCourseCheckpointGuidance(course,locale,opening,{...directive,conversationAct:'correction'},turns,'No'), '')
   }
  }
+})
+
+test('unverified time uses short scenario-order guidance; separate permissions never become live questions',()=>{
+ const opening={completed:true,answers:{focus:{kind:'goal'}}}
+ for(const course of ['clarity_day_1','clarity_day_2','clarity_day_3']){
+  for(const locale of ['en','ru','es']){
+   const schema=coachCourseProtocolSchema(course,locale,{scenarioVersion:clarityScenarioVersion(course)})
+   for(const elapsedSeconds of [null,undefined,NaN,-1]){
+    const directive={conversationAct:'substantive_reply',timebox:{elapsedSeconds}}
+    const hint=coachCourseCheckpointGuidance(course,locale,opening,directive,[],'I want to explore this.')
+    assert.match(hint,/Active time unverified/)
+    assert.match(hint,/approved scenario order/)
+    assert.ok(hint.length<=450)
+   }
+   for(const row of schema.checkpoints.filter(x=>x.requiresSeparateReview)){
+    const directive={conversationAct:'substantive_reply',timebox:{elapsedSeconds:300}}
+    const hint=coachCourseCheckpointGuidance(course,locale,opening,directive,[{role:'assistant',content:row.question}],'yes')
+    assert.doesNotMatch(hint,/Current field:/)
+    assert.equal(hint,clarityScenarioTimeGuidance(course,300))
+   }
+  }
+ }
+})
+
+
+test('method outcome distinguishes confirmed core from optional coverage, independent homework and timed completion',()=>{
+ const v=clarityScenarioVersion(ids[1]),make=(id,extra={})=>({id,scenarioVersion:v,status:'confirmed',quote:'Client answer',source:'client_reviewed_quote',...extra})
+ const rows=['priority','goal','why','success','next','timing'].map(k=>make(k))
+ rows.push(make('goal_status',{methodDecision:'accepted'}),make('reviewed_summary',{reviewDecision:'accepted'}))
+ assert.equal(clarityMethodOutcome(3,rows).outcome,'goal_partial_plan')
+ rows.push(make('baseline'),make('horizon'))
+ assert.equal(clarityMethodOutcome(3,rows).outcome,'goal_plan')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='goal'?{...r,status:'self_reported',source:'daybook'}:r)).outcome,'partial')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='reviewed_summary'?{...r,reviewDecision:null}:r)).outcome,'partial')
+ assert.equal(clarityMethodOutcome(3,rows.map(r=>r.id==='goal_status'?{...r,methodDecision:'deferred'}:r)).outcome,'goal_deferred')
+ const b=fixture(ids[0]);b.add('episode','Late work');b.add('needs','Time to rest');b.add('selected_support','Ask a colleague');b.add('practice_consent','yes','consent','accepted');b.add('test_status','tried');b.add('transfer_action','Ask tomorrow');b.add('timing_or_condition','Tomorrow morning');b.add('helpfulness_indicator','Finish on time');b.add('reviewed_summary','yes','review')
+ const result=claritySemanticResult(2,coachCourseProtocolRows(ids[0],b.turns,b.review()))
+ assert.equal(result.methodOutcome.outcome,'partial');assert.ok(result.methodOutcome.coreMissing.includes('test_observation'))
+ assert.equal(clarityMethodOutcome(1,[]),null)
+})
+
+
+import {coachCourseResumeRecap} from '../lib/coaching/coach-course-gate-draft.mjs'
+test('resume recap prioritizes recent verified answers and the exact outstanding prompt',()=>{
+ const course=ids[0],f=fixture(course)
+ f.add('episode','I worked late twice');f.add('needs','A quieter evening');f.add('resources','A colleague can share tasks');f.add('selected_support','Ask the colleague');f.add('practice_consent','no','consent','declined');f.add('transfer_action','Ask about one task')
+ const scenarioVersion=clarityScenarioVersion(course),protocol={courseSessionId:course,locale:'en',turns:f.turns}
+ const gate={pending:null,fields:[{id:'timing_or_condition',kind:'text'}],accepted:{}}
+ const prompt={fieldId:'timing_or_condition',text:'When exactly will you try this next step?'}
+ const value={protocol,courseGate:{scenarioVersion,paused:false,review:f.review(),gate,prompt}}
+ const recap=coachCourseResumeRecap(value)
+ assert.ok(recap.includes('Ask about one task'));assert.ok(!recap.includes('I worked late twice'));assert.ok(recap.includes(prompt.text));assert.ok(recap.includes('Continue this same coaching session?'))
+ const fallback=coachCourseResumeRecap({...value,courseGate:{...value.courseGate,prompt:null}})
+ assert.ok(fallback.includes(f.schema.checkpoints.find(r=>r.id==='timing_or_condition').label))
 })

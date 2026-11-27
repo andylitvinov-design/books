@@ -10,7 +10,7 @@ import {coachProtocolControlUtterance,COACH_PROTOCOL_VERIFICATION_INSTRUCTION} f
 import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
 import {verifyCoachSemanticHint} from '../lib/coaching/semantic-evidence.mjs'
-import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
+import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS,MY_COACH_PROTOCOL_MAX_CHARS,MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '../lib/personal-coaching/session-protocol.mjs'
 import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
 
 const id='8afbf841-49a0-46e1-b5c1-124a116efa28'
@@ -86,7 +86,7 @@ test('hard caps prevent oversized transcripts and invented fields',()=>{
   assert.throws(()=>normalizeMyCoachProtocol(tooMany),/MY_COACH_PROTOCOL_INVALID/)
   const control=sample();control.turns[0].content='Bad\u0001data'
   assert.throws(()=>normalizeMyCoachProtocol(control),/MY_COACH_PROTOCOL_INVALID/)
-  const large=sample();large.turns[0].content='a'.repeat(1201)
+  const large=sample();large.turns[0].content='a'.repeat(MY_COACH_PROTOCOL_MAX_TURN_CHARS+1)
   assert.throws(()=>normalizeMyCoachProtocol(large),/MY_COACH_PROTOCOL_INVALID/)
   const unknown=sample();unknown.personaId='untrusted-model-provider'
   assert.throws(()=>normalizeMyCoachProtocol(unknown),/MY_COACH_PROTOCOL_INVALID/)
@@ -101,10 +101,20 @@ test('saving requires explicit consent; GET validates the serving host and owner
   assert.match(service,/seal\(envelope,sealContext\(actor\),config\)/)
   assert.match(service,/revision=revision\+1/)
 })
-test('the main voice session ends in a review dialog with PDF actions, not navigation',()=>{
+test('the main voice session opens a closing menu and retains explicit review with PDF actions',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const archive=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
-  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/onClick=\{openHangupMenu\}/)
+  assert.match(ui,/onChoice=\{leaveEarlySession\}/)
+  assert.match(ui,/if\(earlyExit.completion&&choice==='results'\)\{\s*setProtocolOpen\(true\);setEarlyExit\(null\);return/)
+  const leave=ui.slice(ui.indexOf('  async function leaveEarlySession'),ui.indexOf('  function endWithProtocol'))
+  assert.doesNotMatch(leave,/saveProtocol\(/)
+  assert.match(leave,/if\(!retainPendingClient\(\)\)throw Error\('PENDING_CLIENT'\)/)
+  assert.match(leave,/if\(earlyExit\.completion\?!\['daybook','exit'\]\.includes\(choice\):!\['switch','exit'\]\.includes\(choice\)\)throw Error\('INVALID_DESTINATION'\)/)
+  assert.ok(leave.indexOf("if(!revision)throw Error('DRAFT_NOT_SYNCED')")<leave.indexOf('window.location.assign('))
+  assert.match(leave,/autoSaveRef.current&&!protocolSaved&&turnsRef.current.length/)
+  assert.match(leave,/await autoSaveQueueRef.current\?\.flush\(\)/)
+  assert.match(leave,/if\(!revision\)throw Error\('DRAFT_NOT_SYNCED'\)/)
   assert.match(ui,/data-my-coach-protocol/)
   assert.match(ui,/downloadCoachingSessionPdf/)
   assert.match(ui,/openCoachingSessionPdf/)
@@ -175,7 +185,7 @@ test('owner mobile design keeps voice controls, back and explicit Insight while 
   assert.match(ui,/sessionProgressSummary/)
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
-  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/onClick=\{openHangupMenu\}/)
   assert.match(ui,/<PhoneOff size=\{24\}/)
   assert.match(ui,/data-coach-dock-speaker/)
   assert.doesNotMatch(ui,/data-coach-panel=/)
@@ -489,17 +499,19 @@ test('explicitly reopening a reviewed checkpoint suppresses stale candidates wit
 
 import {coachProtocolCanAppend,coachProtocolRoomForExchange} from '../lib/personal-coaching/protocol-capture.mjs'
 test('private protocol never rotates its first turns or accepts an exchange without reply capacity',()=>{
- const history=Array.from({length:158},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
+ const history=Array.from({length:MY_COACH_PROTOCOL_MAX_TURNS-2},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
  assert.equal(coachProtocolRoomForExchange(history,'last question'),true)
  assert.equal(coachProtocolRoomForExchange([...history,{role:'user',content:'pending'}],'another question'),false)
  assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'}]),true)
  assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'},{role:'user',content:'overflow'}]),false)
  assert.equal(history[0].content,'turn 0')
- const large=Array.from({length:57},()=>({role:'user',content:'x'.repeat(1200)}))
+ const large=Array.from({length:Math.floor(MY_COACH_PROTOCOL_MAX_CHARS/1200)-2},()=>({role:'user',content:'x'.repeat(1200)}))
+ large.push({role:'user',content:'x'.repeat(800)})
  assert.equal(coachProtocolRoomForExchange(large,'x'.repeat(1200)),false)
  assert.equal(coachProtocolRoomForExchange(large,'short'),true)
  assert.equal(coachProtocolCanAppend(large,[{role:'assistant',content:'x'.repeat(1200),suggestion:'x'.repeat(300)}]),true)
- assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(1201)),false)
+ assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(1201)),true)
+ assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(MY_COACH_PROTOCOL_MAX_TURN_CHARS+1)),false)
 })
 test('all typed reply paths synchronously commit transcript and checkpoint before releasing the request',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
@@ -508,7 +520,10 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
+ // Six original reply paths plus two deterministic identity/name paths.
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ assert.match(send,/coachNameCorrectionQuestion\(candidate,responseLocale\)[\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
+ assert.match(send,/const firstParty=coachOpeningTurn\([\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
@@ -770,4 +785,100 @@ test('continuous protocol voice rejects echo and interrupted delivery and waits 
  const next={enabled:true,waiting:false,blocked:false,promptId:'p2',submittedPromptId:'p1'}
  assert.equal(courseGateVoiceNext(next),true)
  for(const changes of [{waiting:true},{blocked:true},{enabled:false},{promptId:'p1'},{promptId:null}])assert.equal(courseGateVoiceNext({...next,...changes}),false)
+})
+
+import {coachTranscriptQualityFields,coachTranscriptQualityExtends,coachQualityTranscript} from '../lib/personal-coaching/protocol-quality.mjs'
+test('quality capture retains visible text, timestamps, persona and allowlisted inference through draft and reviewed archive',()=>{
+ const data=sample(),capturedAt='2026-11-19T20:01:00.000Z'
+ Object.assign(data.turns[0],{locale:'ru',capturedAt})
+ Object.assign(data.turns[1],{locale:'ru',capturedAt,coachId:'mira',inference:{provider:'groq',model:'openai/gpt-oss-120b',secret:'private token'},interrupted:true})
+ const reviewed=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:data}).protocol
+ assert.deepEqual(draft.turns,reviewed.turns)
+ assert.deepEqual(reviewed.turns[1].inference,{provider:'groq',model:'openai/gpt-oss-120b'})
+ assert.equal(reviewed.turns[0].capturedAt,capturedAt)
+ assert.equal(reviewed.turns[1].coachId,'mira')
+ const qa=coachQualityTranscript(draft)
+ assert.equal(qa.reviewStatus,'unreviewed')
+ assert.equal(qa.counts.interrupted,1)
+ assert.deepEqual(qa.turns.map(t=>t.content),data.turns.map(t=>t.content))
+ assert.equal(qa.turns[1].stage,'explore')
+ assert.equal(qa.turns[1].sequence,2)
+ assert.equal(qa.clientSummary,undefined)
+ assert.doesNotMatch(JSON.stringify(qa),/private token|hidden reasoning|secret.wav/)
+ assert.equal(coachQualityTranscript(reviewed).reviewStatus,'reviewed')
+})
+test('legacy records stay readable; known QA metadata cannot be removed or rewritten',()=>{
+ const before={role:'assistant',content:'Reply',coachId:'mira',inference:{provider:'groq',model:'model-a'}}
+ assert.equal(coachTranscriptQualityExtends(before,{...before,coachId:'caesar'}),false)
+ assert.equal(coachTranscriptQualityExtends(before,{role:'assistant',content:'Reply'}),false)
+ assert.equal(coachTranscriptQualityExtends({role:'assistant'},before),true)
+ assert.deepEqual(coachTranscriptQualityFields({role:'user',capturedAt:'invalid',locale:'xx',coachId:'mira'}),{})
+ assert.deepEqual(coachTranscriptQualityFields({role:'assistant',inference:{provider:'unknown',model:'secret'}}),{})
+ const legacy=coachQualityTranscript(normalizeMyCoachProtocol(sample()))
+ assert.equal(legacy.turns[1].capturedAt,undefined)
+})
+test('assistant-only captured introduction is an unreviewed chronological transcript, not a result',()=>{
+ const protocol={...sample(),turnLayout:'chronological',turns:[{role:'assistant',content:'Welcome',coachId:'mira'}]}
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol}).protocol
+ assert.equal(draft.turns.length,1)
+ assert.equal(coachQualityTranscript(draft).counts.client,0)
+ assert.equal(coachQualityTranscript(draft).reviewStatus,'unreviewed')
+})
+
+import {appendGeminiLiveTranscript,readGeminiLiveServerMessage} from '../lib/coaching/gemini-live-transport.mjs'
+test('long Gemini transcripts retain beginning and end, including a large provider frame',()=>{
+ const first='FIRST '+('a'.repeat(2500)),last='LAST '+('b'.repeat(2500))
+ const frame=readGeminiLiveServerMessage(JSON.stringify({serverContent:{inputTranscription:{text:first},outputTranscription:{text:last}}}))
+ assert.equal(frame.input,first);assert.equal(frame.output,last)
+ const whole=appendGeminiLiveTranscript(frame.input,frame.output)
+ assert.equal(whole,first+' '+last)
+ assert.equal(appendGeminiLiveTranscript(first,whole),whole)
+ const input={...sample(),turnLayout:'chronological',turns:[{role:'user',content:whole},{role:'assistant',content:last,interrupted:true}]}
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:input}).protocol
+ const reviewed=normalizeMyCoachProtocol(input)
+ assert.equal(draft.turns[0].content,whole)
+ assert.equal(reviewed.turns[1].content,last)
+ assert.equal(coachQualityTranscript(draft).turns[0].content,whole)
+ assert.equal(coachQualityTranscript(reviewed).turns[1].content,last)
+})
+test('the archive does not trim a long ASR turn or rotate earlier dialogue',()=>{
+ const text='START '+('слова '.repeat(1000))+' END'
+ const turns=Array.from({length:220},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
+ turns.push({role:'user',content:text},{role:'assistant',content:'complete answer'})
+ const protocol=normalizeMyCoachProtocol({...sample(),turns,turnLayout:'chronological'})
+ assert.equal(protocol.turns[0].content,'turn 0')
+ assert.equal(protocol.turns.at(-2).content,text)
+ assert.equal(coachQualityTranscript(protocol).turns.length,222)
+})
+test('cancelled streaming replies retain an approved audible prefix in the same private transcript',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const capture=ui.slice(ui.indexOf('function retainPendingClient'),ui.indexOf('function commitCompletedClientTurn'))
+ assert.match(capture,/pendingClient\.approvedReply/)
+ assert.match(capture,/queuePrivateDraft\(next\)/)
+ assert.match(ui,/waiting\.approvedReply=\{role:'assistant',content:phrase/)
+ assert.match(ui,/capturedAt:new Date\(\)\.toISOString\(\),mode:'ai',interrupted:true/)
+})
+
+import {draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+test('long QA capture and immutable Clarity visit attribution coexist in draft, report and export',()=>{
+ const visit='8afbf841-49a0-46e1-b5c1-124a116efa29',capturedAt='2026-11-19T20:01:00.000Z'
+ const data={...sample(),courseSessionId:'clarity_day_1',turnLayout:'chronological',turns:[
+  {role:'assistant',content:'Welcome',coachId:'mira',capturedAt,locale:'en'},
+  {role:'user',content:'Original answer '+('words '.repeat(500)),coachId:'caesar',visitId:visit},
+  {role:'assistant',content:'Continue',coachId:'caesar',visitId:visit,authorPersonaId:'caesar',capturedAt,inference:{provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'}}
+ ]}
+ const normalized=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:data.courseSessionId,protocol:data}).protocol
+ assert.deepEqual(draft.turns,normalized.turns)
+ assert.equal(draft.turns[0].coachId,'mira');assert.equal(draft.turns[0].visitId,undefined)
+ assert.equal(draft.turns[1].content,data.turns[1].content)
+ assert.equal(draft.turns[1].coachId,'caesar');assert.equal(draft.turns[1].visitId,visit)
+ assert.equal(draft.turns[2].authorPersonaId,'caesar')
+ const exported=coachQualityTranscript(draft)
+ assert.equal(exported.turns[1].visitId,visit);assert.equal(exported.turns[1].coachId,'caesar')
+ assert.equal(exported.turns[2].visitId,visit);assert.equal(exported.turns[2].authorPersonaId,'caesar')
+ assert.equal(draftTranscriptPrefix(draft,normalized),true)
+ const altered={...draft,turns:draft.turns.map((row,i)=>i===2?{...row,coachId:'mira',authorPersonaId:'mira'}:row)}
+ assert.equal(draftTranscriptPrefix(draft,altered),false)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,turns:data.turns.map((row,i)=>i===2?{...row,authorPersonaId:'mira'}:row)}),/MY_COACH_PROTOCOL_INVALID/)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,courseSessionId:'introductory'}),/MY_COACH_PROTOCOL_INVALID/)
 })
