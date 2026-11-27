@@ -79,7 +79,11 @@ test('public cart exposes card and Interac without pretending a completed paymen
   assert.match(page, /configuredSquarePaymentLinks/)
   assert.match(cart, /buildSquarePaymentForServices/)
   // Keep all original payment props; allow the separately gated video-order tracking prop.
-  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false \}: \{/)
+  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false, courseCheckoutEnabled=false, courseOrdersEnabled=false \}: \{/)
+  assert.match(cart, /courseCheckoutEnabled\?: boolean/)
+  assert.match(cart, /courseOrdersEnabled\?: boolean/)
+  assert.match(page, /courseCheckoutEnabled=\{courseCheckoutEnabled\(\)\}/)
+  assert.match(page, /courseOrdersEnabled=\{process\.env\.HH_COURSE_CHECKOUT_SCHEMA_APPROVED==='true'\}/)
   assert.match(cart, /paidVideoTrackingEnabled\?: boolean/)
   assert.match(read('app/[locale]/cart/page.tsx'), /paidVideoTrackingEnabled=\{process\.env\.HH_VIDEO_PAID_ORDERS_SCHEMA_APPROVED/)
   assert.match(cart, /<VideoCartPayment locale=\{locale\} paypalEnabled=\{paypalEnabled\} trackingEnabled=\{paidVideoTrackingEnabled\}/)
