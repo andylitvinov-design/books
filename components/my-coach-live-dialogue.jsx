@@ -36,6 +36,7 @@ import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEar
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
+import {coachExplicitRecall,privateCoachRecallText} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -395,6 +396,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [greetingIdentity,setGreetingIdentity]=useState({status:'loading',name:''})
+  const [privateRecall,setPrivateRecall]=useState(null)
+  const recallRequestRef=useRef(null)
+  useEffect(()=>()=>recallRequestRef.current?.abort(),[])
   const namePreferenceVersion=useRef(null),nameCorrectionRef=useRef(null),confirmedNameRef=useRef('')
   const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
   const [stagedMemory,setStagedMemory]=useState(null)
@@ -1298,6 +1302,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timeTimer=window.setInterval(heartbeat,30000)
     return()=>{window.clearInterval(timer);window.clearInterval(timeTimer);window.removeEventListener('online',retry);window.removeEventListener('pagehide',leave);document.removeEventListener('visibilitychange',hidden)}
   },[autoSaveEnabled])
+  // Private facts are kept out of model history and provider recovery.
+  async function loadPrivateRecall(locale){
+    recallRequestRef.current?.abort()
+    const controller=new AbortController();recallRequestRef.current=controller
+    const owner=protocolOwnerRef.current
+    setPrivateRecall(null)
+    let result={kind:owner?'unavailable':'guest'}
+    if(owner)try{
+      const query=new URLSearchParams({view:'previous-context'})
+      if(protocolIdRef.current)query.set('exclude',protocolIdRef.current)
+      const response=await fetch('/api/app/my-coach/protocol?'+query,{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'X-HH-Account-ID':owner}})
+      if(response.ok)result=await response.json()
+    }catch{/* failure is not absence */}
+    if(controller.signal.aborted||protocolOwnerRef.current!==owner)return null
+    const reply=privateCoachRecallText(result,locale)
+    setPrivateRecall({owner,reply})
+    return reply
+  }
   function captureBasicIntroduction(){
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
     const content=String(introduction||'').trim()
@@ -1457,6 +1479,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
+    if(coachExplicitRecall(message)&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
+      setBusy(true)
+      try{
+        const reply=await loadPrivateRecall(responseLocale)
+        if(!reply||turnRequestRef.current!==requestId){retainPendingClient();return null}
+        const acknowledgment=({ru:'Проверка приватного архива показана отдельно.',en:'The private archive check is displayed separately.',es:'La consulta privada se muestra por separado.'})[responseLocale]
+        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline'}))return null
+        setDraft('');setSpeechPreview('')
+        return {reply,mode:'identity',locale:responseLocale}
+      }finally{setBusy(false)}
+    }
     // Confirm preferred-name changes locally, before any model or unrelated stage.
     if(isNameCorrection&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
       const candidate=correctionName||pendingName?.name
@@ -2344,6 +2377,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               // never mint another grant automatically or let a model save a name.
               const candidate=coachExplicitNameCorrection(text)
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
+              if(coachExplicitRecall(text)&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
+                if(!appendLiveTranscript('user',text))return true
+                void loadPrivateRecall(conversationLang)
+                return true // stop Live before accepting an ungrounded reply
+              }
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
@@ -2558,6 +2596,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
+          {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&<div className={styles.transcriptCoach} data-coach-private-recall>
+            <strong>{name} · {({ru:'Приватная память',en:'Private memory',es:'Memoria privada'})[lang]}</strong>
+            <p>{privateRecall.reply}</p>
+            <small>{({ru:'Показано из вашего кабинета, без передачи провайдеру. Для голосового продолжения используйте разрешение на память коуча.',en:'Read from your account without sharing with the provider. For voice continuation, use the coach memory permission.',es:'Leído desde tu cuenta sin compartir con el proveedor. Para continuar por voz, utiliza el permiso de memoria del coach.'})[lang]}</small>
+          </div>}
           {streamingPreview&&<div className={styles.transcriptCoach} data-coach-stream-preview aria-live="off">
             <strong>{name} · {{ru:'Черновик ответа',en:'Draft reply',es:'Borrador de respuesta'}[lang]}</strong>
             <p>{streamingPreview}</p>
