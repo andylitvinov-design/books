@@ -132,7 +132,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
-  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,therapyRelaySelection=null,onTherapyRelayClock,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,therapyRelaySelection=null,onTherapyRelayClock,onTherapyRelayClosed,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -147,7 +147,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,therapyRelaySelection,onTherapyRelayClock}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,therapyRelaySelection,onTherapyRelayClock,onTherapyRelayClosed}
 
   const notify=text=>{
     setNotice(text)
@@ -1421,6 +1421,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         const verified=receipt.terminalVerified===true||receipt.status==='not_started'
         if(!verified)relayStopUnverified.current=true
         r.resolveCourseStop?.(verified)
+        if(r.therapyMode)propsRef.current.onTherapyRelayClosed?.(receipt)
         if(current){
           finishCourseMedia(r,receipt.status==='time_limit'?'idle':'paused')
           if(!receipt.terminalVerified)notify(receipt.status==='not_started'?t.failure:t.resumeUnavailable)

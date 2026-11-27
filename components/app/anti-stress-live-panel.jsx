@@ -1,5 +1,8 @@
 'use client'
-import {useRef,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
+import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
+import {lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachGeminiLive from '../my-coach-gemini-live'
 import {projectAntiStressPanelClock} from '@/lib/coaching/anti-stress-relay-client.mjs'
 import {PUBLIC_COACH_PERSONAS,localCoachText} from '@/lib/coaching/persona-registry.mjs'
@@ -13,9 +16,28 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
  const lang=copy[locale]?locale:'en',t=copy[lang],speech=useRef(null),clockRef=useRef(null)
  const [coach,setCoach]=useState('mira'),[clock,setClock]=useState(null),[phase,setPhase]=useState('idle'),[fault,setFault]=useState(false)
  const [input,setInput]=useState(''),[output,setOutput]=useState(''),[stopping,setStopping]=useState(false),[storageConsent,setStorageConsent]=useState(false)
+ const [identity,setIdentity]=useState({status:'loading',name:''})
+ const identityScope=useRef(accountId);identityScope.current=accountId
+ useEffect(()=>{
+  const controller=new AbortController();setIdentity({status:'loading',name:''})
+  async function readIdentity(){
+   try{
+    const verified=await getCabinetBootstrap('portrait',{refresh:true})
+    if(controller.signal.aborted||identityScope.current!==accountId)return
+    if(verified?.account?.id!==accountId)throw Error('ACCOUNT_CHANGED')
+    const result=await appFetch('my-coach/protocol?view=greeting-identity',undefined,'GET',{accountId,signal:controller.signal})
+    if(controller.signal.aborted||identityScope.current!==accountId)return
+    const name=typeof result?.preferredName==='string'?result.preferredName.trim().slice(0,80):''
+    setIdentity({status:'ready',name,returning:result?.hasPreviousProtocol===true})
+   }catch{if(!controller.signal.aborted&&identityScope.current===accountId)setIdentity({status:'unavailable',name:''})}
+  }
+  void readIdentity();return()=>controller.abort()
+ },[accountId])
+ const voiceName=lockedCoachSessionVoice(coach,lang)
+ const privateSalutation=identity.name?coachReturningSalutation(({ru:'Здравствуйте, ',en:'Hello, ',es:'Hola, '})[lang]+identity.name+'.',identity.returning,lang):''
  const elapsed=clock?.elapsedMs??day.elapsedMs
  const completed=clock?.status==='time_limit'||day.status==='time_limit'
- const canStart=Boolean(!fault&&!completed&&!stopping&&run.access==='free'&&run.currentDay===day.day&&['not_started','paused'].includes(day.status))
+ const canStart=Boolean(identity.status==='ready'&&voiceName&&!fault&&!completed&&!stopping&&run.access==='free'&&run.currentDay===day.day&&['not_started','paused'].includes(day.status))
  const selection={accountId,runId:run.id,protocolId:day.protocolId,sessionId:day.sessionId,personaId:coach,minimumElapsedMs:elapsed,storageConsent}
  const onClock=(ack,selected)=>{
   if(selected.personaId!==coach)return false
@@ -39,10 +61,12 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
  return <section data-anti-stress-live-panel style={{display:'grid',gap:10,border:'1px solid #d9cebe',padding:12,borderRadius:12}}>
   <h3>{t.title} · {title}</h3>
   <p>{t.notice}</p>
+  {!voiceName&&<p role="status">{({ru:'Утверждённый голос для этого языка пока недоступен.',en:'An approved voice for this language is not available yet.',es:'Aún no hay una voz aprobada para este idioma.'})[lang]}</p>}
+  {identity.status==='unavailable'&&<p role="alert">{({ru:'Не удалось проверить профиль. Обновите сохранённую сессию.',en:'Could not verify your profile. Refresh the saved session.',es:'No se pudo verificar tu perfil. Actualiza la sesión guardada.'})[lang]}</p>}
   <label><input type="checkbox" checked={storageConsent} disabled={stopping||!['idle','paused'].includes(phase)} onChange={e=>setStorageConsent(e.target.checked)}/>{({ru:'Сохранить распознанные завершённые реплики этой части разговора в моём приватном Daybook. Незавершённые реплики могут не сохраниться.',en:'Save recognized completed turns from this connection in my private Daybook. Incomplete turns may not be saved.',es:'Guardar los turnos completos reconocidos de esta conexión en mi Daybook privado. Los turnos incompletos podrían no guardarse.'})[lang]}</label>
   <label>{t.coach} <select value={coach} disabled={stopping||completed||fault} onChange={e=>void changeCoach(e.target.value)}>{PUBLIC_COACH_PERSONAS.map(p=><option key={p.id} value={p.id}>{localCoachText(p.name,lang)}</option>)}</select></label>
   <progress max={900000} value={elapsed} aria-label={t.time}/><span>{Math.floor(elapsed/60000)}:{String(Math.floor(elapsed/1000)%60).padStart(2,'0')} / 15:00</span>
-  {completed?<p role="status">{t.done}</p>:<MyCoachGeminiLive ref={speech} locale={lang} personaId={coach} courseSessionId={day.sessionId} therapyRelaySelection={selection} onTherapyRelayClock={onClock}
+  {completed?<p role="status">{t.done}</p>:<MyCoachGeminiLive ref={speech} locale={lang} personaId={coach} courseSessionId={day.sessionId} voiceName={voiceName||''} privateGreetingText={privateSalutation} therapyRelaySelection={selection} onTherapyRelayClock={onClock} onTherapyRelayClosed={receipt=>{if(!receipt.terminalVerified&&receipt.status!=='not_started')setFault(true)}}
     enabled={canStart} canStart={canStart} elapsedSeconds={Math.floor(elapsed/1000)}
     onVoiceStateChange={v=>setPhase(v.phase)} onInputInterim={setInput} onOutputInterim={setOutput}
     onInputFinal={text=>{setInput(text);return false}} onOutputFinal={text=>setOutput(text)} />}

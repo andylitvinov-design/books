@@ -123,3 +123,16 @@ test('private transcript storage is independent of voice consent and defaults to
  assert.equal(normalizeAntiStressRelayEntry(wire({storageConsent:false}),owner).storageConsent,false)
  assert.throws(()=>normalizeAntiStressRelayEntry(wire({storageConsent:'true'}),owner),/INVALID/)
 })
+
+test('Therapy locks approved coach voice, verifies owner before greeting and exposes unverified stop',async()=>{
+ const {readFileSync}=await import('node:fs')
+ const panel=readFileSync(new URL('../components/app/anti-stress-live-panel.jsx',import.meta.url),'utf8')
+ const relay=readFileSync(new URL('../lib/app/anti-stress-live-relay.js',import.meta.url),'utf8')
+ const voice=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ assert.match(panel,/lockedCoachSessionVoice\(coach,lang\)/)
+ assert.match(panel,/identity\.status==='ready'&&voiceName/)
+ assert.match(panel,/verified\?\.account\?\.id!==accountId/)
+ assert.match(panel,/privateGreetingText=\{privateSalutation\}/)
+ assert.match(relay,/if\(!approved\|\|body\.voiceName!==approved\)/)
+ assert.match(voice,/onTherapyRelayClosed\?\.\(receipt\)/)
+})
