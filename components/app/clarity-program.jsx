@@ -164,7 +164,7 @@ export function ProgramStartLink({locale='en',program,className,children}){
 export function ClarityDetails({locale='en'}){
  const lang=clarityLocale(locale),t=COPY[lang]
  return <main className={css.shell} data-clarity-program-details>
-  <Link href={'/'+lang+'/app/portrait'} className={css.back}>{t.back}</Link>
+  <Link href={lang==='es'?'/es/app/portrait?discover=programs':'/'+lang+'/app/portrait'} className={css.back}>{t.back}</Link>
   <header className={css.hero}><span>{t.details}</span><h1>{t.title}</h1><p>{t.intro}</p><ClarityStartButton locale={lang}/></header>
   <p className={css.terms}>{t.terms}</p>
   {CLARITY_SYLLABUS[lang].map(([title,description],index)=><article className={css.card} key={title}><span className={css.eyebrow}>{t.day} {index+1} · {t.free}</span><h2>{title}</h2><p>{description}</p></article>)}
