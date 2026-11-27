@@ -409,3 +409,6 @@ for (const locale of ['en', 'ru']) {
     assert.deepEqual(input, before)
   })
 }
+
+// Exercise the thematic discovery catalog in the existing registered app suite.
+import './self-discovery-themes.test.mjs'

@@ -96,3 +96,6 @@
  .count,.terms,.status,.priceNote{font-size:14px}
 }
 @media(prefers-reduced-motion:reduce){.chevron{transition:none}}
+
+.programPreviewLink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #c9ae73;border-radius:999px;color:#103d30;background:#fffaf2;text-decoration:none;font:650 13px/1.2 system-ui;text-align:center;padding:6px 10px}
+.programPreviewLink svg{flex-shrink:0}
