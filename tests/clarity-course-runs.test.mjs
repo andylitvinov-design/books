@@ -153,3 +153,22 @@ test('bound early archive review preserves the draft until a genuine trusted tim
  assert.match(ui,/response.status===409&&result\?\.error==='CLARITY_SESSION_STILL_OPEN'/)
  assert.match(ui,/protocolSaveSnapshotRef.current=null;setProtocolSaveLocked\(false\)/)
 })
+
+test('run transcript preserves legacy coach labels and exact visit attribution without inference metadata',()=>{
+ const run=createClarityRun(input(1,'free',1)),visitId=id(91),capturedAt='2026-11-27T09:00:00.000Z'
+ const record={id:run.protocolIds[0],courseSessionId:'clarity_day_1',personaId:'mira',provenance:'client_reviewed_dialogue',turns:[
+  {role:'assistant',content:'Welcome',coachId:'mira',locale:'en',capturedAt},
+  {role:'user',content:'Continue',coachId:'caesar',visitId,locale:'en',capturedAt},
+  {role:'assistant',content:'Let us continue',coachId:'caesar',authorPersonaId:'caesar',visitId,locale:'en',capturedAt,inference:{provider:'gemini_live_free',model:'private'}},
+  {role:'assistant',content:'Legacy captured reply',coachId:'sofia'}
+ ]}
+ const log=clarityRunTranscript(record,1,run,capturedAt)
+ assert.equal(log.turns[0].personaId,'mira')
+ assert.equal(log.turns[1].coachId,'caesar')
+ assert.equal(log.turns[1].visitId,visitId)
+ assert.equal(log.turns[1].capturedAt,capturedAt)
+ assert.equal(log.turns[2].personaId,'caesar')
+ assert.equal(log.turns[2].locale,'en')
+ assert.equal(log.turns[2].inference,undefined)
+ assert.equal(log.turns[3].personaId,'sofia')
+})
