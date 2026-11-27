@@ -12,14 +12,14 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,persistTurn=null}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,persistTurn=null,readReference=null}={}){
  const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=previousRun||createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const previousCredentialExpiresAt=previousRun?base:null
  const lease={leaseId:previousRun?id(11):id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt,
   ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt})}
  let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retired=[]
- const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),persistTurn,
+ const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),persistTurn,readReference,
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async b=>{retired.push(b);return true},persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
  function advance(ms,fireTimers=true){now+=ms;if(!fireTimers)return;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
@@ -223,4 +223,26 @@ test('failed private log write stops the segment without claiming a reviewed res
  assert.equal(f.run.clock.days[0].status,'paused')
  assert.equal(f.run.clock.days[0].elapsedMs,5000)
  assert.equal(f.provider.readyState,3)
+})
+
+test('fresh reference is checked after committed consent but before audio and upstream disclosure',async()=>{
+ let release,entered
+ const pending=new Promise(r=>release=r),checking=new Promise(r=>entered=r)
+ const f=fixture({readReference:async()=>{entered();return pending}})
+ f.ready();f.consent();await checking
+ assert.equal(f.events[0].type,'begin')
+ assert.ok(!f.client.messages.some(m=>m.type==='hh_anti_stress_clock'))
+ const audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ f.client.input(audio)
+ assert.equal(f.provider.messages.length,1)
+ release('CLIENT-APPROVED REFERENCE DATA (one selected reference). Work')
+ await f.relay.settled()
+ assert.equal(f.provider.messages[1].clientContent.turnComplete,false)
+ assert.equal(f.provider.messages[2].clientContent.turnComplete,true)
+ f.client.input(audio);assert.deepEqual(f.provider.messages.at(-1),audio)
+ const g=fixture({readReference:async()=>{throw Error('stale')}})
+ g.ready();g.consent();await g.relay.settled()
+ assert.equal(g.provider.messages.length,1)
+ assert.equal(g.run.clock.days[0].status,'paused')
+ assert.equal(g.run.clock.days[0].elapsedMs,0)
 })
