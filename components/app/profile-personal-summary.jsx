@@ -5,6 +5,7 @@ import {ArrowRight,BarChart3,LockKeyhole,Pencil,Play,Target,UserRound,Video} fro
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import {buildProfileAssessmentView} from '@/lib/profile/profile-assessment-view'
 import styles from './profile-personal-summary.module.css'
+import MyPageCourses from './my-page-courses'
 
 const COPY={
  ru:{about:'Обо мне',emptyBio:'Расскажите о себе в настройках своей странички.',edit:'Редактировать',privacy:'Личная страничка · ваши данные',goal:'Моя терапевтическая задача',goalEmpty:'Текст личной задачи пока не указан. Сформулировать направление работы можно в «Моём пути».',goalNote:'Самооценка выбранной цели — не диагноз и не результат теста.',goalLink:'Мой путь',goalRatings:['Ясность цели','Мотивация к цели','Уверенность в достижении цели'],tests:'Результаты моих тестов',testsEmpty:'Пока нет завершённых профессиональных тестов.',testsNote:'Это позиции в шкалах отдельных опросников, а не общий процент здоровья.',allTests:'Мои тесты',videos:'Мои видео и медитации',allVideos:'Все мои видео',videosEmpty:'Сохранённых видео пока нет.',open:'Смотреть',add:'Добавить на страничку',private:'Приватно',videoError:'Видео пока недоступно. Откройте его в библиотеке.',editIntro:'Настроить мою страничку',wait:'Загружаем личные результаты…',resultError:'Не удалось загрузить результаты. Откройте «Мои тесты».',personal:'Мои личные материалы',themes:{energy:'Энергия',relationships:'Отношения',goals:'Цели',money:'Деньги',health:'Самочувствие',life:'Жизнь'}},
@@ -63,6 +64,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
        <Link href={'/'+appLocale+'/app/portrait?space=path'} className={styles.outline}>{t.goalLink}<ArrowRight size={18} aria-hidden="true"/></Link>
      </div>
    </section>
+   <MyPageCourses locale={language} accountId={data?.accountId||data?.page?.account_id}/>
    <section className={styles.card} aria-label={t.goal}>
      <header className={styles.heading}><Target size={23} aria-hidden="true"/><h2>{t.goal}</h2><Link href={'/'+appLocale+'/app/portrait?space=path'} aria-label={t.goalLink}><ArrowRight size={20}/></Link></header>
      <p className={styles.goalEmpty}>{t.goalEmpty}</p>
