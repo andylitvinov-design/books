@@ -506,3 +506,20 @@ test('Mira public presentation starts in screened HD, never the 480px opening',(
  const hd=qualityScreenedPresentation(pinned,releasedReactionMedia('mira',REACTION_V4_RELEASED,pinned.group))
  assert.equal(hd.id,'MIR-01');assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
 })
+
+
+test('Harry catalog preserves the approved native source and avoids 3x mobile over-enlargement',()=>{
+ const css=read('components/my-coach-mira-landing.module.css')
+ const media=read('components/my-coach-motion-media.jsx')
+ const original=coachPresentationOpening('harry')
+ assert.equal(original.width,768)
+ assert.equal(original.height,1344)
+ assert.match(original.src,/harry-greeting-real-v2\\.mp4$/)
+ assert.ok(css.includes(".heroStage[data-my-coach-hero='harry'] .heroPortrait[data-persona='harry']"))
+ assert.ok(css.includes('@media(max-width:540px) and (min-resolution:3dppx)'))
+ assert.ok(css.includes('width:min(100%,256px)!important;max-width:256px!important;'))
+ assert.equal(256*3,original.width)
+ assert.ok(css.includes("background-image:url('/images/holistic-house/my-coach-motion/harry-greeting-real-v2.webp')!important"))
+ assert.ok(media.includes("const harryOriginalPoster=MEDIA_ROOT+'harry-greeting-real-v2.webp'"))
+ assert.ok(media.includes('preferredPoster!==missingPoster?preferredPoster:largeHarryFallback'))
+})
