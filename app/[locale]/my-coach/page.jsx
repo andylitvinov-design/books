@@ -1,3 +1,4 @@
+import {clarityResumeRunId} from '@/lib/coaching/clarity-resume-scope.mjs'
 import {clarityDay} from '@/lib/coaching/clarity-course.mjs'
 import { notFound } from 'next/navigation'
 import MyCoachCatalog from '@/components/my-coach-catalog'
@@ -28,7 +29,10 @@ export async function generateMetadata({ params }) {
 export default async function MyCoachPage({ params, searchParams }) {
   const { locale } = await params
   if (!locales.includes(locale)) notFound()
+  const query=await searchParams
+  const day=clarityDay(query?.clarityDay)
+  if(query?.courseRunId!==undefined&&(!day||!clarityResumeRunId(query.courseRunId)))notFound()
   return <div className={styles.page} lang={locale} data-my-coach-page>
-    <MyCoachCatalog locale={locale} clarityDay={clarityDay((await searchParams)?.clarityDay)} />
+    <MyCoachCatalog locale={locale} clarityDay={day} courseRunId={clarityResumeRunId(query?.courseRunId)} />
   </div>
 }

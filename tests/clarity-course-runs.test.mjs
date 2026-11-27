@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata,clarityRunReviewPatch,expireClarityRunObservation} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript,clarityRunResumeMetadata,clarityRunReviewPatch,expireClarityRunObservation,assertClarityCredentialEvent} from '../lib/coaching/clarity-course-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n,access,ordinal)=>({id:id(n),access,ordinal,protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0})
 function event(run,day,type,atMs,{seg=50,coachId='mira',decision='start',turn='consent:'+seg}={}){
@@ -222,4 +222,59 @@ test('stale connection recovery uses owner lock, database time and CAS, never a 
  const api=read('app/api/app/clarity-course/runs/route.js')
  assert.doesNotMatch(api,/recoverExpiredClarityRun|export (?:const|async function|function) POST/)
  assert.match(store,/TRUSTED_RUN_ADAPTER_READY=false/)
+})
+
+
+test('private credential reservation is account-locked, bounded and cannot expose a public mint or early release',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js'),sql=read('docs/coaching/clarity-course-runs.proposal.sql')
+ const body=store.slice(store.indexOf('export async function reserveClarityCredentialInTransaction'),store.indexOf('export async function reserveClarityRunCredential'))
+ assert.ok(body.indexOf('await lockCourseOwner')<body.indexOf('for update'))
+ assert.ok(body.indexOf('clarityRunCredentialWindow(')<body.indexOf('insert into '))
+ assert.match(body,/possible_expires_at_ms<=excluded\.reserved_at_ms/)
+ assert.match(body,/previousCredentialExpiresAt/)
+ assert.match(sql,/clarity_live_credential_windows force row level security/)
+ assert.match(sql,/account_id uuid primary key references app.accounts\(id\) on delete cascade/)
+ assert.doesNotMatch(sql,/grant delete[^\n]*clarity_live_credential_windows/i)
+ assert.match(store,/const TRUSTED_RUN_ADAPTER_READY=false/)
+})
+
+
+test('trusted clock events must match the durable credential, never another run, day or expired connection',()=>{
+ const lease={leaseId:id(90),courseRunId:id(1),protocolId:id(2),day:1,reservedAtMs:1000,possibleExpiresAtMs:1201000}
+ const begin={type:'begin',courseRunId:lease.courseRunId,protocolId:lease.protocolId,day:1,
+  connectionId:lease.leaseId,atMs:1000,consent:{connectionId:lease.leaseId}}
+ const reject=/CLARITY_CREDENTIAL_EVENT_REJECTED/
+ assert.equal(assertClarityCredentialEvent(lease,begin),true)
+ assert.throws(()=>assertClarityCredentialEvent(null,begin),reject)
+ for(const wrong of [{courseRunId:id(3)},{protocolId:id(4)},{day:2},{connectionId:id(91)},
+  {atMs:999},{atMs:1201000},{consent:{connectionId:id(91)}},{type:'token_minted'}])
+  assert.throws(()=>assertClarityCredentialEvent(lease,{...begin,...wrong}),reject)
+ const observe={...begin,type:'observe',atMs:1201000}
+ assert.equal(assertClarityCredentialEvent(lease,observe),true)
+ assert.throws(()=>assertClarityCredentialEvent(lease,{...observe,atMs:1201001}),reject)
+ assert.throws(()=>assertClarityCredentialEvent({...lease,leaseId:id(91)},observe),reject)
+ assert.throws(()=>assertClarityCredentialEvent({...lease,possibleExpiresAtMs:1201001},observe),reject)
+ assert.throws(()=>assertClarityCredentialEvent({...lease,reservedAtMs:'1000'},observe),reject)
+ for(const type of ['disconnect','pause','coach_change','lost_observation'])
+  assert.equal(assertClarityCredentialEvent(lease,{...observe,type,atMs:1210000}),true)
+ // Matching a lease still cannot start or credit a clock without trusted
+ // explicit consent / server observation, enforced by the domain reducer.
+ const d=input(1,'free',1)
+ assert.throws(()=>beginFreeClarityRun(d,{...event(d,1,'begin',1000),connectionId:lease.leaseId,consent:begin.consent}),/NOT_AUTHORIZED/)
+})
+
+test('credential interlock is in both owner-locked mutation paths before time or quota is committed',()=>{
+ const store=readFileSync(new URL('../lib/app/clarity-course-runs.js',import.meta.url),'utf8')
+ const interlock=store.slice(store.indexOf('async function requireClarityCredentialEvent'),store.indexOf('// No public POST.'))
+ assert.match(interlock,/where account_id=\$1 for update/)
+ assert.match(interlock,/assertClarityCredentialEvent\(/)
+ for(const [start,end] of [['export async function startFirstClarityRun','// Never accept an order object'],
+  ['export async function applyTrustedClarityRunEvent','// Internal recovery only.']]){
+  const body=store.slice(store.indexOf(start),store.indexOf(end))
+  const lock=body.indexOf('await lockCourseOwner(db,actor)'),check=body.indexOf('await requireClarityCredentialEvent(db,actor,event)')
+  assert.ok(lock>=0&&check>lock&&check<body.indexOf('await claimTrustedFreeCoachingDays'))
+ }
+ const route=readFileSync(new URL('../app/api/app/clarity-course/runs/route.js',import.meta.url),'utf8')
+ assert.doesNotMatch(route,/requireClarityCredentialEvent|applyTrustedClarityRunEvent|startFirstClarityRun/)
 })

@@ -275,7 +275,7 @@ const visualTopics = [
 const FAVORITES_KEY = 'hh-my-coach-favorites-v1'
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ё/g, 'е').trim()
 
-export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
+export default function MyCoachCatalog({ locale = 'en', clarityDay = null, courseRunId = null }) {
   const lang = words[locale] ? locale : 'en'
   const t = words[lang]
   const categories = topicText[lang]
@@ -338,7 +338,7 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
   const safeMethod=selectedMethod&&resolveCoachMethodId(selected.id,selectedMethod)||''
-  const startHref = clarityCoachHref(coachSessionHref(lang, selected.id, safeSettings, safeMethod),clarityDay)
+  const startHref = clarityCoachHref(coachSessionHref(lang, selected.id, safeSettings, safeMethod),clarityDay,courseRunId)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
   // Reuse the website's service-specific, privacy-filtered messenger handoff.
@@ -604,7 +604,7 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null }) {
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
                   <a className={styles.cardButton}
-                    href={clarityCoachHref(coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id)),clarityDay)}>
+                    href={clarityCoachHref(coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id)),clarityDay,courseRunId)}>
                     {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
                 </div>
               </div>

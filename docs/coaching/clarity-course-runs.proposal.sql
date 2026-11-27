@@ -64,3 +64,32 @@ create policy coaching_free_day_insert on app_private.coaching_free_session_days
  with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 -- No UPDATE or DELETE privilege; account deletion cascades. Backfill existing
 -- trusted free-day claims and rehearse cross-account RLS before enabling.
+
+-- One bounded account-wide Clarity credential window, even before enrollment.
+-- A lease is not a session, entitlement, consent, or provider observation.
+-- Retain ambiguous issuance through the possible expiry. No token is stored.
+create table app_private.clarity_live_credential_windows (
+ account_id uuid primary key references app.accounts(id) on delete cascade,
+ lease_id uuid not null,
+ course_run_id uuid not null,
+ course_day smallint not null check(course_day between 1 and 3),
+ protocol_id uuid not null check(protocol_id<>course_run_id),
+ reserved_at_ms bigint not null check(reserved_at_ms>=0),
+ possible_expires_at_ms bigint not null,
+ check(possible_expires_at_ms>reserved_at_ms and possible_expires_at_ms-reserved_at_ms<=1200000)
+);
+alter table app_private.clarity_live_credential_windows enable row level security;
+alter table app_private.clarity_live_credential_windows force row level security;
+revoke all on app_private.clarity_live_credential_windows from public,anon,authenticated;
+grant select,insert on app_private.clarity_live_credential_windows to hh_app_backend;
+grant update(lease_id,course_run_id,course_day,protocol_id,reserved_at_ms,possible_expires_at_ms) on app_private.clarity_live_credential_windows to hh_app_backend;
+create policy clarity_credential_select on app_private.clarity_live_credential_windows for select to hh_app_backend
+ using(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy clarity_credential_insert on app_private.clarity_live_credential_windows for insert to hh_app_backend
+ with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy clarity_credential_update on app_private.clarity_live_credential_windows for update to hh_app_backend
+ using(account_id=(select auth.uid()) and (select app_private.account_active()))
+ with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+-- No DELETE or account reassignment privilege. Account deletion cascades.
+-- All live transports still need a common account credential exclusion rule
+-- and trusted observation/consent integration before production activation.

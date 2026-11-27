@@ -53,3 +53,10 @@ Clarity's Free token helper now fails closed without an internal run lease; the 
 
 ## Disabled entry and shared quota (27 Nov)
 While the trusted transport adapter and release flags are disabled, the normalized authenticated Clarity token request fails closed before reserving any shared Gemini attempt, successful grant, or provider credential. Existing ordinary coach limits and the additional remaining-time lease validation remain unchanged. No production flag, migration or paid provider change.
+
+
+## Durable credential reservation (27 Nov)
+One owner-locked SQL proposal row records each possible Clarity credential expiry across devices/coaches, before any provider mint. First candidate identity does not create a course or consume the daily slot; later reservations load the exact persisted run. Atomic conflict/CAS rejects overlap, retains ambiguous provider issuance until expiry, and returns a server timestamp for the bounded mint. No token storage, early release, public mutation route or production migration. The remaining adapter must bind the reservation to the actual provider connection, explicit consent, trusted observation and shared exclusion with non-Clarity transports; all activation vetoes remain. Native CI must rehearse the new SQL and concurrency test in disposable PostgreSQL.
+
+## Durable credential/event binding (27 Nov)
+Both internal clock-write paths now require a locked owner-scoped credential window before claiming any free-day slot or mutating the clock. The future provider adapter must use the server-generated lease ID as the connection ID. First consent and observations are constrained to the exact run, day, protocol and credential interval; old callbacks cannot credit a newer lease, and a late stop cannot credit time. This interlock is not actual provider observation, and no browser event or mint is accepted as consent. Automatic lost-observation recovery remains server-derived and does not issue credentials. No schema change, production mutation, flag activation or paid service. Native CI and authorized actual provider/mobile acceptance remain mandatory.

@@ -43,17 +43,20 @@ if(!isolated){
         create schema auth; create schema app; create schema app_private;
         create function auth.uid() returns uuid language sql stable as
           $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
-        create table app.accounts(id uuid primary key,status text not null,onboarding_state text not null);
+        create table app.accounts(id uuid primary key,status text not null,onboarding_state text not null,display_name text);
         create function app_private.account_active() returns boolean language sql stable as
           $$ select exists(select 1 from app.accounts where id=auth.uid() and status='active' and onboarding_state='active') $$;
         grant usage on schema auth,app,app_private to hh_app_backend;
         grant select on app.accounts to hh_app_backend;
+        -- Mirror the production profile-column update privilege needed for
+        -- SELECT FOR UPDATE; do not grant changes to account IDs or status.
+        grant update(display_name) on app.accounts to hh_app_backend;
         grant execute on function auth.uid(),app_private.account_active() to hh_app_backend;
       `)
       const role=(await db.query("select rolsuper,rolbypassrls from pg_roles where rolname='hh_app_backend'")).rows[0]
       assert.equal(role.rolsuper,false)
       assert.equal(role.rolbypassrls,false)
-      await db.query('insert into app.accounts values ($1,$3,$3),($2,$3,$3)',[A,B,'active'])
+      await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$3,$3),($2,$3,$3)',[A,B,'active'])
       const migration=await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8')
       await db.query(migration)
       const as=async(actor,fn)=>{
@@ -149,8 +152,8 @@ if(!isolated){
         const p1='30000000-0000-4000-8000-000000000001',p2='30000000-0000-4000-8000-000000000002',p3='30000000-0000-4000-8000-000000000003'
         const date='2026-11-27',nextDate='2026-11-28'
         const claim=(actor,calendarDay,protocolId)=>transaction(config,actor,c=>claimTrustedFreeCoachingDays(c,actor,[{calendarDay,protocolId}]))
-        const freeRuns='app_private.clarity_course_runs',bindings='app_private.clarity_course_run_sessions',quota='app_private.coaching_free_session_days'
-        await db.query('insert into app.accounts values ($1,$2,$2)',[C,'active'])
+        const freeRuns='app_private.clarity_course_runs',bindings='app_private.clarity_course_run_sessions',quota='app_private.coaching_free_session_days',leases='app_private.clarity_live_credential_windows'
+        await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$2,$2)',[C,'active'])
         const addRun=(actor,id)=>as(actor,c=>c.query('insert into '+freeRuns+'(account_id,id,ordinal,access,revision,payload_ciphertext) values($1,$2,1,\'free\',1,\'synthetic ciphertext\')',[actor,id]))
         const bind=(actor,run,day,protocol)=>as(actor,c=>c.query('insert into '+bindings+'(account_id,course_run_id,course_day,protocol_id) values($1,$2,$3,$4)',[actor,run,day,protocol]))
         await addRun(A,runA);await addRun(B,runB);await addRun(C,runC)
@@ -191,14 +194,40 @@ if(!isolated){
         }),/synthetic rollback/)
         assert.equal((await as(A,c=>c.query('select protocol_id from '+quota+' where calendar_day=$1',[nextDate]))).rowCount,0)
         await claim(actorA,nextDate,p3)
+        // Real owner-lock + durable reservation race; no token mint, time
+        // credit or enrollment. Synthetic candidates deliberately precede consent.
+        const {reserveClarityCredentialInTransaction}=await import('../lib/app/clarity-course-runs.js')
+        const {createClarityRun}=await import('../lib/coaching/clarity-course-runs.mjs')
+        const candidate=(n)=>createClarityRun({id:'60000000-0000-4000-8000-00000000000'+n,ordinal:1,access:'free',createdAt:0,protocolIds:[p1,p2,p3]})
+        const reserve=(actor,run)=>transaction(config,actor,c=>reserveClarityCredentialInTransaction(c,actor,run,{day:1,protocolId:p1}))
+        const leaseRace=await Promise.allSettled([reserve(actorA,candidate(1)),reserve(actorA,candidate(2))])
+        assert.equal(leaseRace.filter(x=>x.status==='fulfilled').length,1)
+        assert.equal(leaseRace.find(x=>x.status==='rejected').reason.code,'CLARITY_CREDENTIAL_BUSY')
+        const lease=leaseRace.find(x=>x.status==='fulfilled').value
+        assert.equal(Date.parse(lease.expiresAt)-lease.now,1200000)
+        assert.equal(Date.parse(lease.newSessionExpireTime)-lease.now,45000)
+        assert.equal((await as(A,c=>c.query('select lease_id from '+leases))).rows[0].lease_id,lease.leaseId)
+        await assert.rejects(()=>reserve(actorA,candidate(3)),{code:'CLARITY_CREDENTIAL_BUSY'})
+        await reserve(actorB,candidate(4))
+        assert.equal((await as(B,c=>c.query('select lease_id from '+leases+' where account_id=$1',[A]))).rowCount,0)
+        assert.equal((await as(B,c=>c.query('update '+leases+' set possible_expires_at_ms=reserved_at_ms+1 where account_id=$1',[A]))).rowCount,0)
+        await assert.rejects(()=>as(A,c=>c.query('delete from '+leases+' where account_id=$1',[A])),/permission denied/i)
+        await assert.rejects(()=>as(A,c=>c.query('update '+leases+' set possible_expires_at_ms=reserved_at_ms+1200001 where account_id=$1',[A])),/check constraint/i)
+        // Test an expired window without waiting for wall time: admin only,
+        // on the disposable database. Production has no early release path.
+        await db.query('update '+leases+' set reserved_at_ms=0,possible_expires_at_ms=1 where account_id=$1',[A])
+        const replacement=await reserve(actorA,candidate(3))
+        assert.notEqual(replacement.leaseId,lease.leaseId)
+        assert.equal(replacement.previousCredentialExpiresAt,1)
+        await reserve({id:C,claims:{sub:C}},candidate(5))
         await db.query("update app.accounts set status='inactive' where id=$1",[B])
-        for(const table of [freeRuns,bindings,quota])assert.equal((await as(B,c=>c.query('select * from '+table))).rowCount,0)
+        for(const table of [freeRuns,bindings,quota,leases])assert.equal((await as(B,c=>c.query('select * from '+table))).rowCount,0)
         await db.query("update app.accounts set status='active' where id=$1",[B])
         await claim({id:C,claims:{sub:C}},date,p3)
         await db.query('delete from app.accounts where id=$1',[C])
-        for(const table of [freeRuns,bindings,quota])assert.equal((await db.query('select * from '+table+' where account_id=$1',[C])).rowCount,0)
+        for(const table of [freeRuns,bindings,quota,leases])assert.equal((await db.query('select * from '+table+' where account_id=$1',[C])).rowCount,0)
         // Anonymous and ordinary authenticated roles receive no table grants.
-        for(const table of [freeRuns,bindings,quota]){
+        for(const table of [freeRuns,bindings,quota,leases]){
           const privileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'SELECT') as authenticated_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[table])).rows[0]
           assert.deepEqual(privileges,{anon_read:false,authenticated_read:false,authenticated_write:false})
         }

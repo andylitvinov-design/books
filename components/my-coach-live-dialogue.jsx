@@ -258,7 +258,7 @@ const sessionRatingCopy={
   es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
 }
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null,clarityDay=null}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null,clarityDay=null,courseRunId=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
@@ -2002,12 +2002,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!owner||resumeBusy||protocolStartedRef.current)return
     setResumeBusy(true);setResumeError(false)
     try{
-      const query=clarityDay?new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(cursor||{})}):new URLSearchParams({view:'summary',...(cursor||{})})
+      const query=clarityDay?new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(courseRunId?{courseRunId}:{}),...(cursor||{})}):new URLSearchParams({view:'summary',...(cursor||{})})
       const response=await fetch('/api/app/my-coach/draft?'+query.toString(),{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':owner}})
       const result=await response.json().catch(()=>null)
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
-      const items=result.drafts.filter(row=>getCoachPersona(row?.personaId)&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!clarityDay||((row?.personaId===personaId||(clarityDay&&row?.crossCoach===true))&&row.courseSessionId===clarityCourseId(clarityDay))))
+      const items=result.drafts.filter(row=>getCoachPersona(row?.personaId)&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!courseRunId||row.courseRunId===courseRunId)&&(!clarityDay||((row?.personaId===personaId||(clarityDay&&row?.crossCoach===true))&&row.courseSessionId===clarityCourseId(clarityDay))))
       setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
@@ -2124,14 +2124,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function restorePrivateDraft(item){
     const owner=protocolOwnerRef.current
-    if(!owner||resumeList?.owner!==owner||(!clarityDay&&item.personaId!==personaId)||resumeBusy||resumeInFlight.current||protocolStartedRef.current||turnsRef.current.length)return
+    if(!owner||resumeList?.owner!==owner||(courseRunId&&item.courseRunId!==courseRunId)||(!clarityDay&&item.personaId!==personaId)||resumeBusy||resumeInFlight.current||protocolStartedRef.current||turnsRef.current.length)return
     resumeInFlight.current=true;setResumeBusy(true);setResumeError(false)
     try{
       const identity=await getCabinetBootstrap('portrait',{refresh:true})
       if(identity?.account?.id!==owner)throw Error('ACCOUNT_CHANGED')
       const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
-        body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true})})
+        body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true,...(item.courseRunId?{courseRunId:item.courseRunId}:{})})})
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==item.personaId||result.draft.courseSessionId!==item.courseSessionId||
          (result.courseRunId||null)!==(item.courseRunId||null)||(result.courseOrdinal||null)!==(item.courseOrdinal||null)||
@@ -2187,7 +2187,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
-    if(greetingIdentity.status==='loading')return
+    if(greetingIdentity.status==='loading'||courseRunId)return
     if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
     clarityTimeLimit.current=false
     setClarityHomeworkAccepted(false)
@@ -2271,7 +2271,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </select>
           </span>
         </label>
-        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={navigateBackToCoaches} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
+        <Link className={styles.chooseCoach} href={clarityCoachHref('/'+lang+'/my-coach',clarityDay,courseRunId)} onClick={navigateBackToCoaches} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
           <ArrowLeft size={16} aria-hidden="true"/>
           <span className={styles.chooseCoachFull}>{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
           <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
@@ -2280,7 +2280,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady} clarityDay={clarityDay}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady} clarityDay={clarityDay} courseRunId={courseRunId}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
@@ -2296,7 +2296,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           const label=<><strong>{({ru:'Продолжить сессию',en:'Continue session',es:'Continuar sesión'})[lang]} · <span data-clarity-resume-time={day?true:undefined}>{duration}</span></strong><br/><small>{item.courseOrdinal?('#'+item.courseOrdinal+' · '):''}{title} · {previousCoach} · {new Date(item.updatedAt).toLocaleDateString(lang)}</small></>
           const direct=item.personaId===personaId||(clarityDay&&day===clarityDay&&item.crossCoach===true)
           return direct?<button key={item.id} type="button" disabled={resumeBusy} data-coach-resume-minutes={day?item.clarityTime?.elapsedSeconds??'':item.durationSeconds??''} onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8,textAlign:'start'}}>{label}</button>:
-            <Link key={item.id} href={clarityCoachHref(coachSessionHref(lang,item.personaId)||'/'+lang+'/my-coach',day)} style={{display:'block',marginTop:8}}>{label}<br/><small>{({ru:'Открыть у прежнего коуча',en:'Open with previous coach',es:'Abrir con el coach anterior'})[lang]}</small></Link>
+            <Link key={item.id} href={clarityCoachHref(coachSessionHref(lang,item.personaId)||'/'+lang+'/my-coach',day,item.courseRunId)} style={{display:'block',marginTop:8}}>{label}<br/><small>{({ru:'Открыть у прежнего коуча',en:'Open with previous coach',es:'Abrir con el coach anterior'})[lang]}</small></Link>
         })}
         {resumeList&&resumeList.items.length===0&&<p>{({ru:'На этой странице нет незавершённых сессий.',en:'No unfinished sessions on this page.',es:'No hay sesiones pendientes en esta página.'})[lang]}</p>}
         {resumeList?.cursor&&<button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume(resumeList.cursor)}>{({ru:'Ранние сессии',en:'Earlier sessions',es:'Sesiones anteriores'})[lang]}</button>}
