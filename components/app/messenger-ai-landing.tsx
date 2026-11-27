@@ -8,6 +8,8 @@ import type {PublicLocale} from "@/lib/public-locales";
 import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound,Video} from "lucide-react";
 import {threeJourneyLabel} from "@/lib/holistic-support/three-journeys.mjs";
 import css from "./messenger-ai-landing.module.css";
+import {AssistantStart} from "@/components/assistant-start";
+import {IHelpTopics} from "@/components/ihelp-welcome";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
 
@@ -227,6 +229,11 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
+    <AssistantStart locale={locale} onAsk={onAsk}/>
+    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    <IHelpTopics locale={locale} onSelect={onTopicSelect}/>
+    <details className={css.legacyWelcome}>
+      <summary>{locale==="ru"?"Другие форматы общения":locale==="es"?"Más formas de conversar":"More ways to talk"}</summary>
     <div className={css.genieScene} data-hh-genie-scene
       style={{'--hh-ai-persona-image':`url("${persona.image}")`} as CSSProperties}>
       <div className={css.dialogueProfile}>
@@ -295,7 +302,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
         <ArrowRight size={19} aria-hidden="true"/>
       </button>
     </div>
-    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    </details>
     <details className={css.extraDirections} data-hh-genie-extra-directions>
       <summary>{locale==="ru"?"Другие направления и разделы":locale==="es"?"Más temas y secciones":"More topics and sections"} <ChevronDown size={16} aria-hidden="true"/></summary>
       <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
