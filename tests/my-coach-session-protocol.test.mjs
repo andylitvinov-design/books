@@ -874,3 +874,28 @@ test('cancelled streaming replies retain an approved audible prefix in the same 
  assert.match(ui,/waiting\.approvedReply=\{role:'assistant',content:phrase/)
  assert.match(ui,/capturedAt:new Date\(\)\.toISOString\(\),mode:'ai',interrupted:true/)
 })
+
+
+test('an early actual name question retains the literal name without granting session consent',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'}
+ ]
+ const run=rows=>coachOpeningProgress({turns:rows,locale:'ru',personaId:'mira'})
+ assert.equal(run(turns).checkmarks.invitation,false)
+ assert.equal(run(turns).checkmarks.name,false)
+ const agreed=run([...turns,{role:'user',content:'Да, давайте начнём.'}])
+ assert.equal(agreed.checkmarks.invitation,true)
+ assert.equal(agreed.checkmarks.name,true)
+ assert.equal(agreed.answers.name.value,'Alex')
+ assert.equal(coachOpeningProtocolSnapshot(agreed).name,'Alex')
+ for(const invalid of [
+  [{...turns[0],interrupted:true},...turns.slice(1)],
+  [{...turns[0],content:'Как ваше самочувствие?'},...turns.slice(1)],
+  [turns[0],{...turns[1],unanswered:true},turns[2]]
+ ]){
+  const progress=run([...invalid,{role:'user',content:'Да, давайте начнём.'}])
+  assert.equal(progress.checkmarks.name,false)
+ }
+})

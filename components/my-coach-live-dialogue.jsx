@@ -692,7 +692,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // The preferred name stays first-party; sharing past-session context remains opt-in.
   const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior?{...openingPrior,name:greetingIdentity.name||openingPrior.name}:{name:greetingIdentity.name,topic:''}}
   const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||localNameScope):localNameScope
-  const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
+  const openingProgress=coachOpeningProgress({turns,locale:conversationLang,
     personaId,...localOpeningScope})
   // Connecting to a voice provider does not constitute coaching consent.
   useEffect(()=>{
@@ -1049,8 +1049,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       pauseActionRef.current?.()
       if(!speechRef.current?.hasLiveSession?.())setVoiceState({phase:'idle',beat:0})
     }
-    const onOffline=()=>pauseActionRef.current?.({disconnect:true})
-    const onPageHide=()=>{stopReplay();pauseActionRef.current?.({disconnect:true})}
+    // A brief radio handoff or BFCache transition is not a transport failure.
+    // Pause capture immediately, but let the socket close naturally if necessary.
+    const onOffline=()=>pauseActionRef.current?.()
+    const onPageHide=event=>{stopReplay();pauseActionRef.current?.({disconnect:event?.persisted!==true})}
     document.addEventListener('visibilitychange',onHidden)
     window.addEventListener('offline',onOffline)
     window.addEventListener('pagehide',onPageHide)
@@ -1177,9 +1179,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!autoSaveRef.current||!owner||protocolSaved||!rows.length)return
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
-    const clientRows=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32)
     const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({
-      turns:clientRows.map(row=>String(row.content||'').slice(0,160)),locale:conversationLang,
+      turns:rows,locale:conversationLang,
       personaId,...localOpeningScope,
     }))
     if(confirmedNameRef.current&&opening.checkmarks.name)opening.name=confirmedNameRef.current
@@ -1402,8 +1403,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   pauseActionRef.current=pauseVoiceConversation
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
-    const history=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32).map(row=>String(row.content||'').slice(0,160))
-    const opening=coachOpeningProgress({turns:history,locale,personaId,...localOpeningScope})
+    const opening=coachOpeningProgress({turns:rows,locale,personaId,...localOpeningScope})
     return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
