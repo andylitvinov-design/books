@@ -1,6 +1,7 @@
 'use client'
 import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId,validClarityHomeworkAnswer} from '@/lib/coaching/clarity-course.mjs'
 import ClarityRunCatalog from './clarity-run-catalog'
+import {clarityDaybookRunSelection} from '@/lib/coaching/clarity-resume-scope.mjs'
 import {clarityRunNotes,clarityRunScopeTag} from '@/lib/coaching/clarity-course-runs.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
@@ -224,6 +225,7 @@ export function ClarityDaybook({locale='en',accountId,entries:allEntries,hasMore
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
  const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries),oldPractice=Array.from({length:7},(_,i)=>clarityPracticeNotes(entries,i+1)).flat()
  const searchParams=useSearchParams()
+ const runSelection=clarityDaybookRunSelection(searchParams)
  const requestedWeek=searchParams?.getAll('week')
  const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
  const [selected,setSelected]=useState(()=>clarityDay(initialDay))
@@ -238,7 +240,8 @@ export function ClarityDaybook({locale='en',accountId,entries:allEntries,hasMore
  const assigned=resultState.phase==='ready'?resultState.data.results.filter(r=>r.day===day&&r.homework.length).map(report=>({...report,projection:clarityResultProjection(report,entries,{journalComplete:!hasMore})})):[]
  const homeworkTotal=assigned.reduce((n,r)=>n+r.projection.homeworkTotal,0)
  const homeworkDone=assigned.reduce((n,r)=>n+r.projection.homeworkDone,0)
- if(resultState.phase==='ready'&&resultState.data.runCatalog?.runs?.length&&!showLegacy)return <ClarityRunCatalog key={accountId} initialCatalog={resultState.data.runCatalog} accountId={accountId} locale={lang} entries={allEntries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={onSaved} onSessionLost={onSessionLost} onLegacy={()=>setShowLegacy(true)} renderReflection={props=><FreeReflection {...props} accountId={accountId} locale={lang} onSaved={onSaved} onSessionLost={onSessionLost}/>}/>
+ if(runSelection.requested&&!showLegacy&&(runSelection.invalid||resultState.phase!=='ready'||!resultState.data.runCatalog))return <section className={css.practiceBody} data-clarity-exact-run-unavailable><p role="status">{resultState.phase==='loading'&&!runSelection.invalid?t.working:({en:'This course is unavailable. No other course was opened.',ru:'Этот курс недоступен. Другой курс не открыт.',es:'Este curso no está disponible. No se abrió otro curso.'})[lang]}</p><button type="button" onClick={resultState.reload}>{t.retry}</button><Link href={clarityDaybookPath(lang)}>{({en:'All courses',ru:'Все курсы',es:'Todos los cursos'})[lang]}</Link></section>
+ if(resultState.phase==='ready'&&(resultState.data.runCatalog?.runs?.length||runSelection.id&&resultState.data.runCatalog)&&!showLegacy)return <ClarityRunCatalog key={accountId+':'+(runSelection.id||'catalog')+':'+(runSelection.day||'all')} initialRunId={runSelection.id} initialDay={runSelection.day} initialCatalog={resultState.data.runCatalog} accountId={accountId} locale={lang} entries={allEntries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={onSaved} onSessionLost={onSessionLost} onLegacy={()=>setShowLegacy(true)} renderReflection={props=><FreeReflection {...props} accountId={accountId} locale={lang} onSaved={onSaved} onSessionLost={onSessionLost}/>}/>
  return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
   <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} 
    practiceFlow={onClose=><DaybookGames day={day} accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(day);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(Math.min(day+1,3));onClose()}}/>}
