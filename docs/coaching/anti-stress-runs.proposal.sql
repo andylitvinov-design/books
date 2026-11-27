@@ -19,6 +19,7 @@ create table app_private.anti_stress_sessions (
  review_revision bigint not null default 0 check(review_revision>=0),
  ledger_ciphertext text,
  log_ciphertext text,
+ last_reviewed_at_ms bigint check(last_reviewed_at_ms is null or (last_reviewed_at_ms between 0 and 8640000000000000 and review_revision>0)),
  check((review_revision=0)=(ledger_ciphertext is null)),
  check((review_revision=0)=(log_ciphertext is null)),
  meditation_revision bigint not null default 0 check(meditation_revision>=0),
@@ -28,6 +29,7 @@ create table app_private.anti_stress_sessions (
  unique(account_id,protocol_id),
  foreign key(account_id,course_run_id) references app_private.anti_stress_runs(account_id,id) on delete cascade
 );
+create index anti_stress_latest_review on app_private.anti_stress_sessions(account_id,last_reviewed_at_ms desc,protocol_id desc) where last_reviewed_at_ms is not null;
 alter table app_private.anti_stress_runs enable row level security;
 alter table app_private.anti_stress_runs force row level security;
 alter table app_private.anti_stress_sessions enable row level security;
@@ -36,7 +38,7 @@ revoke all on app_private.anti_stress_runs,app_private.anti_stress_sessions from
 grant select,insert on app_private.anti_stress_runs,app_private.anti_stress_sessions to hh_app_backend;
 grant update(revision,payload_ciphertext,live_active,updated_at) on app_private.anti_stress_runs to hh_app_backend;
 -- PROPOSED only: verify trusted runtime, privacy lifecycle and RLS before applying.
-grant update(review_revision,ledger_ciphertext,log_ciphertext,meditation_revision,meditation_ciphertext) on app_private.anti_stress_sessions to hh_app_backend;
+grant update(review_revision,ledger_ciphertext,log_ciphertext,last_reviewed_at_ms,meditation_revision,meditation_ciphertext) on app_private.anti_stress_sessions to hh_app_backend;
 create policy anti_stress_run_select on app_private.anti_stress_runs for select to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_insert on app_private.anti_stress_runs for insert to hh_app_backend with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_update on app_private.anti_stress_runs for update to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active())) with check(account_id=(select auth.uid()) and (select app_private.account_active()));

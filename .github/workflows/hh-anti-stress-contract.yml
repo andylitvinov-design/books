@@ -10,6 +10,7 @@ on:
       - 'lib/coaching/clarity-course-clock.mjs'
       - 'lib/app/anti-stress-runs.js'
       - 'lib/app/anti-stress-live-relay.js'
+      - 'lib/app/anti-stress-private-memory.js'
       - 'app/api/app/anti-stress/**'
       - 'components/app/anti-stress-archive*'
       - 'lib/app/my-page-courses*'
@@ -39,8 +40,9 @@ jobs:
       - name: Verify domain, clock, consent and private archive contracts
         run: |
           node --check lib/app/anti-stress-runs.js
+          node --check lib/app/anti-stress-private-memory.js
           node --check app/api/app/anti-stress/session/route.js
-          node --test tests/anti-stress-therapy-course.test.mjs tests/anti-stress-runs.test.mjs tests/anti-stress-archive.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/anti-stress-trusted-live-connection.test.mjs tests/clarity-course-clock.test.mjs tests/my-page-courses.test.mjs
+          node --test tests/anti-stress-private-memory.test.mjs tests/anti-stress-therapy-course.test.mjs tests/anti-stress-runs.test.mjs tests/anti-stress-archive.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/anti-stress-trusted-live-connection.test.mjs tests/clarity-course-clock.test.mjs tests/my-page-courses.test.mjs
       - name: Rehearse exact proposed therapy SQL on disposable PostgreSQL
         shell: bash
         run: |

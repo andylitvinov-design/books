@@ -36,6 +36,10 @@ insert into app_private.anti_stress_sessions(account_id,course_run_id,session_nu
  values(auth.uid(),'20000000-0000-4000-8000-000000000001',1,'30000000-0000-4000-8000-000000000001');
 do $$ begin
  begin
+  update app_private.anti_stress_sessions set last_reviewed_at_ms=1000;
+  raise exception 'Review timestamp without review accepted';
+ exception when check_violation then null; end;
+ begin
   update app_private.anti_stress_sessions set review_revision=1;
   raise exception 'Missing ciphertext accepted';
  exception when check_violation then null; end;
@@ -49,7 +53,14 @@ do $$ begin
   raise exception 'Two active therapy runs';
  exception when unique_violation then null; end;
 end $$;
-update app_private.anti_stress_sessions set review_revision=1,ledger_ciphertext='synthetic ledger',log_ciphertext='synthetic log' where session_number=1;
+update app_private.anti_stress_sessions set review_revision=1,ledger_ciphertext='synthetic ledger',log_ciphertext='synthetic log',last_reviewed_at_ms=1000 where session_number=1;
+do $ begin
+ if not exists(select 1 from app_private.anti_stress_sessions where account_id=auth.uid() and last_reviewed_at_ms=1000) then raise exception 'Owner review timestamp missing'; end if;
+ begin
+  update app_private.anti_stress_sessions set last_reviewed_at_ms=-1;
+  raise exception 'Negative review timestamp accepted';
+ exception when check_violation then null; end;
+end $;
 update app_private.anti_stress_sessions set meditation_revision=1,meditation_ciphertext='synthetic meditation' where session_number=1;
 insert into app_private.coaching_free_session_days(account_id,calendar_day,protocol_id)
  values(auth.uid(),'2026-11-27','30000000-0000-4000-8000-000000000001');
