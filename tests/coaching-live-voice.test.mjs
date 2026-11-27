@@ -195,7 +195,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale,','window.SpeechSynthesisUtterance',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,MY_COACH_PROTOCOL_MAX_TURN_CHARS))','turnRef.current?.(text,{locale:utteranceLocale,','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
@@ -252,7 +252,7 @@ test('My Coach displays live voice in the transcript without recording/uploading
   }
   for(const marker of ['heardRef.current=visible','finished=visible',
     'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))']){
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS))']){
     assert.ok(loop.includes(marker),marker)
   }
   assert.match(css,/\.liveTranscript/)
@@ -302,7 +302,7 @@ test('My Coach Fish TTS remains limited to approved free vendor routes and Play 
     "['fish_free','gemini_tts_free'].includes(voiceProvider)?{trainingUseConsent:true}:{}"])
     assert.ok(speech.includes(marker),marker)
   assert.ok(page.includes('voiceProviderDetails'))
-  assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(page.includes('onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
   assert.ok(page.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
   assert.ok(!page.includes('checked={cloudAgreed}'))
   assert.ok(page.includes('Fish may use the text to train models'))
@@ -407,13 +407,13 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
 test('iOS Safari naturally ending with interim-only speech commits another user turn exactly once',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const onend=loop.slice(loop.indexOf('    recognition.onend=()=>{'),loop.indexOf('    const startRecognition='))
-  assert.ok(onend.includes("if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))"))
+  assert.ok(onend.includes("if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,MY_COACH_PROTOCOL_MAX_TURN_CHARS))"))
   assert.ok(onend.includes("if(hasCoachSpokenAnswer(recovered)){"))
-  assert.ok(onend.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
-  assert.ok(!onend.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
+  assert.ok(onend.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS))"))
+  assert.ok(!onend.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS))"))
   const stopped=loop.slice(loop.indexOf('  function stopVoice({pause=false}={}){'),loop.indexOf('  function pauseSession(){'))
   assert.ok(stopped.length>0,'inspect actual stop controller')
-  assert.ok(stopped.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))"))
+  assert.ok(stopped.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),MY_COACH_PROTOCOL_MAX_TURN_CHARS))"))
   assert.ok(!stopped.includes('void deliver('), 'explicit Stop keeps the words editable but does not send')
 })
 
@@ -425,7 +425,7 @@ test('a silent iPhone recognizer retries automatically without stopping to recor
     'setTimeout(()=>','settleTimerRef.current=setTimeout',
     'void deliver(appendSpokenAnswer'])
     assert.ok(loop.includes(marker),marker)
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
   assert.ok(!ui.includes('<dialog'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
   assert.ok(!loop.includes('stopRecordedTurn'))
@@ -483,7 +483,7 @@ test('spoken My Coach reply retains the reflection and short session opening',()
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
  assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
  assert.ok(ui.includes('introduction={introduction}'))
- assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+ assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
