@@ -16,7 +16,6 @@ import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-r
 import styles from './daybook-journal.module.css'
 import DaybookStages from './daybook-stages'
 import DiscoverPractice from './discover-practice'
-const AntiStressDaybook=dynamic(()=>import('./anti-stress-daybook'))
 import GoalJourneyPlanner from './goal-journey-planner'
 import { ClarityDaybook, ClarityStartButton, ProgramStartLink } from './clarity-program'
 import clarityStyles from './clarity-program.module.css'
@@ -24,6 +23,7 @@ import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
 import {GUIDE_WEEKS,guideReadable,parseGuideEntry} from '@/lib/app/daybook-guide.mjs'
+const AntiStressDaybook=dynamic(()=>import('./anti-stress-daybook'))
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
 const DaybookWeekly=dynamic(()=>import('./daybook-weekly'))
