@@ -2317,7 +2317,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
-            openingPrior={localOpeningScope.priorSession} allowOpeningPrior={localOpeningScope.allowPrior&&openingProgress.checkmarks.invitation}
+            openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             localRecoveryTurns={turns}
