@@ -243,13 +243,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
      // Our own explicit stop increments generation before cancelling.
      outputFailed();
     },
-   },{rate:normalizeSpeechRate(rate),voiceURI:retryVoice?'':normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
+   },{rate:normalizeSpeechRate(rate),voiceURI:retryVoice?'':normalizeDeviceVoiceId(voiceId,voices,speechLocale),startTimeoutMs:phone?4000:undefined});
    if(!result?.ok&&seq===generation.current){
     // iOS can briefly retain the old synthesis queue between spoken chunks.
     if(phone&&result?.reason==='busy'&&busyRetries++<2){
      index--;resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},180);return;
     }
-    if(!phone&&dialogueActive.current)stopDialogue();
     outputFailed();
    }
   };
@@ -267,7 +266,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(!phoneCall.current||!dialogueActive.current||!phoneReplayAvailable||document.hidden||!lastSpoken.current)return;
   // Safari's direct tap permits a fresh audio route and default local voice.
   phoneRetryVoice.current=true;
-  setCoachIos27AudioSession(window.navigator,'playback');
+  // speak() cancels the active capture before switching the route.
   speak(lastSpoken.current,false,true);
  },[phoneReplayAvailable,speak]);
  const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
