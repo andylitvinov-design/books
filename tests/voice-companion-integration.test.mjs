@@ -161,7 +161,7 @@ test('phone replay is a user-gesture recovery of the same answer without a new A
  assert.match(voice,/if\(phone&&dialogueActive\.current\)\{[\s\S]*?setPhoneReplayAvailable\(true\)/);
  assert.match(voice,/if\(text\)\{hadSpeech=true;emptyListenRetries\.current=0;setPhoneReplayAvailable\(false\)/);
  assert.match(voice,/recordedTurn\.current=null;emptyListenRetries\.current=0;setRecording\(false\);setNotice\(''\);setPhoneReplayAvailable\(false\)/);
- assert.match(voice,/setPhoneReplayAvailable\(false\);stop\(\);\s*resumeDialogue\.current\?\.\(\)/);
+ assert.match(voice,/setPhoneReplayAvailable\(false\);phoneTurnReadyAt\.current=null;stop\(\);\s*resumeDialogue\.current\?\.\(\)/);
 });
 test('shorter latency is scoped to phone conversation and preserves public dictation timing',()=>{
  const voice=source('components/voice-companion-controls.tsx');
@@ -226,4 +226,19 @@ test('real owner PCM output rejects digital silence and cancels stale completion
  startAliOwnerAudio(opts);await flush();assert.deepEqual(events,['error']);
  events.length=0;const cancelled=startAliOwnerAudio(opts);cancelled.cancel();await flush();
  assert.deepEqual(events,[]);assert.equal(calls.length,2);
+});
+
+test('call barge ownership is restricted to consented owner PCM and records no private timing payload',()=>{
+ const voice=source('components/voice-companion-controls.tsx');
+ const call=source('components/ali-audio-call.tsx');
+ const recorder=source('lib/personal-coaching/coach-recorded-turn.mjs');
+ assert.match(voice,/if\(phone&&ownerAudioPersona\.current&&!retryVoice\)/);
+ assert.match(voice,/recordedSupported&&useRecordedDialogue\.current&&\s*recordedPurpose\.current==='ali_chat'&&setCoachIos27DuplexRoute/);
+ assert.match(voice,/if\(monitor\?\.continueAfterCoach\(\)\)return/);
+ assert.match(voice,/onEcho:\(\)=>\{if\(current\(\)\)\{clearIdle\(\);releaseMonitor\(\);setRecording\(false\);nextListen\(\);\}\}/);
+ assert.match(voice,/markPhoneOutput\('pcm-graph'\)/);
+ assert.match(voice,/markPhoneOutput\('device-speech-event'\)/);
+ assert.match(voice,/performance\.measure\('hh-ali-text-to-'\+kind,\{start,end:window\.performance\.now\(\)\}\)/);
+ assert.match(call,/voice\.speaking&&voice\.phoneAutoInterrupt/);
+ assert.match(recorder,/const prefix=fastCoach\?'hh-coach':'hh-ali'/);
 });
