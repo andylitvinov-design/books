@@ -38,3 +38,18 @@ test('guest cabinet does not require login for public program discovery or MyVid
  assert.ok(source.includes('data-my-page-my-video'))
  assert.ok(source.includes("status==='ready'&&data"))
 })
+
+test('My Page keeps public navigation available during private API errors without pretending the user is signed out',()=>{
+ const source=readFileSync(new URL('../components/app/my-page-client.jsx',import.meta.url),'utf8')
+ const fallback=source.slice(source.indexOf("status==='guest'||status==='error'"),source.indexOf("{notice?"))
+ assert.ok(fallback.includes('data-my-page-public-fallback={status}'))
+ assert.ok(fallback.includes("status==='error'?"))
+ assert.ok(fallback.includes('onClick={()=>void load()}'))
+ assert.ok(fallback.includes('data-my-page-discover'))
+ assert.ok(fallback.includes('data-my-page-my-video'))
+ assert.ok(fallback.includes("+'/holistic-support/mandala'"))
+ assert.ok(source.includes("err?.code==='SIGN_IN_REQUIRED'?'guest':'error'"))
+ assert.ok(source.includes("status==='ready'&&data"))
+ const profile=readFileSync(new URL('../components/app/profile-personal-summary.jsx',import.meta.url),'utf8')
+ assert.ok(profile.includes("data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}"))
+})

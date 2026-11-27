@@ -73,7 +73,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
      ['/'+appLocale+'/app/portrait?space=sessions',language==='ru'?'Мои сессии':language==='es'?'Mis sesiones':'My sessions'],
      ['/'+language+'/holistic-support/mandala','MyVideo'],
      ['/'+appLocale+'/app/settings',language==='ru'?'Настройки':language==='es'?'Ajustes':'Settings']
-    ].map(([href,title])=><Link key={href} href={href} prefetch={false} className={styles.measure}><span className={styles.measureTop}><strong>{title}</strong><ArrowRight size={16} aria-hidden="true"/></span></Link>)}</div>
+    ].map(([href,title])=><Link key={href} href={href} prefetch={false} className={styles.measure} data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}><span className={styles.measureTop}><strong>{title}</strong><ArrowRight size={16} aria-hidden="true"/></span></Link>)}</div>
    </section>
    <section className={styles.card} aria-label={t.goal}>
      <header className={styles.heading}><Target size={23} aria-hidden="true"/><h2>{t.goal}</h2><Link href={'/'+appLocale+'/app/portrait?space=path'} aria-label={t.goalLink}><ArrowRight size={20}/></Link></header>

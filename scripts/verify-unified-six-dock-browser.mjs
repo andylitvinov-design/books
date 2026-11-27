@@ -1482,6 +1482,13 @@ try{
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
+ // This runner has no private account infrastructure. Exercise both actual
+ // public fallback states explicitly without changing API authentication.
+ const myPageApi='**/api/app/my-page';
+ let myPageStatus=503;
+ const myPageFallback=route=>route.fulfill({status:myPageStatus,contentType:"application/json",
+   body:JSON.stringify({error:myPageStatus===401?"SIGN_IN_REQUIRED":"SERVICE_UNAVAILABLE"})});
+ await page.route(myPageApi,myPageFallback);
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
  const unifiedProfile=page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]');
  await unifiedProfile.waitFor({state:"visible",timeout:30000});
@@ -1489,8 +1496,19 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/my-page\/?$/,{timeout:45000});
  await expect(page.locator('[data-universal-my-page]')).toBeVisible({timeout:45000});
- await expect(page.locator('[data-my-page-google]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-public-fallback="error"]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-my-video]')).toHaveAttribute("href","/ru/holistic-support/mandala");
+ await expect(page.locator('[data-my-page-discover]')).toHaveAttribute("href","/ru/app/portrait");
+ await expect(page.locator('[data-my-page-google]')).toHaveCount(0);
  await expect(page.locator('[data-my-page-courses]')).toHaveCount(0);
+ myPageStatus=401;
+ await page.reload({waitUntil:"domcontentloaded",timeout:75000});
+ await expect(page.locator('[data-my-page-public-fallback="guest"]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-google]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-my-video]')).toHaveAttribute("href","/ru/holistic-support/mandala");
+ await expect(page.locator('[data-my-page-courses]')).toHaveCount(0);
+ await page.unroute(myPageApi,myPageFallback);
+ results.push({journey:"My Page public navigation on 503 and signed-out 401; private course data hidden",passed:true});
  await expect(page.locator('[data-unified-dock-item="profile"]')).toHaveAttribute("aria-current","page");
  const discovery=page.locator('[data-my-page-discover]');
  await expect(discovery).toHaveAttribute("href","/ru/app/portrait");
