@@ -125,9 +125,9 @@ const designCopy = {
   },
 }
 const programLandingCopy = {
-  en: { free: 'Start Free AI Coaching', details: 'Course options & details', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
-  ru: { free: 'Начать бесплатный AI-коучинг', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
-  es: { free: 'Empezar coaching IA gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
+  en: { free: 'Start Free Program', details: 'Program Details & Options', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
+  ru: { free: 'Начать бесплатно', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
+  es: { free: 'Empezar programa gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
 }
 
 const miraCopy = {
@@ -414,15 +414,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                   data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
           </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
-            <div className={heroStyles.programArt} aria-hidden="true">
-              <Leaf size={32} strokeWidth={1.4}/>
-            </div>
             <div className={heroStyles.programActions}>
               <Link href={coachCourseLaunchHref(lang,'clarity',selected.id)} prefetch={false} className={heroStyles.freeProgram} data-my-coach-free-course>
-                <BookOpen size={18} aria-hidden="true"/><span>{programs.free}</span><ArrowRight size={18} aria-hidden="true"/>
+                <BookOpen size={20} aria-hidden="true"/><span>{programs.free}</span>
               </Link>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
-                <span>{programs.details}</span><ArrowRight size={17} aria-hidden="true"/>
+                <ClipboardCheck size={20} aria-hidden="true"/><span>{programs.details}</span>
               </Link>
             </div>
           </div>

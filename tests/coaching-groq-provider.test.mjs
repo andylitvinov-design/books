@@ -239,13 +239,13 @@ test('completed Groq high-effort reply exposes actual effort, never its hidden r
 test('My Coach annotates validated model replies only, not synthetic probes or offline turns',()=>{
   const server=readFileSync(new URL('../lib/app/coaching-brain.js',import.meta.url),'utf8')
   const client=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(server,/const checked=enforceCoachSessionDirective\(parsed,directive\)/)
+  assert.match(server,/const checked=finalizeCoachCharacterReply\(enforceCoachSessionDirective\(parsed,directive\),directive\)/)
   assert.match(server,/return \{\.\.\.checked,sessionProgress,inference:\{provider:provider\.provider,model:reply\.model/)
   assert.match(server,/\.\.\.directedCoachOfflineReply\(input,directive,reason\),sessionProgress/)
   assert.match(client,/inference:result\.mode==='ai'/)
   assert.match(client,/data-coach-answer-source=\{turn\.inference\.provider\}/)
   assert.match(client,/turn\.mode==='offline'/)
-  assert.match(client,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
+  assert.match(client,/providerWindow=coachTurnWindow\(providerHistory\.filter\(row=>row\.content\.length<=1200\),10\)/)
   assert.match(client,/turns:providerWindow\s*\.map\(/)
 })
 

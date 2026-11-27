@@ -43,6 +43,15 @@ for(const engine of [chromium,webkit]){
     assert.equal(await landingMode('all').getAttribute('aria-pressed'),'true')
     assert.ok(await page.locator('[data-my-coach-hero]').isVisible())
     assert.ok(await page.locator('[data-my-coach-real-people]').isVisible())
+    assert.ok(await page.locator('[data-my-coach-hero]').evaluate(hero=>{
+     const a=hero.querySelector('[data-my-coach-free-course]'),b=hero.querySelector('[data-my-coach-program-details]')
+     const panel=hero.querySelector('[data-my-coach-program-panel]'),media=hero.querySelector('[data-coach-motion-context="hero"]')
+     if(!a||!b||!panel||!media)return false
+     const h=hero.getBoundingClientRect(),x=a.getBoundingClientRect(),y=b.getBoundingClientRect(),m=media.getBoundingClientRect()
+     const sa=getComputedStyle(a),sb=getComputedStyle(b),bg=getComputedStyle(panel).backgroundColor
+     return Math.abs(x.top-y.top)<1&&Math.abs(x.width-y.width)<1&&x.right<=y.left&&x.height>=44&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3&&sa.backgroundColor===sb.backgroundColor&&sa.backgroundColor==='rgba(255, 252, 246, 0.76)'&&bg==='rgba(0, 0, 0, 0)'
+    }), 'equal translucent white program tiles over full-width hero')
+    await page.screenshot({path:out+'/landing-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
     await page.locator('[data-my-coach-program-details]').click()
     await page.waitForURL('**/'+lang+'/my-coach/programs')
     const cards=page.locator('[data-coach-comparison-program]')
