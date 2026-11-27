@@ -174,6 +174,7 @@ export default function MyCoachSessionStateCard({
               {label}
               {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
                 aria-hidden="true"/>}
+              {key==='name'&&status==='done'&&opening.answers?.name?.value&&<small className={styles.openingValue} data-coach-preferred-name>{opening.answers.name.value}</small>}
               {quote&&<small className={styles.openingValue} data-coach-opening-answer>{captureT.quote}: «{quote}»</small>}
               {automatic&&<small className={styles.openingValue}>{captureT.automatic}</small>}
             </span>
