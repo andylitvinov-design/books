@@ -106,7 +106,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
     setConsultations(null);
     const query = "/api/public/remote-energy-support-masters?locale=" + locale +
       (choice === "consultation" ? "&kind=consultation" : "");
-    fetch(query, { credentials: "omit", signal: controller.signal })
+    fetch(query, { credentials: "omit", cache: "no-store", signal: controller.signal })
       .then(async response => {
         if (!response.ok) throw new Error("PRACTITIONERS_UNAVAILABLE");
         const data: unknown = await response.json();
