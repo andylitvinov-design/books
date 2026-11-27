@@ -72,3 +72,14 @@ test('Self Discovery is an independent expandable cabinet course and shows measu
  assert.ok(source.includes("href:root+'/app/daybook/self-discovery?theme=all&view=results'"))
  assert.ok(source.includes('return expand(c.key,view,c.percent,status,label,content,c.kind)'))
 })
+
+
+test('Spanish public program discovery stays localized without changing private cabinet bookmarks',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const route=read('app/[locale]/app/portrait/page.jsx')
+ assert.ok(route.includes("query.discover === 'programs' && Object.keys(query).length === 1"))
+ assert.ok(route.includes('<ProfileSpaceDashboard locale="es" root="/en/app" accountId={null}/>'))
+ assert.ok(route.includes("englishCabinetTarget(['portrait'], query)"))
+ assert.ok(read('components/app/my-page-client.jsx').includes("locale==='es'?'/es/app/portrait?discover=programs'"))
+ assert.ok(read('components/app/clarity-program.jsx').includes("lang==='es'?'/es/app/portrait?discover=programs'"))
+})
