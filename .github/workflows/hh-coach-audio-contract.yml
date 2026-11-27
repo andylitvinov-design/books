@@ -1,7 +1,7 @@
 name: HH Coach Audio Identity contract
 on:
   pull_request:
-    branches: [feat/anti-stress-therapy-program-20261127, codex/public-book-library]
+    branches: [feat/clarity-three-day-coaching-p0-20261126, codex/public-book-library]
     paths:
       - 'lib/coaching/coach-audio-profiles.mjs'
       - 'lib/coaching/coach-audio-wire.mjs'
