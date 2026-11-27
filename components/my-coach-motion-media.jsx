@@ -11,6 +11,7 @@ import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coa
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
+import {qualityScreenedReactionMedia,qualityScreenedPresentation} from '@/lib/coaching/coach-reaction-quality.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -28,27 +29,27 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [pageVisible,setPageVisible]=useState(true)
   const [videoReady,setVideoReady]=useState(false)
   const [missingPoster,setMissingPoster]=useState(null)
-  const [failedCameras,setFailedCameras]=useState({})
+  const [unavailableCamera,setUnavailableCamera]=useState(null)
   const [failedLegacy,setFailedLegacy]=useState([])
   const [openingDone,setOpeningDone]=useState(null)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
-  const directorActive=context==='session'&&Boolean(reactionIntent)
+  const sessionContext=context==='session'
+  const directorActive=sessionContext&&Boolean(reactionIntent)
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
-  const presentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
+  const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
+  const presentation=useMemo(()=>pinnedPresentation?qualityScreenedPresentation(pinnedPresentation,releasedReactionMedia(personaId,REACTION_V4_RELEASED,pinnedPresentation.group)):null,[pinnedPresentation,personaId])
   const opening=presentationActive?coachPresentationOpening(personaId):null
   const openingActive=Boolean(opening&&openingDone!==personaId)
   const activePresentation=openingActive?opening:presentation
-  // Session fallback may change camera groups, but cannot change the pinned public greeting.
+  // Lock the released HD camera for the whole session. Exhaustion holds its
+  // verified anchor, never switches camera or falls back to legacy SD.
   const preferredGroup=REACTION_V5_CAMERA_GROUPS[personaId]||'primary'
-  const cameraGroup=useMemo(()=>selectCoachReactionCameraGroup(personaId,REACTION_V4_RELEASED,preferredGroup,failedCameras[personaId]||[]),[personaId,preferredGroup,failedCameras])
-  const released=useMemo(()=>directorActive&&cameraGroup?releasedReactionMedia(personaId,REACTION_V4_RELEASED,cameraGroup):null,[directorActive,personaId,cameraGroup])
-  function failCamera(group=cameraGroup){
-    if(!group)return
-    setVideoReady(false)
-    setFailedCameras(previous=>previous[personaId]?.includes(group)?previous:{...previous,[personaId]:[...(previous[personaId]||[]),group]})
-  }
+  const cameraGroup=useMemo(()=>selectCoachReactionCameraGroup(personaId,REACTION_V4_RELEASED,preferredGroup),[personaId,preferredGroup])
+  const released=useMemo(()=>sessionContext&&cameraGroup?qualityScreenedReactionMedia(releasedReactionMedia(personaId,REACTION_V4_RELEASED,cameraGroup)):null,[sessionContext,personaId,cameraGroup])
+  const sessionPoster=useMemo(()=>sessionContext?protectedCoachPresence(personaId,REACTION_V4_RELEASED)?.poster:null,[sessionContext,personaId])
+  function failCamera(group=cameraGroup){setUnavailableCamera(personaId+':'+group)}
   const phaseState=PHASES.has(phase)?phase:'idle'
   const state=directorActive&&phaseState==='listening'&&reactionIntent.speaker==='none'?'idle':phaseState
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
@@ -75,7 +76,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const src=presentationActive?(activePresentation?.src||null):reserveSrc
   const framePoster = presentationActive?null:coachVideoPosterPath(src)
   // Keep the initial poster stable beneath the two presentation layers.
-  const preferredPoster=presentationActive?(opening?.poster||presentation?.poster):released?.poster||framePoster
+  const preferredPoster=presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
   const poster=preferredPoster&&preferredPoster!==missingPoster?preferredPoster:fallbackPoster
   const mediaIdentity=presentationActive?personaId+'-presentation':released?.anchorHash||src
 
@@ -110,11 +111,11 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     return()=>observer.disconnect()
   },[personaId,supported])
   useEffect(()=>{setVideoReady(false)},[mediaIdentity,personaId])
-  useEffect(()=>{setOpeningDone(null)},[personaId,presentationActive])
+  useEffect(()=>{setOpeningDone(null);setUnavailableCamera(null)},[personaId,presentationActive])
   const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible&&
-    (presentationActive?Boolean(opening||presentation):(Boolean(released)||(!protectedHold&&(isGenie||Boolean(src)))))
+    (presentationActive?Boolean(opening||presentation):sessionContext?Boolean(released):(!protectedHold&&(isGenie||Boolean(src))))
   useEffect(()=>{
-    if(presentationActive)return
+    if(presentationActive||sessionContext)return
     const video=videoRef.current
     if(!video)return
     if(!shouldPlay){video.pause();setVideoReady(false);return}
@@ -124,13 +125,14 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
       setVideoReady(false)
       if(!presentationActive&&src)setFailedLegacy(previous=>previous.includes(src)?previous:[...previous,src])
     })
-  },[shouldPlay,src,presentationActive])
+  },[shouldPlay,src,presentationActive,sessionContext])
   const finishPresentationOpening=useCallback(()=>setOpeningDone(personaId),[personaId])
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
     data-coach-motion-state={state} data-coach-motion-clip={presentationActive?(activePresentation?.id||'still'):released?'reaction-v4':isGenie?samirTake:hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v2':personaId==='harry'?harryClip:clip):'still'}
-    data-coach-reaction-mode={presentationActive?(openingActive?'presentation-original':presentation?'presentation-loop':'presentation-still'):directorActive?(released?'v4':'legacy'):undefined}
+    data-coach-reaction-mode={presentationActive?(openingActive?'presentation-original':presentation?'presentation-loop':'presentation-still'):sessionContext?(released?'v4':'hd-anchor'):undefined}
+    data-coach-quality-hold={sessionContext&&unavailableCamera===personaId+':'+cameraGroup?'true':undefined}
     data-coach-presentation-loop={presentation?.id}
     data-coach-presentation-opening={openingActive?opening.id:undefined}
     data-coach-presentation-anchor={presentation?.anchorHash}
@@ -143,13 +145,13 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={isGenie&&context==='greeting'?'high':undefined}
       onError={poster===preferredPoster?()=>setMissingPoster(preferredPoster):undefined} />
     {presentationActive?<CoachPresentationLayers key={personaId} opening={opening} presence={presentation}
-        openingActive={openingActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={setVideoReady} onUnavailable={failCamera} />:shouldPlay&&(isGenie
+        openingActive={openingActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={personaId+':'+released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={value=>{setVideoReady(value);if(value)setUnavailableCamera(null)}} onUnavailable={failCamera} />:!sessionContext&&shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={!neutralOnly&&(state==='idle'||state==='greeting')} onReady={setVideoReady} />
       : <video key={src} ref={videoRef} className={styles.video}
           src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
           controls={false} disablePictureInPicture
           onPlaying={()=>setVideoReady(true)} onError={()=>{setVideoReady(false);if(src)setFailedLegacy(previous=>previous.includes(src)?previous:[...previous,src])}} />)}
-    {motionAllowed&&hasVideo&&!presentationActive&&!released&&!protectedHold&&(isGenie||!['greeting','session','hero'].includes(context))&&<span className={styles.sceneGraphics}>
+    {motionAllowed&&hasVideo&&!presentationActive&&!sessionContext&&!released&&!protectedHold&&(isGenie||!['greeting','session','hero'].includes(context))&&<span className={styles.sceneGraphics}>
       <span className={styles.sceneHalo}/><span className={styles.sceneArc}/>
       <span className={styles.scenePoint}/>
     </span>}
