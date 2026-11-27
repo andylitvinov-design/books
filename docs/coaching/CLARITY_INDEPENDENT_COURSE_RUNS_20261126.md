@@ -34,3 +34,6 @@ The existing Coaching CI runner now executes the disposable PostgreSQL rehearsal
 
 ## Server-validated journal scope
 The existing owner-locked journal save transaction validates the reserved cr:UUID tag, exact course ownership and homework report binding, refuses cross-course/day retagging and unscoped edits of bound homework, and preserves normal legacy journal behavior. Scoped writes fail closed while the run adapter is disabled. This is a server write guard, not payment, enrollment, transcript, or runtime activation.
+
+## Verified payment read adapter
+Repeat checkout must reuse the canonical PayPal commerce repository, not the personal PayPal redirect. The owner-locked read validates exact order ID, capture ID, one repeat SKU, approved price and currency, and zero refunds. No approved price is present; do not publish a sellable product. Replace synthetic caller-supplied settlement objects with an order ID only. Keep checkout hard veto: a same-transaction settlement/refund bridge, historical price snapshot and entitlement hold on refunds/disputes are required before activation. Synthetic EUR 9 fixture is not an offer or pricing decision.
