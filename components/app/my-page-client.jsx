@@ -56,7 +56,7 @@ export default function MyPageClient({locale='en'}){
   {(status==='guest'||status==='error')?<section className={css.card} data-my-page-public-fallback={status}>
     {status==='error'?<><p className={css.error}>{t.error}</p><button className={css.secondary} type="button" onClick={()=>void load()}>{t.retry}</button></>:<><p>{t.guest}</p>
     <button className={css.button} type="button" disabled={busy} onClick={()=>void google()} data-my-page-google>{t.login}</button></>}
-    <div className={css.actions}><Link className={css.secondary} href={'/'+cabinetLocale+'/app/portrait'} prefetch={false} data-my-page-discover>{({en:'Explore programs and tests',ru:'Посмотреть программы и тесты',es:'Explorar programas y tests'})[locale]||'Explore programs and tests'}</Link>
+    <div className={css.actions}><Link className={css.secondary} href={locale==='es'?'/es/app/portrait?discover=programs':'/'+cabinetLocale+'/app/portrait'} prefetch={false} data-my-page-discover>{({en:'Explore programs and tests',ru:'Посмотреть программы и тесты',es:'Explorar programas y tests'})[locale]||'Explore programs and tests'}</Link>
     <Link className={css.secondary} href={'/'+locale+'/holistic-support/mandala'} prefetch={false} data-my-page-my-video>MyVideo</Link></div></section>:null}
   {notice?<p role="status" className={notice===t.saved?css.notice:css.error}>{notice}</p>:null}
   {status==='ready'&&data?<>
