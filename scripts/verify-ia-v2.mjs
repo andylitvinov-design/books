@@ -491,7 +491,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
         // dock. Opening the public test catalogue is not a signed-in Profile.
         const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
         await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
-          'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
+          'href','/'+locale+'/my-page')
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), label + ': discovery overflow')
       }
     }
@@ -631,7 +631,7 @@ try {
         locale,label:locale+'/library/'+width,visible:width<760,
       })
       await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
-        'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
+        'href','/'+locale+'/my-page')
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)
       if(width<760){
         const last=page.locator('.library-note')

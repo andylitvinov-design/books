@@ -9,7 +9,7 @@ import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
   GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
   GeminiLivePcmResampler,geminiLiveAudioRms,geminiLivePcmMessage,base64ToPcmFloats,
-  geminiLiveSetupMessage,geminiLiveSocketUrl,
+  geminiLiveSetupMessage,geminiLiveSetupForToken,geminiLiveSocketUrl,
   readGeminiLiveServerMessage,appendGeminiLiveTranscript,
 } from '../lib/coaching/gemini-live-transport.mjs'
 
@@ -528,9 +528,10 @@ test('socket rollover drains a completed reply and resumes the original credenti
     constructor(url){this.url=url;this.readyState=1;sockets.push(this)}
     close(code){this.readyState=3;this.onclose?.({code})}
   }
-  const token={token:'auth_tokens/synthetic-resume',model:'gemini-3.1-flash-live-preview',
+  const token={token:'auth_tokens/synthetic-resume',model:'gemini-3.1-flash-live-preview',voiceName:'Orus',
+    audioProfile:{version:'hh-coach-audio-identity-v1',personaId:'alex',locale:'en',courseSessionId:'life_direction',voiceName:'Orus',mode:'coaching',silenceDurationMs:900},
     expiresAt:new Date(Date.now()+20*60000).toISOString()}
-  const r={voiceName:'Orus',ready:true,ended:false,reconnects:0,resumeHandle:'prior-handle',
+  const r={voiceName:'Orus',personaId:'alex',locale:'en',courseSessionId:'life_direction',ready:true,ended:false,reconnects:0,resumeHandle:'prior-handle',
     lastAssistantTurnFinished:false,modelTurnComplete:true,hadAudio:true,outputText:'Full reply',
     player:{playing:true,setVolume(){}},stream:{active:true},
     pendingAudio:[],inputText:'incomplete fragment',bargeDetector:{userActive:false},
@@ -540,7 +541,7 @@ test('socket rollover drains a completed reply and resumes the original credenti
     section('  function finishAudibleTurn(','  // A local playback fault')+
     section('  function connect(','  async function getToken(')
   const methods=runInNewContext(code+'\n({connect,finishAudibleTurn,maybeReconnectOnGoAway})',{
-    WebSocket:MockSocket,geminiLiveSetupMessage,geminiLiveSocketUrl,
+    WebSocket:MockSocket,geminiLiveSetupForToken,geminiLiveSocketUrl,
     GeminiLiveBargeGate,GeminiLiveBargeDetector,LIVE_START_TIMEOUT_MS:10000,
     notify(){},phaseChange(){},stop(){stops++},flushSideband(){},
     propsRef:{current:{onInputInterim(){},onUnconfirmedInput:text=>drafts.push(text)}},
@@ -570,6 +571,7 @@ test('socket rollover drains a completed reply and resumes the original credenti
   sockets[1].onopen()
   assert.equal(sockets[1].url,sockets[0].url)
   assert.equal(sent.at(-1).setup.sessionResumption.handle,'prior-handle')
+  assert.equal(sent.at(-1).setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Orus')
   assert.equal(r.audioGate.blocked,false)
   assert.equal(stops,0)
   r.resumeHandle=null
