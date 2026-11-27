@@ -42,6 +42,10 @@ for(const engine of [chromium,webkit]){
     await page.waitForURL('**/'+lang+'/my-coach/programs/clarity')
     const launch=page.locator('[data-coach-course-launch="clarity"]')
     await launch.waitFor()
+    const daybook=launch.locator('[data-course-daybook]')
+    assert.equal(await daybook.getAttribute('href'),'/'+lang+'/app/daybook?program=clarity')
+    assert.equal(await daybook.innerText(),({en:'My Daybook',ru:'Мой дневник',es:'Mi diario'})[lang])
+    assert.ok(await launch.locator('[data-course-nav]').evaluate(nav=>{const [left,right]=nav.querySelectorAll('a');const a=left.getBoundingClientRect(),b=right.getBoundingClientRect();const l=getComputedStyle(left),r=getComputedStyle(right);return Math.abs(a.y-b.y)<1&&a.right<=b.left&&b.right<=innerWidth&&l.font===r.font&&r.borderTopWidth==='0px'}))
     assert.equal(await launch.locator('[data-my-coach-hero]').getAttribute('data-my-coach-hero'),'mira')
     const merlin=launch.locator('[data-course-coach-choice="merlin"]')
     await merlin.click()
@@ -74,6 +78,9 @@ for(const engine of [chromium,webkit]){
     // while intercepting the destination to avoid real account writes.
     await page.route('**/'+lang+'/app/daybook?program=clarity',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>synthetic destination</p>'}))
     await launch.locator('[data-clarity-start]').click()
+    await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
+    await page.goto(origin+'/'+lang+'/my-coach/programs/clarity',{waitUntil:'domcontentloaded'})
+    await page.locator('[data-course-daybook]').click()
     await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
    }finally{await ctx.close()}
   }

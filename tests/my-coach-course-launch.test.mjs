@@ -95,3 +95,16 @@ test('archive-only query accepts only exact version and archive flag',()=>{
  for(const v of [2,3,4,5,6,7])assert.equal(re.test('?v='+v+'&archive=1'),true)
  for(const bad of ['v=4&archive=1','?v=1&archive=1','?archive=1&v=4','?v=4&archive=2','?v=4&archive=1&archive=1','?v=4'])assert.equal(re.test(bad),false)
 })
+
+test('My Daybook is a plain localized peer navigation link to the protected free course, not a start action',()=>{
+ const view=read('components/my-coach-course-launch.jsx'),css=read('components/my-coach-course-launch.module.css')
+ const labels={en:'My Daybook',ru:'Мой дневник',es:'Mi diario'}
+ for(const [lang,label] of Object.entries(labels))assert.equal(getCoachCourseLaunch(lang,'clarity').copy.daybook,label)
+ const nav=view.split('data-course-nav>')[1].split('</div>')[0]
+ assert.match(nav,/course\.available&&course\.id==='clarity'&&<Link href=\{programDaybookPath\(lang,course\.id\)\}/)
+ assert.match(nav,/className=\{styles\.back\} data-course-daybook prefetch=\{false\}>\{copy\.daybook\}<ArrowRight size=\{19\}/)
+ assert.equal((nav.match(/className=\{styles\.back\}/g)||[]).length,2)
+ assert.doesNotMatch(nav,/ClarityStartLink|onClick|<button/)
+ assert.ok(view.indexOf('data-course-nav')<view.indexOf('className={styles.intro}'))
+ assert.match(css,/\.courseNav\{display:flex;align-items:center;justify-content:space-between;/)
+})

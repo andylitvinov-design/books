@@ -13,6 +13,7 @@ import styles from './my-coach-course-launch.module.css'
 import MyCoachCourseDirectory,{courseCoachPortrait} from './my-coach-course-directory'
 import {appFetch} from '@/lib/app/client-fetch'
 import {projectCourseSession} from '@/lib/coach-course-session-progress.mjs'
+import {programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
 
 const progressWords={
  en:{unknown:'Session progress unavailable',known:(n,p)=>'Session '+n+': '+p+'% of 20 minutes',complete:'Course time completed',resume:'Continue Session {session} with {name}'},
@@ -76,7 +77,10 @@ export default function MyCoachCourseLaunch({launch,initialCoach='mira'}){
      <button type="button" className={heroStyles.helpPill} aria-label="iHelp" onClick={()=>{const nativeHelp=document.querySelector('[data-hh-ihelp-trigger]');if(nativeHelp instanceof HTMLElement)nativeHelp.click();else window.location.assign('/'+lang+'/contact')}}><span aria-hidden="true">ⓘ</span> iHelp</button>
     </div>
    </header>
-   <Link href={'/'+lang+'/my-coach'} className={styles.back} prefetch={false}><ArrowLeft size={19} aria-hidden="true"/>{copy.back}</Link>
+   <div className={styles.courseNav} data-course-nav>
+    <Link href={'/'+lang+'/my-coach'} className={styles.back} prefetch={false}><ArrowLeft size={19} aria-hidden="true"/>{copy.back}</Link>
+    {course.available&&course.id==='clarity'&&<Link href={programDaybookPath(lang,course.id)} className={styles.back} data-course-daybook prefetch={false}>{copy.daybook}<ArrowRight size={19} aria-hidden="true"/></Link>}
+   </div>
    <div className={styles.intro}>
     <span className={styles.courseArt} data-course-art={course.id} aria-hidden="true"/>
     <div><h1>{course.title}</h1><p>{intro}</p></div>
