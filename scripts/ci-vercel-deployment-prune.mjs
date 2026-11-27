@@ -1,5 +1,5 @@
 // Owner-authorized cost-control cleanup runs from the trusted daily job or manual dispatch.
-// Retention is 2 days; protect current LIVE, newest 10 READY and newest 10 deployments.
+// Retention is 1 day; protect current LIVE, newest 6 READY (LIVE + 5 rollbacks) and newest 6 deployments.
 // Fail closed if any project, current aliases or rollback evidence is unclear.
 const TEAM = 'team_OSf690d0nxRHWVMXCElA8i95';
 const PROJECT = 'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
@@ -7,8 +7,8 @@ const BRANCH = 'codex/public-book-library';
 const LIVE_ALIAS = 'holistichouse.vercel.app';
 const ORIGIN = 'https://api.vercel.com';
 const DAY = 86400000;
-export const RETAIN_DAYS = 2;
-export const RETAIN_READY = 10;
+export const RETAIN_DAYS = 1;
+export const RETAIN_READY = 6;
 const MAX_DELETE = 35;
 const MAX_PAGES = 5;
 const validId = id => typeof id === 'string' && /^dpl_[A-Za-z0-9]{10,}$/.test(id);
@@ -29,7 +29,7 @@ const isExpectedSource = d => d.meta?.githubOrg === 'andylitvinov-design'
 
 export function protectedDeploymentIds(recent) {
   if (!Array.isArray(recent)) throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
-  const ids = new Set(recent.slice(0, 10).map(deploymentId).filter(Boolean));
+  const ids = new Set(recent.slice(0, RETAIN_READY).map(deploymentId).filter(Boolean));
   let ready = 0;
   for (const d of recent) {
     const id = deploymentId(d);
@@ -45,7 +45,7 @@ export function protectedDeploymentIds(recent) {
 
 // Pure bounded paginator: no API calls, deployment DELETE, or clock dependence.
 // A repeated page, missing timestamp cursor or malformed response never
-// authorizes cleanup. The caller remains responsible for the 10-READY gate.
+// authorizes cleanup. The caller remains responsible for the 6-READY gate.
 export function appendRollbackEvidencePage(response, collected, currentUntil) {
   if (!Array.isArray(response?.deployments) || !response.pagination ||
       !Array.isArray(collected?.recentDeployments) ||
@@ -80,9 +80,9 @@ export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases
     return false;
   // The detail.alias field is historical, not proof of a CURRENT assignment.
   // Fail closed unless the dedicated Vercel aliases endpoint confirms zero active aliases.
-  // Two-day cleanup still retains ten successful READY versions.
+  // One-day cleanup still retains six successful READY versions.
   // Vercel marks historic READY deployments as rollback candidates even after
-  // they fall outside our retention window. Protect the 10 newest READY builds
+  // they fall outside our retention window. Protect the six newest READY builds
   // in protectedDeploymentIds instead of preventing *all* old READY cleanup.
   if (!Array.isArray(assignedAliases) || assignedAliases.length !== 0
     || d.customEnvironmentId) return false;
@@ -191,7 +191,7 @@ async function main() {
   }
   console.log('HH_VERCEL_PRUNE mode=' + mode + ' scanned=' + scanned
     + ' eligible=' + eligible + ' deleted=' + deleted
-    + ' preserve_ready>=10 age_days=' + RETAIN_DAYS);
+    + ' preserve_ready>=' + RETAIN_READY + ' age_days=' + RETAIN_DAYS);
   if (mode !== 'apply') console.log('Dry-run only. No deployment deleted.');
 }
 

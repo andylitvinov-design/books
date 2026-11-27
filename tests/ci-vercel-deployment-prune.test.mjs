@@ -16,32 +16,32 @@ const make = (n, overrides = {}) => ({
 });
 const history = Array.from({length: 35}, (_, i) => make(i));
 
-test('keep 10 READY production rollback versions and 10 newest deployments', () => {
+test('keep six READY versions (LIVE plus five rollbacks) and six newest deployments', () => {
   const protectedIds = protectedDeploymentIds(history);
-  assert.equal(protectedIds.size, 10);
+  assert.equal(protectedIds.size, RETAIN_READY);
   assert.equal(protectedIds.has(history[0].id), true);
-  assert.equal(protectedIds.has(history[9].id), true);
-  assert.equal(protectedIds.has(history[10].id), false);
-  assert.throws(() => protectedDeploymentIds(history.slice(0, 9)),
+  assert.equal(protectedIds.has(history[5].id), true);
+  assert.equal(protectedIds.has(history[6].id), false);
+  assert.throws(() => protectedDeploymentIds(history.slice(0, RETAIN_READY - 1)),
     /INSUFFICIENT_ROLLBACK_EVIDENCE/);
 });
 
 test('delete only old, currently unaliased, exact-project production deployments', () => {
   const protectedIds = protectedDeploymentIds(history);
   const opts = {now, protectedIds, liveId: history[0].id, assignedAliases: []};
-  assert.equal(RETAIN_DAYS, 2, '2-day retention is intentional; 10 READY rollbacks still protected');
+  assert.equal(RETAIN_DAYS, 1, 'one-day retention with LIVE plus five READY rollbacks protected');
   assert.equal(eligibleForDelete(history[31], opts), true);
-  assert.equal(eligibleForDelete(make(87, {created: now - 2 * 86400000 + 1}), opts), false,
-    'a deployment newer than 2 days is never deleted');
-  assert.equal(eligibleForDelete(make(88, {created: now - 2 * 86400000}), opts), true,
-    'exactly 2 days old and unassigned is eligible only outside rollback set');
+  assert.equal(eligibleForDelete(make(87, {created: now - RETAIN_DAYS * 86400000 + 1}), opts), false,
+    'a deployment newer than one day is never deleted');
+  assert.equal(eligibleForDelete(make(88, {created: now - RETAIN_DAYS * 86400000}), opts), true,
+    'exactly one day old and unassigned is eligible only outside rollback set');
   assert.equal(eligibleForDelete(make(81, {alias: ['holistichouse.vercel.app']}), opts), true,
     'stale historical aliases are not current assignments');
   const cases = {
     live: {id: history[0].id},
     rollback: {id: history[5].id},
     preview: {target: 'preview'},
-    recent: {created: now - 86400000},
+    recent: {created: now - 86400000 + 1},
     unknownProject: {projectId: 'prj_other'},
     unknownRepo: {meta: {...history[31].meta, githubRepo: 'other'}},
     wrongBranch: {meta: {...history[31].meta, githubCommitRef: 'main'}},
@@ -59,14 +59,14 @@ test('delete only old, currently unaliased, exact-project production deployments
   assert.equal(eligibleForDelete(make(84), {...opts, assignedAliases: null}), false,
     'null active aliases must block deletion');
   assert.equal(eligibleForDelete(make(85, {isRollbackCandidate: true}), opts), true,
-    'old unaliased READY is eligible once 10 newer READY versions are protected');
+    'old unaliased READY is eligible once six newer READY versions are protected');
   assert.equal(eligibleForDelete(make(86, {isRollbackCandidate: true}), {
     ...opts, protectedIds: new Set([...protectedIds, make(86).id]),
   }), false, 'explicit protected rollback is never eligible');
 });
 
 
-test('real Vercel v6 uid records establish 10-READY rollback quorum without granting extra deletes',()=>{
+test('real Vercel v6 uid records establish six-READY rollback quorum without granting extra deletes',()=>{
  const raw=history.map(({id,...rest})=>({...rest,uid:id,readyState:undefined,state:'READY'}));
  const accumulated={recentDeployments:[],recentSeen:new Set(),readyCount:0};
  const page={deployments:[...raw,...raw.slice(0,3)],pagination:{next:now-10000}};
@@ -76,9 +76,9 @@ test('real Vercel v6 uid records establish 10-READY rollback quorum without gran
  assert.equal(accumulated.recentDeployments.length,35);
  const protectedIds=protectedDeploymentIds(accumulated.recentDeployments);
  assert.equal(protectedIds.size,RETAIN_READY);
- assert.equal(protectedIds.has(raw[9].uid),true);
- assert.equal(protectedIds.has(raw[10].uid),false);
- assert.throws(()=>protectedDeploymentIds(raw.slice(0,9)),/INSUFFICIENT_ROLLBACK_EVIDENCE/);
+ assert.equal(protectedIds.has(raw[5].uid),true);
+ assert.equal(protectedIds.has(raw[6].uid),false);
+ assert.throws(()=>protectedDeploymentIds(raw.slice(0,RETAIN_READY-1)),/INSUFFICIENT_ROLLBACK_EVIDENCE/);
 });
 
 test('v6 uid and v13 id are recognized; mismatched identity and LIVE remain fail-closed',()=>{
@@ -115,16 +115,16 @@ test('daily scheduled storage prune is isolated from hourly deployment and prese
 });
 
 
-test('daily cleanup works with exactly ten READY versions and no older pagination page',()=>{
- assert.equal(RETAIN_READY,10);
+test('daily cleanup works with exactly six READY versions and no older pagination page',()=>{
+ assert.equal(RETAIN_READY,6);
  const collected={recentDeployments:[],recentSeen:new Set(),readyCount:0};
- const page=appendRollbackEvidencePage({deployments:history.slice(0,10),pagination:{}},collected,now);
+ const page=appendRollbackEvidencePage({deployments:history.slice(0,RETAIN_READY),pagination:{}},collected,now);
  assert.equal(page.done,true);
- assert.equal(page.readyCount,10);
+ assert.equal(page.readyCount,RETAIN_READY);
  const protectedIds=protectedDeploymentIds(collected.recentDeployments);
- assert.equal(protectedIds.size,10);
+ assert.equal(protectedIds.size,RETAIN_READY);
  const opts={now,liveId:history[0].id,protectedIds,assignedAliases:[]};
- assert.equal(eligibleForDelete(history[10],opts),true,'an older unaliased release can be pruned');
+ assert.equal(eligibleForDelete(history[6],opts),true,'an older unaliased release can be pruned');
  assert.equal(eligibleForDelete(history[0],opts),false,'LIVE stays protected');
- assert.throws(()=>protectedDeploymentIds(history.slice(0,9)),/INSUFFICIENT_ROLLBACK_EVIDENCE/);
+ assert.throws(()=>protectedDeploymentIds(history.slice(0,RETAIN_READY-1)),/INSUFFICIENT_ROLLBACK_EVIDENCE/);
 });

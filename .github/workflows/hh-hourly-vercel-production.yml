@@ -1,11 +1,11 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '13,43 * * * *' # two off-peak chances/hour for GitHub scheduler; still one Vercel build/60m
+    - cron: '13,43 * * * *' # off-peak wakeups only; Toronto release window and rolling 90m cap
     - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
   # GitHub can drop schedule ticks under load. Reuse this SAME publisher after a
   # trusted closed-PR cleanup completes; this is NOT another deploy workflow.
-  # The existing rolling-60-minute, UTC-hour and exact-SHA guards apply equally.
+  # The existing rolling-90-minute, Toronto window and UTC-hour and exact-SHA guards apply equally.
   workflow_run:
     workflows: ['HH closed PR Actions cleanup']
     types: [completed]
@@ -30,11 +30,11 @@ concurrency:
 jobs:
   publish:
     # Off-peak schedule plus a trusted merged-PR completion event tolerate missed
-    # GitHub cron ticks; the same Vercel history, rolling-60-minute and UTC-hour
+    # GitHub cron ticks; the same Vercel history, rolling-90-minute, Toronto window and UTC-hour
     # guards allow at most one normal paid build.
-    # An explicit emergency=true manual action is the sole off-schedule exception.
+    # Explicit emergency=true bypasses cadence only, NEVER the Toronto night window.
     # Manual dry-run/apply cleanup remains separate and never starts a build.
-    # Exact HEAD, last-60-minutes and UTC-hour guards remain unchanged.
+    # Exact HEAD, last-90-minutes and UTC-hour guards apply.
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
@@ -58,6 +58,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 0
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 0
+          fi
           if [[ -z "$VERCEL_TOKEN" ]]; then
             echo 'Hourly batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
             exit 1
@@ -72,14 +85,22 @@ jobs:
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
             fi
-            # Never schedule a second production build in a rolling 60-minute window.
+            if ! printf '%s' "$response" | jq -e '[.deployments[] | ((.created // .createdAt) | type == "number")] | all' >/dev/null; then
+              echo 'Vercel production timestamps unverified; refusing speculative hourly release.'
+              exit 1
+            fi
+            # Never schedule a second production build in a rolling 90-minute window.
             # This is defense-in-depth against manual non-emergency dispatches,
             # GitHub cron delays, and already-existing Vercel production builds.
             # Emergency Deploy Now deliberately remains outside this limit.
-            cutoff_ms="$(( $(date -u +%s) * 1000 - 3600000 ))"
+            cutoff_ms="$(( $(date -u +%s) * 1000 - 5400000 ))"
             if printf '%s' "$response" | jq -e --argjson cutoff "$cutoff_ms" \
-              '[.deployments[] | select((.created // .createdAt // 0) >= $cutoff and .target == "production" and ((.readyState // .state) != "BLOCKED"))] | length > 0' >/dev/null; then
-              echo 'Production deployment created within the last 60 minutes; skip routine build.'
+              '[.deployments[] | select((.created // .createdAt // 0) >= $cutoff and .target == "production")] | length > 0' >/dev/null; then
+              echo 'Production deployment created within the last 90 minutes; skip routine build.'
+              exit 0
+            fi
+            if printf '%s' "$response" | jq -e '[.deployments[] | select(.target == "production" and ((.readyState // .state) == "BUILDING" or (.readyState // .state) == "QUEUED" or (.readyState // .state) == "INITIALIZING"))] | length > 0' >/dev/null; then
+              echo 'Production build still in progress; do not overlap builds.'
               exit 0
             fi
             if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | (.readyState // .state) as $status | select(.meta.githubCommitSha == $sha and ($status == "READY" or $status == "BUILDING" or $status == "QUEUED" or $status == "INITIALIZING"))] | length > 0' >/dev/null; then
@@ -88,13 +109,9 @@ jobs:
             fi
             # One NORMAL production request per UTC hour, across changing SHAs.
             # Fail closed on missing Vercel timestamps; emergency bypass is separate.
-            if ! printf '%s' "$response" | jq -e '[.deployments[] | ((.created // .createdAt) | type == "number")] | all' >/dev/null; then
-              echo 'Vercel production timestamps unverified; refusing speculative hourly release.'
-              exit 1
-            fi
             hour_start_ms="$(( ($(date -u +%s) / 3600) * 3600000 ))"
             if printf '%s' "$response" | jq -e --argjson hour_start_ms "$hour_start_ms" '[.deployments[] | select(.target == "production" and ((.created // .createdAt) >= $hour_start_ms))] | length > 0' >/dev/null; then
-              echo 'Production already requested this UTC hour; defer pending changes to next hourly run.'
+              echo 'Production already requested this UTC hour; defer pending changes to next eligible run.'
               exit 0
             fi
           # Prove that the whole LIVE-to-HEAD delta is CI-only before skipping.
@@ -137,8 +154,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 0
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 0
+          fi
           latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
-          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next hourly run will publish latest SHA.'; exit 0; }
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next eligible run will publish latest SHA.'; exit 0; }
           # Restore the GitSource payload from the last successful hourly run.
           # Custom metadata preceded repeated HTTP 400 responses; keep its
           # diagnostic context in the GitHub Actions run rather than the POST.
@@ -176,7 +206,7 @@ jobs:
   cleanup:
     # Daily bounded cleanup uses the already validated owner cleanup code.
     # Dedicated daily cron NEVER activates the publish job or a paid Vercel build.
-    # Preserve LIVE, active aliases, ten READY rollbacks, and ten newest deployments.
+    # Preserve LIVE, active aliases, six newest READY versions (LIVE + five rollbacks), and six newest deployments.
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
       (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *')

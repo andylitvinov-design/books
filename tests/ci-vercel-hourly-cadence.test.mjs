@@ -3,23 +3,23 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const workflow=readFileSync(new URL('../.github/workflows/hh-hourly-vercel-production.yml',import.meta.url),'utf8')
 
-test('hourly Vercel workflow re-registers one hourly off-peak cron at minute 37',()=>{
-  assert.match(workflow,/cron:\s*'37 \* \* \* \*'/)
+test('Vercel workflow keeps off-peak wakeups with one trusted publisher',()=>{
+  assert.match(workflow,/cron:\s*'13,43 \* \* \* \*'/)
   assert.doesNotMatch(workflow,/cron:\s*'0 \* \* \* \*'/)
   assert.match(workflow,/HH_VERCEL_HOURLY_ENABLED/)
   assert.match(workflow,/refs\/heads\/codex\/public-book-library/)
 })
 
-test('routine production releases skip any build already started in rolling hour',()=>{
-  assert.match(workflow,/cutoff_ms="\$\(\( \$\(date -u \+%s\) \* 1000 - 3600000 \)\)"/)
+test('routine production releases skip any build already started in rolling 90 minutes',()=>{
+  assert.match(workflow,/cutoff_ms="\$\(\( \$\(date -u \+%s\) \* 1000 - 5400000 \)\)"/)
   assert.match(workflow,/\.created \/\/ \.createdAt \/\/ 0/)
   assert.match(workflow,/\.target == "production"/)
-  assert.match(workflow,/Production deployment created within the last 60 minutes/)
+  assert.match(workflow,/Production deployment created within the last 90 minutes/)
   assert.match(workflow,/Already deployed or in progress:/)
   assert.match(workflow,/concurrency:[\s\S]*cancel-in-progress: false/)
 })
 
-test('emergency Deploy Now and manual-only guarded cleanup remain available',()=>{
+test('daytime emergency Deploy Now and guarded cleanup remain available',()=>{
   assert.match(workflow,/workflow_dispatch:/)
   assert.match(workflow,/emergency:[\s\S]*type: boolean/)
   assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/)
@@ -49,27 +49,48 @@ test('hourly 400 diagnostics preserve fields without leaking error text or retry
   assert.doesNotMatch(workflow,/echo "\$\(cat "\$response_file"\)"/);
   assert.doesNotMatch(workflow,/\bcurl[^\n]*--retry[^\n]*-X POST|\bcurl[^\n]*-X POST[^\n]*--retry/);
   assert.match(workflow,/No automatic retry/);
-  assert.match(workflow,/Production deployment created within the last 60 minutes/);
+  assert.match(workflow,/Production deployment created within the last 90 minutes/);
   assert.match(workflow,/Already deployed or in progress:/);
   assert.doesNotMatch(workflow,/skipAutoDetectionConfirmation|forceNew=1.*cron/);
 });
 
-test('verified production merge wakes the SAME one-per-hour batch without an extra workflow or CI wave',()=>{
+test('trusted closed-PR cleanup wakes the SAME guarded publisher',()=>{
   const top=workflow.slice(0,workflow.indexOf('jobs:'))
-  const pub=workflow.slice(workflow.indexOf('  publish:'),
-    workflow.indexOf('  cleanup:'))
-  assert.match(top,/pull_request_target:\s*\n\s*types: \[closed\]/)
-  assert.match(top,/branches: \['codex\/public-book-library'\]/)
-  assert.doesNotMatch(top,/types: \[opened|types: \[synchronize/)
-  assert.match(pub,/github\.event_name == 'pull_request_target'/)
-  assert.match(pub,/github\.event\.pull_request\.merged == true/)
-  assert.match(pub,/github\.event\.pull_request\.draft == false/)
-  assert.match(pub,/github\.event\.pull_request\.base\.repo\.full_name == github\.repository/)
-  assert.match(pub,/github\.event\.pull_request\.head\.repo\.full_name == github\.repository/)
+  const pub=workflow.slice(workflow.indexOf('  publish:'),workflow.indexOf('  cleanup:'))
+  assert.match(top,/workflow_run:/)
+  assert.match(top,/HH closed PR Actions cleanup/)
+  assert.match(pub,/github\.event_name == 'workflow_run'/)
+  assert.match(pub,/github\.event\.workflow_run\.event == 'pull_request_target'/)
+  assert.match(pub,/github\.event\.workflow_run\.conclusion == 'success'/)
+  assert.match(pub,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/)
   assert.match(pub,/vars\.HH_VERCEL_HOURLY_ENABLED == 'true'/)
-  assert.match(pub,/cutoff_ms=.*3600000/)
-  assert.match(pub,/Production deployment created within the last 60 minutes/)
+  assert.match(pub,/cutoff_ms=.*5400000/)
   assert.match(pub,/Already deployed or in progress:/)
-  assert.match(pub,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/)
-  assert.doesNotMatch(pub,/actions\/checkout|checkout.*pull_request|github\.event\.pull_request\.head\.sha/)
+  assert.doesNotMatch(pub,/actions\/checkout|checkout.*pull_request/)
+})
+
+test('Toronto night freeze applies before gate and before POST, including emergency',()=>{
+  const pub=workflow.slice(workflow.indexOf('  publish:'),workflow.indexOf('  cleanup:'))
+  const gate=pub.slice(pub.indexOf('id: gate'),pub.indexOf('Deploy exact production SHA'))
+  const post=pub.slice(pub.indexOf('Deploy exact production SHA'))
+  for(const step of [gate,post]) {
+    assert.match(step,/TZ=America\/Toronto date \+%H%M/)
+    assert.match(step,/10#\$local_hhmm >= 100 && 10#\$local_hhmm < 700/)
+    assert.match(step,/10#\$local_hhmm < 100/)
+    assert.match(step,/Toronto night publication freeze/)
+    assert.ok(step.indexOf('Toronto night publication freeze')<step.indexOf(step===gate?'if [[ "$EMERGENCY"':'-X POST'))
+  }
+})
+
+test('Toronto timezone window handles EST and EDT and midnight buffer',async()=>{
+  const {spawnSync}=await import('node:child_process')
+  const pub=workflow.slice(workflow.indexOf('id: gate'),workflow.indexOf('Deploy exact production SHA'))
+  const guard=pub.slice(pub.indexOf('          local_hhmm='),pub.indexOf('          if [[ -z "$VERCEL_TOKEN"'))
+  assert.ok(guard.includes('Toronto night publication freeze'))
+  const check=(stamp,allowed)=>{
+    const r=spawnSync('bash',['-c','date() { command date -d "$TEST_UTC" "$@"; }\n'+guard+'\necho ALLOWED'],{encoding:'utf8',env:{...process.env,TEST_UTC:stamp}})
+    assert.equal(r.status,0,r.stderr)
+    assert.equal(r.stdout.includes('ALLOWED'),allowed,stamp)
+  }
+  for(const [stamp,allowed] of [['2026-11-27 05:30:00 UTC',false],['2026-11-27 06:00:00 UTC',false],['2026-11-27 11:59:00 UTC',false],['2026-11-27 12:00:00 UTC',true],['2026-11-27 04:59:00 UTC',true],['2026-07-01 05:00:00 UTC',false],['2026-07-01 11:00:00 UTC',true]]) check(stamp,allowed)
 })
