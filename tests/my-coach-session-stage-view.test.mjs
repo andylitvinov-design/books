@@ -88,7 +88,10 @@ test('native transcript review requires exact four-turn evidence; restore and ex
  assert.equal(get(turns.map((x,i)=>i===2?{...x,interrupted:true}:x)),null);
  assert.equal(get(turns.map((x,i)=>i===2?turn('assistant','different echo'):x)),null);
  assert.equal(get(turns,{afterIndex:0}),null);
- assert.equal(get([...turns,turn('assistant','goal?')]),null);
+ assert.deepEqual(get([...turns,turn('assistant','goal?')]),r);
+ assert.deepEqual(get([...turns,turn('assistant','goal?'),turn('user','A possible new goal'),turn('assistant','echo: A possible new goal'),turn('user','no')]),r);
+ const corrected=get([...turns,turn('assistant','goal?'),turn('user','A confirmed new goal'),turn('assistant','echo: A confirmed new goal'),turn('user','yes')]);
+ assert.equal(corrected.events.length,2);assert.equal(corrected.events.at(-1).quote,'A confirmed new goal');
  assert.equal(get(turns,{normalize:()=>{throw Error('invalid')}}),null);
  const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
  assert.deepEqual(get(turns,{existing:manual}),manual);
@@ -128,4 +131,26 @@ test('incident: unrelated interface replies and bare no are transcript only, not
   assert.equal(courseCapturedRows(fields,turns,()=>true)[0].quote,undefined)
   assert.equal(coachCapturedClientTurns(turns).length,1)
  }
+})
+
+
+test('confirmed preferred name shows the normalized value independently of the literal assent',()=>{
+ for(const locale of ['en','ru','es']){
+  const name={kind:'confirmed_previous',value:'Alex',quote:({en:'Yes',ru:'Да',es:'Sí'})[locale]}
+  const confirmed=openingStagePosition({fieldStatus:{name:'confirmed'},checkmarks:{name:true},answers:{name}},locale).rows.find(r=>r.id==='name')
+  assert.equal(confirmed.value,'Alex');assert.equal(confirmed.quote,name.quote);assert.equal(confirmed.status,'done')
+  const pending=openingStagePosition({current:'name',fieldStatus:{name:'needs_confirmation'},answers:{name}},locale).rows.find(r=>r.id==='name')
+  assert.equal(pending.value,undefined);assert.equal(pending.status,'needs_confirmation')
+ }
+})
+
+
+test('restored bound evidence is not duplicated or frozen; a later explicit correction can append',()=>{
+ const t=(role,content)=>({role,content}),courseId='goal_result',fields=[{id:'goal'}]
+ const turns=[t('assistant','goal?'),t('user','Old goal'),t('assistant','echo: Old goal'),t('user','yes')]
+ const get=(turns,existing=null)=>boundTranscriptReview({courseId,turns,fields,existing,matchQuestion:(f,q)=>q===f.id+'?',matchEcho:(f,q,a,e)=>e==='echo: '+a,answerClass:x=>x==='yes'?'affirm':'candidate',normalize:v=>v})
+ const prior=get(turns);assert.equal(prior.events.length,1)
+ assert.deepEqual(get(turns,prior),prior)
+ const next=get([...turns,t('assistant','goal?'),t('user','New goal'),t('assistant','echo: New goal'),t('user','yes')],prior)
+ assert.equal(next.events.length,2);assert.equal(next.events.at(-1).quote,'New goal')
 })
