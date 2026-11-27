@@ -42,3 +42,37 @@ test('Goal uses its authored time window without forcing questions, progress or 
  }
  assert.equal(goalScenarioTimeGuidance('business_strategy',300),'');
 });
+
+import {coachCourseScenarioFirst,coachCourseLiveInstruction} from '../lib/coaching/coach-course-journey.mjs';
+import {coachCourseIndependentQuestion} from '../lib/coaching/coach-course-protocol-schema.mjs';
+import {coachSessionDirectivePrompt,enforceCoachSessionDirective} from '../lib/coaching/coach-session-director.mjs';
+import {vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs';
+import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs';
+test('all existing registered programs prefer their scenario, not the persona model',()=>{
+ for(const group of COACH_PROGRAM_GROUPS)for(const item of group.sessions)for(const locale of ['en','ru','es']){
+  assert.equal(coachCourseScenarioFirst(item.id),true);
+  assert.match(coachCourseLiveInstruction(item.id,locale),/COURSE SCENARIO FIRST/);
+  assert.match(coachCourseLiveInstruction(item.id,locale),/secondary toolbox/);
+ }
+ for(const id of [null,undefined,'life_direction','introductory','meaning_axes_inner_growth','goal_forged']){
+  assert.equal(coachCourseScenarioFirst(id),false);
+ }
+});
+test('course-first Director and Live preserve evidence and action safety',()=>{
+ const base={version:'test',personaId:'mira',personaVersion:'test',methodId:'grow',methodShape:'Goal → Reality → Options',methodProtocolVersion:'test',provisionalPhase:'discovery',phase:'discovery',stageLimit:'goal',methodStepId:'grow:goal',interventionId:'clarify_goal',timebox:{elapsedSeconds:480,phase:'exploration'},evidence:{},readiness:{missing:[]},allowQuestion:true,canOfferAction:false,locale:'en'};
+ assert.match(coachSessionDirectivePrompt(base),/Locked primary method=grow/);
+ const d={...base,courseScenarioFirst:true,courseScenarioActive:true,courseSessionId:'goal_possibilities'};
+ const prompt=coachSessionDirectivePrompt(d);
+ assert.match(prompt,/COURSE SCENARIO FIRST/);
+ assert.doesNotMatch(prompt,/Locked primary method=grow/);
+ assert.match(prompt,/Do NOT suggest a plan/);
+ assert.match(geminiLiveThematicCheckpointGuidance('',d,' Goal active phase: method.'),/course scenario first/);
+ assert.doesNotMatch(geminiLiveThematicCheckpointGuidance('',d,' Goal active phase: method.'),/step grow:goal/);
+ const row=coachCourseProtocolSchema(d.courseSessionId,'en').checkpoints.find(x=>x.id==='options');
+ assert.equal(coachCourseIndependentQuestion(d.courseSessionId,'en',row.question),true);
+ const response={mode:'ai',message:row.question,planSuggestion:'',evidenceQuote:''};
+ assert.equal(enforceCoachSessionDirective(response,d).message,row.question);
+ assert.throws(()=>enforceCoachSessionDirective({...response,message:'You must commit to a deadline.'},d));
+ assert.throws(()=>enforceCoachSessionDirective(response,{...d,allowQuestion:false}));
+ assert.equal(vetoMethodStepQuestion('When will you start?',{methodId:'oskar',methodStepId:'oskar:outcome'},{courseOwnedQuestion:true}),true);
+});
