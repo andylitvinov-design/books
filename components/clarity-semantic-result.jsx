@@ -15,8 +15,8 @@ function Radar({axes,t}){
    {coords.every(Boolean)&&<polygon points={coords.map(x=>x.join(',')).join(' ')} stroke={color[key]} fill={color[key]} fillOpacity=".09" strokeWidth="2"/>}
    {coords.map((p,i)=>p&&<circle key={axes[i].id} cx={p[0]} cy={p[1]} r={key==='current'?3:5} fill={key==='current'?color[key]:'none'} stroke={color[key]} strokeWidth="1.5"/>)}
   </g>})}
- </svg><div style={{display:'flex',flexWrap:'wrap',gap:12}}>{['current','desired'].map(key=><small key={key} style={{color:color[key]}}>● {t[key]}</small>)}</div>
- <small>{t.hint}</small><ol style={{paddingInlineStart:22,display:'grid',gap:8}}>{axes.map(axis=><li key={axis.id}><strong>{axis.label}</strong><div>{axis.current===null?t.missing:axis.current+' → '+axis.desired}</div>{axis.source&&<small>{axis.source==='daybook'?t.self:t.coach}</small>}</li>)}</ol></>
+ </svg><div style={{display:'flex',flexWrap:'wrap',gap:12}}>{['current',...(axes.some(axis=>axis.desired!==null)?['desired']:[])].map(key=><small key={key} style={{color:color[key]}}>● {t[key]}</small>)}</div>
+ <small>{t.hint}</small><ol style={{paddingInlineStart:22,display:'grid',gap:8}}>{axes.map(axis=><li key={axis.id}><strong>{axis.label}</strong><div>{axis.current===null?t.missing:axis.desired===null?String(axis.current):axis.current+' → '+axis.desired}</div>{axis.source&&<small>{axis.source==='daybook'?t.self:t.coach}</small>}</li>)}</ol></>
 }
 export default function ClaritySemanticResult({day,rows,locale='en'}){
  const t=copy[locale]||copy.en,model=claritySemanticResult(day,rows,locale)

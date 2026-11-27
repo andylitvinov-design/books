@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs'
 import {CLARITY_COURSE_IDS,CLARITY_COURSE_SECONDS,CLARITY_COURSE_GROUP,clarityDay,clarityCourseDay,clarityCourseId,clarityCoachHref,clarityReturnHref,clarityHomeworkRows,clarityHomeworkCandidates,clarityHomeworkTags,clarityHomeworkNotes,clarityHomeworkEntryId} from '../lib/coaching/clarity-course.mjs'
 import {clarityCourseResult,clarityResultProjection} from '../lib/coaching/clarity-course-results.mjs'
 import {coachCourseProtocolRows,coachCourseProtocolSchema,appendCoachCourseFieldReview,coachCourseFieldReviewQuotes} from '../lib/coaching/coach-course-protocol-schema.mjs'
-import {claritySemanticResult,clarityRatingPair} from '../lib/coaching/clarity-session-fields.mjs'
+import {claritySemanticResult,clarityRatingPair,clarityRatingAnswer,clarityRatingForQuestion,claritySpecialField} from '../lib/coaching/clarity-session-fields.mjs'
 import {validClarityHomeworkAnswer} from '../lib/coaching/clarity-course.mjs'
 import {checkpointAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -145,11 +145,11 @@ test('canonical axes, exact bound score pairs, legacy review and living semantic
   assert.equal(new Set(b.checkpoints.map(x=>x.question)).size,13)
  }
  const course='clarity_day_1',schema=coachCourseProtocolSchema(course,'ru'),field='outer_body_health'
- const question=schema.checkpoints.find(x=>x.id===field).question
+ const question=claritySpecialField(field,'ru',{legacyPair:true}).question
  const turns=[{role:'assistant',content:question},{role:'user',content:'0/8'}]
  assert.deepEqual(clarityRatingPair(field,'0/8'),{current:0,desired:8})
  assert.deepEqual(clarityRatingPair(field,'сейчас пять, хочу девять'),{current:5,desired:9})
- for(const invalid of ['','да','7','11/8','-1/8','в 2026 году 5 и 7','6.5/8','пропустим']){assert.equal(clarityRatingPair(field,invalid),null);assert.equal(checkpointAnswerMismatch(field,invalid),true)}
+ for(const invalid of ['','да','7','11/8','-1/8','в 2026 году 5 и 7','6.5/8','пропустим']){assert.equal(clarityRatingPair(field,invalid),null);assert.equal(checkpointAnswerMismatch(field,invalid),invalid!=='7')}
  assert.equal(coachCourseFieldReviewQuotes(course,'outer_finance',turns).length,0)
  assert.equal(coachCourseFieldReviewQuotes(course,field,turns).length,1)
  assert.throws(()=>appendCoachCourseFieldReview(null,course,turns,'outer_finance','turn:1'))
@@ -179,4 +179,39 @@ test('canonical axes, exact bound score pairs, legacy review and living semantic
  assert.equal(dream.dream.value,'A creative life');assert.equal(dream.nodes[0].value,'Make a studio');assert.equal(dream.nodes[1].value,null)
  assert.equal(validClarityHomeworkAnswer('goal','yes'),false)
  assert.equal(validClarityHomeworkAnswer('goal','Build a studio'),true)
+})
+
+test('Day 1 v5 current-only wheel retains exact question provenance and old pairs',()=>{
+ const course='clarity_day_1',field='outer_body_health'
+ for(const lang of ['en','ru','es']){
+  const question=coachCourseProtocolSchema(course,lang).checkpoints.find(row=>row.id===field).question
+  const turns=[{role:'assistant',content:question},{role:'user',content:'0'}]
+  assert.deepEqual(clarityRatingForQuestion(field,'0',question),{current:0,desired:null})
+  assert.equal(clarityRatingForQuestion(field,'5/10',question),null)
+  assert.equal(coachCourseFieldReviewQuotes(course,'outer_finance',turns).length,0)
+  assert.equal(coachCourseFieldReviewQuotes(course,field,turns).length,1)
+  assert.equal(coachCourseFieldReviewQuotes(course,field,[{...turns[0],interrupted:true},turns[1]]).length,0)
+  const pending=coachCourseProtocolRows(course,turns,null,lang)
+  assert.equal(pending.find(row=>row.id===field).status,'needs_confirmation')
+  assert.equal(claritySemanticResult(1,pending,lang).axes[0].current,null)
+  const review=appendCoachCourseFieldReview(null,course,turns,field,'turn:1')
+  const rows=coachCourseProtocolRows(course,turns,review,lang)
+  assert.equal(rows.find(row=>row.id===field).question,question)
+  const axis=claritySemanticResult(1,rows,lang).axes[0]
+  assert.equal(axis.current,0);assert.equal(axis.desired,null)
+  const old=claritySpecialField(field,lang,{legacyPair:true}).question
+  assert.deepEqual(clarityRatingForQuestion(field,'0/8',old),{current:0,desired:8})
+  assert.equal(clarityRatingForQuestion(field,'0',old),null)
+ }
+ for(const value of ['сейчас пять','five out of 10','ahora cinco','5 из 10'])assert.deepEqual(clarityRatingAnswer(field,value),{current:5,desired:null})
+ for(const value of ['11','-1','6.5','в 2026 году 5','5 лет','пять человек','не знаю'])assert.equal(clarityRatingAnswer(field,value),null)
+ assert.equal(clarityRatingAnswer('inner_anchor','5'),null)
+ assert.equal(validClarityHomeworkAnswer(field,'0'),true)
+ assert.equal(validClarityHomeworkAnswer('inner_anchor','0'),false)
+ const report={id:'00000000-0000-4000-8000-000000000002',rows:[{id:field,status:'not_explored',question:'current'}],homework:[{id:field}]}
+ const entry={kind:'note',revision:1,goalId:null,text:'0',tags:clarityHomeworkTags(report.id,field)}
+ const view=clarityResultProjection(report,[entry],{journalComplete:true})
+ assert.equal(view.homeworkDone,1)
+ const axis=claritySemanticResult(1,view.rows,'en').axes[0]
+ assert.equal(axis.current,0);assert.equal(axis.desired,null);assert.equal(axis.source,'daybook')
 })

@@ -2,7 +2,7 @@
 import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId,validClarityHomeworkAnswer} from '@/lib/coaching/clarity-course.mjs'
 import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
 import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
-import {clarityRatingDefinition,clarityRatingPair} from '@/lib/coaching/clarity-session-fields.mjs'
+import {clarityRatingDefinition,clarityRatingAnswer} from '@/lib/coaching/clarity-session-fields.mjs'
 import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
@@ -194,9 +194,12 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
  const t=COPY[locale]
  const [text,setText]=useState(entry?.text||''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
  const rating=homework&&clarityRatingDefinition(homework.row.id)
- const [current,setCurrent]=useState(()=>rating?String(clarityRatingPair(homework.row.id,entry?.text)?.current??''):'')
- const [desired,setDesired]=useState(()=>rating?String(clarityRatingPair(homework.row.id,entry?.text)?.desired??''):'')
- const answer=rating?(current!==''&&desired!==''?current+'/'+desired:''):text.trim()
+ const previousRating=rating?clarityRatingAnswer(homework.row.id,entry?.text):null
+ // Preserve a previously saved pair on edit; do not require a new desired rating on Day 1.
+ const needsDesired=rating?.track==='inner'||previousRating?.desired!=null
+ const [current,setCurrent]=useState(()=>String(previousRating?.current??''))
+ const [desired,setDesired]=useState(()=>String(previousRating?.desired??''))
+ const answer=rating?(current!==''&&(!needsDesired||desired!=='')?(needsDesired?current+'/'+desired:current):''):text.trim()
  const valid=homework?validClarityHomeworkAnswer(homework.row.id,answer):Boolean(answer)
  const labels=({ru:{current:'Сейчас',desired:'Желаемое',select:'Выберите 0–10',invalid:'Уточните ответ на этот вопрос.'},en:{current:'Current',desired:'Desired',select:'Choose 0–10',invalid:'Please clarify your answer to this question.'},es:{current:'Actual',desired:'Deseado',select:'Elige 0–10',invalid:'Aclara tu respuesta a esta pregunta.'}})[locale]
  const saver=useRef(null),draft=useRef(null),alive=useRef(true),inFlight=useRef(false)
@@ -219,7 +222,7 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homewo
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  {rating?<fieldset disabled={busy||failed} style={{border:0,padding:0,margin:0}}><legend>{homework.row.question}</legend><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[[labels.current,current,setCurrent],[labels.desired,desired,setDesired]].map(([label,value,change])=><label key={label}>{label}<select value={value} onChange={e=>change(e.target.value)} style={{width:'100%',minHeight:44}}><option value="">{labels.select}</option>{Array.from({length:11},(_,i)=><option key={i} value={i}>{i}</option>)}</select></label>)}</div></fieldset>:<label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={homework?1200:20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>}
+  {rating?<fieldset disabled={busy||failed} style={{border:0,padding:0,margin:0}}><legend>{homework.row.question}</legend><div style={{display:'grid',gridTemplateColumns:needsDesired?'1fr 1fr':'1fr',gap:12}}>{[[labels.current,current,setCurrent],...(needsDesired?[[labels.desired,desired,setDesired]]:[])].map(([label,value,change])=><label key={label}>{label}<select value={value} onChange={e=>change(e.target.value)} style={{width:'100%',minHeight:44}}><option value="">{labels.select}</option>{Array.from({length:11},(_,i)=><option key={i} value={i}>{i}</option>)}</select></label>)}</div></fieldset>:<label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={homework?1200:20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>}
   {entry&&(!homework||validClarityHomeworkAnswer(homework.row.id,entry.text))&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
   {homework&&answer&&!valid&&<p role="status">{labels.invalid}</p>}
   {failed&&<p role="alert">{t.error}</p>}
