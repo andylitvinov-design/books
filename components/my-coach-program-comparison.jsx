@@ -5,10 +5,13 @@ import {useState} from 'react'
 import {ArrowLeft,ArrowRight,CalendarDays,ChevronDown,Sparkles} from 'lucide-react'
 import {coachCourseLaunchHref} from '@/lib/coach-course-launch.mjs'
 import {COACH_COMPARISON_LOCALES,getVisibleCoachPrograms} from '@/lib/coach-program-comparison.mjs'
+import {CourseCartButton} from './commerce/course-cart-button'
+import {coachCourseOffer} from '@/lib/commerce/course-cart.mjs'
 import styles from './my-coach-program-comparison.module.css'
 
 function ComparisonCard({program:p,copy,lang,selected,onSelect}){
  const selectLabel=p.title
+ const paidOffer=coachCourseOffer(p.id,lang)
  return <article className={styles.card} data-coach-comparison-program={p.id} data-selected={selected} data-program-type={p.id==='antistress'||p.id==='anti-stress'?'therapy':'coaching'}>
   <span className={styles.art} data-art={p.id} aria-hidden="true"/>
   <div className={styles.intro}>
@@ -21,7 +24,8 @@ function ComparisonCard({program:p,copy,lang,selected,onSelect}){
    <div className={styles.meta}>
     <span className={styles.count}><CalendarDays size={15} aria-hidden="true"/>{p.count} {copy.sessions}</span>
     <span className={styles.price}>{p.price}</span>
-    {selected&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.start} data-coach-comparison-launch={p.id} aria-label={copy.start+' · '+p.title}>{copy.start}<ArrowRight size={15} aria-hidden="true"/></Link>}
+    {!paidOffer&&<>{selected&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.start} data-coach-comparison-launch={p.id} aria-label={copy.start+' · '+p.title}>{copy.start}<ArrowRight size={15} aria-hidden="true"/></Link>}</>}
+    {selected&&paidOffer&&<CourseCartButton sku={paidOffer.id} locale={lang} className={styles.start}/>}
    </div>
   </div>
  </article>
