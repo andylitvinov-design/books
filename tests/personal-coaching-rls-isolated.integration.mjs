@@ -43,17 +43,20 @@ if(!isolated){
         create schema auth; create schema app; create schema app_private;
         create function auth.uid() returns uuid language sql stable as
           $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
-        create table app.accounts(id uuid primary key,status text not null,onboarding_state text not null);
+        create table app.accounts(id uuid primary key,status text not null,onboarding_state text not null,display_name text);
         create function app_private.account_active() returns boolean language sql stable as
           $$ select exists(select 1 from app.accounts where id=auth.uid() and status='active' and onboarding_state='active') $$;
         grant usage on schema auth,app,app_private to hh_app_backend;
         grant select on app.accounts to hh_app_backend;
+        -- Mirror the production profile-column update privilege needed for
+        -- SELECT FOR UPDATE; do not grant changes to account IDs or status.
+        grant update(display_name) on app.accounts to hh_app_backend;
         grant execute on function auth.uid(),app_private.account_active() to hh_app_backend;
       `)
       const role=(await db.query("select rolsuper,rolbypassrls from pg_roles where rolname='hh_app_backend'")).rows[0]
       assert.equal(role.rolsuper,false)
       assert.equal(role.rolbypassrls,false)
-      await db.query('insert into app.accounts values ($1,$3,$3),($2,$3,$3)',[A,B,'active'])
+      await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$3,$3),($2,$3,$3)',[A,B,'active'])
       const migration=await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8')
       await db.query(migration)
       const as=async(actor,fn)=>{
@@ -150,7 +153,7 @@ if(!isolated){
         const date='2026-11-27',nextDate='2026-11-28'
         const claim=(actor,calendarDay,protocolId)=>transaction(config,actor,c=>claimTrustedFreeCoachingDays(c,actor,[{calendarDay,protocolId}]))
         const freeRuns='app_private.clarity_course_runs',bindings='app_private.clarity_course_run_sessions',quota='app_private.coaching_free_session_days',leases='app_private.clarity_live_credential_windows'
-        await db.query('insert into app.accounts values ($1,$2,$2)',[C,'active'])
+        await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$2,$2)',[C,'active'])
         const addRun=(actor,id)=>as(actor,c=>c.query('insert into '+freeRuns+'(account_id,id,ordinal,access,revision,payload_ciphertext) values($1,$2,1,\'free\',1,\'synthetic ciphertext\')',[actor,id]))
         const bind=(actor,run,day,protocol)=>as(actor,c=>c.query('insert into '+bindings+'(account_id,course_run_id,course_day,protocol_id) values($1,$2,$3,$4)',[actor,run,day,protocol]))
         await addRun(A,runA);await addRun(B,runB);await addRun(C,runC)
