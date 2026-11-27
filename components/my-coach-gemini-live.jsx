@@ -2,7 +2,7 @@
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {beginPrivateCoachSalutation,beginPrivateCoachRecallSpeech} from '@/lib/coaching/coach-private-greeting.mjs'
-import {coachExplicitRecall,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn} from '@/lib/coaching/coach-private-recall.mjs'
+import {coachExplicitRecall,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn,coachHasReviewedRecallPermission,coachApprovedRecallMatches} from '@/lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
 import {Mic,Play,Volume2} from 'lucide-react'
@@ -17,7 +17,7 @@ import {
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupForToken,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
-  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,
+  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,geminiLiveReviewedRecallMessage,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
 const ui={
@@ -183,15 +183,53 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.privateRecallTurn=null
     clearTimeout(turn.deadline);clearTimeout(turn.tail)
     turn.speech?.cancel()
-    turn.reply=null
+    turn.request?.abort()
+    turn.reply=null;turn.record=null;turn.owner=null
   }
-  function finishPrivateRecall(r,turn){
+  async function tryReviewedVoiceRecall(r,turn){
+    const p=propsRef.current,key=p.liveContextAccess,version=p.contextRevision
+    if(!turn.record||!turn.owner||r.paused||p.outputMuted||!coachHasReviewedRecallPermission(key))return false
+    // Never send owner-only recall text or unreviewed drafts. Re-read the
+    // existing signed context, with the initiating account binding, at use.
+    const controller=new AbortController();turn.request=controller
+    const timeout=setTimeout(()=>controller.abort(),5000)
+    let data
+    try{
+      const response=await fetch('/api/app/my-coach/live-context',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-ID':turn.owner},body:key})
+      if(response.ok)data=await response.json()
+    }catch{}finally{clearTimeout(timeout);turn.request=null}
+    if(r.ended||r.privateRecallTurn!==turn||r.paused||propsRef.current.outputMuted)return false
+    const valid=key===propsRef.current.liveContextAccess&&version===propsRef.current.contextRevision&&r.contextVersion===version
+    if(r.contextSentKey&&(!valid||r.contextSentKey!==key||data?.fingerprint!==r.contextSentFingerprint)){
+      notify(t.contextRevoked);stop();return false
+    }
+    if(!valid||!coachApprovedRecallMatches(data,turn.record)||!r.ready||r.socket?.readyState!==1)return false
+    if(!r.contextSentKey){
+      try{if(!sendSocket(r,geminiLiveContextMessage(data.note)))return false}catch{return false}
+      r.contextSentKey=key;r.contextSentFingerprint=data.fingerprint
+    }
+    r.contextRequestKey=key;r.pendingContext='';r.pendingContextFingerprint=''
+    scheduleContextFreshnessCheck(r)
+    if(!sendSocket(r,geminiLiveReviewedRecallMessage()))return false
+    r.privateRecallTurn=null
+    turn.record=null;turn.owner=null;turn.reply=null
+    r.audioGate=new GeminiLiveBargeGate();r.bargeDetector=new GeminiLiveBargeDetector()
+    r.resampler=new GeminiLivePcmResampler(r.context.sampleRate);r.pendingMic=[]
+    r.lastAssistantTurnFinished=false;r.lastHumanAudioAt=Date.now()
+    phaseChange('thinking');r.replyWatch?.touch()
+    return true
+  }
+  async function finishPrivateRecall(r,turn){
     if(r.ended||r.privateRecallTurn!==turn||!turn.loaded||!turn.drained||turn.playing)return
     clearTimeout(turn.deadline)
     turn.playing=true
     // The microphone capture path stays blocked through playback and its tail.
     // Archive text is never written to socket, Director, recovery or telemetry.
     const reply=turn.reply;turn.reply=null
+    if(await tryReviewedVoiceRecall(r,turn))return
+    if(r.ended||r.privateRecallTurn!==turn)return
+    turn.record=null;turn.owner=null
     const release=()=>{
       if(r.ended||r.privateRecallTurn!==turn)return
       r.privateRecallTurn=null
@@ -289,6 +327,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.paused=true
       r.privateGreeting?.cancel()
       r.privateRecallTurn?.speech?.cancel()
+      r.privateRecallTurn?.request?.abort()
       r.routePrimed=false
       r.audioResumeAttempt=null
       r.pausedPhase=r.currentPhase||(r.speaking?'speaking':r.ready?'listening':'loading')
@@ -587,8 +626,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
-    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
+    if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
+    // Once approved memory reaches this socket, treat model replies as possibly
+    // archive-bearing. Never replay them into another model or Director history.
+    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})
     r.interrupted=false
   }
   // Deliver server-rechecked references and Director hints ONLY after the
@@ -700,6 +741,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
          typeof result.note!=='string'||
          (result.note&&!/^[a-f0-9]{64}$/.test(result.fingerprint||'')))
         throw Error('LIVE_CONTEXT_INVALID')
+      if(r.contextSentKey===key){
+        if(result.fingerprint!==r.contextSentFingerprint){notify(t.contextRevoked);stop()}
+        return
+      }
       if(result.note){
         r.pendingContext=result.note
         r.pendingContextFingerprint=result.fingerprint
@@ -1478,7 +1523,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
-    if(outputMuted){runtime.current?.privateGreeting?.cancel();runtime.current?.privateRecallTurn?.speech?.cancel()}
+    if(outputMuted){runtime.current?.privateGreeting?.cancel();runtime.current?.privateRecallTurn?.speech?.cancel();runtime.current?.privateRecallTurn?.request?.abort()}
   },[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}

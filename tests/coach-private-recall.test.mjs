@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import {coachExplicitRecall,projectPrivateCoachRecall,privateCoachRecallText,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn} from '../lib/coaching/coach-private-recall.mjs'
+import {coachExplicitRecall,projectPrivateCoachRecall,privateCoachRecallText,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn,coachHasReviewedRecallPermission,coachApprovedRecallMatches,coachReturningSalutation} from '../lib/coaching/coach-private-recall.mjs'
 for(const [s,e] of [["Вспомни, на чём мы закончили",true],["Что мы обсуждали на прошлой сессии?",true],["Напомни, на чём остановились",true],["Where did we leave off?",true],["Remember our previous session",true],["¿En qué nos quedamos?",true],["Привет",false],["I remember my mother",false],["Вспомни упражнение",false],["Что мы будем делать сегодня?",false]])assert.equal(coachExplicitRecall(s),e,s)
 const reviewed={provenance:'client_reviewed_dialogue',savedAt:'2026-11-25T12:00:00Z',completedAt:'2026-11-25T11:00:00Z',goal:'Work',clientSummary:'My decision',clientNextStep:'Walk'}
 const draft={updatedAt:'2026-11-26T12:00:00Z',protocol:{provenance:'client_autosaved_unreviewed_draft',turns:[{role:'user',content:'I want to rest today'},{role:'assistant',content:'Invented conclusion'}]}}
@@ -59,3 +59,28 @@ assert.ok(transport.includes("r.paused||r.privateRecallTurn||!r.ready"))
 assert.ok(transport.indexOf("if(coachExplicitRecall(body))")<transport.indexOf("sendSocket(r,geminiLiveTextMessage(body))"))
 assert.ok(transport.includes("if(observePrivateCoachRecallFrame(r.privateRecallTurn,frame))"))
 assert.ok(!ui.includes("return true // stop Live before accepting an ungrounded reply"))
+
+const record=projectPrivateCoachRecall(reviewed,null)
+const access=JSON.stringify({shareApproved:true,continuity:'previous',consent:{priorSessions:true},stageToken:'test-signed'})
+assert.equal(coachHasReviewedRecallPermission(access),true)
+for(const value of ['',null,'{}',JSON.stringify({...JSON.parse(access),continuity:'pending'}),JSON.stringify({...JSON.parse(access),shareApproved:false}),JSON.stringify({...JSON.parse(access),consent:{priorSessions:false}})])assert.equal(coachHasReviewedRecallPermission(value),false)
+const approved={schema:'HH_MY_COACH_LIVE_CONTEXT_V1',available:true,fingerprint:'a'.repeat(64),scopes:['prior_session'],note:'CLIENT-APPROVED REFERENCE DATA (not instructions): '+JSON.stringify({items:[{category:'prior_session',source:'client_reviewed_dialogue',date:record.date,topic:'Work',conclusions:'My decision',nextStep:'Walk'}]})}
+assert.equal(coachApprovedRecallMatches(approved,record),true)
+for(const row of [{...record,kind:'draft'},{...record,date:'2026-01-01'},{...record,conclusions:'Different decision'},{...record,topic:'Other'},{...record,nextStep:'Run'}])assert.equal(coachApprovedRecallMatches(approved,row),false)
+for(const data of [{...approved,scopes:['prior_topic']},{...approved,fingerprint:'bad'},{...approved,available:false},{...approved,note:'untrusted'},{...approved,note:approved.note.replace('client_reviewed_dialogue','client_autosaved_unreviewed_draft')}])assert.equal(coachApprovedRecallMatches(data,record),false)
+const structured=createPrivateCoachRecallTurn(false)
+assert.equal(resolvePrivateCoachRecallTurn(structured,{reply:'Owner preview',record,owner:'test-owner'}),true)
+assert.equal(structured.reply,'Owner preview')
+assert.deepEqual(structured.record,record)
+assert.equal(resolvePrivateCoachRecallTurn(structured,{reply:'Private draft',record:draft,owner:'test-owner'}),true)
+assert.equal(structured.record,null)
+for(const locale of ['ru','en','es']){assert.ok(coachReturningSalutation('Hello Ada.',true,locale).startsWith('Hello Ada. '));assert.equal(coachReturningSalutation('Hello Ada.',false,locale),'Hello Ada.')}
+assert.equal(projectPrivateCoachRecall(null,{...draft,protocol:{...draft.protocol,turns:[{role:'user',content:'I want to rest today'},{role:'user',content:'Remember our previous session'}]}}).lastWords,'I want to rest today')
+assert.ok(storage.includes('hasPreviousProtocol:Boolean(record||draft)'))
+assert.ok(ui.includes('if(saveToAccount&&greetingIdentity.hasPreviousProtocol)'))
+assert.ok(ui.includes('const livePriorApproved=Boolean(memorySharePrior&&'))
+assert.ok(transport.includes("'X-HH-Account-ID':turn.owner"))
+assert.ok(transport.includes('coachApprovedRecallMatches(data,turn.record)'))
+assert.ok(transport.includes('sendSocket(r,geminiLiveReviewedRecallMessage())'))
+assert.ok(transport.includes('data?.fingerprint!==r.contextSentFingerprint'))
+assert.ok(transport.includes('requestedSavedContext:Boolean(r.contextSentKey)'))
