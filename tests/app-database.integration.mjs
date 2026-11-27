@@ -34,6 +34,9 @@ import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
 import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
 import { seal } from '../lib/app/crypto.js'
+import {readDevelopmentGoals,saveDevelopmentGoals} from '../lib/app/development-goals.js'
+import {vectorHistoryRows} from '../lib/profile/self-discovery-vector-history.mjs'
+import {emptyDevelopmentVectors} from '../lib/profile/development-vectors.mjs'
 import { createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession } from '../lib/app/client-session-save-flow.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
@@ -2699,4 +2702,39 @@ test('Reiki verified registration creates a single operational CRM contact; pres
     if(previousOwner!==undefined)await db.query('update app.practitioners set trusted_auth_user_id=$2 where id=$1',[PRACTITIONER_ID,previousOwner])
     await db.end()
   }
+})
+
+// Exercise the actual app transaction and encryption, not a fake repository.
+test('Self Discovery history: old baseline, equal retest, CAS, isolation and account cascade',async()=>{
+ const id=randomUUID(),session=randomUUID(),who=actor(id,session),db=await adminClient()
+ try{
+  await db.query('insert into auth.users(id,email) values($1,$2)',[id,'discovery-'+id+'@example.invalid'])
+  await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])
+  await repo.ensureAccount(who)
+  await repo.onboarding(who,{adult:true,necessary:true,marketing:false,displayName:'Synthetic discovery',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+  const initial=(await readDevelopmentGoals(config,who)).goals
+  const vectors=emptyDevelopmentVectors()
+  vectors.outer.ratings.body_health={current:0,desired:8,source:'self',recordedAt:'2026-11-01T12:00:00.000Z'}
+  // Legacy pre-release baseline without a history row.
+  const original={...initial,vectors}
+  await rawAs(who,'hh_app_backend',d=>d.query('insert into app_private.development_goals(account_id,targets_ciphertext,revision) values($1,$2,1)',[id,seal(original,{accountId:id,recordId:id,field:'development.goals'},config)]))
+  assert.equal((await readDevelopmentGoals(config,who,{includeHistory:true})).vectorHistory.length,1)
+  const next=structuredClone(vectors)
+  next.outer.ratings.body_health={...next.outer.ratings.body_health,current:6,recordedAt:'2026-11-08T12:00:00.000Z'}
+  const saved=await saveDevelopmentGoals(config,who,{...initial,vectors:next,revision:1})
+  const same=structuredClone(next);same.outer.ratings.body_health.recordedAt='2026-11-15T12:00:00.000Z'
+  const race=await Promise.allSettled([1,2].map(()=>saveDevelopmentGoals(config,who,{...initial,vectors:same,revision:saved.revision})))
+  assert.equal(race.filter(v=>v.status==='fulfilled').length,1)
+  assert.equal(race.find(v=>v.status==='rejected').reason.code,'DEVELOPMENT_GOALS_CONFLICT')
+  const archived=await readDevelopmentGoals(config,who,{includeHistory:true})
+  assert.deepEqual(vectorHistoryRows(archived.vectorHistory,'outer','body_health').map(v=>v.current),[0,6,6])
+  assert.equal((await readDevelopmentGoals(config,who)).vectorHistory,undefined)
+  const raw=(await db.query('select payload_ciphertext from app_private.development_vector_history where account_id=$1',[id])).rows
+  assert.equal(raw.length,3);assert.ok(raw.every(v=>!v.payload_ciphertext.includes('body_health')))
+  assert.equal((await rawAs(b,'hh_app_backend',d=>d.query('select id from app_private.development_vector_history where account_id=$1',[id]))).rowCount,0)
+  await assert.rejects(rawAs(b,'hh_app_backend',d=>d.query('insert into app_private.development_vector_history values($1,$2,99,$3,now())',[randomUUID(),id,'synthetic'])),{code:'42501'})
+  await assert.rejects(rawAs(who,'hh_app_backend',d=>d.query('update app_private.development_vector_history set payload_ciphertext=$1 where account_id=$2',['synthetic',id])),{code:'42501'})
+  await db.query('delete from app.accounts where id=$1',[id])
+  assert.equal((await db.query('select id from app_private.development_vector_history where account_id=$1',[id])).rowCount,0)
+ }finally{await db.end()}
 })
