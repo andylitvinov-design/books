@@ -34,6 +34,7 @@ test('archive report distinguishes exact client evidence from independent semant
  assert.equal(archiveReviewStoredVerdict(c,valid).verdict,'MATCH')
  assert.equal(archiveReviewStoredVerdict(c,{...valid,binding:{...valid.binding,revision:9}}),null)
  assert.equal(archiveReviewStoredVerdict(c,{...valid,evidence:[{turnId:'t:1',quote:'forged'}]}),null)
+ for(const bad of [{...valid,binding:null},{...valid,binding:{...valid.binding,unexpected:'x'}},{...valid,informationType:'invalid'},{...valid,reasonCode:'unrelated'},{...valid,clarificationIntent:'clarify_missing'},{...valid,evidence:[...valid.evidence,...valid.evidence]}])assert.equal(archiveReviewStoredVerdict(c,bad),null)
  const checked=archiveQualityProjection(p,[{fieldId:'goal',state:'reviewed',verdict:'MATCH'}],true)
  assert.equal(checked.semanticReviewed,1);assert.equal(checked.qualityScore,null)
  assert.equal(archiveQualityProjection(p,[{fieldId:'goal',state:'revoked'}],false).semanticReviewed,0)
@@ -51,4 +52,5 @@ test('live advisory binds only current persisted typed candidate and rejects sta
  assert.equal(liveSupervisorCandidate({...state,protocol:{...state.protocol,turns:[...state.protocol.turns,{role:'user',content:'Да'}]}},'review1'),null)
  assert.equal(liveSupervisorCandidate({...state,courseGate:{...state.courseGate,paused:true}},'review1'),null)
  assert.equal(liveSupervisorAdvisory(state,{...v,evidence:[{turnId:'t:1',quote:'fabricated'}]}),null)
+ for(const bad of [{...v,binding:{reviewId:'review1'}},{...v,binding:{...v.binding,unexpected:'x'}},{...v,version:'unknown'},{...v,informationType:'invalid'},{...v,reasonCode:'sufficient'},{...v,clarificationIntent:'confirm_literal'},{...v,evidence:[...v.evidence,...v.evidence]}])assert.equal(liveSupervisorAdvisory(state,bad),null)
 })
