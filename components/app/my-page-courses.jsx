@@ -16,6 +16,7 @@ function courseView(c,locale,t){
  const root='/'+locale,appRoot='/'+(locale==='es'?'en':locale)+'/app'
  const fallback=c.done===null||c.total===null?'':c.done+'/'+c.total
  switch(c.kind){
+  case 'self-discovery':return {title:'Self Discovery',detail:[fallback?fallback+' '+({en:'tests explored',ru:'тестов исследовано',es:'pruebas exploradas'}[locale]):'',c.axes+'/16 '+({en:'axes measured',ru:'осей измерено',es:'ejes medidos'}[locale])].filter(Boolean).join(' · '),href:root+'/app/daybook/self-discovery?theme=all&view=results',Icon:BookOpen}
   case 'growth':return {title:t[c.presetId]||t.growth,detail:fallback?fallback+' '+t.lessons:'',href:appRoot+'/course?view=courses&courseId='+encodeURIComponent(c.id),Icon:BookOpen}
   case 'reiki':return {title:t.reiki,detail:fallback?t.slides+' · '+fallback:'',href:root+'/academy/principles-of-energywork/learn'+(c.slideId?'?slide='+encodeURIComponent(c.slideId):''),Icon:Flower2}
   case 'business':return {title:t.business,detail:fallback+' '+t.days,href:root+'/app/daybook/business',Icon:Briefcase}
@@ -66,11 +67,12 @@ export default function MyPageCourses({locale='en',accountId}){
     return <Link key={c.key} href={view.href} prefetch={false} className={styles.row} data-my-page-course={c.kind}>
      <span className={styles.icon}><Icon size={22} aria-hidden="true"/></span>
      <span className={styles.description}><strong>{view.title}</strong>{view.detail&&<small>{view.detail}</small>}<span className={styles.action}>{c.state==='saved'?t.review:t[c.state]}<ArrowRight size={14} aria-hidden="true"/></span></span>
-     <ProgressRing percent={c.percent} label={view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:t.progress)} unknown={t.unknown}/>
+     <ProgressRing percent={c.percent} label={view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:c.kind==='self-discovery'?({en:'Test catalogue coverage',ru:'Охват каталога тестов',es:'Cobertura del catálogo'}[lang]):t.progress)} unknown={t.unknown}/>
     </Link>
    })}</div>:!current.partial&&<p className={profileStyles.empty}>{t.empty}</p>}
    {current.partial&&<div className={styles.notice} role="status">{t.partial} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></div>}
   </>}
+  {current&&!current.courses.some(c=>c.kind==='self-discovery')&&<Link href={'/'+lang+'/app/daybook/self-discovery'} prefetch={false} className={profileStyles.more} data-self-discovery-entry>Self Discovery · {({en:'Open',ru:'Открыть',es:'Abrir'})[lang]}<ArrowRight size={16} aria-hidden="true"/></Link>}
   <Link href={root+'/course?view=courses'} prefetch={false} className={profileStyles.more}>{t.all}<ArrowRight size={16} aria-hidden="true"/></Link>
  </section>
 }

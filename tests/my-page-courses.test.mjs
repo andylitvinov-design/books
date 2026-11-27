@@ -14,3 +14,13 @@ test('independent coaching runs use total server time and do not show ready unst
  assert.deepEqual(summarizeClarityRuns(runs).map(c=>[c.id,c.percent]),[['r1',50],['r3',100]])
  assert.equal(combineMyPageCourses([{key:'x',state:'closed'}],runs).at(0).id,'r1')
 })
+
+import {summarizeDiscoveryCoverage} from '../lib/app/my-page-courses.mjs'
+test('Self Discovery catalogue coverage is ongoing, private and based on actual measurements',()=>{
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:0,attempts:0}),null)
+ assert.deepEqual(summarizeDiscoveryCoverage({done:4,total:100,axes:8,attempts:7}),{key:'self-discovery',kind:'self-discovery',state:'active',done:4,total:100,axes:8,percent:4})
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:1,attempts:0}).percent,0)
+ assert.equal(summarizeDiscoveryCoverage({done:100,total:100,axes:16,attempts:110}).state,'active')
+ assert.equal(summarizeDiscoveryCoverage({done:2,total:1,axes:0,attempts:2}),null)
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:1,axes:17,attempts:0}),null)
+})
