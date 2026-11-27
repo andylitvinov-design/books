@@ -4,9 +4,12 @@ import Link from 'next/link'
 import {ArrowLeft,ArrowRight,CalendarDays,ChevronDown,PlayCircle,Sparkles} from 'lucide-react'
 import {coachCourseLaunchHref} from '@/lib/coach-course-launch.mjs'
 import {COACH_COMPARISON_LOCALES,getCoachProgramComparison} from '@/lib/coach-program-comparison.mjs'
+import {CourseCartButton} from './commerce/course-cart-button'
+import {coachCourseOffer} from '@/lib/commerce/course-cart.mjs'
 import styles from './my-coach-program-comparison.module.css'
 
 function ComparisonCard({program:p,copy,lang}){
+ const paidOffer=coachCourseOffer(p.id,lang)
  return <details className={styles.card} data-coach-comparison-program={p.id} open={p.id==='clarity'}>
   <summary className={styles.summary}>
    <span className={styles.art} data-art={p.id} aria-hidden="true"/>
@@ -22,7 +25,7 @@ function ComparisonCard({program:p,copy,lang}){
    <ChevronDown className={styles.chevron} size={19} aria-hidden="true"/>
   </summary>
   <div className={styles.expanded}>
-   {p.id!=='clarity'&&<p className={styles.status}>{p.draft?copy.draft:copy.preview}</p>}
+   {p.id!=='clarity'&&!paidOffer&&<p className={styles.status}>{p.draft?copy.draft:copy.preview}</p>}
    <ol className={styles.sessions}>
     {p.rows.map((row,index)=><li key={index}>
      {p.id==='clarity'&&<span className={styles.sessionArt} data-session-art={index+1} aria-hidden="true"/>}
@@ -33,6 +36,7 @@ function ComparisonCard({program:p,copy,lang}){
     <Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.start} data-coach-comparison-launch={p.id}><PlayCircle size={21} aria-hidden="true"/><span>{copy.start}</span><ArrowRight size={20} aria-hidden="true"/></Link>
     <p className={styles.terms}>{copy.terms}</p>
    </>}
+   {paidOffer&&<CourseCartButton sku={paidOffer.id} locale={lang} className={styles.start}/>}
    {p.id!=='clarity'&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.programPreviewLink} data-coach-comparison-launch={p.id}>{({en:'View course & coaches',ru:'Курс и коучи',es:'Ver curso y coaches'})[lang]}<ArrowRight size={18} aria-hidden="true"/></Link>}
    {p.id==='health'&&<p className={styles.terms}>{copy.healthNote}</p>}
   </div>

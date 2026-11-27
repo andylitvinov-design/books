@@ -9,6 +9,8 @@ import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } 
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, restoreVideoCart, videoCartProduct, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
 import { VideoCartPayment } from "@/components/commerce/video-cart-payment";
+import { CourseCartPayment } from "@/components/commerce/course-cart-payment";
+import { useCourseCart } from "@/components/commerce/use-course-cart";
 import { buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquareCheckoutRedirect } from "@/lib/commerce/square-payment-links";
@@ -97,11 +99,12 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false, courseCheckoutEnabled=false }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
   paidVideoTrackingEnabled?: boolean;
+  courseCheckoutEnabled?: boolean;
   hostedPayPalLinks: Record<string, string>;
   stripeLinks: Record<string, string>;
   wiseEnabled: boolean;
@@ -116,6 +119,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
   const [videoCartCount, setVideoCartCount] = useState(0);
+  const courseCart=useCourseCart(true);
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderReceipt, setOrderReceipt] = useState<{ cartKey: string; referenceCode: string } | null>(null);
   const [method, setMethod] = useState<Method>(squareApiEnabled || Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : Object.keys(stripeLinks).length ? "stripe" : "interac");
@@ -321,11 +325,12 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}><ShoppingBasket size={16} aria-hidden="true" /> HOLISTIC HOUSE</p>
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount}</span>
+      <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount + courseCart.ids.length}</span>
     </div>
+    <CourseCartPayment locale={locale} ids={courseCart.ids} remove={id=>courseCart.change(id,false)} enabled={courseCheckoutEnabled} mixed={Boolean(chosen.length||videoCartCount)} />
     <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} trackingEnabled={paidVideoTrackingEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
-      !chosen.length && !videoCartCount ? <div className={styles.empty} data-cart-empty>
+      !chosen.length && !videoCartCount && !courseCart.ids.length ? <div className={styles.empty} data-cart-empty>
         <p role="status">{t.empty}</p><span className={styles.emptyHint}>{t.emptyHint}</span>
         <div className={styles.suggestions} aria-label={t.choose}>
           {products.map(product => <article key={product.id} className={styles.suggestion}>

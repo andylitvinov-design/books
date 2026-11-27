@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PersonalCart } from "@/components/commerce/personal-cart";
+import { courseCheckoutEnabled } from "@/lib/commerce/course-cart.mjs";
 import { getCommerceConfig } from "@/lib/commerce/config";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
@@ -31,7 +32,7 @@ export default async function CartPage({ params }: Props) {
   const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
-    <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
+    <PersonalCart locale={locale} courseCheckoutEnabled={courseCheckoutEnabled()} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
       squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
       squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
       hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()}
