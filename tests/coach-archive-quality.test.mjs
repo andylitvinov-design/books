@@ -39,3 +39,16 @@ test('archive report distinguishes exact client evidence from independent semant
  assert.equal(archiveQualityProjection(p,[{fieldId:'goal',state:'revoked'}],false).semanticReviewed,0)
  assert.equal(JSON.stringify(p),original)
 })
+
+import {liveSupervisorCandidate,liveSupervisorAdvisory} from '../lib/coaching/coach-live-supervisor-binding.mjs'
+test('live advisory binds only current persisted typed candidate and rejects stale or changed drafts',()=>{
+ const p=fixture(),q=p.turns[0].content,a=p.turns[1].content,e=p.turns[2].content
+ const state={protocol:{...p,provenance:'client_autosaved_unreviewed_draft',turns:p.turns.slice(0,3)},revision:5,courseSessionId:p.courseSessionId,courseGate:{paused:false,prompt:{kind:'confirm',fieldId:'goal',questionId:'q:1',text:e,turnIndex:2},gate:{sessionId:id,courseSessionId:p.courseSessionId,pending:{phase:'awaiting_echo',fieldId:'goal',questionId:'q:1',deliveryId:'display:0',candidate:{sourceId:'t:1',quote:a}},history:[{type:'issue',fieldId:'goal',questionId:'q:1'},{type:'delivery',fieldId:'goal',questionId:'q:1',deliveryId:'display:0',final:true},{type:'answer',fieldId:'goal',questionId:'q:1',deliveryId:'display:0',turnId:'t:1',text:a,final:true}]}}}
+ const c=liveSupervisorCandidate(state,'review1');assert.ok(c);assert.equal(c.revision,5);assert.equal(c.question,q)
+ const v=validateSupervisorVerdict(prepareSupervisorCandidate(c),{reviewId:'review1',fieldId:'goal',verdict:'PARTIAL',informationType:'goal',reasonCode:'incomplete',evidence:[{turnId:'t:1',quote:a}]})
+ assert.equal(liveSupervisorAdvisory(state,v).intent,'clarify_missing')
+ assert.equal(liveSupervisorAdvisory({...state,revision:6},v),null)
+ assert.equal(liveSupervisorCandidate({...state,protocol:{...state.protocol,turns:[...state.protocol.turns,{role:'user',content:'Да'}]}},'review1'),null)
+ assert.equal(liveSupervisorCandidate({...state,courseGate:{...state.courseGate,paused:true}},'review1'),null)
+ assert.equal(liveSupervisorAdvisory(state,{...v,evidence:[{turnId:'t:1',quote:'fabricated'}]}),null)
+})

@@ -20,7 +20,7 @@ async function handle(request,write){
   let result
   if(write){
    const input=validateArchiveQualityRequest(await readBody(request,2048))
-   await consumeRate(config,{op:'coach-archive-quality-write',actor:actor.id},30,3600)
+   await consumeRate(config,{op:input.action==='revoke'?'coach-archive-quality-revoke':'coach-archive-quality-write',actor:actor.id},input.action==='revoke'?120:30,3600)
    result=input.action==='review'?await runCoachArchiveQuality(config,actor,input):await revokeCoachArchiveQuality(config,actor,input)
   }else{
    const p=new URL(request.url).searchParams
