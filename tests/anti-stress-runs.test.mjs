@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import {createAntiStressCourseClock,validateAntiStressCourseClock} from '../lib/coaching/anti-stress-clock.mjs'
 import {ANTI_STRESS_SESSION_IDS} from '../lib/coaching/coach-program-mode.mjs'
-import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact,expireAntiStressRunObservation,antiStressRunCredentialWindow} from '../lib/coaching/anti-stress-runs.mjs'
+import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact,expireAntiStressRunObservation,antiStressRunCredentialWindow,assertAntiStressCredentialEvent} from '../lib/coaching/anti-stress-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n=1,access='free')=>({id:id(n),protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0,access})
 function event(run,day,type,atMs,{seg=50,decision='start',coachId='mira',...extra}={}){
@@ -133,4 +133,19 @@ test('abandoned connection cannot credit lost time; remint is bounded by trusted
  run=tick(run,1,900000,600000,51)
  assert.equal(run.clock.days[0].status,'time_limit')
  assert.throws(()=>window(1500000,1500000),/CONFLICT/)
+})
+
+test('therapy clock and reviewed turns must belong to the current shared credential, never Clarity or an expired token',()=>{
+ const lease={programKind:'therapy',leaseId:id(90),courseRunId:id(1),protocolId:id(2),day:1,reservedAtMs:1000,possibleExpiresAtMs:901000}
+ const start={type:'begin',courseRunId:lease.courseRunId,protocolId:lease.protocolId,day:1,sessionId:ANTI_STRESS_SESSION_IDS[0],connectionId:lease.leaseId,atMs:1000,consent:{connectionId:lease.leaseId}}
+ const reject=/ANTI_STRESS_CREDENTIAL_EVENT_REJECTED/
+ assert.equal(assertAntiStressCredentialEvent(lease,start),true)
+ for(const wrong of [{courseRunId:id(3)},{protocolId:id(4)},{day:2},{sessionId:ANTI_STRESS_SESSION_IDS[1]},{connectionId:id(91)},{atMs:999},{atMs:901000},{consent:{connectionId:id(91)}},{type:'token_minted'}])assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,...wrong}),reject)
+ assert.throws(()=>assertAntiStressCredentialEvent({...lease,programKind:'clarity'},start),reject)
+ assert.throws(()=>assertAntiStressCredentialEvent({...lease,possibleExpiresAtMs:901001},start),reject)
+ assert.equal(assertAntiStressCredentialEvent(lease,{...start,type:'observe',atMs:901000}),true)
+ assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,type:'observe',atMs:901001}),reject)
+ assert.equal(assertAntiStressCredentialEvent(lease,{...start,kind:'review',atMs:901000}),true)
+ assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901001}),reject)
+ assert.equal(assertAntiStressCredentialEvent(lease,{...start,type:'disconnect',atMs:901001}),true)
 })

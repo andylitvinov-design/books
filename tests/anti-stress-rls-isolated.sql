@@ -60,9 +60,23 @@ do $$ begin
   raise exception 'Second free slot accepted';
  exception when unique_violation then null; end;
 end $$;
+-- Shared account reservation excludes both course types, with 15/20-minute caps.
+insert into app_private.clarity_live_credential_windows(account_id,lease_id,course_run_id,course_day,protocol_id,reserved_at_ms,possible_expires_at_ms,program_kind)
+ values(auth.uid(),'40000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',1,'30000000-0000-4000-8000-000000000001',1000,901000,'therapy');
+do $ declare n integer; begin
+ begin
+  update app_private.clarity_live_credential_windows set possible_expires_at_ms=901001;
+  raise exception 'Therapy credential over fifteen minutes';
+ exception when check_violation then null; end;
+ insert into app_private.clarity_live_credential_windows(account_id,lease_id,course_run_id,course_day,protocol_id,reserved_at_ms,possible_expires_at_ms,program_kind)
+ values(auth.uid(),'40000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002',1,'30000000-0000-4000-8000-000000000003',2000,1202000,'clarity')
+ on conflict(account_id) do update set lease_id=excluded.lease_id,course_run_id=excluded.course_run_id,course_day=excluded.course_day,protocol_id=excluded.protocol_id,reserved_at_ms=excluded.reserved_at_ms,possible_expires_at_ms=excluded.possible_expires_at_ms,program_kind=excluded.program_kind where clarity_live_credential_windows.possible_expires_at_ms<=excluded.reserved_at_ms;
+ get diagnostics n=row_count;
+ if n<>0 then raise exception 'Overlapping Clarity credential accepted'; end if;
+end $;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002"}',false);
 do $$ declare n integer; begin
- if exists(select 1 from app_private.anti_stress_runs) or exists(select 1 from app_private.anti_stress_sessions) or exists(select 1 from app_private.coaching_free_session_days) then raise exception 'Cross-account disclosure'; end if;
+ if exists(select 1 from app_private.anti_stress_runs) or exists(select 1 from app_private.anti_stress_sessions) or exists(select 1 from app_private.coaching_free_session_days) or exists(select 1 from app_private.clarity_live_credential_windows) then raise exception 'Cross-account disclosure'; end if;
  update app_private.anti_stress_sessions set meditation_ciphertext='other account';
  get diagnostics n=row_count;
  if n<>0 then raise exception 'Cross-account update'; end if;
@@ -87,6 +101,6 @@ end $$;
 reset role;
 delete from app.accounts where id='10000000-0000-4000-8000-000000000001';
 do $$ begin
- if exists(select 1 from app_private.anti_stress_runs) or exists(select 1 from app_private.anti_stress_sessions) or exists(select 1 from app_private.coaching_free_session_days) then raise exception 'Account deletion did not cascade'; end if;
+ if exists(select 1 from app_private.anti_stress_runs) or exists(select 1 from app_private.anti_stress_sessions) or exists(select 1 from app_private.coaching_free_session_days) or exists(select 1 from app_private.clarity_live_credential_windows) then raise exception 'Account deletion did not cascade'; end if;
 end $$;
 select 'ANTI_STRESS_RLS_SYNTHETIC_PASS' as result;
