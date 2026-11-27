@@ -1487,6 +1487,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           ...(requestedSavedContext?{
             memoryStageToken:stagedMemory.stageToken,memorySharePrior,
             memoryShareGoals,memoryShareTests,
+            ...(memorySharePrior&&memoryProvider==='groq'&&stagedMemory?.shareReviewedFields===true?{memoryShareReviewedFields:true}:{}),
             ...(sessionToken?{contextSessionToken:sessionToken}:{}),
           }:{}),
           ...(selectedGeminiEngine?{
