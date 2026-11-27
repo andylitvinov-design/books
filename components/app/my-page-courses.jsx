@@ -20,6 +20,7 @@ function courseView(c,locale,t){
   case 'reiki':return {title:t.reiki,detail:fallback?t.slides+' · '+fallback:'',href:root+'/academy/principles-of-energywork/learn'+(c.slideId?'?slide='+encodeURIComponent(c.slideId):''),Icon:Flower2}
   case 'business':return {title:t.business,detail:fallback+' '+t.days,href:root+'/app/daybook/business',Icon:Briefcase}
   case 'clarity':return {title:t.clarity+' · '+t.run+' '+c.ordinal,detail:[c.day?t.session+' '+c.day+'/3':'',t.time+' '+Math.floor(c.done/60000)+'/60 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/daybook?program=clarity',Icon:MessageCircle}
+  case 'therapy':return {title:t.antistress+' · Therapy',detail:[c.day?t.session+' '+c.day+'/3':'',Math.floor(c.done/60000)+'/45 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/my-coaching-plan?tab=reports&antiStressRun='+encodeURIComponent(c.id),Icon:Flower2}
   case 'legacy':return {title:c.group==='clarity'?t.legacyClarity:t[c.group]||t.coach,detail:t.saved+' · '+c.done,href:c.group==='goal'?root+'/app/daybook?start=vector':c.group==='clarity'?root+'/app/daybook?program=clarity':root+'/my-coach',Icon:c.group==='goal'?Target:MessageCircle}
   default:return null
  }
