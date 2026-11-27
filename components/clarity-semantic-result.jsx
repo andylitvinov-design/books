@@ -1,9 +1,9 @@
 // Shared client-visible semantic projection: no inferred scores or AI calls.
 import {claritySemanticResult} from '@/lib/coaching/clarity-session-fields.mjs'
 const copy={
- en:{outer:'Wheel of life',inner:'Meaning axes & inner resources',dream:'My inspiring dream',current:'Current',desired:'Desired',missing:'Not recorded',self:'Independent answer',coach:'Reviewed protocol',hint:'Self-ratings, not a diagnosis.',dreamEmpty:'Your dream is not recorded yet.'},
- ru:{outer:'Колесо жизненного баланса',inner:'Оси смысла и внутренние ресурсы',dream:'Моя вдохновляющая мечта',current:'Сейчас',desired:'Желаемое',missing:'Нет ответа',self:'Самостоятельный ответ',coach:'Подтверждено в протоколе',hint:'Самооценки, не диагноз.',dreamEmpty:'Образ мечты пока не записан.'},
- es:{outer:'Rueda de la vida',inner:'Ejes de sentido y recursos internos',dream:'Mi sueño inspirador',current:'Actual',desired:'Deseado',missing:'Sin respuesta',self:'Respuesta autónoma',coach:'Protocolo revisado',hint:'Autoevaluaciones, no un diagnóstico.',dreamEmpty:'Todavía no has registrado tu sueño.'}
+ en:{support:'My Support & Energy Plan',goal:'My Goal & Personal Guidance',outer:'Wheel of life',inner:'Meaning axes & inner resources',dream:'My inspiring dream',current:'Current',desired:'Desired',missing:'Not recorded',self:'Independent answer',coach:'Reviewed protocol',hint:'Self-ratings, not a diagnosis.',dreamEmpty:'Your dream is not recorded yet.'},
+ ru:{support:'Моя карта поддержки и ресурсов',goal:'Моя цель и первые шаги',outer:'Колесо жизненного баланса',inner:'Оси смысла и внутренние ресурсы',dream:'Моя вдохновляющая мечта',current:'Сейчас',desired:'Желаемое',missing:'Нет ответа',self:'Самостоятельный ответ',coach:'Подтверждено в протоколе',hint:'Самооценки, не диагноз.',dreamEmpty:'Образ мечты пока не записан.'},
+ es:{support:'Mi plan de apoyo y energía',goal:'Mi meta y orientación personal',outer:'Rueda de la vida',inner:'Ejes de sentido y recursos internos',dream:'Mi sueño inspirador',current:'Actual',desired:'Deseado',missing:'Sin respuesta',self:'Respuesta autónoma',coach:'Protocolo revisado',hint:'Autoevaluaciones, no un diagnóstico.',dreamEmpty:'Todavía no has registrado tu sueño.'}
 }
 const point=(i,score)=>[110+score*8*Math.cos(-Math.PI/2+i*Math.PI/4),110+score*8*Math.sin(-Math.PI/2+i*Math.PI/4)]
 const color={current:'#427969',desired:'#b18a51'}
