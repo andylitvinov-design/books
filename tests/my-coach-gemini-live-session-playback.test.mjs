@@ -572,6 +572,7 @@ test('socket rollover drains a completed reply and resumes the original credenti
   assert.equal(sockets[1].url,sockets[0].url)
   assert.equal(sent.at(-1).setup.sessionResumption.handle,'prior-handle')
   assert.equal(sent.at(-1).setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Orus')
+  assert.equal(sent.at(-1).setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs,900)
   assert.equal(r.audioGate.blocked,false)
   assert.equal(stops,0)
   r.resumeHandle=null
