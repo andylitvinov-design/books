@@ -291,7 +291,7 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
+ assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang,greetingIdentity.name)'))
  assert.ok(ui.includes('coachSessionOpeningAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
