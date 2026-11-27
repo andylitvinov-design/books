@@ -145,7 +145,10 @@ test('therapy clock and reviewed turns must belong to the current shared credent
  assert.throws(()=>assertAntiStressCredentialEvent({...lease,possibleExpiresAtMs:901001},start),reject)
  assert.equal(assertAntiStressCredentialEvent(lease,{...start,type:'observe',atMs:901000}),true)
  assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,type:'observe',atMs:901001}),reject)
- assert.equal(assertAntiStressCredentialEvent(lease,{...start,kind:'review',atMs:901000}),true)
- assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901001}),reject)
+ const {type,day,consent,...scope}=start
+ assert.equal(assertAntiStressCredentialEvent(lease,{...scope,kind:'review',atMs:901000},{observation:true}),true)
+ assert.throws(()=>assertAntiStressCredentialEvent(lease,{...scope,kind:'turn',atMs:901001},{observation:true}),reject)
+ assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901000}),reject)
+ assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901000},{observation:true}),reject)
  assert.equal(assertAntiStressCredentialEvent(lease,{...start,type:'disconnect',atMs:901001}),true)
 })
