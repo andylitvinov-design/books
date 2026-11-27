@@ -88,3 +88,11 @@ test('personal meditation is based on explicitly confirmed tried resource only',
  assert.ok(antiStressScenario(ANTI_STRESS_SESSION_IDS[1]).fields.some(f=>f.id==='calm_steps'))
  assert.ok(antiStressScenario(ANTI_STRESS_SESSION_IDS[2]).fields.some(f=>f.id==='low_energy_option'))
 })
+
+test('meditation uses only confirmed optional sensory details, quality and phrase',()=>{
+ const base=[row('practice_consent','accepted'),row('practice_status','attempted'),row('resource_kind','imagery'),row('resource_selected','quiet shore'),row('resource_response','comfortable'),row('meditation_consent','accepted'),row('resource_details','warm stone'),row('resource_quality','steadiness'),row('resource_phrase','I can rest',{reviewed:false})]
+ const m=antiStressResult(id,base).meditation
+ assert.match(m.body,/warm stone/);assert.match(m.body,/steadiness/);assert.ok(!m.body.includes('I can rest'))
+ assert.deepEqual(m.sourceFieldIds,['resource_selected','resource_details','resource_quality'])
+ assert.deepEqual(m.sourceEvidenceIds,['verified-resource_selected','verified-resource_details','verified-resource_quality'])
+})

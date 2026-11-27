@@ -14,6 +14,9 @@ export default function AntiStressResult({result,locale='en'}){
  if(!result||result.programType!=='therapy')return null
  const t=copy[locale]||copy.en
  const rows=[[t.signal,result.signalOrNeed],[t.resource,result.chosenResource],[t.observation,result.observation],[t.carryover,result.carryover],[t.status,t.states[result.practiceStatus]]]
+ const planLabels=({en:['My regulation sequence','Alternative or stop rule','Available resources','Daily practice cue','Smallest fallback','When to seek support'],ru:['Моя последовательность','Запасной вариант или остановка','Доступные ресурсы','Момент ежедневной практики','Минимальный запасной вариант','Когда обратиться за поддержкой'],es:['Mi secuencia','Alternativa o parada','Recursos disponibles','Momento de práctica diaria','Alternativa mínima','Cuándo buscar apoyo']}[locale]||['My regulation sequence','Alternative or stop rule','Available resources','Daily practice cue','Smallest fallback','When to seek support'])
+ if(result.calmPlan)rows.push([planLabels[0],result.calmPlan.steps],[planLabels[1],result.calmPlan.fallback])
+ if(result.resourcePlan)rows.push([planLabels[2],result.resourcePlan.availableResources],[planLabels[3],result.resourcePlan.dailyCue],[planLabels[4],result.resourcePlan.fallback],[planLabels[5],result.resourcePlan.supportThreshold])
  return <section className={styles.card} data-anti-stress-result lang={copy[locale]?locale:'en'}>
   <h3>{result.skill}</h3>
   <h4>{t.stress}</h4><Rating label={t.before} value={result.stress?.before} missing={t.missing}/><Rating label={t.after} value={result.stress?.after} missing={t.missing}/>
