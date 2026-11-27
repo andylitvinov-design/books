@@ -34,6 +34,13 @@ test('the build pins only authorized scripts, preserves the public React documen
     assert.equal(result.buildId, 'exact-build');
     assert.equal(gunzipSync(Buffer.from(result.gzip, 'base64')).toString(), result.html);
     assert.equal(result.portrait, '/images/holistic-house/hero.webp');
+    const heroPreload = '<link rel="preload" as="image" fetchpriority="high" href="/images/holistic-house/hero.webp">';
+    const lateSource = source.replace(heroPreload, '').replace('</head>', heroPreload + '</head>');
+    const late = await compilePublicDocument({...options, source: lateSource});
+    assert.ok(late.html.indexOf(heroPreload) < late.html.indexOf('<style data-home-critical-css="">'));
+    assert.equal(late.html.split(heroPreload).length - 1, 1);
+    assert.equal(result.html.split(heroPreload).length - 1, 1);
+    assert.equal(late.policy, result.policy);
     assert.ok(result.html.includes('integrity="' + hash('self.started=true') + '"'));
     assert.ok(result.policy.includes("'" + hash('self.initial=""') + "'"));
     assert.ok(result.policy.includes("object-src 'none'; base-uri 'none'; frame-ancestors 'none'"));

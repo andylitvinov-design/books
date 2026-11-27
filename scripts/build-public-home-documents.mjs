@@ -81,6 +81,7 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   let firstStylesheet;
   let portrait;
   const highPriorityImages = new Set();
+  const highPriorityPreloads = [];
   let documentLocale;
   let foundHome = false;
   let foundHeading = false;
@@ -108,7 +109,10 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
       }
     }
     if (node.tagName !== 'link') continue;
-    if (attrs.rel === 'preload' && attrs.as === 'image' && attrs.fetchpriority === 'high') highPriorityImages.add(attrs.href);
+    if (attrs.rel === 'preload' && attrs.as === 'image' && attrs.fetchpriority === 'high') {
+      highPriorityImages.add(attrs.href);
+      if (node.parentNode?.tagName === 'head' && loc) highPriorityPreloads.push({href: attrs.href, loc});
+    }
     if (attrs.rel === 'preload' && attrs.as === 'script') {
       // The same script is already in this head with its integrity attribute.
       edits.push([loc.startOffset, loc.endOffset, '']);
@@ -146,7 +150,17 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
   const headEnd = source.indexOf('</head>');
   // Put critical rules before every original sheet, so later state changes
   // always obey the full production cascade.
-  edits.push([firstStylesheet, firstStylesheet, '<style data-home-critical-css="">' + css + '</style>']);
+  // The inlined CSS can be tens of KB. Preserve the renderer's exact portrait
+  // preload tag, but discover it before those bytes on a cold connection.
+  // Only relocate an existing head link; never alter a React body boundary.
+  const portraitPreloads = highPriorityPreloads.filter(item => item.href === portrait);
+  let earlyPortrait = '';
+  if (portraitPreloads.length === 1 && portraitPreloads[0].loc.startOffset > firstStylesheet) {
+    const {loc} = portraitPreloads[0];
+    earlyPortrait = source.slice(loc.startOffset, loc.endOffset);
+    edits.push([loc.startOffset, loc.endOffset, '']);
+  }
+  edits.push([firstStylesheet, firstStylesheet, earlyPortrait + '<style data-home-critical-css="">' + css + '</style>']);
   edits.push([headEnd, headEnd, '<script>' + restoreStyles + '</script>']);
   const policy = csp.replace("'nonce-" + nonce + "'", [...hashes].map(h => "'" + h + "'").join(' '));
   if (policy.includes(nonce) || policy.length > 12_000) throw new Error('Invalid static script policy');
