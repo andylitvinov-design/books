@@ -276,7 +276,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setSelectedKeys([entry.key])
     setSimpleSelectionChanged(true)
     setAvailability('available')
-    setFocus([entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
+    setFocus(new URLSearchParams(window.location.search).get('from') === 'self-discovery' ? [] : [entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
   }, [entries])
   // Reports → Test it: offer the exact rights-cleared questionnaire whose
   // scored dimension feeds this portrait axis. Preselect only; never start,

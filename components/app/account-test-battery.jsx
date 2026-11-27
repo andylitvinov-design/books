@@ -16,6 +16,7 @@ import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
 import { courseTestKeys, coursePendingKeys, groupCourseTestRows, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import styles from './account-test-battery.module.css'
+import {discoveryNavigation} from '@/lib/app/self-discovery-themes.mjs'
 
 const COPY = {
   en: {
@@ -132,6 +133,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const portraitAxis = rayParam && rayParam !== 'personality' && TEST_EXPLORER_AXES.includes(rayParam) ? rayParam : null
   const openFromInsights = searchParams.get('explore') === '1' || Boolean(portraitAxis)
   const fromCourse = searchParams.get('course') === '1'
+  const discovery = fromCourse ? null : discoveryNavigation(searchParams,locale)
   const requestedCourseId = searchParams.get('courseId') || null
   const accountId = data.account?.id
   const scopeKey = JSON.stringify([accountId, requestedCourseId])
@@ -325,7 +327,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.added)
       setExploring(false)
       setShowList(true)
-      router.replace(fromCourse ? courseHref({}, returnCourseId) : root + '/tests?plan=' + encodeURIComponent(created.id))
+      router.replace(fromCourse ? courseHref({}, returnCourseId) : root + '/tests?plan=' + encodeURIComponent(created.id) + (discovery?'&'+discovery.source:''))
     } catch (cause) {
       if (!isCurrent()) return
       if (cause.code === 'TEST_PLAN_CAPACITY') setError(c.capacity)
@@ -427,7 +429,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         // receive /advance from the runner unless the plan is active.
         : savedPlan.status === 'active' ? '&plan=' + encodeURIComponent(savedPlan.id) : ''
       setPlan(savedPlan)
-      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick' + query)
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick' + query + (!courseId&&discovery?'&'+discovery.source:''))
     } catch (cause) {
       if (!isCurrent()) return
       if (savedPlan) setPlan(savedPlan)
@@ -585,7 +587,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         currentPlan.definitionIds.includes(row.definition.id)
       if (!isCurrent()) return
       router.push(root + '/runs/' + encodeURIComponent(run.id) +
-        '?mode=quick' + (isPlanStep ? '&plan=' + encodeURIComponent(currentPlan.id) : ''))
+        '?mode=quick' + (isPlanStep ? '&plan=' + encodeURIComponent(currentPlan.id) : '') + (discovery?'&'+discovery.source:''))
     } catch (cause) {
       if (!isCurrent()) return
       setError(c.error + ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
@@ -613,12 +615,13 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup} initialAxis={portraitAxis}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
-          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id)+(discovery?'?'+discovery.source:''))}/>
         </>}
       </section>
   )
 
   return <>
+    {discovery&&<div className="hh-actions"><Link href={discovery.href} prefetch={false}>{locale==='ru'?'Вернуться в самопознание':locale==='es'?'Volver a Autoconocimiento':'Back to Self Discovery'}</Link></div>}
     {profileCompletion && <section className={styles.profileCompletion}
       aria-labelledby="hh-profile-missing-tests-title" data-testid="profile-missing-tests">
       <header className={styles.profileCompletionHeading}>
