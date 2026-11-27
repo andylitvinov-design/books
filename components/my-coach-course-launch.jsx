@@ -3,9 +3,8 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,PlayCircle} from 'lucide-react'
-import {PUBLIC_COACH_RAIL_IDS,getCoachPersona,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {PUBLIC_COACH_RAIL_IDS,getCoachPersona,localCoachText,coachSessionHref} from '@/lib/coaching/persona-registry.mjs'
 import {coachCourseLaunchHref,normalizeLaunchCoach} from '@/lib/coach-course-launch.mjs'
-import {ClarityStartLink} from './app/clarity-program'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import catalogStyles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
@@ -95,7 +94,7 @@ export default function MyCoachCourseLaunch({launch,initialCoach='mira'}){
      <SessionProgressRing progress={progress} lang={lang}/>
      <div className={heroStyles.stageGreeting}><h2>{name}</h2><p>{selected.id==='mira'?copy.mira:localCoachText(selected.role,lang)}</p></div>
      <div className={[heroStyles.stageActions,styles.action].join(' ')}>
-      {course.available&&course.id==='clarity'?<ClarityStartLink locale={lang} coachId={selected.id} className={[heroStyles.talkButton,styles.start].join(' ')}><PlayCircle size={22} aria-hidden="true"/><span>{(progress&&!progress.complete&&(progress.percent>0||progress.session>1)?progressWords[lang].resume.replace('{session}',progress.session):copy.start).replace('{name}',name)}</span><ArrowRight size={19} aria-hidden="true"/></ClarityStartLink>:paidOffer?<CourseCartButton sku={paidOffer.id} locale={lang} className={[heroStyles.talkButton,styles.start].join(' ')}/>:<p className={styles.unavailable} role="status">{copy.unavailable}</p>}
+      {course.available&&course.id==='clarity'?<Link href={coachSessionHref(lang,selected.id)+'&greetingProgram='+encodeURIComponent(course.id)} data-course-greeting-start data-course-selected-coach={selected.id} prefetch={false} className={[heroStyles.talkButton,styles.start].join(' ')}><PlayCircle size={22} aria-hidden="true"/><span>{(progress&&!progress.complete&&(progress.percent>0||progress.session>1)?progressWords[lang].resume.replace('{session}',progress.session):copy.start).replace('{name}',name)}</span><ArrowRight size={19} aria-hidden="true"/></Link>:paidOffer?<CourseCartButton sku={paidOffer.id} locale={lang} className={[heroStyles.talkButton,styles.start].join(' ')}/>:<p className={styles.unavailable} role="status">{copy.unavailable}</p>}
      </div>
     </div>
     <div className={heroStyles.coachRailHeading}>

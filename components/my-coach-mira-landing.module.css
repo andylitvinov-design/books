@@ -495,7 +495,7 @@
 }
 .programPanel{
  position:relative;z-index:2;display:block;flex-shrink:0;min-width:0;
- width:fit-content;max-width:100%;align-self:center;padding:0;background:none;border:0;
+ width:fit-content;max-width:100%;align-self:center;margin:6px auto 0;padding:0;background:none;border:0;
 }
 .programActions{display:flex;justify-content:center;min-width:0}
 .programDetails{
@@ -532,11 +532,11 @@
 @media(max-width:540px){
  /* Reserve the first fold for the real coach picker and the raised AI dock.
     A minimum instead of a fixed height lets longer names/copy wrap safely. */
- .heroStage[data-my-coach-hero]{height:auto;min-height:clamp(208px,calc(100svh - 470px),350px);max-height:none;padding:9px 10px;gap:5px;border-radius:24px}
- .heroStage[data-my-coach-hero] .stageGreeting{margin:clamp(6px,2.8svh,22px) 0 0 4px;width:46%;max-width:46%}
+ .heroStage[data-my-coach-hero]{height:auto;min-height:clamp(228px,calc(100svh - 420px),465px);max-height:none;padding:9px 10px;gap:5px;border-radius:24px}
+ .heroStage[data-my-coach-hero] .stageGreeting{margin:clamp(16px,6.5svh,60px) 0 0 4px;width:43%;max-width:43%}
  .heroStage[data-my-coach-hero] .stageGreeting h2{font-size:clamp(26px,8vw,36px);margin-bottom:6px}
  .heroStage[data-my-coach-hero] .stageGreeting p{font-size:clamp(12px,3.2vw,14px);line-height:1.22}
- .heroStage[data-my-coach-hero] .stageActions{margin-bottom:0}
+  .heroStage[data-my-coach-hero] .stageActions{margin-bottom:clamp(15px,5.5svh,48px)}
  .heroStage[data-my-coach-hero] .stageActions :global([data-my-coach-mira-talk]){min-height:48px}
  .programPanel{max-width:100%}
  .programDetails{padding:5px 12px;gap:6px;font-size:clamp(12px,3.2vw,14px)}
@@ -545,7 +545,8 @@
 }
 @media(max-width:540px) and (max-height:740px){
  .heroHeading{padding-top:3px!important;padding-bottom:5px!important}
- .heroStage[data-my-coach-hero] .stageGreeting{margin-top:6px}
+  .heroStage[data-my-coach-hero] .stageGreeting{margin-top:clamp(8px,3svh,22px)}
+ .heroStage[data-my-coach-hero] .stageActions{margin-bottom:clamp(8px,3svh,22px)}
  .heroStage[data-my-coach-hero] .stageGreeting h2{font-size:clamp(25px,7.6vw,30px)}
  .stageGreeting h2::after{margin-top:6px}
  .coachRailHeading{margin:6px 2px 4px}
@@ -611,4 +612,32 @@
   background:linear-gradient(90deg,#20392e 0%,#20392e 30%,rgba(32,57,46,.55) 42%,transparent 55%),
    linear-gradient(0deg,rgba(15,31,24,.48),transparent 45%)!important;
  }
+}
+
+/* Final owner-approved catalog reference: large motion portrait, one in-card
+   conversation action, separate programs link, compact horizontal coach rail. */
+.landing .programPanel{margin:6px auto 0}
+.heroStage[data-my-coach-hero] .stageActions{margin-bottom:clamp(20px,5vw,56px)}
+.landing .programDetails{background:#fffaf2;border-color:#e7d9c3;box-shadow:0 4px 12px #4f392514}
+@media(max-width:540px){
+ .stickyHeader{min-height:54px!important}
+ .heroHeading{padding:1px 4px 5px!important}
+ .heroStage[data-my-coach-hero] .stageActions{margin-bottom:clamp(16px,5.5svh,48px)}
+ .coachRailHeading{margin:6px 2px 4px}
+ .coachRail{grid-auto-columns:minmax(68px,calc((100% - 24px)/5));gap:6px;padding:2px 1px 4px}
+ .railCard{padding:4px;min-width:0}
+ .railCard[aria-pressed=true]{padding:3px}
+ .railPortrait{height:clamp(54px,10svh,91px)!important;aspect-ratio:auto}
+ .railCard strong{font-size:clamp(11px,3.1vw,14px);overflow-wrap:anywhere}
+ .railCard small{font-size:clamp(9px,2.55vw,11px);line-height:1.16;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+}
+@media(max-width:540px) and (max-height:740px){
+ .heroStage[data-my-coach-hero] .stageActions{margin-bottom:clamp(8px,3svh,22px)}
+ .railPortrait{height:clamp(48px,8svh,60px)!important}
+ .coachRailHeading a{min-height:34px}
+ .railCard strong{line-height:1.1;margin:3px 1px 2px}
+ .railCard small{margin:0 1px 2px}
+}
+@media(max-width:355px){
+ .coachRail{grid-auto-columns:minmax(72px,calc((100% - 18px)/4))}
 }
