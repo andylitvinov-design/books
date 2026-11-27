@@ -1,0 +1,56 @@
+/* Owner-approved shared launch: reuse original coach media, hero and rail. */
+.page{min-height:100vh;width:100%;min-width:0;box-sizing:border-box;overflow-x:clip;color:#103d30;background:radial-gradient(ellipse at 10% 0,#fffaf1,transparent 50%),var(--hh-light-canvas,#fbf5e9);padding:0 14px calc(112px + env(safe-area-inset-bottom,0px))}
+.frame{max-width:790px;margin-inline:auto}
+.header{gap:6px}
+.back{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:#103f30;text-decoration:none;font:700 17px/1 Georgia,'Times New Roman',serif}
+.intro{display:grid;grid-template-columns:68px minmax(0,1fr);gap:13px;align-items:center;margin:7px 1px 17px}
+.courseArt{display:block;aspect-ratio:1;border-radius:17px;background:#fff4df center/cover no-repeat;box-shadow:0 3px 9px #6b49231a}
+.courseArt[data-course-art=clarity]{background-image:url('/images/holistic-house/messenger-zen-stones.svg');background-size:contain}
+.courseArt[data-course-art=business]{background-image:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.courseArt[data-course-art=love]{background-image:url('/images/holistic-house/magic-mirror-lotus.webp')}
+.courseArt[data-course-art=health]{background-image:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.intro>div{border-left:1px solid #dec695;padding-left:12px;min-width:0}
+.intro h1{font:700 clamp(25px,6.4vw,39px)/1.07 Georgia,'Times New Roman',serif;letter-spacing:-.035em;margin:0 0 5px;color:#103d30;text-wrap:balance}
+.intro p{font:500 clamp(12px,3.4vw,17px)/1.3 system-ui;margin:0;color:#48453e;text-wrap:pretty}
+.meet{font:700 clamp(24px,6vw,33px)/1.12 Georgia,'Times New Roman',serif;letter-spacing:-.02em;margin:0 0 13px;text-align:left;color:#103d30}
+.page .stage[data-my-coach-hero]{height:clamp(325px,64vw,490px);min-height:0;max-height:none;padding-bottom:16px}
+.page .stage[data-my-coach-hero] .action{margin-top:auto;margin-bottom:0;display:flex;flex-wrap:wrap;justify-content:center}
+.page .stage[data-my-coach-hero] .start{width:92%!important;max-width:580px;flex:0 1 92%;min-height:48px;gap:8px;padding:8px 13px}
+.start span{min-width:0;text-align:center;text-wrap:balance}
+.start svg{flex-shrink:0}
+.action>p{flex-basis:100%;text-align:center;color:#fff8e8;font-size:12px;margin:4px 0 0}
+.action>.unavailable{margin:0;width:92%;padding:13px;border:1px solid #d9bd7f;border-radius:18px;background:#213b30;color:#fff8e8}
+.all,.compare{display:inline-flex;align-items:center;justify-content:center;gap:6px;color:#103f30;background:#fffaf2;border:1px solid #d7bb83;border-radius:999px;font:700 13px/1.1 system-ui;padding:8px 12px;min-height:44px;cursor:pointer;text-decoration:none}
+.page [data-course-rail-expanded=true]{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-columns:auto;overflow:visible}
+.details{margin:32px 0 0;padding:20px 16px;background:#fffcf7;border:1px solid #e4d1ad;border-radius:22px;box-shadow:0 4px 14px #65481912}
+.details h2,.details h3{font:700 25px/1.1 Georgia,'Times New Roman',serif;color:#103d30;margin:0 0 9px}
+.details h3{font-size:21px;margin-top:17px}
+.details p{font:450 14px/1.42 system-ui;color:#514b41;margin:0 0 10px}
+.details ol{list-style:none;display:grid;gap:8px;margin:0 0 15px;padding:0}
+.details li{display:flex;align-items:flex-start;gap:10px;border:1px solid #e8d9bf;border-radius:13px;padding:10px}
+.details li strong{font:700 16px/1.24 Georgia,'Times New Roman',serif}
+.details li p{font-size:13px;margin:4px 0 0}
+.sessionNo{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:50%;background:#f8e8bd;color:#36503c;font:700 14px system-ui}
+.compare{width:100%;box-sizing:border-box}
+.page :is(a,button,select):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+:global(body):has(.page) :global([data-hh-ihelp-trigger]){display:none!important}
+:global(body):has(.page) :global([data-hh-unified-dock]){background:linear-gradient(145deg,#0b6246,#03372a)!important;border-color:#d4b16a!important}
+:global(body):has(.page) :global([data-hh-unified-dock] a){color:#fff8e8!important}
+:global(body):has(.page) :global([data-hh-unified-dock] a[aria-current=page]:not([data-unified-dock-item=ai])){background:#2a7753!important;color:#fff8e8!important}
+@media(max-width:540px){
+ .page .stage[data-my-coach-hero]{height:clamp(245px,67vw,320px);min-height:0;padding:13px 10px 10px}
+ .page .stage[data-my-coach-hero] .start{font-size:clamp(13px,3.75vw,17px);min-height:44px;padding-inline:8px}
+ .page .stage[data-my-coach-hero] .start svg{width:17px;height:17px}
+ .back{min-height:36px}
+ .intro{grid-template-columns:62px minmax(0,1fr);gap:10px;margin-top:6px}
+ .intro>div{padding-left:10px}
+ .all{min-height:38px;font-size:11px;padding:6px 8px;flex-shrink:0}
+ .details{margin-top:28px}
+}
+@media(max-width:355px){
+ .page{padding-inline:9px}
+ .intro{grid-template-columns:52px minmax(0,1fr)}
+ .intro h1{font-size:24px}
+ .page [data-course-rail-expanded=true]{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .page .stage[data-my-coach-hero]{height:245px}
+}

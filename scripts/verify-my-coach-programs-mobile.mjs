@@ -35,12 +35,25 @@ for(const engine of [chromium,webkit]){
      await card.locator('summary').click()
      assert.equal(await card.getAttribute('open'),null)
     }
-    assert.equal(await cards.first().locator('[data-clarity-start]').getAttribute('href'),'/'+lang+'/app/daybook?program=clarity')
+    assert.equal(await cards.first().locator('[data-coach-comparison-launch]').getAttribute('href'),'/'+lang+'/my-coach/programs/clarity')
+    await cards.first().locator('[data-coach-comparison-launch]').click()
+    await page.waitForURL('**/'+lang+'/my-coach/programs/clarity')
+    const launch=page.locator('[data-coach-course-launch="clarity"]')
+    await launch.waitFor()
+    assert.equal(await launch.locator('[data-my-coach-hero]').getAttribute('data-my-coach-hero'),'mira')
+    const merlin=launch.locator('[data-course-coach-choice="merlin"]')
+    await merlin.click()
+    assert.equal(await launch.locator('[data-my-coach-hero]').getAttribute('data-my-coach-hero'),'merlin')
+    assert.equal(await merlin.getAttribute('aria-pressed'),'true')
+    assert.equal(await launch.locator('[data-clarity-start]').getAttribute('data-course-selected-coach'),'merlin')
+    assert.equal(await launch.locator('[data-course-session-details] li').count(),3)
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+    await page.screenshot({path:out+'/launch-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
     // Protected real launch is checked with a synthetic signed-in account,
     // while intercepting the destination to avoid real account writes.
-    await page.route('**/api/app/bootstrap?view=portrait',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({account:{onboardingState:'active'}})}))
+    await page.route('**/api/app/bootstrap?view=portrait',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({account:{id:'12345678-1234-4234-8234-123456789012',onboardingState:'active'}})}))
     await page.route('**/'+lang+'/app/daybook?program=clarity',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>synthetic destination</p>'}))
-    await cards.first().locator('[data-clarity-start]').click()
+    await launch.locator('[data-clarity-start]').click()
     await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
    }finally{await ctx.close()}
   }
