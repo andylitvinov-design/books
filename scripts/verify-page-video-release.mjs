@@ -172,6 +172,20 @@ async function exercise(engine, browserType) {
       }
     }
     await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
+    if (await page.locator('[data-home-program-page]').count()) {
+      await expect(page.locator('[data-home-program-page]')).toHaveCount(1);
+      await expect(page.locator('[data-video-slot="home-intro"],[data-video-slot="home-presentation"],[data-home-intent-form]')).toHaveCount(0);
+      const menu=page.locator('[data-home-language-switch]');
+      await menu.locator('summary').click();
+      await menu.locator('a[lang="ru"]').click();
+      await expect(page).toHaveURL(origin+'/ru');
+      await expect(page.locator('[data-home-program-page][lang="ru"]')).toHaveCount(1);
+      await expect(page.locator('[data-video-slot="home-intro"],[data-video-slot="home-presentation"],[data-home-intent-form]')).toHaveCount(0);
+      assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
+      results.push({engine,retiredHomeIntroHidden:true,approvedRussianPresentation:null,russianPresentationStatus:"retired-owner-approved",programDiscovery:true,pageJavaScriptErrors:pageErrors});
+    } else {
+      assert.ok(live, 'Local Home must render the approved program discovery page');
+      // Older LIVE builds may still have the original Russian presentation.
     // Retired short AI intros remain hidden even after approving the new film.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0);
     const englishPresentation = page.locator('[data-video-slot="home-presentation"]');
@@ -197,6 +211,7 @@ async function exercise(engine, browserType) {
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
     results.push({ engine, retiredHomeIntroHidden: true, approvedRussianPresentation: russianPresentationVerified ? true : null, russianPresentationStatus: russianPresentationVerified ? "verified-click-to-iframe" : "skipped-live-slot-absent", pageJavaScriptErrors: pageErrors });
+    }
   } catch (error) {
     const geometry = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, className: String(el.className).slice(0,120), rect: el.getBoundingClientRect().toJSON() })).filter(item => item.rect.width > 1 && (item.rect.right > innerWidth + 2 || item.rect.left < -2)).slice(0,25) })).catch(() => null);
     await page.screenshot({ path: `${evidence}/${label}-six-videos-failed-${engine}.png`, fullPage: true }).catch(() => {});

@@ -66,7 +66,7 @@ async function run(script,{live=true,present=false,badIframe=false,hydrationRead
  const source=readFileSync(new URL(`../scripts/${script}`, import.meta.url), 'utf8');
  const pageScript=script==='verify-page-video-release.mjs';
  const start=pageScript?source.indexOf('    const approvedRussian ='):source.indexOf('  let russianPresentationVerified =')>=0?source.indexOf('  let russianPresentationVerified ='):source.indexOf("  for (const home of ['/', '/ru']) {");
- const end=pageScript?source.indexOf('  } catch (error)',start):source.indexOf('  // Regressions reported',start);
+ const end=pageScript?source.indexOf('\n    }\n  } catch (error)',start):source.indexOf('  // Regressions reported',start);
  assert.ok(start>=0&&end>start);
  let home='/ru',clicked=false,scrolled=false,hydrated=false;
  const results=[];
@@ -126,14 +126,33 @@ async function run(script,{live=true,present=false,badIframe=false,hydrationRead
  }
  return [...results, ...skippedResults];
 }
-for(const script of ['verify-page-video-release.mjs','verify-site-video-browser.mjs']) {
- test(`${script}: absent live slot must not claim RU verified`,async()=>{const r=await run(script);if(typeof r[0]==='object'){assert.equal(r[0].approvedRussianPresentation,null);assert.equal(r[0].russianPresentationStatus,'skipped-live-slot-absent')}else{assert.ok(r.some(x=>x.startsWith('SKIPPED:')));assert.ok(!r.some(x=>x.startsWith('PASS:')&&/RU presentation/.test(x)))}});
- test(`${script}: present slot reports only after click and exact iframe assertion`,async()=>{const r=await run(script,{present:true});assert.ok(r.some(x=>typeof x==='object'?x.approvedRussianPresentation===true:/PASS:.*RU presentation.*(?:verified|checked)/.test(x)))});
- test(`${script}: absent local slot remains failure`,async()=>{await assert.rejects(run(script,{live:false}))});
- test(`${script}: failed iframe remains failure, not success evidence`,async()=>{await assert.rejects(run(script,{present:true,badIframe:true}))});
-}
+// Legacy release verifier can still inspect the previous public deployment.
+// The new Home must instead explicitly prove the old slots are absent.
+const script='verify-page-video-release.mjs';
+test(`${script}: absent live slot must not claim RU verified`,async()=>{const r=await run(script);assert.equal(r[0].approvedRussianPresentation,null);assert.equal(r[0].russianPresentationStatus,'skipped-live-slot-absent')});
+test(`${script}: present slot reports only after click and exact iframe assertion`,async()=>{const r=await run(script,{present:true});assert.ok(r.some(x=>x.approvedRussianPresentation===true))});
+test(`${script}: absent local legacy slot remains failure`,async()=>{await assert.rejects(run(script,{live:false}))});
+test(`${script}: failed iframe remains failure, not success evidence`,async()=>{await assert.rejects(run(script,{present:true,badIframe:true}))});
 
-test('synthetic site-video reporter cannot pass before actual React hydration',async()=>{
-  await assert.rejects(run('verify-site-video-browser.mjs',{present:true,hydrationReady:false}),
-    /Next router is not hydrated/);
+test('site-video browser reports the retired slots only after real assertions on all three Home locales',async()=>{
+ const source=readFileSync(new URL('../scripts/verify-site-video-browser.mjs',import.meta.url),'utf8');
+ const start=source.indexOf("  for (const home of ['/?full=1','/ru?full=1','/es']) {");
+ const end=source.indexOf('  // Regressions reported',start);
+ assert.ok(start>=0&&end>start);
+ async function check({oldSlot=false,missingProgram=false,hydrated=true}={}){
+  const paths=[],passed=[];
+  const page={locator:selector=>selector,evaluate:async()=>hydrated};
+  const expect=selector=>({toHaveCount:async n=>{
+   const actual=selector.includes('data-home-program-page')?(missingProgram?0:1):(oldSlot?1:0);
+   assert.equal(actual,n)
+  }});
+  expect.poll=cb=>({toBe:async n=>assert.equal(await cb(),n)});
+  const fn=new AsyncFunction('page','expect','navigate','pass','live',source.slice(start,end));
+  await fn(page,expect,async path=>paths.push(path),label=>passed.push(label),false);
+  assert.deepEqual(paths,['/?full=1','/ru?full=1','/es']);
+  assert.deepEqual(passed,['Local: old Home video slots absent; program discovery visible']);
+ }
+ await check();
+ await assert.rejects(check({oldSlot:true}));
+ await assert.rejects(check({missingProgram:true}));
 });

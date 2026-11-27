@@ -254,7 +254,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     es: { label: 'Mi espacio', clarity: 'Exprés', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
   }[selected]
   const tabs = [
-    { id: 'clarity', title: homeDiscovery ? {en:'Clarity',ru:'Ясность',es:'Claridad'}[selected] : navigation.clarity, icon: Compass },
+    { id: 'clarity', title: navigation.clarity, icon: Compass },
     { id: 'goals', title: navigation.goal, icon: Target },
     { id: 'business', title: navigation.business, icon: BriefcaseBusiness },
   ]

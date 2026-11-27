@@ -12,7 +12,7 @@ export async function verifyProgramHome(page,{locale,width}){
  assert.deepEqual(await tabs.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-goal-profile-tab'))),['clarity','goals','business'])
  assert.equal(await tabs.first().getAttribute('aria-pressed'),'true')
  const titles=await tabs.evaluateAll(nodes=>nodes.map(n=>n.innerText.trim()))
- assert.deepEqual(titles,{en:['Clarity','My Goal','My Business'],ru:['Ясность','Моя цель','Мой бизнес'],es:['Claridad','Mi meta','Mi negocio']}[locale])
+ assert.deepEqual(titles,{en:['Express','My Goal','My Business'],ru:['Экспресс','Моя цель','Мой бизнес'],es:['Exprés','Mi meta','Mi negocio']}[locale])
  const bounds=await tabs.evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,right:r.right,y:r.y,width:r.width,height:r.height}}))
  assert.ok(bounds.every(r=>r.x>=-1&&r.right<=width+1&&r.y>=0&&r.y<700&&r.width>=44&&r.height>=44),label+': first-screen tabs '+JSON.stringify(bounds))
  const panels={clarity:'[data-profile-clarity-support]',goals:'[data-goal-program-landing]',business:'[data-profile-business]'}

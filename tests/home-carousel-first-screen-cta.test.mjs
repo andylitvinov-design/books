@@ -90,7 +90,7 @@ test("legacy carousel retains its service link; the new Home owns the first scre
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
  assert.match(browser,/verifyProgramHome/);
- assert.match(browser,/\["clarity","goal","business","reiki"\]\.entries\(\)/);
+ assert.match(browser,/\[\["clarity",3\],\["goal",8\],\["business",8\],\["reiki",5\]\]/);
  assert.match(read("scripts/verify-program-home.mjs"),/data-goal-profile-tab/);
  assert.match(entry,/data-home-intent-option=\{art\.id\}/);
  // The approved seven-slot dock now uses My Reiki; MyVideo lives in Profile.
