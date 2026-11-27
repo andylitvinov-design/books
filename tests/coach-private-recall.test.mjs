@@ -10,3 +10,9 @@ assert.equal(projectPrivateCoachRecall(null,null).kind,'none')
 assert.ok(!privateCoachRecallText(projectPrivateCoachRecall(reviewed,draft),'ru').includes('Invented conclusion'))
 assert.ok(privateCoachRecallText({kind:'unavailable'},'ru').includes('Не удалось'))
 assert.ok(privateCoachRecallText({kind:'none'},'ru').includes('нет предыдущего'))
+
+// A newer draft remains newer even when there are no safe quotable words.
+for(const turns of [[],null,{},[null,{role:'assistant',content:'Fabricated conclusion'},{role:'user',content:'My password is secret'},{role:'user',interim:true,content:'Unconfirmed partial words'}]]){
+ const newer={...draft,protocol:{...draft.protocol,turns}};
+ assert.deepEqual(projectPrivateCoachRecall(reviewed,newer),{kind:'draft',date:'2026-11-26',lastWords:''});
+}
