@@ -12,7 +12,8 @@ import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detec
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
-import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
+import {lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Speaking…',
@@ -1083,6 +1084,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     const replyLocale=['en','ru','es'].includes(result.locale)?result.locale:
       ['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current:
       detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
+    const preserveApprovedVoice=Boolean(lockedCoachSessionVoice(personaId,replyLocale))
     const outputEpoch=++outputEpochRef.current
     let audioStarted=false
     const live=()=>activeRef.current&&generationRef.current===generation&&outputEpochRef.current===outputEpoch
@@ -1115,7 +1117,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!synth?.speak||!Utterance)return false
       const voice=new Utterance(speakable||reply)
       voice.lang={ru:'ru-RU',en:'en-US',es:'es-ES'}[replyLocale]||'en-US'
-      voice.rate=0.96
+      voice.rate=personaId==='merlin'?0.9:0.96
       const matches=(synth.getVoices?.()||[]).filter(item=>
         String(item.lang||'').toLowerCase().startsWith(replyLocale))
       // A device without a RU/ES voice must not silently pronounce translated
@@ -1196,7 +1198,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         setNotice(t.fallback);return
       }
       // Natural Google/Fish stays first; disclose the temporary OS voice.
-      if(playDeviceFallback())return
+      if(!preserveApprovedVoice&&playDeviceFallback())return
       afterSpeech()
       setNotice(t.fallback)
     }
@@ -1204,11 +1206,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // Device narration is a clearly labeled continuity fallback; it is not
     // the persona's natural Google/Fish voice.
 
-    // Initial Play requests only the fixed authored persona introduction from
-    // the public, globally rate-limited Fish S2.1 free route. No client audio,
+    // Initial Play requests only the short authored in-session line from
+    // the existing globally rate-limited public audio route. No client audio,
     // client transcript or arbitrary text is exposed through this endpoint.
     if(result.mode==='intro'){
-      const url=coachIntroAudioPath(personaId,lang)
+      const url=coachSessionOpeningAudioPath(personaId,lang)
       if(!url){showTextOnly();return}
       const controller=new AbortController()
       introControllerRef.current=controller
@@ -1236,6 +1238,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
       cloudProvider:voiceProvider,voiceName:selectedVoice}=voiceConfigRef.current
+    if(preserveApprovedVoice&&!['gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)){
+      showTextOnly();return
+    }
     if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller
@@ -1362,7 +1367,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
-      aria-pressed={active&&!ready} aria-label={isPaused?continueLabel:ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?pauseLabel:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
+      aria-pressed={active&&!ready} aria-label={isPaused?continueLabel:ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?pauseLabel:!introStartedRef.current?({en:'Start coaching session',ru:'Начать голосовую сессию',es:'Iniciar sesión de voz'}[lang]):t.start}>
       {isPaused||(!active&&!introStartedRef.current)?
         <Play size={19} fill="currentColor" aria-hidden="true"/>:
         <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}

@@ -1,3 +1,4 @@
+import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {geminiLiveThematicCheckpointGuidance} from '../lib/coaching/gemini-live-free.mjs'
 import {normalizeMyCoachDraft} from '../lib/personal-coaching/protocol-draft.mjs'
