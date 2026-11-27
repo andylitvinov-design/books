@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {setImmediate as settleResume,setTimeout as nextTimer} from 'node:timers/promises'
 import {runInNewContext} from 'node:vm'
 import * as duplex from '../lib/personal-coaching/coach-ios-live-duplex.mjs'
+import {coachCharacterObservedIds,getCoachCharacterSignature} from '../lib/coaching/coach-character-signature.mjs'
 import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
   GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
@@ -95,7 +96,7 @@ function session(sampleRate=48000,environment={}){
     close(){socketCloses++;this.readyState=3}}
   const r={context:clock.context,socket,stream:{active:true,getTracks:()=>[track]},abort:new AbortController(),
     ready:true,ended:false,sessionStarted:true,introSent:true,firstAudio:false,greetingTimer:null,
-    history:[],openingHistory:[],inputText:'',outputText:'',speaking:false,interrupted:false,
+    history:[],openingHistory:[],characterSeenIds:new Set(),inputText:'',outputText:'',speaking:false,interrupted:false,
     modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,lastAssistantTurnFinished:false,
     pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,playbackNoticeShown:false,
     audioGate:new GeminiLiveBargeGate(),bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
@@ -110,7 +111,7 @@ function session(sampleRate=48000,environment={}){
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
     '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState,watch:()=>watchLiveAudioSession(runtime.current)})',{
     GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,
-    geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,
+    geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,coachCharacterObservedIds,
     Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
     propsRef,runtime,
     phaseChange:phase=>events.phases.push(phase),
@@ -1141,4 +1142,17 @@ test('provider acknowledgement without PCM retains the short deadline; delayed A
   assert.equal(h.r.lastAssistantTurnFinished,false)
   assert.deepEqual(h.events.input,[])
   h.assertLive()
+})
+
+test('only completed live character text enters the bounded signature observation set',()=>{
+  const h=session()
+  const line=getCoachCharacterSignature('genie')[0]
+  h.receive({audio:[pcm(.5)],output:line.en,turnComplete:true})
+  assert.equal(h.r.characterSeenIds.size,0,'do not count the still-playing response')
+  h.clock.advanceTo(2)
+  assert.ok(h.r.characterSeenIds.has(line.id))
+  const next=getCoachCharacterSignature('genie')[1]
+  h.receive({audio:[pcm(.5)],output:next.en})
+  h.receive({interrupted:true})
+  assert.equal(h.r.characterSeenIds.has(next.id),false)
 })
