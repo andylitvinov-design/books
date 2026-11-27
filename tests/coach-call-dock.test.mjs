@@ -8,7 +8,7 @@ test('shared call dock keeps microphone, speaker and explicit end actions separa
   assert.match(view,/data-coach-dock-video/)
   assert.match(view,/data-coach-dock-speaker/)
   assert.match(view,/<PhoneOff size=\{24\}/)
-  assert.match(view,/onClick=\{endWithProtocol\} aria-label=\{hangupLabel\}/)
+  assert.match(view,/onClick=\{openHangupMenu\} aria-label=\{hangupLabel\}/)
   assert.match(view,/\['left','right'\]\.map\(side/)
   assert.equal((view.match(/onMicLevel=\{level=>/g)||[]).length,2)
   assert.doesNotMatch(view,/data-coach-panel=/)
