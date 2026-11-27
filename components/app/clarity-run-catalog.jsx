@@ -8,6 +8,7 @@ import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs
 import {gameProgress} from '@/lib/app/daybook-games.mjs'
 import DaybookGames from './daybook-games'
 import ClaritySemanticResult from '../clarity-semantic-result'
+import {ClarityProtocolDocuments} from './clarity-course-protocol'
 import css from './clarity-program.module.css'
 const COPY={
  en:{title:'My Coaching Courses',back:'All courses',free:'Free',paid:'Paid',ready:'Ready',in_progress:'In progress',completed:'Completed',open:'Open Daybook',session:'Session',protocol:'Course protocol',results:'Session results',draft:'Saved draft — not a reviewed report',empty:'No saved dialogue yet',notes:'Personal notes',practices:'Practices',homework:'Homework',load:'Load more',loading:'Loading…',retry:'Retry',error:'Could not verify saved data.',legacy:'Earlier workbook & archive',unavailable:'New purchases and live sessions are not available yet.',client:'You',coach:'Coach',duplicate:'Conflicting notes. Review your journal.',not_started:'Not started',active:'Active',paused:'Paused',time_limit:'20 minutes completed',minutes:'min'},
@@ -24,7 +25,7 @@ function SessionData({run,day,accountId,locale,entries,hasMore,loadingAll,loadEr
   setState({phase:'loading'})
   appFetch('clarity-course/runs?'+q,undefined,'GET',{accountId,signal:controller.signal}).then(data=>{
    if(controller.signal.aborted)return
-   if(data?.courseRunId!==run.id||data.day!==day.day||data.protocolId!==day.protocolId||data.transcript&&(data.transcript.id!==day.protocolId||data.transcript.courseRunId!==run.id||!Array.isArray(data.transcript.turns))||data.result&&data.result.id!==day.protocolId)throw Error('INVALID_RUN_PROTOCOL')
+   if(data?.courseRunId!==run.id||data.day!==day.day||data.protocolId!==day.protocolId||data.transcript&&(data.transcript.id!==day.protocolId||data.transcript.courseRunId!==run.id||!Array.isArray(data.transcript.turns))||data.sessionProtocol&&(data.sessionProtocol.id!==day.protocolId||data.sessionProtocol.day!==day.day||!Array.isArray(data.sessionProtocol.rows))||Boolean(data.transcript)!==Boolean(data.sessionProtocol)||data.result&&(data.result.id!==day.protocolId||data.sessionProtocol?.reviewed!==true))throw Error('INVALID_RUN_PROTOCOL')
    setState({phase:'ready',data})
   }).catch(e=>{
    if(controller.signal.aborted)return
@@ -35,11 +36,11 @@ function SessionData({run,day,accountId,locale,entries,hasMore,loadingAll,loadEr
  },[run.id,day.day,day.protocolId,accountId,locale,retry])
  if(state.phase==='loading')return <p role="status">{t.loading}</p>
  if(state.phase==='error')return <><p role="alert">{t.error}</p><button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></>
- const {transcript,result}=state.data
+ const {transcript,sessionProtocol,result}=state.data
  const projection=result?clarityResultProjection(result,entries,{journalComplete:!hasMore}):null
  return <div className={css.practiceBody}>
   {transcript?<><p>{new Date(transcript.updatedAt).toLocaleDateString(locale)}{!transcript.reviewed?' · '+t.draft:''}</p>
-   <ol>{transcript.turns.map((turn,i)=><li key={i}><strong>{turn.role==='assistant'?t.coach+' · '+turn.personaId:t.client}</strong><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p></li>)}</ol></>:<p>{t.empty}</p>}
+   <ClarityProtocolDocuments sessionProtocol={sessionProtocol} log={transcript} locale={locale}/></>:<p>{t.empty}</p>}
   {result&&<section><h3>{t.results}</h3><ClaritySemanticResult day={day.day} rows={projection.rows} locale={locale}/>
    <dl>{projection.rows.map(row=><div key={row.id}><dt>{row.label}</dt><dd>{row.quote||'—'}</dd></div>)}</dl>
    {projection.assigned.length>0&&<section><h4>{t.homework} · {projection.homeworkDone}/{projection.homeworkTotal}</h4>

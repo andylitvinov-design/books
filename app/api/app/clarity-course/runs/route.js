@@ -9,6 +9,7 @@ import {readClarityRunDraft} from '@/lib/app/my-coach-protocol-drafts.js'
 import {readMyCoachProtocol} from '@/lib/app/personal-coaching'
 import {clarityRunProtocolId,clarityRunTranscript,isClarityRunId} from '@/lib/coaching/clarity-course-runs.mjs'
 import {clarityCourseResult} from '@/lib/coaching/clarity-course-results.mjs'
+import {claritySessionProtocol} from '@/lib/coaching/clarity-course-protocol.mjs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -36,8 +37,9 @@ export async function GET(request){
    try{reviewed=await readMyCoachProtocol(config,actor,protocolId)}catch(error){if(error.code!=='MY_COACH_PROTOCOL_NOT_FOUND')throw error}
    const protocol=reviewed||draft?.protocol||null
    const transcript=protocol?clarityRunTranscript(protocol,day,run,reviewed?.savedAt||draft?.updatedAt):null
-   if(protocol&&!transcript)throw new AppError('CLARITY_RUN_CONFLICT',409)
-   data={courseRunId:run.id,day,protocolId,transcript,result:reviewed?clarityCourseResult(reviewed,locale,{clock:run.clock}):null}
+   const sessionProtocol=reviewed?claritySessionProtocol(reviewed,day,locale):draft?claritySessionProtocol(draft.protocol,day,locale,{draftReview:draft.review,scenarioVersion:draft.scenarioVersion,updatedAt:draft.updatedAt}):null
+   if(protocol&&(!transcript||!sessionProtocol))throw new AppError('CLARITY_RUN_CONFLICT',409)
+   data={courseRunId:run.id,day,protocolId,transcript,sessionProtocol,result:reviewed?clarityCourseResult(reviewed,locale,{clock:run.clock}):null}
   }else{
    if(q.has('before')&&!/^[1-9][0-9]{0,9}$/.test(q.get('before')))throw new AppError('INVALID_QUERY',400)
    data=await listClarityRuns(config,actor,{before:q.has('before')?Number(q.get('before')):null})
