@@ -131,7 +131,7 @@ export default function MyPageCourses({locale='en',accountId,onSummary}){
   </article>
  }
  return <section className={profileStyles.card} aria-label={t.title} id="my-courses" data-my-page-courses>
-  <header className={profileStyles.heading}><BookOpen size={23} aria-hidden="true"/><h2>{t.title}</h2><button className={styles.seeAll} type="button" aria-expanded={showAvailable} aria-controls="my-course-discovery" onClick={()=>setShowAvailable(v=>!v)}>{labels.explore}<ArrowRight size={15}/></button></header>
+  <header className={profileStyles.heading}><BookOpen size={23} aria-hidden="true"/><h2>{t.title}</h2>{canExplore&&rows.length>0&&<button className={styles.seeAll} type="button" aria-expanded={showAvailable} aria-controls="my-course-discovery" onClick={()=>setShowAvailable(v=>!v)}>{labels.explore}<ArrowRight size={15}/></button>}</header>
   {!current||!goalSnapshot?<p className={profileStyles.empty} role="status">{t.loading}</p>:null}
   {rows.length>0?<div className={styles.list}>{rows.map(c=>{
     const view=courseView(c,lang,t);if(!view)return null

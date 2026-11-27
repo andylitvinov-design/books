@@ -112,7 +112,7 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
    </section>
    <section className={styles.card+' '+styles.dashboardTile+' '+styles.todayTile} data-my-page-today>
     <header className={styles.heading}><CalendarDays size={20} aria-hidden="true"/><h2>{dashboard.today}</h2></header>
-    {todayActions.length?<div className={styles.todayList}>{todayActions.map(a=><Link key={a.id} href={'/'+appLocale+'/app/my-coaching-plan'} prefetch={false}>{['completed','done'].includes(a.status)?<CheckCircle2 size={17} aria-hidden="true"/>:<Circle size={17} aria-hidden="true"/>}<span>{a.description}</span></Link>)}</div>:<p>{!currentDaily||!summary?extras.loading:currentDaily.failed||summary.planFailed?extras.unavailable:extras.noTasks}</p>}
+    {todayActions.length?<div className={styles.todayList}>{todayActions.map(a=><Link key={a.id} href={'/'+appLocale+'/app/my-coaching-plan'} prefetch={false}>{['completed','done'].includes(a.status)?<CheckCircle2 size={17} aria-hidden="true"/>:<Circle size={17} aria-hidden="true"/>}<span>{a.description}</span></Link>)}</div>:<p>{!currentDaily||!summary?extras.loading:currentDaily.failed||summary.planFailed||currentDaily.intention?.actionIds?.length?extras.unavailable:extras.noTasks}</p>}
     <Link className={styles.tileLink} href={'/'+appLocale+'/app/daybook?tab=today'} prefetch={false}>{extras.plan}<ArrowRight size={16}/></Link>
    </section>
    <section className={styles.card+' '+styles.dashboardTile} data-my-page-overall-progress>
