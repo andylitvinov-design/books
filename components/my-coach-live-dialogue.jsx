@@ -30,6 +30,8 @@ import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import callStyles from './my-coach-call-dock.module.css'
+import MyCoachEarlyExit from './my-coach-early-exit'
+import {coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
@@ -299,6 +301,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const turnRequestRef=useRef(0)
   const inFlightClientRef=useRef(null) // client message awaiting a genuine coach reply
   const [protocolOpen,setProtocolOpen]=useState(false)
+  const [earlyExit,setEarlyExit]=useState(null),[earlyExitBusy,setEarlyExitBusy]=useState(false),[earlyExitError,setEarlyExitError]=useState(false)
+  const earlyExitBusyRef=useRef(false)
   const [protocolEditing,setProtocolEditing]=useState(false)
   const [ratingOpen,setRatingOpen]=useState(false)
   const [rating,setRating]=useState({stars:0,character:3,intelligence:3,impression:3})
@@ -1585,6 +1589,39 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   // End is not navigation: stop the microphone, then let the client review and
   // download a complete local PDF, independently of optional account retention.
+  function openHangupMenu(){
+    if(earlyExitBusyRef.current||earlyExit||profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return
+    const elapsed=Math.floor(activeClockRef.current.sample(window.performance.now()))
+    if(!coachShouldOfferEarlyExit(elapsed)){endWithProtocol();return}
+    const seconds=Math.floor(freezeActiveClock())
+    speechRef.current?.pauseSession?.()
+    replayControllerRef.current?.abort();replayPlayerRef.current?.cancel()
+    cancelPendingCoachTurn()
+    if(!retainPendingClient())return
+    queuePrivateDraft(turnsRef.current)
+    setEarlyExitError(false)
+    setEarlyExit({seconds,wasPaused:paused})
+    setPaused(true)
+  }
+  function dismissHangupMenu(){
+    if(earlyExitBusyRef.current||!earlyExit)return
+    setPaused(earlyExit.wasPaused);setEarlyExit(null);setEarlyExitError(false)
+  }
+  async function leaveEarlySession(choice){
+    if(!earlyExit||earlyExitBusyRef.current||profileV3BusyRef.current||courseGateBusyRef.current)return
+    earlyExitBusyRef.current=true;setEarlyExitBusy(true);setEarlyExitError(false)
+    try{
+      freezeActiveClock();speechRef.current?.stop?.();cancelPendingCoachTurn()
+      if(!retainPendingClient())throw Error('PENDING_CLIENT')
+      if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
+        const structured=profileV3Ref.current
+        const queued=!profileV3FaultRef.current&&!(structured&&!structured.step.closed)&&queuePrivateDraft(turnsRef.current)
+        const revision=courseGateAttemptRef.current?null:courseGateRef.current?courseGateRef.current.revision:profileV3FaultRef.current?null:structured&&!structured.step.closed?structured.revision:queued?await autoSaveQueueRef.current?.flush():null
+        if(!revision)throw Error('DRAFT_NOT_SYNCED')
+      }
+      window.location.assign(coachEarlyExitDestination(lang,selectedCourseId,choice))
+    }catch{setEarlyExitError(true)}finally{earlyExitBusyRef.current=false;setEarlyExitBusy(false)}
+  }
   function endWithProtocol(){
     if(profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return
     freezeActiveClock()
@@ -2225,7 +2262,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           onClick={()=>setOutputMuted(value=>!value)}>
           {outputMuted?<VolumeX size={24} aria-hidden="true"/>:<Volume2 size={24} aria-hidden="true"/>}
         </button>
-        <button type="button" className={`${styles.endControl} ${callStyles.hangup}`} onClick={endWithProtocol} aria-label={hangupLabel} title={hangupLabel} disabled={protocolOpen} data-coach-finish-with-protocol>
+        <button type="button" className={`${styles.endControl} ${callStyles.hangup}`} onClick={openHangupMenu} aria-label={hangupLabel} title={hangupLabel} disabled={protocolOpen||Boolean(earlyExit)} data-coach-finish-with-protocol>
           <PhoneOff size={24} aria-hidden="true"/><span>{hangupLabel}</span>
         </button>
       </div>
@@ -2721,6 +2758,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
+    {earlyExit&&<MyCoachEarlyExit locale={lang} seconds={earlyExit.seconds} saving={earlyExitBusy} error={earlyExitError} privateSave={autoSaveEnabled} onDismiss={dismissHangupMenu} onChoice={leaveEarlySession}/>}
     {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={keyInfoUi.finish} data-my-coach-protocol>
       <div className={styles.protocolCard}>
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
