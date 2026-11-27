@@ -44,3 +44,50 @@ test('entry attaches synchronously and does not mint while entitlement is pendin
  const x=new Socket(),k=attachAntiStressRelayEntry(x,{...args,resolveEntitlement:()=>null});x.input(wire());await k.settled()
  assert.equal(opens,1);assert.equal(x.readyState,3)
 })
+
+test('Therapy browser transport uses exact run, session and server visit, never direct provider credentials',async()=>{
+ const {createAntiStressRelayClient,connectAntiStressBrowserRelay}=await import('../lib/coaching/anti-stress-relay-client.mjs')
+ const selection={accountId:owner,runId:id(1),protocolId:id(2),sessionId,body,minimumElapsedMs:5000}
+ const selected={type:'hh_anti_stress_selection',runId:id(1),protocolId:id(2),sessionId,day:1}
+ const ready={type:'hh_anti_stress_ready',decision:'continue'}
+ const frame={type:'hh_anti_stress_clock',day:1,elapsedMs:5000,status:'active',visitId:id(11),coachId:'mira'}
+ const control=createAntiStressRelayClient(selection)
+ assert.equal(JSON.parse(control.entry).sessionId,sessionId)
+ assert.equal(JSON.parse(control.entry).protocolId,undefined)
+ assert.throws(()=>control.receive(JSON.stringify({...selected,sessionId:'anti_stress_calm'})),/INVALID/)
+ control.receive(JSON.stringify(selected));control.receive(JSON.stringify(ready))
+ assert.equal(control.snapshot().canSendAudio,false)
+ assert.throws(()=>control.consent({foreground:true,explicitPlay:false}),/INVALID/)
+ control.consent({foreground:true,explicitPlay:true})
+ assert.throws(()=>control.receive(JSON.stringify({...frame,coachId:'alex'})),/INVALID/)
+ assert.throws(()=>control.receive(JSON.stringify({...frame,visitId:undefined})),/INVALID/)
+ assert.equal(control.receive(JSON.stringify(frame)).visitId,id(11))
+ assert.equal(control.snapshot().canSendAudio,true)
+ assert.throws(()=>control.receive(JSON.stringify({...frame,elapsedMs:4999})),/INVALID/)
+ assert.equal(JSON.parse(control.changeCoach()).type,'hh_anti_stress_change_coach')
+ assert.equal(control.snapshot().canSendAudio,false)
+ assert.equal(control.receive(JSON.stringify({serverContent:{turnComplete:true}})).playAudio,false)
+ assert.equal(control.receive(JSON.stringify({...frame,status:'paused'})).elapsedMs,5000)
+ let socket,closed=[],clocks=[],played=[]
+ class BrowserSocket{
+  constructor(url){this.url=url;this.readyState=0;this.bufferedAmount=0;this.sent=[];socket=this}
+  send(raw){this.sent.push(JSON.parse(raw))}
+  close(){this.readyState=3;this.onclose?.()}
+  receive(value){this.onmessage({data:JSON.stringify(value)})}
+ }
+ const h=connectAntiStressBrowserRelay({selection,explicitPlay:true,isForeground:()=>true,onClock:x=>{clocks.push(x);return true},onProvider:x=>played.push(x),onClosed:x=>closed.push(x),origin:'https://holistichouse.vercel.app',WebSocketImpl:BrowserSocket,schedule:()=>1,cancel:()=>{}})
+ assert.equal(socket.url,'wss://holistichouse.vercel.app/api/app/anti-stress/live-relay')
+ socket.readyState=1;socket.onopen();socket.receive(selected);socket.receive(ready)
+ const audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ assert.equal(h.sendAudio(audio),false)
+ socket.receive(frame)
+ assert.equal(h.sendAudio(audio),true)
+ assert.equal(h.sendAudio({clientContent:{turns:[]}}),false)
+ assert.equal(h.sendAudio({type:'observe'}),false)
+ socket.receive({serverContent:{turnComplete:true}});assert.equal(played.length,1)
+ assert.equal(h.pause(),true)
+ socket.receive({...frame,status:'paused'})
+ assert.equal(closed[0].terminalVerified,true);assert.equal(closed[0].elapsedMs,5000)
+ assert.equal(closed[0].binding.sessionId,sessionId)
+ assert.equal(clocks.length,2)
+})
