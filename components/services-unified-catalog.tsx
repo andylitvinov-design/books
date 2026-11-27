@@ -28,7 +28,7 @@ const icons: Record<ServicesPanelId, LucideIcon> = {
    Lazy 96px thumbs avoid extra Vercel image-generation work. */
 const panelMedia: Record<ServicesPanelId, string> = {
   reiki: "/images/holistic-house/reiki-practitioner-sunrise.webp",
-  browse: "/images/holistic-house/report-lighthouse-coast.webp",
+  browse: "/images/holistic-house/report-lighthouse-coast.avif",
   reading: "/images/holistic-house/homepage-constellations.svg",
   consultation: "/images/holistic-house/andy-about.png",
   services: "/images/holistic-house/homepage-constellations.svg",
@@ -46,6 +46,8 @@ const panelMedia: Record<ServicesPanelId, string> = {
 // Direct delivery for already-small first-party artwork only (4–43 KB).
 // Keep Next optimization for the large portraits and scenic photographs.
 const directPanelImages = new Set([
+  // Existing approved 8 KB alternate encoding of the same report artwork.
+  "/images/holistic-house/report-lighthouse-coast.avif",
   "/images/holistic-house/reiki-practitioner-sunrise.webp",
   "/images/holistic-house/distance-homeopathy.webp",
   "/images/holistic-house/reiki-approved-sunrise-v3.webp",

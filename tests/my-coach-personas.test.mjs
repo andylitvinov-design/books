@@ -316,7 +316,7 @@ test('the twelve registered presentations flow directly into the same live dialo
   assert.ok(!ui.includes('coachPresentationVoice'))
   assert.ok(!voice.includes('coachPresentationVoice'))
   assert.ok(ui.includes('data-session-visual-v4'))
-  assert.ok(ui.includes('className={styles.conversationPanel}'))
+  assert.match(ui,/styles\.conversationPanel.*callStyles\.conversation/)
   assert.ok(!ui.includes('{introductionComplete&&<>'))
   assert.ok(!ui.includes('onReady={()=>setIntroductionComplete(true)}'))
   assert.ok(voice.includes('sessionStartRef.current?.()'))
