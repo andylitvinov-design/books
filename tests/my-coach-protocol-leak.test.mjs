@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+// Source-backed owner-memory privacy tests run within the existing release suite.
+import './coach-personal-memory.test.mjs'
+import './coach-memory-selection.test.mjs'
+import './coach-memory-selection-adapter.test.mjs'
 import {coachLooksLikeProtocolText,coachReviewableStreamReply} from '../lib/coaching/coach-stream-format.mjs'
 import {readCoachTurnStream} from '../lib/coaching/coach-stream-client.mjs'
 const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
