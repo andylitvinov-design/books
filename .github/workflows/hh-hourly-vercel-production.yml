@@ -68,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$VERCEL_TOKEN" ]]; then
-            echo 'Hourly batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
+            echo 'Two-hour batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
             exit 1
           fi
           head_sha="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
@@ -81,7 +81,7 @@ jobs:
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
             fi
-            # Never schedule a second production build in a rolling 120-minute window.
+            # Never schedule a second production release in a rolling 120-minute window.
             # This is defense-in-depth against manual non-emergency dispatches,
             # GitHub cron delays, and already-existing Vercel production builds.
             # Emergency Deploy Now deliberately remains outside this limit.
@@ -101,7 +101,7 @@ jobs:
               echo 'Vercel production timestamps unverified; refusing speculative two-hour release.'
               exit 1
             fi
-            slot_start_ms="$(( ($(date -u +%s) / 3600) * 7200000 ))"
+            slot_start_ms="$(( ($(date -u +%s) / 7200) * 7200000 ))"
             if printf '%s' "$response" | jq -e --argjson slot_start_ms "$slot_start_ms" '[.deployments[] | select(.target == "production" and ((.created // .createdAt) >= $slot_start_ms))] | length > 0' >/dev/null; then
               echo 'Production already requested this UTC two-hour slot; defer pending changes to next two-hour run.'
               exit 0
