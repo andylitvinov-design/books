@@ -9,7 +9,7 @@ import styles from './public-program-overview.module.css'
 const icons={
  clarity:[Flower2,Leaf,Target],
  goal:[Compass,Flame,Route,Flag,Flower2,Sparkles,TrendingUp,Sunrise],
- business:[BriefcaseBusiness,Layers,Settings2,BarChart3],
+ business:[BriefcaseBusiness,Layers,Settings2,BarChart3,Route,Target,TrendingUp,Flag],
  reiki:[Sunrise,Flower2,Flame,Leaf,Sparkles]
 }
 const programIcons={clarity:Flower2,goal:Target,business:TrendingUp,reiki:Flower2}
@@ -43,7 +43,7 @@ export default function ProgramOverview({program:p}){
    {p.id==='reiki'&&<div className={styles.reikiEntry}><ReikiDaybookStart locale={p.locale} className={styles.cta}/></div>}
    <ol className={styles.sessions}>
     {p.rows.map(([title,description],index)=>{
-     const RowIcon=icons[p.id][index]
+     const RowIcon=icons[p.id]?.[index]??programIcons[p.id]
      return <li key={index} data-program-session={index+1}>
       {p.id==='reiki'?<article className={styles.reikiWeek}>
        <div className={styles.reikiPhoto} aria-hidden="true"><RowIcon size={26}/></div>

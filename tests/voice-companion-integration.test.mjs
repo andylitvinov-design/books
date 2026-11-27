@@ -60,7 +60,7 @@ test('explicit hands-free conversation stays inside original AI turn and stops s
  assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
  assert.match(voice,/if\(dialogueActive\.current&&!hadSpeech\)/);
  assert.match(voice,/if\(!supported\|\|\(!consentOnStart&&\(!playbackConsent\|\|!sttConsent\)\)\)/);
- assert.match(chat,/if\(requiresProtectedReply\(text,locale\)\)voice\.stopDialogue\(\)/);
+ assert.match(chat,/if\(requiresProtectedReply\(text,locale\)\)\{setAudioCallOpen\(false\);lukasRef\.current\?\.stop\(\);voice\.stopDialogue\(\);\}/);
 });
 
 test('hands-free fail-closed preserves unsent speech on busy or no model consent',()=>{
@@ -68,7 +68,7 @@ test('hands-free fail-closed preserves unsent speech on busy or no model consent
  const speech=source('components/voice-companion-controls.tsx');
  assert.match(chat,/if\(busy\|\|mode==="owned"&&!agree\)\{setDraft\(text\);voice\.stopDialogue\(\);return;\}/);
  assert.match(speech,/if\(!parts.length\)\{if\(dialogueActive\.current\)stopDialogue\(\);return;\}/);
- assert.match(speech,/if\(!result\?\.ok\)\{[\s\S]*?if\(dialogueActive\.current\)stopDialogue\(\);/);
+ assert.match(speech,/if\(!result\?\.ok&&seq===generation\.current\)\{[\s\S]*?if\(dialogueActive\.current\)stopDialogue\(\);/);
  assert.match(speech,/if\(!supported\|\|!speaker\.current\)\{[\s\S]*?stopDialogue\(\);/);
 });
 
@@ -110,7 +110,7 @@ test('disabled Voice Companion never initializes browser audio, microphone detec
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*mounted\.current=true;/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*try\{\s*const value=JSON\.parse\(window\.localStorage/);
  assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\|\|!prefsLoaded\)return;/);
- assert.match(voice,/const speak=useCallback\(\(text:string,explicitPlay=false\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const speak=useCallback\(\(text:string,explicitPlay=false,openingConsent=false\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const dictate=useCallback\(\(onTranscript:.*\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\|\|document\.hidden\)return false;/);
 });

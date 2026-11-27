@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { NextRequest, NextResponse } from 'next/server.js'
 import * as redirects from '../lib/canonical-redirect.js'
 import { personalVideoStorageCsp } from '../lib/app/personal-video-storage-csp.mjs'
+import * as publicHomeDocument from '../lib/public-home-document-request.mjs'
 
 function middlewareModule(refreshAdminAuth) {
   const source = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8')
@@ -16,8 +17,10 @@ function middlewareModule(refreshAdminAuth) {
     './lib/app/personal-video-storage-csp.mjs': { personalVideoStorageCsp },
     // The public-only static router is inert on these protected auth paths.
     './lib/instant-home-policy.mjs': { instantHomeLocale: () => null },
+    // Exercise the actual public-only CSS route gate, not a permissive stub.
+    './lib/public-home-document-request.mjs': publicHomeDocument,
   }
-  const runtime = { exports: {}, Headers, crypto: globalThis.crypto, process: { env: {} }, require(name) {
+  const runtime = { exports: {}, Headers, crypto: globalThis.crypto, process: { env: { HH_HAVE_PUBLIC_HOME_DOCUMENTS: '1' } }, require(name) {
     assert.ok(Object.hasOwn(modules, name), name)
     return modules[name]
   } }
@@ -40,6 +43,8 @@ test('actual middleware forwards rotated app cookies and returns the same secure
     assert.equal(response.headers.get('x-frame-options'), 'DENY')
     assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
     assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/)
+    assert.equal(response.headers.get('x-middleware-rewrite'), null)
+    assert.equal(response.headers.get('x-middleware-request-x-hh-public-home-encoding'), null)
   }
 })
 

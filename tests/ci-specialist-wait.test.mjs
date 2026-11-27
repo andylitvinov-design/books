@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1084,4 +1084,122 @@ test('positive-only detached CI proof refreshes transient null without rerun, bu
   await assert.rejects(()=>verify({...api,compare:async()=>diff([...target,{filename:'package-lock.json',status:'modified'}])},
     ctx,files,{maxWaitMs:10000,sleep:async ms=>{waits.push(ms);}}),/PRODUCTION_BASE_CHANGED/);
   assert.deepEqual(waits,[]);
+});
+
+test('owner loose-base policy: actual #5682 protected delta does not discard successful exact-HEAD checks', async () => {
+  const tested = '76633ffe2a215d4e1e9919a632edb1a20f88d079', target = 'bda9ed625796e4fb3cca1c3b0d014f6fb90025b0';
+  const candidates = [
+  "app/api/holistic-agent/lukas-owner-check/route.js",
+  "components/ali-audio-call.module.css",
+  "components/ali-audio-call.tsx",
+  "components/ali-lukas-video.jsx",
+  "components/app/messenger-ai-landing.module.css",
+  "components/app/messenger-ai-landing.tsx",
+  "components/holistic-agent-chat.module.css",
+  "components/holistic-agent-chat.tsx",
+  "components/voice-companion-controls.tsx",
+  "docs/coaching/LUKAS_VISIBLE_ENTRY_FIX_20261126.md",
+  "lib/coaching/lukas-owner-check.mjs",
+  "lib/voice-companion/browser-voice.d.mts",
+  "lib/voice-companion/browser-voice.mjs",
+  "tests/ali-chat-live-voice-mic.test.mjs",
+  "tests/lukas-owner-check.test.mjs",
+  "tests/voice-companion-browser.test.mjs",
+  "tests/voice-companion-integration.test.mjs"
+];
+  const targetRows = [
+  {
+    "filename": "app/admin/learning/page.jsx",
+    "status": "modified"
+  },
+  {
+    "filename": "components/mandala-auto-video-director.module.css",
+    "status": "modified"
+  },
+  {
+    "filename": "components/mandala-auto-video-director.tsx",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/crm/telegram-wave-local-reply.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/holistic-support/ali-dialogue-quality.mjs",
+    "status": "added"
+  },
+  {
+    "filename": "lib/holistic-support/natural-dialogue.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/holistic-support/wave-native-router.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/mandala/category-video-storyboard.d.mts",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/mandala/category-video-storyboard.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/mandala/mytube-personal-video-brief.d.mts",
+    "status": "added"
+  },
+  {
+    "filename": "lib/mandala/mytube-personal-video-brief.mjs",
+    "status": "added"
+  },
+  {
+    "filename": "lib/mandala/prompt-shot-director.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/mandala/video-emotional-scene-plan.d.mts",
+    "status": "modified"
+  },
+  {
+    "filename": "lib/mandala/video-emotional-scene-plan.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "tests/mytube-personal-video-brief-integration.test.mjs",
+    "status": "added"
+  },
+  {
+    "filename": "tests/mytube-plot-montage.test.mjs",
+    "status": "modified"
+  },
+  {
+    "filename": "tests/natural-dialogue.test.mjs",
+    "status": "modified"
+  }
+];
+  const delta = {status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    base_commit:{sha:tested},merge_base_commit:{sha:tested},
+    commits:[{sha:'9dadc41800381d2442e7f5df62c78547c0a4f62b'},{sha:target}],files:targetRows};
+  assert.equal(safeNonOverlappingProductAdvance(delta,tested,target,candidates),true);
+  for (const filename of [candidates[0],'package-lock.json','lib/auth/permissions.mjs',
+      'lib/ci/production-base-impact.mjs','supabase/migrations/private.sql',
+      'components/shared/nav.tsx','app/api/example/route.js','app/[locale]/layout.tsx','unknown.txt']) {
+    assert.equal(safeNonOverlappingProductAdvance({...delta,files:[...targetRows,{filename,status:'modified'}]},tested,target,candidates),false,filename);
+  }
+  for (const invalid of [{status:'diverged'},{behind_by:1},{commits:[]},
+    {files:[{filename:targetRows[0].filename,status:'renamed',previous_filename:'old.js'}]},
+    {files:[{filename:targetRows[0].filename,status:'removed'}]},
+    {files:[targetRows[0],targetRows[0]]},
+    {files:Array.from({length:300},(_,i)=>({filename:'components/test-'+i+'.tsx',status:'added'}))}]) {
+    assert.equal(safeNonOverlappingProductAdvance({...delta,...invalid},tested,target,candidates),false);
+  }
+  assert.equal(safeNonOverlappingProductAdvance(delta,tested,target,[...candidates,'package-lock.json']),false);
+  const exact = {...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const candidateSources = {base:new Map(),current:new Map(),changedRows:candidates.map(filename=>({filename,status:'M'}))};
+  const args = {...ctx,base:tested};
+  const api = {pr:async()=>exact,target:async()=>target,compare:async()=>delta,runs:async()=>[],jobs:async()=>[]};
+  assert.equal((await verify(api,args,candidateSources,{maxWaitMs:0})).head,head);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},args,candidateSources,{maxWaitMs:0}),/MERGE_CONFLICT/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:null})},args,candidateSources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},args,candidateSources,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
 });
