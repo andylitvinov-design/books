@@ -22,7 +22,7 @@ import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress
 import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview,clarityVersionedStageView} from '@/lib/coaching/coach-session-stage-view.mjs'
 import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
-import {projectClarityPanelClock} from '@/lib/coaching/clarity-relay-client.mjs'
+import {projectClarityPanelClock,restoredClarityRelayBinding} from '@/lib/coaching/clarity-relay-client.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
@@ -323,7 +323,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [courseGateAnswer,setCourseGateAnswer]=useState('')
   const [courseResumeRequired,setCourseResumeRequired]=useState(false)
   const [restoredClarityTimeKnown,setRestoredClarityTimeKnown]=useState(false)
-  const privateTextOnly=restoredDraft||freshPrivateProfile||Boolean(courseGate)||courseGateBusy||Boolean(courseGateAttemptRef.current)
+  const [restoredRelay,setRestoredRelay]=useState(false)
+  const privateTextOnly=(restoredDraft&&!restoredRelay)||freshPrivateProfile||Boolean(courseGate)||courseGateBusy||Boolean(courseGateAttemptRef.current)
   const initialDraftRevision=useRef(0)
   const restoredOpeningScope=useRef(null),restoredProfileCheckin=useRef(null),restoredMethod=useRef(null)
   // Only the existing server-verified archive may supply a structured result.
@@ -726,7 +727,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     const clock=activeClockRef.current
     // New bound course time is displayed from committed relay receipts only.
-    if(clarityCourseActive&&!restoredDraft){clock.setRunning(window.performance.now(),false);return}
+    if(clarityCourseActive){clock.setRunning(window.performance.now(),false);return}
     const limit=clarityCourseActive?CLARITY_COURSE_SECONDS:7200
     const sample=()=>Math.min(limit,clock.sample(window.performance.now()))
     const canRun=()=>sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&!resumePending&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current&&!courseClockHeld&&
@@ -1218,13 +1219,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // actual finalized client words even when the model never replies.
 
   function acceptClarityRelayClock(ack,selection){
-    if(!draftMountedRef.current||!autoSaveRef.current||restoredDraft||protocolSaved||
+    if(!draftMountedRef.current||!autoSaveRef.current||(restoredDraft&&!restoredRelay)||protocolSaved||
       clarityCourseDay(selectedCourseId)!==selection?.day)return false
     const owner=protocolOwnerRef.current
     const next=projectClarityPanelClock({previous:relayClockRef.current,selection,owner,ack})
     if(!next||(protocolIdRef.current&&protocolIdRef.current!==next.protocolId)||
        (activeCourseRunId&&activeCourseRunId!==next.runId))return false
-    if(!relayClockRef.current)protocolStartedRef.current=new Date().toISOString()
+    if(!relayClockRef.current&&!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     relayClockRef.current=next;protocolIdRef.current=next.protocolId
     setRestoredCourseRunId(next.runId);setRestoredClarityTimeKnown(true)
     setActiveSessionSeconds(activeClockRef.current.restore(Math.floor(next.elapsedMs/1000)))
@@ -1872,7 +1873,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
-      if(clarityCourseDay(selectedCourseId)&&speechRef.current?.finishCourseSegment&&!await speechRef.current.finishCourseSegment(true))return
+      if(clarityCourseDay(selectedCourseId)&&speechRef.current?.finishCourseSegment&&!await speechRef.current.finishCourseSegment(true)){
+        setError(({ru:'Остановка не подтверждена. Откройте сохранённую сессию из Daybook после обновления страницы.',en:'Stop is unverified. Reopen the saved session from Daybook after refreshing.',es:'No se confirmó el cierre. Actualiza y abre la sesión guardada en Daybook.'})[lang]);return
+      }
       freezeActiveClock()
       speechRef.current?.stop?.()
       replayControllerRef.current?.abort()
@@ -2229,6 +2232,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setCourseFieldReview(thematic?.step.review||result.draft.draftCourseReview||null);setCourseGateEnabled(result.courseGateEnabled===true)
       setCourseResumeRequired(Boolean(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused))
       const structured=readProfileV3Step(result.draft,p)
+      const relay=restoredClarityRelayBinding({owner,runId:result.courseRunId,protocol:p,courseSessionId:recovered.courseSessionId,time:restoredTime,personaId,structured:Boolean(thematic||structured||recovered.privateProfileV3Requested)})
+      relayClockRef.current=relay;setRestoredRelay(Boolean(relay))
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
       setProfileV3CanStart(Boolean(!structured&&!restoredProfileProof.current&&!p.profileCheckin?.ratings?.length&&
@@ -2250,7 +2255,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }else if(thematic?.step.crossCoach&&!thematic.step.paused){setResumePending(false);setPaused(false)}
         else{setResumePending(true);setPaused(true)}
         setAllowOpeningPrior(false);setStagedMemory(null);setContextTopic('');setContextPaused(true)
-        setGeminiLiveConsent(false);setGeminiConsent(false);setCoachEngine('groq_stream');setDraft('')
+        setGeminiLiveConsent(false);setGeminiConsent(false);setCoachEngine(relay?'gemini_live_free':'groq_stream');setDraft('')
       })
       if(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused)toggleComposer()
     }catch{if(draftMountedRef.current)setResumeError(true)}
@@ -2258,7 +2263,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function beginRestoredConversation(){
     if(!resumePending||!protocolOwnerRef.current||!restoredDraft||clarityTimeLimit.current)return
-    setResumePending(false);setPaused(false);toggleComposer()
+    setResumePending(false);setPaused(false)
+    if(!restoredRelay)toggleComposer() // Voice requires a separate explicit Play with visible provider consent.
   }
   const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!earlyExit&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
@@ -2365,7 +2371,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         <button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume()}>{({ru:'Продолжить сохранённую сессию',en:'Continue a saved session',es:'Continuar una sesión guardada'})[lang]}</button>
         {resumeBusy&&<p role="status">{({ru:'Проверяем сохранённые сессии…',en:'Checking saved sessions…',es:'Buscando sesiones guardadas…'})[lang]}</p>}
-        {resumeList?.items.length>0&&<p>{({ru:'Приватное текстовое продолжение без нового голосового токена.',en:'Private text continuation without a new voice token.',es:'Continuación privada por texto sin un nuevo token de voz.'})[lang]}</p>}
+        {resumeList?.items.length>0&&<p>{({ru:'Сохранённая история остаётся приватной. Для доступной голосовой сессии потребуется новое явное нажатие Play.',en:'Saved history remains private. Available voice continuation requires a new explicit Play.',es:'El historial guardado sigue siendo privado. Para continuar por voz, pulsa Play de nuevo.'})[lang]}</p>}
         {resumeList?.owner===protocolOwnerRef.current&&resumeList.items.map(item=>{
           const previousCoach=localCoachText(getCoachPersona(item.activeCoachId||item.personaId)?.name,conversationLang)||item.personaId
           const title=coachCourseFocusLabel(item.courseSessionId,conversationLang),day=clarityCourseDay(item.courseSessionId)
@@ -2449,7 +2455,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
-            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&!restoredDraft?{accountId:protocolOwnerRef.current,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
+            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
             onClarityRelayClock={acceptClarityRelayClock}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
@@ -2553,7 +2559,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </button>
       </div>
 
-      <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{freshPrivateProfile?({ru:'Приватная текстовая сессия. Ответы не передаются внешнему ИИ. После знакомства выберите исследование профиля.',en:'Private text session. Answers are not sent to an external AI. Choose personal profile during the introduction.',es:'Sesión privada de texto. Las respuestas no se envían a una IA externa. Elige el perfil personal durante la introducción.'})[lang]:restoredDraft?({ru:'Восстановлен приватный черновик. Продолжайте текстом без передачи истории внешнему ИИ; неясные сведения уточняются.',en:'Private draft restored. Continue in text without sharing history with an external AI; clarify uncertain details.',es:'Borrador privado restaurado. Continúa en texto sin compartir el historial con IA externa.'})[lang]:liveVoiceSelected?({
+      <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{freshPrivateProfile?({ru:'Приватная текстовая сессия. Ответы не передаются внешнему ИИ. После знакомства выберите исследование профиля.',en:'Private text session. Answers are not sent to an external AI. Choose personal profile during the introduction.',es:'Sesión privada de texto. Las respuestas no se envían a una IA externa. Elige el perfil personal durante la introducción.'})[lang]:restoredDraft&&!restoredRelay?({ru:'Восстановлен приватный черновик. Продолжайте текстом без передачи истории внешнему ИИ; неясные сведения уточняются.',en:'Private draft restored. Continue in text without sharing history with an external AI; clarify uncertain details.',es:'Borrador privado restaurado. Continúa en texto sin compartir el historial con IA externa.'})[lang]:liveVoiceSelected?({
         ru:'Play отправляет голос и текст Google Gemini Free (возможно обучение моделей). Говорите в любой момент, чтобы перебить коуча.',
         en:'Play sends voice and transcripts to Google Gemini Free (may train models). Speak anytime to interrupt the coach.',
         es:'Play envía voz y texto a Google Gemini Free (puede entrenar modelos). Habla cuando quieras para interrumpir.',

@@ -138,6 +138,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const simliPilotRef=useRef(null)
   const relayClosing=useRef(null)
+  const relayStopUnverified=useRef(false)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
@@ -1273,7 +1274,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   function finishCourseSegment(changeCoach=false){
     const r=runtime.current?.claritySelection?runtime.current:relayClosing.current
-    if(!r)return Promise.resolve(true)
+    if(!r)return Promise.resolve(!relayStopUnverified.current)
     const wait=r.courseStopPromise
     if(runtime.current===r)stopCourseRelay(r,'paused',changeCoach)
     return wait||Promise.resolve(false)
@@ -1302,7 +1303,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       onClosed:receipt=>{
         const current=runtime.current===r
         if(relayClosing.current===r)relayClosing.current=null
-        r.resolveCourseStop?.(receipt.terminalVerified===true||receipt.status==='not_started')
+        const verified=receipt.terminalVerified===true||receipt.status==='not_started'
+        if(!verified)relayStopUnverified.current=true
+        r.resolveCourseStop?.(verified)
         if(current){
           finishCourseMedia(r,receipt.status==='time_limit'?'idle':'paused')
           if(!receipt.terminalVerified)notify(receipt.status==='not_started'?t.failure:t.resumeUnavailable)
@@ -1370,7 +1373,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const p=propsRef.current
     if(!p.enabled||!p.canStart){notify(t.requires);return false}
     const clarityDay=clarityCourseDay(p.courseSessionId)
-    if(clarityDay&&(!p.clarityRelaySelection||p.clarityRelaySelection.day!==clarityDay||relayClosing.current)){notify(t.requires);return false}
+    if(clarityDay&&(!p.clarityRelaySelection||p.clarityRelaySelection.day!==clarityDay||relayClosing.current||relayStopUnverified.current)){notify(t.requires);return false}
     if(runtime.current?.paused){
       if(runtime.current.ended||runtime.current.resumeUnavailable){notify(t.resumeUnavailable);return false}
       void resumePausedSession(runtime.current);return true
