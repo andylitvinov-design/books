@@ -279,7 +279,7 @@ test('restored verified minutes are frozen during recap, safety hold and unknown
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(ui.includes('const courseClockHeld=courseResumeRequired||Boolean(courseGate?.step.paused)||clarityTimeUnknown'))
  assert.ok(ui.includes('!coachProfileOpenRef.current&&!courseClockHeld&&'))
- assert.ok(ui.includes('clarityVoiceActive,courseClockHeld])'))
+ assert.ok(ui.includes('clarityVoiceActive,courseClockHeld,resumePending])'))
  assert.ok(ui.includes('activeClockRef.current.restore(timeKnown?restoredTime.elapsedSeconds:p.durationSeconds||0)'))
  assert.ok(ui.includes("if(payload.action==='course-gate-continue')setCourseResumeRequired(false)"))
  assert.ok(ui.includes('&&!clarityTimeUnknown?Math.floor(activeSessionSeconds):null'))

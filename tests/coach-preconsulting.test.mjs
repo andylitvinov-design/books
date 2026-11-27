@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {projectCoachPreconsultation,formatCoachPreconsultation,COACH_PRECONSULTING_GUIDANCE} from '../lib/coaching/coach-preconsulting.mjs'
+import {projectCoachPreconsultation,formatCoachPreconsultation,COACH_PRECONSULTING_GUIDANCE,projectCoachReviewedFields,coachReviewedFieldContext} from '../lib/coaching/coach-preconsulting.mjs'
 import {projectCoachPriorSessions} from '../lib/coaching/coach-staged-memory.mjs'
 import {coachLiveMemoryNote} from '../lib/coaching/coach-live-memory-note.mjs'
 import {coachOpeningProgress,coachOpeningNextReply} from '../lib/coaching/coach-opening-protocol.mjs'
@@ -47,4 +47,22 @@ test('text model uses the same adaptive gap instruction and preserves the latest
  assert.match(result.at(-3).content,/ONE useful missing-detail question/)
  assert.match(COACH_PRECONSULTING_GUIDANCE,/Never repeat a known answer/)
  assert.equal(withCoachContext(turns,{...snapshot,items:[{...snapshot.items[0],sourceKind:'saved_life_plan'}]}),turns)
+})
+
+test('historical field memory is literal, reviewed and bounded; never a current answer',()=>{
+ const quote='I need a more predictable schedule.'
+ const protocol={...record,locale:'en',courseSessionId:'clarity_discover',
+  turns:[{role:'user',content:quote},{role:'assistant',content:'What is important?'},{role:'user',content:'PRIVATE UNREVIEWED'}],
+  courseFieldReview:{version:'hh-coach-course-review-v1',courseSessionId:'clarity_discover',events:[{fieldId:'needs',status:'confirmed',turnIndex:0,quote,revision:1}]}}
+ const projection=projectCoachReviewedFields(protocol)
+ assert.equal(projection.fields.length,1)
+ assert.equal(projection.fields[0].answer,quote)
+ assert.equal(projectCoachReviewedFields({...protocol,provenance:'draft'}),null)
+ assert.equal(projectCoachReviewedFields({...protocol,courseFieldReview:null}),null)
+ assert.equal(projectCoachReviewedFields({...protocol,turns:[{role:'user',content:'different quote'}]}),null)
+ const items=coachReviewedFieldContext(projection)
+ assert.equal(items.length,1);assert.match(items[0].text,/Historical reviewed answer/)
+ assert.doesNotMatch(JSON.stringify(projectCoachPriorSessions([protocol])),/PRIVATE UNREVIEWED/)
+ assert.doesNotMatch(coachLiveMemoryNote({prior:projectCoachPriorSessions([protocol]),priorAllowed:true,continuity:'previous'}),/more predictable schedule/)
+ assert.deepEqual(coachReviewedFieldContext({...projection,source:'draft'}),[])
 })
