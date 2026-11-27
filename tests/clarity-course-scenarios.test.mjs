@@ -188,3 +188,25 @@ test('a current answer is verified before a timed transition, while closing rema
   }
  }
 })
+
+test('unverified time uses short scenario-order guidance; separate permissions never become live questions',()=>{
+ const opening={completed:true,answers:{focus:{kind:'goal'}}}
+ for(const course of ['clarity_day_1','clarity_day_2','clarity_day_3']){
+  for(const locale of ['en','ru','es']){
+   const schema=coachCourseProtocolSchema(course,locale,{scenarioVersion:clarityScenarioVersion(course)})
+   for(const elapsedSeconds of [null,undefined,NaN,-1]){
+    const directive={conversationAct:'substantive_reply',timebox:{elapsedSeconds}}
+    const hint=coachCourseCheckpointGuidance(course,locale,opening,directive,[],'I want to explore this.')
+    assert.match(hint,/Active time unverified/)
+    assert.match(hint,/approved scenario order/)
+    assert.ok(hint.length<=450)
+   }
+   for(const row of schema.checkpoints.filter(x=>x.requiresSeparateReview)){
+    const directive={conversationAct:'substantive_reply',timebox:{elapsedSeconds:300}}
+    const hint=coachCourseCheckpointGuidance(course,locale,opening,directive,[{role:'assistant',content:row.question}],'yes')
+    assert.doesNotMatch(hint,/Current field:/)
+    assert.equal(hint,clarityScenarioTimeGuidance(course,300))
+   }
+  }
+ }
+})
