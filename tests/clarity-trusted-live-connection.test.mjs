@@ -12,7 +12,7 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture(){
+function fixture({beforePersist=async()=>{}}={}){
  const base=1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const lease={leaseId:id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt:null,
@@ -20,7 +20,7 @@ function fixture(){
  let now=base,seq=20,tid=0;const timers=new Map(),events=[]
  const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
-  persist:async e=>{events.push(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
+  persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
  function advance(ms){now+=ms;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
  const consent=()=>client.input({type:'hh_clarity_consent',decision:'start'})
@@ -81,4 +81,20 @@ test('provider is closed on credential expiry without claiming logical completio
  f.advance(1200000);await f.relay.settled()
  assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,0)
  assert.equal(f.provider.readyState,3)
+})
+
+
+test('unconsented connection closes at its short start deadline without creating a run',async()=>{
+ const f=fixture();f.ready();f.advance(45000);await f.relay.settled()
+ assert.equal(f.events.length,0);assert.equal(f.run.clock.revision,0)
+ assert.equal(f.provider.readyState,3);assert.equal(f.client.readyState,3)
+})
+test('client disconnect during first durable begin closes upstream and records pause without credit',async()=>{
+ let release,entered;const blocked=new Promise(resolve=>{release=resolve}),start=new Promise(resolve=>{entered=resolve})
+ const f=fixture({beforePersist:async e=>{if(e.type==='begin'){entered();await blocked}}})
+ f.ready();f.consent();await start
+ f.client.close();assert.equal(f.provider.readyState,3)
+ release();await f.relay.settled()
+ assert.equal(f.events.length,2);assert.equal(f.events[0].type,'begin');assert.equal(f.events[1].type,'disconnect')
+ assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,0)
 })
