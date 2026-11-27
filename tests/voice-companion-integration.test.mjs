@@ -242,6 +242,8 @@ test('call barge ownership is restricted to consented owner PCM and records no p
  assert.match(voice,/performance\.measure\('hh-ali-text-to-'\+kind,\{start,end:window\.performance\.now\(\)\}\)/);
  assert.match(call,/voice\.speaking&&voice\.phoneAutoInterrupt/);
  assert.match(recorder,/const prefix=fastCoach\?'hh-coach':'hh-ali'/);
+ assert.match(recorder,/const aliBargePreRoll=purpose==='ali_chat'&&fastConversation&&monitorPlayback===true/);
+ assert.match(recorder,/if\(!\(fastCoach\|\|aliBargePreRoll\)\|\|!captureContext\?\.audioWorklet/);
 });
 
 test('barge gate ducks only a candidate, then accepts exactly one human turn and no playback echo',()=>{
