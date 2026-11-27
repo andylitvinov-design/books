@@ -215,3 +215,49 @@ test('Day 1 v5 current-only wheel retains exact question provenance and old pair
  const axis=claritySemanticResult(1,view.rows,'en').axes[0]
  assert.equal(axis.current,0);assert.equal(axis.desired,null);assert.equal(axis.source,'daybook')
 })
+
+import {CLARITY_DAY_ONE_VERSION,CLARITY_DAY_ONE_REVIEW_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
+import {checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
+test('v5 independent homework needs verified method consent, trusted exact timed end and current-only ratings',()=>{
+ const id='00000000-0000-4000-8000-000000000001',segmentId='00000000-0000-4000-8000-000000000011',connectionId='00000000-0000-4000-8000-000000000021'
+ let clock=createClarityCourseClock()
+ const event={day:1,protocolId:id,segmentId,connectionId}
+ clock=advanceClarityCourseClock(clock,{...event,type:'begin',expectedRevision:0,atMs:0,coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId:id,connectionId,coachId:'mira',atMs:0,turnId:'consent:1'}})
+ for(let t=10000;t<=1200000;t+=10000)clock=advanceClarityCourseClock(clock,{...event,type:'observe',expectedRevision:clock.revision,atMs:t,evidence:'server_observed_connected'})
+ const base={id,courseSessionId:'clarity_day_1',locale:'en',provenance:'client_reviewed_dialogue',savedAt:'2026-11-26T12:00:00Z',durationSeconds:1200,clarityTimeLimitReached:true,clarityHomeworkAccepted:true,opening:{completed:true,declined:false,checkmarks:{confirmation:true},confirmedQuote:'Yes'}}
+ const schema=coachCourseProtocolSchema(base.courseSessionId,'en',{scenarioVersion:CLARITY_DAY_ONE_VERSION})
+ const question=field=>schema.checkpoints.find(r=>r.id===field).question
+ const make=(answer,decision)=>{
+  const turns=answer?[{role:'assistant',content:question('balance_consent')},{role:'user',content:answer}]:[]
+  const events=answer?[{fieldId:'balance_consent',status:'confirmed',turnIndex:1,quote:answer,revision:1,binding:{questionTurnIndex:0,decision}}]:[]
+  if(decision==='accepted'){
+   turns.push({role:'assistant',content:question('outer_body_health')},{role:'user',content:'0'},{role:'assistant',content:checkpointConfirmation(question('outer_body_health'),'0','en')},{role:'user',content:'Yes'})
+   events.push({fieldId:'outer_body_health',status:'confirmed',turnIndex:3,quote:'0',revision:2,binding:{questionTurnIndex:2,confirmationTurnIndex:5}})
+  }
+  return {...base,turns,courseFieldReview:{version:CLARITY_DAY_ONE_REVIEW_VERSION,courseSessionId:base.courseSessionId,events}}
+ }
+ for(const [answer,decision] of [[null,null],['No','declined'],['Not now','deferred'],['Yes','accepted']]){
+  const record=make(answer,decision),result=clarityCourseResult(record,'en',{clock}),ids=result.homework.map(row=>row.id)
+  assert.ok(ids.includes('situation'));assert.ok(ids.includes('needs'));assert.ok(ids.includes('learning'))
+  assert.ok(!ids.some(x=>['balance_consent','balance_review','reviewed_summary','homework_consent','outer_body_health'].includes(x)))
+  assert.equal(ids.filter(x=>x.startsWith('outer_')).length,decision==='accepted'?7:0)
+  assert.ok(result.homework.every(row=>clarityHomeworkTags(id,row.id)))
+  assert.deepEqual(clarityCourseResult(record,'en').homework,[])
+  assert.deepEqual(clarityCourseResult({...record,clarityHomeworkAccepted:false},'en',{clock}).homework,[])
+  assert.deepEqual(clarityCourseResult({...record,id:'00000000-0000-4000-8000-000000000009'},'en',{clock}).homework,[])
+  if(decision==='accepted'){
+   const field='outer_finance',row=result.homework.find(r=>r.id===field)
+   assert.equal(row.ratingMode,'current')
+   const note=text=>({kind:'note',revision:1,goalId:null,text,tags:clarityHomeworkTags(id,field)})
+   const pair=clarityResultProjection(result,[note('5/10')],{journalComplete:true})
+   assert.equal(pair.rows.find(r=>r.id===field).homeworkState,'invalid')
+   const single=clarityResultProjection(result,[note('0')],{journalComplete:true})
+   const axis=claritySemanticResult(1,single.rows).axes.find(r=>r.id===field)
+   assert.equal(single.homeworkDone,1);assert.equal(axis.current,0);assert.equal(axis.desired,null);assert.equal(axis.source,'daybook')
+   assert.equal(claritySemanticResult(1,single.rows).axes[0].source,'client_reviewed_quote')
+  }
+ }
+ const declined=make('No','declined'),rows=coachCourseProtocolRows(base.courseSessionId,declined.turns,declined.courseFieldReview)
+ const forged=rows.map(row=>row.id==='balance_consent'?{...row,methodDecision:'accepted'}:row)
+ assert.ok(!clarityHomeworkCandidates(declined,forged).some(row=>row.id.startsWith('outer_')))
+})
