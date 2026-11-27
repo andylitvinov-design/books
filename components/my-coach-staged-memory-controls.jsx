@@ -23,7 +23,7 @@ const copy={
    tests:'Подключить отдельно разрешённые результаты тестов',topic:'Тема сохранённого контекста',
    choose:'Выберите тему',details:'Цели и профиль · после знакомства',approved:'Разрешённые записи',
    empty:'Разрешённых записей по выбранной теме пока нет',share:'Передать только отдельно разрешённые записи, не весь профиль',
-   sharePrior:'Отдельно разрешаю передать этому AI-коучу моё имя, краткий итог первой сохранённой сессии и до двух последних',
+   sharePrior:'Отдельно разрешаю передать этому AI-коучу моё имя, краткий итог первой сохранённой сессии и до двух последних, включая статусы проверенных пунктов и незакрытых вопросов',
    shareAxes:'Отдельно разрешаю передать подтверждённые оценки восьми смысловых осей (0–10) выбранному AI. Google Gemini Free может использовать их для обучения.'},
  en:{title:'Coach memory · only with your permission',prior:'Check for previous coaching sessions and recall my preferred name and brief conclusions',
    extra:'Google Gemini Free may use submitted content to improve its models. This permission covers only the chosen details, not your entire account.',
@@ -34,7 +34,7 @@ const copy={
    tests:'Use separately approved test results',topic:'Saved context topic',
    choose:'Choose a topic',details:'Goals and profile · after introductions',approved:'Approved items',
    empty:'No approved items for this topic yet',share:'Share individually approved items, not the full profile',
-   sharePrior:'Separately allow this AI coach to receive my name, first saved session recap and up to two recent recaps',
+   sharePrior:'Separately allow this AI coach to receive my name, first saved session recap and up to two recent recaps, including reviewed checkpoint and unresolved-question status',
    shareAxes:'Separately allow the selected AI to receive my reviewed 0–10 meaning-axis ratings. Google Gemini Free may use them for training.'},
  es:{title:'Memoria del coach · solo con tu permiso',prior:'Buscar sesiones anteriores y recordar mi nombre y sus conclusiones breves',
    extra:'Gemini Free puede usar los datos enviados para mejorar modelos. Este permiso solo cubre la información elegida, no toda tu cuenta.',
@@ -45,7 +45,7 @@ const copy={
    tests:'Usar resultados de pruebas aprobados por separado',topic:'Tema del contexto guardado',
    choose:'Selecciona un tema',details:'Metas y perfil · después de conocernos',approved:'Datos aprobados',
    empty:'Todavía no hay datos aprobados para este tema',share:'Compartir solo elementos aprobados, no todo el perfil',
-   sharePrior:'Autorizo al coach IA a recibir mi nombre, el primer resumen guardado y hasta dos resúmenes recientes',
+   sharePrior:'Autorizo al coach IA a recibir mi nombre, el primer resumen guardado y hasta dos resúmenes recientes, incluidos los estados de revisión y las preguntas pendientes',
    shareAxes:'Autorizo por separado a la IA a recibir mis puntuaciones revisadas de los ocho ejes (0–10). Gemini Free puede usarlas para entrenar modelos.'},
 }
 
@@ -58,6 +58,7 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
  const [allowProfile,setAllowProfile]=useState(false)
  const [sharePersonal,setSharePersonal]=useState(false)
  const [sharePrior,setSharePrior]=useState(false)
+ const [shareReviewedFields,setShareReviewedFields]=useState(false)
  const [shareAxes,setShareAxes]=useState(false)
  const [identity,setIdentity]=useState(null)
  const [stageToken,setStageToken]=useState('')
@@ -73,9 +74,10 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
 
  useEffect(()=>{
    if(!invitationAccepted||!priorAllowed)setSharePrior(false)
- },[invitationAccepted,priorAllowed])
+   if(!invitationAccepted||!priorAllowed||!sharePrior||provider!=='groq')setShareReviewedFields(false)
+ },[invitationAccepted,priorAllowed,sharePrior,provider])
  useEffect(()=>{
-   setIdentity(null);setStageToken('');setPersonal(null)
+   setIdentity(null);setStageToken('');setPersonal(null);setShareReviewedFields(false)
    if(!invitationAccepted||!wantsMemory){setLoadingIdentity(false);return}
    const controller=new AbortController()
    setLoadingIdentity(true);setFailed(false)
@@ -126,9 +128,10 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
  useEffect(()=>{
    lastCallback.current?.({provider,prior:priorAllowed?identity:null,stageToken,personal,
      allowGoals,allowProfile,assessmentsAllowed,sharePersonal,sharePrior,shareAxes,topicKey,invitationAccepted,
+     shareReviewedFields:provider==='groq'&&sharePrior&&shareReviewedFields,
      loading:loadingIdentity||loadingPersonal})
  },[provider,identity,stageToken,personal,priorAllowed,allowGoals,allowProfile,
-   assessmentsAllowed,sharePersonal,sharePrior,shareAxes,topicKey,invitationAccepted,loadingIdentity,loadingPersonal])
+   assessmentsAllowed,sharePersonal,sharePrior,shareAxes,topicKey,invitationAccepted,loadingIdentity,loadingPersonal,shareReviewedFields])
 
  return <section className={styles.goalPrivacy} data-coach-staged-memory aria-label={t.title}>
    <label data-coach-prior-session-opt-in>
@@ -149,12 +152,22 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
        {identity.previous?.[1]&&<p>{[identity.previous[1].date,identity.previous[1].topic,identity.previous[1].clientConclusions,identity.previous[1].clientNextStep].filter(Boolean).join(' · ')}</p>}
        {identity.previous?.[0]?.clientConclusions&&<p>{t.recap}: {identity.previous[0].clientConclusions}</p>}
        {identity.previous?.[0]?.clientNextStep&&<p>{t.step}: {identity.previous[0].clientNextStep}</p>}
+       {identity.reviewedFields?.fields?.length>0&&<details data-coach-reviewed-history>
+         <summary>{({ru:'Зафиксированные ответы прошлой сессии',en:'Reviewed answers from the previous session',es:'Respuestas revisadas de la sesión anterior'})[lang]}</summary>
+         <small>{identity.reviewedFields.date} · {({ru:'Исторические данные, не текущие ответы',en:'Historical data, not current answers',es:'Datos históricos, no respuestas actuales'})[lang]}</small>
+         <dl>{identity.reviewedFields.fields.map(field=><div key={field.id}><dt>{field.label}</dt><dd style={{overflowWrap:'anywhere',whiteSpace:'pre-wrap'}}>{field.answer}</dd></div>)}</dl>
+       </details>}
      </div>}
    </div>:null}
    {invitationAccepted&&priorAllowed&&identity&&!loadingIdentity&&
      <label data-coach-prior-provider-sharing>
        <input type="checkbox" checked={sharePrior} onChange={event=>setSharePrior(event.target.checked)}/>
        {' '}{t.sharePrior}
+     </label>}
+   {invitationAccepted&&identityConfirmed&&priorAllowed&&sharePrior&&provider==='groq'&&!loadingIdentity&&identity?.reviewedFields?.fields?.length>0&&
+     <label data-coach-reviewed-fields-sharing>
+       <input type="checkbox" checked={shareReviewedFields} onChange={event=>setShareReviewedFields(event.target.checked)}/>
+       {' '}{({ru:'Разрешаю передать проверенному Groq (без хранения данных) до трёх коротких подтверждённых ответов из предыдущего протокола. Полная история не передаётся этим разрешением.',en:'Allow verified Groq (zero data retention) to receive up to three short reviewed answers from the previous protocol. This does not share the full archive.',es:'Autorizo a Groq verificado (sin retención) a recibir hasta tres respuestas breves revisadas del protocolo anterior. No se comparte el archivo completo.'})[lang]}
      </label>}
    {identityConfirmed&&focusConfirmed&&<details className={styles.voicePrivacyDetails} data-coach-memory-personal>
      <summary>{t.details}</summary>

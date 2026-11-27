@@ -81,3 +81,21 @@ test('mobile coach thumbnails preserve their photo proportions and the Mira CTA 
   assert.match(css, /\.stageActions > \[data-my-coach-mira-quick-start\][\s\S]*?flex:0 1 88%;/)
   assert.match(css, /\.stageActions\{justify-content:center\}/)
 })
+
+
+test('approved My Coach landing prioritizes the original portrait, talk and free program', () => {
+  const jsx = read('components/my-coach-catalog.jsx')
+  const css = read('components/my-coach-mira-landing.module.css')
+  const hero = jsx.slice(jsx.indexOf('className={heroStyles.heroStage}'), jsx.indexOf('className={heroStyles.coachRailHeading}'))
+  assert.match(hero, /<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
+  assert.match(hero, /<h2>\{selectedName\}<\/h2>/)
+  assert.doesNotMatch(hero, /hw\.hello|stageTopics|liveLabel/)
+  assert.match(hero, /coachCourseLaunchHref\(lang,'clarity',selected\.id\)/)
+  assert.match(jsx, /Start Free AI Coaching/)
+  assert.match(hero, /data-my-coach-program-details/)
+  assert.ok(hero.includes("'/my-coach/programs'"))
+  assert.ok(hero.indexOf('className={heroStyles.stageActions}') < hero.indexOf('data-my-coach-program-panel'))
+  assert.match(css, /\.heroStage\[data-my-coach-hero\] \.heroPortrait\{[\s\S]*?aspect-ratio:9 \/ 16/)
+  assert.match(css, /\.heroStage\[data-my-coach-hero\] \.stageGreeting\{[\s\S]*?background:none/)
+  assert.match(css, /\.programPanel\{/)
+})

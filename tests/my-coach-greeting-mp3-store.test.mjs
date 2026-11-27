@@ -200,3 +200,14 @@ test('Harry v6 preserves historical keys and is exclusive to Harry',()=>{
   assert.equal(coachGreetingObjectKey('harry',locale),'v2/'+locale+'/harry.mp3')
  }
 })
+
+
+test('v7 short session openings have independent immutable keys; Harry v6 remains exclusive',()=>{
+  for(const locale of locales)for(const coach of [...coaches,'caesar']){
+    assert.equal(coachGreetingObjectKey(coach,locale,'v7'),'v7/'+locale+'/'+coach+'.mp3')
+    assert.equal(coachGreetingObjectKey(coach,locale,'v6'),coach==='harry'?'v6/'+locale+'/harry.mp3':null)
+    assert.equal(coachGreetingObjectKey(coach,locale),'v2/'+locale+'/'+coach+'.mp3')
+  }
+  assert.equal(coachGreetingObjectKey('../x','ru','v7'),null)
+  assert.equal(coachGreetingObjectKey('harry','../x','v7'),null)
+})

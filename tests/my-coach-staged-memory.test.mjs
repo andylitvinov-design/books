@@ -105,3 +105,12 @@ test('session-scoped grants require a staged provider ticket in model input',()=
   assert.throws(()=>normalizeGenerativeCoachInput({...input,memoryStageToken:undefined}),/COACHING_BRAIN_INPUT_INVALID/)
   assert.throws(()=>normalizeGenerativeCoachInput({...input,contextSessionToken:'invalid'}),/COACHING_BRAIN_INPUT_INVALID/)
 })
+
+test('reviewed fields require separate prior consent and a signed stage token',()=>{
+ const stage=issueCoachMemoryTicket({accountId:'owner',provider:'groq',secret:'fixture',priorSessions:true})
+ const base={personaId:'mira',locale:'en',consent:true,message:'Hello',turns:[],memoryStageToken:stage,allowOpeningPrior:true,memorySharePrior:true}
+ assert.doesNotThrow(()=>normalizeGenerativeCoachInput({...base,memoryShareReviewedFields:true}))
+ assert.throws(()=>normalizeGenerativeCoachInput({...base,memorySharePrior:false,memoryShareReviewedFields:true}),/COACHING_BRAIN_INPUT_INVALID/)
+ assert.throws(()=>normalizeGenerativeCoachInput({...base,memoryStageToken:undefined,memoryShareReviewedFields:true}),/COACHING_BRAIN_INPUT_INVALID/)
+ assert.throws(()=>normalizeGenerativeCoachInput({...base,allowOpeningPrior:false,memoryShareReviewedFields:true}),/COACHING_BRAIN_INPUT_INVALID/)
+})

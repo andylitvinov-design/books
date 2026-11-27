@@ -78,4 +78,6 @@
 .fieldRow[data-dual-evidence-field] .evidenceChecks{grid-column:2 / -1}
 .protocolGroup{border-top:1px solid #eae7dd;padding:9px 3px;display:grid;gap:8px;min-width:0}
 .protocolGroupTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#17493e;font-size:14px}
-.protocolGroupBar{height:6px;border-radius:99px;background:linear-gradient(to right,#32846b 0 var(--verified),#a7cfbe var(--verified) var(--recorded),#e7e3dc var(--recorded) calc(100% - var(--skipped)),#b9b4a9 calc(100% - var(--skipped)) 100%)}
+.protocolGroupBar{height:6px;border-radius:99px;background:#e7e3dc}
+.protocolGroupBar[data-stage-tone=yellow]{background:#dcb877}
+.protocolGroupBar[data-stage-tone=green]{background:#32846b}

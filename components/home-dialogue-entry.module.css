@@ -694,3 +694,21 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 /* Fourth owner-approved program: the original three remain unchanged. */
 .programCard[data-home-intent-option="reiki"]{background:linear-gradient(125deg,#278b72,#075447 58%,#063b33);border-color:#ffe0a0;box-shadow:0 2px 9px #164f4055,inset 0 0 0 1px #ffe1a44d}
 .programCard[data-home-intent-option="reiki"] .programImage img{object-position:55% center}
+
+.sessionLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 44px;
+  margin: 0 auto;
+  padding: 0 14px;
+  color: #163c33;
+  background: #fff3dc;
+  border: 1px solid #d9ad65;
+  border-radius: 999px;
+  font: 700 14px/1.2 system-ui;
+  text-decoration: none;
+}
+.sessionLink:focus-visible { outline: 2px solid #163c33; outline-offset: 2px; }

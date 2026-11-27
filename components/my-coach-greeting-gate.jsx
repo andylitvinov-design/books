@@ -6,7 +6,6 @@ import {useRouter} from 'next/navigation'
 import {ArrowLeft,Play,Headphones,History,Sparkles,Volume2,List,ChevronDown,ChevronLeft,ChevronRight,X,Info} from 'lucide-react'
 import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,COACH_METHOD_CODES} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
-import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import {MyCoachInlineProfile} from './my-coach-compact-profile'
@@ -36,11 +35,10 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[]}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
- const presentation=getCoachPresentation(personaId,lang)
  const [phase,setPhase]=useState('preview')
  const [error,setError]=useState('')
  const [expandedGroup,setExpandedGroup]=useState(null)
@@ -98,7 +96,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    setError('');setPhase('playing')
    try{
      player.current=startDirectCoachIntroAudio(url,{
-       fallbackText:presentation?.text||localCoachText(persona?.opening,lang),locale:lang,
+       locale:lang,
        onStart:()=>{if(audioRun.current===generation)setPhase('playing')},
        onEnd:()=>{if(audioRun.current===generation){player.current=null;setPhase('complete')}},
        onBlocked:()=>{if(audioRun.current===generation){player.current=null;setError(t.failed);setPhase('complete')}},
@@ -108,6 +106,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  }
  function chooseSession(id,options){
    if(chosen.current||switching.current)return
+   if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
@@ -122,11 +121,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const label=name||localCoachText(persona?.name,lang)||''
  const russianNames={mira:'Мирой',max:'Максом',sofia:'Софией',alex:'Алексом',merlin:'Мерлином',harry:'Гарри',genie:'Самиром'}
  const sessionName=lang==='ru'?(russianNames[personaId]||'«'+label+'»'):label
- const greetingText=presentation?.text||localCoachText(persona?.opening,lang)||''
- const sentences=greetingText.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)||[greetingText]
- const shortGreeting=sentences.slice(0,2).join('').trim()
- const remainingGreeting=sentences.slice(2).join('').trim()
- const compactCopy={en:{eyebrow:'AI COACH',thematic:'Thematic sessions',again:'Listen to the greeting',more:'Read full greeting'},ru:{eyebrow:'AI-КОУЧ',thematic:'Тематические сессии',again:'Послушать приветствие',more:'Читать приветствие полностью'},es:{eyebrow:'COACH DE IA',thematic:'Sesiones temáticas',again:'Escuchar la bienvenida',more:'Leer la bienvenida completa'}}[lang]
+ const compactCopy={en:{eyebrow:'AI COACH',thematic:'Thematic sessions',again:'Listen to the greeting'},ru:{eyebrow:'AI-КОУЧ',thematic:'Тематические сессии',again:'Послушать приветствие'},es:{eyebrow:'COACH DE IA',thematic:'Sesiones temáticas',again:'Escuchar la bienvenida'}}[lang]
  return <div className={styles.screen} data-my-coach-greeting-gate={personaId}
    data-greeting-phase={phase}>
    <div className={styles.firstView}>
@@ -156,16 +151,9 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>}
      </div>
      {phase==='complete'&&<div className={styles.completed}>
-       <div className={styles.quoteCard}>
-         <p className={styles.greetingQuote}>“{shortGreeting}{remainingGreeting?'…':'”'}</p>
-         {remainingGreeting&&<details className={styles.fullGreeting}>
-           <summary>{compactCopy.more}</summary>
-           <p>“{greetingText}”</p>
-         </details>}
-       </div>
        <button type="button" className={styles.primary} data-coach-greeting-start
          onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
-         <span>{t.start} {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+         <span>{draftCourses.includes(INTRODUCTORY_COACH_SESSION_ID)?({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]:({ru:'Начать сессию',en:'Start session',es:'Iniciar sesión'})[lang]} · {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
        {privateProfileEnabled&&<div data-coach-private-profile-entry style={{display:'grid',gap:8}}>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button>
@@ -202,7 +190,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            {group.sessions.map(item=><button key={item.id} type="button" className={styles.topicChoice}
              data-coach-topic={item.id} onClick={()=>chooseSession(item.id)}>
              <span className={styles.topicNumber}>{String(item.number).padStart(2,'0')}</span>
-             <span>{coachCourseLocal(item.title,lang)}</span><ChevronRight size={18} aria-hidden="true"/>
+             <span>{coachCourseLocal(item.title,lang)}{draftCourses.includes(item.id)&&<small> · {({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]}</small>}</span><ChevronRight size={18} aria-hidden="true"/>
            </button>)}
          </div>
        </section>)}
