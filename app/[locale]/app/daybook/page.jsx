@@ -9,5 +9,5 @@ export default async function DaybookPage({params,searchParams}){
  const {locale}=await params
  if(!['en','ru','es'].includes(locale))notFound()
  const query=await searchParams
- return <DaybookJournal locale={locale} {...daybookRouteOptions(query)} initialProgram={query?.program==='clarity'?'clarity':null}/>
+ return <DaybookJournal locale={locale} {...daybookRouteOptions(query)} initialProgram={['clarity','anti-stress'].includes(query?.program)?query.program:null}/>
 }

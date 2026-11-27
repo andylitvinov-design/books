@@ -21,3 +21,25 @@ test('visual feedback does not replace private journal verification or grant com
  assert.equal(gameProgress([note(1),note(2),note(3),{...note(2),id:'duplicate'}],2).complete,false)
  assert.equal(gameProgress([{...note(1),revision:0}],2).done,0)
 })
+
+test('all three days have one translated practical action cue per game and goal choices allow defer',()=>{
+ for(const locale of ['ru','en','es'])for(const day of [1,2,3])for(const game of daybookGames(locale,day)){
+  assert.equal(game.steps.length,4)
+  const cues=game.steps.filter(s=>typeof s.actionCue==='string')
+  assert.equal(cues.length,1)
+  assert.ok(cues[0].actionCue.length>30)
+  assert.ok(!cues[0].actionCue.includes('|'))
+  const answers=Object.fromEntries(game.steps.map((s,i)=>[i,s.kind==='multi'?[0]:0]))
+  const saved=gameResult(game,answers)
+  assert.ok(!saved.includes(cues[0].actionCue))
+  assert.deepEqual(decodeSavedGame({locale,text:saved},day,game.id),answers)
+ }
+ for(const locale of ['ru','en','es']){
+  const [direction,goal,quest]=daybookGames(locale,3)
+  const defer={ru:'Пока уточняю',en:'Still exploring',es:'Todavía exploro'}[locale]
+  const later={ru:'Пока не готов(а)',en:'Not ready yet',es:'Aún no estoy listo/a'}[locale]
+  assert.equal(direction.steps[0].options.at(-1),defer)
+  assert.ok(goal.steps.every(s=>s.options.at(-1)===defer))
+  assert.ok(quest.steps.every(s=>s.options.at(-1)===later))
+ }
+})

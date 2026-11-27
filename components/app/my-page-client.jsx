@@ -53,9 +53,11 @@ export default function MyPageClient({locale='en'}){
     <Link href={'/'+locale+'/practice'} data-profile-mode="work" prefetch={false}>{locale==='ru'?'Профиль мастера':locale==='es'?'Perfil profesional':'Practitioner profile'}</Link>
    </nav>
   {status==='loading'?<p role="status">{t.loading}</p>:null}
-  {status==='error'?<section className={css.card}><p className={css.error}>{t.error}</p><button className={css.secondary} onClick={()=>void load()}>{t.retry}</button></section>:null}
-  {status==='guest'?<section className={css.card}><p>{t.guest}</p>
-    <button className={css.button} type="button" disabled={busy} onClick={()=>void google()} data-my-page-google>{t.login}</button></section>:null}
+  {(status==='guest'||status==='error')?<section className={css.card} data-my-page-public-fallback={status}>
+    {status==='error'?<><p className={css.error}>{t.error}</p><button className={css.secondary} type="button" onClick={()=>void load()}>{t.retry}</button></>:<><p>{t.guest}</p>
+    <button className={css.button} type="button" disabled={busy} onClick={()=>void google()} data-my-page-google>{t.login}</button></>}
+    <div className={css.actions}><Link className={css.secondary} href={'/'+cabinetLocale+'/app/portrait'} prefetch={false} data-my-page-discover>{({en:'Explore programs and tests',ru:'Посмотреть программы и тесты',es:'Explorar programas y tests'})[locale]||'Explore programs and tests'}</Link>
+    <Link className={css.secondary} href={'/'+locale+'/holistic-support/mandala'} prefetch={false} data-my-page-my-video>MyVideo</Link></div></section>:null}
   {notice?<p role="status" className={notice===t.saved?css.notice:css.error}>{notice}</p>:null}
   {status==='ready'&&data?<>
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
@@ -91,6 +93,11 @@ export default function MyPageClient({locale='en'}){
     </div><p className={css.small}>{t.privacy}</p>
    </section>
    </>:null}
+   <section className={css.card} data-my-page-anti-stress-practices>
+    <h2>{({ru:'Антистресс · практики',en:'Anti-Stress · Practices',es:'Antiestrés · Prácticas'})[locale]}</h2>
+    <p>{({ru:'Три дня самостоятельных упражнений в личном Daybook.',en:'Three days of self-guided exercises in your private Daybook.',es:'Tres días de ejercicios autónomos en tu diario privado.'})[locale]}</p>
+    <Link className={css.button} href={'/'+locale+'/app/daybook?program=anti-stress'} prefetch={false}>{({ru:'Открыть практики',en:'Open practices',es:'Abrir prácticas'})[locale]}</Link>
+   </section>
    <section className={css.card} aria-label={t.feed}><h2>{t.feed}</h2>
     <label className={css.label} htmlFor="my-page-entry">{t.postType}</label>
     <textarea id="my-page-entry" className={css.area} maxLength={1200} rows={3} placeholder={t.write}
