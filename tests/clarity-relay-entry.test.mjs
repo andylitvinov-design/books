@@ -224,7 +224,7 @@ test('browser WebSocket relay opens same-origin only and releases microphone aft
  let socket,visible=true,timerId=0
  const timers=new Map(),clocks=[],selectionFrames=[],played=[],drained=[],closed=[]
  class BrowserSocket {
-  constructor(url){this.url=url;this.readyState=0;this.sent=[];socket=this}
+  constructor(url){this.url=url;this.readyState=0;this.bufferedAmount=0;this.sent=[];socket=this}
   send(raw){this.sent.push(JSON.parse(raw))}
   open(){this.readyState=1;this.onopen()}
   receive(value){this.onmessage({data:wire(value)})}
@@ -275,4 +275,11 @@ test('browser WebSocket relay opens same-origin only and releases microphone aft
  socket.receive(clock(5000,'active'));socket.close()
  assert.equal(closed.at(-1).status,'unverified');assert.equal(closed.at(-1).elapsedMs,5000);assert.equal(closed.at(-1).terminalVerified,false)
  assert.equal(k.sendAudio(audio),false)
+ const l=connectClarityBrowserRelay(opts);socket.open();socket.receive(select);socket.receive({type:'hh_clarity_ready',decision:'continue'})
+ socket.receive(clock(5000,'active'));socket.bufferedAmount=200001
+ const before=socket.sent.length
+ assert.equal(l.sendAudio(audio),false);assert.equal(socket.sent.length,before)
+ assert.equal(closed.at(-1).reason,'audio_backpressure_unverified');assert.equal(closed.at(-1).status,'unverified')
+ assert.equal(closed.at(-1).elapsedMs,5000);assert.equal(closed.at(-1).terminalVerified,false)
+ assert.equal(l.snapshot().closed,true);assert.equal(events.size,0);assert.equal(timers.size,0)
 })

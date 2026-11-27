@@ -5,7 +5,7 @@ import {createClarityRun,advanceClarityRun,clarityRunSummary,clarityRunCredentia
 import {bindClarityTrustedLiveConnection} from '../lib/coaching/clarity-trusted-live-connection.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 class Socket extends EventEmitter{
- constructor(){super();this.readyState=1;this.messages=[];this.pings=[]}
+ constructor(){super();this.readyState=1;this.bufferedAmount=0;this.messages=[];this.pings=[]}
  send(value){this.messages.push(JSON.parse(value))}
  ping(value){this.pings.push(value)}
  close(code=1000){if(this.readyState===3)return;this.readyState=3;this.emit('close',code)}
@@ -208,4 +208,23 @@ test('failed delivery of start ACK stops without opening speech or adding time',
  assert.equal(f.run.clock.days[0].status,'paused')
  assert.equal(f.run.clock.days[0].elapsedMs,0)
  assert.equal(f.provider.readyState,3)
+})
+
+
+test('relay backpressure stops both sockets and preserves only durably observed time',async()=>{
+ const audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ for(const side of ['client','provider']){
+  const f=fixture();f.ready();f.consent();await f.relay.settled()
+  f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+  assert.equal(f.run.clock.days[0].elapsedMs,5000)
+  f.advance(5000);f.client.pong();f[side].bufferedAmount=200001;f.provider.pong();await f.relay.settled()
+  assert.equal(f.run.clock.days[0].elapsedMs,5000);assert.equal(f.run.clock.days[0].status,'paused')
+  assert.equal(f.client.readyState,3);assert.equal(f.provider.readyState,3)
+ }
+ const g=fixture();g.ready();g.consent();await g.relay.settled()
+ const before=g.provider.messages.length;g.provider.bufferedAmount=200001;g.client.input(audio);await g.relay.settled()
+ assert.equal(g.provider.messages.length,before);assert.equal(g.run.clock.days[0].status,'paused')
+ const h=fixture();h.ready();h.consent();await h.relay.settled()
+ const delivered=h.client.messages.length;h.client.bufferedAmount=200001;h.provider.input({serverContent:{turnComplete:true}});await h.relay.settled()
+ assert.equal(h.client.messages.length,delivered);assert.equal(h.run.clock.days[0].status,'paused')
 })
