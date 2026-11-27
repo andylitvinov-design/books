@@ -1112,7 +1112,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // text-model + WAV-TTS pipeline. Do not charge another provider.
       const message=draft.trim()
       if(!message)return null
-      if(nameCorrectionRef.current||openingProgress.pendingNameCorrection||coachExplicitNameCorrection(message)||coachExplicitRecall(message)){
+      if(nameCorrectionRef.current||openingProgress.pendingNameCorrection||coachExplicitNameCorrection(message)||(coachExplicitRecall(message)&&(coachingBrainSafety({locale:conversationLang,message,turns:turnsRef.current})||coachingBrainBoundary({locale:conversationLang,message,turns:turnsRef.current})))){
         speechRef.current?.stop?.();voicePauseRef.current=false
         setVoiceState({phase:'idle',beat:0})
         return await sendMessage(message,{forceLocal:true})
@@ -1123,6 +1123,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
          (voicePaused&&speechRef.current?.isResumeUnavailable?.()))return await sendMessage(message,{forceLocal:true})
       const accepted=speechRef.current?.sendText?.(message)===true
       if(accepted){setDraft('');setError('');return {mode:'live'}}
+      if(coachExplicitRecall(message)){setError(({ru:'Дождитесь окончания текущей реплики и отправьте вопрос о памяти.',en:'Send your memory question after the current reply finishes.',es:'Envía la pregunta de memoria al terminar la respuesta actual.'})[lang]);return null}
       if(voicePaused){setError(({ru:'Нажмите Play, чтобы продолжить прежний разговор.',en:'Tap Play to resume the previous conversation.',es:'Pulsa Play para continuar la conversación anterior.'})[lang]);return null}
       setError(({ru:'Сначала начните живую голосовую сессию.',
         en:'Start the live voice session first.',
@@ -1321,6 +1322,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const reply=privateCoachRecallText(result,locale)
     setPrivateRecall({owner,sessionId,reply})
     return reply
+  }
+  function handlePrivateLiveRecall(text){
+    const guard={locale:conversationLang,message:text,turns:turnsRef.current}
+    if(!coachExplicitRecall(text)||coachingBrainSafety(guard)||coachingBrainBoundary(guard))return null
+    if(!appendLiveTranscript('user',text))return true
+    setStreamingPreview('');setSpeechPreview('')
+    return {privateRecall:loadPrivateRecall(conversationLang)}
   }
   function captureBasicIntroduction(){
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
@@ -2360,6 +2368,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             localRecoveryTurns={turns.filter(row=>!row.privateGreetingPrefix)}
             privateGreetingText={!turns.length?coachSessionNameSalutation(greetingIdentity.name,conversationLang):''}
             onPrivateGreeting={capturePrivateLiveSalutation}
+            onPrivateRecallRequest={handlePrivateLiveRecall}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={handleVoiceStateChange}
@@ -2379,12 +2388,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               // never mint another grant automatically or let a model save a name.
               const candidate=coachExplicitNameCorrection(text)
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
-              if(coachExplicitRecall(text)&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
-                if(!appendLiveTranscript('user',text))return true
-                setStreamingPreview('');setSpeechPreview('')
-                void loadPrivateRecall(conversationLang)
-                return true // stop Live before accepting an ungrounded reply
-              }
+              const recallDecision=handlePrivateLiveRecall(text)
+              if(recallDecision)return recallDecision
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
@@ -2602,7 +2607,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&privateRecall.sessionId===protocolIdRef.current&&<div className={styles.transcriptCoach} data-coach-private-recall>
             <strong>{name} · {({ru:'Приватная память',en:'Private memory',es:'Memoria privada'})[lang]}</strong>
             <p>{privateRecall.reply}</p>
-            <small>{({ru:'Показано из вашего кабинета, без передачи провайдеру. Для голосового продолжения используйте разрешение на память коуча.',en:'Read from your account without sharing with the provider. For voice continuation, use the coach memory permission.',es:'Leído desde tu cuenta sin compartir con el proveedor. Para continuar por voz, utiliza el permiso de memoria del coach.'})[lang]}</small>
+            <small>{({ru:'Показано из вашего кабинета, без передачи провайдеру. При наличии локального голоса устройства архив может быть озвучен им. Голос коуча требует отдельного разрешения на передачу памяти.',en:'Read from your account without sharing with the provider. If available, an on-device voice can read the archive. The coach voice requires separate memory sharing permission.',es:'Leído desde tu cuenta sin compartir con el proveedor. Si está disponible, una voz local puede leer el archivo. La voz del coach requiere permiso separado para compartir la memoria.'})[lang]}</small>
           </div>}
           {streamingPreview&&<div className={styles.transcriptCoach} data-coach-stream-preview aria-live="off">
             <strong>{name} · {{ru:'Черновик ответа',en:'Draft reply',es:'Borrador de respuesta'}[lang]}</strong>

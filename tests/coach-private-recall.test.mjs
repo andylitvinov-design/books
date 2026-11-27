@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import {coachExplicitRecall,projectPrivateCoachRecall,privateCoachRecallText} from '../lib/coaching/coach-private-recall.mjs'
+import {coachExplicitRecall,projectPrivateCoachRecall,privateCoachRecallText,createPrivateCoachRecallTurn,observePrivateCoachRecallFrame,resolvePrivateCoachRecallTurn} from '../lib/coaching/coach-private-recall.mjs'
 for(const [s,e] of [["Вспомни, на чём мы закончили",true],["Что мы обсуждали на прошлой сессии?",true],["Напомни, на чём остановились",true],["Where did we leave off?",true],["Remember our previous session",true],["¿En qué nos quedamos?",true],["Привет",false],["I remember my mother",false],["Вспомни упражнение",false],["Что мы будем делать сегодня?",false]])assert.equal(coachExplicitRecall(s),e,s)
 const reviewed={provenance:'client_reviewed_dialogue',savedAt:'2026-11-25T12:00:00Z',completedAt:'2026-11-25T11:00:00Z',goal:'Work',clientSummary:'My decision',clientNextStep:'Walk'}
 const draft={updatedAt:'2026-11-26T12:00:00Z',protocol:{provenance:'client_autosaved_unreviewed_draft',turns:[{role:'user',content:'I want to rest today'},{role:'assistant',content:'Invented conclusion'}]}}
@@ -29,8 +29,33 @@ assert.ok(ui.includes("if(sessionId)query.set('exclude',sessionId)"))
 assert.ok(ui.includes('protocolOwnerRef.current!==owner||protocolIdRef.current!==sessionId'))
 assert.ok(ui.includes('privateRecall.sessionId===protocolIdRef.current'))
 assert.ok(ui.includes('recallRequestRef.current?.abort();setPrivateRecall(null)'))
-assert.ok(ui.includes('||coachExplicitRecall(message)){'))
+assert.ok(ui.includes('onPrivateRecallRequest={handlePrivateLiveRecall}'))
 assert.ok(ui.includes('!isNameCorrection&&!coachExplicitRecall(message)'))
 assert.ok(api.includes("if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)"))
 assert.ok(storage.includes("where account_id=$1'+(excludeId?' and protocol_id<>$2::uuid':''"))
 assert.ok(drafts.includes("where account_id=$1 and state='active'"))
+
+// Neither a loaded archive nor a partial/interrupted model reply unlocks a new voice turn.
+for(const order of ['archive-first','boundary-first']){
+ const turn=createPrivateCoachRecallTurn(true)
+ assert.equal(observePrivateCoachRecallFrame(turn,{output:'invented'}),false)
+ assert.equal(observePrivateCoachRecallFrame(turn,{interrupted:true}),false)
+ if(order==='archive-first'){
+   assert.equal(resolvePrivateCoachRecallTurn(turn,'private'),false)
+   assert.equal(observePrivateCoachRecallFrame(turn,{turnComplete:true}),true)
+ }else{
+   assert.equal(observePrivateCoachRecallFrame(turn,{turnComplete:true}),false)
+   assert.equal(resolvePrivateCoachRecallTurn(turn,'private'),true)
+ }
+ turn.playing=true
+ assert.equal(observePrivateCoachRecallFrame(turn,{turnComplete:true}),false)
+}
+assert.equal(resolvePrivateCoachRecallTurn(createPrivateCoachRecallTurn(false),'local'),true)
+assert.ok(privateCoachRecallText(reviewed&&projectPrivateCoachRecall(reviewed,null),'fr').includes('Topic: Work'))
+const transport=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+assert.ok(transport.includes("startPrivateRecall(r,decision.privateRecall,!atBoundary)"))
+assert.ok(transport.includes("startPrivateRecall(r,decision.privateRecall,false)"))
+assert.ok(transport.includes("r.paused||r.privateRecallTurn||!r.ready"))
+assert.ok(transport.indexOf("if(coachExplicitRecall(body))")<transport.indexOf("sendSocket(r,geminiLiveTextMessage(body))"))
+assert.ok(transport.includes("if(observePrivateCoachRecallFrame(r.privateRecallTurn,frame))"))
+assert.ok(!ui.includes("return true // stop Live before accepting an ungrounded reply"))
