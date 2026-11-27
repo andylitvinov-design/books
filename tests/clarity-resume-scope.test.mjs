@@ -55,3 +55,22 @@ test('each My Page Express card opens its own saved run and logical day',()=>{
  assert.ok(ui.includes('const href=clarityMyPageRunHref(locale,c)'))
  assert.ok(ui.includes('const view=courseView(c,lang,t);if(!view)return null'))
 })
+
+test('restored server-ended session opens results without restarting or silently approving a report',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const restore=ui.slice(ui.indexOf('async function restorePrivateDraft('),ui.indexOf('function beginRestoredConversation('))
+ assert.ok(restore.includes('result?.draft?.id!==item.id'))
+ assert.ok(restore.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
+ assert.match(restore,/if\(timedEnd\)\{\s*clarityTimeLimit\.current=true\s*setResumePending\(false\);setPaused\(true\)\s*setProtocolFinishedAt\(new Date\(\)\.toISOString\(\)\);setProtocolEditing\(false\);setProtocolOpen\(true\)/)
+ assert.ok(restore.includes('if(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused)toggleComposer()'))
+ assert.doesNotMatch(restore,/saveProtocol\(/)
+ const expr=restore.match(/const timedEnd=(timeKnown[^\n]+)/)?.[1]
+ assert.ok(expr)
+ const timedEnd=new Function('timeKnown','restoredTime','CLARITY_COURSE_SECONDS','return '+expr)
+ assert.equal(timedEnd(true,{status:'time_limit',elapsedSeconds:1200,remainingSeconds:0},1200),true)
+ for(const [known,time] of [[false,{status:'time_limit',elapsedSeconds:1200,remainingSeconds:0}],[true,{status:'paused',elapsedSeconds:1200,remainingSeconds:0}],[true,{status:'active',elapsedSeconds:1200,remainingSeconds:0}],[true,{status:'time_limit',elapsedSeconds:1199,remainingSeconds:1}],[true,{status:'time_limit',elapsedSeconds:1200,remainingSeconds:1}]])assert.equal(timedEnd(known,time,1200),false)
+ const close=ui.slice(ui.indexOf('async function closeProtocolToRating('),ui.indexOf('async function submitSessionRating('))
+ assert.ok(close.includes('if(clarityTimeLimit.current)'))
+ assert.ok(close.includes('clarityReturnHref(lang,day,activeCourseRunId)'))
+ assert.doesNotMatch(close,/saveProtocol\(/)
+})
