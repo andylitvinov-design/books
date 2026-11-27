@@ -67,3 +67,7 @@
    layer actually renders. No opacity fade through an unrelated portrait. */
 .media .video.presentationLayer{opacity:0;transition:none;will-change:auto}
 .media .video.presentationLayer[data-presentation-visible='true']{opacity:1}
+
+/* Public catalog only: video and poster fill the enlarged cinematic hero.
+   Preserve session/HD camera composition and all other motion contexts. */
+.media[data-coach-motion-context='hero'] :is(.poster,.video){object-fit:cover;object-position:60% 22%}
