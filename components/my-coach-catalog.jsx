@@ -13,7 +13,6 @@ import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
-import { coachCourseLaunchHref } from '@/lib/coach-course-launch.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import { HeaderCreditProfile } from './header-credit-profile'
 import { MandatoryMessengerActions } from './mandatory-messenger-actions'
@@ -125,9 +124,9 @@ const designCopy = {
   },
 }
 const programLandingCopy = {
-  en: { free: 'Start Free Program', details: 'Program Details & Options', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
-  ru: { free: 'Начать бесплатно', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
-  es: { free: 'Empezar programa gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
+  en: { details: 'All programs available', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
+  ru: { details: 'Все доступные программы', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
+  es: { details: 'Todos los programas disponibles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
 }
 
 const miraCopy = {
@@ -409,17 +408,14 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
             {selected.id === 'mira' && !safeMethod
-              ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
-              : <a className={heroStyles.talkButton} href={startHref}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
+              ? <MyCoachExpressStart locale={lang} href={startHref} embedded data-my-coach-hero-start={selected.id} />
+              : <MyCoachExpressStart locale={lang} className={heroStyles.talkButton} href={startHref}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></MyCoachExpressStart>}
           </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
             <div className={heroStyles.programActions}>
-              <Link href={coachCourseLaunchHref(lang,'clarity',selected.id)} prefetch={false} className={heroStyles.freeProgram} data-my-coach-free-course>
-                <BookOpen size={20} aria-hidden="true"/><span>{programs.free}</span>
-              </Link>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
-                <ClipboardCheck size={20} aria-hidden="true"/><span>{programs.details}</span>
+                <ClipboardCheck size={16} aria-hidden="true"/><span>{programs.details}</span><ArrowRight size={15} aria-hidden="true"/>
               </Link>
             </div>
           </div>
@@ -428,7 +424,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <h2>{hw.choose}</h2>
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
-        <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
+        <div className={heroStyles.coachRail} data-my-coach-rail role="group" aria-label={hw.choose}>
           {PUBLIC_COACH_RAIL_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null
@@ -463,7 +459,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={heroStyles.benefitTiles}>
           <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
-          <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
+          <MyCoachExpressStart locale={lang} className="" href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></MyCoachExpressStart>
         </div>
         </>}
       </section>
@@ -602,9 +598,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
-                  <a className={styles.cardButton}
+                  <MyCoachExpressStart locale={lang} className={styles.cardButton}
                     href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}>
-                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
+                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></MyCoachExpressStart>
                 </div>
               </div>
               <button type="button" className={styles.heart}
@@ -673,8 +669,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={styles.preview}>
           <span>{t.preview}</span><p>{followupPreview}</p>
         </div>
-        <a className={styles.primary} href={startHref}
-          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></a>
+        <MyCoachExpressStart locale={lang} className={styles.primary} href={startHref}
+          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></MyCoachExpressStart>
         <p className={styles.sessionNote}>{t.sessionNote}</p>
         <p className={styles.privacy}>{t.privacy}</p>
       </section>
