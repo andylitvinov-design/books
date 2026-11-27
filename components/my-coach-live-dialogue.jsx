@@ -58,7 +58,7 @@ import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal
 import MyCoachCourseFieldReview from './my-coach-course-field-review'
 import MyCoachCourseGateVoice from './my-coach-course-gate-voice'
 import MyCoachResultPreview from './my-coach-result-preview'
-import {coachCourseProtocolRows,coachCourseProtocolSchema,normalizeCoachCourseFieldReview,coachCourseGateHandoffRequired} from '@/lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolRows,coachCourseProtocolSchema,normalizeCoachCourseFieldReview,coachCourseGateHandoffRequired,coachReviewScenarioVersion} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {normalizeMyCoachDraft} from '@/lib/personal-coaching/protocol-draft.mjs'
 import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
 import {coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
@@ -813,7 +813,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // review or temporarily inconsistent turn snapshot to crash the session.
   let courseRows=[],courseReviewInvalid=false
   let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
-  const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang)
+  const courseScenarioVersion=courseGate?.step.scenarioVersion||coachReviewScenarioVersion(effectiveCourseReview)
+  const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang,{scenarioVersion:courseScenarioVersion})
   // Do not use opening answers as core field candidates. Retain original indices.
   let openingEnd=-1,openingCount=0
   for(let i=0;i<turns.length&&openingCount<openingProgress.consumedTurns;i++){
@@ -821,13 +822,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   if(openingProgress.completed&&!profileSelected&&courseSchema){
     try{
-      const schemas=['ru','en','es'].map(locale=>({locale,schema:coachCourseProtocolSchema(selectedCourseId,locale)}))
+      const schemas=['ru','en','es'].map(locale=>({locale,schema:coachCourseProtocolSchema(selectedCourseId,locale,{scenarioVersion:courseScenarioVersion})}))
       const across=(row,test)=>schemas.some(({locale,schema})=>{
         const field=schema?.checkpoints.find(x=>x.id===row.id)
         return field&&test(field,locale)
       })
       const matches=(row,text)=>typeof text==='string'&&across(row,(field,locale)=>checkpointQuestionMatches(field,locale,text.trim()))
-      if(!courseGate&&!courseGateRequired){
+      if(!courseGate&&!courseGateRequired&&!courseScenarioVersion){
         // Existing explicit review events win. Reconstruct only exact spoken/
         // typed question + literal answer + exact echo + explicit assent.
         // No inference from the currently suggested field and no new provider.
@@ -837,7 +838,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             checkpointQuestionMatches(field,locale,q)&&checkpointConfirmationMatches(field,q,quote,locale,echo)),
           answerClass:protocolAnswerClass,normalize:normalizeCoachCourseFieldReview})
       }
-      courseRows=coachCourseProtocolRows(selectedCourseId,turns,effectiveCourseReview?.courseSessionId===selectedCourseId?effectiveCourseReview:null,lang)
+      courseRows=coachCourseProtocolRows(selectedCourseId,turns,effectiveCourseReview?.courseSessionId===selectedCourseId?effectiveCourseReview:null,lang,{scenarioVersion:courseScenarioVersion})
       courseRows=courseCapturedRows(courseRows,protocolDisplayTurns,matches,{afterIndex:openingEnd,livePrompt:courseGate?.step.prompt})
     }catch{
       courseReviewInvalid=true
@@ -2410,10 +2411,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                   return runCourseGate('course-gate-answer',{promptId,content});return false}}/>
               <button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'пропустить вопрос',en:'skip this question',es:'omitir la pregunta'})[lang]})}}>{({ru:'Пропустить',en:'Skip',es:'Omitir'})[lang]}</button>
-              {courseGate.step.prompt.kind==='confirm'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
+              {(courseGate.step.prompt.kind==='confirm'||courseGate.step.prompt.fieldId==='balance_consent')&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'да',en:'yes',es:'sí'})[lang]})}}>{({ru:'Подтверждаю',en:'Confirm',es:'Confirmar'})[lang]}</button>}
+              {courseGate.step.prompt.fieldId==='balance_consent'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt;if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'нет',en:'no',es:'no'})[lang]})}}>{({ru:'Нет',en:'No',es:'No'})[lang]}</button>}
             </form>:<p>{courseGate.step.paused?({ru:'Проверка приостановлена. Можно завершить сессию.',en:'Review paused. You can finish the session.',es:'Revisión pausada. Puedes terminar la sesión.'})[lang]:({ru:'Проверка пунктов завершена. Можно уточнить ответ или завершить.',en:'Checkpoint review complete. Correct an answer or finish.',es:'Revisión completa. Corrige una respuesta o termina.'})[lang]}</p>}
-            {!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)).map(row=>
+            {!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)&&(!courseScenarioVersion||!row.id.startsWith('outer_')||courseGate.step.review?.events?.findLast(e=>e.fieldId==='balance_consent')?.binding?.decision==='accepted')).map(row=>
               <button key={row.id} type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-correct',{fieldId:row.id})}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}: {row.label}</button>)}
           </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}
         </section>}

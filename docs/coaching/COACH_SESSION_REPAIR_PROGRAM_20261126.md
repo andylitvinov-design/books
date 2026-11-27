@@ -17,3 +17,6 @@ Incident: Genie UI reported Introductory session / WOOP, 53 exchanges and 0 minu
 7. Native CI exact head, real signed-in iPhone EN/RU/ES Basic/Pro and all-persona routing, eight-minute disconnect/resume, cross-account and duplicate quota tests; verify canonical LIVE deployment and functional session after protected merge. No new paid provider or manual deployment.
 
 Calendar-day timezone remains a proposed UTC policy, not owner-approved. Never downgrade privacy/entitlement protections to make a green status.
+
+### Versioned first-party gate integration (draft)
+New Clarity Day 1 gates select the approved v5 scenario before question issuance. Existing encrypted course gate/review adapter persists exact consent decision (including decline/defer) and question-bound narrative/axis answers with existing CAS receipt. Old v1 gates and ten-field reports retain their original schema. Live tracker, result preview, PDF and Daybook rows derive from the versioned review. Separate balance/summary verification and timed homework remain explicitly open; v5 homework is fail-closed until the trusted timed-end adapter. No browser clock authority, provider activation, migration or new service.

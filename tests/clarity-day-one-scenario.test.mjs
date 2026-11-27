@@ -125,3 +125,56 @@ test('unrelated interface commands and bare no are raw transcript only, not fiel
   assert.equal(coachCapturedClientTurns(turns).length,1)
  }
 })
+
+import {CLARITY_DAY_ONE_VERSION,CLARITY_DAY_ONE_REVIEW_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
+import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
+import {coachCourseGateTransition,coachCourseGateView} from '../lib/coaching/coach-course-gate-draft.mjs'
+import {coachOpeningProtocolSnapshot} from '../lib/coaching/coach-opening-protocol.mjs'
+test('server draft v5 preserves decision and moves directly to priority on refusal',()=>{
+ const openingTurns=['Yes','Alex','My problem is money','I feel sad','Yes'].map(content=>({role:'user',content}))
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns:openingTurns,locale:'en',personaId:'genie'}))
+ assert.equal(opening.completed,true)
+ const id='12345678-1234-4234-8234-123456789abc'
+ let value={courseSessionId:'clarity_day_1',revision:1,protocol:{id,courseSessionId:'clarity_day_1',locale:'en',personaId:'genie',opening,turns:openingTurns}}
+ const run=(action,extra={})=>{
+  const next=coachCourseGateTransition(value,{action,id,revision:value.revision,consent:true,requestId:'87654321-4321-4321-8321-abcdefabcdef',...extra},'2026-11-26T12:00:00.000Z')
+  value={...value,...next,revision:value.revision+1}
+  return coachCourseGateView(value)
+ }
+ let view=run('course-gate-start')
+ assert.equal(view.scenarioVersion,CLARITY_DAY_ONE_VERSION)
+ assert.equal(view.review.version,CLARITY_DAY_ONE_REVIEW_VERSION)
+ for(const field of ['situation','feelings','impact']){
+  assert.equal(view.prompt.fieldId,field)
+  view=run('course-gate-answer',{promptId:view.prompt.id,content:'skip this question'})
+ }
+ assert.equal(view.prompt.fieldId,'balance_consent')
+ view=run('course-gate-answer',{promptId:view.prompt.id,content:'No'})
+ assert.equal(view.prompt.fieldId,'priority')
+ const rows=coachCourseProtocolRows('clarity_day_1',value.protocol.turns,view.review)
+ assert.equal(rows.find(r=>r.id==='balance_consent').methodDecision,'declined')
+ assert.ok(rows.filter(r=>r.id.startsWith('outer_')).every(r=>r.status==='not_explored'))
+ assert.equal(rows.find(r=>r.id==='balance_review').status,'not_explored')
+ assert.deepEqual(normalizeCoachCourseFieldReview(view.review,'clarity_day_1',value.protocol.turns),view.review)
+})
+test('v5 readback rejects forged consent, wrong axis and legacy pair for current-only question',()=>{
+ for(const locale of ['en','ru','es']){
+  const schema=coachCourseProtocolSchema('clarity_day_1',locale,{scenarioVersion:CLARITY_DAY_ONE_VERSION})
+  const permission=schema.checkpoints.find(r=>r.id==='balance_consent').question
+  const axis=schema.checkpoints.find(r=>r.id==='outer_finance').question
+  const reply=locale==='ru'?'да':locale==='es'?'sí':'yes'
+  const turns=[{role:'assistant',content:permission},{role:'user',content:reply},{role:'assistant',content:axis},{role:'user',content:'0'},{role:'assistant',content:checkpointConfirmation(axis,'0',locale)},{role:'user',content:reply}]
+  const review={version:CLARITY_DAY_ONE_REVIEW_VERSION,courseSessionId:'clarity_day_1',events:[
+   {fieldId:'balance_consent',status:'confirmed',turnIndex:1,quote:reply,revision:1,binding:{questionTurnIndex:0,decision:'accepted'}},
+   {fieldId:'outer_finance',status:'confirmed',turnIndex:3,quote:'0',revision:2,binding:{questionTurnIndex:2,confirmationTurnIndex:5}}
+  ]}
+  assert.deepEqual(normalizeCoachCourseFieldReview(review,'clarity_day_1',turns),review)
+  assert.equal(coachCourseProtocolRows('clarity_day_1',turns,review,locale).find(r=>r.id==='outer_finance').quote,'0')
+  assert.equal(coachCourseProtocolSchema('clarity_day_1',locale).checkpoints.length,10)
+  assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[{...review.events[1],revision:1}]},'clarity_day_1',turns))
+  assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[{...review.events[0],binding:{questionTurnIndex:0,decision:'declined'}},review.events[1]]},'clarity_day_1',turns))
+  const pair=turns.map((r,i)=>i===3?{...r,content:'5/10'}:i===4?{...r,content:checkpointConfirmation(axis,'5/10',locale)}:r)
+  assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[review.events[0],{...review.events[1],quote:'5/10'}]},'clarity_day_1',pair))
+ }
+})
