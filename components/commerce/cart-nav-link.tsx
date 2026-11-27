@@ -5,12 +5,15 @@ import Link from "next/link";
 import { ShoppingBasket } from "lucide-react";
 import type { ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, restoreVideoCart, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
+import { useCourseCart } from "./use-course-cart";
 import styles from "./cart-nav-link.module.css";
 
 const copy = { en: "Cart", ru: "Корзина", es: "Carrito" } as const;
 
 export function CartNavLink({ locale }: { locale: ServiceLocale }) {
-  const [count, setCount] = useState(0);
+  const [legacyCount, setCount] = useState(0);
+  const {ids:courseIds}=useCourseCart();
+  const count=legacyCount+courseIds.length;
   useEffect(() => {
     function sync() {
       try { setCount(restoreServiceCart(window.sessionStorage.getItem(SERVICE_CART_STORAGE_KEY)).length +

@@ -2483,7 +2483,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <MyCoachSessionStateCard locale={lang} turns={protocolDisplayTurns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           opening={openingProgress} profile={profileProgress} openingPosition={openingPosition}
-          profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode} stageGroups={stagePosition.rows}/>
+          profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode} stageGroups={stagePosition.rows} courseProtocol={coreMode==='course'}/>
         {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.coreChildren.length>0).map(row=>({...row,children:row.coreChildren}))} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
