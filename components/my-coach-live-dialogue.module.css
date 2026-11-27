@@ -2194,3 +2194,34 @@
 .sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-tone=green]{background:#32846b}
 .sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-current=true]{outline:1px solid #8b8b83;outline-offset:2px}
 
+/* Shared six-stage ruler and twenty-minute marks occupy the same track width.
+   No extra card, no additional text, and no increase in the outer card width. */
+.sessionProgressSummary .sessionProgressRuler{
+  display:flex;flex-direction:column;justify-content:center;gap:5px;
+  flex:0 0 clamp(104px,38%,220px);min-width:0;
+}
+.sessionProgressSummary .sessionProgressRuler .sessionProgressSegments{
+  display:flex;flex:none;width:100%;min-width:0;gap:4px;
+}
+.sessionProgressSummary .sessionProgressRuler .sessionProgressSegments span{
+  flex:1 1 0;min-width:0;height:6px;
+}
+.sessionProgressSummary .sessionMinuteDots{
+  display:flex;justify-content:space-between;align-items:center;
+  width:100%;min-width:0;height:4px;gap:0;
+}
+.sessionProgressSummary .sessionMinuteDots i{
+  display:block;flex:0 0 3px;width:3px;height:3px;border-radius:50%;
+  background:#d9d3c8;
+}
+.sessionProgressSummary .sessionMinuteDots i[data-elapsed='true']{background:#087d64}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionProgressSummary .sessionProgressRuler .sessionProgressSegments{
+    flex-basis:auto;min-width:0;gap:3px;
+  }
+  .sessionProgressSummary .sessionProgressRuler{gap:4px;flex-basis:clamp(104px,38%,180px)}
+}
+@media(max-width:360px){
+  .sessionProgressSummary .sessionProgressRuler{flex-basis:104px}
+  .sessionProgressSummary .sessionProgressRuler .sessionProgressSegments{gap:2px}
+}

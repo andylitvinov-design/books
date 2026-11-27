@@ -93,3 +93,25 @@ test('native transcript review requires exact four-turn evidence; restore and ex
  const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
  assert.deepEqual(get(turns,{existing:manual}),manual);
 });
+
+test('all published courses, all languages, and opening/active states share six stable macro stages without fictitious answers',async()=>{
+ const {COACH_PROGRAM_SESSIONS}=await import('../lib/coaching/coach-program-topics.mjs')
+ const {coachCourseProtocolSchema}=await import('../lib/coaching/coach-course-protocol-schema.mjs')
+ for(const locale of ['en','ru','es'])for(const course of [...COACH_PROGRAM_SESSIONS,...['clarity_day_1','clarity_day_2','clarity_day_3'].map(id=>({id}))]){
+  const schema=coachCourseProtocolSchema(course.id,locale);if(!schema)continue;
+  const rows=schema.checkpoints.map(r=>({...r,status:'not_explored'}));
+  const start=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(rows,{allowProvisional:false}),{mode:'course',courseId:course.id,locale,openingActive:true});
+  const running=groupedSessionPosition(openingStagePosition({completed:true,checkmarks:Object.fromEntries(keys.map(k=>[k,true]))},locale),courseStagePosition(rows),{mode:'course',courseId:course.id,locale});
+  assert.equal(start.total,6,course.id);assert.equal(running.total,6,course.id);
+  assert.equal(start.step,1);assert.deepEqual(start.rows.map(g=>g.id),running.rows.map(g=>g.id));
+  assert.ok(running.rows.filter(g=>g.total===0).every(g=>g.tone==='gray'));
+  assert.deepEqual(running.rows.flatMap(g=>g.coreChildren.map(r=>r.id)).sort(),rows.map(r=>r.id).sort());
+  assert.deepEqual(running.rows[0].children.slice(0,keys.length).map(r=>r.id),keys);
+  assert.equal(running.rows.filter(g=>g.active).length,1);
+ }
+})
+
+test('a course field mapped to contact remains in the course projection and can be active',()=>{
+ const p=groupedSessionPosition(openingStagePosition({completed:true}),courseStagePosition([{id:'continuity_review',progressStage:'contact',label:'Continuity review',status:'not_explored'}],{promptId:'continuity_review'}),{mode:'course'});
+ assert.equal(p.total,6);assert.equal(p.rows[0].coreChildren[0].id,'continuity_review');assert.equal(p.rows[0].active,true);assert.equal(p.rows[0].tone,'gray');
+});
