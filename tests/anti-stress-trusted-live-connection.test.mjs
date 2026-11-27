@@ -5,25 +5,26 @@ import {createAntiStressRun,advanceAntiStressRun,antiStressRunSummary,antiStress
 import {bindAntiStressTrustedLiveConnection} from '../lib/coaching/anti-stress-trusted-live-connection.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 class Socket extends EventEmitter{
- constructor(){super();this.readyState=1;this.messages=[];this.pings=[]}
+ constructor(){super();this.readyState=1;this.bufferedAmount=0;this.messages=[];this.pings=[]}
  send(value){this.messages.push(JSON.parse(value))}
  ping(value){this.pings.push(value)}
  close(code=1000){if(this.readyState===3)return;this.readyState=3;this.emit('close',code)}
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null}={}){
- const base=1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
- let run=createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
- const lease={leaseId:id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null,
-  ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null})}
- let now=base,seq=20,tid=0;const timers=new Map(),events=[],retired=[]
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null}={}){
+ const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
+ let run=previousRun||createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
+ const previousCredentialExpiresAt=previousRun?base:null
+ const lease={leaseId:previousRun?id(11):id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt,
+  ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt})}
+ let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retired=[]
  const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async b=>{retired.push(b);return true},persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
  function advance(ms,fireTimers=true){now+=ms;if(!fireTimers)return;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
- const consent=()=>client.input({type:'hh_anti_stress_consent',decision:'start'})
+ const consent=()=>client.input({type:'hh_anti_stress_consent',decision:previousRun?'continue':'start'})
  return {client,provider,relay,events,retired,advance,ready,consent,base,get run(){return run}}
 }
 test('server provider setup and explicit client consent are both required; paired real socket pongs alone credit time',async()=>{
@@ -151,4 +152,42 @@ test('late host timer cannot permit microphone or provider replies past the hard
 })
 test('invalid hosting deadline fails before a therapy socket is opened',()=>{
  assert.throws(()=>fixture({segmentBudgetMs:0}),/ANTI_STRESS_RELAY_INVALID/)
+})
+
+test('therapy opening follows committed consent and the delivered clock ACK; resume is not a new intake',async()=>{
+ const f=fixture(),order=[]
+ const sendClient=f.client.send.bind(f.client),sendProvider=f.provider.send.bind(f.provider)
+ f.client.send=value=>{if(JSON.parse(value).type==='hh_anti_stress_clock')order.push('ack');sendClient(value)}
+ f.provider.send=value=>{if(JSON.parse(value).clientContent?.turnComplete===true)order.push('spoken');sendProvider(value)}
+ const cues=s=>s.messages.filter(m=>m.clientContent?.turnComplete===true)
+ f.ready();assert.equal(cues(f.provider).length,0)
+ f.consent();await f.relay.settled()
+ assert.deepEqual(order,['ack','spoken'])
+ assert.equal(cues(f.provider).length,1)
+ assert.match(cues(f.provider)[0].clientContent.turns[0].parts[0].text,/THERAPY START EVENT/)
+ assert.match(cues(f.provider)[0].clientContent.turns[0].parts[0].text,/separate explicit practice permission/)
+ f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+ f.client.input({type:'hh_anti_stress_change_coach'});await f.relay.settled()
+ const g=fixture({previousRun:f.run});g.ready();assert.equal(g.client.messages.at(-1).decision,'continue')
+ g.consent();await g.relay.settled()
+ assert.equal(g.run.clock.days[0].protocolId,id(2))
+ assert.equal(g.run.clock.days[0].elapsedMs,5000)
+ assert.equal(cues(g.provider).length,1)
+ assert.match(cues(g.provider)[0].clientContent.turns[0].parts[0].text,/THERAPY CONTINUATION EVENT/)
+ assert.match(cues(g.provider)[0].clientContent.turns[0].parts[0].text,/Do not repeat the intake or claim to remember unavailable details/)
+ await g.relay.close();await g.relay.settled()
+})
+test('failed start receipt or backpressure stops therapy without granting unobserved time',async()=>{
+ const f=fixture();f.ready()
+ f.client.send=()=>{throw Error('synthetic broken socket')}
+ f.consent();await f.relay.settled()
+ assert.equal(f.provider.messages.filter(m=>m.clientContent).length,0)
+ assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,0)
+ for(const side of ['client','provider']){
+  const g=fixture();g.ready();g.consent();await g.relay.settled()
+  g[side].bufferedAmount=200001
+  g.advance(5000);await g.relay.settled()
+  assert.equal(g.run.clock.days[0].status,'paused');assert.equal(g.run.clock.days[0].elapsedMs,0)
+  assert.equal(g.provider.readyState,3)
+ }
 })
