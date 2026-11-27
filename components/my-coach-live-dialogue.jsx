@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2,Pause,PhoneOff,VolumeX,Plus} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
-import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
+import {coachTimeboxState,coachMinuteRuler} from '@/lib/coaching/session-timebox.mjs'
 import {createCoachActiveClock} from '@/lib/coaching/coach-active-clock.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
@@ -369,7 +369,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [outputMuted,setOutputMuted]=useState(false)
   const outputMutedRef=useRef(false)
   outputMutedRef.current=outputMuted
-  const [summaryPreviewOpen,setSummaryPreviewOpen]=useState(false)
   const [moreOptionsOpen,setMoreOptionsOpen]=useState(false)
   const reactionActivity=useCoachReactionActivity(voiceState.phase,personaId)
   const voicePaused=voiceState.phase==='paused'
@@ -418,19 +417,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setActiveSessionSeconds(seconds)
     return seconds
   }
-  useEffect(()=>{
-    const clock=activeClockRef.current
-    const tick=()=>setActiveSessionSeconds(clock.sample(window.performance.now()))
-    const onVisibility=()=>setActiveSessionSeconds(clock.setRunning(window.performance.now(),
-      sessionClockStarted&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current))
-    onVisibility()
-    const timer=window.setInterval(tick,1000)
-    document.addEventListener('visibilitychange',onVisibility)
-    return()=>{
-      clock.setRunning(window.performance.now(),false)
-      window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
-    }
-  },[sessionClockStarted,paused,voicePaused,coachProfileOpen])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -555,7 +541,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const name=persona?localCoachText(persona.name,conversationLang):t.coach
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
-  const sessionTimebox=coachTimeboxState(sessionClockStarted?Math.floor(activeSessionSeconds):null)
   const introduction=coachSessionOpeningLine(personaId,conversationLang)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
@@ -681,6 +666,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||{allowPrior:false,priorSession:null}):{allowPrior:allowOpeningPrior,priorSession:openingPrior}
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,...localOpeningScope})
+  // Connecting to a voice provider does not constitute coaching consent.
+  useEffect(()=>{
+    const clock=activeClockRef.current
+    const tick=()=>setActiveSessionSeconds(clock.sample(window.performance.now()))
+    const onVisibility=()=>setActiveSessionSeconds(clock.setRunning(window.performance.now(),
+      sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current))
+    onVisibility()
+    const timer=window.setInterval(tick,1000)
+    document.addEventListener('visibilitychange',onVisibility)
+    return()=>{
+      clock.setRunning(window.performance.now(),false)
+      window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
+    }
+  },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined])
+  const sessionTimebox=coachTimeboxState(sessionClockStarted&&openingProgress.completed&&!openingProgress.declined?Math.floor(activeSessionSeconds):null)
+  const minuteRuler=coachMinuteRuler(sessionTimebox.elapsedSeconds)
   const openingActive=!openingProgress.completed
   // Session 0 is distinct from method coaching. Existing saved values are
   // consulted ONLY in an owner-authorized preview, never from model prose.
@@ -1993,30 +1994,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     turnKey:turns.filter(turn=>turn.role==='user').length+(inFlightClientRef.current?1:0)
   })
   const visualScene=reactionIntent.scene
-  const sessionPanelCopy={en:{transcript:'Transcript',insights:'Key Insights',summary:'Summary'},ru:{transcript:'Диалог',insights:'Инсайты',summary:'Итог'},es:{transcript:'Diálogo',insights:'Claves',summary:'Resumen'}}[lang]
   const speakerLabel=outputMuted?({ru:'Включить звук коуча',en:'Unmute coach audio',es:'Activar sonido del coach'})[lang]:({ru:'Выключить звук коуча',en:'Mute coach audio',es:'Silenciar al coach'})[lang]
   const hangupLabel=({ru:'Завершить диалог',en:'End conversation',es:'Finalizar conversación'})[lang]
-  function showSessionPanel(panel){
-    const root=sessionRootRef.current
-    const progress=root?.querySelector('[data-coach-progress-accordion]')
-    setSummaryPreviewOpen(panel==='summary')
-    if(panel==='summary'){
-      if(progress)progress.open=false
-      return
-    }
-    if(panel==='insights'&&progress){
-      progress.open=true
-      progress.querySelector('summary')?.focus({preventScroll:true})
-      progress.scrollIntoView({block:'nearest'})
-      return
-    }
-    if(progress)progress.open=false
-    transcriptRef.current?.scrollIntoView({block:'nearest'})
-  }
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
-  return <section ref={sessionRootRef} className={`${styles.root} ${callStyles.rootV6}`} lang={lang} data-coach-dock-v6 data-coach-dialogue-active={sessionHasStarted?'true':'false'} data-coach-summary-preview={summaryPreviewOpen?'true':'false'} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
+  return <section ref={sessionRootRef} className={`${styles.root} ${callStyles.rootV6}`} lang={lang} data-coach-dock-v6 data-coach-dialogue-active={sessionHasStarted?'true':'false'} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang} {...browseProps} onClick={keepCoachTab?pauseForNavigation:navigateBackToCoaches} aria-label="Holistic House">
@@ -2239,7 +2222,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {!sessionHasStarted&&<MyCoachInlineProfile personaId={personaId}
         locale={conversationLang} methodId={visibleMethodId}/>}
       {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
-        onToggle={event=>{if(event.currentTarget.open)setSummaryPreviewOpen(false)}} aria-label={ui.stageQuestion}
+        aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleProgressStep}
         data-coach-stage-source={progressMode==='opening'?'client-evidence-opening':progressMode==='profile'?'client-evidence-profile':progressMode==='profile-v3'?'saved-profile':progressMode==='course'?(courseGate?'saved-course-gate':'course-review-provisional'):progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
@@ -2248,6 +2231,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <strong>{visibleProgressStep>0?ui.step+' '+visibleProgressStep+' '+ui.of+' '+visibleProgressTotal+' · ':''}{visibleProgressName}</strong>
             <span>{visibleProgressDescription}</span>
           </div>
+          <div className={styles.sessionProgressRuler} data-coach-progress-ruler>
           <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
             aria-valuemin={0} aria-valuemax={Math.max(1,visibleProgressTotal)} aria-valuenow={visibleProgressStep}
             aria-valuetext={visibleProgressDescription}>
@@ -2259,13 +2243,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               data-current={row.active?'true':undefined}/>)}
 
           </div>
+          <div className={styles.sessionMinuteDots} data-coach-minute-ruler role="progressbar"
+            aria-label={({ru:'Активные минуты сессии',en:'Active session minutes',es:'Minutos activos de la sesión'})[lang]}
+            aria-valuemin={0} aria-valuemax={minuteRuler.total} aria-valuenow={minuteRuler.completed}>
+            {Array.from({length:minuteRuler.total},(_,index)=><i key={index} aria-hidden="true"
+              data-coach-minute={index+1} data-elapsed={index<minuteRuler.completed?'true':'false'}/>)}
+          </div>
+          </div>
           <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
         </summary>
         <MyCoachSessionStateCard locale={lang} turns={protocolDisplayTurns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           opening={openingProgress} profile={profileProgress} openingPosition={openingPosition}
-          profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode}/>
-        {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.id!=='contact')} provisional={plannedCourse}/>} 
+          profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode} stageGroups={stagePosition.rows}/>
+        {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.kind==='core')} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
@@ -2320,18 +2311,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={`${styles.conversationPanel} ${callStyles.conversation}`}>
-      <nav className={`${styles.sessionPanelNav} ${callStyles.tabs}`} aria-label={lang==='ru'?'Разделы сессии':lang==='es'?'Secciones de la sesión':'Session sections'}>
-        <button type="button" data-coach-panel="transcript" onClick={()=>showSessionPanel('transcript')}><MessageCircle size={17} aria-hidden="true"/><span>{sessionPanelCopy.transcript}</span></button>
-        <button type="button" data-coach-panel="insights" disabled={!sessionHasStarted} onClick={()=>showSessionPanel('insights')}><Sparkles size={17} aria-hidden="true"/><span>{sessionPanelCopy.insights}</span></button>
-        <button type="button" data-coach-panel="summary" disabled={protocolOpen||!sessionHasStarted} aria-pressed={summaryPreviewOpen} onClick={()=>showSessionPanel('summary')}><FileText size={17} aria-hidden="true"/><span>{sessionPanelCopy.summary}</span></button>
-      </nav>
-      {summaryPreviewOpen&&<section className={callStyles.summary} data-coach-summary-current aria-label={sessionPanelCopy.summary}>
-        <strong>{({ru:'Текущий итог · предварительно',en:'Current summary · provisional',es:'Resumen actual · provisional'})[lang]}</strong>
-        <p>{ui.step} {visibleProgressStep} {ui.of} {visibleProgressTotal} · {visibleProgressName}</p>
-        <p>{visibleProgressDescription}</p>
-        <button type="button" onClick={()=>showSessionPanel('insights')}>{sessionPanelCopy.insights}</button>
-        <button type="button" onClick={endWithProtocol} disabled={protocolOpen}>{hangupLabel}</button>
-      </section>}
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>

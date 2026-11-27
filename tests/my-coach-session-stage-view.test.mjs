@@ -32,34 +32,34 @@ test('course receives short and unrelated exact-prompt responses before validati
  assert.equal(courseCapturedRows(rows,turns,(row,text)=>row.id===text,{afterIndex:1})[0].quote,undefined);
  assert.equal(courseCapturedRows(rows,[{role:'assistant',content:'a',interrupted:true},{role:'user',content:'5'}],()=>true)[0].quote,undefined);
 });
-test('all Clarity 1 fields map exactly once to seven groups with partial and reviewed fill',()=>{
+test('all Clarity 1 fields map exactly once to six groups with partial and reviewed fill',()=>{
  const ids=['request','outer_body_health','outer_emotional_wellbeing','outer_relationships','outer_career_business','outer_finance','outer_personal_growth','outer_lifestyle','outer_meaning_purpose','needs'];
  for(const locale of ['ru','en','es']){
   const opening=openingStagePosition({current:'complete',completed:true,checkmarks:Object.fromEntries(keys.map(k=>[k,true]))},locale);
   const core=courseStagePosition(ids.map(id=>({id,label:id,status:id==='outer_body_health'?'confirmed':id==='outer_emotional_wellbeing'?'needs_confirmation':'not_explored',quote:id.includes('wellbeing')||id.includes('health')?'5 8':''})),{promptId:'outer_emotional_wellbeing'});
   const p=groupedSessionPosition(opening,core,{mode:'course',courseId:'clarity_day_1',locale});
-  assert.deepEqual(p.rows.map(x=>x.id),['contact','request','wellbeing','personal','realization','self','integration']);
-  assert.equal(p.total,7);assert.equal(p.step,3);
+  assert.deepEqual(p.rows.map(x=>x.id),['contact','request','wellbeing','personal+realization','self','integration']);
+  assert.equal(p.total,6);assert.equal(p.step,3);
   assert.deepEqual(p.rows[2].children.map(x=>x.id),['outer_body_health','outer_emotional_wellbeing']);
   assert.equal(p.rows[2].recordedFraction,1);assert.equal(p.rows[2].verifiedFraction,.5);assert.equal(p.rows[2].status,'needs_confirmation');
   assert.equal(p.rows.slice(1).flatMap(x=>x.children).length,10);
-  assert.equal(p.rows[3].children.length,2);
+  assert.equal(p.rows[3].children.length,4);
  }
 });
 test('partial fill, skip, correction and unknown fields never fake a completed group',()=>{
  const rows=[{id:'goal',label:'Goal',status:'confirmed',quote:'goal'},{id:'success',label:'Success',status:'not_explored'},{id:'future_new',label:'New',status:'skipped_by_client'}];
  const opening=openingStagePosition({current:'invitation'});
  let p=groupedSessionPosition(opening,courseStagePosition(rows),{mode:'course',openingActive:true});
- assert.equal(p.step,1);assert.equal(p.rows[1].verifiedFraction,.5);assert.equal(p.rows[1].recordedFraction,.5);assert.equal(p.rows[2].skippedFraction,1);assert.equal(p.rows[2].verifiedFraction,0);
+ assert.equal(p.step,1);assert.equal(p.total,6);const goal=p.rows.find(x=>x.id==='goal'),future=p.rows.find(x=>x.id==='field:future_new');assert.equal(goal.verifiedFraction,.5);assert.equal(goal.recordedFraction,.5);assert.equal(future.skippedFraction,1);assert.equal(future.verifiedFraction,0);
  p=groupedSessionPosition(opening,courseStagePosition(rows.map(x=>x.id==='goal'?{...x,status:'not_explored',quote:''}:x)),{mode:'course'});
- assert.equal(p.rows[1].verifiedFraction,0);assert.equal(p.rows[1].recordedFraction,0);
+ assert.equal(p.rows.find(x=>x.id==='goal').verifiedFraction,0);assert.equal(p.rows.find(x=>x.id==='goal').recordedFraction,0);
 });
 test('every existing thematic field and future Clarity day field remains represented without padding',()=>{
  const plans=[['clarity_day_2',['changes','review_homework','inner_anchor','inner_connection','inner_freedom','inner_agency','inner_love','inner_dignity','inner_self-realization','inner_recognition','strengths','resources','practices']],['clarity_day_3',['changes','review_homework','dream_image','goal','why','success','next','timing']],['goal_plan',['plan','timing','levels','contingency','next']],['business_execution',['accountability_people','controls_metrics','launch_review']],['life_direction',['situation','wishes','direction','goal']]];
  for(const [courseId,ids] of plans){
   const p=groupedSessionPosition(openingStagePosition({current:'invitation'}),courseStagePosition(ids.map(id=>({id,label:id,status:'not_explored'}))),{mode:'course',courseId,openingActive:true});
-  assert.deepEqual(p.rows.slice(1).flatMap(g=>g.children.map(r=>r.id)).sort(),[...ids].sort());
-  assert.equal(p.rows[0].id,'contact');assert.equal(p.rows.every(g=>g.children.length>0),true);
+  assert.deepEqual(p.rows.filter(g=>g.kind==='core').flatMap(g=>g.children.map(r=>r.id)).sort(),[...ids].sort());
+  assert.equal(p.total,6);assert.equal(p.rows[0].id,'contact');assert.equal(p.rows.every(g=>g.children.length>0),true);assert.deepEqual(p.rows.filter(g=>g.kind==='opening').flatMap(g=>g.children.map(r=>r.id)),keys);
  }
 });
 
@@ -83,3 +83,20 @@ test('native transcript review requires exact four-turn evidence; restore and ex
  const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
  assert.deepEqual(get(turns,{existing:manual}),manual);
 });
+
+test('all published courses, all languages, and opening/active states share six nonempty macro stages',async()=>{
+ const {COACH_PROGRAM_SESSIONS}=await import('../lib/coaching/coach-program-topics.mjs')
+ const {coachCourseProtocolSchema}=await import('../lib/coaching/coach-course-protocol-schema.mjs')
+ for(const locale of ['en','ru','es'])for(const course of [...COACH_PROGRAM_SESSIONS,...['clarity_day_1','clarity_day_2','clarity_day_3'].map(id=>({id}))]){
+  const schema=coachCourseProtocolSchema(course.id,locale);if(!schema)continue;
+  const rows=schema.checkpoints.map(r=>({...r,status:'not_explored'}));
+  const start=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(rows,{allowProvisional:false}),{mode:'course',courseId:course.id,locale,openingActive:true});
+  const running=groupedSessionPosition(openingStagePosition({completed:true,checkmarks:Object.fromEntries(keys.map(k=>[k,true]))},locale),courseStagePosition(rows),{mode:'course',courseId:course.id,locale});
+  assert.equal(start.total,6,course.id);assert.equal(running.total,6,course.id);
+  assert.equal(start.step,1);assert.deepEqual(start.rows.map(g=>g.id),running.rows.map(g=>g.id));
+  assert.ok(running.rows.every(g=>g.children.length>0));
+  assert.deepEqual(running.rows.filter(g=>g.kind==='core').flatMap(g=>g.children.map(r=>r.id)).sort(),rows.map(r=>r.id).sort());
+  assert.deepEqual(running.rows.filter(g=>g.kind==='opening').flatMap(g=>g.children.map(r=>r.id)),keys);
+  assert.equal(running.rows.filter(g=>g.active).length,1);
+ }
+})
