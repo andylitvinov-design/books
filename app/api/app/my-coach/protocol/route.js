@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {readMyCoachGreetingIdentity,listMyCoachProtocols,saveMyCoachProtocol,deleteMyCoachProtocol} from '@/lib/app/personal-coaching'
+import {readMyCoachGreetingIdentity,saveMyCoachGreetingName,listMyCoachProtocols,saveMyCoachProtocol,deleteMyCoachProtocol} from '@/lib/app/personal-coaching'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -57,7 +57,10 @@ export async function POST(request){
       throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
     await consumeRate(config,{op:'my-coach-protocol',actor:actor.id},15,3600)
     let result
-    if(input.action==='save'){
+    if(input.action==='set-preferred-name'){
+      if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
+      result=await saveMyCoachGreetingName(config,actor,input)
+    }else if(input.action==='save'){
       if(Object.keys(input).some(key=>!['action','consent','protocol','draftRevision'].includes(key)))
         throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
       result=await saveMyCoachProtocol(config,actor,input)

@@ -36,7 +36,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null,draftCourses=[]}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null,draftCourses=[]}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -106,7 +106,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    }catch{if(audioRun.current===generation){setPhase('complete');setError(t.failed)}}
  }
  function chooseSession(id,options){
-   if(chosen.current||switching.current||(!accountSaving&&clarityCourseDay(id)))return
+   if(entryPending||chosen.current||switching.current||(!accountSaving&&clarityCourseDay(id)))return
    if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
    chosen.current=true
    topicDialog.current?.close()
