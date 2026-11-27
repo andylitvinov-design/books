@@ -99,3 +99,24 @@
 
 .programPreviewLink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #c9ae73;border-radius:999px;color:#103d30;background:#fffaf2;text-decoration:none;font:650 13px/1.2 system-ui;text-align:center;padding:6px 10px}
 .programPreviewLink svg{flex-shrink:0}
+
+/* Approved three-course catalog: compact same-row action; no reserved CTA column. */
+.card[data-coach-comparison-program]{display:grid;grid-template-columns:clamp(68px,23vw,175px) minmax(0,1fr);gap:10px;padding:9px;min-height:122px;background:#fffcf7;border:1px solid #dfc69a;box-shadow:0 4px 10px #60401c13}
+.card[data-selected=true]{background:linear-gradient(130deg,#fff0c9,#fffbef 80%);border-color:#d9a83b;box-shadow:0 4px 12px #a27a2920}
+.card .art{min-height:100%;height:auto;grid-row:auto;align-self:stretch;border-radius:14px}
+.art[data-art=clarity]{background-image:url('/images/holistic-house/reiki-week-sunrise-approved.webp');background-size:cover}
+.art[data-art=anti-stress]{background-image:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.art[data-art=goal]{background-image:url('/images/holistic-house/messenger-zen-stones.svg');background-size:cover}
+.card .intro{gap:4px;justify-content:space-between}
+.select{display:flex;flex-direction:column;align-items:flex-start;gap:4px;position:relative;text-align:left;width:100%;color:inherit;background:none;border:0;padding:0 18px 2px 0;cursor:pointer;min-height:54px}
+.select .name{font-size:clamp(19px,5.4vw,34px);line-height:1.05}
+.select .description{font-size:clamp(12px,3.4vw,16px);line-height:1.25}
+.select .chevron{position:absolute;right:0;top:50%;transform:translateY(-50%);width:16px}
+.card[data-selected=true] .select .chevron{transform:translateY(-50%) rotate(180deg)}
+.card .meta{display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:flex-start;align-items:center;gap:6px;padding:0;border:0;align-self:stretch;min-height:44px}
+.card .count{font-size:clamp(10px,2.9vw,14px);white-space:nowrap;gap:3px}
+.card .price{font-size:clamp(16px,4.4vw,24px);padding:4px 7px}
+.card .start{margin-left:auto;flex:none;min-height:44px;padding:0 9px;gap:3px;font:700 clamp(11px,3vw,15px)/1 system-ui;background:#0c5943;border:1px solid #356a4f;color:#fffdf4;box-shadow:none;white-space:nowrap}
+.card .startHere{background:#f4d27d;font-size:clamp(10px,2.8vw,13px)}
+@media(max-width:380px){.card[data-coach-comparison-program]{grid-template-columns:62px minmax(0,1fr);gap:7px;padding:7px}.card .meta{gap:4px}.card .count svg{width:12px}.card .price{padding:4px 5px;font-size:15px}.card .start{padding:0 6px;font-size:11px}.card .start svg{width:12px}}
+@media(min-width:600px){.card[data-coach-comparison-program]{padding:13px;gap:19px;min-height:155px}.card .meta{gap:14px}.card .start{padding-inline:17px}}
