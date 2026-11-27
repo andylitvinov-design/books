@@ -438,3 +438,13 @@ test('greeting navigation cancels old audio before switching and never starts Li
  assert.ok(discovery.includes("MyCoachLiveDialogue key={selectedPersona.id+':'+(personaSelection?.methodId||'standard')+':'+(personaSelection?.clarityDay||goalCourseId||'general')}"))
  assert.ok(discovery.includes('clarityDay={personaSelection?.clarityDay}'))
 })
+
+
+test('Clarity credential expiry pauses without claiming trusted time-limit completion',()=>{
+ const live=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.match(live,/if\(r\.paused\|\|clarityCourseDay\(r\.courseSessionId\)\)/)
+ assert.doesNotMatch(live,/onTimeLimit/)
+ assert.doesNotMatch(ui,/clarityTimeLimit\.current=true/)
+ assert.ok(ui.includes("sessionClockStarted&&openingProgress.completed&&!openingProgress.declined"))
+})

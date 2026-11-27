@@ -195,7 +195,13 @@ for (const engine of [chromium, webkit]) {
           assert.ok(firstScreen.width >= width - 24, label + " full-width request");
           assert.ok(firstScreen.height < 540, label + " one mobile-screen request height");
 
-          await finder.locator('[data-support-choice="consultation"]').click();
+          const consultationChoice = finder.locator('[data-support-choice="consultation"]');
+          await consultationChoice.click();
+          // The next budget touch must target the committed consultation
+          // picker, just as later theme and talisman transitions do.
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-choice="consultation"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
           await finder.locator('[data-support-budget="20"]').click();
           await page.waitForFunction(() => document.querySelector('[data-support-budget="20"]')
             ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});

@@ -3,7 +3,7 @@ import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import SimliDialoguePilot from './simli-dialogue-pilot'
-import {Mic,Play,Volume2,Square} from 'lucide-react'
+import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
   prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
@@ -120,7 +120,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
-  canStart=true,elapsedSeconds=0,onSessionStart,onTimeLimit,onVoiceStateChange,
+  canStart=true,elapsedSeconds=0,outputMuted=false,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
@@ -135,7 +135,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const simliPilotRef=useRef(null)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
-    elapsedSeconds,onSessionStart,onTimeLimit,onVoiceStateChange,onMicLevel,onInputInterim,
+    elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
     liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
@@ -1239,14 +1239,16 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       connect(r,token)
       r.timer=setTimeout(()=>{
         if(r.ended)return
-        if(r.paused){
+        if(r.paused||clarityCourseDay(r.courseSessionId)){
+          // Credential expiry is not logical course completion or homework proof.
           // The old credential may not be used beyond the configured lifetime.
+          r.paused=true
           // Keep the paused UI and transcript; Play must not silently mint again.
           preserveUnconfirmedInput(r)
           if(r.outputText){r.interrupted=true;commitOutput(r)}
           teardown(r);r.resumeUnavailable=true
           phaseChange('paused');notify(t.resumeUnavailable)
-        }else{const completedWindow=r.ready&&r.socket?.readyState===WebSocket.OPEN;notify(t.ended);stop();if(completedWindow)propsRef.current.onTimeLimit?.()}
+        }else{notify(t.ended);stop()}
       },clarityCourseDay(r.courseSessionId)?Math.max(0,Math.min(MAX_SESSION_MS,Date.parse(token.expiresAt)-Date.now())):MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){
@@ -1335,6 +1337,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }},
       // The player's output RMS is not microphone input. Only capture() may publish the live mic level.
     })
+    r.player.setMuted(propsRef.current.outputMuted)
     runtime.current=r
     context.onstatechange=()=>handleAudioContextState(r)
     // This optional platform signal must never prevent ordinary Web Audio.
@@ -1372,6 +1375,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     isConnected:()=>Boolean(runtime.current?.ready&&!runtime.current.paused&&!runtime.current.ended&&runtime.current.socket?.readyState===WebSocket.OPEN),
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
+  useEffect(()=>{runtime.current?.player?.setMuted(outputMuted)},[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
     const onPageHide=()=>pauseSession({disconnect:true})
@@ -1420,8 +1424,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         pauseSession()
       }}>
       {phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
-        phase==='speaking'?<Mic size={19} aria-hidden="true"/>:
-        <Square size={18} aria-hidden="true"/>}
+        <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}
       <span>{label}</span>
       {phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
     </button>

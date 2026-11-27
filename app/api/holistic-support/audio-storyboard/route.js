@@ -58,7 +58,7 @@ export async function POST(request){
     // The coach lane is authenticated so a public caller cannot claim its quota.
     const purpose=form.get("purpose");
     const textOnly=output==="text";
-    if(textOnly&&purpose!==null&&purpose!=="ali_chat")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
+    if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();
       await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
@@ -90,7 +90,7 @@ export async function POST(request){
     if(language!=="auto")multipart.set("language",language);
     const provider=await fetch(GROQ_TRANSCRIPT_URL,{
       method:"POST",cache:"no-store",redirect:"error",
-      signal:AbortSignal.timeout(18000),
+      signal:purpose==="my_coach"&&textOnly?AbortSignal.any([request.signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(18000),
       headers:{Authorization:"Bearer "+process.env.HH_FIRST_VIDEO_GROQ_API_KEY},
       body:multipart
     });
@@ -100,6 +100,8 @@ export async function POST(request){
     if(textOnly){
       const text=typeof result?.text==="string"?result.text.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/gu," ").trim().slice(0,2000):"";
       if(!text)throw new AppError("AUDIO_STT_EMPTY",422);
+      if(purpose==="my_coach"&&isSpeechTranscriptLanguageMismatch({requested:language,detected:result.language,text}))
+        throw new AppError("AUDIO_STT_LANGUAGE_MISMATCH",422);
       return NextResponse.json({version:"hh-audio-dictation-v1",text,provider:"groq_free_confirmed",charged:false,locallyStored:false},{headers:PRIVATE_HEADERS});
     }
     const transcript=normalizeTimedTranscript(result);
