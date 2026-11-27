@@ -9,6 +9,11 @@ test('all registered characters get ongoing personalized guidance in all support
   assert.equal(new Set(prompts).size,ids.length)
   for(const prompt of prompts){
    assert.match(prompt,/LIVING CHARACTER/)
+   assert.match(prompt,/CHARACTER FIRST/)
+   assert.match(prompt,/first suitable response to actual client content/)
+   assert.match(prompt,/two short sentences total/)
+   assert.match(prompt,/12–28 spoken words/)
+   assert.match(prompt,/Support and any aphorism should fit inside the reaction/)
    assert.match(prompt,/first two suitable exchanges after consent/)
    assert.match(prompt,/Do not initiate pause, postponement or stopping/)
    assert.match(prompt,/client-requested pause\/stop/)
@@ -16,7 +21,7 @@ test('all registered characters get ongoing personalized guidance in all support
    assert.match(prompt,/at most one question/)
   }
  }
- assert.match(coachPersonalityBaseInstruction('mira','ru'),/даст вам опору/)
+ assert.match(coachPersonalityBaseInstruction('mira','ru'),/поискала опору, а не новые задачи/)
  assert.equal(coachPersonalityBaseInstruction('not-a-coach','ru'),'')
 })
 test('Mira retains her stance during ordinary and supportive turns',()=>{
@@ -25,6 +30,8 @@ test('Mira retains her stance during ordinary and supportive turns',()=>{
   const guidance=coachPersonalityTurnGuidance(turn)
   assert.match(guidance,/specific support or a tentative character-specific observation/)
   assert.match(guidance,/not optional/)
+  assert.match(guidance,/Make the very first sentence the character's specific reaction/)
+  assert.match(guidance,/two short sentences total/)
   assert.match(guidance,/Direct requests, refusal, safety/)
  }
 })
@@ -41,4 +48,12 @@ test('due cue uses remaining live space without clipping Director text',()=>{
  assert.ok(result.includes(turn.characterReply.text))
  const opening=withCoachLivePersonality({guidance:core,openingProgress:{completed:false}},turn)
  assert.ok(!opening.guidance.includes(turn.characterReply.text))
+})
+
+test('native live setup declares character-first brevity with safety overrides',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const source=await readFile(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
+ assert.match(source,/CHARACTER FIRST: make the first suitable spoken sentence/)
+ assert.match(source,/two short sentences total: one supportive reaction/)
+ assert.match(source,/Mandatory opening, profile, consent, safety, refusals/)
 })
