@@ -283,3 +283,40 @@ test('browser WebSocket relay opens same-origin only and releases microphone aft
  assert.equal(closed.at(-1).elapsedMs,5000);assert.equal(closed.at(-1).terminalVerified,false)
  assert.equal(l.snapshot().closed,true);assert.equal(events.size,0);assert.equal(timers.size,0)
 })
+
+test('live panel consumes only exact committed owner/run/protocol clock receipts',async()=>{
+ const {projectClarityPanelClock}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const runId=id(10),protocolId=id(11),selection={accountId:owner,day:1,runId:null,protocolId:null,minimumElapsedMs:0}
+ const ack={kind:'clock',binding:{runId,protocolId,day:1},status:'active',elapsedMs:0}
+ const first=projectClarityPanelClock({selection,owner,ack})
+ assert.equal(first.protocolId,protocolId);assert.equal(first.runId,runId)
+ const next=projectClarityPanelClock({previous:first,selection,owner,ack:{...ack,elapsedMs:5000}})
+ assert.equal(next.elapsedMs,5000)
+ for(const bad of [{...ack,kind:'selection'},{...ack,status:'time_limit'},{...ack,elapsedMs:1200000},{...ack,binding:{...ack.binding,protocolId:id(99)}},{...ack,binding:{...ack.binding,runId:id(99)}},{...ack,binding:{...ack.binding,day:2}}]){
+  assert.equal(projectClarityPanelClock({previous:next,selection,owner,ack:bad}),null)
+ }
+ assert.equal(projectClarityPanelClock({previous:next,selection,owner:id(98),ack}),null)
+ assert.equal(projectClarityPanelClock({previous:next,selection,owner,ack}),null)
+ const paused=projectClarityPanelClock({previous:next,selection,owner,ack:{...ack,status:'paused',elapsedMs:5000}})
+ assert.equal(paused.status,'paused')
+ const resumed=projectClarityPanelClock({previous:paused,selection:{...selection,runId,protocolId,minimumElapsedMs:5000},owner,ack:{...ack,elapsedMs:5000}})
+ assert.equal(resumed.status,'active')
+ const done=projectClarityPanelClock({previous:resumed,selection,owner,ack:{...ack,status:'time_limit',elapsedMs:1200000}})
+ assert.equal(done.status,'time_limit')
+ assert.equal(projectClarityPanelClock({previous:done,selection,owner,ack}),null)
+})
+test('existing voice panel routes Clarity through the trusted relay and binds the draft before saving',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const voice=read('components/my-coach-gemini-live.jsx'),page=read('components/my-coach-live-dialogue.jsx')
+ const begin=voice.slice(voice.indexOf('  async function begin('),voice.indexOf('  function startSession('))
+ assert.ok(begin.indexOf('connectCourseRelay(r);return')<begin.indexOf('const token=await getToken(r)'))
+ assert.match(voice,/onClarityRelayClock\?\.\(ack,selected\)!==true/)
+ assert.match(voice,/r\.ready=true[\s\S]*?server sends the opening/)
+ assert.match(voice,/if\(r\.claritySelection\)return !r\.ended&&!r\.paused&&r\.clarityRelay\?\.sendAudio/)
+ assert.match(page,/projectClarityPanelClock\(\{previous:relayClockRef\.current,selection,owner,ack\}\)/)
+ assert.match(page,/relayClockRef\.current=next;protocolIdRef\.current=next\.protocolId/)
+ assert.match(page,/if\(clarityCourseActive&&!restoredDraft\)\{clock\.setRunning/)
+ assert.match(page,/if\(clarityCourseDay\(selectedCourseId\)&&!restoredDraft&&\(!relayClockRef\.current/)
+ assert.match(page,/next\.status==='time_limit'/)
+ assert.match(page,/finishCourseSegment\(choice==='switch'\)/)
+})

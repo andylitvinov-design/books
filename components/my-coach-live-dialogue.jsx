@@ -22,6 +22,7 @@ import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress
 import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview,clarityVersionedStageView} from '@/lib/coaching/coach-session-stage-view.mjs'
 import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
+import {projectClarityPanelClock} from '@/lib/coaching/clarity-relay-client.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
@@ -362,6 +363,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
+  const relayClockRef=useRef(null)
   const [restoredCourseRunId,setRestoredCourseRunId]=useState(null)
   const activeCourseRunId=restoredCourseRunId||courseRunId
   const protocolStartedRef=useRef(null)
@@ -441,11 +443,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
+    if(clarityCourseDay(selectedCourseId)&&!relayClockRef.current)return
     if(voiceState.phase==='loading'||voiceState.phase==='listening')setSessionClockStarted(true)
     if((voiceState.phase==='loading'||voiceState.phase==='listening')&&!protocolStartedRef.current)
       protocolStartedRef.current=new Date().toISOString()
     if(voiceState.phase==='listening')setIntroComplete(true)
-  },[voiceState.phase])
+  },[voiceState.phase,selectedCourseId])
   useEffect(()=>{replayPlayerRef.current?.setMuted?.(outputMuted)},[outputMuted])
   useEffect(()=>{
     // The iOS software keyboard resizes the visual viewport but not always
@@ -714,7 +717,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
   const clarityOpeningReady=openingProgress.completed&&!openingProgress.declined&&Boolean(openingProgress.answers?.confirmation?.quote)
   const clarityVoiceActive=['listening','thinking','speaking'].includes(voiceState.phase)
-  const clarityTimeUnknown=clarityCourseActive&&restoredDraft&&!restoredClarityTimeKnown
+  const clarityTimeUnknown=clarityCourseActive&&!restoredClarityTimeKnown
   // Restore/recap is not active coaching. Preserve any verified saved time
   // without crediting a safety hold, missing time proof or unaccepted resume.
   const courseClockHeld=courseResumeRequired||Boolean(courseGate?.step.paused)||clarityTimeUnknown
@@ -722,6 +725,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // sole authority for course grants, completion and homework.
   useEffect(()=>{
     const clock=activeClockRef.current
+    // New bound course time is displayed from committed relay receipts only.
+    if(clarityCourseActive&&!restoredDraft){clock.setRunning(window.performance.now(),false);return}
     const limit=clarityCourseActive?CLARITY_COURSE_SECONDS:7200
     const sample=()=>Math.min(limit,clock.sample(window.performance.now()))
     const canRun=()=>sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&!resumePending&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current&&!courseClockHeld&&
@@ -735,7 +740,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       clock.setRunning(window.performance.now(),false)
       window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
     }
-  },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive,courseClockHeld,resumePending])
+  },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive,courseClockHeld,resumePending,restoredDraft])
   // A local preview is not a trusted time-limit receipt. No automatic close
   // on a browser clock or provider timeout while the transport gate is off.
   const timeUnverifiedText=({ru:'Время сессии не подтверждено',en:'Session time not verified',es:'Tiempo de sesión no verificado'})[lang]
@@ -1211,11 +1216,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   // The first-party archive and provider consent remain separate. Save the
   // actual finalized client words even when the model never replies.
+
+  function acceptClarityRelayClock(ack,selection){
+    if(!draftMountedRef.current||!autoSaveRef.current||restoredDraft||protocolSaved||
+      clarityCourseDay(selectedCourseId)!==selection?.day)return false
+    const owner=protocolOwnerRef.current
+    const next=projectClarityPanelClock({previous:relayClockRef.current,selection,owner,ack})
+    if(!next||(protocolIdRef.current&&protocolIdRef.current!==next.protocolId)||
+       (activeCourseRunId&&activeCourseRunId!==next.runId))return false
+    if(!relayClockRef.current)protocolStartedRef.current=new Date().toISOString()
+    relayClockRef.current=next;protocolIdRef.current=next.protocolId
+    setRestoredCourseRunId(next.runId);setRestoredClarityTimeKnown(true)
+    setActiveSessionSeconds(activeClockRef.current.restore(Math.floor(next.elapsedMs/1000)))
+    setSessionClockStarted(true)
+    if(turnsRef.current.length)queuePrivateDraft(turnsRef.current)
+    if(next.status==='time_limit'){
+      clarityTimeLimit.current=true
+      setProtocolFinishedAt(new Date().toISOString());setProtocolEditing(false);setPaused(true);setProtocolOpen(true)
+    }
+    return true
+  }
+
   function queuePrivateDraft(rows){
     if(courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return false
     if(profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed))return false
     const owner=protocolOwnerRef.current
     if(!autoSaveRef.current||!owner||protocolSaved||!rows.length)return
+    if(clarityCourseDay(selectedCourseId)&&!restoredDraft&&(!relayClockRef.current||relayClockRef.current.accountId!==owner))return false
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({
@@ -1344,6 +1371,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return()=>{window.clearInterval(timer);window.clearInterval(timeTimer);window.removeEventListener('online',retry);window.removeEventListener('pagehide',leave);document.removeEventListener('visibilitychange',hidden)}
   },[autoSaveEnabled])
   function captureBasicIntroduction(){
+    if(clarityCourseDay(selectedCourseId))return // local-only name salutation is captured by the voice runner
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
     const content=String(introduction||'').trim()
     if(!content)return
@@ -1782,6 +1810,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!earlyExit||earlyExitBusyRef.current||profileV3BusyRef.current||courseGateBusyRef.current)return
     earlyExitBusyRef.current=true;setEarlyExitBusy(true);setEarlyExitError(false)
     try{
+      if(clarityCourseDay(selectedCourseId)&&speechRef.current?.finishCourseSegment&&!await speechRef.current.finishCourseSegment(choice==='switch'))throw Error('COURSE_STOP_UNVERIFIED')
       freezeActiveClock();speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!retainPendingClient())throw Error('PENDING_CLIENT')
       if(earlyExit.completion&&choice==='results'){
@@ -1843,6 +1872,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     headerBackPendingRef.current=true
     const href=event.currentTarget.href
     try{
+      if(clarityCourseDay(selectedCourseId)&&speechRef.current?.finishCourseSegment&&!await speechRef.current.finishCourseSegment(true))return
       freezeActiveClock()
       speechRef.current?.stop?.()
       replayControllerRef.current?.abort()
@@ -2419,6 +2449,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
+            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&!restoredDraft?{accountId:protocolOwnerRef.current,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
+            onClarityRelayClock={acceptClarityRelayClock}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
