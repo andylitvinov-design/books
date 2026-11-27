@@ -196,7 +196,7 @@ if(!isolated){
         await claim(actorA,nextDate,p3)
         // Real owner-lock + durable reservation race; no token mint, time
         // credit or enrollment. Synthetic candidates deliberately precede consent.
-        const {reserveClarityCredentialInTransaction}=await import('../lib/app/clarity-course-runs.js')
+        const {reserveClarityCredentialInTransaction,retireClarityCredentialInTransaction}=await import('../lib/app/clarity-course-runs.js')
         const {createClarityRun}=await import('../lib/coaching/clarity-course-runs.mjs')
         const candidate=(n)=>createClarityRun({id:'60000000-0000-4000-8000-00000000000'+n,ordinal:1,access:'free',createdAt:0,protocolIds:[p1,p2,p3]})
         const reserve=(actor,run)=>transaction(config,actor,c=>reserveClarityCredentialInTransaction(c,actor,run,{day:1,protocolId:p1}))
@@ -223,8 +223,19 @@ if(!isolated){
         assert.equal((await as(B,c=>c.query('update '+leases+' set possible_expires_at_ms=reserved_at_ms+1 where account_id=$1',[A]))).rowCount,0)
         await assert.rejects(()=>as(A,c=>c.query('delete from '+leases+' where account_id=$1',[A])),/permission denied/i)
         await assert.rejects(()=>as(A,c=>c.query('update '+leases+' set possible_expires_at_ms=reserved_at_ms+1200001 where account_id=$1',[A])),/check constraint/i)
-        // Test an expired window without waiting for wall time: admin only,
-        // on the disposable database. Production has no early release path.
+        // Synthetic trusted normal-close binding (no external provider calls).
+        const retire=(actor,binding)=>transaction(config,actor,c=>retireClarityCredentialInTransaction(c,actor,config,binding))
+        const binding={leaseId:lease.leaseId,courseRunId:lease.run.id,day:1,protocolId:p1}
+        assert.equal(await retire(actorB,binding),false)
+        assert.equal(await retire(actorA,{...binding,protocolId:p2}),false)
+        assert.equal(await retire(actorA,binding),true)
+        assert.equal(await retire(actorA,binding),true)
+        const earlyReplacement=await reserve(actorA,candidate(3))
+        assert.notEqual(earlyReplacement.leaseId,lease.leaseId)
+        assert.equal(await retire(actorA,binding),false)
+        assert.equal((await as(A,c=>c.query('select provider_closed_at_ms from '+leases))).rows[0].provider_closed_at_ms,null)
+        // Test an expired window without waiting for wall time: admin only
+        // on the disposable database.
         await db.query('update '+leases+' set reserved_at_ms=0,possible_expires_at_ms=1 where account_id=$1',[A])
         const replacement=await reserve(actorA,candidate(3))
         assert.notEqual(replacement.leaseId,lease.leaseId)
