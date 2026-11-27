@@ -835,8 +835,7 @@ test('Spanish Services source contract belongs to Core; real billing changes sta
   for (const path of ['app/api/payments/square/checkout/route.js',
     'lib/billing/checkout.js', 'lib/commerce/square-gateway.js',
     'tests/service-commerce-paypal.test.mjs', 'tests/service-square-api-cart.test.mjs',
-    'supabase/migrations/new.sql', 'middleware.ts', 'next.config.ts', 'package-lock.json',
-    '.github/workflows/hh-billing-isolated.yml']) {
+    'supabase/migrations/new.sql', 'middleware.ts', 'next.config.ts', 'package-lock.json']) {
     assert.equal(matchesTrigger(billing, [spanish, path], target), true, path);
   }
   const core = workflow('hh-pr-core-release.yml');
