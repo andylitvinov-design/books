@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {COACH_PROFILE_AXES,coachProfileProgress,coachProfileNextReply,coachProfileScorePair,
  coachProfileProtocolSnapshot} from '../lib/coaching/coach-profile-intake.mjs'
-import {coachOpeningProgress} from '../lib/coaching/coach-opening-protocol.mjs'
+import {coachOpeningProgress,coachOpeningNextReply,coachOpeningFocusExchange,coachOpeningQuestion,coachOpeningNameCandidate,COACH_OPENING_QUESTION_BANK} from '../lib/coaching/coach-opening-protocol.mjs'
 import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
 
 test('baseline profile has eight distinct RU/EN/ES self-rating axes',()=>{
@@ -82,4 +82,37 @@ test('incidental numeric details cannot populate profile; labelled multilingual 
   const value=coachProfileScorePair(text)
   assert.equal(value?.current,3,text);assert.equal(value?.desired,7,text)
  }
+})
+
+test('focus is a starting point, and short contextual replies are recognized in RU/EN/ES',()=>{
+ for(const [locale,yes,name,focus,kind] of [
+  ['ru','да','Андрей','трудность','challenge'],
+  ['ru','да','Андрей','цель','goal'],
+  ['ru','да','Андрей','разобраться в себе','self_exploration'],
+  ['en','yes','Anna','difficulty','challenge'],
+  ['en','yes','Anna','understand myself','self_exploration'],
+  ['es','sí','Ana','dificultad','challenge'],
+  ['es','sí','Ana','conocerme','self_exploration'],
+ ]){
+  for(const personaId of Object.keys(COACH_OPENING_QUESTION_BANK)){
+   const question=coachOpeningQuestion(personaId,'focus',locale)
+   const history=[yes,name]
+   const p=coachOpeningProgress({locale,personaId,turns:[...history,focus]})
+   assert.equal(p.answers.focus.kind,kind)
+   assert.equal(p.current,'feelings')
+   assert.equal(p.completed,false)
+   assert.equal(coachOpeningFocusExchange([{role:'assistant',content:question}],focus),kind)
+   assert.equal(coachOpeningFocusExchange([{role:'assistant',content:question,interrupted:true}],focus),'')
+  }
+ }
+ const oldQuestion='Что вам сейчас было бы полезнее: цель, трудность или личный профиль?'
+ assert.equal(coachOpeningFocusExchange([{role:'assistant',content:oldQuestion}],'трудность'),'challenge')
+ assert.equal(coachOpeningFocusExchange([{role:'assistant',content:oldQuestion}],'да'),'')
+ assert.equal(coachOpeningFocusExchange([{role:'assistant',content:oldQuestion}],'проблема и цель'),'')
+ assert.equal(coachOpeningFocusExchange([{role:'assistant',content:oldQuestion}],'трудность?'),'')
+ assert.equal(coachOpeningNameCandidate('трудность'),'')
+ const p=coachOpeningProgress({locale:'ru',turns:['да','Андрей','трудность']})
+ assert.match(coachOpeningNextReply(p),/начнём с вашей трудности/)
+ assert.equal(coachOpeningProgress({locale:'ru',turns:['трудность']}).current,'invitation')
+ assert.equal(coachOpeningProgress({locale:'ru',turns:['нет','трудность']}).declined,true)
 })
