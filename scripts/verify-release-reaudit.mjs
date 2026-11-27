@@ -291,7 +291,28 @@ async function exercise(engine, browserType, width) {
     } finally {
       if (frameTimer !== null) clearTimeout(frameTimer);
     }
-    await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    try {
+      await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    } catch (error) {
+      // Keep the full settlement gate. Emit bounded, query-free request
+      // diagnostics so a real stalled resource can be repaired, not waived.
+      const pending = [...publicPageState.pendingPublicRequests].slice(0, 25).map(request => ({
+        path: new URL(request.url()).pathname,
+        // Only report a validated local public image path, never arbitrary query data.
+        imageSource: (() => {
+          const url = new URL(request.url());
+          const image = url.pathname === '/_next/image' ? url.searchParams.get('url') : null;
+          return image && /^\/(?:images|academy|videos)\/[a-zA-Z0-9_./-]+$/.test(image) && !image.includes('..') ? image : null;
+        })(),
+        method: request.method(), resourceType: request.resourceType(),
+        prefetch: request.headers()['next-router-prefetch'] === '1' || request.headers().purpose === 'prefetch',
+      }));
+      console.error('[release-reaudit] PUBLIC_REQUEST_SETTLEMENT_FAILED ' + JSON.stringify({
+        engine, width, stage, path: publicPhase, total: publicPageState.pendingPublicRequests.size, pending,
+        quietForMs: Date.now() - publicPageState.lastPublicRequestActivity,
+      }));
+      throw error;
+    }
     publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };
   try {
@@ -463,6 +484,33 @@ async function exercise(engine, browserType, width) {
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
+      await check('home-paid-session-link', { engine, width, locale }, async () => {
+        // Isolate the cross-document booking journey from public audit telemetry.
+        const bookingPage = await context.newPage();
+        try {
+          const home = locale === 'en' ? '/' : '/' + locale;
+          const destination = '/' + locale + '/services?consultation=1#consultation';
+          await bookingPage.goto(origin + home, { waitUntil: 'domcontentloaded', timeout: 35000 });
+          await expect(bookingPage.locator('[data-home-dialogue-entry][data-home-interactive="true"]')).toBeVisible({ timeout: 20000 });
+          const link = bookingPage.locator('a[data-home-request-session]');
+          await expect(link).toHaveCount(1);
+          await expect(link).toHaveAttribute('href', destination);
+          await bookingPage.evaluate(() => window.scrollTo(0, 0));
+          const rect = await link.boundingBox();
+          const viewportHeight = bookingPage.viewportSize().height;
+          assert.ok(rect && rect.height >= 44 && rect.y >= 0 && rect.y + rect.height <= viewportHeight,
+            'The real booking link is visible in the first viewport without scrolling');
+          await link.click();
+          await expect(bookingPage).toHaveURL(origin + destination, { timeout: 35000 });
+          const panel = bookingPage.locator('[data-services-unified-panel="consultation"]');
+          await expect(panel).toHaveAttribute('data-expanded', 'true', { timeout: 20000 });
+          const booking = panel.locator('#consultation[data-consultation-capture="service"]');
+          await expect(booking).toBeVisible();
+          await expect(booking.locator('[data-service-product]')).toHaveCount(2);
+          await expect(booking.locator('h2')).toBeInViewport({ timeout: 10000 });
+          return { realPaidOffer: true, paymentsOrBookingsMade: false, firstScreen: true };
+        } finally { await bookingPage.close(); }
+      });
       await check('consultation-safe-handoff', { engine, width, locale }, async () => {
         await page.goto(origin + `/${locale}/about`, { waitUntil: 'networkidle' });
         const capture = page.locator('[data-consultation-capture="personal"]');

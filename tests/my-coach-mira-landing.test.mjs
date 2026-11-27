@@ -13,7 +13,7 @@ test('My Coach opens on Mira invitation and scrolls to a working filtered direct
   assert.match(component, /id="my-coach-top"/)
   assert.match(component, /id="all-coaches"/)
   assert.match(component, /setTopic\(current => current === item.id \? 'all' : item.id\)/)
-  assert.match(component, /<ClarityStartLink locale=\{lang\}/)
+  assert.match(component, /coachCourseLaunchHref\(lang,'clarity',selected\.id\)/)
   assert.match(component, /data-my-coach-program-panel/)
   assert.match(component, /scrollIntoView/)
   assert.match(component, /COACH_PERSONAS/)

@@ -90,7 +90,7 @@ test('approved My Coach landing prioritizes the original portrait, talk and free
   assert.match(hero, /<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
   assert.match(hero, /<h2>\{selectedName\}<\/h2>/)
   assert.doesNotMatch(hero, /hw\.hello|stageTopics|liveLabel/)
-  assert.match(hero, /<ClarityStartLink locale=\{lang\}/)
+  assert.match(hero, /coachCourseLaunchHref\(lang,'clarity',selected\.id\)/)
   assert.match(jsx, /Start Free AI Coaching/)
   assert.match(hero, /data-my-coach-program-details/)
   assert.ok(hero.includes("'/my-coach/programs'"))
