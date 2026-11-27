@@ -1,0 +1,30 @@
+name: HH Coach Audio Identity contract
+on:
+  pull_request:
+    branches: [feat/anti-stress-therapy-program-20261127, codex/public-book-library]
+    paths:
+      - 'lib/coaching/coach-audio-profiles.mjs'
+      - 'lib/coaching/gemini-voice-catalog.mjs'
+      - 'lib/coaching/gemini-live-free.mjs'
+      - 'lib/coaching/gemini-coach-tts.mjs'
+      - 'lib/coaching/conversational-persona.mjs'
+      - 'tests/coach-audio-profiles.test.mjs'
+      - '.github/workflows/hh-coach-audio-contract.yml'
+permissions:
+  contents: read
+concurrency:
+  group: coach-audio-contract-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test audio registry and server setup with synthetic payloads only
+        run: node --test tests/coach-audio-profiles.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/my-coach-gemini-approved-voices.test.mjs tests/my-coach-gemini-tiers-tts.test.mjs
