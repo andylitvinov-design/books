@@ -90,3 +90,26 @@ test('owner memory skips excluded records on bounded pages and never mistakes in
  assert.match(panel,/appFetch\('anti-stress\/session\?'\+q,undefined,'GET',\{accountId,signal:c.signal\}\)/)
  assert.doesNotMatch(panel,/sendSocket|localStorage|sessionStorage|geminiLiveContextMessage/)
 })
+
+test('provider memory shares only one fresh explicitly selected reference, never the archive',async()=>{
+ const {crossModeShareOptions,resolveCrossModeShare}=await import('../lib/coaching/anti-stress-memory-share.mjs')
+ const owner=id(100),current=id(90)
+ const c=projectCoachingPrivateMemory([{id:id(30),provenance:'client_reviewed_dialogue',savedAt:new Date(atMs).toISOString(),goal:'Work',clientSummary:'Reviewed conclusion',clientNextStep:'One step'}])
+ const {run,ledger}=fixture()
+ const t=projectAntiStressPrivateMemory(run,sessionId,protocolId,ledger,atMs+5000,'en')
+ const ok=value=>({status:'fulfilled',value})
+ const m=assembleOwnerCrossModeMemory({identity:ok({preferredName:'Mary'}),coaching:ok(c),therapy:ok(t)})
+ const choices=crossModeShareOptions(m,owner,current)
+ const x=choices.find(v=>v.field==='topic')
+ const selection={provider:'gemini_live_free',consent:true,fingerprint:x.fingerprint}
+ const note=resolveCrossModeShare(m,owner,current,selection)
+ assert.match(note,/Work/)
+ assert.doesNotMatch(note,/Reviewed conclusion|One step|Mary|Quiet lake/)
+ assert.equal(resolveCrossModeShare(m,id(99),current,selection),null)
+ assert.equal(resolveCrossModeShare(m,owner,id(91),selection),null)
+ assert.equal(resolveCrossModeShare(m,owner,current,{...selection,consent:false}),null)
+ assert.equal(resolveCrossModeShare(m,owner,current,{...selection,provider:'groq'}),null)
+ const edited={...m,coaching:{status:'available',record:{...c,topic:'Changed'}}}
+ assert.equal(resolveCrossModeShare(edited,owner,current,selection),null)
+ assert.ok(!crossModeShareOptions(m,owner,c.protocolId).some(v=>v.mode==='coaching'))
+})

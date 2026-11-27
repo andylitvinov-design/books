@@ -5,7 +5,7 @@ import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,safeError,readBody} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns,readAntiStressRunSummary,editOwnedAntiStressMeditation} from '@/lib/app/anti-stress-runs'
-import {readOwnedCrossModeMemory} from '@/lib/app/anti-stress-private-memory'
+import {readOwnedCrossModeMemory,ownerCrossModeShareOptions} from '@/lib/app/anti-stress-private-memory'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -24,7 +24,7 @@ export async function GET(request){
   if(url.searchParams.get('view')==='continuity'){
    if([...url.searchParams.keys()].some(k=>!['view','exclude','locale'].includes(k)||url.searchParams.getAll(k).length!==1))throw new AppError('ANTI_STRESS_INVALID',400)
    const memory=await readOwnedCrossModeMemory(config,actor,url.searchParams.get('exclude'),locale)
-   return auth.apply(NextResponse.json(memory,{headers:PRIVATE_HEADERS}))
+   return auth.apply(NextResponse.json({...memory,shareOptions:ownerCrossModeShareOptions(memory,actor,url.searchParams.get('exclude'))},{headers:PRIVATE_HEADERS}))
   }
   if(url.searchParams.get('view')==='run'){
    if([...url.searchParams.keys()].some(k=>!['view','runId','locale'].includes(k)||url.searchParams.getAll(k).length!==1))throw new AppError('ANTI_STRESS_INVALID',400)
