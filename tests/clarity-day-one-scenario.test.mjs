@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {createCoachActiveClock} from '../lib/coaching/coach-active-clock.mjs'
+import {readFileSync} from 'node:fs'
 import {CLARITY_DAY_ONE_BUDGETS,clarityDayOneScenario,clarityDayOneTimebox,clarityDayOneGapPlan,clarityDayOneBalanceSummary,clarityDayOneTimeGuidance} from '../lib/coaching/clarity-day-one-scenario.mjs'
 import {coachCourseProtocolGuidance,coachCourseCheckpointGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
 test('v5 budgets, stages and all localized protocol fields',()=>{
@@ -271,4 +273,23 @@ test('Clarity day two and three handoff keeps the same immutable prefix and reis
   assert.equal(value.protocol.turns.at(-1).authorPersonaId,'mira')
   assert.throws(()=>run('course-gate-answer',{promptId:view.prompt.id,content:'I need support',coachId:'genie'}))
  }
+})
+
+test('restored verified minutes are frozen during recap, safety hold and unknown-time recovery',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('const courseClockHeld=courseResumeRequired||Boolean(courseGate?.step.paused)||clarityTimeUnknown'))
+ assert.ok(ui.includes('!coachProfileOpenRef.current&&!courseClockHeld&&'))
+ assert.ok(ui.includes('clarityVoiceActive,courseClockHeld])'))
+ assert.ok(ui.includes('activeClockRef.current.restore(timeKnown?restoredTime.elapsedSeconds:p.durationSeconds||0)'))
+ assert.ok(ui.includes("if(payload.action==='course-gate-continue')setCourseResumeRequired(false)"))
+ assert.ok(ui.includes('&&!clarityTimeUnknown?Math.floor(activeSessionSeconds):null'))
+ const clock=createCoachActiveClock()
+ assert.equal(clock.restore(420),420)
+ assert.equal(clock.sample(10000),420)
+ clock.setRunning(10000,false)
+ assert.equal(clock.sample(40000),420)
+ clock.setRunning(40000,true)
+ assert.equal(clock.sample(45000),425)
+ clock.setRunning(45000,false)
+ assert.equal(clock.sample(55000),425)
 })

@@ -30,3 +30,7 @@ The v5 reviewed ledger now determines independent question assignments. Only una
 
 ## Verified resume-time readback (26 Nov)
 The owner-scoped greeting summary and revision-bound restore now project elapsed/remaining time only from the exact matching encrypted course clock. The browser's saved duration is never promoted into verified resume minutes; if there is no trusted clock, the UI identifies time as unverified. No new table, provider call, client clock event route or activation; the existing private text-only restore remains text-only. Native CI and real authenticated/provider acceptance remain required.
+
+
+## Resume presentation clock interlock (26 Nov)
+Freeze the local presentation clock throughout explicit continuation recap, safety-paused gate and a restored Clarity draft without matching trusted elapsed-time proof. Preserve known saved seconds in the display; never turn the local preview into entitlement or timed-end evidence. This is a UI interlock, not a provider/clock adapter or activation. Keep transport veto and flags OFF pending trusted provider observations, shared quota and authenticated acceptance.

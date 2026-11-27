@@ -674,13 +674,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
   const clarityOpeningReady=openingProgress.completed&&!openingProgress.declined&&Boolean(openingProgress.answers?.confirmation?.quote)
   const clarityVoiceActive=['listening','thinking','speaking'].includes(voiceState.phase)
+  const clarityTimeUnknown=clarityCourseActive&&restoredDraft&&!restoredClarityTimeKnown
+  // Restore/recap is not active coaching. Preserve any verified saved time
+  // without crediting a safety hold, missing time proof or unaccepted resume.
+  const courseClockHeld=courseResumeRequired||Boolean(courseGate?.step.paused)||clarityTimeUnknown
   // Presentation clock only. The trusted encrypted server clock remains the
   // sole authority for course grants, completion and homework.
   useEffect(()=>{
     const clock=activeClockRef.current
     const limit=clarityCourseActive?CLARITY_COURSE_SECONDS:7200
     const sample=()=>Math.min(limit,clock.sample(window.performance.now()))
-    const canRun=()=>sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current&&
+    const canRun=()=>sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current&&!courseClockHeld&&
       (!clarityCourseActive||(clarityOpeningReady&&clarityVoiceActive&&speechRef.current?.isConnected?.()===true))
     const tick=()=>{const now=window.performance.now();clock.setRunning(now,canRun());setActiveSessionSeconds(sample())}
     const onVisibility=()=>{clock.setRunning(window.performance.now(),canRun());setActiveSessionSeconds(sample())}
@@ -691,10 +695,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       clock.setRunning(window.performance.now(),false)
       window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
     }
-  },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive])
+  },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive,courseClockHeld])
   // A local preview is not a trusted time-limit receipt. No automatic close
   // on a browser clock or provider timeout while the transport gate is off.
-  const clarityTimeUnknown=clarityCourseActive&&restoredDraft&&!restoredClarityTimeKnown
   const timeUnverifiedText=({ru:'Время сессии не подтверждено',en:'Session time not verified',es:'Tiempo de sesión no verificado'})[lang]
   const sessionTimebox=coachTimeboxState(sessionClockStarted&&openingProgress.completed&&!openingProgress.declined&&!clarityTimeUnknown?Math.floor(activeSessionSeconds):null)
   const minuteRuler=coachMinuteRuler(sessionTimebox.elapsedSeconds)
