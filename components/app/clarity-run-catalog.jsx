@@ -3,7 +3,8 @@ import {useEffect,useRef,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {clarityRunNotes} from '@/lib/coaching/clarity-course-runs.mjs'
 import {CLARITY_SYLLABUS,clarityDayNotes} from '@/lib/app/clarity-program.mjs'
-import {clarityHomeworkNotes} from '@/lib/coaching/clarity-course.mjs'
+import Link from 'next/link'
+import {clarityCoachHref,clarityHomeworkNotes} from '@/lib/coaching/clarity-course.mjs'
 import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
 import {gameProgress} from '@/lib/app/daybook-games.mjs'
 import DaybookGames from './daybook-games'
@@ -40,7 +41,8 @@ function SessionData({run,day,accountId,locale,entries,hasMore,loadingAll,loadEr
  const projection=result?clarityResultProjection(result,entries,{journalComplete:!hasMore}):null
  return <div className={css.practiceBody}>
   {transcript?<><p>{new Date(transcript.updatedAt).toLocaleDateString(locale)}{!transcript.reviewed?' · '+t.draft:''}</p>
-   <ClarityProtocolDocuments sessionProtocol={sessionProtocol} log={transcript} locale={locale}/></>:<p>{t.empty}</p>}
+   <ClarityProtocolDocuments sessionProtocol={sessionProtocol} log={transcript} locale={locale}/>
+   {!transcript.reviewed&&day.status==='paused'&&run.currentDay===day.day&&<Link prefetch={false} href={clarityCoachHref('/'+locale+'/my-coach',day.day,run.id)}>{({en:'Continue saved session by text',ru:'Продолжить сохранённую сессию текстом',es:'Continuar sesión guardada por texto'})[locale]}</Link>}</>:<p>{t.empty}</p>}
   {result&&<section><h3>{t.results}</h3><ClaritySemanticResult day={day.day} rows={projection.rows} locale={locale}/>
    <dl>{projection.rows.map(row=><div key={row.id}><dt>{row.label}</dt><dd>{row.quote||'—'}</dd></div>)}</dl>
    {projection.assigned.length>0&&<section><h4>{t.homework} · {projection.homeworkDone}/{projection.homeworkTotal}</h4>

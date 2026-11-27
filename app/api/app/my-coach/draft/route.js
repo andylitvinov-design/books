@@ -24,7 +24,7 @@ async function handle(request,write){
    if(input.action==='checkpoint'&&Object.keys(input).every(k=>['action','consent','revision','value'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-checkpoint',actor:actor.id},240,3600)
     result=await saveCoachDraft(config,actor,input)
-   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision'].includes(k))){
+   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision','courseRunId'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
     result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
@@ -43,12 +43,12 @@ async function handle(request,write){
    }else throw new AppError('MY_COACH_DRAFT_INVALID',400)
   }else{
    const params=new URL(request.url).searchParams
-   if([...params.keys()].some(k=>!['before','beforeId','view','personaId','courseSessionId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
+   if([...params.keys()].some(k=>!['before','beforeId','view','personaId','courseSessionId','courseRunId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
    if(params.get('view')==='capabilities'){
     if([...params.keys()].length!==1)throw new AppError('MY_COACH_DRAFT_INVALID',400)
     // Metadata-only; no draft or personal data read. Same verified owner and origin.
     result={profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
-   }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId'),courseSessionId:params.get('courseSessionId')})
+   }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId'),courseSessionId:params.get('courseSessionId'),courseRunId:params.get('courseRunId')})
   }
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){
