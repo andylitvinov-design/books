@@ -51,7 +51,7 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
-       inputs.emergency == true && inputs.prebuilt_test != true && inputs.cleanup_mode == 'off') ||
+       inputs.emergency == true && inputs.cleanup_mode == 'off' && inputs.prebuilt_test != true) ||
       (github.event_name == 'workflow_dispatch' && inputs.prebuilt_test == true &&
        inputs.emergency != true && inputs.cleanup_mode == 'off'))
     runs-on: ubuntu-latest
