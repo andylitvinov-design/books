@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck, Mic } from 'lucide-react'
 import {
   PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_RAIL_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona, COACH_METHOD_CODES, resolveCoachMethodId,
   localCoachText, normalizeCoachSettings,
@@ -394,7 +394,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               ))}
             </div>
           </div>
-          <p className={heroStyles.tagline}>{directoryMode === 'human' ? h.intro : hw.tagline}</p>
+          {directoryMode === 'human' && <p className={heroStyles.tagline}>{h.intro}</p>}
         </div>
         {directoryMode !== 'human' && <>
         <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
@@ -410,8 +410,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             {selected.id === 'mira' && !safeMethod
               ? <MyCoachExpressStart locale={lang} href={startHref} embedded data-my-coach-hero-start={selected.id} />
               : <MyCoachExpressStart locale={lang} className={heroStyles.talkButton} href={startHref}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></MyCoachExpressStart>}
+                  data-my-coach-hero-start={selected.id}><Mic size={19} aria-hidden="true" /> {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></MyCoachExpressStart>}
           </div>
+        </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
             <div className={heroStyles.programActions}>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
@@ -419,7 +420,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               </Link>
             </div>
           </div>
-        </div>
         <div className={heroStyles.coachRailHeading}>
           <h2>{hw.choose}</h2>
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
