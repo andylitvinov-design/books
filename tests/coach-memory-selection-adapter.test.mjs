@@ -19,7 +19,7 @@ function fixture(){
  let item={accountId:A,kind:'resource',evidenceStatus:'client_confirmed',temporalStatus:'historical',
   value:'A quiet walk helps.',sessionEndedAt:'2026-11-22T10:00:00.000Z',source}
  const settings={memory_enabled:true,sensitive_enabled:true,revision:1}
- let ref=null,archive=true
+ let ref=null,archive=true,changeRevisionAtRecheck=false
  const ops=new Map(),calls=[]
  const fp=(config,accountId,x)=>digest({accountId,source:x.source,value:x.value,sessionEndedAt:x.sessionEndedAt})
  const query=async(sql,args)=>{
@@ -41,7 +41,12 @@ function fixture(){
    if(ref?.id===args[1]&&ref.revision===args[2]&&ref.status==='active'){
     ref={...ref,status:'blocked',source_hash:null,revision:ref.revision+1};rows=[{...ref}]
    }
-  }else if(sql.startsWith('select id,revision')){if(ref?.status==='active'&&args[1].includes(ref.id))rows=[{id:ref.id,revision:ref.revision}]}
+  }else if(sql.startsWith('select id,revision')){
+   if(ref?.status==='active'&&args[1].includes(ref.id)){
+    if(changeRevisionAtRecheck)ref={...ref,revision:ref.revision+1}
+    rows=[{id:ref.id,revision:ref.revision}]
+   }
+  }
   else if(sql.startsWith('select * from app_private.client_ai_memory_protocol_refs')){
    if(ref&&(sql.includes("status='active'")?ref.status==='active'&&(!args[1]||ref.id>args[1]):
      sql.includes('protocol_id=$2')?ref.protocol_id===args[1]&&ref.field_id===args[2]:ref.id===args[1]))rows=[{...ref}]
@@ -55,7 +60,7 @@ function fixture(){
  const run=raw=>manage({}, {id:A},raw)
  const save=(n=1)=>({action:'save',confirmed:true,operationId:op(n),expectedSettingsRevision:settings.revision,
   source,sourceFingerprint:fp({},A,item)})
- return {run,save,settings,calls,change:patch=>{item={...item,...patch}},
+ return {run,save,settings,calls,reviseDuringRead:()=>{changeRevisionAtRecheck=true},change:patch=>{item={...item,...patch}},
   revoke:()=>{settings.sensitive_enabled=false;settings.revision++;if(ref?.status==='active')ref={...ref,status:'blocked',source_hash:null,revision:ref.revision+1}},
   deleteSource:()=>{archive=false;ref=null}}
 }
@@ -126,4 +131,13 @@ test('selected search reports stale source and denied consent without leaking te
  const partial=await f.run(request);assert.equal(partial.searchStatus,'partial');assert.deepEqual(partial.items,[])
  f.revoke();const denied=await f.run(request);assert.equal(denied.searchStatus,'not_authorized');assert.deepEqual(denied.items,[])
  await assert.rejects(()=>f.run({action:'search',query:{ownerReview:true,query:'walk',provider:'groq'}}),/MY_COACH_MEMORY_SELECTION_INVALID/)
+})
+
+test("a concurrent correction discards stale evidence and marks the search partial",async()=>{
+ const f=fixture()
+ await f.run(f.save())
+ f.reviseDuringRead()
+ const result=await f.run({action:"search",query:{ownerReview:true,query:"quiet walk"}})
+ assert.equal(result.searchStatus,"partial")
+ assert.deepEqual(result.items,[])
 })

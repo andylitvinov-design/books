@@ -186,9 +186,33 @@ if(!isolated){
       assert.equal((await as(B,d=>d.query("update app_private.client_ai_memory_protocol_refs set status='blocked',source_hash=null,revision=revision+1 where account_id=$1 and id=$2",[A,refA]))).rowCount,0)
       await as(A,d=>d.query("insert into app_private.client_ai_memory_protocol_ref_ops(account_id,operation_id,action,request_hash,ref_id) values($1,$2,'save',$3,$4)",[A,op(99),fingerprint,refA]))
       assert.equal((await as(B,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_ref_ops'))).rows[0].n,0)
+      const addCorrection=(owner,ref,revision)=>as(owner,d=>d.query(
+        "insert into app_private.client_ai_memory_protocol_ref_versions(account_id,ref_id,revision,value_ciphertext) values($1,$2,$3,$4)",
+        [owner,ref,revision,"x".repeat(80)]))
+      const advanceCorrection=(owner,ref)=>as(owner,d=>d.query(
+        "update app_private.client_ai_memory_protocol_refs set revision=revision+1 where account_id=$1 and id=$2 returning revision",
+        [owner,ref]))
+      await assert.rejects(()=>advanceCorrection(A,refA),/MEMORY_PROTOCOL_REF_IMMUTABLE/)
+      await assert.rejects(()=>addCorrection(B,refA,1))
+      await assert.rejects(()=>addCorrection(A,refA,2))
+      await as(A,async d=>{
+        await d.query("insert into app_private.client_ai_memory_protocol_ref_versions(account_id,ref_id,revision,value_ciphertext) values($1,$2,1,$3)",
+          [A,refA,"x".repeat(80)])
+        const result=await d.query("update app_private.client_ai_memory_protocol_refs set revision=revision+1 where account_id=$1 and id=$2 returning revision",
+          [A,refA])
+        assert.equal(result.rows[0].revision,1)
+      })
+      assert.equal((await as(B,d=>d.query("select * from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",
+        [refA]))).rowCount,0)
+      assert.equal((await as(A,d=>d.query("delete from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",
+        [refA]))).rowCount,0)
+      await assert.rejects(()=>as(A,d=>d.query("update app_private.client_ai_memory_protocol_ref_versions set value_ciphertext=$1",
+        ["y".repeat(80)])),/permission denied/)
       await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=false where account_id=$1',[A]))
       assert.deepEqual((await as(A,d=>d.query('select status,revision,source_hash from app_private.client_ai_memory_protocol_refs where id=$1',[refA]))).rows[0],
-        {status:'blocked',revision:1,source_hash:null})
+        {status:'blocked',revision:2,source_hash:null})
+      assert.equal((await as(A,d=>d.query("select * from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",
+        [refA]))).rowCount,0)
       assert.equal((await as(B,d=>d.query('select status from app_private.client_ai_memory_protocol_refs where id=$1',[refB]))).rows[0].status,'active')
       await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=true where account_id=$1',[A]))
       assert.equal((await as(A,d=>d.query('select status from app_private.client_ai_memory_protocol_refs where id=$1',[refA]))).rows[0].status,'blocked')
@@ -196,8 +220,12 @@ if(!isolated){
       await as(A,d=>d.query('delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2',[A,protocolA]))
       assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_refs'))).rows[0].n,0)
       assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_ref_ops'))).rows[0].n,1)
-      const pmeRls=await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid in ('app_private.client_ai_memory_protocol_refs'::regclass,'app_private.client_ai_memory_protocol_ref_ops'::regclass)")
-      assert.equal(pmeRls.rowCount,2);assert.ok(pmeRls.rows.every(row=>row.relrowsecurity&&row.relforcerowsecurity))
+      await addCorrection(B,refB,1)
+      assert.equal((await advanceCorrection(B,refB)).rows[0].revision,1)
+      await as(B,d=>d.query("delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2",[B,protocolB]))
+      assert.equal((await as(B,d=>d.query("select * from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",[refB]))).rowCount,0)
+      const pmeRls=await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid in ('app_private.client_ai_memory_protocol_refs'::regclass,'app_private.client_ai_memory_protocol_ref_ops'::regclass,'app_private.client_ai_memory_protocol_ref_versions'::regclass)")
+      assert.equal(pmeRls.rowCount,3);assert.ok(pmeRls.rows.every(row=>row.relrowsecurity&&row.relforcerowsecurity))
 
       // Re-enabling sharing and then deleting settings must revoke every live grant.
       await as(A,db=>db.query(`update app_private.client_ai_memory_settings

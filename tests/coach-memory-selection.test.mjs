@@ -45,7 +45,9 @@ test('SQL candidate uses canonical settings, account-scoped FK and irreversible 
  assert.match(sql,/FOREIGN KEY\(account_id,protocol_id\) REFERENCES app_private\.my_coach_protocol_records\(account_id,protocol_id\) ON DELETE CASCADE/)
  assert.match(sql,/UNIQUE\(account_id,protocol_id,field_id\)/)
  assert.match(sql,/FORCE ROW LEVEL SECURITY/)
- assert.match(sql,/OLD\.status<>'active' OR NEW\.status<>'blocked'/)
+ assert.match(sql,/OLD\.status<>'active' OR NEW\.revision<>OLD\.revision\+1/)
+ assert.match(sql,/FOREIGN KEY\(account_id,ref_id\) REFERENCES app_private\.client_ai_memory_protocol_refs\(account_id,id\) ON DELETE CASCADE/)
+ assert.match(sql,/DELETE FROM app_private\.client_ai_memory_protocol_ref_versions/)
  assert.match(sql,/AFTER UPDATE OF memory_enabled,sensitive_enabled/)
  assert.match(sql,/status='blocked',source_hash=NULL,revision=revision\+1/)
  assert.doesNotMatch(sql,/SECURITY DEFINER|payload_ciphertext|protocol_ciphertext/)
@@ -63,4 +65,27 @@ test('server boundary stays private and forget is possible with flag off',()=>{
  assert.match(store,/MY_COACH_MEMORY_BLOCKED/)
  assert.match(store,/latest\.revision!==settings\.revision/)
  assert.doesNotMatch(store,/fetch\(|sendToProvider|modelGateway/)
+})
+
+test("a correction requires explicit confirmation and an exact active revision", () => {
+  const input = {action:"correct",confirmed:true,operationId:op,id,expectedRevision:0,value:"  A walk by the sea.  "}
+  assert.deepEqual(normalizeMemorySelection(input),{...input,value:"A walk by the sea."})
+  for (const patch of [{value:" "},{value:"x".repeat(601)},{value:"bad\u0000text"},
+    {confirmed:false},{expectedRevision:-1},{provider:"groq"},{accountId:id},{kind:"resource"}]) {
+    assert.throws(()=>normalizeMemorySelection({...input,...patch}),/MY_COACH_MEMORY_SELECTION_INVALID/)
+  }
+})
+
+test("the latest correction has distinct provenance and cannot fall back to the old quote", () => {
+  const row = {id,account_id:id,revision:1,status:"active",created_at:"2026-11-27T21:00:00Z"}
+  const correction = {revision:1,value:"A walk by the sea.",confirmedAt:"2026-11-27T21:10:00Z"}
+  assert.equal(memorySelectionView(row,item),null)
+  assert.equal(memorySelectionView(row,item,{...correction,revision:2}),null)
+  const view = memorySelectionView(row,item,correction)
+  assert.equal(view.value,correction.value)
+  assert.equal(view.valueSource,"owner_correction")
+  assert.equal(view.confirmedAt,correction.confirmedAt)
+  assert.equal(view.providerShareable,false)
+  assert.deepEqual(view.source,item.source)
+  assert.doesNotMatch(JSON.stringify(view),/quiet walk/)
 })
