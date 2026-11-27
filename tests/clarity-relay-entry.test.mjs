@@ -65,3 +65,21 @@ test('upgrade preserves same-origin auth and shared provider quota; direct token
  const section=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
  assert.ok(section.indexOf("throw new AppError('CLARITY_RELAY_REQUIRED',409)")<section.indexOf('await consumeRateBatch(config,liveQuota.attempts)'))
 })
+
+
+test('Vercel SDK route verifies identity before upgrade and attaches synchronously, with bounded segments',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const route=read('app/api/app/my-coach/live-relay/route.js'),upgrade=read('lib/app/clarity-live-upgrade.js')
+ const pkg=JSON.parse(read('package.json')),lock=JSON.parse(read('package-lock.json'))
+ for(const key of ['@vercel/functions','ws']){
+  assert.match(pkg.dependencies[key],/^\d+\.\d+\.\d+$/)
+  assert.equal(lock.packages['node_modules/'+key].version,pkg.dependencies[key])
+  assert.ok(lock.packages['node_modules/'+key].integrity)
+ }
+ assert.match(route,/export const maxDuration=300/)
+ assert.ok(route.indexOf('await prepareClarityLiveUpgrade(')<route.indexOf('return experimental_upgradeWebSocket('))
+ assert.match(route,/experimental_upgradeWebSocket\(client=>\{[\s\S]*?prepared\.attach\(client\)/)
+ assert.match(route,/perMessageDeflate:false,followRedirects:false/)
+ assert.match(upgrade,/await consumeRate\(config,\{op:'clarity-live-upgrade',actor:actor\.id\},12,3600\)/)
+ assert.doesNotMatch(route,/console\.|token:|access_token/)
+})
