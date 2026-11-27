@@ -495,3 +495,14 @@ test('quality hold retains the HD camera and does not return to legacy video',()
  assert.ok(src.includes("sessionContext?(released?.poster||sessionPoster)"))
  assert.ok(pres.includes('Never fall back to a previously shown lower-resolution greeting.'))
 })
+
+
+test('Mira public presentation starts in screened HD, never the 480px opening',()=>{
+ const src=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+ assert.ok(src.includes("const opening=presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null"))
+ const original=coachPresentationOpening('mira')
+ assert.equal(original.width,480)
+ const pinned=protectedCoachPresence('mira',REACTION_V4_RELEASED)
+ const hd=qualityScreenedPresentation(pinned,releasedReactionMedia('mira',REACTION_V4_RELEASED,pinned.group))
+ assert.equal(hd.id,'MIR-01');assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
+})
