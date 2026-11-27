@@ -1,0 +1,3 @@
+# Goal eight-session scenario contract
+
+Eight fixed Goal topics, six time windows and existing verified report checkpoints. The new guidance is advisory and the result outline is read-only, not a completion or entitlement source. The full methodology is on Google Drive. Existing IDs are unchanged to preserve archives. Detailed additional fields, server-owned run/clock, report UI, games and authenticated E2E remain follow-up work; do not infer completion or enable payments/providers. No direct deploy.
