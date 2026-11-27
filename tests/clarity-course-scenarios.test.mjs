@@ -160,3 +160,12 @@ test('timecode guidance targets current scenario checkpoints, preserves dialogue
  assert.match(clarityScenarioTimeGuidance('clarity_day_1',1200),/do not start another coaching question/)
  assert.match(clarityScenarioTimeGuidance('clarity_day_1',240),/4–9 min balance/)
 })
+
+test('all Clarity time hints fit the Gemini Director sideband budget',()=>{
+ for(const course of ['clarity_day_1','clarity_day_2','clarity_day_3']){
+  for(let seconds=0;seconds<=1200;seconds++){
+   const hint=clarityScenarioTimeGuidance(course,seconds)
+   assert.ok(hint.length<=450,course+' '+seconds+' '+hint.length)
+  }
+ }
+})
