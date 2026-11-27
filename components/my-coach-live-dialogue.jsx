@@ -22,7 +22,7 @@ import {openingStagePosition,profileStagePosition,methodStagePosition,courseStag
 import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
-import {coachSessionOpeningLine,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
   coachProfileReviewProtocolSnapshot} from '@/lib/coaching/coach-profile-review.mjs'
@@ -599,10 +599,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
-    if(liveVoiceSelected&&greetingIdentity.name&&!turnsRef.current.length){
-      // Show the name in the first-party transcript, not in a provider start packet.
-      flushSync(()=>captureBasicIntroduction())
-    }
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   // Explicit logical start shared by text, streaming and Live. Never reselect on resume.
@@ -1307,6 +1303,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const content=String(introduction||'').trim()
     if(!content)return
     const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',requestedSavedContext:Boolean(greetingIdentity.name)}]
+    if(!coachProtocolCanAppend([],next))return
+    turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+  }
+  function capturePrivateLiveSalutation(){
+    if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
+    const content=coachSessionNameSalutation(greetingIdentity.name,conversationLang)
+    if(!content)return
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',privateGreetingPrefix:true,requestedSavedContext:true}]
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
   }
@@ -2162,10 +2166,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setGreetingAccepted(true)
     })
     if(privateProfile){toggleComposer();return}
-    if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying){
-      if(greetingIdentity.name&&!turnsRef.current.length)flushSync(()=>captureBasicIntroduction())
+    if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
       speechRef.current?.startSession?.()
-    }
   }
   const motionPhase=paused||voiceState.phase==='paused'?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
@@ -2320,7 +2322,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
-            localRecoveryTurns={turns}
+            localRecoveryTurns={turns.filter(row=>!row.privateGreetingPrefix)}
+            privateGreetingText={!turns.length?coachSessionNameSalutation(greetingIdentity.name,conversationLang):''}
+            onPrivateGreeting={capturePrivateLiveSalutation}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={handleVoiceStateChange}

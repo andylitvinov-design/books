@@ -1,6 +1,7 @@
 'use client'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
+import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
 import {Mic,Play,Volume2} from 'lucide-react'
@@ -125,6 +126,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
+  privateGreetingText='',onPrivateGreeting,
   methodSession=null,prepareMethodSession,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
@@ -138,7 +140,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting}
 
   const notify=text=>{
     setNotice(text)
@@ -177,6 +179,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function teardown(r){
     if(!r||r.ended)return
     r.ended=true
+    r.privateGreeting?.cancel()
     r.replyWatch?.clear()
     try{r.abort?.abort()}catch{}
     try{r.socket?.close(1000,'coach-stop')}catch{}
@@ -226,6 +229,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.resumeInFlight=false
     if(!r.paused){
       r.paused=true
+      r.privateGreeting?.cancel()
       r.routePrimed=false
       r.audioResumeAttempt=null
       r.pausedPhase=r.currentPhase||(r.speaking?'speaking':r.ready?'listening':'loading')
@@ -1225,6 +1229,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{
       r.stream=await microphone
       if(r.ended){for(const track of r.stream.getTracks())track.stop();return}
+      // Never install capture or connect to Gemini until the local-only name
+      // salutation has finished or been cancelled. The microphone cannot
+      // transmit the salutation through the provider's audio stream.
+      if(r.privateGreeting)await r.privateGreeting.done
+      if(r.ended)return
       // Keep both microphone and speaker active even if iPhone is on silent.
       activateCoachIos27LiveDuplex(navigator)
       // Safari can revoke the microphone when a call takes over, privacy is
@@ -1346,6 +1355,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     setNotice('')
     phaseChange('loading')
     setAudioNeedsGesture(false)
+    // The salutation is an application-owned local-only utterance, not
+    // provider input or consent. A fresh session still uses the normal start cue.
+    if(!recovery.continuing&&p.privateGreetingText){
+      p.onPrivateGreeting?.()
+      r.privateGreeting=beginPrivateCoachSalutation({text:p.privateGreetingText,locale:p.locale,muted:p.outputMuted,
+        synthesis:window.speechSynthesis,Utterance:window.SpeechSynthesisUtterance,
+        schedule:setTimeout,clear:clearTimeout})
+    }
     // Only verified setupComplete marks a session connected.
     void begin(r,microphone)
     return true
@@ -1373,7 +1390,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
-  useEffect(()=>{runtime.current?.player?.setMuted(outputMuted)},[outputMuted])
+  useEffect(()=>{
+    runtime.current?.player?.setMuted(outputMuted)
+    if(outputMuted)runtime.current?.privateGreeting?.cancel()
+  },[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
     const onPageHide=()=>pauseSession({disconnect:true})

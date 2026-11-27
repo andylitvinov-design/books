@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {coachOpeningProgress,coachSessionOpeningLine,COACH_OPENING_PUBLIC_IDS,coachExplicitNameCorrection,coachNameCorrectionDecision} from '../lib/coaching/coach-opening-protocol.mjs'
+import {beginPrivateCoachSalutation} from '../lib/coaching/coach-private-greeting.mjs'
+import {coachOpeningProgress,coachSessionOpeningLine,coachSessionNameSalutation,COACH_OPENING_PUBLIC_IDS,coachExplicitNameCorrection,coachNameCorrectionDecision} from '../lib/coaching/coach-opening-protocol.mjs'
 import {coachSessionStateView} from '../lib/coaching/coach-session-state-view.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
 import {coachProfileProgress,coachProfileScorePair} from '../lib/coaching/coach-profile-intake.mjs'
@@ -75,4 +76,28 @@ test('name correction requires separate confirmation and cannot advance focus',(
   assert.equal(coachExplicitNameCorrection('Называйте меня Анна'),'Анна')
   assert.equal(coachNameCorrectionDecision('Верно'),'confirm')
   assert.equal(coachNameCorrectionDecision('maybe'),'pending')
+})
+
+test('private Live salutation speaks only a matching local device voice, and cancellation settles',async()=>{
+ const sent=[],timers=new Map();let cancelled=0,serial=0
+ const schedule=(fn)=>{timers.set(++serial,fn);return serial},clear=id=>timers.delete(id)
+ const synthesis={getVoices:()=>[{lang:'ru-RU',localService:false},{lang:'en-US',localService:true},{lang:'ru-RU',localService:true}],speak:u=>sent.push(u),cancel:()=>cancelled++}
+ const options={text:coachSessionNameSalutation('Анна','ru'),locale:'ru',synthesis,Utterance:class{constructor(text){this.text=text}},schedule,clear}
+ const first=beginPrivateCoachSalutation(options)
+ assert.equal(sent[0].text,'Здравствуйте, Анна.')
+ assert.equal(sent[0].voice.localService,true)
+ assert.equal(sent[0].voice.lang,'ru-RU')
+ sent[0].onend()
+ assert.equal(await first.done,'spoken')
+ assert.equal(timers.size,0)
+ first.cancel();assert.equal(cancelled,0)
+ const second=beginPrivateCoachSalutation(options)
+ second.cancel();second.cancel()
+ assert.equal(await second.done,'text')
+ assert.equal(cancelled,1);assert.equal(timers.size,0)
+ const noLocal=beginPrivateCoachSalutation({...options,synthesis:{...synthesis,getVoices:()=>[{lang:'ru-RU',localService:false}]}})
+ assert.equal(await noLocal.done,'text')
+ const muted=beginPrivateCoachSalutation({...options,muted:true})
+ assert.equal(await muted.done,'text')
+ assert.equal(sent.length,2)
 })
