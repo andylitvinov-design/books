@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {createHmac} from 'node:crypto'
+import {createClarityRun,advanceClarityRun} from '../lib/coaching/clarity-course-runs.mjs'
 import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig,
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
@@ -730,4 +731,41 @@ test('all eight public coaches lock the recorded RU/EN voice and share TTS deliv
    assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice)
    assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice)))
  }
+})
+
+
+test('Clarity mint requires trusted lease and uses only remaining logical time after cross-coach pause',async()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
+ const base=1795100000000,protocolId=id(2),connectionId=id(8),segmentId=id(9)
+ let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
+ const config=geminiFreeLiveConfig(free)
+ const initial=normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1'})
+ const next=normalizeGeminiFreeLiveStart({...start,personaId:'caesar',voiceName:lockedCoachSessionVoice('caesar','ru'),courseSessionId:'clarity_day_1'})
+ let calls=0,last
+ const fetcher=async(_url,options)=>{calls++;last=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-clarity-lease'})}}
+ const mint=(input,now,lease)=>issueGeminiFreeLiveToken(config,input,{now,fetcher,clarityLease:lease})
+ const lease=previousCredentialExpiresAt=>({run,protocolId,previousCredentialExpiresAt})
+ await assert.rejects(mint(initial,base,undefined),/LEASE_REQUIRED/)
+ await assert.rejects(mint(initial,base,lease(undefined)),/LEASE_REJECTED/)
+ assert.throws(()=>normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1',clarityLease:lease(null)}),/REQUEST_INVALID/)
+ assert.equal(calls,0)
+ const first=await mint(initial,base,lease(null))
+ assert.equal(first.expiresAt,new Date(base+1200000).toISOString())
+ assert.equal(last.uses,1)
+ const ev=(type,atMs,extra)=>({courseRunId:run.id,expectedRevision:run.clock.revision,day:1,type,atMs,protocolId,connectionId,segmentId,...extra})
+ run=advanceClarityRun(run,ev('begin',base,{coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId,connectionId,coachId:'mira',atMs:base,turnId:'start'}}))
+ for(let t=10000;t<=420000;t+=10000)run=advanceClarityRun(run,ev('observe',base+t,{evidence:'server_observed_connected'}))
+ await assert.rejects(mint(next,base+420000,lease(base+1200000)),/LEASE_REJECTED/)
+ run=advanceClarityRun(run,ev('coach_change',base+420001,{evidence:'server_observed_stop'}))
+ await assert.rejects(mint(next,base+420001,lease(base+1200000)),/LEASE_REJECTED/)
+ await assert.rejects(mint(next,base+1200000,lease(null)),/LEASE_REJECTED/)
+ await assert.rejects(mint(next,base+1200000,{...lease(base+1200000),protocolId:id(3)}),/LEASE_REJECTED/)
+ assert.equal(calls,1,'no extra provider request while earlier token is potentially usable')
+ const resumed=await mint(next,base+1200000,lease(base+1200000))
+ assert.equal(calls,2)
+ assert.equal(resumed.expiresAt,new Date(base+1200000+780000).toISOString())
+ assert.equal(last.expireTime,resumed.expiresAt)
+ assert.equal(last.newSessionExpireTime,new Date(base+1200000+45000).toISOString())
+ assert.equal(run.clock.days[0].elapsedMs,420000)
+ assert.equal(run.clock.days[0].status,'paused','mint is not start, consent or credited time')
 })
