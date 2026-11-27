@@ -652,3 +652,28 @@ test('Course Banner uses four reviewed locked dependencies or original full inst
  assert.ok(section.includes('node tests/course-banner/browser.mjs'));
  assert.doesNotMatch(section,/continue-on-error:\s*true/);
 });
+
+test('Course Banner exact four-package proof tolerates only unrelated scripts and lock entries',()=>{
+  const y=read('hh-app-r1.yml');
+  const src=y.split('// HH_BANNER_DEPENDENCY_PROOF_BEGIN')[1]?.split('// HH_BANNER_DEPENDENCY_PROOF_END')[0];
+  assert.ok(src);
+  const prove=Function(src+';return reviewedBannerDependencies')();
+  const manifest={"name":"books-catalog","version":"0.1.0","private":true,"type":"module","dependencies":{"@capacitor/android":"^7.6.9","@capacitor/app":"^7.1.2","@capacitor/browser":"^7.0.5","@capacitor/cli":"^7.6.9","@capacitor/core":"^7.6.9","@capacitor/ios":"^7.6.9","@capacitor/preferences":"^7.0.4","@capacitor/share":"^7.0.4","@radix-ui/react-accordion":"^1.2.12","@radix-ui/react-scroll-area":"^1.2.10","@radix-ui/react-separator":"^1.1.8","@radix-ui/react-slot":"^1.2.4","@supabase/ssr":"0.12.7","@supabase/supabase-js":"2.114.0","class-variance-authority":"^0.7.1","clsx":"^2.1.1","ffmpeg-static":"5.3.0","livekit-client":"2.23.0","livekit-server-sdk":"2.19.2","lucide-react":"^0.511.0","mediabunny":"1.65.0","next":"^15.5.21","pg":"8.16.3","react":"^19.0.0","react-dom":"^19.0.0","server-only":"0.0.1","simli-client":"3.2.0","stripe":"^23.0.0","tailwind-merge":"^3.3.0","web-push":"^3.6.7"},"devDependencies":{"@types/node":"^22.15.21","@types/react":"^19.0.12","@types/react-dom":"^19.0.4","acorn":"8.16.0","autoprefixer":"^10.4.21","eslint":"^9.25.0","eslint-config-next":"^15.3.2","postcss":"^8.5.23","tailwindcss":"^3.4.17","typescript":"^5.8.3"},"allowScripts":{"ffmpeg-static@5.3.0":true},"overrides":{"nanoid":"3.3.18","postcss":"$postcss","sharp":"0.35.0"},"engines":{"node":">=22"},"scripts":{"build":"next build"}};
+  const lock={"lockfileVersion":3,"packages":{"":{"name":"books-catalog","version":"0.1.0","dependencies":{"@capacitor/android":"^7.6.9","@capacitor/app":"^7.1.2","@capacitor/browser":"^7.0.5","@capacitor/cli":"^7.6.9","@capacitor/core":"^7.6.9","@capacitor/ios":"^7.6.9","@capacitor/preferences":"^7.0.4","@capacitor/share":"^7.0.4","@radix-ui/react-accordion":"^1.2.12","@radix-ui/react-scroll-area":"^1.2.10","@radix-ui/react-separator":"^1.1.8","@radix-ui/react-slot":"^1.2.4","@supabase/ssr":"0.12.7","@supabase/supabase-js":"2.114.0","class-variance-authority":"^0.7.1","clsx":"^2.1.1","ffmpeg-static":"5.3.0","livekit-client":"2.23.0","livekit-server-sdk":"2.19.2","lucide-react":"^0.511.0","mediabunny":"1.65.0","next":"^15.5.21","pg":"8.16.3","react":"^19.0.0","react-dom":"^19.0.0","server-only":"0.0.1","simli-client":"3.2.0","stripe":"^23.0.0","tailwind-merge":"^3.3.0","web-push":"^3.6.7"},"devDependencies":{"@types/node":"^22.15.21","@types/react":"^19.0.12","@types/react-dom":"^19.0.4","acorn":"8.16.0","autoprefixer":"^10.4.21","eslint":"^9.25.0","eslint-config-next":"^15.3.2","postcss":"^8.5.23","tailwindcss":"^3.4.17","typescript":"^5.8.3"},"engines":{"node":">=22"}},"node_modules/react":{"version":"19.2.5","resolved":"https://registry.npmjs.org/react/-/react-19.2.5.tgz","integrity":"sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA==","license":"MIT","engines":{"node":">=0.10.0"}},"node_modules/react-dom":{"version":"19.2.5","resolved":"https://registry.npmjs.org/react-dom/-/react-dom-19.2.5.tgz","integrity":"sha512-J5bAZz+DXMMwW/wV3xzKke59Af6CHY7G4uYLN1OvBcKEsWOs4pQExj86BBKamxl/Ik5bx9whOrvBlSDfWzgSag==","license":"MIT","dependencies":{"scheduler":"^0.27.0"},"peerDependencies":{"react":"^19.2.5"}},"node_modules/scheduler":{"version":"0.27.0","resolved":"https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz","integrity":"sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==","license":"MIT"},"node_modules/typescript":{"version":"5.9.3","resolved":"https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz","integrity":"sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==","dev":true,"license":"Apache-2.0","bin":{"tsc":"bin/tsc","tsserver":"bin/tsserver"},"engines":{"node":">=14.17"}}}};
+  assert.equal(prove(manifest,lock),true);
+  const unrelated=structuredClone(lock);
+  unrelated.packages['node_modules/unrelated']={version:'1.0.0'};
+  assert.equal(prove({...manifest,scripts:{build:'next build',extra:'node --test tests/example.test.mjs'}},unrelated),true);
+  const badManifest=structuredClone(manifest);badManifest.dependencies.react='^20';
+  assert.equal(prove(badManifest,lock),false);
+  const override=structuredClone(manifest);override.overrides.react='20.0.0';
+  assert.equal(prove(override,lock),false);
+  for(const name of ['react','react-dom','scheduler','typescript']){
+    const bad=structuredClone(lock);bad.packages['node_modules/'+name].integrity='sha512-changed';
+    assert.equal(prove(manifest,bad),false,name);
+  }
+  const nested=structuredClone(lock);nested.packages['node_modules/react-dom/node_modules/scheduler']={version:'0.0.0'};
+  assert.equal(prove(manifest,nested),false);
+  assert.equal(prove(manifest,{...lock,lockfileVersion:2}),false);
+  assert.ok(y.includes("fs.existsSync('.npmrc')"));
+});
