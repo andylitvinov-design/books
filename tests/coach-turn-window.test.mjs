@@ -224,7 +224,7 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.ok(context.every(x=>!recent.some(r=>r.role==='user'&&r.content===x)))
   const ui=(await import('node:fs')).readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(ui,/providerHistory=coachProviderHistory\(conversationTurns\)/)
-  assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
+  assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory\.filter\(row=>row\.content\.length<=1200\),10\)/)
   assert.match(ui,/sessionContext:coachEphemeralContext\(providerHistory,providerWindow,responseLocale,message\)/)
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
   const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
