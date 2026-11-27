@@ -23,3 +23,10 @@ test('coach auth reuses verified status and Google PKCE, and returns to the exac
  assert.match(api,/const destination = pageReturn \? origin\+pageReturn/)
  assert.match(api,/const account=await createAppRepository\(config\)\.ensureAccount\(actor\)/)
 })
+
+test('cancel and failure retain legacy guest routes and remove the new page resume marker',()=>{
+ const api=read('app/api/app/[...path]/route.js')
+ assert.match(api,/const failedPracticeDestination = continueTo === 'practice-preview'/)
+ assert.equal((api.match(/if\(pageReturn\) url\.searchParams\.delete\('hh_resume'\)/g)||[]).length,2)
+ assert.equal((api.match(/new URL\(failedPracticeDestination\)/g)||[]).length,2)
+})

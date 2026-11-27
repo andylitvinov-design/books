@@ -547,12 +547,12 @@ async function handle(request, { params }) {
                         : `${origin}/${locale}/app`
       // Failed Google login returns to the guest-visible approved design,
       // not a private editor that can only show an old sign-in shell.
-      const failedPracticeDestination = pageReturn ? origin+returnPath : continueTo === 'practice-preview'
+      const failedPracticeDestination = continueTo === 'practice-preview'
         ? `${origin}/${locale}/practice`
         : continueTo === 'my-coach-mira' ? `${origin}/${locale}/my-coach` : destination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(pageReturn) url.searchParams.delete('hh_resume'); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -564,7 +564,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(pageReturn) url.searchParams.delete('hh_resume'); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
