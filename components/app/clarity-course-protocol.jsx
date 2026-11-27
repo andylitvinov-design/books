@@ -7,12 +7,12 @@ const COPY={
  ru:{empty:'За этот день ещё нет сохранённого протокола.',open:'Открыть протокол',close:'Закрыть протокол',loading:'Загружаем протокол…',failed:'Не удалось открыть этот протокол.',retry:'Повторить',client:'Вы',coach:'Коуч',interrupted:'Прервано',unanswered:'Без ответа',partial:'В архиве могут быть более ранние отчёты.',draft:'Незавершённая сессия · сохранена в кабинете',log:'Лог диалога',structured:'Протокол сессии',pendingResult:'Итоговый результат ещё не проверен.',more:'Более ранние незавершённые сессии',confirmed:'Подтверждено',needs_confirmation:'Требует подтверждения',not_explored:'Нет ответа',skipped_by_client:'Пропущено'},
  es:{empty:'Todavía no hay un protocolo guardado para este día.',open:'Abrir protocolo',close:'Cerrar protocolo',loading:'Cargando protocolo…',failed:'No se pudo abrir este protocolo.',retry:'Reintentar',client:'Tú',coach:'Coach',interrupted:'Interrumpido',unanswered:'Sin respuesta',partial:'Puede haber informes anteriores en el archivo.',draft:'Sesión pendiente · guardada en privado',log:'Registro del diálogo',structured:'Protocolo de la sesión',pendingResult:'Los resultados finales aún no se han revisado.',more:'Sesiones pendientes anteriores',confirmed:'Confirmado',needs_confirmation:'Requiere confirmación',not_explored:'Sin respuesta',skipped_by_client:'Omitido'}
 }
-export function ClarityProtocolDocuments({sessionProtocol,log,locale}){
+export function ClarityProtocolDocuments({sessionProtocol,log,locale,timedEnd=false}){
  const t=COPY[locale]||COPY.en
  return <>
   {sessionProtocol&&<section data-clarity-structured-protocol>
    <h3>{t.structured}</h3>
-   {!sessionProtocol.reviewed&&<p role="status">{t.draft} · {t.pendingResult}</p>}
+   {!sessionProtocol.reviewed&&<p role="status">{timedEnd?({en:'Completed session · protocol saved privately',ru:'Завершённая сессия · протокол сохранён в кабинете',es:'Sesión completada · protocolo guardado en privado'})[locale]||t.draft:t.draft} · {t.pendingResult}</p>}
    <dl>{sessionProtocol.rows.map(row=><div key={row.id} data-clarity-protocol-status={row.status}>
     <dt><strong>{row.label}</strong></dt><dd style={{margin:0,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>
      <p>{row.question}</p>{row.quote&&<p>{row.quote}</p>}

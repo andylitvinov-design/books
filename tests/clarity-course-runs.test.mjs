@@ -64,6 +64,7 @@ test('transcript is scoped to exact run and logical day; retains coach authorshi
  const protocol={id:run.protocolIds[0],courseSessionId:'clarity_day_1',personaId:'mira',provenance:'client_autosaved_unreviewed_draft',turns:[{role:'user',content:'hello'},{role:'assistant',content:'hi',authorPersonaId:'caesar',visitId:id(98)}]}
  const result=clarityRunTranscript(protocol,1,run,'2026-11-26T20:00:00Z')
  assert.equal(result.reviewed,false)
+ assert.equal(result.personaId,'mira')
  assert.equal(result.courseRunId,run.id)
  assert.equal(result.turns[1].personaId,'caesar')
  assert.equal(result.turns[1].visitId,id(98))

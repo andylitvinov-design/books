@@ -87,3 +87,18 @@ test('unreviewed checkpoints cannot assert trusted completion or homework and un
  assert.ok(save.indexOf("throw new AppError('CLARITY_SESSION_STILL_OPEN',409)",save.indexOf('const legacyClock='))<save.indexOf('await finalizeCoachDraft'))
  assert.ok(save.includes('if (existing && !sameSavedProtocol(existing, protocol))'))
 })
+
+test('completed saved but unreviewed session returns to its exact original coach for report review',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const ui=read('components/app/clarity-run-catalog.jsx')
+ assert.ok(ui.includes("transcript&&!transcript.reviewed&&day.status==='time_limit'&&day.elapsedMs===1200000&&day.remainingMs===0"))
+ assert.ok(ui.includes('coachSessionHref(locale,transcript.personaId)'))
+ assert.ok(ui.includes('data-clarity-review-completed href={clarityCoachHref(reviewHref,day.day,run.id)}'))
+ assert.ok(ui.includes('timedEnd={completedUnreviewed}'))
+ const live=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(live.includes("item.clarityTime?.status==='time_limit'&&item.clarityTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&item.clarityTime.remainingSeconds===0"))
+ assert.ok(live.includes("completedReview?{ru:'Открыть итоги'"))
+ const docs=read('components/app/clarity-course-protocol.jsx')
+ assert.ok(docs.includes('!sessionProtocol.reviewed'))
+ assert.ok(docs.includes('t.pendingResult'))
+})
