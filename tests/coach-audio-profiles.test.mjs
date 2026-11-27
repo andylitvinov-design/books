@@ -60,7 +60,7 @@ test('exact outgoing provider JSON and browser socket agree for each approved RU
  for(const id of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en'])for(const mode of ['coaching','therapy']){
   const voice=approvedGeminiVoice(id,locale),ordinary=normalizeGeminiFreeLiveStart({...body,personaId:id,locale,voiceName:voice})
   const start=mode==='therapy'?{...ordinary,courseSessionId:ANTI_STRESS_SESSION_IDS[0]}:ordinary
-  const opts=mode==='therapy'?{antiStressLease:{run,protocolId,reservedExpiresAt:new Date(now+900000).toISOString()}}:{}
+  const opts=mode==='therapy'?{antiStressLease:{run,protocolId,previousCredentialExpiresAt:null,reservedExpiresAt:new Date(now+900000).toISOString()}}:{}
   let sent;const token=await issueGeminiFreeLiveToken(config,start,{now,...opts,fetcher:async(_url,o)=>{sent=JSON.parse(o.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-audio-profile'})}}})
   const setup=sent.bidiGenerateContentSetup;assert.ok(sent.fieldMask.split(',').includes('systemInstruction'))
   assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,mode)))
