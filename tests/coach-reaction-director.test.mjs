@@ -6,6 +6,7 @@ import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
 import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '../lib/coaching/coach-reaction-v4-release.mjs'
+import {COACH_REACTION_QUALITY_AUDIT,coachReactionQualityEligible,qualityScreenedReactionMedia,qualityScreenedPresentation} from '../lib/coaching/coach-reaction-quality.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
  let s=initialCoachMicActivity()
@@ -293,10 +294,10 @@ test('presentation contexts use a stable source independent of greeting audio an
  assert.ok(layers.includes('video.readyState<2'))
  assert.ok(css.includes('.media .video.presentationLayer{opacity:0;transition:none;will-change:auto}'))
  assert.ok(css.includes(".media .video.presentationLayer[data-presentation-visible='true']{opacity:1}"))
- assert.ok(motion.includes('!presentationActive&&!released&&!protectedHold'))
- assert.ok(motion.includes('presentationActive?(opening?.poster||presentation?.poster)'))
+ assert.ok(motion.includes('!presentationActive&&!sessionContext&&!released&&!protectedHold'))
+ assert.ok(motion.includes('presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster)'))
  assert.ok(motion.includes("presentationActive?personaId+'-presentation'"))
- assert.ok(motion.includes('},[shouldPlay,src,presentationActive])'))
+ assert.ok(motion.includes('},[shouldPlay,src,presentationActive,sessionContext])'))
 })
 
 test('shared personality empathy veto prevents cheerful reaction to explicit shame, anger, exhaustion or mixed progress',()=>{
@@ -432,4 +433,65 @@ test('missing or failed stage falls back to same-camera presence; report exhaust
  p.update(listening(),true)
  assert.equal(unavailable,1)
  p.dispose()
+})
+
+test('digest-bound visual review holds severe flags and rejects unaudited or SD media',()=>{
+ assert.equal(Object.keys(COACH_REACTION_QUALITY_AUDIT).length,31)
+ let held=0
+ for(const token of REACTION_V4_RELEASED){
+  const [group,coach]=token.split(':')
+  const m=releasedReactionMedia(coach,[token],group)
+  const safe=qualityScreenedReactionMedia(m)
+  for(const b of m.blocks){
+   assert.equal(COACH_REACTION_QUALITY_AUDIT[b.id].sha256,b.sha256)
+   const ok=coachReactionQualityEligible(b)
+   assert.equal(safe.blocks.includes(b),ok)
+   assert.equal(coachReactionQualityEligible({...b,sha256:'0'.repeat(64)}),false)
+   assert.equal(coachReactionQualityEligible({...b,width:480}),false)
+   if(!ok)held++
+  }
+  assert.equal(safe.anchorHash,m.anchorHash);assert.equal(safe.poster,m.poster)
+ }
+ assert.equal(held,10)
+ const mira=protectedCoachPresence('mira',REACTION_V4_RELEASED)
+ const safe=qualityScreenedPresentation(mira,releasedReactionMedia('mira',REACTION_V4_RELEASED,'primary'))
+ assert.equal(safe.id,'MIR-01');assert.equal(safe.anchorHash,mira.anchorHash)
+ assert.equal(qualityScreenedPresentation(mira,releasedReactionMedia('mira',REACTION_V4_RELEASED,'alternate')),null)
+ for(const coach of ['alex','sofia','max','merlin','harry','genie']){
+  const p=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  assert.equal(qualityScreenedPresentation(p,releasedReactionMedia(coach,REACTION_V4_RELEASED,p.group)),p)
+ }
+})
+test('dialogue waits for a rendered frame, cancels stale callbacks and rejects wrong duration',()=>{
+ const {player,videos,visible}=fixture()
+ const callbacks=new Map();let count=0
+ for(const v of videos){
+  v.requestVideoFrameCallback=fn=>{callbacks.set(++count,fn);return count}
+  v.cancelVideoFrameCallback=id=>callbacks.delete(id)
+ }
+ player.update(listening(),true);videos[0].ready()
+ assert.equal(visible(),null);assert.equal(callbacks.size,1)
+ ;[...callbacks.values()][0]();assert.equal(visible(),'HAR-01')
+ player.update(smile(),true);videos[1].ready()
+ videos[0].end();assert.equal(visible(),'HAR-01')
+ const old=[...callbacks.values()][0]
+ player.update({kind:'hold',speaker:'none'},true)
+ assert.equal(callbacks.size,0);old();assert.equal(visible(),null)
+ player.dispose()
+ const invalid=fixture();invalid.player.update(listening(),true)
+ invalid.videos[0].ready(1080,1890,5.4)
+ assert.equal(invalid.visible(),null);assert.ok(invalid.player.snapshot().failed.includes('HAR-01'))
+ invalid.player.dispose()
+})
+test('quality hold retains the HD camera and does not return to legacy video',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ const src=read('components/my-coach-motion-media.jsx')
+ const pres=read('components/coach-presentation-layers.jsx')
+ assert.ok(src.includes('qualityScreenedReactionMedia(releasedReactionMedia('))
+ assert.ok(src.includes('qualityScreenedPresentation(pinnedPresentation,'))
+ assert.ok(src.includes(':!sessionContext&&shouldPlay&&'))
+ assert.ok(src.includes('if(presentationActive||sessionContext)return'))
+ assert.doesNotMatch(src,/setFailedCameras|failedCameras\[personaId\]/)
+ assert.ok(src.includes("sessionContext?(released?.poster||sessionPoster)"))
+ assert.ok(pres.includes('Never fall back to a previously shown lower-resolution greeting.'))
 })

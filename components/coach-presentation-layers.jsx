@@ -10,7 +10,6 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
   const presenceRef=useRef(null)
   const activeSrcRef=useRef(null)
   const visibleRef=useRef(null)
-  const openingSeen=useRef(false)
   const [mounted,setMounted]=useState(false)
   const [failed,setFailed]=useState({})
   const [visibleSrc,setVisibleSrc]=useState(null)
@@ -23,14 +22,14 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     if(!clip||!video||(openingRef.current!==video&&presenceRef.current!==video))return
     video.pause()
     setFailed(previous=>previous[clip.src]?previous:{...previous,[clip.src]:true})
-    if(visibleRef.current===clip.src){
-      const previous=clip.src===presence?.src&&openingSeen.current&&openingRef.current?.readyState>=2?opening?.src:null
-      visibleRef.current=previous||null
-      setVisibleSrc(previous||null)
-      onReady(Boolean(previous))
+    if(visibleRef.current===clip.src||clip.src===presence?.src&&activeSrcRef.current===clip.src){
+      // Never fall back to a previously shown lower-resolution greeting.
+      // Parent holds the same-camera HD anchor after the opening.
+      visibleRef.current=null
+      setVisibleSrc(null)
+      onReady(false)
     }
     if(clip.src===opening?.src){
-      openingSeen.current=false
       onOpeningDone()
     }
   },[opening,presence,onOpeningDone,onReady])
@@ -40,6 +39,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     const presenceVideo=presenceRef.current
     const target=targetSrc===opening?.src?openingVideo:targetSrc===presence?.src?presenceVideo:null
     activeSrcRef.current=enabled?targetSrc:null
+    if(!openingActive&&(!presence||failed[presence.src])&&visibleRef.current===opening?.src){
+      visibleRef.current=null;setVisibleSrc(null);onReady(false)
+    }
     for(const video of [openingVideo,presenceVideo]){
       if(video&&(!enabled||video!==target))video.pause()
     }
@@ -55,7 +57,7 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
       return()=>{cancelled=true;activeSrcRef.current=null;target.pause()}
     }
     return()=>{activeSrcRef.current=null}
-  },[enabled,renderLayers,targetSrc,opening,presence,fail])
+  },[enabled,renderLayers,targetSrc,opening,presence,openingActive,failed,fail,onReady])
 
   function valid(video,clip){
     if(coachPresentationMetadataMatches(clip,video))return true
@@ -67,7 +69,6 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     if(openingRef.current!==video&&presenceRef.current!==video)return
     if(!valid(video,clip))return
     if(visibleRef.current===clip.src)return
-    if(clip.src===opening?.src)openingSeen.current=true
     visibleRef.current=clip.src
     setVisibleSrc(clip.src)
     onReady(true)
