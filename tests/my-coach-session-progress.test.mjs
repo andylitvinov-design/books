@@ -102,7 +102,7 @@ test('Mobile progress shares one active stage projection and is still server-evi
  assert.match(ui,/aria-valuemax=\{Math\.max\(1,visibleProgressTotal\)\}/)
  assert.match(ui,/const visibleProgressTotal=stagePosition\.total/)
  assert.match(ui,/const visibleProgressStep=stagePosition\.step/)
- assert.match(ui,/const stagePosition=groupedSessionPosition\(openingPosition,detailPosition/)
+ assert.match(ui,/const stagePosition=approvedClarity\?\.position\|\|groupedSessionPosition\(openingPosition,detailPosition/)
  assert.match(ui,/const profileActive=Boolean\(profileSelected&&profileProgress&&!profileV3&&!restoredProfileProof\.current\)/)
  assert.match(ui,/const profileV3Active=Boolean\(profileV3&&!profileV3\.step\.closed\)/)
  const projection=readFileSync(new URL('../lib/coaching/coach-session-stage-view.mjs',import.meta.url),'utf8')
