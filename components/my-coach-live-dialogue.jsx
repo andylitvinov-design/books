@@ -24,7 +24,7 @@ import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coa
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
-import {coachSessionOpeningLine,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
   coachProfileReviewProtocolSnapshot} from '@/lib/coaching/coach-profile-review.mjs'
@@ -396,6 +396,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [greetingIdentity,setGreetingIdentity]=useState({status:'loading',name:''})
+  const namePreferenceVersion=useRef(null),nameCorrectionRef=useRef(null),confirmedNameRef=useRef('')
   const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
   const [stagedMemory,setStagedMemory]=useState(null)
   // A private preview is latched at the exact conversational turn at which
@@ -467,8 +468,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         return fetch('/api/app/my-coach/protocol?view=greeting-identity',{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':id}}).then(async response=>{
           if(!response.ok)throw Error('GREETING_IDENTITY_UNAVAILABLE')
           const value=await response.json()
-          if(active&&protocolOwnerRef.current===id&&!protocolStartedRef.current&&!turnsRef.current.length)
+          if(active&&protocolOwnerRef.current===id&&!protocolStartedRef.current&&!turnsRef.current.length){
+            namePreferenceVersion.current=value.preferenceVersion||null
             setGreetingIdentity({status:'ready',name:typeof value.preferredName==='string'?value.preferredName:'',returning:value.returning===true})
+          }
         })
       }
       if(active)setGreetingIdentity({status:'ready',name:''})
@@ -682,7 +685,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const confirmedClientTurns=turns.filter(turn=>turn.role==='user'&&turn.unanswered!==true)
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
-  const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||{allowPrior:false,priorSession:null}):{allowPrior:allowOpeningPrior,priorSession:openingPrior}
+  // The preferred name stays first-party; sharing past-session context remains opt-in.
+  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior||{name:greetingIdentity.name,topic:''}}
+  const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||localNameScope):localNameScope
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,...localOpeningScope})
   const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
@@ -1130,7 +1135,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const result=await sendMessage(draft.trim())
     if(result?.reply){
       const spokeInSession=liveVoice&&speechRef.current?.speakReply?.(result)
-      if(!spokeInSession&&!['safety','boundary'].includes(result.mode))
+      if(!spokeInSession&&!['safety','boundary','identity'].includes(result.mode))
         replayCoachReply(result.reply)
       if(liveVoice&&!spokeInSession)speechRef.current?.resumeAfterTypedFailure?.()
     }else if(liveVoice)speechRef.current?.resumeAfterTypedFailure?.()
@@ -1178,6 +1183,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:clientRows.map(row=>String(row.content||'').slice(0,160)),locale:conversationLang,
       personaId,...localOpeningScope,
     }))
+    if(confirmedNameRef.current&&opening.checkmarks.name)opening.name=confirmedNameRef.current
     let value
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,...(freshPrivateProfile?{privateProfileV3Requested:true}:{}),protocol:{
@@ -1390,7 +1396,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
-    const goalEligible=openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
+    const pendingName=nameCorrectionRef.current||openingProgress.pendingNameCorrection
+    const correctionName=coachExplicitNameCorrection(message)
+    const isNameCorrection=Boolean(pendingName||(correctionName&&(openingProgress.current!=='name'||localOpeningScope.priorSession?.name)))
+    const goalEligible=!isNameCorrection&&openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
     if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
     inFlightClientRef.current={requestId,message}
@@ -1419,6 +1428,41 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
+    // Confirm preferred-name changes locally, before any model or unrelated stage.
+    if(isNameCorrection&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
+      const candidate=correctionName||pendingName?.name
+      const decision=correctionName?'pending':coachNameCorrectionDecision(message)
+      let answer
+      if(decision==='confirm'){
+        const owner=protocolOwnerRef.current
+        if(owner){
+          try{
+            const response=await fetch('/api/app/my-coach/protocol',{method:'POST',credentials:'same-origin',cache:'no-store',
+              headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
+              body:JSON.stringify({action:'set-preferred-name',name:candidate,confirmed:true,expectedPreferenceVersion:namePreferenceVersion.current})})
+            const result=await response.json()
+            if(!response.ok||result.saved!==true||result.preferredName!==candidate||protocolOwnerRef.current!==owner)throw Error('NAME_NOT_SAVED')
+            namePreferenceVersion.current=result.preferenceVersion
+          }catch{
+            retainPendingClient()
+            setDraft('');setSpeechPreview('')
+            return {reply:({ru:'Не удалось сохранить имя в профиле. Попробуйте подтвердить ещё раз.',en:'I could not save the name in your profile. Please confirm again.',es:'No pude guardar el nombre en tu perfil. Confírmalo otra vez.'})[responseLocale],mode:'identity',locale:responseLocale}
+          }
+        }
+        confirmedNameRef.current=candidate
+        nameCorrectionRef.current=null
+        answer=owner?({ru:'Имя '+candidate+' сохранено в вашем профиле.',en:'Your preferred name '+candidate+' is saved in your profile.',es:'El nombre '+candidate+' está guardado en tu perfil.'})[responseLocale]:
+          ({ru:'Буду обращаться к вам: '+candidate+'. Войдите, чтобы сохранить имя для следующих сессий.',en:'I will call you '+candidate+'. Sign in to keep this name for future sessions.',es:'Te llamaré '+candidate+'. Inicia sesión para guardarlo para otras sesiones.'})[responseLocale]
+      }else if(decision==='reject'){
+        nameCorrectionRef.current=null
+        answer=({ru:'Не меняю имя. Скажите: «Называйте меня…» и назовите верное имя.',en:'I will not change the name. Please say “Call me…” and the correct name.',es:'No cambiaré el nombre. Di «Llámame…» y tu nombre correcto.'})[responseLocale]
+      }else{
+        nameCorrectionRef.current={name:candidate}
+        answer=coachNameCorrectionQuestion(candidate,responseLocale)
+      }
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'opening'}))return null
+      setDraft('');setSpeechPreview('');return {reply:answer,mode:'identity',locale:responseLocale}
+    }
     // The last opening turn is answered locally before any generative provider
     // can race ahead into the next protocol question. Safety and stop still win.
     if(courseGateOpeningAfter([...turnsRef.current,{role:'user',content:message}],responseLocale)&&
@@ -1426,6 +1470,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const answer=courseGateHandoffText(responseLocale)
       if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'opening'}))return null
       setDraft('');setSpeechPreview('');setStreamingPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
+    }
+    if(greetingIdentity.name&&!openingProgress.completed&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
+      const firstParty=coachOpeningTurn({locale:responseLocale,message,openingHistory,
+        openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,deferProfileToPrivateDirector:freshPrivateProfile},personaId)
+      if(firstParty){
+        const answer=firstParty.message
+        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:firstParty.stage,openingProgress:firstParty.openingProgress}))return null
+        setDraft('');setSpeechPreview('');return {reply:answer,mode:'identity',locale:responseLocale}
+      }
     }
     // The review of an existing profile remains first-party and deterministic.
     // Never send saved axis values or unapproved goals/tests to any model.
@@ -1709,7 +1762,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ...(effectiveCourseReview?.courseSessionId===selectedCourseId?{courseFieldReview:effectiveCourseReview}:{}),
       ...(turns.some((row,index)=>row.unanswered===true||row.role!==(index%2===0?'user':'assistant'))||
          turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
-      opening:courseGateRef.current?.protocol.opening||coachOpeningProtocolSnapshot(openingProgress),
+      opening:courseGateRef.current?.protocol.opening||{...coachOpeningProtocolSnapshot(openingProgress),...(confirmedNameRef.current&&openingProgress.checkmarks.name?{name:confirmedNameRef.current}:{})},
       ...(restoredProfileProof.current?{[restoredProfileProof.current.key]:restoredProfileProof.current.value}:
         restoredProfileCheckin.current?{profileCheckin:restoredProfileCheckin.current}:profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
