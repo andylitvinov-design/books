@@ -138,6 +138,70 @@ if(!isolated){
         assert.equal(stored.revision,3)
         assert.equal(stored.payload_ciphertext.includes(answer.answer),false)
         assert.equal((await readPersonalCoaching(config,actorA)).course.current.pendingFollowup,undefined)
+        // Rehearse the NEW Clarity SQL proposal on the same deliberately
+        // disposable local database. This is not a registered deployment
+        // migration, provider acceptance or flag activation.
+        await db.query(await readFile(new URL('../docs/coaching/clarity-course-runs.proposal.sql',import.meta.url),'utf8'))
+        const {claimTrustedFreeCoachingDays}=await import('../lib/app/coaching-free-day-quota.js')
+        const {transaction}=await import('../lib/app/database.js')
+        const C='10000000-0000-4000-8000-000000000003'
+        const runA='20000000-0000-4000-8000-000000000001',runB='20000000-0000-4000-8000-000000000002',runC='20000000-0000-4000-8000-000000000003'
+        const p1='30000000-0000-4000-8000-000000000001',p2='30000000-0000-4000-8000-000000000002',p3='30000000-0000-4000-8000-000000000003'
+        const date='2026-11-27',nextDate='2026-11-28'
+        const claim=(actor,calendarDay,protocolId)=>transaction(config,actor,c=>claimTrustedFreeCoachingDays(c,actor,[{calendarDay,protocolId}]))
+        const freeRuns='app_private.clarity_course_runs',bindings='app_private.clarity_course_run_sessions',quota='app_private.coaching_free_session_days'
+        await db.query('insert into app.accounts values ($1,$2,$2)',[C,'active'])
+        const addRun=(actor,id)=>as(actor,c=>c.query('insert into '+freeRuns+'(account_id,id,ordinal,access,revision,payload_ciphertext) values($1,$2,1,\'free\',1,\'synthetic ciphertext\')',[actor,id]))
+        const bind=(actor,run,day,protocol)=>as(actor,c=>c.query('insert into '+bindings+'(account_id,course_run_id,course_day,protocol_id) values($1,$2,$3,$4)',[actor,run,day,protocol]))
+        await addRun(A,runA);await addRun(B,runB);await addRun(C,runC)
+        await bind(A,runA,1,p1);await bind(B,runB,1,p2);await bind(C,runC,1,p3)
+        assert.equal((await as(A,c=>c.query('select id from '+freeRuns))).rows[0].id,runA)
+        assert.equal((await as(B,c=>c.query('select id from '+freeRuns+' where id=$1',[runA]))).rowCount,0)
+        assert.equal((await as(B,c=>c.query('select protocol_id from '+bindings+' where protocol_id=$1',[p1]))).rowCount,0)
+        await assert.rejects(()=>as(B,c=>c.query('insert into '+bindings+'(account_id,course_run_id,course_day,protocol_id) values($1,$2,2,$3)',[A,runA,p3])),/row-level security/i)
+        await assert.rejects(()=>bind(B,runA,2,p3),/foreign key/i)
+        await assert.rejects(()=>bind(A,runA,2,p1),/unique constraint/i)
+        await assert.rejects(()=>as(A,c=>c.query('update '+bindings+' set protocol_id=$1 where account_id=$2',[p3,A])),/permission denied/i)
+        await assert.rejects(()=>as(A,c=>c.query('update '+freeRuns+' set ordinal=2 where id=$1',[runA])),/permission denied/i)
+        assert.equal((await as(B,c=>c.query('update '+freeRuns+' set live_active=true where id=$1',[runA]))).rowCount,0)
+        await as(A,c=>c.query('update '+freeRuns+' set live_active=true where id=$1',[runA]))
+        const paid='20000000-0000-4000-8000-000000000004'
+        await as(A,c=>c.query('insert into '+freeRuns+'(account_id,id,ordinal,access,revision,payload_ciphertext,payment_key) values($1,$2,2,\'paid\',0,\'synthetic ciphertext\',$3)',[A,paid,'d'.repeat(64)]))
+        await assert.rejects(()=>as(A,c=>c.query('update '+freeRuns+' set live_active=true where id=$1',[paid])),/unique constraint/i)
+        assert.equal((await as(A,c=>c.query('select id from '+freeRuns+' where live_active'))).rowCount,1)
+        // Race two distinct logical sessions through the actual transaction and
+        // shared quota function. Unique account/date + row visibility decides
+        // one winner; the loser never consumes another day's slot.
+        const quotaRace=await Promise.allSettled([claim(actorA,date,p1),claim(actorA,date,p2)])
+        assert.equal(quotaRace.filter(x=>x.status==='fulfilled').length,1)
+        assert.equal(quotaRace.find(x=>x.status==='rejected').reason.code,'COACHING_FREE_DAILY_LIMIT')
+        const winner=(await as(A,c=>c.query('select protocol_id from '+quota+' where calendar_day=$1',[date]))).rows[0].protocol_id
+        assert.ok([p1,p2].includes(winner))
+        await claim(actorA,date,winner)
+        await assert.rejects(()=>claim(actorA,date,winner===p1?p2:p1),{code:'COACHING_FREE_DAILY_LIMIT'})
+        await claim(actorB,date,p2)
+        assert.equal((await as(B,c=>c.query('select account_id from '+quota+' where account_id=$1',[A]))).rowCount,0)
+        await assert.rejects(()=>as(B,c=>c.query('insert into '+quota+'(account_id,calendar_day,protocol_id) values($1,$2,$3)',[A,nextDate,p3])),/row-level security/i)
+        await assert.rejects(()=>as(A,c=>c.query('update '+quota+' set protocol_id=$1 where account_id=$2',[p3,A])),/permission denied/i)
+        await assert.rejects(()=>as(A,c=>c.query('delete from '+quota+' where account_id=$1',[A])),/permission denied/i)
+        // A failure after a successful claim rolls the slot back atomically.
+        await assert.rejects(()=>transaction(config,actorA,async c=>{
+          await claimTrustedFreeCoachingDays(c,actorA,[{calendarDay:nextDate,protocolId:p3}])
+          throw Error('synthetic rollback')
+        }),/synthetic rollback/)
+        assert.equal((await as(A,c=>c.query('select protocol_id from '+quota+' where calendar_day=$1',[nextDate]))).rowCount,0)
+        await claim(actorA,nextDate,p3)
+        await db.query("update app.accounts set status='inactive' where id=$1",[B])
+        for(const table of [freeRuns,bindings,quota])assert.equal((await as(B,c=>c.query('select * from '+table))).rowCount,0)
+        await db.query("update app.accounts set status='active' where id=$1",[B])
+        await claim({id:C,claims:{sub:C}},date,p3)
+        await db.query('delete from app.accounts where id=$1',[C])
+        for(const table of [freeRuns,bindings,quota])assert.equal((await db.query('select * from '+table+' where account_id=$1',[C])).rowCount,0)
+        // Anonymous and ordinary authenticated roles receive no table grants.
+        for(const table of [freeRuns,bindings,quota]){
+          const privileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'SELECT') as authenticated_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[table])).rows[0]
+          assert.deepEqual(privileges,{anon_read:false,authenticated_read:false,authenticated_write:false})
+        }
       }finally{await closeDatabase()}
     }finally{await db.end()}
   })
