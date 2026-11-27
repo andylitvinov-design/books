@@ -12,7 +12,7 @@ await mkdir(out,{recursive:true})
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch()
  try{
-  for(const [lang,width,height] of [['en',320,660],['en',390,660],['ru',390,844],['es',430,700]]){
+  for(const [lang,width,height] of [['en',320,660],['en',390,660],['en',390,844],['ru',390,844],['es',430,700]]){
    const ctx=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
    try{
     const page=await ctx.newPage()
@@ -48,13 +48,13 @@ for(const engine of [chromium,webkit]){
     assert.equal(await programs.innerText(),({en:'All programs available',ru:'Все доступные программы',es:'Todos los programas disponibles'})[lang])
     assert.equal(await programs.getAttribute('href'),'/'+lang+'/my-coach/programs')
     assert.ok(await page.locator('[data-my-coach-hero]').evaluate(hero=>{
-     const b=hero.querySelector('[data-my-coach-program-details]')
+     const b=hero.nextElementSibling?.querySelector('[data-my-coach-program-details]')
      const talk=hero.querySelector('[data-my-coach-hero-start]')
      const media=hero.querySelector('[data-coach-motion-context="hero"]')
      if(!b||!talk||!media)return false
      const h=hero.getBoundingClientRect(),y=b.getBoundingClientRect(),t=talk.getBoundingClientRect(),m=media.getBoundingClientRect()
-     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<=y.top+1&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3
-    }), 'single compact horizontal programs action over full-width hero')
+     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<h.bottom-5&&y.top>=h.bottom&&y.bottom<=document.querySelector('[data-my-coach-rail]').getBoundingClientRect().top&&m.width>=h.width-3&&m.height>=h.height-3
+    }), 'single compact horizontal programs action outside and below full-width hero')
     const fold=await page.evaluate(()=>{
      const rail=document.querySelector('[data-my-coach-rail]')
      const dock=document.querySelector('[data-hh-unified-dock]')
@@ -89,6 +89,7 @@ for(const engine of [chromium,webkit]){
     await page.waitForURL('**/'+lang+'/my-coach/programs/clarity')
     const launch=page.locator('[data-coach-course-launch="clarity"]')
     await launch.waitFor()
+    assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0)
     const daybook=launch.locator('[data-course-daybook]')
     assert.equal(await daybook.getAttribute('href'),'/'+lang+'/app/daybook?program=clarity')
     assert.equal(await daybook.innerText(),({en:'My Daybook',ru:'Мой дневник',es:'Mi diario'})[lang])
@@ -98,7 +99,7 @@ for(const engine of [chromium,webkit]){
     await merlin.click()
     assert.equal(await launch.locator('[data-my-coach-hero]').getAttribute('data-my-coach-hero'),'merlin')
     assert.equal(await merlin.getAttribute('aria-pressed'),'true')
-    assert.equal(await launch.locator('[data-clarity-start]').getAttribute('data-course-selected-coach'),'merlin')
+    assert.equal(await launch.locator('[data-course-greeting-start]').getAttribute('data-course-selected-coach'),'merlin')
     assert.equal(await launch.locator('[data-course-session-details] li').count(),3)
     await launch.locator('[data-course-session-progress="68"]').waitFor()
     await launch.locator('[data-course-all-coaches]').click()
@@ -113,7 +114,7 @@ for(const engine of [chromium,webkit]){
     await directory.locator('[data-course-directory-select="genie"]').click()
     await directory.waitFor({state:'detached'})
     assert.equal(await launch.locator('[data-my-coach-hero]').getAttribute('data-my-coach-hero'),'genie')
-    assert.equal(await launch.locator('[data-clarity-start]').getAttribute('data-course-selected-coach'),'genie')
+    assert.equal(await launch.locator('[data-course-greeting-start]').getAttribute('data-course-selected-coach'),'genie')
     assert.equal(await launch.locator('[data-course-session-progress]').getAttribute('data-course-session-progress'),'68')
     await launch.locator('[data-course-all-coaches]').click()
     await directory.waitFor()
@@ -121,11 +122,17 @@ for(const engine of [chromium,webkit]){
     await directory.waitFor({state:'detached'})
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
     await page.screenshot({path:out+'/launch-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
-    // Protected real launch is checked with a synthetic signed-in account,
-    // while intercepting the destination to avoid real account writes.
+    // Course CTA must open the existing cinematic greeting, not Daybook.
+    // The explicit Daybook link remains separate; intercept its destination.
     await page.route('**/'+lang+'/app/daybook?program=clarity',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>synthetic destination</p>'}))
-    await launch.locator('[data-clarity-start]').click()
-    await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
+    await launch.locator('[data-course-greeting-start]').click()
+    await page.waitForURL('**/'+lang+'/coaching/sessions?**greetingProgram=clarity')
+    const selectedGate=page.locator('[data-my-coach-greeting-gate="genie"]')
+    await selectedGate.waitFor()
+    assert.equal(await selectedGate.getAttribute('data-greeting-phase'),'preview')
+    assert.equal(await selectedGate.locator('[data-coach-greeting-course]').getAttribute('data-coach-greeting-course'),'clarity')
+    assert.equal(await selectedGate.locator('[data-clarity-start]').count(),0)
+    assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0)
     await page.goto(origin+'/'+lang+'/my-coach/programs/clarity',{waitUntil:'domcontentloaded'})
     await page.locator('[data-course-daybook]').click()
     await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
@@ -138,7 +145,7 @@ for(const engine of [chromium,webkit]){
     const gate=page.locator('[data-my-coach-greeting-gate]')
     await gate.waitFor()
     assert.equal(await gate.getAttribute('data-greeting-phase'),'preview')
-    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    assert.equal(await gate.locator('[data-coach-greeting-live-start]').count(),0)
     assert.ok(await gate.locator('[data-coach-greeting-tiles]').isVisible())
     assert.ok(await gate.locator('[data-coach-greeting-player]').isVisible())
     await gate.locator('[data-coach-greeting-course-next]').click()
@@ -147,19 +154,23 @@ for(const engine of [chromium,webkit]){
     await gate.locator('[data-coach-greeting-course-previous]').click()
     await gate.locator('[data-coach-greeting-play]').click()
     await page.locator('[data-greeting-phase="playing"]').waitFor()
-    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    await gate.locator('[data-coach-greeting-live-start]').waitFor()
+    assert.equal(await gate.getAttribute('data-greeting-phase'),'playing')
+    assert.equal(await gate.locator('[data-coach-greeting-live-start]').getAttribute('type'),'button')
+    assert.equal(await gate.locator('[data-coach-greeting-live-start]').getAttribute('href'),null)
     assert.ok(await gate.locator('[data-coach-greeting-tiles]').isVisible())
     await page.locator('[data-greeting-phase="complete"]').waitFor({timeout:15000})
-    assert.ok(await gate.locator('[data-clarity-start]').isVisible())
+    assert.ok(await gate.locator('[data-coach-greeting-live-start]').isVisible())
     await page.screenshot({path:out+'/greeting-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
     await gate.locator('[data-coach-greeting-replay]').click()
-    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    assert.ok(await gate.locator('[data-coach-greeting-live-start]').isVisible())
     await gate.locator('[data-coach-greeting-course-next]').click()
     await gate.locator('[data-coach-greeting-next]').click()
     await page.waitForURL('**/coaching/sessions?**greetingProgram=business')
     await page.locator('[data-my-coach-greeting-gate]:not([data-my-coach-greeting-gate="merlin"])').waitFor()
     assert.equal(await gate.locator('[data-coach-greeting-course]').getAttribute('data-coach-greeting-course'),'business')
     assert.equal(await gate.getAttribute('data-greeting-phase'),'preview')
+    assert.equal(await gate.locator('[data-coach-greeting-live-start]').count(),0)
    }finally{await ctx.close()}
   }
  }finally{await browser.close()}
