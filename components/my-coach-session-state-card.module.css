@@ -79,3 +79,7 @@
 .protocolGroup{border-top:1px solid #eae7dd;padding:9px 3px;display:grid;gap:8px;min-width:0}
 .protocolGroupTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#17493e;font-size:14px}
 .protocolGroupBar{height:6px;border-radius:99px;background:linear-gradient(to right,#32846b 0 var(--verified),#a7cfbe var(--verified) var(--recorded),#e7e3dc var(--recorded) calc(100% - var(--skipped)),#b9b4a9 calc(100% - var(--skipped)) 100%)}
+
+.protocolGroupBar[data-stage-resolution='pending']{background:#d9d6ce}
+.protocolGroupBar[data-stage-resolution='needs_confirmation'],.protocolGroupBar[data-stage-resolution='skipped']{background:#d9b55b}
+.protocolGroupBar[data-stage-resolution='done']{background:#27866d}

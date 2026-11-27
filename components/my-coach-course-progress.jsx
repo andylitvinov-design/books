@@ -22,12 +22,12 @@ export default function MyCoachCourseProgress({courseSessionId,turns,review,loca
    <small>{t.confirmed}: {confirmed}/{rows.length} · {t.needs_confirmation}: {pending}{skipped>0?' · '+t.skipped_by_client+': '+skipped:''}</small>
    {groupList.map(group=><section key={group.id} className={styles.protocolGroup} data-coach-protocol-group={group.id}>
     <div className={styles.protocolGroupTitle}><b>{group.label}</b><small>{words[0]} {group.recorded}/{group.total} · {words[1]} {group.confirmed}/{group.total}</small></div>
-    <div className={styles.protocolGroupBar} style={{'--verified':(group.verifiedFraction*100)+'%','--recorded':(group.recordedFraction*100)+'%','--skipped':(group.skippedFraction*100)+'%'}}/>
+    <div className={styles.protocolGroupBar} data-stage-resolution={group.status} style={{'--verified':(group.verifiedFraction*100)+'%','--recorded':(group.recordedFraction*100)+'%','--skipped':(group.skippedFraction*100)+'%'}}/>
     {group.children.map(child=>{
      const row=rows.find(x=>x.id===child.id);if(!row)return null
      return <div key={row.id} data-stage-id={row.id} data-stage-status={row.active?'current':row.status==='confirmed'?'done':row.status==='skipped_by_client'?'skipped':row.status==='needs_confirmation'?'needs_confirmation':'pending'} data-course-field-status={row.status} aria-current={row.active?'step':undefined} style={{display:'grid',gap:3,...(row.active?{background:'#eef8f0',borderRadius:10,padding:6}:{})}}>
       <b>{row.label}{row.active?' · '+(provisional?({ru:'Ориентир',en:'Suggested',es:'Orientativo'})[lang]:({ru:'Сейчас',en:'Current',es:'Actual'})[lang]):''}</b>
-      <small>{t[row.status]}{row.turnIndex!==null?' · '+t.source+' '+(row.turnIndex+1):''}</small>
+      <small>{t[row.status]}{Number.isInteger(row.turnIndex)?' · '+t.source+' '+(row.turnIndex+1):''}</small>
       {row.quote&&<small data-coach-field-answer style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.quote}</small>}
       <EvidenceChecks row={row} locale={lang}/>
      </div>

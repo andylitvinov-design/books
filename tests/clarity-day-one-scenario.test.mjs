@@ -43,3 +43,44 @@ test('actual shared text/live prompt and timed checkpoint consume v5 policy',()=
  assert.equal(coachCourseCheckpointGuidance('clarity_day_1','ru',opening,{conversationAct:'correction',timebox:{elapsedSeconds:960}}),'')
  assert.match(coachCourseProtocolGuidance('clarity_day_2','ru'),/Shared flow/)
 })
+
+import {clarityDayOneStageView,openingStagePosition,courseStagePosition} from '../lib/coaching/coach-session-stage-view.mjs'
+import {coachProtocolSessionControlUtterance,coachProtocolEvidenceVeto} from '../lib/coaching/coach-protocol-relevance.mjs'
+import {coachOpeningProgress} from '../lib/coaching/coach-opening-protocol.mjs'
+test('owner regression: interface commands are not goals, facts or a refusal of coaching',()=>{
+ for(const message of ['No, I want to check protocol of the session.','I want to check the protocol','I did not find an answer for the session today.','I didn\'t find an answer for the session today.','Нет, я хочу проверить протокол сессии','No, quiero ver el protocolo de la sesión']){
+  assert.equal(coachProtocolSessionControlUtterance(message),true,message)
+  assert.equal(coachProtocolEvidenceVeto(message),true,message)
+  assert.equal(coachProtocolEvidenceVeto(message,{historicalReview:true}),false,message)
+  const opening=coachOpeningProgress({turns:[message],locale:'en'})
+  assert.equal(opening.declined,false)
+  assert.equal(opening.current,'invitation')
+ }
+ assert.equal(coachProtocolEvidenceVeto('My problem is money.'),false)
+ assert.equal(coachOpeningProgress({turns:['No.']}).declined,true)
+ for(const word of ['sad','Sad','happy','triste','грустно']){
+  const p=coachOpeningProgress({turns:['Yes',word]})
+  assert.equal(p.current,'name')
+  assert.equal(p.answers.name,undefined)
+ }
+ assert.equal(coachOpeningProgress({turns:['Yes','Call me Happy']}).answers.name.value,'Happy')
+})
+test('v5 wheel permission remains the next question in the verification window',()=>{
+ assert.equal(clarityDayOneGapPlan({elapsedSeconds:550}).nextFieldId,'balance_consent')
+ assert.equal(clarityDayOneGapPlan({elapsedSeconds:550,methodConsent:'declined'}).nextFieldId,'priority')
+})
+test('approved day one has six real groups before any answer; missing ledger fields stay open',()=>{
+ for(const locale of ['en','ru','es']){
+  const opening=openingStagePosition(coachOpeningProgress({turns:[],locale}),locale)
+  const core=courseStagePosition([{id:'request',label:'Request',status:'confirmed',quote:'Money'},{id:'outer_finance',label:'Finance',status:'needs_confirmation',quote:'5'}])
+  const view=clarityDayOneStageView(opening,core,locale,true)
+  assert.deepEqual(view.position.rows.map(r=>r.id),['contact','situation','balance','needs','support','integration'])
+  assert.equal(view.position.step,1)
+  assert.equal(view.position.rows.find(r=>r.id==='balance').confirmed,0)
+  assert.equal(view.position.rows.find(r=>r.id==='balance').status,'needs_confirmation')
+  assert.equal(view.core.rows.find(r=>r.id==='balance_consent').protocolStatus,'not_explored')
+  assert.equal(view.core.rows.find(r=>r.id==='request').status,'done')
+  assert.equal(view.core.rows.filter(r=>r.id.startsWith('outer_')).length,8)
+  assert.equal(view.position.rows.find(r=>r.id==='integration').status,'pending')
+ }
+})

@@ -2226,3 +2226,9 @@
   .sessionProgressSummary .sessionProgressRuler{flex-basis:104px}
   .sessionProgressSummary .sessionProgressRuler .sessionProgressSegments{gap:2px}
 }
+
+/* Owner-approved evidence colors: time and evidence are independent. */
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='pending']{background:#d9d6ce}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='needs_confirmation'],
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='skipped']{background:#d9b55b}
+.sessionProgressSummary .sessionProgressSegments span[data-group-progress][data-stage-resolution='done']{background:#27866d}
