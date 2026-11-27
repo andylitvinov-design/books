@@ -28,6 +28,7 @@ function courseView(c,locale,t){
  const root='/'+locale,appRoot='/'+(locale==='es'?'en':locale)+'/app'
  const fallback=c.done===null||c.total===null?'':c.done+'/'+c.total
  switch(c.kind){
+  case 'self-discovery':return {title:'Self Discovery',detail:[fallback?fallback+' '+({en:'tests explored',ru:'тестов исследовано',es:'pruebas exploradas'}[locale]):'',c.axes+'/16 '+({en:'axes measured',ru:'осей измерено',es:'ejes medidos'}[locale])].filter(Boolean).join(' · '),href:root+'/app/daybook/self-discovery?theme=all&view=results',Icon:BookOpen}
   case 'goal':return {title:c.title,detail:c.progress?c.progress.completedWeeks+'/8 '+({en:'weeks',ru:'недель',es:'semanas'})[locale]:'',href:c.progress?.next?profileDaybookHref(appRoot,c.id,c.progress.next.week,c.progress.next.step):profileDaybookHref(appRoot,c.id),Icon:Target}
   case 'growth':return {title:t[c.presetId]||t.growth,detail:fallback?fallback+' '+t.lessons:'',href:appRoot+'/course?view=courses&courseId='+encodeURIComponent(c.id),Icon:BookOpen}
   case 'reiki':return {title:t.reiki,detail:fallback?t.slides+' · '+fallback:'',href:root+'/academy/principles-of-energywork/learn'+(c.slideId?'?slide='+encodeURIComponent(c.slideId):''),Icon:Flower2}
@@ -103,6 +104,7 @@ export default function MyPageCourses({locale='en',accountId}){
  const rows=[...goalRows,...(current?.courses||[])]
  const canExplore=Boolean(current&&goalSnapshot&&!goalSnapshot.error)
  const available=[
+  ...(!rows.some(c=>c.kind==='self-discovery')?[{key:'new:self-discovery',title:'Self Discovery',href:localRoot+'/app/daybook/self-discovery',Icon:BookOpen}]:[]),
   ...(!rows.some(c=>c.kind==='clarity'||c.kind==='legacy'&&c.group==='clarity')?[{key:'new:clarity',title:labels.clarity,section:'clarity',Icon:MessageCircle}]:[]),
   ...(!goalRows.length?[{key:'new:goal',title:labels.goal,section:'goals',Icon:Target}]:[]),
   ...(!rows.some(c=>c.kind==='business')?[{key:'new:business',title:labels.business,section:'business',Icon:Briefcase}]:[]),
@@ -126,7 +128,7 @@ export default function MyPageCourses({locale='en',accountId}){
   {rows.length>0?<div className={styles.list}>{rows.map(c=>{
     const view=courseView(c,lang,t);if(!view)return null
     const status=c.state==='saved'?t.review:t[c.state]
-    const label=view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:t.progress)
+    const label=view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:c.kind==='self-discovery'?({en:'Test catalogue coverage',ru:'Охват каталога тестов',es:'Cobertura del catálogo'}[lang]):t.progress)
     const action=<Link href={view.href} prefetch={false} className={styles.resume} data-my-course-resume>{c.state==='completed'||c.state==='saved'||c.state==='closed'?labels.manage:status}<ArrowRight size={18} aria-hidden="true"/></Link>
     let content=action
     if(c.kind==='goal')content=<ProfileGoalConsole key={c.id} locale={lang} root={root} accountId={accountId} selectedGoalId={c.id} cabinetSnapshot={snapshot}/>
