@@ -120,3 +120,14 @@
 .card .startHere{background:#f4d27d;font-size:clamp(10px,2.8vw,13px)}
 @media(max-width:380px){.card[data-coach-comparison-program]{grid-template-columns:62px minmax(0,1fr);gap:7px;padding:7px}.card .meta{gap:4px}.card .count svg{width:12px}.card .price{padding:4px 5px;font-size:15px}.card .start{padding:0 6px;font-size:11px}.card .start svg{width:12px}}
 @media(min-width:600px){.card[data-coach-comparison-program]{padding:13px;gap:19px;min-height:155px}.card .meta{gap:14px}.card .start{padding-inline:17px}}
+
+/* Remove the old Clarity-only two-row grid placement. Selection covers the card, but Start remains a separate accessible link. */
+.card[data-coach-comparison-program]{position:relative}
+.card[data-coach-comparison-program] .art{grid-row:1;min-height:0}
+.card[data-coach-comparison-program] .intro{grid-row:1;grid-column:2}
+.card .select{position:static}
+.card .select::after{content:'';position:absolute;inset:0;border-radius:inherit}
+.card .select .chevron{right:9px;top:34%;pointer-events:none}
+.card .start{position:relative;z-index:1}
+.card .select:focus-visible::after{outline:3px solid #176e6e;outline-offset:-3px}
+@media(max-width:340px){.card .meta{gap:3px}.card .start{font-size:10px;padding-inline:5px}.card .price{font-size:14px}.card .count{font-size:10px}.card .count svg{display:none}}
