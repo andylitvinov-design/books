@@ -163,6 +163,13 @@ const miraCopy = {
   },
 }
 
+// Compact landing filters share the existing directory mode (no second filter state).
+const landingCoachKinds = {
+  en: { all: 'All', ai: 'AI', human: 'Human' },
+  ru: { all: 'Все', ai: 'AI', human: 'Люди' },
+  es: { all: 'Todos', ai: 'IA', human: 'Humano' },
+}
+
 const humanCopy = {
   en: {
     chooser: 'Choose a section', all: 'All', ai: 'AI Coach', real: 'Human Coach', express: 'Express Diagnostics', tao: 'Tao Advice',
@@ -376,9 +383,21 @@ export default function MyCoachCatalog({ locale = 'en' }) {
 
       <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
         <div className={[styles.heroCopy, heroStyles.heroHeading].join(' ')}>
-          <h1 id="my-coach-heading">My Coach</h1>
-          <p className={heroStyles.tagline}>{hw.tagline}</p>
+          <div className={heroStyles.titleRow}>
+            <h1 id="my-coach-heading">My Coach</h1>
+            <div className={heroStyles.landingKindSwitch} role="group" aria-label={h.chooser} data-my-coach-landing-kind-switch>
+              {Object.entries(landingCoachKinds[lang]).map(([mode, label]) => (
+                <button type="button" key={mode} className={heroStyles.landingKindButton}
+                  data-my-coach-landing-mode={mode} aria-pressed={directoryMode === mode}
+                  onClick={() => { setDirectoryMode(mode); setHumanContactOpen(false) }}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className={heroStyles.tagline}>{directoryMode === 'human' ? h.intro : hw.tagline}</p>
         </div>
+        {directoryMode !== 'human' && <>
         <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
           <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true">
             <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="hero" />
@@ -449,6 +468,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
           <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
         </div>
+        </>}
       </section>
       <section className={[heroStyles.directoryHeading, styles.compactHeading].join(" ")} id="all-coaches" aria-label={hw.browse}>
         <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
