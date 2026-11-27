@@ -736,7 +736,9 @@ test('all eight public coaches lock the recorded RU/EN voice and share TTS deliv
 
 test('late opening checkpoint does not interpret the screenshot focus answer as refusal',()=>{
  const question='Андрей, что вам сейчас было бы полезнее: цель, трудность или личный профиль?'
- const packet={...start,message:'трудность',turns:[{role:'assistant',content:question}],elapsedSeconds:0}
+ const {voiceName,...checkpointStart}=start
+ const packet={...checkpointStart,message:'трудность',turns:[{role:'assistant',content:question}],elapsedSeconds:0}
+ assert.throws(()=>geminiFreeLiveCheckpoint({...packet,voiceName}),{message:'GEMINI_LIVE_REQUEST_INVALID'})
  const lag=geminiFreeLiveCheckpoint({...packet,openingHistory:[]})
  assert.equal(lag.openingProgress.current,'invitation')
  assert.equal(lag.openingProgress.declined,false)
