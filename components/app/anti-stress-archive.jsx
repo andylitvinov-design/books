@@ -59,7 +59,7 @@ function SessionView({accountId,locale,run,day,t}){
   {state?.view===view&&state.error?<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>:!data?<p>{t.loading}</p>:view==='result'?<><AntiStressResult result={data.result} locale={locale} hideMeditation/>{data.result?.meditation&&<MeditationEditor key={data.result.meditation.revision} accountId={accountId} locale={locale} run={run} day={day} meditation={data.result.meditation} onSaved={()=>setRetry(n=>n+1)} t={t}/>}</>:view==='protocol'?<dl>{data.protocol?.rows?.map(row=><div key={row.fieldId}><dt>{row.label} · {t.states[row.status]||t.missing}</dt><dd>{row.value===null||row.value===undefined?t.missing:String(row.value)}</dd></div>)}</dl>:data.log?.turns?.length?<div>{data.log.turns.map(turn=><p key={turn.turnId}><strong>{turn.role==='client'?t.client:(turn.coachId||t.coach)}</strong> — {turn.text}</p>)}</div>:<p>{t.missing}</p>}
  </div>
 }
-export default function AntiStressArchive({accountId,locale='en'}){
+export default function AntiStressArchive({accountId,locale='en',runId=null}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const [state,setState]=useState(null),[open,setOpen]=useState(null),[retry,setRetry]=useState(0)
  const generation=useRef(0),activeOwner=useRef(accountId);activeOwner.current=accountId
@@ -67,14 +67,20 @@ export default function AntiStressArchive({accountId,locale='en'}){
  useEffect(()=>{
   const g=++generation.current;setState(null);setOpen(null)
   if(!accountId)return
+  if(runId!==null&&!uuid(runId)){setState({accountId,error:true});return}
   const c=new AbortController();abort.current=c
-  appFetch('anti-stress/session?view=catalog',undefined,'GET',{accountId,signal:c.signal}).then(data=>{
+  const path=runId===null?'anti-stress/session?view=catalog':'anti-stress/session?view=run&runId='+encodeURIComponent(runId)
+  appFetch(path,undefined,'GET',{accountId,signal:c.signal}).then(data=>{
    if(g!==generation.current||activeOwner.current!==accountId)return
+   if(runId!==null){
+    if(!validRun(data.run)||data.run.id!==runId)throw Error('binding')
+    setState({accountId,runs:[data.run],nextCursor:null});return
+   }
    if(!Array.isArray(data.runs)||!data.runs.every(validRun)||(data.nextCursor!==null&&!uuid(data.nextCursor)))throw Error('catalog')
    setState({accountId,runs:data.runs,nextCursor:data.nextCursor})
-  }).catch(e=>{if(g===generation.current&&activeOwner.current===accountId&&e.code!=='ANTI_STRESS_UNAVAILABLE'&&!c.signal.aborted)setState({accountId,error:true})})
+  }).catch(e=>{if(g===generation.current&&activeOwner.current===accountId&&(runId!==null||e.code!=='ANTI_STRESS_UNAVAILABLE')&&!c.signal.aborted)setState({accountId,error:true})})
   return()=>{generation.current++;abort.current?.abort()}
- },[accountId,retry])
+ },[accountId,retry,runId])
  async function more(){
   if(!state?.nextCursor||state.loading||state.accountId!==accountId)return
   const g=generation.current,c=new AbortController();abort.current=c
@@ -86,7 +92,7 @@ export default function AntiStressArchive({accountId,locale='en'}){
    setState(old=>({...old,loading:false,runs:[...old.runs,...data.runs.filter(r=>!old.runs.some(x=>x.id===r.id))],nextCursor:data.nextCursor}))
   }catch{if(g===generation.current&&activeOwner.current===accountId)setState(old=>({...old,loading:false,error:true}))}
  }
- if(!state||state.accountId!==accountId||(!state.error&&!state.runs?.length))return null
+ if(!state||state.accountId!==accountId||(!state.error&&!state.runs?.length))return runId!==null?<p role="status">{t.loading}</p>:null
  return <section className={styles.archive} data-anti-stress-archive>
   <h2>{t.title}</h2>
   {state.error&&<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>}

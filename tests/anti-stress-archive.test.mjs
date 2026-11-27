@@ -38,3 +38,13 @@ test('private therapy archive is wired to owner-scoped no-store reads, with only
  assert.match(ui,/m.protocolId!==day.protocolId/)
  assert.match(ui,/c.signal.aborted/)
 })
+
+test('My Page reads exact owned therapy run without relying on catalog pagination',()=>{
+ const route=read('app/api/app/anti-stress/session/route.js'),store=read('lib/app/anti-stress-runs.js'),ui=read('components/app/anti-stress-archive.jsx'),cards=read('components/app/my-page-courses.jsx'),server=read('lib/app/my-page-courses-server.js')
+ assert.match(route,/readAntiStressRunSummary\(config,actor,url.searchParams.get\('runId'\)\)/)
+ assert.match(store,/antiStressRunSummary\(await read\(db,actor,config,runId\)\)/)
+ assert.match(ui,/data.run.id!==runId/)
+ assert.match(ui,/runId!==null&&!uuid\(runId\)/)
+ assert.match(cards,/tab=reports&antiStressRun=/)
+ assert.match(server,/antiStressStorageEnabled\(\)\?listAntiStressRuns/)
+})

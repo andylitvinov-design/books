@@ -14,3 +14,13 @@ test('independent coaching runs use total server time and do not show ready unst
  assert.deepEqual(summarizeClarityRuns(runs).map(c=>[c.id,c.percent]),[['r1',50],['r3',100]])
  assert.equal(combineMyPageCourses([{key:'x',state:'closed'}],runs).at(0).id,'r1')
 })
+
+import {summarizeAntiStressRuns} from '../lib/app/my-page-courses.mjs'
+test('therapy run progress uses only exact verified 45-minute course records',()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),sessions=['anti_stress_ground','anti_stress_calm','anti_stress_resource']
+ const run={id:id(1),programId:'anti-stress-three-session',programType:'therapy',status:'in_progress',totalElapsedMs:1350000,days:sessions.map((sessionId,i)=>({sessionId,protocolId:id(i+2),elapsedMs:[900000,450000,0][i],status:['time_limit','paused','not_started'][i]}))}
+ assert.deepEqual(summarizeAntiStressRuns([run,run]).map(c=>[c.percent,c.state,c.day]),[[50,'paused',2]])
+ assert.deepEqual(summarizeAntiStressRuns([{...run,totalElapsedMs:1},{...run,status:'completed'},{...run,programType:'coaching'},{...run,status:'ready'}]),[])
+ const done={...run,status:'completed',totalElapsedMs:2700000,days:run.days.map(d=>({...d,elapsedMs:900000,status:'time_limit'}))}
+ assert.equal(summarizeAntiStressRuns([done])[0].percent,100)
+})
