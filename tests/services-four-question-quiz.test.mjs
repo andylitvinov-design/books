@@ -130,8 +130,15 @@ test("approved cream Support layout keeps the actual quiz and explicit messenger
  assert.match(quiz,/hidden=\{!reviewOpen\}/);
  assert.match(quiz,/<MandatoryMessengerActions locale=\{locale\} whatsappUrl=\{reviewWhatsApp\} label=\{review\.channel\} compact/);
  assert.match(quiz,/whatsappEnquiryUrl\(\{locale,service:review\.service,request:review\.request,pagePath:/);
- assert.match(quiz,/data-support-learn-more href=\{homeHref\}/);
- assert.match(quiz,/homeHref = locale === "en" \? "\/" : "\/" \+ locale/);
+ assert.match(quiz,/data-support-learn-more href="#support-programs"/);
+ assert.match(quiz,/id="support-programs"/);
+ assert.match(quiz,/data-support-program-screen/);
+ assert.match(quiz,/homeDiscovery=\{true\}/);
+ assert.ok(quiz.indexOf("data-services-goal-entry")<quiz.indexOf("data-support-program-screen"));
+ const dashboard=read("components/app/profile-space-dashboard.jsx");
+ assert.match(dashboard,/homeDiscovery = false/);
+ assert.match(dashboard,/clarity: 'Express'/);
+ assert.match(dashboard,/!embeddedSection && !homeDiscovery/);
  assert.doesNotMatch(quiz,/data-services-goal-or/);
  assert.match(css,/SUPPORT_CREAM_ARTIFACTS_APPROVED_20261127/);
  assert.match(css,/\.heroActions\{/);

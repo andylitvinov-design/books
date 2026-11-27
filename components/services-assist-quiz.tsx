@@ -14,6 +14,7 @@ import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { serviceGroupAnchor, servicesCategoryTargets } from "@/lib/services-quick-categories";
 import { ServicesBusinessMenu, suggestBusinessCategory, type BusinessKey } from "./services-business-menu";
+import { ProfileSpaceDashboard } from "@/components/app/profile-space-dashboard";
 import { MandatoryMessengerActions } from "@/components/mandatory-messenger-actions";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-assist-quiz.module.css";
@@ -868,9 +869,9 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
           aria-expanded={reviewOpen} aria-controls="support-free-review-channels" onClick={()=>setReviewOpen(open=>!open)}>
           {v.prompt}<ArrowRight size={18} aria-hidden="true"/>
         </button>
-        <Link className={styles.learnMore} data-support-learn-more href={homeHref} prefetch={false}>
-          {review.learn}<ChevronRight size={18} aria-hidden="true"/>
-        </Link>
+        <a className={styles.learnMore} data-support-learn-more href="#support-programs">
+          {review.learn}<ChevronDown size={18} aria-hidden="true"/>
+        </a>
       </div>
     </header>
     <div id="support-free-review-channels" className={styles.reviewChannels} hidden={!reviewOpen} data-support-free-channels>
@@ -939,6 +940,12 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
       </button>
     </div>
 
+    </div>
+    <section id="support-programs" className={styles.programScreen} data-support-program-screen
+      aria-label={locale==="ru"?"Программы поддержки":locale==="es"?"Programas de apoyo":"Support programs"}>
+      <ProfileSpaceDashboard locale={locale} root={"/"+(locale==="es"?"en":locale)+"/app"} homeDiscovery={true} />
+    </section>
+    <div className={styles.paper} data-support-catalog-panel>
     {audience === "personal" ? <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
       <div className={styles.categoryHeader}>
         <h2 id="services-quiz-categories-title">{t.section}</h2>

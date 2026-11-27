@@ -304,6 +304,11 @@ try {
         firstScreenFit.progressTop<firstScreenFit.questionTop,
         "Approved order is audience → inset photo hero → progress → quiz → goal: "+JSON.stringify(firstScreenFit));
     }
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout:30000,message:"Support must hydrate before messenger disclosure" }
+    ).toBe(true);
+    await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     const reviewButton=quiz.locator("[data-support-free-analyses]");
     const reviewPanel=quiz.locator("[data-support-free-channels]");
     await expect(reviewButton).toHaveAttribute("aria-expanded","false");
@@ -318,7 +323,20 @@ try {
     assert.ok(!new URL(reviewWA).searchParams.get("text").includes("Calm and clear decisions"),"Do not transfer private goal text");
     await reviewButton.click();
     await expect(reviewPanel).toBeHidden();
-    await expect(quiz.locator("[data-support-learn-more]")).toHaveAttribute("href",locale==="en"?"/":"/"+locale);    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    const learnMore=quiz.locator("[data-support-learn-more]");
+    await expect(learnMore).toHaveAttribute("href","#support-programs");
+    await learnMore.click();
+    assert.equal(new URL(page.url()).pathname,"/"+locale+"/services");
+    assert.equal(new URL(page.url()).hash,"#support-programs");
+    const programScreen=quiz.locator("[data-support-program-screen]");
+    await expect(programScreen.locator("[data-goal-profile-tab]")).toHaveCount(3);
+    await expect(programScreen.locator('[data-goal-profile-tab="clarity"]')).toHaveAttribute("aria-pressed","true");
+    if(locale==="en")await expect(programScreen.locator('[data-goal-profile-tab="clarity"]')).toContainText("Express");
+    await expect(programScreen.locator('[data-goal-profile-tab="goals"]')).toBeVisible();
+    await expect(programScreen.locator('[data-goal-profile-tab="business"]')).toBeVisible();
+    await expect(programScreen.locator("[data-profile-my-video]")).toHaveCount(0);
+    await page.evaluate(()=>window.scrollTo(0,0));
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
     await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
