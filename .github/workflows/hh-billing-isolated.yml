@@ -27,7 +27,6 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/hh-billing-isolated.yml'
 permissions:
   contents: read
 concurrency:
