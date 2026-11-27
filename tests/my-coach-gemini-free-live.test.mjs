@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {createHmac} from 'node:crypto'
-import {createClarityRun,advanceClarityRun} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,advanceClarityRun,clarityRunCredentialWindow} from '../lib/coaching/clarity-course-runs.mjs'
 import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig,
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
@@ -746,7 +746,11 @@ test('Clarity mint requires trusted lease and uses only remaining logical time a
  let calls=0,last
  const fetcher=async(_url,options)=>{calls++;last=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-clarity-lease'})}}
  const mint=(input,now,lease)=>issueGeminiFreeLiveToken(config,input,{now,fetcher,clarityLease:lease})
- const lease=previousCredentialExpiresAt=>({run,protocolId,previousCredentialExpiresAt})
+ const lease=(previousCredentialExpiresAt,at=base)=>{
+  const value={leaseId:id(7),run,day:1,protocolId,now:at,previousCredentialExpiresAt}
+  try{return {...value,...clarityRunCredentialWindow(run,{day:1,protocolId,now:at,previousCredentialExpiresAt})}}
+  catch{return value}
+ }
  await assert.rejects(mint(initial,base,undefined),/LEASE_REQUIRED/)
  await assert.rejects(mint(initial,base,lease(undefined)),/LEASE_REJECTED/)
  assert.throws(()=>normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1',clarityLease:lease(null)}),/REQUEST_INVALID/)
@@ -754,6 +758,7 @@ test('Clarity mint requires trusted lease and uses only remaining logical time a
  const first=await mint(initial,base,lease(null))
  assert.equal(first.expiresAt,new Date(base+1200000).toISOString())
  assert.equal(last.uses,1)
+ assert.deepEqual(last.bidiGenerateContentSetup.contextWindowCompression,{slidingWindow:{}})
  const ev=(type,atMs,extra)=>({courseRunId:run.id,expectedRevision:run.clock.revision,day:1,type,atMs,protocolId,connectionId,segmentId,...extra})
  run=advanceClarityRun(run,ev('begin',base,{coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId,connectionId,coachId:'mira',atMs:base,turnId:'start'}}))
  for(let t=10000;t<=420000;t+=10000)run=advanceClarityRun(run,ev('observe',base+t,{evidence:'server_observed_connected'}))
@@ -763,11 +768,39 @@ test('Clarity mint requires trusted lease and uses only remaining logical time a
  await assert.rejects(mint(next,base+1200000,lease(null)),/LEASE_REJECTED/)
  await assert.rejects(mint(next,base+1200000,{...lease(base+1200000),protocolId:id(3)}),/LEASE_REJECTED/)
  assert.equal(calls,1,'no extra provider request while earlier token is potentially usable')
- const resumed=await mint(next,base+1200000,lease(base+1200000))
+ const resumed=await mint(next,base+1200000,lease(base+1200000,base+1200000))
  assert.equal(calls,2)
  assert.equal(resumed.expiresAt,new Date(base+1200000+780000).toISOString())
  assert.equal(last.expireTime,resumed.expiresAt)
  assert.equal(last.newSessionExpireTime,new Date(base+1200000+45000).toISOString())
  assert.equal(run.clock.days[0].elapsedMs,420000)
  assert.equal(run.clock.days[0].status,'paused','mint is not start, consent or credited time')
+})
+
+
+test('Clarity mint keeps the persisted expiry and never retries ambiguous issuance',async()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
+ const now=1795100000000,protocolId=id(2),run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:now})
+ const window=clarityRunCredentialWindow(run,{day:1,protocolId,now,previousCredentialExpiresAt:null})
+ const lease={leaseId:id(7),run,day:1,protocolId,now,previousCredentialExpiresAt:null,...window}
+ const input=normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1'}),config=geminiFreeLiveConfig(free)
+ let calls=0,request
+ const fetcher=async(_url,options)=>{calls++;request=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-reserved-window'})}}
+ const mint=(at,value)=>issueGeminiFreeLiveToken(config,input,{now:at,clarityLease:value,fetcher})
+ await assert.rejects(mint(now+45000,lease),/LEASE_REJECTED/)
+ await assert.rejects(mint(now-1,lease),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,leaseId:'missing'}),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,expiresAt:new Date(now+1200001).toISOString()}),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,day:2}),/LEASE_REJECTED/)
+ assert.equal(calls,0)
+ const result=await mint(now+10000,lease)
+ assert.equal(result.expiresAt,window.expiresAt)
+ assert.equal(request.expireTime,window.expiresAt)
+ assert.equal(request.newSessionExpireTime,window.newSessionExpireTime)
+ assert.deepEqual(request.bidiGenerateContentSetup.contextWindowCompression,{slidingWindow:{}})
+ assert.equal(calls,1)
+ let attempts=0,pauses=0
+ await assert.rejects(issueGeminiFreeLiveToken(config,input,{now,clarityLease:lease,fetcher:async()=>{attempts++;return {ok:false,status:503}},pause:async()=>{pauses++}}),/PROVIDER_UNAVAILABLE/)
+ assert.equal(attempts,1)
+ assert.equal(pauses,0)
 })
