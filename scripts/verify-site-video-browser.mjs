@@ -172,57 +172,12 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
-  let russianPresentationVerified = false
-  for (const home of ['/?full=1', '/ru?full=1']) {
+  for (const home of ['/?full=1','/ru?full=1','/es']) {
     await navigate(home)
-    // The withdrawn 2026-10-01 intro remains retired; this is a different
-    // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
-    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
-    const presentation = page.locator('[data-video-slot="home-presentation"]')
-    if (home.startsWith('/ru')) {
-      // A production-domain check may run before this PR is deployed.
-      // Local/preview builds MUST show the approved RU presentation.
-      if (!live || await presentation.count()) {
-        await expect(presentation).toHaveCount(1)
-        await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
-        await expect(presentation.locator('iframe')).toHaveCount(0)
-        // This secondary player is below the initial Home fold. A DEV
-        // DOMContentLoaded response may precede React hydration, leaving
-        // its intentionally inert SSR Play button disabled. Simulate the
-        // real visitor scrolling into view and prove hydration rather than
-        // pressing an unbound control or waiving the playback assertion.
-        await presentation.scrollIntoViewIfNeeded()
-        if (!live) await page.waitForLoadState('load', { timeout: 60000 })
-        await expect.poll(
-          () => page.evaluate(() => history.pushState.toString().includes('__NA')),
-          { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
-        ).toBe(true)
-        const play = presentation.locator('button.site-video-play')
-        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
-        await expect(play).toBeEnabled()
-        await play.click()
-        await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
-        russianPresentationVerified = true
-      }
-    } else if (await presentation.count()) {
-      // English is visible only if a separately approved English YouTube
-      // presentation exists; never reuse the Russian publication.
-      await expect(presentation).toHaveAttribute('data-video-locale', 'en')
-      await expect(presentation.locator('iframe')).toHaveCount(0)
-    }
-    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
-    await expect(page.locator('[data-home-intent-form]')).toHaveCount(1)
-    // Testimonial galleries now load only when the visitor explicitly expands
-    // the lower catalogue, never before Ali's main composer is interactive.
+    await expect(page.locator('[data-home-program-page]')).toHaveCount(1)
+    await expect(page.locator('[data-video-slot="home-intro"],[data-video-slot="home-presentation"],[data-home-intent-form]')).toHaveCount(0)
   }
-  pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
-  if (russianPresentationVerified) {
-    pass(`${live ? 'Production' : 'Local'}: approved RU presentation click-to-iframe verified`)
-  } else {
-    const skipped = 'SKIPPED: production RU presentation slot absent; click-to-iframe not verified'
-    skippedResults.push(skipped)
-    console.log(skipped)
-  }
+  pass(`${live ? 'Production' : 'Local'}: old Home video slots absent; program discovery visible`)
 
   // Regressions reported by the owner: the Services videos were buried inside
   // Approved 10x3 Services catalogue: the legacy intro and video gallery remain
