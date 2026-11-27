@@ -520,7 +520,10 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
+ // Six original reply paths plus two deterministic identity/name paths.
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ assert.match(send,/coachNameCorrectionQuestion\(candidate,responseLocale\)[\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
+ assert.match(send,/const firstParty=coachOpeningTurn\([\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
