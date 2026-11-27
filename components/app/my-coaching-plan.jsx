@@ -486,7 +486,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
-      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
+      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):turn.authorPersonaId||protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
       {turn.interrupted===true&&<small>{lang==='ru'?'Ответ перебит (мог быть услышан не полностью)':lang==='es'?'Respuesta interrumpida':'Reply interrupted; may not have been fully heard'}</small>}
      </div>)}

@@ -248,3 +248,27 @@ test('v5 balance and final review show actual accepted answers, and corrections 
  assert.equal(view.prompt.fieldId,'balance_review');assert.match(view.prompt.text,/6\/10/)
  assert.equal(view.review.events.filter(e=>e.fieldId==='balance_review'&&e.status==='confirmed').length,1)
 })
+
+
+test('Clarity day two and three handoff keeps the same immutable prefix and reissues the unresolved prompt',()=>{
+ for(const courseSessionId of ['clarity_day_2','clarity_day_3']){
+  const openingTurns=['Yes','Alex','My problem is money','I feel sad','Yes'].map(content=>({role:'user',content}))
+  const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns:openingTurns,locale:'en',personaId:'genie'}))
+  const id='12345678-1234-4234-8234-123456789abc'
+  let value={courseSessionId,revision:1,protocol:{id,courseSessionId,locale:'en',personaId:'genie',opening,turns:openingTurns}}
+  const run=(action,extra={})=>{
+   const next=coachCourseGateTransition(value,{action,id,revision:value.revision,consent:true,requestId:'87654321-4321-4321-8321-abcdefabcdef',...extra},'2026-11-26T12:00:00.000Z')
+   value={...value,...next,revision:value.revision+1};return coachCourseGateView(value)
+  }
+  let view=run('course-gate-start')
+  assert.equal(view.crossCoach,true)
+  const before=JSON.stringify(value.protocol.turns),length=value.protocol.turns.length,field=view.prompt.fieldId,prompt=view.prompt.id
+  assert.throws(()=>run('course-gate-continue',{coachId:'mira',resumeConfirmed:false}))
+  view=run('course-gate-continue',{coachId:'mira',resumeConfirmed:true,requestId:'11111111-1111-4111-8111-111111111111'})
+  assert.equal(value.protocol.id,id);assert.equal(value.protocol.personaId,'genie')
+  assert.equal(view.activeCoachId,'mira');assert.equal(view.prompt.fieldId,field);assert.notEqual(view.prompt.id,prompt)
+  assert.equal(JSON.stringify(value.protocol.turns.slice(0,length)),before)
+  assert.equal(value.protocol.turns.at(-1).authorPersonaId,'mira')
+  assert.throws(()=>run('course-gate-answer',{promptId:view.prompt.id,content:'I need support',coachId:'genie'}))
+ }
+})

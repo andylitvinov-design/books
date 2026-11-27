@@ -103,7 +103,7 @@ test('cross-coach greeting metadata excludes ledger and transcript, and safety-p
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
 })
 
-test('course resume discovery is exact-course and permits cross-coach only for a persisted active v5 gate',()=>{
+test('course resume discovery is exact-course and permits cross-coach for eligible persisted Clarity gates',()=>{
  const item={courseSessionId:'clarity_day_1',protocol:{personaId:'mira'},courseGate:{scenarioVersion:CLARITY_DAY_ONE_VERSION,paused:false}}
  assert.equal(coachDraftMatchesResume(item,'mira'),true)
  assert.equal(coachDraftMatchesResume(item,'genie'),false)
@@ -116,6 +116,13 @@ test('course resume discovery is exact-course and permits cross-coach only for a
  assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}},'genie','clarity_day_1'),false)
  assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'genie','clarity_day_2'),false)
  assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'mira','clarity_day_2'),true)
+ for(const day of ['clarity_day_2','clarity_day_3']){
+  const draft={...item,courseSessionId:day,courseGate:{paused:false}}
+  assert.equal(coachDraftMatchesResume(draft,'genie',day),true)
+  assert.equal(coachDraftMatchesResume({...draft,courseGate:{paused:true}},'genie',day),false)
+  assert.equal(coachDraftMatchesResume({...draft,courseGate:null},'genie',day),false)
+  assert.equal(coachDraftListSummary({...draft,protocol:{...draft.protocol,turns:[]}}).crossCoach,true)
+ }
 })
 
 test('Clarity resume does not promote a browser duration into verified minutes',()=>{
@@ -128,4 +135,17 @@ test('Clarity resume does not promote a browser duration into verified minutes',
  assert.match(store,/clarityClockResumeTime\(clock,day,value\.protocol\.id\)/)
  assert.match(ui,/data-clarity-resume-time/)
  assert.match(ui,/clarityTimeUnknown\?timeUnverifiedText/)
+})
+
+
+test('private draft archive preserves the locked server review and per-turn author',()=>{
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ const profile=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.ok(store.includes('courseGateArchive:{review:courseGate.review||null'))
+ assert.ok(archive.includes('lockedGate?lockedGate.review:courseFieldReview'))
+ assert.ok(archive.includes('lockedGate&&opening?{opening}'))
+ assert.ok(archive.includes('disabled={busy||Boolean(lockedGate)}'))
+ assert.ok(archive.includes('row.authorPersonaId||t.coach'))
+ assert.ok(profile.includes('turn.authorPersonaId||protocolCopy[lang].coach'))
 })

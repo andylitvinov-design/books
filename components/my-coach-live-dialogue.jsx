@@ -1876,7 +1876,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        (q!==null&&(!q||typeof q.id!=='string'||typeof q.fieldId!=='string'||typeof q.text!=='string'||
        !['answer','confirm'].includes(q.kind))))throw Error('COURSE_GATE_READBACK')
     const review=normalizeCoachCourseFieldReview(step.review,protocol.courseSessionId,protocol.turns)
-    if(step.scenarioVersion&&(!getCoachPersona(step.activeCoachId)||(!step.paused&&typeof step.resumeText!=='string')))throw Error('COURSE_GATE_READBACK')
+    if((step.scenarioVersion||step.crossCoach||step.activeCoachId)&&(!getCoachPersona(step.activeCoachId)||(step.crossCoach===true&&(!step.resumeText||step.paused))))throw Error('COURSE_GATE_READBACK')
     return {step:{...step,review},revision:item.revision,protocol}
   }
   async function runCourseGate(action,extra={}){
@@ -1898,7 +1898,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         const revision=start?await autoSaveQueueRef.current?.flush():courseGateRef.current?.revision
         if(!Number.isInteger(revision)||revision<1)throw Error('COURSE_GATE_NOT_SYNCED')
         if(start){autoSaveQueueRef.current?.stop();autoSaveQueueRef.current=null;speechRef.current?.stop?.()}
-        payload={action,id,revision,consent:true,requestId:crypto.randomUUID(),...(courseGateRef.current?.step.scenarioVersion?{coachId:personaId}:{}),...(continuing?{resumeConfirmed:true}:{}),...extra}
+        payload={action,id,revision,consent:true,requestId:crypto.randomUUID(),...(courseGateRef.current?.step.crossCoach?{coachId:personaId}:{}),...(continuing?{resumeConfirmed:true}:{}),...extra}
         courseGateAttemptRef.current=payload
       }
       const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
@@ -1908,7 +1908,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==(courseGateRef.current?.protocol.personaId||personaId)||
          recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
-      const next=readCourseGateStep(item,p);if(!next||(next.step.scenarioVersion&&next.step.activeCoachId!==personaId))throw Error('COURSE_GATE_READBACK')
+      const next=readCourseGateStep(item,p);if(!next||(next.step.activeCoachId&&next.step.activeCoachId!==personaId))throw Error('COURSE_GATE_READBACK')
       if(payload.action==='course-gate-continue')setCourseResumeRequired(false)
       initialDraftRevision.current=item.revision
       courseGateRef.current=next;courseGateAttemptRef.current=null;turnsRef.current=p.turns
@@ -1930,7 +1930,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true})})
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==item.personaId||
-         (item.personaId!==personaId&&!(clarityDay&&item.crossCoach===true&&result.draft.courseGateStep?.scenarioVersion==='hh-clarity-day-one-v5'&&!result.draft.courseGateStep.paused&&result.draft.courseSessionId===clarityCourseId(clarityDay))))throw Error('RESUME_CONFLICT')
+         (item.personaId!==personaId&&!(clarityDay&&item.crossCoach===true&&result.draft.courseGateStep?.crossCoach===true&&!result.draft.courseGateStep.paused&&result.draft.courseSessionId===clarityCourseId(clarityDay))))throw Error('RESUME_CONFLICT')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       const restoredTime=result.clarityTime
@@ -1949,7 +1949,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const thematic=readCourseGateStep(result.draft,p)
       courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
       setCourseFieldReview(thematic?.step.review||null);setCourseGateEnabled(result.courseGateEnabled===true)
-      setCourseResumeRequired(Boolean(thematic?.step.scenarioVersion&&!thematic.step.paused))
+      setCourseResumeRequired(Boolean(thematic?.step.crossCoach&&!thematic.step.paused))
       const structured=readProfileV3Step(result.draft,p)
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
