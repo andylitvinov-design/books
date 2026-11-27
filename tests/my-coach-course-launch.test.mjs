@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach} from '../lib/coach-course-launch.mjs'
+import {projectCourseSession} from '../lib/coach-course-session-progress.mjs'
 import {courseCoachChoice,verifyCourseCoachChoice} from '../lib/app/coach-course-choice.mjs'
 import {isUnifiedMobileDockAppPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -54,4 +55,35 @@ test('course entry, selector, details below rail and private Daybook handoff are
  assert.match(dashboard,/consumeCoachCourseChoice\(program,accountId\)/)
  assert.match(dashboard,/sessionAvailable=program==='goal'/)
  assert.doesNotMatch(view,/startSession\(|live-token|paymentUrl|checkout/)
+})
+
+test('session indicator follows only the trusted cumulative logical clock and never the selected coach',()=>{
+ const row=(day,elapsedMs,status)=>({day,elapsedMs,remainingMs:1200000-elapsedMs,status})
+ const clock=(currentDay,days)=>({currentDay,complete:currentDay===null,days})
+ const blank=day=>row(day,0,'not_started')
+ assert.deepEqual(projectCourseSession(null),{session:1,percent:0,complete:false})
+ assert.equal(projectCourseSession(undefined),null)
+ assert.deepEqual(projectCourseSession(clock(1,[row(1,816000,'paused'),blank(2),blank(3)])),{session:1,percent:68,complete:false})
+ assert.deepEqual(projectCourseSession(clock(2,[row(1,1200000,'time_limit'),row(2,360000,'active'),blank(3)])),{session:2,percent:30,complete:false})
+ assert.deepEqual(projectCourseSession(clock(null,[1,2,3].map(d=>row(d,1200000,'time_limit')))),{session:3,percent:100,complete:true})
+ assert.equal(projectCourseSession(clock(1,[row(1,1199999,'active'),blank(2),blank(3)])).percent,99)
+ assert.equal(projectCourseSession(clock(1,[blank(1),row(2,360000,'active'),blank(3)])),null)
+ assert.equal(projectCourseSession(clock(2,[blank(1),blank(2),blank(3)])),null)
+ assert.equal(projectCourseSession(clock(1,[blank(1),blank(2),{...blank(3),remainingMs:1}])),null)
+})
+test('compact course hero and accessible full coach directory do not start or reset sessions',()=>{
+ const view=read('components/my-coach-course-launch.jsx'),directory=read('components/my-coach-course-directory.jsx')
+ const css=read('components/my-coach-course-launch.module.css'),route=read('app/api/coaching/intro/[locale]/[coach]/route.js')
+ assert.ok(view.indexOf('data-course-all-coaches')<view.indexOf('data-my-coach-hero'))
+ assert.match(view,/<SessionProgressRing progress=\{progress\} lang=\{lang\}/)
+ assert.match(view,/appFetch\('clarity-course\/clock',undefined,'GET',\{accountId:boot.account.id/)
+ assert.doesNotMatch(view,/data-course-rail-expanded|setInterval|localStorage/)
+ assert.match(css,/\.sessionRing\{position:absolute;[^}]*top:12px;right:12px;width:64px/)
+ assert.match(directory,/d\.showModal\(\)/)
+ assert.match(directory,/PUBLIC_COACH_RAIL_IDS\.map\(getCoachPersona\)/)
+ assert.match(directory,/p\.related\.includes\(topic\)/)
+ assert.match(directory,/onChoose\(p\.id\)/)
+ assert.match(directory,/new Audio\(path\+'&archive=1'\)/)
+ assert.ok(route.indexOf('if(archiveOnly)throw new AppError')<route.indexOf('const voiceName='))
+ assert.doesNotMatch(directory,/getUserMedia|startSession\(|sessionStorage|localStorage/)
 })
