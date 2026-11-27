@@ -84,3 +84,44 @@ test('approved day one has six real groups before any answer; missing ledger fie
   assert.equal(view.position.rows.find(r=>r.id==='integration').status,'pending')
  }
 })
+
+import {clarityDayOneGateFields} from '../lib/coaching/clarity-day-one-scenario.mjs'
+import {createCoachProtocolGate,coachProtocolGateNext,transitionCoachProtocolGate,coachMethodConsentDecision} from '../lib/coaching/coach-protocol-validation-gate.mjs'
+import {openingCapturedAnswers,courseCapturedRows,coachCapturedClientTurns} from '../lib/coaching/coach-session-stage-view.mjs'
+test('method consent is explicitly question-bound and requires a durable receipt before any wheel field',()=>{
+ const fields=clarityDayOneGateFields().filter(f=>f.id==='balance_consent'||f.id.startsWith('outer_')||f.id==='priority')
+ for(const [answer,expected,next] of [['Yes','accepted','outer_body_health'],['No','declined','priority'],['Not now','deferred','priority']]){
+  let state=createCoachProtocolGate({sessionId:'session1',courseSessionId:'clarity_day_1',fields})
+  const event=(type,fieldId,extra={})=>({id:'e:'+String(state.revision+1),type,sessionId:'session1',courseSessionId:'clarity_day_1',fieldId,coachId:'genie',expectedRevision:state.revision,...extra})
+  const apply=(type,fieldId,extra={})=>{state=transitionCoachProtocolGate(state,event(type,fieldId,extra))}
+  assert.equal(coachProtocolGateNext(state).fieldId,'balance_consent')
+  assert.throws(()=>apply('issue','outer_body_health',{questionId:'q:wrong'}))
+  apply('issue','balance_consent',{questionId:'q:1'})
+  apply('delivery','balance_consent',{questionId:'q:1',deliveryId:'d:1',final:true})
+  apply('answer','balance_consent',{questionId:'q:1',deliveryId:'d:1',turnId:'t:1',text:answer,final:true})
+  assert.equal(state.pending.phase,'awaiting_save')
+  assert.equal(state.pending.candidate.value,expected)
+  assert.equal(coachProtocolGateNext(state).fieldId,'balance_consent')
+  assert.throws(()=>apply('issue',next,{questionId:'q:wrong'}))
+  apply('save_ack','balance_consent',{questionId:'q:1',receipt:state.pending.candidate.receipt,durableRevision:2})
+  assert.equal(coachProtocolGateNext(state).fieldId,next)
+  assert.equal(Object.keys(state.accepted).length,1)
+  assert.equal(state.accepted.balance_consent.quote,answer)
+  assert.equal(state.accepted.outer_body_health,undefined)
+ }
+ assert.equal(coachMethodConsentDecision('No, I want to check protocol of the session.'),null)
+ assert.equal(coachMethodConsentDecision('Yes, but not now'),null)
+ assert.throws(()=>createCoachProtocolGate({sessionId:'s',courseSessionId:'clarity_day_1',fields:[{id:'outer_finance',kind:'text',requiresConsent:'balance_consent'}]}))
+})
+test('unrelated interface commands and bare no are raw transcript only, not field captures',()=>{
+ const rows=[{role:'user',content:'Yes'},{role:'user',content:'sad'},{role:'user',content:'No, I want to check protocol of the session.'}]
+ const cap=openingCapturedAnswers(rows,h=>coachOpeningProgress({turns:h}))
+ assert.equal(cap.name,undefined)
+ assert.equal(coachCapturedClientTurns(rows).length,3)
+ const questions=[{id:'feelings',status:'not_explored'}]
+ for(const reply of ['No.','I want to check the protocol']){
+  const turns=[{role:'assistant',content:'question'},{role:'user',content:reply}]
+  assert.equal(courseCapturedRows(questions,turns,()=>true)[0].quote,undefined)
+  assert.equal(coachCapturedClientTurns(turns).length,1)
+ }
+})
