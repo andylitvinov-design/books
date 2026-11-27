@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {setImmediate as settleResume,setTimeout as nextTimer} from 'node:timers/promises'
 import {runInNewContext} from 'node:vm'
 import * as duplex from '../lib/personal-coaching/coach-ios-live-duplex.mjs'
+import * as privateRecall from '../lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds,getCoachCharacterSignature} from '../lib/coaching/coach-character-signature.mjs'
 import {
   GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,bytesToBase64,
@@ -21,6 +22,7 @@ const section=(start,end)=>{
 }
 const helpers=[
   section('function audioTranscription(','\n\n'),
+  section('  function silence(r){','  function teardown(r){'),
   section('  function interrupt(){','  async function checkpoint('),
   section('  function commitInput(','  // Deliver server-rechecked references'),
   section('  function finishAudibleTurn(','  async function installCapture('),
@@ -110,7 +112,7 @@ function session(sampleRate=48000,environment={}){
   }}
   const methods=runInNewContext(limits+'\n'+helpers+'\n'+playerFactory+
     '\n({handleAudio,capture,flushPendingAudio,discardAudioTurn,interrupt,makePlayer,handleAudioContextState,watch:()=>watchLiveAudioSession(runtime.current)})',{
-    GeminiLivePcmPlayer,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,
+    GeminiLivePcmPlayer,GeminiLiveBargeGate,GeminiLiveBargeDetector,GeminiLivePcmResampler,readGeminiLiveServerMessage,appendGeminiLiveTranscript,geminiLiveCanResumeStalledReply,...privateRecall,
     geminiLiveAudioRms,geminiLivePcmMessage,Float32Array,Uint8Array,coachCharacterObservedIds,
     Date:class extends Date{static now(){return 100000+clock.context.currentTime*1000}},
     propsRef,runtime,
@@ -149,7 +151,7 @@ function session(sampleRate=48000,environment={}){
     assert.equal(track.readyState,'live')
     assert.ok(!events.notices.includes('unavailable'))
   }
-  return {r,runtime,clock,events,receive,assertLive,sent,...methods}
+  return {r,runtime,clock,events,receive,assertLive,sent,propsRef,...methods}
 }
 
 // Drive the same ~32 ms blocks that the capture worklet delivers. Echo
@@ -537,6 +539,7 @@ test('socket rollover drains a completed reply and resumes the original credenti
     pendingAudio:[],inputText:'incomplete fragment',bargeDetector:{userActive:false},
     audioGate:new GeminiLiveBargeGate()}
   const code=section('function audioTranscription(','\n\n')+'\n'+
+    section('  function cancelPrivateRecall(r){','  async function tryReviewedVoiceRecall(')+
     section('  function preserveUnconfirmedInput(','  function commitInput(')+
     section('  function finishAudibleTurn(','  // A local playback fault')+
     section('  function connect(','  async function getToken(')
@@ -1214,4 +1217,32 @@ test('only completed live character text enters the bounded signature observatio
   h.receive({audio:[pcm(.5)],output:next.en})
   h.receive({interrupted:true})
   assert.equal(h.r.characterSeenIds.has(next.id),false)
+})
+
+// Exercise the actual component callbacks, not merely the recall reducer.
+// Both orderings must discard fabricated provider PCM and retain the token,
+// microphone and same socket. Muted output covers the private text fallback.
+test('private archive recall drains an ungrounded reply without ending the session',async()=>{
+ for(const order of ['archive-first','boundary-first']){
+  const h=session(),oldToken=h.r.liveToken,oldSocket=h.r.socket
+  let deliver
+  h.propsRef.current.outputMuted=true
+  h.propsRef.current.onInputFinal=text=>{h.events.input.push(text);return {privateRecall:new Promise(resolve=>{deliver=resolve})}}
+  h.receive({input:'Remember our previous session'})
+  h.receive({output:'Fabricated memory',audio:[pcm(.4)]})
+  assert.ok(h.r.privateRecallTurn)
+  assert.equal(h.events.final.length,0)
+  assert.equal(h.clock.heardSamples,0)
+  assert.equal(h.r.history.length,0)
+  h.capture(h.r,new Float32Array(1536).fill(.1))
+  assert.equal(h.sent.length,0,'private playback cannot reach the microphone stream')
+  if(order==='archive-first'){deliver('Private owner recap');await settleResume();assert.ok(h.r.privateRecallTurn);h.receive({turnComplete:true})}
+  else{h.receive({turnComplete:true});assert.ok(h.r.privateRecallTurn);deliver('Private owner recap')}
+  await settleResume()
+  assert.equal(h.r.privateRecallTurn,null)
+  assert.equal(h.r.liveToken,oldToken)
+  assert.equal(h.r.socket,oldSocket)
+  assert.equal(h.events.phases.at(-1),'listening')
+  h.assertLive()
+ }
 })
