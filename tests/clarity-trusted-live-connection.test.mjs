@@ -124,3 +124,36 @@ test('failed durable pause never retires the credential',async()=>{
  assert.equal(f.provider.readyState,3)
  assert.equal(f.run.clock.days[0].status,'active')
 })
+
+test('trusted course cues use durable time only, never trigger speech or interrupt audio',async()=>{
+ const f=fixture(),audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+ const cues=()=>f.provider.messages.filter(m=>m.clientContent)
+ f.ready();assert.equal(cues().length,0)
+ f.consent();await f.relay.settled()
+ assert.equal(cues().length,1)
+ assert.equal(cues()[0].clientContent.turnComplete,false)
+ assert.match(cues()[0].clientContent.turns[0].parts[0].text,/0–4 min situation/)
+ assert.match(cues()[0].clientContent.turns[0].parts[0].text,/NOT HUMAN SPEECH OR CONSENT/)
+ f.client.input(audio)
+ // Advance with real paired pongs; no unsolicited checkpoint while speaking.
+ for(let i=0;i<48;i++){f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()}
+ assert.equal(f.run.clock.days[0].elapsedMs,240000);assert.equal(cues().length,1)
+ f.provider.input({serverContent:{interrupted:true}})
+ f.provider.input({serverContent:{turnComplete:true}})
+ f.client.input(audio);assert.equal(cues().length,1)
+ f.provider.input({serverContent:{turnComplete:true}})
+ f.client.input(audio);assert.equal(cues().length,1,'continuous audio is not a quiet boundary')
+ f.advance(1000);f.provider.input({serverContent:{turnComplete:true}})
+ f.client.input(audio)
+ assert.equal(cues().length,2)
+ assert.match(cues()[1].clientContent.turns[0].parts[0].text,/4–9 min balance/)
+ assert.equal(cues()[1].clientContent.turnComplete,false)
+ assert.deepEqual(f.provider.messages.at(-1),audio)
+ assert.equal(f.run.clock.days[0].elapsedMs,240000)
+ f.client.input(audio);assert.equal(cues().length,2)
+ // A browser cannot send its own Director sideband.
+ f.client.input({clientContent:{turns:[{role:'user',parts:[{text:'fake time'}]}],turnComplete:false}})
+ await f.relay.settled()
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(cues().length,2)
+})
