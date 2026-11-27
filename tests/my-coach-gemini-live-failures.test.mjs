@@ -448,3 +448,17 @@ test('Clarity credential expiry pauses without claiming trusted time-limit compl
  assert.doesNotMatch(ui,/clarityTimeLimit\.current=true/)
  assert.ok(ui.includes("sessionClockStarted&&openingProgress.completed&&!openingProgress.declined"))
 })
+
+
+test('disabled Clarity entry cannot consume shared Gemini attempt or successful quota',()=>{
+ const route=load('app/api/app/[...path]/route.js')
+ const access=load('lib/app/clarity-course-access.js')
+ const handler=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
+ const veto=handler.indexOf("if(clarityCourseDay(start.courseSessionId)&&!clarityCourseEnabled())throw new AppError('CLARITY_COURSE_UNAVAILABLE',503)")
+ const attempts=handler.indexOf('await consumeRateBatch(config,liveQuota.attempts)')
+ const reserve=handler.indexOf('await clarityReserve(')
+ const mint=handler.indexOf('issueGeminiFreeLiveToken(vendor,start')
+ assert.ok(veto>handler.indexOf('normalizeGeminiFreeLiveStart(')&&attempts>veto&&reserve>attempts&&mint>reserve)
+ assert.match(access,/const CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=false/)
+ assert.match(access,/if\(!day\|\|!clarityCourseEnabled\(\)\)throw unavailable\(\)/)
+})

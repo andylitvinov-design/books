@@ -1,5 +1,5 @@
 import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
-import {clarityReserve,clarityConfirm,clarityRelease} from '@/lib/app/clarity-course-access.js'
+import {clarityCourseEnabled,clarityReserve,clarityConfirm,clarityRelease} from '@/lib/app/clarity-course-access.js'
 import { NextResponse, after } from 'next/server'
 import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, validReikiConsent } from '@/lib/academy/reiki-oauth-consent.js'
 import { randomUUID } from 'node:crypto'
@@ -1211,6 +1211,9 @@ async function handle(request, { params }) {
       let start
       try{start=normalizeGeminiFreeLiveStart(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
+      // A disabled course must not consume the shared free provider quota.
+      // Check the server release veto before any attempt reservation or mint.
+      if(clarityCourseDay(start.courseSessionId)&&!clarityCourseEnabled())throw new AppError('CLARITY_COURSE_UNAVAILABLE',503)
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.
       const liveQuota=geminiLiveTokenQuota(actor.id,{

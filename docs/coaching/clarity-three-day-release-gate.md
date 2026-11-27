@@ -49,3 +49,7 @@ Added an internal owner-locked, database-timestamped recovery seam for independe
 
 ## Provider credential remaining-time budget (27 Nov)
 Clarity's Free token helper now fails closed without an internal run lease; the old full-window default is removed for Clarity only. The private budget checks the exact current run/day/protocol, refuses an active or completed session and rejects a prior credential whose possible expiry has not passed. A paused 7-minute segment permits at most a 13-minute replacement credential, not a new 20-minute token. New-session expiry is capped by that same remaining budget. A token is not consent, credited time or trusted provider observation. Caller must still durably reserve the possible expiry under the account-wide mint lock before provider issuance, prove the absence/expiry of all previous credentials, and obtain actual trusted connection/consent/stop observations. No public lease input, proxy, paid provider, flags or production migration. Native CI and real authenticated provider acceptance required.
+
+
+## Disabled entry and shared quota (27 Nov)
+While the trusted transport adapter and release flags are disabled, the normalized authenticated Clarity token request fails closed before reserving any shared Gemini attempt, successful grant, or provider credential. Existing ordinary coach limits and the additional remaining-time lease validation remain unchanged. No production flag, migration or paid provider change.
