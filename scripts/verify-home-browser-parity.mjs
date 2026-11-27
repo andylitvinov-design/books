@@ -17,6 +17,16 @@ async function sample(stage, locale, pass) {
   const ctx = await browser.newContext({viewport: {width: 390, height: 844}, deviceScaleFactor: 1, ignoreHTTPSErrors: true, isMobile: true, hasTouch: true, locale: locale === 'en' ? 'en-US' : locale});
   const page = await ctx.newPage();
   const errors = [];
+  const cssRequests = new Map();
+  page.on('request', request => {
+    if (request.resourceType() === 'stylesheet') {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith('/_next/static/css/')) {
+        const key = url.pathname + url.search;
+        cssRequests.set(key, (cssRequests.get(key) || 0) + 1);
+      }
+    }
+  });
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => {
     if (m.type() === 'error' && /hydrat|react error|content security policy|refused to execute|refused to apply/i.test(m.text())) errors.push(m.text());
@@ -68,7 +78,7 @@ async function sample(stage, locale, pass) {
     await input.fill('Local CSS audit');
     assert.equal(await input.inputValue(),'Local CSS audit');
     await input.fill('');
-    const report = {stage,locale,pass,...metrics,errors:[...errors]};
+    const report = {stage,locale,pass,...metrics,errors:[...errors],cssRequests:Object.fromEntries(cssRequests),duplicateCssRequests:[...cssRequests].filter(([,count])=>count>1).map(([url,count])=>({url,count}))};
     reports.push(report);
     return {image,natural,report};
   } catch (e) {
@@ -87,7 +97,7 @@ try {
     const clean=[before.report,after.report].every(r=>!r.error && r.errors.length===0 && r.csp.length===0 && Number.isFinite(r.lcp?.ms));
     const localTargets=clean && after.report.lcp.ms < 2500 && after.report.cls < 0.1;
     pairs.push({locale,pass,identical,naturalIdentical,clean,localTargets});
-    console.log(JSON.stringify({locale,pass,identical,naturalIdentical,clean,localTargets,beforeLcp:before.report.lcp?.ms,afterLcp:after.report.lcp?.ms}));
+    console.log(JSON.stringify({locale,pass,identical,naturalIdentical,clean,localTargets,beforeLcp:before.report.lcp?.ms,afterLcp:after.report.lcp?.ms,duplicateCssRequests:after.report.duplicateCssRequests}));
   }
 } finally {
   await browser.close();

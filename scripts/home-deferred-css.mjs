@@ -10,12 +10,11 @@ export function restoreHomeStyles() {
     // Keep the original link/href/data-precedence nodes in place so React's
     // stylesheet resource lookup and the original cascade are preserved.
     const links = [...document.querySelectorAll('link[data-home-full-style]')];
-    const originalMedia = links.map(link => link.getAttribute('media'));
+    const originalMedia = links.map(link => link.getAttribute('data-home-original-media'));
     const pending = links.map(link => new Promise(resolve => {
       link.addEventListener('load', () => resolve(true), {once: true});
       link.addEventListener('error', () => resolve(false), {once: true});
-      link.media = 'print';
-      link.disabled = false;
+      // The same non-blocking request is already in flight or completed.
       if (link.sheet) resolve(true);
     }));
     const activate = () => links.forEach((link, i) => {

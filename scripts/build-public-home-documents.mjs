@@ -123,10 +123,16 @@ export async function compilePublicDocument({ source, csp, origin, buildDir, bui
     const path = localAsset(attrs.href, 'css', origin);
     await access(resolve(buildDir, path.slice('/_next/'.length)));
     const originalTag = source.slice(loc.startOffset, loc.endOffset);
-    // Disabled links retain Next's href/precedence and DOM order, but unlike
-    // print-media links do not fetch full CSS during the initial paint.
+    // The speculative scanner may fetch even a disabled stylesheet.
+    // Keep the original link/href/precedence and fetch at print priority;
+    // restore original media without restarting a disabled stylesheet.
     deferredStylesheets.add(attrs.href);
-    edits.push([loc.startOffset, loc.endOffset, originalTag.replace('<link ', '<link disabled data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
+    const media = loc.attrs.media;
+    const preservedTag = media
+      ? originalTag.slice(0, media.startOffset - loc.startOffset) +
+        'data-home-original-' + originalTag.slice(media.startOffset - loc.startOffset)
+      : originalTag;
+    edits.push([loc.startOffset, loc.endOffset, preservedTag.replace('<link ', '<link media="print" data-home-full-style="" ') + '<noscript>' + originalTag + '</noscript>']);
     const href = loc.attrs.href;
     cssInputEdits.push([href.startOffset, href.endOffset, 'href="' + path + '"']);
     styles++;

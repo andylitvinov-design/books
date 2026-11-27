@@ -41,6 +41,11 @@ test('the build pins only authorized scripts, preserves the public React documen
     assert.equal(late.html.split(heroPreload).length - 1, 1);
     assert.equal(result.html.split(heroPreload).length - 1, 1);
     assert.equal(late.policy, result.policy);
+    const media = await compilePublicDocument({...options, source: source.replace('data-precedence="next">', 'data-precedence="next" media="screen">')});
+    assert.ok(media.html.includes('data-home-original-media="screen"'));
+    assert.ok(media.html.includes('<link media="print" data-home-full-style=""'));
+    assert.ok(media.html.includes('<noscript><link rel="stylesheet"'));
+    assert.ok(!media.html.includes('<link disabled data-home-full-style'));
     assert.ok(result.html.includes('integrity="' + hash('self.started=true') + '"'));
     assert.ok(result.policy.includes("'" + hash('self.initial=""') + "'"));
     assert.ok(result.policy.includes("object-src 'none'; base-uri 'none'; frame-ancestors 'none'"));
@@ -53,12 +58,12 @@ test('the build pins only authorized scripts, preserves the public React documen
     assert.match(await readFile(join(dir, 'static/css/home.css'), 'utf8'), /\.below-fold-copy\{color:purple\}/);
     assert.match(result.html, /<noscript><link rel="stylesheet"/);
     assert.doesNotMatch(result.html, /rel="preload" as="style"/);
-    assert.match(result.html, /<link disabled data-home-full-style="" rel="stylesheet" href="\/_next\/static\/css\/home\.css\?dpl=fixture" data-precedence="next">/);
+    assert.match(result.html, /<link media="print" data-home-full-style="" rel="stylesheet" href="\/_next\/static\/css\/home\.css\?dpl=fixture" data-precedence="next">/);
     assert.match(result.html, /data-home-full-style/);
     assert.equal(result.html.split('.original-inline-fixture{color:teal}').length - 1, 1, 'original inline styles must not be copied into critical CSS');
     assert.match(result.html, /Promise\.all\(pending\)/);
     assert.match(result.html, /setTimeout\(activate, 2500\)/);
-    assert.match(result.html, /<link disabled data-home-full-style/);
+    assert.match(result.html, /<link media="print" data-home-full-style/);
     assert.ok(result.policy.includes("'" + hash(restoreStyles) + "'"));
     assert.match(result.html, /<style data-home-critical-css="">[^<]*\.visible-summary\{/);
     assert.doesNotMatch(result.html, /\.closed-menu\{|\.hidden-stream\{/);
@@ -78,7 +83,7 @@ function deferredFixture() {
   const events = {}, frames = [], timers = new Map(), requests = [];
   let decoded, removed = false, count = 0;
   const links = [null, 'screen'].map(media => ({
-    media, sheet: null, handlers: {},
+    media: 'print', 'data-home-original-media': media, sheet: null, handlers: {},
     getAttribute(k) { return this[k]; },
     setAttribute(k, v) { this[k] = v; },
     removeAttribute(k) { this[k] = null; },
@@ -86,7 +91,7 @@ function deferredFixture() {
     fire(k) { if (k === 'load') this.sheet = {}; this.handlers[k](); },
   }));
   links.forEach((link, i) => Object.defineProperty(link, 'disabled', {
-    get() { return this.off ?? true; },
+    get() { return this.off ?? false; },
     set(v) { this.off = v; if (!v) requests.push(i); },
   }));
   const portrait = {decode: () => new Promise(resolve => { decoded = resolve; })};
@@ -109,7 +114,7 @@ function deferredFixture() {
     }};
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
-test('defers full-sheet requests until portrait decode and two frames; restores the cascade as a group', async () => {
+test('keeps one print-priority request per sheet and restores the cascade after portrait decode and two frames', async () => {
   const f = deferredFixture();
   f.document.readyState = 'interactive'; f.events.DOMContentLoaded();
   assert.deepEqual(f.requests, []);
@@ -117,26 +122,26 @@ test('defers full-sheet requests until portrait decode and two frames; restores 
   f.frames.shift()(); f.frames.shift()();
   assert.deepEqual(f.requests, []);
   f.tick(0);
-  assert.deepEqual(f.requests, [0, 1]);
+  assert.deepEqual(f.requests, []);
   assert.equal(f.links[0].media, 'print');
   f.links[0].fire('load'); await flush();
   assert.equal(f.links[0].media, 'print');
   f.links[1].fire('load'); await flush();
   assert.equal(f.links[0].media, null); assert.equal(f.links[1].media, 'screen');
   assert.equal(f.removed(), true);
-  f.events.scroll(); assert.deepEqual(f.requests, [0, 1]);
+  f.events.scroll(); assert.deepEqual(f.requests, []);
 });
 test('early interaction enables CSS and stylesheet errors keep the critical fallback', async () => {
   const f = deferredFixture();
   f.document.readyState = 'interactive'; f.events.DOMContentLoaded(); f.events.pointerdown();
-  assert.deepEqual(f.requests, [0, 1]);
+  assert.deepEqual(f.requests, []);
   f.links[0].fire('error'); f.links[1].fire('load'); await flush();
   assert.equal(f.links[1].media, 'screen'); assert.equal(f.removed(), false);
 });
-test('bounded fallback loads complete CSS even without portrait decode', () => {
+test('bounded fallback restores complete CSS even without portrait decode', () => {
   const f = deferredFixture();
   f.document.readyState = 'interactive'; f.events.DOMContentLoaded(); f.tick(1200);
-  assert.deepEqual(f.requests, [0, 1]); f.tick(2500);
+  assert.deepEqual(f.requests, []); f.tick(2500);
   assert.equal(f.links[0].media, null); assert.equal(f.links[1].media, 'screen');
   assert.equal(f.removed(), false);
 });
