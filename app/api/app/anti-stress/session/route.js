@@ -20,7 +20,9 @@ export async function GET(request){
   await consumeRate(config,{op:'anti-stress-session-read',actor:actor.id},60,3600)
   const url=new URL(request.url),locale=url.searchParams.get('locale')||'en'
   if(!['en','ru','es'].includes(locale))throw new AppError('ANTI_STRESS_INVALID',400)
-  const session=await readAntiStressSession(config,actor,url.searchParams.get('runId'),url.searchParams.get('sessionId'),locale)
+  const view=url.searchParams.get('view')||'result'
+  if(!['result','protocol','log'].includes(view))throw new AppError('ANTI_STRESS_INVALID',400)
+  const session=await readAntiStressSession(config,actor,url.searchParams.get('runId'),url.searchParams.get('sessionId'),locale,view)
   return auth.apply(NextResponse.json(session,{headers:PRIVATE_HEADERS}))
  }catch(error){
   const safe=safeError(error),response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
