@@ -877,6 +877,30 @@ test('cancelled streaming replies retain an approved audible prefix in the same 
 })
 
 
+// Owner incident 2026-11-27: neutral conversation is not a request to stop.
+import {COACH_OPENING_QUESTION_BANK,coachOpeningLiveInstruction,coachOpeningNextReply} from '../lib/coaching/coach-opening-protocol.mjs'
+import {COACH_SAFETY_RULES} from '../lib/coaching/persona-registry.mjs'
+test('ordinary opening questions never proactively offer an exit, in all persona languages',()=>{
+  const exitOffer=/(?:\b(?:pause|postpone|stop anytime|another day|come back later|leave it for)\b|пауз|отлож|остановиться|вернуться позже|\b(?:paus\w*|parar|detenerte|otro día)\b)/iu
+  for(const [persona,gates] of Object.entries(COACH_OPENING_QUESTION_BANK)){
+    for(const locale of ['en','ru','es']){
+      for(const gate of ['invitation','confirmation']){
+        for(const question of gates[gate][locale])assert.doesNotMatch(question,exitOffer,persona+'/'+locale+'/'+gate)
+        for(let attempts=0;attempts<=4;attempts++){
+          const reply=coachOpeningNextReply({personaId:persona,locale,current:gate,attempts,answers:{}})
+          assert.doesNotMatch(reply,exitOffer,persona+'/'+locale+'/'+gate+'/'+attempts)
+        }
+      }
+      const instruction=coachOpeningLiveInstruction(persona,locale)
+      assert.match(instruction,/Never introduce an unsolicited option to pause/)
+      assert.match(instruction,/Honor explicit client requests to pause, skip, end or decline immediately/)
+      assert.match(instruction,/Maybe, silence or a question is NOT yes/)
+    }
+  }
+  assert.match(COACH_SAFETY_RULES.join(' '),/Honor client-initiated pauses/)
+})
+
+
 test('an early actual name question retains the literal name without granting session consent',()=>{
  const turns=[
   {role:'assistant',content:'Как мне вас называть?'},
