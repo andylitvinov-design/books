@@ -51,9 +51,9 @@ test('Approved three-step landing uses one static hero action and numbered photo
  assert.match(source,/\{index\+1\}/)
  assert.match(source,/data-stage-photo/)
  const hero=source.slice(source.indexOf('<header className={styles.clarityHero}>'),source.indexOf('</header>',source.indexOf('<header className={styles.clarityHero}>')))
- assert.equal((hero.match(/<ClarityStartButton /g)||[]).length,1)
- assert.match(hero,/data-clarity-details/)
- assert.match(hero,/\/coaching\/clarity/)
+ assert.equal((hero.match(/<ProfileProgramRequest /g)||[]).length,1)
+ assert.match(hero,/program="clarity"/)
+ assert.doesNotMatch(hero,/ClarityStartButton|data-clarity-details/)
  assert.doesNotMatch(hero,/openStage\(0\)/)
  assert.doesNotMatch(hero,/<video|<iframe/)
  assert.match(css,/CLARITY_LANDING_THREE_20261124/)
@@ -62,10 +62,10 @@ test('Approved three-step landing uses one static hero action and numbered photo
 
 test('Business profile implements the approved eight-session mobile landing and real actions',()=>{
  const business=source.slice(source.indexOf("{section === 'business' &&"),source.indexOf("{section === 'goals' &&"))
- for(const attr of ['data-profile-business','data-business-start','data-business-details','data-business-topic','data-business-session'])assert.ok(business.includes(attr),attr)
- assert.match(business,/<Link href=\{root\+'\/daybook\/business'\} prefetch=\{false\} data-business-start>/)
- assert.match(business,/aria-controls="business-contact-options"/)
- assert.match(business,/<MandatoryMessengerActions/)
+ for(const attr of ['data-profile-business','data-business-topic','data-business-session'])assert.ok(business.includes(attr),attr)
+ assert.match(business,/<ProfileProgramRequest locale=\{selected\} program="business" open=\{businessContactOpen\}/)
+ assert.doesNotMatch(business,/data-business-start/)
+ assert.match(source,/data-business-daybook-link/)
  assert.doesNotMatch(business,/services\/business-consulting/)
  assert.match(business,/businessSessionScreenshot\(selected,index\+1\)/)
  assert.match(business,/position="top"/)
@@ -80,8 +80,8 @@ test('Business profile implements the approved eight-session mobile landing and 
  assert.match(css,/businessTopics\{grid-template-columns:1fr\}/)
 })
 
-test('Both capture CTAs open the same Clarity Google continuation, not the generic consultation',()=>{
- assert.match(source,/<ClarityStartButton locale=\{selected\}>/)
+test('Lower Clarity course CTA preserves Google continuation independently of consultation',()=>{
+ assert.match(source,/<ProfileProgramRequest locale=\{selected\} program="clarity"/)
  assert.match(source,/<ClarityStartLink locale=\{selected\} className=\{styles\.clarityPersonal\}>[\s\S]*?\{c\.planButton\}[\s\S]*?<\/ClarityStartLink>/)
  assert.doesNotMatch(source,/<Link href=\{personal\} className=\{styles\.clarityPersonal\}/)
 })
