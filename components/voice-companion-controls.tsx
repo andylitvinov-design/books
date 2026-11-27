@@ -97,7 +97,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const speaker=useRef<SpeechController|null>(null);
  const lastSpoken=useRef('');
  const phoneRetryVoice=useRef(false);
- const [phoneReplyPending,setPhoneReplyPending]=useState(false);
+ const [phoneReplayAvailable,setPhoneReplayAvailable]=useState(false);
  const mounted=useRef(true);
  const stop=useCallback(()=>{
   if(resumeTimer.current!==null){clearTimeout(resumeTimer.current);resumeTimer.current=null;}
@@ -108,13 +108,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   speaker.current?.stop();
   recordedTurn.current?.cancel();recordedTurn.current=null;
   recognition.current?.abort();recognition.current=null;
-  if(mounted.current){setSpeaking(false);setRecording(false);setPhoneReplyPending(false)}
+  if(mounted.current){setSpeaking(false);setRecording(false)}
  },[]);
  const stopDialogue=useCallback(()=>{
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   pauseOnHide.current=false;
   const wasPhone=phoneCall.current;phoneCall.current=false;phoneRetryVoice.current=false;lastSpoken.current='';
-  if(mounted.current){setConversing(false);setPaused(false);setNotice('');}
+  if(mounted.current){setConversing(false);setPaused(false);setNotice('');setPhoneReplayAvailable(false);}
   stop();
   if(wasPhone&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
  },[stop]);
@@ -122,7 +122,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(!dialogueActive.current)return;
   // Retire every capture/playback callback, retaining only the UI pause state.
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
-  if(mounted.current){setConversing(false);setPaused(true);setNotice('');}
+  if(mounted.current){setConversing(false);setPaused(true);setNotice('');setPhoneReplayAvailable(false);}
   stop();
   if(phoneCall.current&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
  },[stop]);
@@ -205,13 +205,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   const seq=generation.current;
   const phone=phoneCall.current&&dialogueActive.current;
   const retryVoice=phoneRetryVoice.current;phoneRetryVoice.current=false;
-  if(phone)setPhoneReplyPending(true);
+  if(phone)setPhoneReplayAvailable(true);
   const outputFailed=()=>{
    setSpeaking(false);
    if(phone&&dialogueActive.current){
     // Keep the exact canonical reply available for a real user-gesture retry.
     // Never re-send the message or auto-open the microphone on failed output.
-    setPhoneReplyPending(true);
+    setPhoneReplayAvailable(true);
     setNotice(speechLocale==='ru'?'Нет звука? Нажмите «Повторить звук».':speechLocale==='es'?'¿Sin sonido? Pulsa Repetir audio.':'No sound? Tap Replay audio.');
    }else{if(dialogueActive.current)stopDialogue();setNotice(t.error);}
   };
@@ -219,7 +219,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   const playNext=()=>{
    if(seq!==generation.current)return;
    if(index>=parts.length){
-    setSpeaking(false);setPhoneReplyPending(false);
+    setSpeaking(false);
     if(dialogueActive.current&&resumeDialogue.current){
      resumeTimer.current=setTimeout(()=>{
       resumeTimer.current=null;
@@ -249,6 +249,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     if(phone&&result?.reason==='busy'&&busyRetries++<2){
      index--;resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},180);return;
     }
+    if(!phone&&dialogueActive.current)stopDialogue();
     outputFailed();
    }
   };
@@ -263,12 +264,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   }else playNext();
  },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
  const replayPhoneReply=useCallback(()=>{
-  if(!phoneCall.current||!dialogueActive.current||!phoneReplyPending||document.hidden||!lastSpoken.current)return;
+  if(!phoneCall.current||!dialogueActive.current||!phoneReplayAvailable||document.hidden||!lastSpoken.current)return;
   // Safari's direct tap permits a fresh audio route and default local voice.
   phoneRetryVoice.current=true;
   setCoachIos27AudioSession(window.navigator,'playback');
   speak(lastSpoken.current,false,true);
- },[phoneReplyPending,speak]);
+ },[phoneReplayAvailable,speak]);
  const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
   if(!sttConsent&&!consentOnStart){setNotice(t.sttConsent);return;}
@@ -287,7 +288,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
     const text=capture.accept(event.results?.[0]?.[0]?.transcript);
-    if(text){hadSpeech=true;emptyListenRetries.current=0;
+    if(text){hadSpeech=true;emptyListenRetries.current=0;setPhoneReplayAvailable(false);
     if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}
     const live=dialogueActive.current;
     setRecording(false);setNotice(live?'':t.captured);onTranscript(text);}
@@ -325,7 +326,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(phoneCall.current)setCoachIos27AudioSession(window.navigator,'auto');
   const epoch=generation.current;
   const capture=startCoachRecordedTurn({
-   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,
+   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,fastConversation:phoneCall.current,
    onState:state=>{
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
@@ -341,7 +342,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    },
    onResult:text=>{
     if(epoch!==generation.current)return;
-    recordedTurn.current=null;emptyListenRetries.current=0;setRecording(false);setNotice('');
+    recordedTurn.current=null;emptyListenRetries.current=0;setRecording(false);setNotice('');setPhoneReplayAvailable(false);
     if(dialogueActive.current)onTranscript(text);
    },
    onFailure:code=>{
@@ -407,12 +408,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  },[stop]);
  const interruptReply=()=>{
   if(!dialogueActive.current||!speaking||document.hidden)return;
-  stop();
+  setPhoneReplayAvailable(false);stop();
   resumeDialogue.current?.();
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,paused,pauseDialogue,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplyPending,replayPhoneReply,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 
