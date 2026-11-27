@@ -10,7 +10,7 @@ import {coachProtocolControlUtterance,COACH_PROTOCOL_VERIFICATION_INSTRUCTION} f
 import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
 import {verifyCoachSemanticHint} from '../lib/coaching/semantic-evidence.mjs'
-import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
+import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS,MY_COACH_PROTOCOL_MAX_CHARS,MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '../lib/personal-coaching/session-protocol.mjs'
 import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
 
 const id='8afbf841-49a0-46e1-b5c1-124a116efa28'
@@ -86,7 +86,7 @@ test('hard caps prevent oversized transcripts and invented fields',()=>{
   assert.throws(()=>normalizeMyCoachProtocol(tooMany),/MY_COACH_PROTOCOL_INVALID/)
   const control=sample();control.turns[0].content='Bad\u0001data'
   assert.throws(()=>normalizeMyCoachProtocol(control),/MY_COACH_PROTOCOL_INVALID/)
-  const large=sample();large.turns[0].content='a'.repeat(1201)
+  const large=sample();large.turns[0].content='a'.repeat(MY_COACH_PROTOCOL_MAX_TURN_CHARS+1)
   assert.throws(()=>normalizeMyCoachProtocol(large),/MY_COACH_PROTOCOL_INVALID/)
   const unknown=sample();unknown.personaId='untrusted-model-provider'
   assert.throws(()=>normalizeMyCoachProtocol(unknown),/MY_COACH_PROTOCOL_INVALID/)
@@ -489,17 +489,19 @@ test('explicitly reopening a reviewed checkpoint suppresses stale candidates wit
 
 import {coachProtocolCanAppend,coachProtocolRoomForExchange} from '../lib/personal-coaching/protocol-capture.mjs'
 test('private protocol never rotates its first turns or accepts an exchange without reply capacity',()=>{
- const history=Array.from({length:158},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
+ const history=Array.from({length:MY_COACH_PROTOCOL_MAX_TURNS-2},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
  assert.equal(coachProtocolRoomForExchange(history,'last question'),true)
  assert.equal(coachProtocolRoomForExchange([...history,{role:'user',content:'pending'}],'another question'),false)
  assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'}]),true)
  assert.equal(coachProtocolCanAppend(history,[{role:'user',content:'last question'},{role:'assistant',content:'reply'},{role:'user',content:'overflow'}]),false)
  assert.equal(history[0].content,'turn 0')
- const large=Array.from({length:57},()=>({role:'user',content:'x'.repeat(1200)}))
+ const large=Array.from({length:Math.floor(MY_COACH_PROTOCOL_MAX_CHARS/1200)-2},()=>({role:'user',content:'x'.repeat(1200)}))
+ large.push({role:'user',content:'x'.repeat(800)})
  assert.equal(coachProtocolRoomForExchange(large,'x'.repeat(1200)),false)
  assert.equal(coachProtocolRoomForExchange(large,'short'),true)
  assert.equal(coachProtocolCanAppend(large,[{role:'assistant',content:'x'.repeat(1200),suggestion:'x'.repeat(300)}]),true)
- assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(1201)),false)
+ assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(1201)),true)
+ assert.equal(coachProtocolRoomForExchange([], 'x'.repeat(MY_COACH_PROTOCOL_MAX_TURN_CHARS+1)),false)
 })
 test('all typed reply paths synchronously commit transcript and checkpoint before releasing the request',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
@@ -808,4 +810,38 @@ test('assistant-only captured introduction is an unreviewed chronological transc
  assert.equal(draft.turns.length,1)
  assert.equal(coachQualityTranscript(draft).counts.client,0)
  assert.equal(coachQualityTranscript(draft).reviewStatus,'unreviewed')
+})
+
+import {appendGeminiLiveTranscript,readGeminiLiveServerMessage} from '../lib/coaching/gemini-live-transport.mjs'
+test('long Gemini transcripts retain beginning and end, including a large provider frame',()=>{
+ const first='FIRST '+('a'.repeat(2500)),last='LAST '+('b'.repeat(2500))
+ const frame=readGeminiLiveServerMessage(JSON.stringify({serverContent:{inputTranscription:{text:first},outputTranscription:{text:last}}}))
+ assert.equal(frame.input,first);assert.equal(frame.output,last)
+ const whole=appendGeminiLiveTranscript(frame.input,frame.output)
+ assert.equal(whole,first+' '+last)
+ assert.equal(appendGeminiLiveTranscript(first,whole),whole)
+ const input={...sample(),turnLayout:'chronological',turns:[{role:'user',content:whole},{role:'assistant',content:last,interrupted:true}]}
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:input}).protocol
+ const reviewed=normalizeMyCoachProtocol(input)
+ assert.equal(draft.turns[0].content,whole)
+ assert.equal(reviewed.turns[1].content,last)
+ assert.equal(coachQualityTranscript(draft).turns[0].content,whole)
+ assert.equal(coachQualityTranscript(reviewed).turns[1].content,last)
+})
+test('the archive does not trim a long ASR turn or rotate earlier dialogue',()=>{
+ const text='START '+('слова '.repeat(1000))+' END'
+ const turns=Array.from({length:220},(_,i)=>({role:i%2?'assistant':'user',content:'turn '+i}))
+ turns.push({role:'user',content:text},{role:'assistant',content:'complete answer'})
+ const protocol=normalizeMyCoachProtocol({...sample(),turns,turnLayout:'chronological'})
+ assert.equal(protocol.turns[0].content,'turn 0')
+ assert.equal(protocol.turns.at(-2).content,text)
+ assert.equal(coachQualityTranscript(protocol).turns.length,222)
+})
+test('cancelled streaming replies retain an approved audible prefix in the same private transcript',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const capture=ui.slice(ui.indexOf('function retainPendingClient'),ui.indexOf('function commitCompletedClientTurn'))
+ assert.match(capture,/pendingClient\.approvedReply/)
+ assert.match(capture,/queuePrivateDraft\(next\)/)
+ assert.match(ui,/waiting\.approvedReply=\{role:'assistant',content:phrase/)
+ assert.match(ui,/capturedAt:new Date\(\)\.toISOString\(\),mode:'ai',interrupted:true/)
 })
