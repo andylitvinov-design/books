@@ -58,7 +58,7 @@ test('Six-step opening progress is visible before the existing methodology check
  assert.match(ui,/data-coach-stage-source=\{progressMode==='opening'\?/)
  assert.match(ui,/aria-valuenow=\{visibleProgressStep\}/)
  assert.match(ui,/sessionProgress:result\.sessionProgress/)
- assert.ok(ui.indexOf('data-coach-stage-index')>ui.indexOf('className={styles.voiceControls}'))
+ assert.ok(ui.indexOf('data-coach-stage-index')>ui.indexOf('data-coach-inline-voice'))
  assert.ok(ui.indexOf('data-coach-stage-index')<ui.indexOf('className={styles.voicePrivacyDetails}'))
  assert.ok(css.includes('.root[data-session-visual-v4] .voiceWorkspace>.sessionProgress[data-coach-progress-accordion]'))
  assert.ok(ui.includes('<details className={styles.sessionProgress} data-coach-progress-accordion'))

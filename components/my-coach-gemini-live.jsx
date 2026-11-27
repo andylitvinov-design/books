@@ -2,7 +2,7 @@
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import SimliDialoguePilot from './simli-dialogue-pilot'
-import {Mic,Play,Volume2,Square} from 'lucide-react'
+import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
   prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
@@ -119,7 +119,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
-  canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
+  canStart=true,elapsedSeconds=0,outputMuted=false,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
@@ -134,7 +134,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const simliPilotRef=useRef(null)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
-    elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
+    elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
     liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession}
@@ -1334,6 +1334,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       }},
       // The player's output RMS is not microphone input. Only capture() may publish the live mic level.
     })
+    r.player.setMuted(propsRef.current.outputMuted)
     runtime.current=r
     context.onstatechange=()=>handleAudioContextState(r)
     // This optional platform signal must never prevent ordinary Web Audio.
@@ -1370,6 +1371,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
+  useEffect(()=>{runtime.current?.player?.setMuted(outputMuted)},[outputMuted])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')pauseSession()}
     const onPageHide=()=>pauseSession({disconnect:true})
@@ -1418,8 +1420,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         pauseSession()
       }}>
       {phase==='idle'||phase==='paused'?<Play size={19} fill="currentColor" aria-hidden="true"/>:
-        phase==='speaking'?<Mic size={19} aria-hidden="true"/>:
-        <Square size={18} aria-hidden="true"/>}
+        <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}
       <span>{label}</span>
       {phase==='speaking'&&<Volume2 size={15} aria-hidden="true"/>}
     </button>
