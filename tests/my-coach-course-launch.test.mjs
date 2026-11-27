@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach} from '../lib/coach-course-launch.mjs'
+import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach,courseLaunchNeighbor,courseLaunchPresentation} from '../lib/coach-course-launch.mjs'
 import {projectCourseSession} from '../lib/coach-course-session-progress.mjs'
 import {courseCoachChoice,verifyCourseCoachChoice} from '../lib/app/coach-course-choice.mjs'
 import {isUnifiedMobileDockAppPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
@@ -74,11 +74,12 @@ test('session indicator follows only the trusted cumulative logical clock and ne
 test('compact course hero and accessible full coach directory do not start or reset sessions',()=>{
  const view=read('components/my-coach-course-launch.jsx'),directory=read('components/my-coach-course-directory.jsx')
  const css=read('components/my-coach-course-launch.module.css'),route=read('app/api/coaching/intro/[locale]/[coach]/route.js')
- assert.ok(view.indexOf('data-course-all-coaches')<view.indexOf('data-my-coach-hero'))
- assert.match(view,/<SessionProgressRing progress=\{progress\} lang=\{lang\}/)
+ assert.ok(view.indexOf('data-course-all-coaches')<view.indexOf('data-course-coach-previous'))
+ assert.match(view,/<CourseProgress progress=\{progress\} lang=\{lang\}/)
  assert.match(view,/appFetch\('clarity-course\/clock',undefined,'GET',\{accountId:boot.account.id/)
  assert.doesNotMatch(view,/data-course-rail-expanded|setInterval|localStorage/)
- assert.match(css,/\.sessionRing\{position:absolute;[^}]*top:12px;right:12px;width:64px/)
+ assert.match(css,/\.cinemaMedia,\.cinemaShade\{position:absolute;inset:0/)
+ assert.match(css,/object-fit:cover!important/)
  assert.match(directory,/d\.showModal\(\)/)
  assert.match(directory,/PUBLIC_COACH_RAIL_IDS\.map\(getCoachPersona\)/)
  assert.match(directory,/p\.related\.includes\(topic\)/)
@@ -107,4 +108,28 @@ test('My Daybook is a plain localized peer navigation link to the protected free
  assert.doesNotMatch(nav,/ClarityStartLink|onClick|<button/)
  assert.ok(view.indexOf('data-course-nav')<view.indexOf('className={styles.intro}'))
  assert.match(css,/\.courseNav\{display:flex;align-items:center;justify-content:space-between;/)
+})
+
+test('cinematic course selector is independent of coach and displays counted bonus',()=>{
+ for(const lang of ['en','ru','es']){
+  const course=getCoachCourseLaunch(lang,'clarity').course
+  const p=courseLaunchPresentation(lang,course)
+  assert.equal(p.bonus,'+ Bonus: 18 Practices in Daybook.')
+  assert.match(p.duration,/3.*20/)
+  assert.equal(courseLaunchPresentation(lang,getCoachCourseLaunch(lang,'business').course).bonus,null)
+ }
+ assert.equal(courseLaunchPresentation('ru',getCoachCourseLaunch('ru','clarity').course).title,'Ясность в своих желаниях')
+ assert.equal(courseLaunchNeighbor('clarity',-1),'health')
+ assert.equal(courseLaunchNeighbor('clarity',1),'business')
+ assert.equal(courseLaunchNeighbor('health',1),'clarity')
+ assert.equal(courseLaunchNeighbor('invalid',1),null)
+ const view=read('components/my-coach-course-launch.jsx')
+ assert.match(view,/coachCourseLaunchHref\(lang,previousCourse,selectedId\)/)
+ assert.match(view,/coachCourseLaunchHref\(lang,nextCourse,selectedId\)/)
+ assert.match(view,/data-course-coach-previous onClick=\{previousCoach\}/)
+ assert.match(view,/data-course-coach-next onClick=\{nextCoach\}/)
+ assert.ok(view.indexOf('className={styles.mainAction}')<view.indexOf('data-course-selector'))
+ assert.ok(view.indexOf('data-course-selector')<view.indexOf('<GreetingControls key='))
+ assert.match(view,/a\.src=path\+'\&archive=1'/)
+ assert.doesNotMatch(view,/03:24|09:50|68%/)
 })
