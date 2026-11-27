@@ -690,7 +690,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   // The preferred name stays first-party; sharing past-session context remains opt-in.
-  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior||{name:greetingIdentity.name,topic:''}}
+  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior?{...openingPrior,name:greetingIdentity.name||openingPrior.name}:{name:greetingIdentity.name,topic:''}}
   const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||localNameScope):localNameScope
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,...localOpeningScope})
@@ -1306,7 +1306,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
     const content=String(introduction||'').trim()
     if(!content)return
-    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening'}]
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',requestedSavedContext:Boolean(greetingIdentity.name)}]
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
   }
@@ -1502,7 +1502,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,deferProfileToPrivateDirector:freshPrivateProfile},personaId)
       if(firstParty){
         const answer=firstParty.message
-        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:firstParty.stage,openingProgress:firstParty.openingProgress}))return null
+        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:firstParty.stage,openingProgress:firstParty.openingProgress,requestedSavedContext:true}))return null
         setDraft('');setSpeechPreview('');return {reply:answer,mode:'identity',locale:responseLocale}
       }
     }
@@ -1623,7 +1623,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeClockRef.current.sample(window.performance.now())):0,
           openingHistory,
-          ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
+          // The deterministic server opening needs the same name-only context.
+          // External-provider memory sharing still requires its separate consent.
+          ...(localOpeningScope.allowPrior&&localOpeningScope.priorSession?{openingPrior:localOpeningScope.priorSession,allowOpeningPrior:true}:{}),
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
           characterSeenIds:coachCharacterObservedIds(providerHistory),
@@ -2315,7 +2317,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
-            openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
+            openingPrior={localOpeningScope.priorSession} allowOpeningPrior={localOpeningScope.allowPrior&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             localRecoveryTurns={turns}
@@ -2341,7 +2343,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
-                const reply={role:'assistant',content:question,mode:'offline',stage:'opening',locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
+                const reply={role:'assistant',content:question,mode:'offline',stage:'opening',requestedSavedContext:true,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
                 if(coachProtocolCanAppend(turnsRef.current,[reply])){
                   nameCorrectionRef.current={name:candidate}
                   const next=[...turnsRef.current,reply];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
