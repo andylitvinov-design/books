@@ -6,14 +6,18 @@ test('v5 budgets, stages and all localized protocol fields',()=>{
  for(const b of Object.values(CLARITY_DAY_ONE_BUDGETS))assert.equal(b.reduce((a,x)=>a+x,0),20)
  for(const l of ['ru','en','es']){
   const p=clarityDayOneScenario(l)
-  assert.equal(p.stages.length,7);assert.equal(new Set(p.fields.map(f=>f.id)).size,p.fields.length)
+  assert.deepEqual(p.stages.map(s=>s.id),['contact','situation','balance','needs','support','integration']);assert.equal(new Set(p.fields.map(f=>f.id)).size,p.fields.length)
   assert.equal(p.fields.filter(f=>f.id.startsWith('outer_')).length,8)
   assert.ok(p.fields.every(f=>f.question&&f.alternative&&f.capture.length))
+  assert.ok(p.fields.every(f=>p.stages.some(s=>s.id===f.progressStage)))
+  assert.equal(p.fields.find(f=>f.id==='balance_review').progressStage,'balance')
  }
 })
 test('normal timing and reserved closing, not fabricated progress',()=>{
  for(const [t,s] of [[0,'situation'],[240,'balance'],[540,'verification'],[600,'needs'],[840,'support'],[960,'integration'],[1140,'reserve'],[1200,'ended']])assert.equal(clarityDayOneTimebox(t).stage,s)
  assert.equal(clarityDayOneTimebox(null).stage,'contact')
+ assert.equal(clarityDayOneTimebox(540).progressStage,'balance')
+ assert.equal(clarityDayOneTimebox(1140).progressStage,'integration')
  assert.equal(clarityDayOneGapPlan({elapsedSeconds:1200}).nextFieldId,null)
  assert.ok(clarityDayOneGapPlan({elapsedSeconds:1200}).coreMissing.includes('reviewed_summary'))
 })
