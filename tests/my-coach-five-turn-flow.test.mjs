@@ -9,8 +9,10 @@ import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
-import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '../lib/personal-coaching/coach-voice-turn-quality.mjs'
+import {createCoachBasicEndpointPolicy,coachBasicListeningMode,coachBasicBackchannel} from '../lib/personal-coaching/coach-basic-dialogue-policy.mjs'
+import {isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecordedSupported,startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -71,17 +73,19 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
   }
   const schedule=(fn,ms)=>{const current=++id;timers.set(current,{fn,ms});return current}
   const cancel=id=>timers.delete(id)
+  fakeWindow.setTimeout=schedule;fakeWindow.clearTimeout=cancel
   const sandbox={
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
-    setCoachIos27AudioSession,
+    setCoachIos27AudioSession,setCoachIos27DuplexRoute,
     // Feed the real category-reset logic into the evaluated controller, while
     // using a synthetic browser microtask instead of touching real hardware.
     refreshCoachIos27PlaybackRoute:(nav)=>refreshCoachIos27PlaybackRoute(nav,fn=>queueMicrotask(fn)),
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     // The VM runs the real controller body; inject its real pure imports.
     coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech,
+    createCoachBasicEndpointPolicy,coachBasicListeningMode,coachBasicBackchannel,isCoachBargeEcho,
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
@@ -350,7 +354,8 @@ test('recorded fallback completes one consented voice turn with a single STT cal
       assert.equal(options.body.get('consent'),'yes');
       assert.equal(options.body.get('locale'),'ru');
       assert.match(options.body.get('file').name,/\.m4a$/);
-      return {ok:true,json:async()=>({transcript:{text:'Я хочу обсудить свою цель'}})};
+      assert.equal(options.body.get('output'),'text');
+      return {ok:true,json:async()=>({text:'Я хочу обсудить свою цель'})};
     },
     performance:{now:()=>time},
     setInterval:fn=>{tick=fn;return 1;},
@@ -399,10 +404,10 @@ test('End during a recorded turn stops the track without sending any speech',asy
 });
 test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(source,/document\.visibilityState==='visible'&&!paused/)
+  assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
   assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen\]\)/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined\]\)/)
   assert.match(source,/data-coach-pause-control/)
   assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
 })

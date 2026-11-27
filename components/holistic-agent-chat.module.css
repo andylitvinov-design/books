@@ -1179,3 +1179,14 @@
 .lukasThreadEntry{order:0;flex:none;align-self:flex-end;display:inline-flex;align-items:center;gap:6px;margin:4px 10px;padding:6px 12px;min-height:44px;border:1px solid #c8d9ce;border-radius:12px;background:#fff8ed;color:#075742;font-weight:700}
 .root[data-hh-lukas-open]>.thread{padding-top:8px!important;min-height:0!important}
 @media(max-width:760px){.root[data-hh-lukas-open]>.lukasVideoHeader{max-height:58dvh;overflow-y:auto;overscroll-behavior:contain}}
+
+/* Owner 26 Nov: the persona scene must remain visible after voice/text sends.
+   Override the legacy opaque established-chat wallpaper at higher specificity. */
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.thread{
+  background:transparent;border:0;border-radius:0;
+  padding:clamp(90px,23dvh,210px) 10px 12px;
+ }
+ :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.thread,
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"][data-hh-lukas-open]>.thread{padding-top:8px}
+}
