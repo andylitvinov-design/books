@@ -99,6 +99,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const lastSpoken=useRef('');
  const phoneRetryVoice=useRef(false);
  const ownerAudioPersona=useRef<string|null>(null);
+ const ownerAudioActive=useCallback(()=>Boolean(ownerAudioPersona.current),[]);
  const ownerAudioContext=useRef<AudioContext|null>(null);
  const ownerAudioJob=useRef<{cancel:()=>void}|null>(null);
  const closeOwnerAudio=useCallback(()=>{
@@ -229,7 +230,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   // The optional owner-only test uses a decoded non-silent audio buffer, not a
   // speechSynthesis event. All ordinary client conversations remain local.
   if(phone&&ownerAudioPersona.current&&!retryVoice){
-   refreshCoachIos27PlaybackRoute(window.navigator);
+   if(openingConsent)setCoachIos27AudioSession(window.navigator,'playback');
+   else refreshCoachIos27PlaybackRoute(window.navigator);
    ownerAudioJob.current=startAliOwnerAudio({environment:window,context:ownerAudioContext.current,
     personaId:ownerAudioPersona.current,locale:speechLocale,text:parts.join(' '),
     onStart:()=>{if(seq===generation.current)setSpeaking(true)},
@@ -405,7 +407,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(phoneCall.current&&consentOnStart&&options.ownerAudioPersona){
    setCoachIos27AudioSession(window.navigator,'playback');
    const context=unlockAliOwnerAudio(window);
-   if(!context){setNotice(t.unavailable);return false;}
+   if(!context){phoneCall.current=false;pauseOnHide.current=false;useRecordedDialogue.current=false;setCoachIos27AudioSession(window.navigator,'auto');setNotice(t.unavailable);return false;}
    ownerAudioContext.current=context;ownerAudioPersona.current=options.ownerAudioPersona;
   }
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setPaused(false);setConversing(true);
@@ -445,7 +447,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,paused,pauseDialogue,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,ownerAudioActive:()=>Boolean(ownerAudioPersona.current),conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,ownerAudioActive,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 
