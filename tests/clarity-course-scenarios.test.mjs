@@ -227,3 +227,18 @@ test('method outcome distinguishes confirmed core from optional coverage, indepe
  assert.equal(result.methodOutcome.outcome,'partial');assert.ok(result.methodOutcome.coreMissing.includes('test_observation'))
  assert.equal(clarityMethodOutcome(1,[]),null)
 })
+
+
+import {coachCourseResumeRecap} from '../lib/coaching/coach-course-gate-draft.mjs'
+test('resume recap prioritizes recent verified answers and the exact outstanding prompt',()=>{
+ const course=ids[0],f=fixture(course)
+ f.add('episode','I worked late twice');f.add('needs','A quieter evening');f.add('resources','A colleague can share tasks');f.add('selected_support','Ask the colleague');f.add('practice_consent','no','consent','declined');f.add('transfer_action','Ask about one task')
+ const scenarioVersion=clarityScenarioVersion(course),protocol={courseSessionId:course,locale:'en',turns:f.turns}
+ const gate={pending:null,fields:[{id:'timing_or_condition',kind:'text'}],accepted:{}}
+ const prompt={fieldId:'timing_or_condition',text:'When exactly will you try this next step?'}
+ const value={protocol,courseGate:{scenarioVersion,paused:false,review:f.review(),gate,prompt}}
+ const recap=coachCourseResumeRecap(value)
+ assert.ok(recap.includes('Ask about one task'));assert.ok(!recap.includes('I worked late twice'));assert.ok(recap.includes(prompt.text));assert.ok(recap.includes('Continue this same coaching session?'))
+ const fallback=coachCourseResumeRecap({...value,courseGate:{...value.courseGate,prompt:null}})
+ assert.ok(fallback.includes(f.schema.checkpoints.find(r=>r.id==='timing_or_condition').label))
+})
