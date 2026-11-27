@@ -16,13 +16,15 @@ test('therapy mint is internal-only, locks scenario and gentle pacing, enforces 
  assert.throws(()=>geminiFreeLiveSetup(start))
  let calls=0,last
  const fetcher=async(_url,opts)=>{calls++;last=JSON.parse(opts.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-therapy'})}}
- const lease=(now,remaining,previousCredentialExpiresAt=null)=>({run,protocolId:pid,previousCredentialExpiresAt,reservedExpiresAt:new Date(now+remaining).toISOString()})
+ const lease=(now,remaining,previousCredentialExpiresAt=null)=>({leaseId:id(90),run,sessionId:sid,protocolId:pid,now,previousCredentialExpiresAt,reservedExpiresAt:new Date(now+remaining).toISOString(),expiresAt:new Date(now+remaining).toISOString(),newSessionExpireTime:new Date(now+Math.min(45000,remaining)).toISOString()})
  const mint=(now,antiStressLease,extra={})=>issueGeminiFreeLiveToken(config,start,{now,antiStressLease,fetcher,...extra})
  await assert.rejects(mint(base,undefined),/LEASE_REQUIRED/)
  await assert.rejects(mint(base,{...lease(base,900000),reservedExpiresAt:'wrong'}),/LEASE_REJECTED/)
  await assert.rejects(mint(base,{...lease(base,900000),protocolId:id(3)}),/LEASE_REJECTED/)
+ await assert.rejects(mint(base+45000,lease(base,900000)),/LEASE_REJECTED/)
+ await assert.rejects(mint(base,{...lease(base,900000),leaseId:'wrong'}),/LEASE_REJECTED/)
  assert.equal(calls,0)
- const first=await mint(base,lease(base,900000))
+ const first=await mint(base+1000,lease(base,900000))
  assert.equal(first.expiresAt,new Date(base+900000).toISOString())
  assert.equal(last.uses,1)
  assert.equal(last.bidiGenerateContentSetup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs,1400)
