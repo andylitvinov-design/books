@@ -13,7 +13,7 @@ const copy={
 }
 function DraftRow({item,t,lang,onAction,busy}){
  const [checked,setChecked]=useState(false),[name,setName]=useState(''),[goal,setGoal]=useState(''),[summary,setSummary]=useState(''),[step,setStep]=useState('')
- const [courseFieldReview,setCourseFieldReview]=useState(null)
+ const [courseFieldReview,setCourseFieldReview]=useState(item.draftCourseReview||null)
  const p=item.protocol,opening=p.opening,lockedGate=item.courseGateArchive
  const nameValid=Boolean(lockedGate)||!name.trim()||(!coachIsNameRepairUtterance(name)&&/^[\p{L}][\p{L}'’ -]{0,59}$/u.test(name.trim()))
  function reviewed(){
