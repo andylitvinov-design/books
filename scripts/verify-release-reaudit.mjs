@@ -739,10 +739,21 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          // The unified Profile dock now opens the PRIVATE Cabinet first.
-          // Verify the hard CSP boundary, guest isolation and the public
-          // actual six-tab My Space and separate public profile builder.
+          // The unified Profile dock opens My Page. A guest must see the
+          // sign-in gate, not private account content. Exercise its real
+          // discovery link into the private CSP boundary, not an invented URL.
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/my-page');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          await expect(cspPage.locator('[data-universal-my-page]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-public-fallback="guest"]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-google]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-anti-stress-practices], [data-my-page-media-library]')).toHaveCount(0);
+          const discover = cspPage.locator('[data-my-page-discover]');
+          await expect(discover).toHaveAttribute('href', '/en/app/portrait');
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'my-page-before-private-profile'; });
+          await discover.click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
@@ -784,7 +795,7 @@ async function exercise(engine, browserType, width) {
           const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
@@ -870,7 +881,7 @@ async function exercise(engine, browserType, width) {
           const restoredDiscoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(restoredDiscoveryBottom).toBeVisible();
           await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
