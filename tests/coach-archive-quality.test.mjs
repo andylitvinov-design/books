@@ -54,3 +54,16 @@ test('live advisory binds only current persisted typed candidate and rejects sta
  assert.equal(liveSupervisorAdvisory(state,{...v,evidence:[{turnId:'t:1',quote:'fabricated'}]}),null)
  for(const bad of [{...v,binding:{reviewId:'review1'}},{...v,binding:{...v.binding,unexpected:'x'}},{...v,version:'unknown'},{...v,informationType:'invalid'},{...v,reasonCode:'sufficient'},{...v,clarificationIntent:'confirm_literal'},{...v,evidence:[...v.evidence,...v.evidence]}])assert.equal(liveSupervisorAdvisory(state,bad),null)
 })
+
+
+test('archive and live binding reject same-revision changes to the finalized candidate fingerprint',()=>{
+ const p=fixture(),c=archivedSupervisorCandidate(p,'goal','review1')
+ assert.ok(c)
+ const reviewed=validateSupervisorVerdict(prepareSupervisorCandidate(c.input),{reviewId:'review1',fieldId:'goal',verdict:'MATCH',informationType:'goal',reasonCode:'sufficient',evidence:[{turnId:'t:1',quote:c.input.quote}]})
+ assert.ok(reviewed);assert.match(reviewed.binding.candidateFingerprint,/^[a-f0-9]{64}$/)
+ assert.equal(archiveReviewStoredVerdict(c,reviewed).verdict,'MATCH')
+ for(const input of [{...c.input,quote:c.input.quote+' — later'},{...c.input,question:c.input.question+'?'},{...c.input,scenario:{courseSessionId:'clarity_day_3',version:'hh-clarity-day-three-goal-v1'}}])assert.equal(archiveReviewStoredVerdict({...c,input},reviewed),null)
+ const {candidateFingerprint,...legacyBinding}=reviewed.binding
+ assert.ok(candidateFingerprint)
+ assert.equal(archiveReviewStoredVerdict(c,{...reviewed,binding:legacyBinding}),null)
+})

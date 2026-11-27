@@ -54,6 +54,25 @@ test('My Page keeps public navigation available during private API errors withou
  assert.ok(profile.includes("data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}"))
 })
 
+import {summarizeDiscoveryCoverage} from '../lib/app/my-page-courses.mjs'
+test('Self Discovery catalogue coverage is ongoing, private and based on actual measurements',()=>{
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:0,attempts:0}),null)
+ assert.deepEqual(summarizeDiscoveryCoverage({done:4,total:100,axes:8,attempts:7}),{key:'self-discovery',kind:'self-discovery',state:'active',done:4,total:100,axes:8,percent:4})
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:1,attempts:0}).percent,0)
+ assert.equal(summarizeDiscoveryCoverage({done:100,total:100,axes:16,attempts:110}).state,'active')
+ assert.equal(summarizeDiscoveryCoverage({done:2,total:1,axes:0,attempts:2}),null)
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:1,axes:17,attempts:0}),null)
+})
+
+test('Self Discovery is an independent expandable cabinet course and shows measured catalogue coverage',()=>{
+ const source=readFileSync(new URL('../components/app/my-page-courses.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes("case 'self-discovery':"))
+ assert.ok(source.includes("key:'new:self-discovery'"))
+ assert.ok(source.includes('Test catalogue coverage'))
+ assert.ok(source.includes("href:root+'/app/daybook/self-discovery?theme=all&view=results'"))
+ assert.ok(source.includes('return expand(c.key,view,c.percent,status,label,content,c.kind)'))
+})
+
 
 test('Spanish public program discovery stays localized without changing private cabinet bookmarks',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')

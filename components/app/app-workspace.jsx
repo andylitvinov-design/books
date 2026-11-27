@@ -3,6 +3,7 @@ import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administr
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
+import {discoveryNavigation} from '@/lib/app/self-discovery-themes.mjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
@@ -562,6 +563,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       return
     }
     const planId = searchParams.get('plan')
+    const discovery=discoveryNavigation(searchParams,locale)
     let advanced = null
     if (planId) {
       const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
@@ -574,11 +576,12 @@ export default function AppWorkspace({ locale, path = [] }) {
     // assessment in a selected battery. Navigation never loses its result.
     if (destination !== 'next') {
       await load()
-      const planQuery = planId ? '?plan=' + encodeURIComponent(planId) : ''
+      const planQuery = [planId?'plan='+encodeURIComponent(planId):'',discovery?.source||''].filter(Boolean).join('&')
+      const resultQuery=planQuery?'?'+planQuery:''
       const discussQuery = destination === 'discuss'
         ? (planQuery ? '&discuss=1' : '?discuss=1') + '#hh-test-result-discussion'
         : ''
-      router.push(root + '/results/' + encodeURIComponent(result.id) + planQuery + discussQuery)
+      router.push(root + '/results/' + encodeURIComponent(result.id) + resultQuery + discussQuery)
       return
     }
     if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
@@ -595,13 +598,13 @@ export default function AppWorkspace({ locale, path = [] }) {
       })
       await load()
       router.push(root + '/runs/' + encodeURIComponent(nextRun.id) +
-        '?mode=quick&plan=' + encodeURIComponent(planId))
+        '?mode=quick&plan=' + encodeURIComponent(planId) + (discovery?'&'+discovery.source:''))
       return
     }
     await load()
     router.push(advanced?.status === 'completed'
-      ? root + '/tests?plan=' + encodeURIComponent(planId) + '&summary=1'
-      : root + '/tests?filter=remaining')
+      ? root + '/tests?plan=' + encodeURIComponent(planId) + '&summary=1' + (discovery?'&'+discovery.source:'')
+      : discovery?.href||root + '/tests?filter=remaining')
   }
   if (deleted || state === 'deletion')
     return (
@@ -894,7 +897,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'tests' && (
             searchParams.get('summary')
-              ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
+              ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(discoveryNavigation(searchParams,locale)?.href||root + '/tests')} />
               : <>
                   {!searchParams.get('courseId') && (
                     <details className="hh-tests-mood-disclosure" data-cabinet-mood-checkin>
@@ -962,7 +965,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               onExit={async () => {
                 if (searchParams.get('course') === 'retest') { await returnFromFinalRetest(); return }
                 await load()
-                router.push(searchParams.get('course') === '1' ? root + '/course' + (searchParams.get('courseId') ? '?courseId=' + encodeURIComponent(searchParams.get('courseId')) : '') : root + '/tests')
+                router.push(searchParams.get('course') === '1' ? root + '/course' + (searchParams.get('courseId') ? '?courseId=' + encodeURIComponent(searchParams.get('courseId')) : '') : discoveryNavigation(searchParams,locale)?.href||root + '/tests')
               }}
               onComplete={async (result, destination) => {
                 await completePlan(result, destination)
@@ -3276,6 +3279,7 @@ function ResultPage({ id, locale, data }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const focusScaleKey = searchParams?.get('scale') || null
+  const discovery=discoveryNavigation(searchParams,locale)
   const [retaking, setRetaking] = useState(false)
   const [retakeError, setRetakeError] = useState(null)
   // Only initialize the personal conversation after an owner-scoped GET for
@@ -3335,7 +3339,7 @@ function ResultPage({ id, locale, data }) {
         instrumentLocale: repeatDefinition.instrumentLocale,
         operationId: crypto.randomUUID(),
       })
-      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick')
+      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick'+(discovery?'&'+discovery.source:''))
     } catch (cause) {
       setRetakeError(cause)
       setRetaking(false)
@@ -3343,6 +3347,7 @@ function ResultPage({ id, locale, data }) {
   }
   return (
     <article className="hh-result-page">
+      {discovery&&<div className="hh-actions"><Link href={discovery.href} prefetch={false}>{locale==='ru'?'Вернуться в самопознание':locale==='es'?'Volver a Autoconocimiento':'Back to Self Discovery'}</Link></div>}
       <header className="hh-result-hero">
         <div>
           <p className="hh-kicker">{c.result}</p>
