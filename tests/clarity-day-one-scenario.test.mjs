@@ -293,3 +293,26 @@ test('restored verified minutes are frozen during recap, safety hold and unknown
  clock.setRunning(45000,false)
  assert.equal(clock.sample(55000),425)
 })
+
+
+test('live course panel keeps authored wheel checkpoints in the same six groups and removes the competing generic method summary',async()=>{
+ const {coachCourseProtocolSchema}=await import('../lib/coaching/coach-course-protocol-schema.mjs')
+ for(const locale of ['ru','en','es']){
+  const scenario=clarityDayOneScenario(locale)
+  const schema=coachCourseProtocolSchema('clarity_day_1',locale,{scenarioVersion:'hh-clarity-day-one-v5'})
+  const fields=schema.checkpoints.map(row=>({...row,status:'not_explored'}))
+  const opening=openingStagePosition(coachOpeningProgress({turns:[],locale}),locale)
+  const view=clarityDayOneStageView(opening,courseStagePosition(fields,{allowProvisional:false}),locale,true)
+  const balance=view.position.rows.find(row=>row.id==='balance')
+  assert.deepEqual(balance.coreChildren.map(row=>row.id),scenario.fields.filter(row=>row.progressStage==='balance').map(row=>row.id))
+  assert.equal(balance.coreChildren.filter(row=>row.id.startsWith('outer_')).length,8)
+  assert.equal(balance.confirmed,0)
+  assert.equal(view.position.total,6)
+  assert.equal(new Set(view.position.rows.flatMap(row=>row.coreChildren.map(field=>field.id))).size,view.core.rows.length)
+ }
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const card=readFileSync(new URL('../components/my-coach-session-state-card.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes("courseProtocol={coreMode==='course'}"))
+ assert.ok(card.includes('{!courseProtocol&&<section className={styles.informationSection}'))
+ assert.ok(card.includes('data-coach-preferred-name'))
+})
