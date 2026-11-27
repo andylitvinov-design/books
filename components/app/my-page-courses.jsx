@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowRight,BookOpen,Briefcase,ChevronDown,Flower2,MessageCircle,Target} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {combineMyPageCourses} from '@/lib/app/my-page-courses.mjs'
+import {CoursePurchaseHistory} from '../commerce/course-purchase-history'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import {guideGoalProgress} from '@/lib/app/daybook-guide.mjs'
 import {profileDaybookHref} from '@/lib/profile/profile-daybook-route.mjs'
@@ -87,7 +88,7 @@ export default function MyPageCourses({locale='en',accountId}){
    // production builds is not a reason to hide the already-owned courses.
    const catalog=runs.status==='fulfilled'&&Array.isArray(runs.value?.runs)?runs.value.runs:[]
    const catalogPartial=runs.status==='fulfilled'?runs.value?.hasMore===true||!Array.isArray(runs.value?.runs):![404].includes(runs.reason?.status)
-   setState({accountId,retry,courses:combineMyPageCourses(saved.value.courses,catalog),partial:saved.value.partial||catalogPartial})
+   setState({accountId,retry,courses:combineMyPageCourses(saved.value.courses,catalog),coursePurchases:Array.isArray(saved.value.coursePurchases)?saved.value.coursePurchases:[],partial:saved.value.partial||catalogPartial})
   })
   return()=>controller.abort()
  },[accountId,retry])
@@ -133,6 +134,7 @@ export default function MyPageCourses({locale='en',accountId}){
     else if(c.kind==='clarity'||c.kind==='legacy'&&c.group==='clarity')content=<>{action}<Link className={styles.secondary} href={localRoot+'/coaching/clarity'} prefetch={false}>{labels.details}<ArrowRight size={16}/></Link></>
     return expand(c.key,view,c.percent,status,label,content,c.kind)
   })}</div>:canExplore&&!current.partial&&<p className={profileStyles.empty}>{t.empty}</p>}
+  {current?.coursePurchases?.length>0&&<CoursePurchaseHistory locale={lang} orders={current.coursePurchases}/>}
   {(current?.partial||goalSnapshot?.error||goalSnapshot?.entriesError)&&<div className={styles.notice} role="status">{t.partial} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></div>}
   {canExplore&&<div className={styles.discovery}>
    <h3>{labels.explore}</h3>

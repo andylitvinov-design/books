@@ -24,8 +24,10 @@ test('course cart accepts only known payable SKUs and deduplicates storage',()=>
 test('activation requires each separate approval and respects PayPal kill switch',()=>{
  const approved={HH_COURSE_CHECKOUT_ENABLED:'true',HH_COURSE_CHECKOUT_SCHEMA_APPROVED:'true',HH_COURSE_CHECKOUT_FULFILLMENT_APPROVED:'true',HH_COURSE_PAYPAL_APPROVED:'true',HH_COURSE_PAYPAL_REVIEW_APPROVED:'true'}
  assert.equal(courseCheckoutEnabled({}),false)
- for(const key of Object.keys(approved))assert.equal(courseCheckoutEnabled({...approved,[key]:'false'},fixture),false)
+ for(const key of Object.keys(approved))assert.equal(courseCheckoutEnabled({...approved,[key]:'false'},fixture,['one','two']),false)
  assert.equal(courseCheckoutEnabled(approved),false) // no approved production offers
- assert.equal(courseCheckoutEnabled(approved,fixture),true)
- assert.equal(courseCheckoutEnabled({...approved,HH_PAYPAL_PERSONAL_DISABLED:'true'},fixture),false)
+ assert.equal(courseCheckoutEnabled(approved,fixture),false)
+ assert.equal(courseCheckoutEnabled(approved,fixture,['one']),false)
+ assert.equal(courseCheckoutEnabled(approved,fixture,['one','two']),true)
+ assert.equal(courseCheckoutEnabled({...approved,HH_PAYPAL_PERSONAL_DISABLED:'true'},fixture,['one','two']),false)
 })

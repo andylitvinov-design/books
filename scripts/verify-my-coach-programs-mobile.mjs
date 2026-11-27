@@ -12,8 +12,8 @@ await mkdir(out,{recursive:true})
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch()
  try{
-  for(const [lang,width] of [['en',320],['en',390],['ru',390],['es',430]]){
-   const ctx=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
+  for(const [lang,width,height] of [['en',320,660],['en',390,660],['ru',390,844],['es',430,700]]){
+   const ctx=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
    try{
     const page=await ctx.newPage()
     await page.route('**/api/app/bootstrap?view=portrait',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({account:{id:'12345678-1234-4234-8234-123456789012',onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]})}))
@@ -43,14 +43,28 @@ for(const engine of [chromium,webkit]){
     assert.equal(await landingMode('all').getAttribute('aria-pressed'),'true')
     assert.ok(await page.locator('[data-my-coach-hero]').isVisible())
     assert.ok(await page.locator('[data-my-coach-real-people]').isVisible())
+    assert.equal(await page.locator('[data-my-coach-free-course]').count(),0)
+    const programs=page.locator('[data-my-coach-program-details]')
+    assert.equal(await programs.innerText(),({en:'All programs available',ru:'Все доступные программы',es:'Todos los programas disponibles'})[lang])
+    assert.equal(await programs.getAttribute('href'),'/'+lang+'/my-coach/programs')
     assert.ok(await page.locator('[data-my-coach-hero]').evaluate(hero=>{
-     const a=hero.querySelector('[data-my-coach-free-course]'),b=hero.querySelector('[data-my-coach-program-details]')
-     const panel=hero.querySelector('[data-my-coach-program-panel]'),media=hero.querySelector('[data-coach-motion-context="hero"]')
-     if(!a||!b||!panel||!media)return false
-     const h=hero.getBoundingClientRect(),x=a.getBoundingClientRect(),y=b.getBoundingClientRect(),m=media.getBoundingClientRect()
-     const sa=getComputedStyle(a),sb=getComputedStyle(b),bg=getComputedStyle(panel).backgroundColor
-     return Math.abs(x.top-y.top)<1&&Math.abs(x.width-y.width)<1&&x.right<=y.left&&x.height>=44&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3&&sa.backgroundColor===sb.backgroundColor&&sa.backgroundColor==='rgba(255, 252, 246, 0.76)'&&bg==='rgba(0, 0, 0, 0)'
-    }), 'equal translucent white program tiles over full-width hero')
+     const b=hero.querySelector('[data-my-coach-program-details]')
+     const talk=hero.querySelector('[data-my-coach-hero-start]')
+     const media=hero.querySelector('[data-coach-motion-context="hero"]')
+     if(!b||!talk||!media)return false
+     const h=hero.getBoundingClientRect(),y=b.getBoundingClientRect(),t=talk.getBoundingClientRect(),m=media.getBoundingClientRect()
+     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<=y.top+1&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3
+    }), 'single compact horizontal programs action over full-width hero')
+    const fold=await page.evaluate(()=>{
+     const rail=document.querySelector('[data-my-coach-rail]')
+     const dock=document.querySelector('[data-hh-unified-dock]')
+     const ai=dock?.querySelector('[data-unified-dock-item="ai"] svg')
+     const r=rail?.getBoundingClientRect()
+     const bottom=Math.min(window.visualViewport?.height??innerHeight,dock?.getBoundingClientRect().top??innerHeight,ai?.getBoundingClientRect().top??innerHeight)
+     return {railBottom:r?.bottom,railTop:r?.top,bottom,scrollY,overflow:document.documentElement.scrollWidth-innerWidth}
+    })
+    assert.ok(fold.railTop>=0&&fold.railBottom<=fold.bottom+2&&fold.scrollY<=1&&fold.overflow<=1,
+      'coach rail fully visible before the raised bottom dock: '+JSON.stringify(fold))
     await page.screenshot({path:out+'/landing-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
     await page.locator('[data-my-coach-program-details]').click()
     await page.waitForURL('**/'+lang+'/my-coach/programs')
@@ -115,6 +129,37 @@ for(const engine of [chromium,webkit]){
     await page.goto(origin+'/'+lang+'/my-coach/programs/clarity',{waitUntil:'domcontentloaded'})
     await page.locator('[data-course-daybook]').click()
     await page.waitForURL('**/'+lang+'/app/daybook?program=clarity')
+    // Actual pre-dialogue route. A local four-second PCM fixture supplies only
+    // a synthetic greeting; no real provider, voice grant or account writes.
+    const pcm=Buffer.alloc(44+4*8000*2)
+    pcm.write('RIFF',0);pcm.writeUInt32LE(pcm.length-8,4);pcm.write('WAVEfmt ',8);pcm.writeUInt32LE(16,16);pcm.writeUInt16LE(1,20);pcm.writeUInt16LE(1,22);pcm.writeUInt32LE(8000,24);pcm.writeUInt32LE(16000,28);pcm.writeUInt16LE(2,32);pcm.writeUInt16LE(16,34);pcm.write('data',36);pcm.writeUInt32LE(pcm.length-44,40)
+    await page.route('**/api/coaching/intro/**',route=>route.fulfill({status:200,contentType:'audio/wav',body:pcm}))
+    await page.goto(origin+'/'+lang+'/coaching/sessions?coach=merlin',{waitUntil:'domcontentloaded'})
+    const gate=page.locator('[data-my-coach-greeting-gate]')
+    await gate.waitFor()
+    assert.equal(await gate.getAttribute('data-greeting-phase'),'preview')
+    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    assert.ok(await gate.locator('[data-coach-greeting-tiles]').isVisible())
+    assert.ok(await gate.locator('[data-coach-greeting-player]').isVisible())
+    await gate.locator('[data-coach-greeting-course-next]').click()
+    assert.equal(await gate.locator('[data-coach-greeting-course]').getAttribute('data-coach-greeting-course'),'business')
+    assert.equal(await gate.getAttribute('data-my-coach-greeting-gate'),'merlin')
+    await gate.locator('[data-coach-greeting-course-previous]').click()
+    await gate.locator('[data-coach-greeting-play]').click()
+    await page.locator('[data-greeting-phase="playing"]').waitFor()
+    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    assert.ok(await gate.locator('[data-coach-greeting-tiles]').isVisible())
+    await page.locator('[data-greeting-phase="complete"]').waitFor({timeout:15000})
+    assert.ok(await gate.locator('[data-clarity-start]').isVisible())
+    await page.screenshot({path:out+'/greeting-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
+    await gate.locator('[data-coach-greeting-replay]').click()
+    assert.equal(await gate.locator('[data-clarity-start]').count(),0)
+    await gate.locator('[data-coach-greeting-course-next]').click()
+    await gate.locator('[data-coach-greeting-next]').click()
+    await page.waitForURL('**/coaching/sessions?**greetingProgram=business')
+    await page.locator('[data-my-coach-greeting-gate]:not([data-my-coach-greeting-gate="merlin"])').waitFor()
+    assert.equal(await gate.locator('[data-coach-greeting-course]').getAttribute('data-coach-greeting-course'),'business')
+    assert.equal(await gate.getAttribute('data-greeting-phase'),'preview')
    }finally{await ctx.close()}
   }
  }finally{await browser.close()}
