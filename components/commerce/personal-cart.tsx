@@ -99,12 +99,13 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false, courseCheckoutEnabled=false }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false, courseCheckoutEnabled=false, courseOrdersEnabled=false }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
   paidVideoTrackingEnabled?: boolean;
   courseCheckoutEnabled?: boolean;
+  courseOrdersEnabled?: boolean;
   hostedPayPalLinks: Record<string, string>;
   stripeLinks: Record<string, string>;
   wiseEnabled: boolean;
@@ -327,7 +328,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
       <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount + courseCart.ids.length}</span>
     </div>
-    <CourseCartPayment locale={locale} ids={courseCart.ids} remove={id=>courseCart.change(id,false)} enabled={courseCheckoutEnabled} mixed={Boolean(chosen.length||videoCartCount)} />
+    <CourseCartPayment locale={locale} ids={courseCart.ids} remove={id=>courseCart.change(id,false)} enabled={courseCheckoutEnabled} ordersEnabled={courseOrdersEnabled} mixed={Boolean(chosen.length||videoCartCount)} />
     <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} trackingEnabled={paidVideoTrackingEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
       !chosen.length && !videoCartCount && !courseCart.ids.length ? <div className={styles.empty} data-cart-empty>

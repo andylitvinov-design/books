@@ -7,7 +7,7 @@ import {createAppRepository} from '@/lib/app/repository'
 import {onlyKeys,AppError} from '@/lib/assessments/contracts'
 import {requireCommerceAccount} from '@/lib/commerce/account-binding'
 import {courseCheckoutEnabled,quoteCourseCart} from '@/lib/commerce/course-cart.mjs'
-import {prepareCourseOrder,listCoursePurchases,submitCourseReceipt} from '@/lib/commerce/course-order-store'
+import {prepareCourseOrder,listCoursePurchases,submitCourseReceipt,resumeUnpaidCoursePurchase} from '@/lib/commerce/course-order-store'
 import {verifiedReikiGoogleEmail} from '@/lib/academy/reiki-registration-proof.mjs'
 
 export const runtime='nodejs'
@@ -36,6 +36,7 @@ export async function POST(request){
   const actor=await auth.verified();requireCommerceAccount(request,actor)
   await consumeRate(config,{op:'course-checkout',actor:actor.id},12,600)
   const input=await readBody(request,4096)
+  if(Object.hasOwn(input,'retryUnpaid'))return auth.apply(json(await resumeUnpaidCoursePurchase(config,actor,input)))
   if(Object.hasOwn(input,'orderId'))return auth.apply(json(await submitCourseReceipt(config,actor,input)))
   if(!courseCheckoutEnabled())throw new AppError('COURSE_CHECKOUT_UNAVAILABLE',503)
   onlyKeys(input,['items','locale','confirmed','timezone'])

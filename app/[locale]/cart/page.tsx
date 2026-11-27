@@ -32,7 +32,7 @@ export default async function CartPage({ params }: Props) {
   const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
-    <PersonalCart locale={locale} courseCheckoutEnabled={courseCheckoutEnabled()} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
+    <PersonalCart locale={locale} courseCheckoutEnabled={courseCheckoutEnabled()} courseOrdersEnabled={process.env.HH_COURSE_CHECKOUT_SCHEMA_APPROVED==='true'} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
       squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
       squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
       hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()}
