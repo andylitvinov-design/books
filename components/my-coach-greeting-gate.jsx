@@ -4,7 +4,7 @@ import {clarityCourseId,clarityCourseDay,clarityCoachHref,CLARITY_COURSE_GROUP} 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useRouter,useSearchParams} from 'next/navigation'
-import {ArrowLeft,Play,Pause,Volume2,VolumeX,List,ChevronDown,ChevronLeft,ChevronRight,X,Info,BookOpen,CalendarDays,Gift,GraduationCap,RotateCcw,Maximize,Minimize,Ellipsis} from 'lucide-react'
+import {ArrowLeft,Play,Pause,Volume2,VolumeX,List,ChevronDown,ChevronLeft,ChevronRight,X,Info,BookOpen,CalendarDays,Gift,GraduationCap,RotateCcw,Maximize,Minimize} from 'lucide-react'
 import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,COACH_METHOD_CODES} from '@/lib/coaching/persona-registry.mjs'
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -73,9 +73,9 @@ function useCourseSessionProgress(courseId,count,available,accountSaving){
  return courseId==='clarity'&&available&&accountSaving?value:null
 }
 const screenWords={
- en:{video:'Video course',menu:'Course and session options',previousCoach:'Previous coach',nextCoach:'Next coach',previousCourse:'Previous course',nextCourse:'Next course',course:'Course',start:'Start course',resume:'Continue session',done:'Open My Daybook',progress:p=>p+'% completed',sessions:'Sessions',courses:'Courses',replay:'Replay greeting',play:'Play greeting',pause:'Pause greeting',mute:'Mute greeting',unmute:'Unmute greeting',seek:'Greeting position',expand:'Expand video',collapse:'Exit expanded view',error:'Recorded greeting unavailable. Please try again.',planned:'Planned price'},
- ru:{video:'Видеокурс',menu:'Настройки и выбор сессии',previousCoach:'Предыдущий коуч',nextCoach:'Следующий коуч',previousCourse:'Предыдущий курс',nextCourse:'Следующий курс',course:'Курс',start:'Пройти курс',resume:'Продолжить сессию',done:'Открыть дневник',progress:p=>p+'% пройдено',sessions:'Сессии',courses:'Курсы',replay:'Повторить приветствие',play:'Воспроизвести приветствие',pause:'Пауза приветствия',mute:'Выключить звук',unmute:'Включить звук',seek:'Позиция приветствия',expand:'Развернуть видео',collapse:'Свернуть видео',error:'Записанное приветствие недоступно. Повторите попытку.',planned:'Плановая цена'},
- es:{video:'Videocurso',menu:'Opciones de curso y sesión',previousCoach:'Coach anterior',nextCoach:'Coach siguiente',previousCourse:'Curso anterior',nextCourse:'Curso siguiente',course:'Curso',start:'Empezar curso',resume:'Continuar sesión',done:'Abrir Mi diario',progress:p=>p+'% completado',sessions:'Sesiones',courses:'Cursos',replay:'Repetir bienvenida',play:'Reproducir bienvenida',pause:'Pausar bienvenida',mute:'Silenciar bienvenida',unmute:'Activar sonido',seek:'Posición de bienvenida',expand:'Ampliar video',collapse:'Cerrar vista ampliada',error:'La bienvenida grabada no está disponible. Inténtalo de nuevo.',planned:'Precio previsto'}
+ en:{video:'Coaching course',previousCoach:'Previous coach',nextCoach:'Next coach',previousCourse:'Previous course',nextCourse:'Next course',course:'Course',start:'Start course',resume:'Continue session',done:'Open My Daybook',progress:p=>p+'% completed',sessions:'Sessions',courses:'Courses',replay:'Replay greeting',play:'Play greeting',pause:'Pause greeting',mute:'Mute greeting',unmute:'Unmute greeting',seek:'Greeting position',expand:'Expand video',collapse:'Exit expanded view',error:'Recorded greeting unavailable. Please try again.',planned:'Planned price'},
+ ru:{video:'Коучинг-курс',previousCoach:'Предыдущий коуч',nextCoach:'Следующий коуч',previousCourse:'Предыдущий курс',nextCourse:'Следующий курс',course:'Курс',start:'Пройти курс',resume:'Продолжить сессию',done:'Открыть дневник',progress:p=>p+'% пройдено',sessions:'Сессии',courses:'Курсы',replay:'Повторить приветствие',play:'Воспроизвести приветствие',pause:'Пауза приветствия',mute:'Выключить звук',unmute:'Включить звук',seek:'Позиция приветствия',expand:'Развернуть видео',collapse:'Свернуть видео',error:'Записанное приветствие недоступно. Повторите попытку.',planned:'Плановая цена'},
+ es:{video:'Curso de coaching',previousCoach:'Coach anterior',nextCoach:'Coach siguiente',previousCourse:'Curso anterior',nextCourse:'Curso siguiente',course:'Curso',start:'Empezar curso',resume:'Continuar sesión',done:'Abrir Mi diario',progress:p=>p+'% completado',sessions:'Sesiones',courses:'Cursos',replay:'Repetir bienvenida',play:'Reproducir bienvenida',pause:'Pausar bienvenida',mute:'Silenciar bienvenida',unmute:'Activar sonido',seek:'Posición de bienvenida',expand:'Ampliar video',collapse:'Cerrar vista ampliada',error:'La bienvenida grabada no está disponible. Inténtalo de nuevo.',planned:'Precio previsto'}
 }
 function clockText(seconds){
  if(!Number.isFinite(seconds))return '--:--'
@@ -106,6 +106,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const muteRef=useRef(false),detachAudio=useRef(()=>{})
  const [audioActive,setAudioActive]=useState(false)
  const [phase,setPhase]=useState('preview')
+ const [greetingStarted,setGreetingStarted]=useState(false)
  const [error,setError]=useState('')
  const [expandedGroup,setExpandedGroup]=useState(null)
  const topicDialog=useRef(null)
@@ -127,7 +128,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  useEffect(()=>()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null;
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
-   setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
  useEffect(()=>{if(!expanded)return;const escape=e=>{if(e.key==='Escape')setExpanded(false)};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[expanded])
  function selectProgram(id){
    if(clarityDay||courseRunId||!COACH_COMPARISON_IDS.includes(id)||id===program||gate.busy)return
@@ -148,7 +149,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    audioRun.current++
    detachAudio.current();player.current?.cancel?.()
    player.current=null
-   setPhase('preview');setError('');setAudioActive(false)
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false)
    // Existing route remounts MyCoachLiveDialogue by persona ID. Do not start Live here.
    router.push(href+'&greetingProgram='+encodeURIComponent(program))
  }
@@ -182,7 +183,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    try{
      const active=startDirectCoachIntroAudio(url,{
        locale:lang,muted:muteRef.current,
-       onStart:()=>{if(audioRun.current===generation){setAudioActive(true);setPhase('playing')}},
+       onStart:()=>{if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setPhase('playing')}},
        onEnd:()=>{if(audioRun.current===generation){const audio=player.current?.audio;if(!audio?.ended||!Number.isFinite(audio.duration)||audio.duration<=0){fail();return}setDuration(audio.duration);setTime(audio.duration);detachAudio.current();player.current=null;setAudioActive(false);setPhase('complete')}},
        onBlocked:fail,onError:fail,
      })
@@ -190,7 +191,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      player.current=active
      const audio=active.audio
      function position(){if(audioRun.current!==generation)return;if(Number.isFinite(audio.duration)){setDuration(audio.duration);setTime(audio.currentTime)}}
-     function playing(){if(audioRun.current===generation){setAudioActive(true);setPhase('playing')}}
+     function playing(){if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setPhase('playing')}}
      audio.addEventListener('loadedmetadata',position);audio.addEventListener('timeupdate',position);audio.addEventListener('playing',playing)
      detachAudio.current=()=>{audio.removeEventListener('loadedmetadata',position);audio.removeEventListener('timeupdate',position);audio.removeEventListener('playing',playing)}
      position()
@@ -208,7 +209,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  }
  function toggleMute(){muteRef.current=!muteRef.current;player.current?.setMuted?.(muteRef.current);setMuted(muteRef.current)}
  function chooseSession(id,options){
-   if(phase!=='complete'||entryPending||chosen.current||switching.current||gate.busy||courseRunId)return
+   if(entryPending||!greetingStarted||chosen.current||switching.current||gate.busy||courseRunId)return
    if(clarityDay&&id!==clarityCourseId(clarityDay))return
    if(!accountSaving){topicDialog.current?.close();void gate.begin({id});return}
    if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
@@ -232,7 +233,6 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        <div className={styles.cinemaShade} aria-hidden="true"/>
        <div className={styles.cinemaTop}>
          <span className={styles.videoLabel}><GraduationCap size={19} aria-hidden="true"/>{ui.video}</span>
-         <button type="button" className={styles.coachArrow} aria-label={ui.menu} aria-haspopup="dialog" onClick={()=>showTopics('options')}><Ellipsis size={22} aria-hidden="true"/></button>
        </div>
        <div className={styles.portraitSpace} data-coach-greeting-swipe={canSwitch?'true':undefined}
          onTouchStart={beginSwipe} onTouchEnd={endSwipe}
@@ -245,10 +245,12 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </div>
        <div className={styles.overlay}>
          <div className={styles.coachName}><h2>{label}</h2><p>{localCoachText(persona?.role,lang)}</p></div>
-         <div className={styles.ctaArea} data-coach-greeting-cta-slot data-ready={phase==='complete'?'true':'false'}>
-           {phase==='complete'&&((clarityDay||courseRunId||readyTopic)?<button type="button" className={styles.mainAction} disabled={Boolean(courseRunId)||entryPending||gate.busy} onClick={()=>chooseSession(clarityCourseId(clarityDay)||readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={25} fill="currentColor" aria-hidden="true"/><span>{clarityDay?CLARITY_COURSE_GROUP.sessions[clarityDay-1]?.title[lang]+' · 20 min':({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]}</span><ChevronRight size={23}/></button>:course.available&&program==='clarity'?<ClarityStartLink locale={lang} coachId={personaId} className={styles.mainAction}>
-             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{progress?.complete?ui.done:progress&&(progress.percent>0||progress.session>1)?ui.resume:ui.start}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
-           </ClarityStartLink>:<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
+         <div className={styles.ctaArea} data-coach-greeting-cta-slot data-ready={greetingStarted?'true':'false'}>
+           {greetingStarted&&((clarityDay||courseRunId||readyTopic)?<button type="button" className={styles.mainAction} disabled={Boolean(courseRunId)||entryPending||gate.busy} onClick={()=>chooseSession(clarityCourseId(clarityDay)||readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={25} fill="currentColor" aria-hidden="true"/><span>{clarityDay?CLARITY_COURSE_GROUP.sessions[clarityDay-1]?.title[lang]+' · 20 min':({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]}</span><ChevronRight size={23}/></button>:course.available&&program==='clarity'?(progress?.complete?<ClarityStartLink locale={lang} coachId={personaId} className={styles.mainAction}>
+             <BookOpen size={25} aria-hidden="true"/><span className={styles.ctaCopy}><strong>{ui.done}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
+           </ClarityStartLink>:<button type="button" className={styles.mainAction} data-coach-greeting-live-start disabled={gate.busy||entryPending} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}>
+             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{ui.start}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
+           </button>):<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
          </div>
          <div className={styles.courseSelector} data-coach-greeting-course={program}>
            <button type="button" className={styles.courseArrow} data-coach-greeting-course-previous disabled={Boolean(clarityDay||courseRunId)} aria-label={ui.previousCourse} onClick={()=>selectProgram(courseLaunchNeighbor(program,-1))}><ChevronLeft size={19} aria-hidden="true"/></button>
@@ -275,7 +277,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
      {entryPending&&<p role="status">{({ru:'Проверяем ваш профиль…',en:'Checking your profile…',es:'Comprobando tu perfil…'})[lang]}</p>}
      <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
-     {phase==='complete'&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
+     {greetingStarted&&resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
@@ -290,7 +292,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      <div className={styles.topicGroups}>
        {dialogMode==='courses'?getCoachProgramComparison(lang).programs.map(item=><button type="button" key={item.id} className={styles.topicChoice} aria-pressed={program===item.id} onClick={()=>{selectProgram(item.id);topicDialog.current?.close()}}><span>{courseLaunchPresentation(lang,item).title}</span><small>{item.available?'FREE':item.price}</small><ChevronRight size={18}/></button>):<>
        {dialogMode==='sessions'&&<div className={styles.coursePlan}><strong>{presentation.title}</strong><ol>{course.rows.map((row,i)=><li key={i}>{row.title}</li>)}</ol></div>}
-       {phase==='complete'?<>
+       {greetingStarted?<>
        <button type="button" className={styles.topicChoice} data-coach-greeting-start disabled={Boolean(courseRunId)||entryPending||gate.busy} onClick={()=>chooseSession(clarityCourseId(clarityDay)||readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><span>{readyTopic?({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]:t.start+' '+label}</span><ChevronRight size={18}/></button>
        {!courseRunId&&!clarityDay&&privateProfileEnabled&&<div data-coach-private-profile-entry><button type="button" className={styles.topicChoice} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button><button type="button" className={styles.topicChoice} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button></div>}
        {[CLARITY_COURSE_GROUP,...COACH_PROGRAM_GROUPS.filter(group=>group.id!=='clarity')].filter(group=>!clarityDay||group.id===CLARITY_COURSE_GROUP.id).map(group=><section key={group.id} className={styles.topicGroup} data-coach-program={group.id}>
