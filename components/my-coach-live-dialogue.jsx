@@ -53,7 +53,7 @@ import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {coachReactionIntent,coachExplicitFarewell} from '@/lib/coaching/coach-reaction-director.mjs'
 import useCoachReactionActivity from './use-coach-reaction-activity'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
-import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
+import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol,MY_COACH_PROTOCOL_MAX_TURNS,MY_COACH_PROTOCOL_MAX_CHARS,MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '@/lib/personal-coaching/session-protocol.mjs'
 import MyCoachCourseFieldReview from './my-coach-course-field-review'
 import MyCoachCourseGateVoice from './my-coach-course-gate-voice'
 import MyCoachResultPreview from './my-coach-result-preview'
@@ -1186,9 +1186,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const pendingClient=inFlightClientRef.current
     if(!pendingClient)return true
     const rows=turnsRef.current,entry={role:'user',content:pendingClient.message,...pendingClient.capture,unanswered:true}
-    if(!coachProtocolCanAppend(rows,[entry])){setError(protocolCopy[lang].limit);return false}
+    // An authorized streamed sentence may already be audible when a request
+    // is cancelled. Preserve it as interrupted, never as a verified full answer.
+    const entries=pendingClient.approvedReply?[{...entry,unanswered:true},pendingClient.approvedReply]:[entry]
+    if(!coachProtocolCanAppend(rows,entries)){setError(protocolCopy[lang].limit);return false}
     inFlightClientRef.current=null
-    const next=[...rows,entry]
+    const next=[...rows,...entries]
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
     return true
   }
@@ -1256,9 +1259,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timeTimer=window.setInterval(heartbeat,30000)
     return()=>{window.clearInterval(timer);window.clearInterval(timeTimer);window.removeEventListener('online',retry);window.removeEventListener('pagehide',leave);document.removeEventListener('visibilitychange',hidden)}
   },[autoSaveEnabled])
+  function captureBasicIntroduction(){
+    if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
+    const content=String(introduction||'').trim()
+    if(!content)return
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening'}]
+    if(!coachProtocolCanAppend([],next))return
+    turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+  }
   function appendLiveTranscript(role,text,{interrupted=false}={}){
     if(courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return
-    const value=String(text||'').trim().slice(0,1200)
+    const value=String(text||'').trim()
     if(!value)return
     // The transport emits final utterances once; identical consecutive words
     // can be legitimate client answers. Preserve them and the original opening.
@@ -1281,7 +1292,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     else setStreamingPreview('')
     // Leave room for the last interrupted output when stopping; never silently
     // roll the report window and erase the first client statements.
-    if(next.length>=159||next.reduce((sum,row)=>sum+String(row.content||'').length+String(row.suggestion||'').length,0)>=67500){
+    if(next.length>=MY_COACH_PROTOCOL_MAX_TURNS-2||next.reduce((sum,row)=>sum+String(row.content||'').length+String(row.suggestion||'').length,0)>=MY_COACH_PROTOCOL_MAX_CHARS-MY_COACH_PROTOCOL_MAX_TURN_CHARS*2){
       setError(protocolCopy[lang].limit)
       queueMicrotask(()=>speechRef.current?.stop?.())
     }
@@ -1347,7 +1358,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(inFlightClientRef.current&&!retainPendingClient())return null
     const requestId=++turnRequestRef.current
     const conversationTurns=coachAudibleTurns(turnsRef.current)
-    if(turnsRef.current.length>=160){setError(protocolCopy[lang].limit);return null}
+    if(turnsRef.current.length>=MY_COACH_PROTOCOL_MAX_TURNS){setError(protocolCopy[lang].limit);return null}
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     setSessionClockStarted(true);setIntroComplete(true)
     // Explicit quote requests use only the already-authenticated first-party
@@ -1367,6 +1378,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
     inFlightClientRef.current={requestId,message,capture:{locale:responseLocale,capturedAt:new Date().toISOString()}}
     queuePrivateDraft([...turnsRef.current,{role:'user',content:message,...inFlightClientRef.current.capture,unanswered:true}])
+    if(message.length>1200){
+      retainPendingClient()
+      setError(({en:'Your full statement is retained in the conversation. Please send a shorter message so the coach can reply.',ru:'Ваш ответ сохранён в диалоге целиком. Отправьте более короткую реплику, чтобы коуч мог ответить.',es:'Tu intervención completa se conserva en el diálogo. Envía un mensaje más breve para que el coach pueda responder.'})[lang])
+      return null
+    }
     // A new focus requires the client to choose which saved topic to use again.
     const contextFocusChanged=['correction','topic_shift'].includes(
       understandCoachingTurn({locale:responseLocale,message}).act)
@@ -1490,7 +1506,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // A previous reply may quote a saved item whose grant has since changed.
     // Keep it in the local transcript and resolve approved items again server-side.
     const providerHistory=coachProviderHistory(conversationTurns)
-    const providerWindow=coachTurnWindow(providerHistory,10)
+    const providerWindow=coachTurnWindow(providerHistory.filter(row=>row.content.length<=1200),10)
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
       if(methodSession&&!await ensureCoachMethodSession())throw Error('COACH_METHOD_SESSION_UNAVAILABLE')
@@ -1536,8 +1552,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         signal:controller.signal,
         onApprovedPhrase:phrase=>{
           if(voiceTurn&&typeof onApprovedPhrase==='function'&&
-             !controller.signal.aborted&&turnRequestRef.current===requestId)
+             !controller.signal.aborted&&turnRequestRef.current===requestId){
+            const waiting=inFlightClientRef.current
+            if(waiting?.requestId===requestId)waiting.approvedReply={role:'assistant',content:phrase,locale:responseLocale,coachId:personaId,capturedAt:new Date().toISOString(),mode:'ai',interrupted:true}
             onApprovedPhrase(phrase,responseLocale)
+          }
         },
         onPreview:preview=>{
           if(!controller.signal.aborted&&turnRequestRef.current===requestId)setStreamingPreview(preview)
@@ -1639,7 +1658,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       cancelPendingCoachTurn()
       if(!retainPendingClient())return
       setPaused(true)
-      if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
+      if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.length){
         const structured=profileV3Ref.current
         // Typed profile writes are already acknowledged by the existing draft CAS.
         const queued=!profileV3FaultRef.current&&!(structured&&!structured.step.closed)&&queuePrivateDraft(turnsRef.current)
@@ -2194,7 +2213,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onDirectorProgress={setLiveDirectorProgress}
             onNotice={setPlaybackNotice}
           />:<MyCoachSpeechLoop ref={speechRef} outputMuted={outputMuted} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
+            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} voicePace={settings?.pace} basicMode={coachEngine.startsWith('groq_')} enabled={true}
