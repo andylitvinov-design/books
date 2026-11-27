@@ -13,7 +13,7 @@ import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
-import { ClarityStartLink } from './app/clarity-program'
+import { coachCourseLaunchHref } from '@/lib/coach-course-launch.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import { HeaderCreditProfile } from './header-credit-profile'
 import { MandatoryMessengerActions } from './mandatory-messenger-actions'
@@ -399,9 +399,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <Leaf size={32} strokeWidth={1.4}/>
             </div>
             <div className={heroStyles.programActions}>
-              <ClarityStartLink locale={lang} className={heroStyles.freeProgram}>
+              <Link href={coachCourseLaunchHref(lang,'clarity',selected.id)} prefetch={false} className={heroStyles.freeProgram} data-my-coach-free-course>
                 <BookOpen size={18} aria-hidden="true"/><span>{programs.free}</span><ArrowRight size={18} aria-hidden="true"/>
-              </ClarityStartLink>
+              </Link>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
                 <span>{programs.details}</span><ArrowRight size={17} aria-hidden="true"/>
               </Link>

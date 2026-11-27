@@ -28,7 +28,7 @@ const icons: Record<ServicesPanelId, LucideIcon> = {
    Lazy 96px thumbs avoid extra Vercel image-generation work. */
 const panelMedia: Record<ServicesPanelId, string> = {
   reiki: "/images/holistic-house/reiki-practitioner-sunrise.webp",
-  browse: "/images/holistic-house/report-lighthouse-coast.webp",
+  browse: "/images/holistic-house/report-lighthouse-coast.avif",
   reading: "/images/holistic-house/homepage-constellations.svg",
   consultation: "/images/holistic-house/andy-about.png",
   services: "/images/holistic-house/homepage-constellations.svg",
@@ -43,6 +43,18 @@ const panelMedia: Record<ServicesPanelId, string> = {
   mytube: "/images/holistic-house/assist-video-botanical.svg",
   directory: "/images/holistic-house/messenger-zen-stones.svg",
 };
+// Direct delivery for already-small first-party artwork only (4–43 KB).
+// Keep Next optimization for the large portraits and scenic photographs.
+const directPanelImages = new Set([
+  // Existing approved 8 KB alternate encoding of the same report artwork.
+  "/images/holistic-house/report-lighthouse-coast.avif",
+  "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  "/images/holistic-house/distance-homeopathy.webp",
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/homepage-constellations.svg",
+  "/images/holistic-house/assist-video-botanical.svg",
+  "/images/holistic-house/messenger-zen-stones.svg",
+]);
 type PriceKind = "free" | "someFree" | "quote" | "mixed" | "session" | "from";
 const panelPriceKind: Record<ServicesPanelId, PriceKind> = {
   reiki: "quote", browse: "mixed", reading: "quote", consultation: "from",
@@ -216,37 +228,47 @@ type CatalogContextValue = {
 };
 const CatalogContext = createContext<CatalogContextValue | null>(null);
 
-export function ServicesCompactCatalog({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
-  const [expanded, setExpanded] = useState<ReadonlySet<ServicesPanelId>>(() => new Set());
+export function ServicesCompactCatalog({ locale, children, initialConsultationOpen = false }: {
+  locale: PublicLocale; children: ReactNode; initialConsultationOpen?: boolean;
+}) {
+  // Explicit booking links have the paid target in the initial server document.
+  const [expanded, setExpanded] = useState<ReadonlySet<ServicesPanelId>>(
+    () => new Set<ServicesPanelId>(initialConsultationOpen ? ["consultation"] : []),
+  );
   useEffect(() => {
-    let firstFrame = 0;
-    let secondFrame = 0;
+    let frame = 0;
     const revealLinkedService = () => {
-      if (!window.matchMedia("(max-width: 760px)").matches) return;
-      const id = panelFromHash[window.location.hash.slice(1)];
+      const hash = window.location.hash.slice(1);
+      const id = Object.hasOwn(panelFromHash, hash) ? panelFromHash[hash] : undefined;
+      window.cancelAnimationFrame(frame);
       if (!id) return;
-      setExpanded(previous => new Set(previous).add(id));
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      // Wait for React to reveal the panel before scrolling to a hidden anchor.
-      firstFrame = window.requestAnimationFrame(() => {
-        secondFrame = window.requestAnimationFrame(() => {
-          const panel = document.querySelector<HTMLElement>(
-            '[data-services-unified-panel="' + id + '"]'
-          );
-          panel?.scrollIntoView({
-            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-            block: "start",
+      setExpanded(previous => previous.has(id) ? previous : new Set(previous).add(id));
+      // Legacy fragment links may have to wait for the expanded React panel.
+      let attempts = 0;
+      const scrollWhenReady = () => {
+        const panel = document.querySelector<HTMLElement>(
+          '[data-services-unified-panel="' + id + '"]'
+        );
+        const booking = hash === "consultation" ? document.getElementById(hash) : null;
+        const target = hash === "consultation"
+          ? (booking && panel?.contains(booking) ? booking.querySelector("h2") ?? booking : null)
+          : panel;
+        if (target && target.getClientRects().length && panel?.getAttribute("data-expanded") === "true") {
+          target.scrollIntoView({
+            behavior: hash === "consultation" || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+            block: hash === "consultation" ? "center" : "start",
           });
-        });
-      });
+          return;
+        }
+        if (++attempts < 120) frame = window.requestAnimationFrame(scrollWhenReady);
+      };
+      frame = window.requestAnimationFrame(scrollWhenReady);
     };
     revealLinkedService();
     window.addEventListener("hashchange", revealLinkedService);
     return () => {
       window.removeEventListener("hashchange", revealLinkedService);
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
+      window.cancelAnimationFrame(frame);
     };
   }, []);
   return (
@@ -282,7 +304,7 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
       <button type="button" className={styles.preview} data-support-uniform-preview
         aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
         <span className={styles.icon} data-support-uniform-photo aria-hidden="true">
-          <Image src={panelMedia[id]} alt="" fill loading="lazy" sizes="(max-width: 760px) 34vw, 120px" />
+          <Image src={panelMedia[id]} alt="" fill loading="lazy" unoptimized={directPanelImages.has(panelMedia[id])} sizes="(max-width: 760px) 34vw, 120px" />
           <span className={styles.iconOverlay}><Icon size={19} strokeWidth={1.8} /></span>
         </span>
         <span className={styles.previewText} data-support-uniform-copy><strong>{title}</strong><small>{description}</small></span>
