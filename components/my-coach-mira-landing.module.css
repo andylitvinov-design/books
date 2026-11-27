@@ -594,3 +594,21 @@
  .heroHeading .titleRow h1{font-size:27px!important}
  .landingKindSwitch{gap:0}
 }
+
+/* Harry native source display budget: the original 768px short edge is intact.
+   On a 3x Retina phone a 368px full-bleed crop would enlarge it 1.44x.
+   Keep the existing hero and actions; use a right-aligned native-width portrait
+   with a local text-side matte, not a synthetic sharpen/filter or transcode. */
+.heroStage[data-my-coach-hero='harry'] .heroPortrait[data-persona='harry']{
+ background-image:url('/images/holistic-house/my-coach-motion/harry-greeting-real-v2.webp')!important;
+}
+@media(max-width:540px) and (min-resolution:3dppx){
+ .heroStage[data-my-coach-hero='harry'] .heroPortrait[data-persona='harry']{
+  inset:0 0 0 auto!important;left:auto!important;right:0!important;
+  width:min(100%,256px)!important;max-width:256px!important;
+ }
+ .heroStage[data-my-coach-hero='harry']::before{
+  background:linear-gradient(90deg,#20392e 0%,#20392e 30%,rgba(32,57,46,.55) 42%,transparent 55%),
+   linear-gradient(0deg,rgba(15,31,24,.48),transparent 45%)!important;
+ }
+}
