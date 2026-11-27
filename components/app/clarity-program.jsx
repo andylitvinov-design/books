@@ -20,7 +20,7 @@ import {stageCoachCourseChoice} from '@/lib/app/coach-course-choice.mjs'
 import css from './clarity-program.module.css'
 const COPY={
  "en": {
-  "title": "Find Clarity & Support",
+  "title": "Express Support",
   "details": "Program details",
   "start": "Start Free Program",
   "day": "Day",
@@ -53,7 +53,7 @@ const COPY={
   "open": "Open tool"
  },
  "ru": {
-  "title": "Ясность и поддержка",
+  "title": "Экспресс-поддержка",
   "details": "Программа курса",
   "start": "Начать бесплатно",
   "day": "День",
@@ -86,7 +86,7 @@ const COPY={
   "open": "Открыть инструмент"
  },
  "es": {
-  "title": "Claridad y apoyo",
+  "title": "Apoyo exprés",
   "details": "Detalles del programa",
   "start": "Empezar gratis",
   "day": "Día",
