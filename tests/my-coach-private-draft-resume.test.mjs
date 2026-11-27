@@ -60,7 +60,7 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 })
 
 
-import {coachDraftListSummary,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+import {coachDraftListSummary,draftTranscriptPrefix,coachDraftMatchesResume} from '../lib/personal-coaching/protocol-draft.mjs'
 import {CLARITY_DAY_ONE_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
  const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
@@ -71,9 +71,12 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
  assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
- // Normal resume remains persona-scoped; Clarity may list only metadata for
- // other coaches, with eligibility determined by the persisted v5 gate.
- assert.ok(ui.includes("new URLSearchParams({view:'summary',...(!clarityDay?{personaId}:{}),...(cursor||{})})"))
+ // Normal resume remains persona-scoped; a course query is explicitly
+ // constrained by both coach and course on the owner-scoped server page.
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(cursor||{})})"))
+ assert.ok(route.includes("courseSessionId:params.get('courseSessionId')"))
+ assert.ok(store.includes("coachDraftMatchesResume(item,personaId,courseSessionId)"))
+ assert.ok(store.includes("!clarityCourseDay(courseSessionId)"))
  assert.ok(ui.includes("row?.personaId===personaId||(clarityDay&&row?.crossCoach===true)"))
  assert.ok(ui.includes("row.courseSessionId===clarityCourseId(clarityDay)"))
  assert.ok(ui.includes("headers:{'X-HH-Account-ID':owner}"))
@@ -98,4 +101,19 @@ test('cross-coach greeting metadata excludes ledger and transcript, and safety-p
  assert.deepEqual(coachDraftListSummary({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}}),common)
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('secret'))
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
+})
+
+test('course resume discovery is exact-course and permits cross-coach only for a persisted active v5 gate',()=>{
+ const item={courseSessionId:'clarity_day_1',protocol:{personaId:'mira'},courseGate:{scenarioVersion:CLARITY_DAY_ONE_VERSION,paused:false}}
+ assert.equal(coachDraftMatchesResume(item,'mira'),true)
+ assert.equal(coachDraftMatchesResume(item,'genie'),false)
+ assert.equal(coachDraftMatchesResume(item,'genie','clarity_day_1'),true)
+ assert.equal(coachDraftMatchesResume(item,'mira','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume(item,'genie','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume(item,'mira','introductory'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:null},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,paused:true}},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'genie','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'mira','clarity_day_2'),true)
 })
