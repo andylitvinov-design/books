@@ -19,6 +19,9 @@ create table app_private.anti_stress_sessions (
  review_revision bigint not null default 0 check(review_revision>=0),
  ledger_ciphertext text,
  log_ciphertext text,
+ meditation_revision bigint not null default 0 check(meditation_revision>=0),
+ meditation_ciphertext text,
+ check((meditation_revision=0)=(meditation_ciphertext is null)),
  primary key(account_id,course_run_id,session_number),
  unique(account_id,protocol_id),
  foreign key(account_id,course_run_id) references app_private.anti_stress_runs(account_id,id) on delete cascade
@@ -31,7 +34,7 @@ revoke all on app_private.anti_stress_runs,app_private.anti_stress_sessions from
 grant select,insert on app_private.anti_stress_runs,app_private.anti_stress_sessions to hh_app_backend;
 grant update(revision,payload_ciphertext,live_active,updated_at) on app_private.anti_stress_runs to hh_app_backend;
 -- PROPOSED only: verify trusted runtime, privacy lifecycle and RLS before applying.
-grant update(review_revision,ledger_ciphertext,log_ciphertext) on app_private.anti_stress_sessions to hh_app_backend;
+grant update(review_revision,ledger_ciphertext,log_ciphertext,meditation_revision,meditation_ciphertext) on app_private.anti_stress_sessions to hh_app_backend;
 create policy anti_stress_run_select on app_private.anti_stress_runs for select to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_insert on app_private.anti_stress_runs for insert to hh_app_backend with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_update on app_private.anti_stress_runs for update to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active())) with check(account_id=(select auth.uid()) and (select app_private.account_active()));
