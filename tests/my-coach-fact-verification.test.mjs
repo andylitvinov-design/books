@@ -37,7 +37,9 @@ for(const [locale,yes,badConsent,name,focus,feeling,repair,quoted,goal] of [
 test('saved identity is confirmed without turning Correct into a name, and explicit corrections preserve opening length',()=>{
  const o={locale:'en',allowPrior:true,priorSession:{name:'Mary',topic:'Work'}}
  const p=coachOpeningProgress({...o,turns:['Yes','Correct','Continue','goal','I feel calm','Yes']})
- const q=coachOpeningProgress({...o,turns:['Yes','Correct','Continue','goal','I feel calm','Yes','Actually, my name is Anna']})
+ const pending=coachOpeningProgress({...o,turns:['Yes','Correct','Continue','goal','I feel calm','Yes','Actually, my name is Anna']})
+ assert.equal(pending.answers.name.value,'Mary')
+ const q=coachOpeningProgress({...o,turns:['Yes','Correct','Continue','goal','I feel calm','Yes','Actually, my name is Anna','Yes']})
  assert.equal(p.answers.name.value,'Mary')
  assert.equal(q.answers.name.value,'Anna')
  assert.equal(q.completed,true)
