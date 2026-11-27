@@ -62,3 +62,14 @@ test('unfinished protocol is separately projected from the stored review, not fr
  const final=claritySessionProtocol({...record,provenance:'client_reviewed_dialogue',savedAt:updatedAt},1,locale)
  assert.equal(final.reviewed,true);assert.equal(final.rows.find(r=>r.id==='situation').quote,answer)
 })
+
+
+test('private log retains observed timestamps, language and actual coach without exposing inference internals',()=>{
+ const capturedAt='2026-11-26T20:00:00.000Z'
+ const record={id:'saved',courseSessionId:'clarity_day_1',personaId:'mira',provenance:'client_reviewed_dialogue',turns:[{role:'user',content:'hello',capturedAt,locale:'en',private:'secret'},{role:'assistant',content:'welcome',coachId:'caesar',capturedAt,locale:'en',inference:{provider:'groq'}}]}
+ const log=clarityProtocolView(record,1)
+ assert.deepEqual(log.turns,[{role:'user',content:'hello',capturedAt,locale:'en'},{role:'assistant',content:'welcome',capturedAt,locale:'en',personaId:'caesar'}])
+ const draft=clarityDraftLog({...record,provenance:'client_autosaved_unreviewed_draft'},1,capturedAt)
+ assert.deepEqual(draft.turns,log.turns)
+ assert.equal(draft.reviewed,false)
+})
