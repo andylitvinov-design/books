@@ -348,7 +348,7 @@ test('approved call dock: header language, real microphone, video, speaker and e
  assert.match(row,/data-coach-dock-video/)
  assert.match(row,/data-coach-dock-speaker/)
  assert.match(row,/<PhoneOff size=\{24\}/)
- assert.match(row,/onClick=\{endWithProtocol\}/)
+ assert.match(row,/onClick=\{openHangupMenu\}/)
  assert.match(row,/\['left','right'\]\.map/)
  assert.doesNotMatch(row,/data-coach-basic-pro-toggle/)
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
