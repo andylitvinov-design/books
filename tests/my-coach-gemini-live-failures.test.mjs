@@ -468,7 +468,18 @@ test('Clarity credential expiry pauses without claiming trusted time-limit compl
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.match(live,/if\(r\.paused\|\|clarityCourseDay\(r\.courseSessionId\)\)/)
  assert.doesNotMatch(live,/onTimeLimit/)
- assert.doesNotMatch(ui,/clarityTimeLimit\.current=true/)
+ // A local credential expiry cannot claim completion. The sole positive
+ // assignment is allowed only during an exact owner-bound resume with a
+ // server-returned complete logical clock, not from the transport.
+ const restored=ui.slice(ui.indexOf('  async function restorePrivateDraft('),ui.indexOf('  function ',ui.indexOf('  async function restorePrivateDraft(')+1))
+ assert.match(restored,/if\(identity\?\.account\?\.id!==owner\)throw Error\('ACCOUNT_CHANGED'\)/)
+ assert.match(restored,/result\?\.draft\?\.id!==item\.id/)
+ assert.match(restored,/const restoredTime=result\.clarityTime/)
+ assert.match(restored,/const timeKnown=isClarity&&Number\.isInteger\(restoredTime\?\.elapsedSeconds\)[^\n]*remainingSeconds===CLARITY_COURSE_SECONDS-restoredTime\.elapsedSeconds/)
+ assert.match(restored,/const timedEnd=timeKnown&&restoredTime\.status==='time_limit'&&restoredTime\.elapsedSeconds===CLARITY_COURSE_SECONDS&&restoredTime\.remainingSeconds===0/)
+ assert.match(restored,/if\(timedEnd\)\{\s*clarityTimeLimit\.current=true/)
+ assert.equal((ui.match(/clarityTimeLimit\.current\s*=\s*true/g)||[]).length,1)
+ assert.doesNotMatch(ui.replace(restored,''),/clarityTimeLimit\.current\s*=\s*true/)
  assert.ok(ui.includes("sessionClockStarted&&openingProgress.completed&&!openingProgress.declined"))
 })
 
