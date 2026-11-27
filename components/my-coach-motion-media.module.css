@@ -62,3 +62,8 @@
 .media .video.reactionLayer{opacity:0;transition:none;will-change:auto}
 .media .video.reactionLayer[data-reaction-visible='true']{opacity:1}
 @media(prefers-reduced-motion:reduce){.media .video.reactionLayer{display:none!important}}
+
+/* Presentation handoff: outgoing decoded frame remains visible until the next
+   layer actually renders. No opacity fade through an unrelated portrait. */
+.media .video.presentationLayer{opacity:0;transition:none;will-change:auto}
+.media .video.presentationLayer[data-presentation-visible='true']{opacity:1}

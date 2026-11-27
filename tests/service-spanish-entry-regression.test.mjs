@@ -13,8 +13,10 @@ test('the real dedicated Spanish services route renders a complete existing conv
   assert.match(es, /export default async function SpanishServicesPage/)
   assert.ok(es.includes('import uniformStyles from "@/components/services-support-uniform.module.css"'))
   assert.ok(es.includes('compactStyles.page + " " + uniformStyles.page} lang="es"'))
-  assert.match(es, /<ServicesCompactCatalog locale="es">/)
-  assert.ok(es.indexOf('<ServicesAssistMobile locale="es" />')<es.indexOf('<ServicesCompactCatalog locale="es">'),'Spanish dialogue remains above compact catalog')
+  const catalogOpening = '<ServicesCompactCatalog locale="es" initialConsultationOpen={query?.consultation === "1"}>'
+  assert.ok(es.includes(catalogOpening), 'Spanish booking query opens the existing compact catalog')
+  const dialogueIndex = es.indexOf('<ServicesAssistMobile locale="es" />')
+  assert.ok(dialogueIndex >= 0 && dialogueIndex < es.indexOf(catalogOpening),'Spanish dialogue remains above compact catalog')
   assert.match(es, /<ServicesAssistMobile locale="es"\s*\/>/)
   assert.match(es, /import assistStyles from "@\/components\/services-assist-mobile\.module\.css"/)
   assert.match(es, /<ServicesConversionHero locale="es"\s*\/>/)

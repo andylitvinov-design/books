@@ -135,7 +135,7 @@ export default function MyCoachSessionStateCard({
   const captureT=captureCopy[language]
   const captured=useMemo(()=>coachCapturedClientTurns(turns),[turns])
   const openingCounts=coachStageCounts(openingPosition)
-  const groupFor=(id,kind)=>stageGroups.find(g=>g.kind===kind&&g.children.some(r=>r.id===id))?.id
+  const groupFor=(id,kind)=>stageGroups.find(g=>kind==='opening'?g.kind==='opening'&&g.children.some(r=>r.id===id):g.coreChildren?.some(r=>r.id===id))
   const review=profile?.version===COACH_PROFILE_REVIEW_VERSION
   const fields=[
     {id:'topic',label:t.topic,Icon:Target,mentioned:!!card.workingTopicQuote,
@@ -168,7 +168,7 @@ export default function MyCoachSessionStateCard({
           const state=done?t.done:status==='skipped'?captureT.skipped:status==='needs_confirmation'?t.mentioned:active?t.current:t.waiting
           const lamp=openingLampKey[key]
           return <li key={key} className={styles.stageRow}
-            data-opening-step={key} data-stage-id={key} data-coach-macro-stage={groupFor(key,'opening')} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row>
+            data-opening-step={key} data-stage-id={key} data-coach-macro-stage={groupFor(key,'opening')?.id} data-stage-tone={groupFor(key,'opening')?.tone} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>
               {label}
@@ -196,7 +196,7 @@ export default function MyCoachSessionStateCard({
           const value=(rating?.kind==='rated'||rating?.kind==='partial')
             ?(rating.current===null?'—':rating.current)+' → '+(rating.desired===null?'—':rating.desired):
             rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
-          return <li key={id} className={styles.stageRow} data-profile-axis={id} data-stage-id={id} data-coach-macro-stage={groupFor(id,'core')}
+          return <li key={id} className={styles.stageRow} data-profile-axis={id} data-stage-id={id} data-coach-macro-stage={groupFor(id,'core')?.id} data-stage-tone={groupFor(id,'core')?.tone}
             data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>{label}
@@ -228,7 +228,7 @@ export default function MyCoachSessionStateCard({
         {stagePosition.rows.map(({id,label,status,active,recorded,value},index)=>{
           const done=status==='done'
           const state=done?t.done:status==='skipped'?({ru:'Пропущено',en:'Skipped',es:'Omitido'}[language]):active?t.current:status==='needs_confirmation'?t.mentioned:t.waiting
-          return <li key={id} className={styles.stageRow} data-stage-id={id} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row={progressMode==='profile-v3'||undefined}>
+          return <li key={id} className={styles.stageRow} data-stage-id={id} data-coach-macro-stage={groupFor(id,'core')?.id} data-stage-tone={groupFor(id,'core')?.tone} data-stage-status={active?'current':status} aria-current={active?'step':undefined} data-dual-evidence-row={progressMode==='profile-v3'||undefined}>
             <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
             <span className={styles.stageName}>{label}{value&&<small className={styles.openingValue}>{value}</small>}</span>
             <span className={styles.stageStatus}>{state}</span>

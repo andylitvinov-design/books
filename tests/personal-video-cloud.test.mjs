@@ -5,6 +5,7 @@ import {runInNewContext} from 'node:vm'
 import ts from 'typescript'
 import {NextRequest,NextResponse} from 'next/server.js'
 import {personalVideoStorageCsp} from '../lib/app/personal-video-storage-csp.mjs'
+import * as publicHomeDocument from '../lib/public-home-document-request.mjs'
 import {inspectPersonalVideoFile,personalVideoDuration,validPersonalVideoDuration} from '../lib/app/personal-video-file-contract.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const server=read('lib/app/personal-videos.js')
@@ -61,8 +62,9 @@ function mediaMiddleware(env){
     './lib/app/admin-auth-refresh':{refreshAdminAuth:async()=>[]},
     './lib/app/personal-video-storage-csp.mjs':{personalVideoStorageCsp},
     './lib/instant-home-policy.mjs':{instantHomeLocale:()=>null},
+    './lib/public-home-document-request.mjs':publicHomeDocument,
   }
-  const runtime={exports:{},Headers,URL,crypto:globalThis.crypto,process:{env},
+  const runtime={exports:{},Headers,URL,crypto:globalThis.crypto,process:{env:{...env,HH_HAVE_PUBLIC_HOME_DOCUMENTS:'1'}},
     require(name){assert.ok(Object.hasOwn(modules,name),name);return modules[name]}}
   runInNewContext(ts.transpileModule(read('middleware.ts'),{compilerOptions:{
     module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
@@ -72,6 +74,9 @@ function mediaMiddleware(env){
 async function browserPolicy(middleware,path){
   const response=await middleware(new NextRequest('https://holistichouse.vercel.app'+path))
   assert.equal(response.status,200)
+  assert.equal(response.headers.get('x-middleware-rewrite'),null,'Private and Studio routes must not enter the compiled public document')
+  assert.equal(response.headers.get('x-middleware-request-x-hh-public-home-encoding'),null,'Public HTML encoding must not reach private media routes')
+  assert.match(response.headers.get('content-security-policy'),/script-src[^;]*'nonce-[a-f0-9]{32}'/)
   return Object.fromEntries(response.headers.get('content-security-policy').split('; ')
     .map(directive=>{const [name,...values]=directive.split(' ');return [name,values]}))
 }
