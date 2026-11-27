@@ -77,6 +77,11 @@ test('Vercel SDK route verifies identity before upgrade and attaches synchronous
   assert.ok(lock.packages['node_modules/'+key].integrity)
  }
  assert.match(route,/export const maxDuration=300/)
+ assert.match(route,/const segmentDeadlineMs=Date\.now\(\)\+270000/)
+ assert.match(upgrade,/createProviderSocket,segmentDeadlineMs,selection/)
+ const relay=read('lib/app/clarity-live-relay.js')
+ assert.match(relay,/setup,segmentDeadlineMs,/)
+ assert.match(relay,/segmentDeadlineMs<=Date\.now\(\)\+15000/)
  assert.ok(route.indexOf('await prepareClarityLiveUpgrade(')<route.indexOf('return experimental_upgradeWebSocket('))
  assert.match(route,/experimental_upgradeWebSocket\(client=>\{[\s\S]*?prepared\.attach\(client\)/)
  assert.match(route,/perMessageDeflate:false,followRedirects:false/)

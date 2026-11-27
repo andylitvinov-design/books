@@ -15,9 +15,13 @@ export const preferredRegion='yul1'
 export const maxDuration=300
 
 export async function GET(request){
+ // Reserve 30 seconds before the platform's hard limit for closing sockets
+ // and durably stopping the segment. The logical course clock never resets.
+ const segmentDeadlineMs=Date.now()+270000
  try{
   // Verify origin, deployment veto and the signed-in owner before upgrading.
   const prepared=await prepareClarityLiveUpgrade(request,getAppConfig(),{
+   segmentDeadlineMs,
    createProviderSocket:url=>new WebSocket(url,{handshakeTimeout:12000,maxPayload:400000,perMessageDeflate:false,followRedirects:false})
   })
   return experimental_upgradeWebSocket(client=>{
