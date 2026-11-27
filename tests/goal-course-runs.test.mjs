@@ -1,3 +1,4 @@
+import './goal-course-result-document.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock,createGoalCourseClock,validateGoalCourseClock,GOAL_LOGICAL_SESSION_MS} from '../lib/coaching/clarity-course-clock.mjs'
