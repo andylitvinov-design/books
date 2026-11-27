@@ -362,7 +362,7 @@ test('all public personas have protected original or explicit neutral-only/still
  assert.equal(coachPresentationOpening('unknown'),null)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
- assert.ok(source.includes('presentationActive?coachPresentationOpening(personaId):null'))
+ assert.ok(source.includes("presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null"))
  assert.ok(source.includes('openingDone!==personaId'))
  assert.ok(source.includes('setOpeningDone(personaId)'))
 })
