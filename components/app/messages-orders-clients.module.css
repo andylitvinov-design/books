@@ -735,3 +735,14 @@
  .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .languageCompact{background:#fff9;border:0;width:43px;min-width:43px}
  .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) [data-hh-messenger-ai]{background:transparent}
 }
+
+@media(max-width:760px){
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start])){background:#faf3e8!important;display:flex;flex-direction:column;gap:4px!important;padding:0!important}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start]))>.head{order:-1;display:flex!important;flex:none;background:#faf3e8!important;margin:0;padding:5px 8px}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start]))>.sections{order:3;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));flex:none;margin:0!important;padding:4px 8px max(4px,env(safe-area-inset-bottom));background:#faf3e8}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start]))>.sections:not([data-chat-tabs-open="true"])>button[aria-controls="hh-news-panel"]{display:none}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start]))>.sections[data-chat-tabs-open="true"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start])) :global([data-hh-messenger-ai]){flex:1;min-height:0;background:#faf3e8!important}
+ .root[data-section="ai"]:has(:global([data-hh-assistant-start]))[data-chat-editing="true"]>.sections{display:none!important}
+ :global(body:has(.hh-messages-page [data-hh-assistant-start])) .root{background:#faf3e8!important}
+}

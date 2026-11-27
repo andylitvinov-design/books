@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
 import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X, Video} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
+import {AssistantStart} from "@/components/assistant-start";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {MessengerDictationButton} from "@/components/app/messenger-dictation-button";
 import {appendSpokenAnswer} from "@/lib/personal-coaching/speech-text";
@@ -2592,15 +2593,16 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         onAdvance={()=>{followTail.current=true;setTestRevision(value=>value+1)}} onClose={()=>{
           followTail.current=true;setNewBelow(false);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestFocus(null);setGuideLink(null);
         }}/>}
-      {compact&&entryOpen&&pageHelp&&<div className={styles.startActions} role="group"
-        aria-label={starter.actions} data-hh-ihelp-actions>
+      {compact&&entryOpen&&pageHelp&&<>
+        <AssistantStart locale={locale} pageHelp section={pageHelp.section} onAsk={()=>{
+          setEntryOpen(false);composerRef.current?.focus({preventScroll:true});
+        }}/>
+        <details className={styles.pageHelpMore}><summary>{locale==="ru"?"Помощь с этой страницей":locale==="es"?"Ayuda con esta página":"Help with this page"}</summary>
+        <div className={styles.startActions} role="group" aria-label={starter.actions} data-hh-ihelp-actions>
         {pageHelp.actions.map(action=><button type="button" key={action.id}
           data-hh-ihelp-option={action.id} disabled={busy}
           onClick={()=>selectPageHelpAction(action)}>{action.label}</button>)}
-        <button type="button" data-hh-ihelp-ask onClick={()=>{
-          setEntryOpen(false);composerRef.current?.focus({preventScroll:true});
-        }}>{locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}</button>
-      </div>}
+        </div></details></>}
       {compact&&entryOpen&&!pageHelp&&!messengerView&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startContent(locale)}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
