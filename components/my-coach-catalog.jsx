@@ -125,9 +125,9 @@ const designCopy = {
   },
 }
 const programLandingCopy = {
-  en: { free: 'Start Free AI Coaching', details: 'Course options & details', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
-  ru: { free: 'Начать бесплатный AI-коучинг', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
-  es: { free: 'Empezar coaching IA gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
+  en: { free: 'Start Free Program', details: 'Program Details & Options', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
+  ru: { free: 'Начать бесплатно', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
+  es: { free: 'Empezar programa gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
 }
 
 const miraCopy = {
@@ -161,6 +161,13 @@ const miraCopy = {
     intro: 'Presentación del coach', nav: 'Idioma y ayuda',
     back: 'Volver a Mira', browse: 'Elige tu coach para una sesión personal de IA',
   },
+}
+
+// Compact landing filters share the existing directory mode (no second filter state).
+const landingCoachKinds = {
+  en: { all: 'All', ai: 'AI', human: 'Human' },
+  ru: { all: 'Все', ai: 'AI', human: 'Люди' },
+  es: { all: 'Todos', ai: 'IA', human: 'Humano' },
 }
 
 const humanCopy = {
@@ -376,9 +383,21 @@ export default function MyCoachCatalog({ locale = 'en' }) {
 
       <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
         <div className={[styles.heroCopy, heroStyles.heroHeading].join(' ')}>
-          <h1 id="my-coach-heading">My Coach</h1>
-          <p className={heroStyles.tagline}>{hw.tagline}</p>
+          <div className={heroStyles.titleRow}>
+            <h1 id="my-coach-heading">My Coach</h1>
+            <div className={heroStyles.landingKindSwitch} role="group" aria-label={h.chooser} data-my-coach-landing-kind-switch>
+              {Object.entries(landingCoachKinds[lang]).map(([mode, label]) => (
+                <button type="button" key={mode} className={heroStyles.landingKindButton}
+                  data-my-coach-landing-mode={mode} aria-pressed={directoryMode === mode}
+                  onClick={() => { setDirectoryMode(mode); setHumanContactOpen(false) }}>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className={heroStyles.tagline}>{directoryMode === 'human' ? h.intro : hw.tagline}</p>
         </div>
+        {directoryMode !== 'human' && <>
         <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
           <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true">
             <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="hero" />
@@ -395,15 +414,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                   data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
           </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
-            <div className={heroStyles.programArt} aria-hidden="true">
-              <Leaf size={32} strokeWidth={1.4}/>
-            </div>
             <div className={heroStyles.programActions}>
               <Link href={coachCourseLaunchHref(lang,'clarity',selected.id)} prefetch={false} className={heroStyles.freeProgram} data-my-coach-free-course>
-                <BookOpen size={18} aria-hidden="true"/><span>{programs.free}</span><ArrowRight size={18} aria-hidden="true"/>
+                <BookOpen size={20} aria-hidden="true"/><span>{programs.free}</span>
               </Link>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
-                <span>{programs.details}</span><ArrowRight size={17} aria-hidden="true"/>
+                <ClipboardCheck size={20} aria-hidden="true"/><span>{programs.details}</span>
               </Link>
             </div>
           </div>
@@ -449,6 +465,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
           <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
         </div>
+        </>}
       </section>
       <section className={[heroStyles.directoryHeading, styles.compactHeading].join(" ")} id="all-coaches" aria-label={hw.browse}>
         <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
