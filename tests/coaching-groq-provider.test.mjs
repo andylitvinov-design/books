@@ -245,7 +245,7 @@ test('My Coach annotates validated model replies only, not synthetic probes or o
   assert.match(client,/inference:result\.mode==='ai'/)
   assert.match(client,/data-coach-answer-source=\{turn\.inference\.provider\}/)
   assert.match(client,/turn\.mode==='offline'/)
-  assert.match(client,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
+  assert.match(client,/providerWindow=coachTurnWindow\(providerHistory\.filter\(row=>row\.content\.length<=1200\),10\)/)
   assert.match(client,/turns:providerWindow\s*\.map\(/)
 })
 

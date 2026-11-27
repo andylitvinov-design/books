@@ -52,7 +52,7 @@ test('the live microphone displays interim words in transcript only',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const ui=source('components/my-coach-live-dialogue.jsx')
   for(const marker of [
-    'readDictationResults(event.results,1200)',
+    'readDictationResults(event.results,MY_COACH_PROTOCOL_MAX_TURN_CHARS)',
     "changePhase('starting')",
     "recognition.onresult=event=>{",
     "recognition.interimResults=true",
@@ -81,7 +81,7 @@ test('iOS 27 recognizer recovery retains locale detection and re-primes after re
     'hasRecognizedRef.current','cue.onend=finishCue',
     'cue.onerror=failCue','recognition.continuous=false',
     'restartSilentRecognition(recognition)','settleTimerRef.current=setTimeout',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))',
     'iosResultTimerRef.current=setTimeout',
     'armSilentWatchdog(14000)','armSilentWatchdog(9000)',
     'cue.volume=0.2','cue.onend=finishCue','cue.onerror=failCue'])
@@ -120,7 +120,7 @@ test('recorded-audio uploads and extra consent gates are removed only from My Co
   assert.ok(!ui.includes('recordingModeHint'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
   assert.ok(!ui.includes('<dialog'))
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
   assert.ok(ui.includes('voiceProviderDetails'))
   assert.ok(route.includes('normalizeMyCoachFishRequest'))
   assert.ok(route.includes('normalizeGoogleChirpInput'))
@@ -143,7 +143,7 @@ test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',(
  const loop=source('components/my-coach-speech-loop.jsx')
  const onresult=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
  const iosFallback=onresult.slice(onresult.indexOf('if(ios27&&visible){'),onresult.indexOf('// Dictation is shown'))
- assert.match(iosFallback,/draftRef\.current\?\.\(appendSpokenAnswer\(draftAtStartRef\.current,heard,1200\)\)/)
+ assert.match(iosFallback,/draftRef\.current\?\.\(appendSpokenAnswer\(draftAtStartRef\.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS\)\)/)
  assert.match(iosFallback,/transcriptRef\.current\?\.\(''\)/)
  assert.match(iosFallback,/setNotice\(t\.iosAwaitEnd\)/)
  assert.doesNotMatch(iosFallback,/recognition\.abort\(\)|void deliver\(/,'never cut recognized iOS voice or auto-send before natural end')
@@ -151,7 +151,7 @@ test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',(
  assert.match(settle,/if\(!ios27\)\{[\s\S]*?settleTimerRef\.current=setTimeout\(/)
  assert.match(loop,/recognition\.continuous=false/)
  const naturalEnd=loop.slice(loop.indexOf('recognition.onend=()=>{'),loop.indexOf('const startRecognition=()=>{'))
- assert.match(naturalEnd,/void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,1200\)\)/)
+ assert.match(naturalEnd,/void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS\)\)/)
  assert.ok(loop.includes('cue.onend=finishCue'),'every subsequent Safari session still waits for the short recovery cue')
  for(const marker of ['iosAwaitEnd:',"setNotice(t.iosAwaitEnd)"])assert.ok(loop.includes(marker))
 });
