@@ -12,7 +12,7 @@ await mkdir(out,{recursive:true})
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch()
  try{
-  for(const [lang,width,height] of [['en',320,660],['en',390,660],['ru',390,844],['es',430,700]]){
+  for(const [lang,width,height] of [['en',320,660],['en',390,660],['en',390,844],['ru',390,844],['es',430,700]]){
    const ctx=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
    try{
     const page=await ctx.newPage()
@@ -48,13 +48,13 @@ for(const engine of [chromium,webkit]){
     assert.equal(await programs.innerText(),({en:'All programs available',ru:'Все доступные программы',es:'Todos los programas disponibles'})[lang])
     assert.equal(await programs.getAttribute('href'),'/'+lang+'/my-coach/programs')
     assert.ok(await page.locator('[data-my-coach-hero]').evaluate(hero=>{
-     const b=hero.querySelector('[data-my-coach-program-details]')
+     const b=hero.nextElementSibling?.querySelector('[data-my-coach-program-details]')
      const talk=hero.querySelector('[data-my-coach-hero-start]')
      const media=hero.querySelector('[data-coach-motion-context="hero"]')
      if(!b||!talk||!media)return false
      const h=hero.getBoundingClientRect(),y=b.getBoundingClientRect(),t=talk.getBoundingClientRect(),m=media.getBoundingClientRect()
-     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<=y.top+1&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3
-    }), 'single compact horizontal programs action over full-width hero')
+     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<h.bottom-5&&y.top>=h.bottom&&y.bottom<=document.querySelector('[data-my-coach-rail]').getBoundingClientRect().top&&m.width>=h.width-3&&m.height>=h.height-3
+    }), 'single compact horizontal programs action outside and below full-width hero')
     const fold=await page.evaluate(()=>{
      const rail=document.querySelector('[data-my-coach-rail]')
      const dock=document.querySelector('[data-hh-unified-dock]')
