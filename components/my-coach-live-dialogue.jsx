@@ -13,6 +13,7 @@ import {coachTimeboxState,coachMinuteRuler} from '@/lib/coaching/session-timebox
 import {createCoachActiveClock} from '@/lib/coaching/coach-active-clock.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
+import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
@@ -1537,6 +1538,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
+          characterSeenIds:coachCharacterObservedIds(providerHistory),
           turns:providerWindow
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),

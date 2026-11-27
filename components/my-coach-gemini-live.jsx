@@ -2,6 +2,7 @@
 import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
+import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
@@ -444,6 +445,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,courseSessionId:r.courseSessionId,
           ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
+          characterSeenIds:[...new Set([...coachCharacterObservedIds(p.localRecoveryTurns),...coachCharacterObservedIds(previous),...r.characterSeenIds])],
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
           openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
           ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
@@ -514,7 +516,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20)}
+    if(!r.interrupted){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
     propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
     r.interrupted=false
   }
@@ -1296,7 +1298,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
+      socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,characterSeenIds:new Set(coachCharacterObservedIds(p.localRecoveryTurns)),
       continuing:recovery.continuing,inputText:'',outputText:'',
       speaking:false,interrupted:false,postBarge:false,awaitingBargeReply:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
