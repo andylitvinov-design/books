@@ -57,3 +57,36 @@ test('cross-mode view separates past facts, rejects unreviewed records, excludes
  assert.equal(unavailable.coaching.status,'available')
  assert.equal(assembleOwnerCrossModeMemory({identity:ok({}),coaching:ok(c),therapy:ok(null)}).latest,'coaching')
 })
+
+test('owner memory skips excluded records on bounded pages and never mistakes incomplete search for an empty archive',async()=>{
+ const {latestReviewedCoachingMemory,crossModeMemoryDisplay}=await import('../lib/coaching/anti-stress-private-memory.mjs')
+ const old={id:id(30),provenance:'client_reviewed_dialogue',savedAt:new Date(atMs).toISOString(),goal:'Work',clientSummary:'Reviewed',clientNextStep:'One step'}
+ const current={...old,id:id(31)}
+ const cursor={before:old.savedAt,beforeId:current.id}
+ const calls=[]
+ const rec=await latestReviewedCoachingMemory(async c=>{calls.push(c);return c?{protocols:[old],hasMore:false}:{protocols:[current],hasMore:true,nextCursor:cursor}},current.id)
+ assert.equal(rec.protocolId,old.id)
+ assert.deepEqual(calls,[null,cursor])
+ assert.equal(await latestReviewedCoachingMemory(async()=>({protocols:[],hasMore:false})),null)
+ await assert.rejects(latestReviewedCoachingMemory(async()=>({protocols:[],hasMore:true,nextCursor:cursor})),/INVALID/)
+ const {run,ledger}=fixture()
+ const t=projectAntiStressPrivateMemory(run,sessionId,protocolId,ledger,atMs+5000,'en')
+ const ok=value=>({status:'fulfilled',value})
+ const memory=assembleOwnerCrossModeMemory({identity:ok({preferredName:'Mary'}),coaching:ok(rec),therapy:ok(t)})
+ const view=crossModeMemoryDisplay({...memory,stageToken:'secret'})
+ assert.equal(view.coaching.record.topic,'Work')
+ assert.equal(view.therapy.record.fields.length,t.fields.length)
+ assert.ok(!JSON.stringify(view).includes('secret'))
+ assert.ok(!JSON.stringify(view).includes('Mary'))
+ assert.ok(!JSON.stringify(view).includes('protocolId'))
+ assert.throws(()=>crossModeMemoryDisplay(memory,old.id),/INVALID/)
+ assert.throws(()=>crossModeMemoryDisplay({...memory,requiresProviderSpecificConsent:false}),/INVALID/)
+ assert.throws(()=>crossModeMemoryDisplay({...memory,therapy:{status:'available',record:{...t,fields:[{fieldId:'resource_details',label:'hidden',value:'private'}]}}}),/INVALID/)
+ const read=await import('node:fs')
+ const panel=read.readFileSync(new URL('../components/app/anti-stress-memory-panel.jsx',import.meta.url),'utf8')
+ assert.match(panel,/getCabinetBootstrap\('portrait',\{refresh:true\}\)/)
+ assert.match(panel,/owner\?\.account\?\.id!==accountId/)
+ assert.match(panel,/c\.signal\.aborted\|\|scope\.current!==key/)
+ assert.match(panel,/appFetch\('anti-stress\/session\?'\+q,undefined,'GET',\{accountId,signal:c.signal\}\)/)
+ assert.doesNotMatch(panel,/sendSocket|localStorage|sessionStorage|geminiLiveContextMessage/)
+})

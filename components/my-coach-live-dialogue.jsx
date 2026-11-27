@@ -39,6 +39,7 @@ import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEar
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
+import AntiStressMemoryPanel from './app/anti-stress-memory-panel'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -2633,6 +2634,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={approvedClarity?.core||detailPosition} groups={stagePosition.rows.filter(row=>row.coreChildren.length>0).map(row=>({...row,children:row.coreChildren}))} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
+      {protocolOwnerReady&&process.env.NEXT_PUBLIC_HH_ANTI_STRESS_MEMORY_ENABLED==='true'&&<AntiStressMemoryPanel key={'shared-memory:'+protocolOwnerRef.current+':'+(protocolIdRef.current||'')} accountId={protocolOwnerRef.current} exclude={protocolIdRef.current} locale={conversationLang}/>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
         identityConfirmed={openingProgress.checkmarks.name&&openingProgress.checkmarks.continuity}
