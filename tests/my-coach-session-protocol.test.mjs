@@ -961,3 +961,35 @@ test('consented legacy draft reconstructs only exact confirmed fields after the 
   assert.equal(deriveCoachDraftReview(protocol,'goal_plan'),null)
  }
 })
+
+
+test('private supervision export audits literal evidence without claiming semantic review or server receipts',async()=>{
+ const {coachProtocolEvidenceAudit}=await import('../lib/personal-coaching/protocol-evidence-audit.mjs')
+ const {checkpointConfirmation}=await import('../lib/coaching/coach-course-question-binding.mjs')
+ for(const locale of ['en','ru','es']){
+  const courseSessionId='goal_result',field=coachCourseProtocolSchema(courseSessionId,locale).checkpoints.find(x=>x.id==='goal')
+  const quote=({en:'I want to open a studio',ru:'Хочу открыть студию',es:'Quiero abrir un estudio'})[locale]
+  const yes=({en:'Yes',ru:'Да',es:'Sí'})[locale]
+  const turns=[{role:'assistant',content:field.question},{role:'user',content:quote},{role:'assistant',content:checkpointConfirmation(field.question,quote,locale)},{role:'user',content:yes}]
+  const event={fieldId:field.id,status:'confirmed',turnIndex:1,quote,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}}
+  const {COACH_COURSE_FIELD_REVIEW_VERSION}=await import('../lib/coaching/coach-course-protocol-schema.mjs')
+  const protocol={...sample(),locale,courseSessionId,turns,courseFieldReview:{version:COACH_COURSE_FIELD_REVIEW_VERSION,courseSessionId,events:[event]}}
+  const before=JSON.stringify(protocol)
+  const audit=coachProtocolEvidenceAudit(protocol)
+  assert.equal(audit.status,'audited');assert.equal(audit.counts.questionBound,1)
+  assert.equal(audit.semanticReview,'not_performed');assert.equal(audit.serverReceiptReview,'not_performed')
+  assert.equal(audit.overallScore,null);assert.equal(JSON.stringify(protocol),before)
+  assert.equal(JSON.stringify(audit).includes(quote),false)
+  assert.deepEqual(coachQualityTranscript(protocol).qualityReport,audit)
+  const {binding,...manual}=event
+  const manualAudit=coachProtocolEvidenceAudit({...protocol,courseFieldReview:{...protocol.courseFieldReview,events:[manual]}})
+  assert.equal(manualAudit.counts.clientReviewed,1);assert.equal(manualAudit.counts.questionBound,0)
+  const forged=coachProtocolEvidenceAudit({...protocol,courseFieldReview:{...protocol.courseFieldReview,events:[{...event,quote:'forged'}]}})
+  assert.equal(forged.status,'unavailable');assert.equal(forged.counts,null)
+  const pending=coachProtocolEvidenceAudit({...protocol,courseFieldReview:null,turns:turns.slice(0,2)})
+  assert.equal(pending.counts.questionBound,0);assert.equal(pending.counts.needsConfirmation>=1,true)
+  const skipped=coachProtocolEvidenceAudit({...protocol,courseFieldReview:{...protocol.courseFieldReview,events:[event,{fieldId:field.id,status:'skipped_by_client',turnIndex:null,quote:'',revision:2}]}})
+  assert.equal(skipped.counts.skipped,1);assert.equal(skipped.counts.questionBound,0)
+ }
+ assert.equal(coachProtocolEvidenceAudit(sample()).status,'unavailable')
+})

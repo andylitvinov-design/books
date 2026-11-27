@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+test('both assistant entries use shared service choices and preserve the original composer',()=>{
+ const shared=read('components/assistant-start.tsx');
+ for(const label of ['Get AI Coach Session','Get Reiki Course (free)','Request Clarity Session with Andy'])assert.ok(shared.includes(label));
+ for(const path of ['my-coach','academy/principles-of-energywork','my-coach/real/andy-litvinov'])assert.ok(shared.includes('path:"'+path+'"'));
+ const landing=read('components/app/messenger-ai-landing.tsx');
+ assert.ok(landing.includes('<AssistantStart locale={locale} onAsk={onAsk}/>'));
+ assert.equal(landing.split('{composer}').length-1,1);
+ assert.ok(landing.includes('<IHelpTopics locale={locale} onSelect={onTopicSelect}/>'));
+ const chat=read('components/holistic-agent-chat.tsx');
+ assert.ok(chat.includes('<AssistantStart locale={locale} pageHelp section={pageHelp.section}'));
+ assert.ok(chat.includes('selectPageHelpAction(action)'));
+ const shell=read('components/sitewide-ihelp.tsx');
+ assert.ok(shell.includes('pageHelp={context} quickPrompt={quickPrompt}'));
+ assert.equal(shell.split('<HolisticAgentChat ').length-1,1);
+ assert.ok(!shell.includes('<IHelpWelcome '));
+});
