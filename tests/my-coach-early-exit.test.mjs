@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {coachShouldOfferEarlyExit,coachEarlyExitDestination,coachCompletionDestination} from '../lib/coaching/coach-early-exit.mjs'
@@ -24,4 +25,23 @@ test('completion actions point to localized Daybook and coach list',()=>{
   assert.equal(coachCompletionDestination(locale,'daybook'),'/'+locale+'/app/daybook')
   assert.equal(coachCompletionDestination(locale,'exit'),'/'+locale+'/my-coach')
  }
+})
+
+test('hangup freezes the clock and only leaves after the existing private save acknowledgement',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const modal=readFileSync(new URL('../components/my-coach-early-exit.jsx',import.meta.url),'utf8')
+ const open=ui.slice(ui.indexOf('  function openHangupMenu(){'),ui.indexOf('  function dismissHangupMenu(){'))
+ const leave=ui.slice(ui.indexOf('  async function leaveEarlySession(choice){'),ui.indexOf('  function endWithProtocol(){'))
+ assert.ok(open.includes('freezeActiveClock()'))
+ assert.ok(open.includes('retainPendingClient()'))
+ assert.ok(open.includes('setPaused(true)'))
+ assert.ok(!open.includes('window.location.assign'))
+ assert.ok(leave.includes("if(choice==='results'){"))
+ assert.ok(leave.includes('setProtocolOpen(true);setEarlyExit(null);return'))
+ assert.ok(leave.indexOf('await saveProtocol()')<leave.indexOf('window.location.assign(coachCompletionDestination'))
+ assert.ok(leave.includes('if(await saveProtocol()!==true)'))
+ assert.ok(leave.indexOf('await autoSaveQueueRef.current?.flush()')<leave.indexOf('window.location.assign(coachEarlyExitDestination'))
+ assert.ok(leave.includes("if(!revision)throw Error('DRAFT_NOT_SYNCED')"))
+ for(const choice of ['results','daybook','exit'])assert.ok(modal.includes("onChoice('"+choice+"')"))
+ assert.ok(modal.includes('const completeTitle=reviewComplete||elapsed>=1200'))
 })

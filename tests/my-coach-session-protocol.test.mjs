@@ -101,10 +101,12 @@ test('saving requires explicit consent; GET validates the serving host and owner
   assert.match(service,/seal\(envelope,sealContext\(actor\),config\)/)
   assert.match(service,/revision=revision\+1/)
 })
-test('the main voice session ends in a review dialog with PDF actions, not navigation',()=>{
+test('the main voice session opens a closing menu and retains explicit review with PDF actions',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const archive=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
-  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/onClick=\{openHangupMenu\}/)
+  assert.match(ui,/onChoice=\{leaveEarlySession\}/)
+  assert.match(ui,/if\(choice==='results'\)\{\s*setProtocolOpen\(true\);setEarlyExit\(null\);return/)
   assert.match(ui,/data-my-coach-protocol/)
   assert.match(ui,/downloadCoachingSessionPdf/)
   assert.match(ui,/openCoachingSessionPdf/)
@@ -175,7 +177,7 @@ test('owner mobile design keeps voice controls, back and explicit Insight while 
   assert.match(ui,/sessionProgressSummary/)
   assert.match(ui,/data-coach-basic-pro-toggle/)
   assert.match(ui,/data-coach-profile-open/)
-  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/onClick=\{openHangupMenu\}/)
   assert.match(ui,/<PhoneOff size=\{24\}/)
   assert.match(ui,/data-coach-dock-speaker/)
   assert.doesNotMatch(ui,/data-coach-panel=/)
