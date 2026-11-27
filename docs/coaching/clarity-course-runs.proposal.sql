@@ -76,13 +76,14 @@ create table app_private.clarity_live_credential_windows (
  protocol_id uuid not null check(protocol_id<>course_run_id),
  reserved_at_ms bigint not null check(reserved_at_ms>=0),
  possible_expires_at_ms bigint not null,
- check(possible_expires_at_ms>reserved_at_ms and possible_expires_at_ms-reserved_at_ms<=1200000)
+ program_kind text not null default 'clarity' check(program_kind in ('clarity','therapy')),
+ check(possible_expires_at_ms>reserved_at_ms and possible_expires_at_ms-reserved_at_ms<=case when program_kind='therapy' then 900000 else 1200000 end)
 );
 alter table app_private.clarity_live_credential_windows enable row level security;
 alter table app_private.clarity_live_credential_windows force row level security;
 revoke all on app_private.clarity_live_credential_windows from public,anon,authenticated;
 grant select,insert on app_private.clarity_live_credential_windows to hh_app_backend;
-grant update(lease_id,course_run_id,course_day,protocol_id,reserved_at_ms,possible_expires_at_ms) on app_private.clarity_live_credential_windows to hh_app_backend;
+grant update(lease_id,course_run_id,course_day,protocol_id,reserved_at_ms,possible_expires_at_ms,program_kind) on app_private.clarity_live_credential_windows to hh_app_backend;
 create policy clarity_credential_select on app_private.clarity_live_credential_windows for select to hh_app_backend
  using(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy clarity_credential_insert on app_private.clarity_live_credential_windows for insert to hh_app_backend

@@ -360,6 +360,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
+  const [restoredCourseRunId,setRestoredCourseRunId]=useState(null)
+  const activeCourseRunId=restoredCourseRunId||courseRunId
   const protocolStartedRef=useRef(null)
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
   // Connected-session marker contains a persona ID only, never user data.
@@ -1775,7 +1777,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         const revision=courseGateAttemptRef.current?null:courseGateRef.current?courseGateRef.current.revision:profileV3FaultRef.current?null:structured&&!structured.step.closed?structured.revision:queued?await autoSaveQueueRef.current?.flush():null
         if(!revision)throw Error('DRAFT_NOT_SYNCED')
       }
-      window.location.assign(earlyExit.completion?coachCompletionDestination(lang,choice):choice==='switch'&&clarityCourseDay(selectedCourseId)?clarityCoachHref('/'+lang+'/my-coach',clarityCourseDay(selectedCourseId)):coachEarlyExitDestination(lang,selectedCourseId,choice))
+      const currentDay=clarityCourseDay(selectedCourseId)
+      window.location.assign(earlyExit.completion?(choice==='daybook'&&currentDay&&activeCourseRunId?clarityReturnHref(lang,currentDay,activeCourseRunId):coachCompletionDestination(lang,choice)):choice==='switch'&&currentDay?clarityCoachHref('/'+lang+'/my-coach',currentDay,activeCourseRunId):coachEarlyExitDestination(lang,selectedCourseId,choice))
     }catch{setEarlyExitError(true)}finally{earlyExitBusyRef.current=false;setEarlyExitBusy(false)}
   }
   function endWithProtocol(){
@@ -2145,6 +2148,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
+      setRestoredCourseRunId(result.courseRunId||null)
       initialDraftRevision.current=result.draft.revision
       restoredOpeningScope.current=recoverPrivateOpeningScope(p)
       restoredMethod.current=p.methodId
@@ -2271,7 +2275,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </select>
           </span>
         </label>
-        <Link className={styles.chooseCoach} href={clarityCoachHref('/'+lang+'/my-coach',clarityDay,courseRunId)} onClick={navigateBackToCoaches} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
+        <Link className={styles.chooseCoach} href={clarityCoachHref('/'+lang+'/my-coach',clarityDay||clarityCourseDay(selectedCourseId),activeCourseRunId)} onClick={navigateBackToCoaches} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
           <ArrowLeft size={16} aria-hidden="true"/>
           <span className={styles.chooseCoachFull}>{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
           <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
@@ -3006,7 +3010,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <button type="button" data-coach-edit-result disabled={protocolSaved||protocolSaving||protocolSaveLocked} onClick={()=>setProtocolEditing(value=>!value)}>{protocolEditing?({en:'Done',ru:'Готово',es:'Listo'})[lang]:({en:'Edit',ru:'Редактировать',es:'Editar'})[lang]}</button>
           <button type="button" data-coach-close-protocol disabled={protocolSaving||(protocolSaveLocked&&!protocolSaved)} onClick={closeProtocolToRating}>{protocolSaved?protocolUi.close:({en:'Cancel',ru:'Отменить',es:'Cancelar'})[lang]}</button>
         </div>
-        {protocolSaved&&clarityCourseDay(selectedCourseId)&&<Link href={clarityReturnHref(lang,clarityCourseDay(selectedCourseId))} data-clarity-return>{({en:'Return to course day',ru:'Вернуться в день курса',es:'Volver al día del curso'})[lang]}</Link>}
+        {protocolSaved&&clarityCourseDay(selectedCourseId)&&<Link href={clarityReturnHref(lang,clarityCourseDay(selectedCourseId),activeCourseRunId)} data-clarity-return>{({en:'Return to course day',ru:'Вернуться в день курса',es:'Volver al día del curso'})[lang]}</Link>}
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
         {!protocolOwnerReady&&<p role="status">{({ru:'Сохранение в аккаунт недоступно: аккаунт не подтверждён до начала беседы. PDF доступен.',en:'Account saving is unavailable because the account was not verified before the conversation. PDF is available.',es:'No se puede guardar en la cuenta porque no se verificó antes del diálogo. El PDF está disponible.'})[lang]}</p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
