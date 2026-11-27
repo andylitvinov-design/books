@@ -12,8 +12,8 @@ await mkdir(out,{recursive:true})
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch()
  try{
-  for(const [lang,width] of [['en',320],['en',390],['ru',390],['es',430]]){
-   const ctx=await browser.newContext({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
+  for(const [lang,width,height] of [['en',320,660],['en',390,660],['ru',390,844],['es',430,700]]){
+   const ctx=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce'})
    try{
     const page=await ctx.newPage()
     await page.route('**/api/app/bootstrap?view=portrait',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({account:{id:'12345678-1234-4234-8234-123456789012',onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]})}))
@@ -43,14 +43,28 @@ for(const engine of [chromium,webkit]){
     assert.equal(await landingMode('all').getAttribute('aria-pressed'),'true')
     assert.ok(await page.locator('[data-my-coach-hero]').isVisible())
     assert.ok(await page.locator('[data-my-coach-real-people]').isVisible())
+    assert.equal(await page.locator('[data-my-coach-free-course]').count(),0)
+    const programs=page.locator('[data-my-coach-program-details]')
+    assert.equal(await programs.innerText(),({en:'All programs available',ru:'Все доступные программы',es:'Todos los programas disponibles'})[lang])
+    assert.equal(await programs.getAttribute('href'),'/'+lang+'/my-coach/programs')
     assert.ok(await page.locator('[data-my-coach-hero]').evaluate(hero=>{
-     const a=hero.querySelector('[data-my-coach-free-course]'),b=hero.querySelector('[data-my-coach-program-details]')
-     const panel=hero.querySelector('[data-my-coach-program-panel]'),media=hero.querySelector('[data-coach-motion-context="hero"]')
-     if(!a||!b||!panel||!media)return false
-     const h=hero.getBoundingClientRect(),x=a.getBoundingClientRect(),y=b.getBoundingClientRect(),m=media.getBoundingClientRect()
-     const sa=getComputedStyle(a),sb=getComputedStyle(b),bg=getComputedStyle(panel).backgroundColor
-     return Math.abs(x.top-y.top)<1&&Math.abs(x.width-y.width)<1&&x.right<=y.left&&x.height>=44&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3&&sa.backgroundColor===sb.backgroundColor&&sa.backgroundColor==='rgba(255, 252, 246, 0.76)'&&bg==='rgba(0, 0, 0, 0)'
-    }), 'equal translucent white program tiles over full-width hero')
+     const b=hero.querySelector('[data-my-coach-program-details]')
+     const talk=hero.querySelector('[data-my-coach-hero-start]')
+     const media=hero.querySelector('[data-coach-motion-context="hero"]')
+     if(!b||!talk||!media)return false
+     const h=hero.getBoundingClientRect(),y=b.getBoundingClientRect(),t=talk.getBoundingClientRect(),m=media.getBoundingClientRect()
+     return getComputedStyle(b).flexDirection==='row'&&y.height>=44&&y.height<=60&&y.width>y.height*2&&t.bottom<=y.top+1&&y.bottom<=h.bottom&&m.width>=h.width-3&&m.height>=h.height-3
+    }), 'single compact horizontal programs action over full-width hero')
+    const fold=await page.evaluate(()=>{
+     const rail=document.querySelector('[data-my-coach-rail]')
+     const dock=document.querySelector('[data-hh-unified-dock]')
+     const ai=dock?.querySelector('[data-unified-dock-item="ai"] svg')
+     const r=rail?.getBoundingClientRect()
+     const bottom=Math.min(window.visualViewport?.height??innerHeight,dock?.getBoundingClientRect().top??innerHeight,ai?.getBoundingClientRect().top??innerHeight)
+     return {railBottom:r?.bottom,railTop:r?.top,bottom,scrollY,overflow:document.documentElement.scrollWidth-innerWidth}
+    })
+    assert.ok(fold.railTop>=0&&fold.railBottom<=fold.bottom+2&&fold.scrollY<=1&&fold.overflow<=1,
+      'coach rail fully visible before the raised bottom dock: '+JSON.stringify(fold))
     await page.screenshot({path:out+'/landing-'+engine.name()+'-'+lang+'-'+width+'.png',fullPage:true})
     await page.locator('[data-my-coach-program-details]').click()
     await page.waitForURL('**/'+lang+'/my-coach/programs')
