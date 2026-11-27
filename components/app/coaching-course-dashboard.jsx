@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {ArrowLeft,ArrowRight,BarChart3,CheckCircle2,ChevronRight,ClipboardCheck,FileText,Flower2,Layers,MessageCircle,Sparkles,Video} from 'lucide-react'
 import {PUBLIC_COACH_PERSONAS,coachSessionHref,localCoachText} from '@/lib/coaching/persona-registry.mjs'
 import {COACH_PROGRAM_GROUPS} from '@/lib/coaching/coach-program-topics.mjs'
+import {consumeCoachCourseChoice} from '@/lib/app/coach-course-choice.mjs'
 import css from './coaching-course-dashboard.module.css'
 
 const copy={
@@ -31,6 +32,8 @@ export default function CoachingCourseDashboard({locale='en',program,title,sessi
   if(previousOwner.current!==accountId){previousOwner.current=accountId;setPanel(null);setStartAfterChoice(false)}
   let id=''
   try{const saved=storageKey&&window.localStorage.getItem(storageKey);if(PUBLIC_COACH_PERSONAS.some(p=>p.id===saved))id=saved}catch{}
+  const launchChoice=storageKey?consumeCoachCourseChoice(program,accountId):null
+  if(launchChoice){id=launchChoice;try{window.localStorage.setItem(storageKey,id)}catch{}}
   setChoice({key:storageKey,id})
  },[accountId,storageKey])
  useEffect(()=>{if(initialPanel)setPanel(initialPanel)},[initialPanel])
