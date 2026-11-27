@@ -101,3 +101,23 @@ test('private Live salutation speaks only a matching local device voice, and can
  assert.equal(await muted.done,'text')
  assert.equal(sent.length,2)
 })
+
+import {coachProtocolSessionControlUtterance,coachProtocolEvidenceVeto} from '../lib/coaching/coach-protocol-relevance.mjs'
+test('owner incident: interface commands never become life facts or an opening refusal',()=>{
+ for(const message of ['No, I want to check protocol of the session.','I want to check the protocol',"I didn't find an answer for the session today.",'Нет, я хочу проверить протокол сессии','No, quiero ver el protocolo de la sesión']){
+  assert.equal(coachProtocolSessionControlUtterance(message),true,message)
+  assert.equal(coachProtocolEvidenceVeto(message),true)
+  assert.equal(coachProtocolEvidenceVeto(message,{historicalReview:true}),false)
+  const opening=coachOpeningProgress({turns:[message],locale:'en'})
+  assert.equal(opening.declined,false)
+  assert.equal(opening.current,'invitation')
+ }
+ assert.equal(coachProtocolEvidenceVeto('My problem is money.'),false)
+ assert.equal(coachOpeningProgress({turns:['No.']}).declined,true)
+ for(const word of ['sad','Sad','happy','triste','грустно']){
+  const p=coachOpeningProgress({turns:['Yes',word]})
+  assert.equal(p.current,'name')
+  assert.equal(p.answers.name,undefined)
+ }
+ assert.equal(coachOpeningProgress({turns:['Yes','Call me Happy']}).answers.name.value,'Happy')
+})
