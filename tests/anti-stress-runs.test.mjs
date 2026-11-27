@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import {createAntiStressCourseClock,validateAntiStressCourseClock} from '../lib/coaching/anti-stress-clock.mjs'
 import {ANTI_STRESS_SESSION_IDS} from '../lib/coaching/coach-program-mode.mjs'
-import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective} from '../lib/coaching/anti-stress-runs.mjs'
+import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation} from '../lib/coaching/anti-stress-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n=1,access='free')=>({id:id(n),protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0,access})
 function event(run,day,type,atMs,{seg=50,decision='start',coachId='mira',...extra}={}){
@@ -52,4 +52,27 @@ test('Director and report consume exact bound server data; browser timing cannot
  assert.equal(antiStressBoundProtocol(run,sid,pid,accepted).result.stress.before,null)
  run=advanceAntiStressRun(run,event(run,1,'disconnect',361000))
  assert.equal(antiStressRunDirective(run,sid,pid,accepted,context).action,'hold')
+})
+
+test('trusted review append preserves provenance, rejects conflicting scope and supports correction',()=>{
+ let run=createAntiStressRun(input())
+ run=advanceAntiStressRun(run,event(run,1,'begin',0));run=tick(run,1,0,10000)
+ const sid=ANTI_STRESS_SESSION_IDS[0],pid=id(2)
+ const scope={courseRunId:run.id,sessionId:sid,protocolId:pid,scenarioVersion:antiStressRunBinding(run,sid,pid).scenarioVersion,segmentId:id(50),connectionId:id(150),coachId:'mira',atMs:10000}
+ let state=null
+ const apply=e=>{state=appendAntiStressObservation(run,sid,pid,state,e)}
+ const turn=(n,role,text)=>({...scope,eventId:'evt:'+n,turnId:'turn:'+n,expectedRevision:state?.revision??0,kind:'turn',proof:'server_observed_final_turn',role,text})
+ apply(turn(1,'coach','Which resource?'));apply(turn(2,'client','Quiet shore'));apply(turn(3,'client','Yes, quiet shore'))
+ const review={...scope,eventId:'review:1',expectedRevision:3,kind:'review',proof:'server_observed_explicit_field_review',role:'client',fieldId:'resource_selected',status:'confirmed',value:'Quiet shore',questionTurnId:'turn:1',answerTurnId:'turn:2',confirmationTurnId:'turn:3'}
+ assert.throws(()=>apply({...review,courseRunId:id(99)}),/CONFLICT/)
+ assert.throws(()=>apply({...review,confirmationTurnId:'turn:1'}),/CONFLICT/)
+ assert.throws(()=>apply({...review,proof:'model_guess'}),/CONFLICT/)
+ apply(review);assert.equal(state.revision,4);apply(review);assert.equal(state.revision,4)
+ assert.throws(()=>apply({...review,value:'invented'}),/CONFLICT/)
+ assert.equal(antiStressBoundProtocol(run,sid,pid,state).result.resources.selected,'Quiet shore')
+ apply(turn(4,'coach','Remove resource?'));apply(turn(5,'client','Remove'));apply(turn(6,'client','Yes'))
+ apply({...review,eventId:'review:2',expectedRevision:7,status:'skipped',value:null,questionTurnId:'turn:4',answerTurnId:'turn:5',confirmationTurnId:'turn:6'})
+ assert.equal(state.rows.length,1);assert.equal(state.reviews.length,2);assert.equal(state.turns.length,6)
+ assert.equal(antiStressBoundProtocol(run,sid,pid,state).result.resources.selected,null)
+ assert.throws(()=>apply({...turn(7,'client','x'),atMs:10001}),/CONFLICT/)
 })

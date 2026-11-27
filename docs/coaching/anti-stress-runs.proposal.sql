@@ -30,8 +30,8 @@ alter table app_private.anti_stress_sessions force row level security;
 revoke all on app_private.anti_stress_runs,app_private.anti_stress_sessions from public,anon,authenticated;
 grant select,insert on app_private.anti_stress_runs,app_private.anti_stress_sessions to hh_app_backend;
 grant update(revision,payload_ciphertext,live_active,updated_at) on app_private.anti_stress_runs to hh_app_backend;
--- Session review updates intentionally not granted until the trusted
--- append/review writer and privacy retention policy are implemented.
+-- PROPOSED only: verify trusted runtime, privacy lifecycle and RLS before applying.
+grant update(review_revision,ledger_ciphertext,log_ciphertext) on app_private.anti_stress_sessions to hh_app_backend;
 create policy anti_stress_run_select on app_private.anti_stress_runs for select to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_insert on app_private.anti_stress_runs for insert to hh_app_backend with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy anti_stress_run_update on app_private.anti_stress_runs for update to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active())) with check(account_id=(select auth.uid()) and (select app_private.account_active()));
@@ -39,3 +39,5 @@ create policy anti_stress_session_select on app_private.anti_stress_sessions for
 create policy anti_stress_session_insert on app_private.anti_stress_sessions for insert to hh_app_backend with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 -- No cross-program concurrency assumption: add shared owner lease to all
 -- transports and confirm global free-day claims, RLS, account export/deletion.
+
+create policy anti_stress_session_update on app_private.anti_stress_sessions for update to hh_app_backend using(account_id=(select auth.uid()) and (select app_private.account_active())) with check(account_id=(select auth.uid()) and (select app_private.account_active()));
