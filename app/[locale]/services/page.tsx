@@ -27,7 +27,7 @@ import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { publicLocales, type PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
 
-type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string; assist?: string }> };
+type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string; assist?: string; consultation?: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 // Production release marker: Wu Xing marketplace featured service.
@@ -96,7 +96,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <ServicesExplorerProvider>
         {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} />}
-        <ServicesCompactCatalog locale={locale}>
+        <ServicesCompactCatalog locale={locale} initialConsultationOpen={query?.consultation === "1"}>
           <ServicesCompactPanel id="consultation">
             <ServicesPersonalConsultationMobile locale={locale} />
             <PublicConsultationCta locale={locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
