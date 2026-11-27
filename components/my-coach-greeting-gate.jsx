@@ -35,7 +35,7 @@ const words={
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[]}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter()
  const persona=getCoachPersona(personaId)
@@ -106,6 +106,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  }
  function chooseSession(id,options){
    if(chosen.current||switching.current)return
+   if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
@@ -152,7 +153,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      {phase==='complete'&&<div className={styles.completed}>
        <button type="button" className={styles.primary} data-coach-greeting-start
          onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
-         <span>{t.start} {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+         <span>{draftCourses.includes(INTRODUCTORY_COACH_SESSION_ID)?({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]:({ru:'Начать сессию',en:'Start session',es:'Iniciar sesión'})[lang]} · {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
        {privateProfileEnabled&&<div data-coach-private-profile-entry style={{display:'grid',gap:8}}>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button>
@@ -189,7 +190,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            {group.sessions.map(item=><button key={item.id} type="button" className={styles.topicChoice}
              data-coach-topic={item.id} onClick={()=>chooseSession(item.id)}>
              <span className={styles.topicNumber}>{String(item.number).padStart(2,'0')}</span>
-             <span>{coachCourseLocal(item.title,lang)}</span><ChevronRight size={18} aria-hidden="true"/>
+             <span>{coachCourseLocal(item.title,lang)}{draftCourses.includes(item.id)&&<small> · {({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]}</small>}</span><ChevronRight size={18} aria-hidden="true"/>
            </button>)}
          </div>
        </section>)}

@@ -168,7 +168,7 @@ test('compact 20-minute ruler follows the existing active clock, not the stage i
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
  assert.match(ui,/coachMinuteRuler\(sessionTimebox\.elapsedSeconds\)/)
- assert.match(ui,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&document\.visibilityState/)
+ assert.match(ui,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&!resumePending&&document\.visibilityState/)
  assert.ok(ui.indexOf('data-coach-progress-ruler')<ui.indexOf('data-coach-minute-ruler'))
  assert.ok(ui.indexOf('data-coach-minute-ruler')<ui.indexOf('<ChevronDown className={styles.sessionProgressChevron}'))
  assert.doesNotMatch(ui,/data-coach-panel=/)
