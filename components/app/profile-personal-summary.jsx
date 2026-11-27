@@ -65,6 +65,16 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
      </div>
    </section>
    <MyPageCourses locale={language} accountId={data?.accountId||data?.page?.account_id}/>
+   <section className={styles.card} aria-label={language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}>
+    <header className={styles.heading}><UserRound size={23} aria-hidden="true"/><h2>{language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}</h2></header>
+    <div className={styles.measures}>{[
+     ['/'+appLocale+'/app/my-coaching-plan',language==='ru'?'Цели и отчёты коучинга':language==='es'?'Metas e informes de coaching':'Goals & coaching reports'],
+     ['/'+appLocale+'/app/portrait?space=reports',language==='ru'?'Мои отчёты':language==='es'?'Mis informes':'My reports'],
+     ['/'+appLocale+'/app/portrait?space=sessions',language==='ru'?'Мои сессии':language==='es'?'Mis sesiones':'My sessions'],
+     ['/'+language+'/holistic-support/mandala','MyVideo'],
+     ['/'+appLocale+'/app/settings',language==='ru'?'Настройки':language==='es'?'Ajustes':'Settings']
+    ].map(([href,title])=><Link key={href} href={href} prefetch={false} className={styles.measure} data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}><span className={styles.measureTop}><strong>{title}</strong><ArrowRight size={16} aria-hidden="true"/></span></Link>)}</div>
+   </section>
    <section className={styles.card} aria-label={t.goal}>
      <header className={styles.heading}><Target size={23} aria-hidden="true"/><h2>{t.goal}</h2><Link href={'/'+appLocale+'/app/portrait?space=path'} aria-label={t.goalLink}><ArrowRight size={20}/></Link></header>
      <p className={styles.goalEmpty}>{t.goalEmpty}</p>

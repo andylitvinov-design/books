@@ -83,3 +83,12 @@
 .reikiNote{display:flex;align-items:center;gap:9px;border-radius:15px;margin:12px 0 0;padding:11px;background:#fff1d7;color:#153d32;font:550 13px/1.4 system-ui}
 .reikiNote svg{flex:none;color:#936527}
 @media(max-width:375px){.reikiWeek{grid-template-columns:minmax(68px,27%) minmax(0,1fr)}.reikiWeekCopy{padding:8px}.reikiWeekCopy h2{font-size:20px}}
+
+/* The goal brochure shares the Express cream, forest-green and gold language. */
+.page[data-public-program=goal]{--deep:#083b2e;--surface:#145b43;--mid:#227558;--edge:#d4b37a;background:linear-gradient(160deg,#241b12,#123a2d);color:#143d2d}
+.page[data-public-program=goal] .hero{min-height:clamp(300px,50svh,470px);margin:10px 12px 0;border:1px solid #e8c68b;border-radius:22px;padding:12px 17px 24px;box-shadow:0 5px 14px #1b130a44}
+.page[data-public-program=goal] .art{background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center/cover no-repeat}
+.page[data-public-program=goal] .shade{background:linear-gradient(90deg,#211a10ef,#30251ab5 52%,#30251a2b),linear-gradient(0deg,#211a10b3,transparent 38%)}
+.page[data-public-program=goal] .body{margin:10px 12px 0;padding:12px;border:1px solid #e7c78f;border-radius:22px;background:#fff6e4}
+.page[data-public-program=goal] .body>.cta{margin:0 0 15px;color:#2b210c;background:linear-gradient(125deg,#ffe77a,#ffbe19);border-color:#e6b94d}
+@media(max-width:374px){.page[data-public-program=goal] .hero{margin-inline:7px;padding-inline:12px}.page[data-public-program=goal] .body{margin-inline:7px;padding:8px}}
