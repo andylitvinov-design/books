@@ -8,7 +8,7 @@ class Socket extends EventEmitter{
  constructor(){super();this.readyState=1;this.messages=[];this.pings=[]}
  send(value){this.messages.push(JSON.parse(value))}
  ping(value){this.pings.push(value)}
- close(){if(this.readyState===3)return;this.readyState=3;this.emit('close')}
+ close(code=1000){if(this.readyState===3)return;this.readyState=3;this.emit('close',code)}
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
@@ -17,14 +17,14 @@ function fixture({beforePersist=async()=>{}}={}){
  let run=createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const lease={leaseId:id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null,
   ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt:null})}
- let now=base,seq=20,tid=0;const timers=new Map(),events=[]
+ let now=base,seq=20,tid=0;const timers=new Map(),events=[],retired=[]
  const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
-  persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
+  retireLease:async b=>{retired.push(b);return true},persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
  function advance(ms){now+=ms;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
  const consent=()=>client.input({type:'hh_anti_stress_consent',decision:'start'})
- return {client,provider,relay,events,advance,ready,consent,base,get run(){return run}}
+ return {client,provider,relay,events,retired,advance,ready,consent,base,get run(){return run}}
 }
 test('server provider setup and explicit client consent are both required; paired real socket pongs alone credit time',async()=>{
  const f=fixture()
@@ -97,4 +97,22 @@ test('client disconnect during first durable begin closes upstream and records p
  release();await f.relay.settled()
  assert.equal(f.events.length,2);assert.equal(f.events[0].type,'begin');assert.equal(f.events[1].type,'disconnect')
  assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,0)
+})
+
+test('normal provider closure and durable pause retire only the exact therapy lease',async()=>{
+ const f=fixture();f.ready();f.consent();await f.relay.settled()
+ assert.equal(f.retired.length,0)
+ f.client.input({type:'hh_anti_stress_pause'});await f.relay.settled()
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.retired.length,1);assert.equal(f.retired[0].programKind,'therapy')
+ assert.equal(f.retired[0].leaseId,id(10));assert.equal(f.retired[0].protocolId,id(2))
+ const g=fixture();g.ready();g.consent();await g.relay.settled()
+ g.provider.close(1006);await g.relay.settled()
+ assert.equal(g.retired.length,0)
+ const h=fixture();h.client.close();await h.relay.settled()
+ assert.equal(h.retired.length,0)
+ const k=fixture({beforePersist:async e=>{if(e.type==='pause')throw Error('synthetic persistence failure')}})
+ k.ready();k.consent();await k.relay.settled()
+ k.client.input({type:'hh_anti_stress_pause'});await k.relay.settled()
+ assert.equal(k.retired.length,0)
 })
