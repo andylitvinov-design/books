@@ -6,7 +6,7 @@ import {createCoachBargeGate,isCoachBargeEcho} from '../lib/personal-coaching/co
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=false,recordedBytes=2000,transcribedText='Я хочу уточнить вашу мысль'}={}){
- let clock=0,energy=0,tick=null,stopped=0,uploads=0,captures=0;
+ let clock=0,energy=0,tick=null,cadence=100,stopped=0,uploads=0,captures=0;
  class Recorder{
   static isTypeSupported(m){return m==='audio/mp4'}
   state='inactive';mimeType='audio/mp4'
@@ -38,13 +38,14 @@ function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=fal
    assert.equal(init.method,'POST')
    assert.equal(init.body.get('locale'),'ru')
    uploads++
-   return {ok:true,json:async()=>({transcript:{text:transcribedText}})}
+   assert.equal(init.body.get('output'),'text','My Coach uses one text-only STT request')
+   return {ok:true,json:async()=>({text:transcribedText})}
   },
-  setInterval(fn){tick=fn;return 1},
+  setInterval(fn,ms){tick=fn;cadence=ms;return 1},
   clearInterval(){tick=null},
   performance:{now:()=>clock},
  }
- return {environment,pulse(rms,ms=100){clock+=ms;energy=rms;tick?.()},get uploading(){return uploads},
+ return {environment,pulse(rms,ms=100){energy=rms;for(let remaining=ms;remaining>0;){const step=Math.min(cadence,remaining);clock+=step;remaining-=step;tick?.()}},get uploading(){return uploads},
   get stopped(){return stopped},get ticker(){return tick},
   get captureRequests(){return captures}}
 }
