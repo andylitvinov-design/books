@@ -250,3 +250,25 @@ test('Gemini Live receives the same six localized personality questions without 
   assert.match(live,/Wait for a clear client yes/)
  }
 })
+
+ test('character appears at focus and feelings before confirmation without changing evidence gates',()=>{
+ const expected={mira:['ваша цель, и ваши силы','Ваше состояние для меня'],max:['Люблю цели','Я учитываю ваши силы'],sofia:['звучали ваши желания','Ваши чувства заслуживают'],alex:['делает эту цель ценной','Ваше состояние — часть картины']}
+ for(const [personaId,[focus,feelings]] of Object.entries(expected)){
+  const p=progress(['да','Анна','цель'],{personaId})
+  assert.equal(p.current,'feelings');assert.equal(p.completed,false)
+  const first=coachOpeningNextReply(p)
+  assert.ok(first.includes(focus));assert.equal((first.match(/\?/gu)||[]).length,1)
+  const q=progress(['да','Анна','цель','сегодня грустно'],{personaId})
+  assert.equal(q.current,'confirmation');assert.equal(q.checkmarks.confirmation,false)
+  const second=coachOpeningNextReply(q)
+  assert.ok(second.includes(feelings));assert.equal((second.match(/\?/gu)||[]).length,1)
+  assert.match(coachOpeningLiveInstruction(personaId,'ru'),/CHARACTER IN THE OPENING/)
+  const skipped=progress(['да','Анна','цель','пропустим'],{personaId})
+  assert.ok(!coachOpeningNextReply(skipped).includes(feelings))
+  assert.equal(progress(['да','Анна','цель','сегодня грустно','да'],{personaId}).completed,true)
+ }
+ for(const locale of ['en','ru','es']){
+  const reactions=['mira','max','sofia','alex','merlin','harry','caesar'].map(personaId=>coachOpeningNextReply({personaId,locale,current:'feelings',attempts:0,answers:{focus:{kind:'goal'}}}))
+  assert.equal(new Set(reactions.map(r=>r.split('. ')[0])).size,7)
+ }
+})

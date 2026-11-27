@@ -101,3 +101,6 @@ if (!good) {
     }
   })
 }
+
+// Same isolated PG17 runner; a separate rollback-only fixture.
+await import('./course-purchase-isolated.integration.mjs')
