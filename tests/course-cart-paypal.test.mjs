@@ -22,7 +22,7 @@ test('course cart accepts only known payable SKUs and deduplicates storage',()=>
  assert.equal(courseCartPath('ru',['one','two']),'/ru/cart?courses=one%2Ctwo')
 })
 test('activation requires each separate approval and respects PayPal kill switch',()=>{
- const approved={HH_COURSE_CHECKOUT_ENABLED:'true',HH_COURSE_CHECKOUT_SCHEMA_APPROVED:'true',HH_COURSE_CHECKOUT_FULFILLMENT_APPROVED:'true',HH_COURSE_PAYPAL_APPROVED:'true'}
+ const approved={HH_COURSE_CHECKOUT_ENABLED:'true',HH_COURSE_CHECKOUT_SCHEMA_APPROVED:'true',HH_COURSE_CHECKOUT_FULFILLMENT_APPROVED:'true',HH_COURSE_PAYPAL_APPROVED:'true',HH_COURSE_PAYPAL_REVIEW_APPROVED:'true'}
  assert.equal(courseCheckoutEnabled({}),false)
  for(const key of Object.keys(approved))assert.equal(courseCheckoutEnabled({...approved,[key]:'false'}),false)
  assert.equal(courseCheckoutEnabled(approved),true)

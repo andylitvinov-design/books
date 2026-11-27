@@ -46,7 +46,7 @@ export async function POST(request){
     const actor=await auth.verified()
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-    const input=await readBody(request,260000)
+    const input=await readBody(request,1800000)
     if(!input||typeof input!=='object'||Array.isArray(input))
       throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
     await consumeRate(config,{op:'my-coach-protocol',actor:actor.id},15,3600)

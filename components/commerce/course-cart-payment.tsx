@@ -18,30 +18,31 @@ export function CourseCartPayment({locale,ids,remove,enabled,mixed}:{locale:Serv
  const [consent,setConsent]=useState(false)
  const [busy,setBusy]=useState(false)
  const [failed,setFailed]=useState(false)
- const [pending,setPending]=useState<{id:string;redirectUrl:string}|null>(null)
+ const [pending,setPending]=useState<{id:string;redirectUrl:string|null;status:string}|null>(null)
+ const [orders,setOrders]=useState<{id:string;status:string;totalMinor:number;items:{id:string;amountMinor:number}[]}[]>([])
+ const [identityLoaded,setIdentityLoaded]=useState(false)
  const generation=useRef(0)
  const key=ids.join(',')
  useEffect(()=>{
-  generation.current+=1;setPending(null);setConsent(false);setFailed(false);setIdentity(null);setBusy(false)
-  if(!enabled||!key)return
+  generation.current+=1;setPending(null);setConsent(false);setFailed(false);setIdentity(null);setBusy(false);setOrders([]);setIdentityLoaded(false)
   const controller=new AbortController()
-  const version=generation.current
-  const load=()=>fetch('/api/app/course-checkout',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
+  const load=()=>{const version=++generation.current;setIdentityLoaded(false);return fetch('/api/app/course-checkout',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
     .then(async r=>r.ok?r.json():null).then(data=>{
       if(generation.current!==version||controller.signal.aborted)return
       setIdentity(data?.accountId?{accountId:data.accountId,onboardingState:data.onboardingState}:null)
-    }).catch(()=>{})
+      setOrders(Array.isArray(data?.orders)?data.orders:[]);setIdentityLoaded(true)
+    }).catch(()=>{if(generation.current===version&&!controller.signal.aborted){setIdentity(null);setOrders([]);setIdentityLoaded(true)}})}
   void load()
-  const hide=()=>{if(document.visibilityState==='hidden'){setIdentity(null);setPending(null)}else void load()}
+  const hide=()=>{if(document.visibilityState==='hidden'){generation.current++;setIdentity(null);setPending(null);setOrders([]);setBusy(false);setIdentityLoaded(false)}else void load()}
   window.addEventListener('pageshow',load);document.addEventListener('visibilitychange',hide)
   return()=>{generation.current++;controller.abort();window.removeEventListener('pageshow',load);document.removeEventListener('visibilitychange',hide)}
  },[enabled,key])
- if(!ids.length)return null
  const items=ids.map(id=>courseOffer(id,locale)).filter(item=>item!==null)
- if(!items.length)return null
- const total=quoteCourseCart(items.map(item=>item.id),locale).totalMinor
+ if(!items.length&&!orders.length)return null
+ const total=items.length?quoteCourseCart(items.map(item=>item.id),locale).totalMinor:0
+ const orderText={en:{history:'Your course orders',receipt:'PayPal transaction ID',send:'Submit receipt for review',submitted:'Receipt submitted · awaiting review',paid:'Payment verified',refunded:'Refund recorded',hold:'Payment not verified',existing:'An order already exists. Do not pay again.'},ru:{history:'Ваши заказы курсов',receipt:'Номер операции PayPal',send:'Отправить номер на проверку',submitted:'Номер отправлен · ожидаем проверки',paid:'Оплата проверена',refunded:'Возврат записан',hold:'Оплата не подтверждена',existing:'Заказ уже существует. Не платите повторно.'},es:{history:'Tus pedidos de cursos',receipt:'ID de transacción PayPal',send:'Enviar referencia para revisión',submitted:'Referencia enviada · en revisión',paid:'Pago verificado',refunded:'Reembolso registrado',hold:'Pago sin verificar',existing:'El pedido ya existe. No pagues otra vez.'}}[locale]
  async function checkout(){
-  if(!enabled||busy||!consent||pending)return
+  if(!enabled||busy||!consent||pending||!identityLoaded||!items.length)return
   setBusy(true);setFailed(false)
   const version=generation.current
   try{
@@ -57,16 +58,23 @@ export function CourseCartPayment({locale,ids,remove,enabled,mixed}:{locale:Serv
    const r=await fetch('/api/app/course-checkout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-HH-Account-ID':identity.accountId},
      body:JSON.stringify({items:ids,locale,confirmed:true,timezone})})
    const data=await r.json()
-   if(!r.ok||typeof data.order?.id!=='string'||typeof data.redirectUrl!=='string')throw Error('ORDER')
+   if(!r.ok||typeof data.order?.id!=='string')throw Error('ORDER')
+   if(data.redirectUrl===null){if(version===generation.current){setPending({id:data.order.id,redirectUrl:null,status:data.order.status});setOrders(current=>[data.order,...current.filter(x=>x.id!==data.order.id)])}return}
+   if(typeof data.redirectUrl!=='string')throw Error('REDIRECT')
    const url=new URL(data.redirectUrl)
    if(url.protocol!=='https:'||url.hostname!=='paypal.me'||!/^\/psitrends\/[0-9]+(?:\.[0-9]{2})?EUR$/.test(url.pathname)||url.search||url.hash)throw Error('REDIRECT')
-   if(version===generation.current)setPending({id:data.order.id,redirectUrl:url.href})
+   if(version===generation.current){setPending({id:data.order.id,redirectUrl:url.href,status:data.order.status});setOrders(current=>[data.order,...current.filter(x=>x.id!==data.order.id)])}
   }catch{if(version===generation.current)setFailed(true)}
   finally{if(version===generation.current)setBusy(false)}
  }
+ async function submitReceipt(orderId:string,receipt:string){
+  if(!identity||!identityLoaded||busy)return
+  setBusy(true);setFailed(false);const version=generation.current
+  try{const res=await fetch('/api/app/course-checkout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-HH-Account-ID':identity.accountId},body:JSON.stringify({orderId,reference:receipt})});if(!res.ok)throw Error('RECEIPT');if(version===generation.current){setOrders(current=>current.map(o=>o.id===orderId?{...o,status:'receipt_submitted'}:o));setPending(null)}}catch{if(version===generation.current)setFailed(true)}finally{if(version===generation.current)setBusy(false)}
+ }
  return <section className={styles.orderStep} data-course-cart aria-label={t.title}>
   <h2>{t.title}</h2>
-  {mixed&&<p className={styles.hint}>{t.split}</p>}
+  {items.length>0&&<>{mixed&&<p className={styles.hint}>{t.split}</p>}
   <ul className={styles.lines}>{items.map(item=><li key={item.id} className={styles.serviceCard}>
     <div className={styles.serviceDetails}><strong>{item.title}</strong></div>
     <div className={styles.serviceActions}><b>{formatServiceAmount(item.amountMinor,locale)}</b><button type="button" disabled={busy||!!pending} aria-label={t.remove+': '+item.title} onClick={()=>remove(item.id)}><Trash2 size={17}/></button></div>
@@ -75,9 +83,10 @@ export function CourseCartPayment({locale,ids,remove,enabled,mixed}:{locale:Serv
   {enabled?<><p className={styles.hint}>{t.note}</p>
    <label><input type="checkbox" checked={consent} disabled={busy||!!pending} onChange={e=>setConsent(e.currentTarget.checked)}/>{t.consent}</label>
    <p><Link href="/terms">{t.terms}</Link> · <Link href="/privacy">{t.privacy}</Link></p>
-   {pending?<p role="status">{t.pending} <code>{pending.id}</code><br/><a className={styles.primary} href={pending.redirectUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><CreditCard size={18}/>{t.pay}</a></p>:
-    <button type="button" className={styles.primary} disabled={!consent||busy} onClick={()=>void checkout()}>{busy?'…':identity?t.pay:t.sign}</button>}
-  </>:<p role="status">{t.error}</p>}
+   {pending?<div role="status">{pending.redirectUrl?t.pending:orderText.existing} <code>{pending.id}</code>{pending.redirectUrl&&<a className={styles.primary} href={pending.redirectUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={()=>setPending(p=>p?{...p,redirectUrl:null}:null)}><CreditCard size={18}/>{t.pay}</a>}</div>:
+    <button type="button" className={styles.primary} disabled={!consent||busy||!identityLoaded} onClick={()=>void checkout()}>{busy?'…':identity?t.pay:t.sign}</button>}
+  </>:<p role="status">{t.error}</p>}</>}
+  {orders.length>0&&<section aria-label={orderText.history}><h3>{orderText.history}</h3>{orders.map(order=><div key={order.id} className={styles.orderStep}><strong>{formatServiceAmount(order.totalMinor,locale)} · {order.status==='paid'?orderText.paid:order.status==='refunded'?orderText.refunded:order.status==='receipt_submitted'?orderText.submitted:orderText.hold}</strong><p><code>{order.id}</code></p>{order.status==='awaiting_payment'&&<form onSubmit={e=>{e.preventDefault();const value=new FormData(e.currentTarget).get('reference');if(typeof value==='string')void submitReceipt(order.id,value)}}><label>{orderText.receipt}<input name="reference" required minLength={6} maxLength={120} autoComplete="off" disabled={busy}/></label><button type="submit" disabled={busy||!identityLoaded}>{orderText.send}</button></form>}</div>)}</section>}
   {failed&&<p role="alert">{t.error}</p>}
  </section>
 }

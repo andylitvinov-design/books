@@ -1,4 +1,8 @@
 import test from 'node:test'
+import './coach-character-signature.test.mjs'
+import './page-auth-continuation.test.mjs'
+import './my-coach-express-auth.test.mjs'
+import './reiki-join-dialog.test.mjs'
 import './coach-session-director.test.mjs'
 import './coach-signature-speech.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
@@ -237,7 +241,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
   assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
-  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
   assert.ok(ui.includes('voiceProviderDetails'))
   assert.ok(!ui.includes('naturalVoiceRow'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -308,7 +312,7 @@ test('the twelve registered presentations flow directly into the same live dialo
   const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
   assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
   assert.ok(ui.includes('introduction={introduction}'))
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}'))
   assert.ok(ui.includes('replayingIntro'))
   assert.ok(ui.includes('onBlocked:fail'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))

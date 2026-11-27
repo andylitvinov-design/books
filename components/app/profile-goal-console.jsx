@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Info, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
+import ProfileProgramRequest from './profile-program-request'
+import GoalLandingSections from '@/components/goal-landing-sections'
 import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
 import { collectJournalExport } from '@/lib/app/daybook-journal-export.mjs'
 import { profileDaybookHref } from '@/lib/profile/profile-daybook-route.mjs'
@@ -69,7 +71,7 @@ const LANDING = {
 }
 const percent = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null
 const validGoal = goal => goal && typeof goal.title === 'string' && goal.title.trim() && VALID_GOALS.has(goal.status)
-function goalList(data) {
+export function goalList(data) {
   const roots = Array.isArray(data?.goals) ? data.goals : []
   const nested = Array.isArray(data?.domains) ? data.domains.flatMap(domain => Array.isArray(domain?.goals) ? domain.goals : []) : []
   const seen = new Set()
@@ -87,7 +89,7 @@ function getStatus(step, value, t) {
   if (value === 100) return t.done
   return t.ready
 }
-export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', accountId = null, children }) {
+export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', accountId = null, children, selectedGoalId = null, cabinetSnapshot = null }) {
   const lang = Object.hasOwn(COPY, locale) ? locale : 'en'
   const t = COPY[lang]
   const landing = LANDING[lang]
@@ -96,7 +98,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const [course, setCourse] = useState({ owner: null, entries: null, error: false })
   const [courseRetry, setCourseRetry] = useState(0)
   useEffect(() => {
-    if (!accountId) return undefined
+    if (!accountId || cabinetSnapshot) return undefined
     const controller = new AbortController()
     setExpandedStage(null)
     setState({ owner: accountId, loading: true, error: false, plan: null })
@@ -104,15 +106,15 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
       .then(plan => { if (!controller.signal.aborted) setState({ owner: accountId, loading: false, error: false, plan }) })
       .catch(() => { if (!controller.signal.aborted) setState({ owner: accountId, loading: false, error: true, plan: null }) })
     return () => controller.abort()
-  }, [accountId, lang])
-  const view = state.owner === accountId ? state : { owner: null, loading: Boolean(accountId), error: false, plan: null }
+  }, [accountId, lang, cabinetSnapshot])
+  const view = cabinetSnapshot?.owner === accountId ? cabinetSnapshot : state.owner === accountId ? state : { owner: null, loading: Boolean(accountId), error: false, plan: null }
   const goals = useMemo(() => goalList(view.plan), [view.plan])
-  const selected = goals[0] || null
+  const selected = selectedGoalId ? goals.find(goal => String(goal.id) === selectedGoalId) || null : goals[0] || null
   const records = STEPS.map(({ id }) => selected ? stageRecord(selected, GOAL_STAGE_IDS.indexOf(id)) : null)
   const scores = records.map(row => percent(row?.progressPercent ?? row?.percent))
   const hasSelected = Boolean(selected)
   useEffect(() => {
-    if (!accountId || !hasSelected) return undefined
+    if (!accountId || !hasSelected || cabinetSnapshot) return undefined
     const controller = new AbortController()
     setCourse({ owner: accountId, entries: null, error: false })
     const scopedFetch = (path, body, method, options) => appFetch(path, body, method, {...options, signal: controller.signal})
@@ -120,8 +122,8 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
       .then(result => { if (!controller.signal.aborted) setCourse({ owner: accountId, entries: result.entries, error: false }) })
       .catch(() => { if (!controller.signal.aborted) setCourse({ owner: accountId, entries: null, error: true }) })
     return () => controller.abort()
-  }, [accountId, hasSelected, courseRetry])
-  const courseView = course.owner === accountId ? course : {entries: null, error: false}
+  }, [accountId, hasSelected, courseRetry, cabinetSnapshot])
+  const courseView = cabinetSnapshot?.owner === accountId ? {entries:cabinetSnapshot.entries,error:cabinetSnapshot.entriesError} : course.owner === accountId ? course : {entries: null, error: false}
   const goalId = selected ? String(selected.id) : null
   const progress = useMemo(() => courseView.entries && goalId ? guideGoalProgress(courseView.entries, goalId) : null, [courseView.entries, goalId])
   const overall = progress?.percent ?? null
@@ -135,12 +137,9 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {showLanding && <header className={css.programHero} data-goal-program-landing data-profile-space-scenic>
       <p className={css.programEyebrow}><Target size={20} aria-hidden="true"/>{landing.label}</p>
       <h1>{landing.title}</h1><p className={css.programIntro}>{landing.intro}</p>
-      <div className={css.programActions}>
-        <Link href={startHref} prefetch={false} className={css.primaryAction} data-goal-vector-entry><PlayCircle size={23} aria-hidden="true"/><strong>{landing.start}</strong><ChevronRight size={18} aria-hidden="true"/></Link>
-        <a href="#goal-program-stages" className={css.secondaryAction}><Info size={20} aria-hidden="true"/><strong>{landing.details}</strong></a>
-      </div>
+      <ProfileProgramRequest locale={lang} program="goal"/>
     </header>}
-    {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
+    {!selectedGoalId && goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
@@ -167,11 +166,11 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           {lessonHref ? <Link href={lessonHref} prefetch={false} className={css.lessonButton} data-goal-current-lesson={next.week}>
             <PlayCircle size={23} aria-hidden="true" /><strong>{t.lesson} — {t.week} {next.week}</strong><ChevronRight size={20} aria-hidden="true" />
           </Link> : progress && !next ? <div className={css.lessonComplete} role="status"><CheckCircle2 size={20} aria-hidden="true" />{t.courseDone}</div> :
-            <div className={css.lessonStatus} role="status">{courseView.error || progress ? <>{t.courseError} <button type="button" onClick={() => setCourseRetry(value => value + 1)}>{t.courseRetry}</button></> : t.courseLoading}</div>}
+            <div className={css.lessonStatus} role="status">{courseView.error || progress ? <>{t.courseError} <button type="button" onClick={() => cabinetSnapshot ? cabinetSnapshot.onRetry?.() : setCourseRetry(value => value + 1)}>{t.courseRetry}</button></> : t.courseLoading}</div>}
         </div>
         <div className={css.activeUtilities}>
           <Link href={startHref} prefetch={false} data-goal-vector-entry><Plus size={20} aria-hidden="true"/>{t.add}</Link>
-          <a href="#goal-program-stages"><Info size={20} aria-hidden="true"/>{landing.details}</a>
+          <Link href={'/'+lang+'/programs/goal'} prefetch={false} data-goal-public-details><Info size={20} aria-hidden="true"/>{landing.details}</Link>
         </div>
       </>}
     {showLanding && <section className={css.benefits} aria-label={landing.benefits}>
@@ -181,6 +180,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
         <span><strong>{title}</strong><small>{detail}</small></span>
       </div>)}</div>
     </section>}
+    {showLanding && <div className={css.activeUtilities}><Link href={startHref} prefetch={false} data-goal-vector-entry><Plus size={20} aria-hidden="true"/>{t.add}</Link></div>}
     <div id="goal-program-stages" className={css.programStages}>
     <h2 className={css.stepsTitle}>{t.plan}</h2>
     <p className={css.programSubtitle}>{landing.subtitle}</p>
@@ -215,5 +215,6 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
     {selected && children && <div className={css.focusDetails}>{children}</div>}
     </div>
+    {showLanding && <GoalLandingSections locale={lang} showHeading={false}/> }
   </section>
 }

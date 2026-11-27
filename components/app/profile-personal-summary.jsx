@@ -5,6 +5,7 @@ import {ArrowRight,BarChart3,LockKeyhole,Pencil,Play,Target,UserRound,Video} fro
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import {buildProfileAssessmentView} from '@/lib/profile/profile-assessment-view'
 import styles from './profile-personal-summary.module.css'
+import MyPageCourses from './my-page-courses'
 
 const COPY={
  ru:{about:'Обо мне',emptyBio:'Расскажите о себе в настройках своей странички.',edit:'Редактировать',privacy:'Личная страничка · ваши данные',goal:'Моя терапевтическая задача',goalEmpty:'Текст личной задачи пока не указан. Сформулировать направление работы можно в «Моём пути».',goalNote:'Самооценка выбранной цели — не диагноз и не результат теста.',goalLink:'Мой путь',goalRatings:['Ясность цели','Мотивация к цели','Уверенность в достижении цели'],tests:'Результаты моих тестов',testsEmpty:'Пока нет завершённых профессиональных тестов.',testsNote:'Это позиции в шкалах отдельных опросников, а не общий процент здоровья.',allTests:'Мои тесты',videos:'Мои видео и медитации',allVideos:'Все мои видео',videosEmpty:'Сохранённых видео пока нет.',open:'Смотреть',add:'Добавить на страничку',private:'Приватно',videoError:'Видео пока недоступно. Откройте его в библиотеке.',editIntro:'Настроить мою страничку',wait:'Загружаем личные результаты…',resultError:'Не удалось загрузить результаты. Откройте «Мои тесты».',personal:'Мои личные материалы',themes:{energy:'Энергия',relationships:'Отношения',goals:'Цели',money:'Деньги',health:'Самочувствие',life:'Жизнь'}},
@@ -62,6 +63,17 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
        <button type="button" onClick={onEdit} className={styles.primary}><Pencil size={19} aria-hidden="true"/>{t.edit}</button>
        <Link href={'/'+appLocale+'/app/portrait?space=path'} className={styles.outline}>{t.goalLink}<ArrowRight size={18} aria-hidden="true"/></Link>
      </div>
+   </section>
+   <MyPageCourses locale={language} accountId={data?.accountId||data?.page?.account_id}/>
+   <section className={styles.card} aria-label={language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}>
+    <header className={styles.heading}><UserRound size={23} aria-hidden="true"/><h2>{language==='ru'?'Мой кабинет':language==='es'?'Mi espacio':'My cabinet'}</h2></header>
+    <div className={styles.measures}>{[
+     ['/'+appLocale+'/app/my-coaching-plan',language==='ru'?'Цели и отчёты коучинга':language==='es'?'Metas e informes de coaching':'Goals & coaching reports'],
+     ['/'+appLocale+'/app/portrait?space=reports',language==='ru'?'Мои отчёты':language==='es'?'Mis informes':'My reports'],
+     ['/'+appLocale+'/app/portrait?space=sessions',language==='ru'?'Мои сессии':language==='es'?'Mis sesiones':'My sessions'],
+     ['/'+language+'/holistic-support/mandala','MyVideo'],
+     ['/'+appLocale+'/app/settings',language==='ru'?'Настройки':language==='es'?'Ajustes':'Settings']
+    ].map(([href,title])=><Link key={href} href={href} prefetch={false} className={styles.measure} data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}><span className={styles.measureTop}><strong>{title}</strong><ArrowRight size={16} aria-hidden="true"/></span></Link>)}</div>
    </section>
    <section className={styles.card} aria-label={t.goal}>
      <header className={styles.heading}><Target size={23} aria-hidden="true"/><h2>{t.goal}</h2><Link href={'/'+appLocale+'/app/portrait?space=path'} aria-label={t.goalLink}><ArrowRight size={20}/></Link></header>
