@@ -286,7 +286,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
-  const [showPrograms, setShowPrograms] = useState(false)
   const [selectedMethod,setSelectedMethod]=useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
@@ -403,17 +402,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <ClarityStartLink locale={lang} className={heroStyles.freeProgram}>
                 <BookOpen size={18} aria-hidden="true"/><span>{programs.free}</span><ArrowRight size={18} aria-hidden="true"/>
               </ClarityStartLink>
-              <button type="button" className={heroStyles.programDetails} aria-expanded={showPrograms}
-                aria-controls="my-coach-program-options" onClick={() => setShowPrograms(open => !open)}>
+              <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
                 <span>{programs.details}</span><ArrowRight size={17} aria-hidden="true"/>
-              </button>
+              </Link>
             </div>
           </div>
-        </div>
-        <div id="my-coach-program-options" className={heroStyles.programOptions} hidden={!showPrograms}>
-          {['clarity','goal','business'].map(id => <Link key={id} href={'/' + lang + '/programs/' + id}>
-            {programs[id]} <ArrowRight size={17} aria-hidden="true"/>
-          </Link>)}
         </div>
         <div className={heroStyles.coachRailHeading}>
           <h2>{hw.choose}</h2>
