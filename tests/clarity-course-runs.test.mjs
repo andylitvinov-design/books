@@ -278,3 +278,18 @@ test('credential interlock is in both owner-locked mutation paths before time or
  const route=readFileSync(new URL('../app/api/app/clarity-course/runs/route.js',import.meta.url),'utf8')
  assert.doesNotMatch(route,/requireClarityCredentialEvent|applyTrustedClarityRunEvent|startFirstClarityRun/)
 })
+
+
+test('daily quota preflight reads the shared slot before credential reservation and never claims consent',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js'),quota=read('lib/app/coaching-free-day-quota.js')
+ const preflight=quota.slice(quota.indexOf('export async function assertFreeCoachingDayAvailable'),quota.indexOf('// INTERNAL ONLY:'))
+ assert.match(preflight,/where account_id=\$1 and calendar_day=\$2::date/)
+ assert.match(preflight,/protocolId.toLowerCase\(\)/)
+ assert.doesNotMatch(preflight,/insert into|update |delete from/i)
+ const body=store.slice(store.indexOf('export async function reserveClarityCredentialInTransaction'),store.indexOf('export async function reserveClarityRunCredential'))
+ const lock=body.indexOf('await lockCourseOwner'),check=body.indexOf("if(run.access==='free')await assertFreeCoachingDayAvailable")
+ assert.ok(lock>=0&&check>lock&&check<body.indexOf('insert into '))
+ assert.match(body,/new Date\(now\).toISOString\(\).slice\(0,10\)/)
+ assert.doesNotMatch(body,/await claimTrustedFreeCoachingDays/)
+})

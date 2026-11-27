@@ -145,12 +145,12 @@ if(!isolated){
         // disposable local database. This is not a registered deployment
         // migration, provider acceptance or flag activation.
         await db.query(await readFile(new URL('../docs/coaching/clarity-course-runs.proposal.sql',import.meta.url),'utf8'))
-        const {claimTrustedFreeCoachingDays}=await import('../lib/app/coaching-free-day-quota.js')
+        const {claimTrustedFreeCoachingDays,assertFreeCoachingDayAvailable}=await import('../lib/app/coaching-free-day-quota.js')
         const {transaction}=await import('../lib/app/database.js')
         const C='10000000-0000-4000-8000-000000000003'
         const runA='20000000-0000-4000-8000-000000000001',runB='20000000-0000-4000-8000-000000000002',runC='20000000-0000-4000-8000-000000000003'
         const p1='30000000-0000-4000-8000-000000000001',p2='30000000-0000-4000-8000-000000000002',p3='30000000-0000-4000-8000-000000000003'
-        const date='2026-11-27',nextDate='2026-11-28'
+        const date='2000-01-01',nextDate='2000-01-02'
         const claim=(actor,calendarDay,protocolId)=>transaction(config,actor,c=>claimTrustedFreeCoachingDays(c,actor,[{calendarDay,protocolId}]))
         const freeRuns='app_private.clarity_course_runs',bindings='app_private.clarity_course_run_sessions',quota='app_private.coaching_free_session_days',leases='app_private.clarity_live_credential_windows'
         await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$2,$2)',[C,'active'])
@@ -200,15 +200,25 @@ if(!isolated){
         const {createClarityRun}=await import('../lib/coaching/clarity-course-runs.mjs')
         const candidate=(n)=>createClarityRun({id:'60000000-0000-4000-8000-00000000000'+n,ordinal:1,access:'free',createdAt:0,protocolIds:[p1,p2,p3]})
         const reserve=(actor,run)=>transaction(config,actor,c=>reserveClarityCredentialInTransaction(c,actor,run,{day:1,protocolId:p1}))
+        // Use the database UTC date rather than a fixed date for preflight.
+        const today=(await db.query("select to_char(clock_timestamp() at time zone 'UTC','YYYY-MM-DD') as day")).rows[0].day
+        await claim(actorB,today,p2)
+        await assert.rejects(()=>reserve(actorB,candidate(4)),{code:'COACHING_FREE_DAILY_LIMIT'})
+        assert.equal((await as(B,c=>c.query('select lease_id from '+leases))).rowCount,0)
+        assert.equal(await transaction(config,actorB,c=>assertFreeCoachingDayAvailable(c,actorB,{calendarDay:today,protocolId:p2})),true)
+        assert.equal(await transaction(config,actorA,c=>assertFreeCoachingDayAvailable(c,actorA,{calendarDay:today,protocolId:p1})),true)
+        assert.equal((await as(A,c=>c.query('select protocol_id from '+quota+' where calendar_day=$1',[today]))).rowCount,0)
         const leaseRace=await Promise.allSettled([reserve(actorA,candidate(1)),reserve(actorA,candidate(2))])
         assert.equal(leaseRace.filter(x=>x.status==='fulfilled').length,1)
         assert.equal(leaseRace.find(x=>x.status==='rejected').reason.code,'CLARITY_CREDENTIAL_BUSY')
         const lease=leaseRace.find(x=>x.status==='fulfilled').value
+        assert.equal((await as(A,c=>c.query('select protocol_id from '+quota+' where calendar_day=$1',[today]))).rowCount,0,'mint reservation never claims a day')
         assert.equal(Date.parse(lease.expiresAt)-lease.now,1200000)
         assert.equal(Date.parse(lease.newSessionExpireTime)-lease.now,45000)
         assert.equal((await as(A,c=>c.query('select lease_id from '+leases))).rows[0].lease_id,lease.leaseId)
         await assert.rejects(()=>reserve(actorA,candidate(3)),{code:'CLARITY_CREDENTIAL_BUSY'})
-        await reserve(actorB,candidate(4))
+        const candidateB=createClarityRun({id:candidate(4).id,ordinal:1,access:'free',createdAt:0,protocolIds:[p2,p1,p3]})
+        await transaction(config,actorB,c=>reserveClarityCredentialInTransaction(c,actorB,candidateB,{day:1,protocolId:p2}))
         assert.equal((await as(B,c=>c.query('select lease_id from '+leases+' where account_id=$1',[A]))).rowCount,0)
         assert.equal((await as(B,c=>c.query('update '+leases+' set possible_expires_at_ms=reserved_at_ms+1 where account_id=$1',[A]))).rowCount,0)
         await assert.rejects(()=>as(A,c=>c.query('delete from '+leases+' where account_id=$1',[A])),/permission denied/i)
