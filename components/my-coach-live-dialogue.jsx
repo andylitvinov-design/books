@@ -600,10 +600,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
     if(greetingIdentity.status==='loading')return
+    if(nameCorrectionRef.current){toggleComposer();return}
     if(privateTextOnly||courseGateRequired){toggleComposer();return}
     if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
+    if(liveVoiceSelected&&greetingIdentity.name&&!turnsRef.current.length){
+      // Show the name in the first-party transcript, not in a provider start packet.
+      flushSync(()=>captureBasicIntroduction())
+    }
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   // Explicit logical start shared by text, streaming and Live. Never reselect on resume.
@@ -1133,6 +1138,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // text-model + WAV-TTS pipeline. Do not charge another provider.
       const message=draft.trim()
       if(!message)return null
+      if(nameCorrectionRef.current||openingProgress.pendingNameCorrection||coachExplicitNameCorrection(message)){
+        speechRef.current?.stop?.();voicePauseRef.current=false
+        setVoiceState({phase:'idle',beat:0})
+        return await sendMessage(message,{forceLocal:true})
+      }
       // An unavailable or stopped transport must not lock the text composer.
       // The same first-party coach continues locally; no other provider is called.
       if(!liveVoiceReady||voiceState.phase==='idle'||
@@ -1480,6 +1490,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(decision==='confirm'){
         const owner=protocolOwnerRef.current
         if(owner){
+          setBusy(true)
           try{
             const response=await fetch('/api/app/my-coach/protocol',{method:'POST',credentials:'same-origin',cache:'no-store',
               headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
@@ -1491,7 +1502,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             retainPendingClient()
             setDraft('');setSpeechPreview('')
             return {reply:({ru:'Не удалось сохранить имя в профиле. Попробуйте подтвердить ещё раз.',en:'I could not save the name in your profile. Please confirm again.',es:'No pude guardar el nombre en tu perfil. Confírmalo otra vez.'})[responseLocale],mode:'identity',locale:responseLocale}
-          }
+          }finally{setBusy(false)}
         }
         confirmedNameRef.current=candidate
         nameCorrectionRef.current=null
@@ -2206,8 +2217,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setGreetingAccepted(true)
     })
     if(privateProfile){toggleComposer();return}
-    if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
+    if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying){
+      if(greetingIdentity.name&&!turnsRef.current.length)flushSync(()=>captureBasicIntroduction())
       speechRef.current?.startSession?.()
+    }
   }
   const motionPhase=paused||voiceState.phase==='paused'?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
@@ -2361,7 +2374,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
-            enabled={liveVoiceReady} canStart={!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
+            enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             localRecoveryTurns={turns}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
@@ -2378,6 +2391,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             }}
             onInputInterim={setSpeechPreview}
             onInputFinal={text=>{
+              // A recognized explicit correction stops the current transport before
+              // its next reply is accepted. Confirmation is a local text turn;
+              // never mint another grant automatically or let a model save a name.
+              const candidate=coachExplicitNameCorrection(text)
+              const guard={locale:conversationLang,message:text,turns:turnsRef.current}
+              if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
+                if(!appendLiveTranscript('user',text))return true
+                const question=coachNameCorrectionQuestion(candidate,conversationLang)
+                const reply={role:'assistant',content:question,mode:'offline',stage:'opening',locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
+                if(coachProtocolCanAppend(turnsRef.current,[reply])){
+                  nameCorrectionRef.current={name:candidate}
+                  const next=[...turnsRef.current,reply];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+                  setDraft('');setStreamingPreview('');setSpeechPreview('');toggleComposer()
+                }
+                return true
+              }
               const captured=appendLiveTranscript('user',text)
               // Current client corrections/topic changes outrank all old memory.
               if(['correction','topic_shift'].includes(
