@@ -181,3 +181,22 @@ test('reviewed therapy outcomes override the practice time window without repeat
   const next=act(allReflection);assert.equal(next.action,'listen-and-reflect');assert.equal(next.maxQuestions,0);
  }
 })
+
+test('Therapy review requires exact question, client answer, exact echo and explicit real acknowledgement',async()=>{
+ const {antiStressExactObservedReview,antiStressReviewEcho}=await import('../lib/coaching/anti-stress-observed-review.mjs')
+ const {antiStressScenario}=await import('../lib/coaching/anti-stress-course.mjs')
+ const scenario=antiStressScenario('anti_stress_ground','ru')
+ const field=scenario.fields.find(f=>f.id==='resource_selected')
+ const scope={kind:'turn',proof:'server_observed_final_turn',scenarioVersion:scenario.version,sessionId:scenario.sessionId,courseRunId:'run',protocolId:'protocol',segmentId:'segment',connectionId:'lease',coachId:'mira'}
+ const row=(n,role,text)=>({...scope,turnId:'turn-'+n,role,text,atMs:n})
+ const t=[row(1,'coach',field.question),row(2,'client','Тихий сад'),row(3,'coach',antiStressReviewEcho('Тихий сад','ru')),row(4,'client','Да')]
+ const review=antiStressExactObservedReview({sessionId:scenario.sessionId,turns:t,locale:'ru'})
+ assert.equal(review.fieldId,'resource_selected');assert.equal(review.value,'Тихий сад');assert.equal(review.confirmationTurnId,'turn-4')
+ for(const rows of [t.slice(0,3),[...t.slice(0,2),row(3,'coach',antiStressReviewEcho('Море','ru')),t[3]],[...t.slice(0,3),row(4,'client','Возможно')],[...t.slice(0,3),{...t[3],segmentId:'other'}],[row(1,'coach','Какой образ?'),...t.slice(1)]])
+  assert.equal(antiStressExactObservedReview({sessionId:scenario.sessionId,turns:rows,locale:'ru'}),null)
+ const permission=scenario.fields.find(f=>f.id==='practice_consent')
+ const build=answer=>[row(1,'coach',permission.question),row(2,'client',answer),row(3,'coach',antiStressReviewEcho(answer,'ru')),row(4,'client','Да')]
+ assert.equal(antiStressExactObservedReview({sessionId:scenario.sessionId,turns:build('Да'),locale:'ru'}),null)
+ assert.equal(antiStressExactObservedReview({sessionId:scenario.sessionId,turns:build('попробовать'),locale:'ru'}).value,'accepted')
+ assert.equal(antiStressExactObservedReview({sessionId:scenario.sessionId,turns:build('пропустить'),locale:'ru'}).status,'skipped')
+})
