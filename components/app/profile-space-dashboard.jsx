@@ -178,11 +178,12 @@ function BusinessReportDownloads({locale,position}) {
   </section>
 }
 
-export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
+export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null, embeddedSection = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const videoHint = {en:'Create videos for yourself, loved ones and work.',ru:'Создавайте видео для себя, близких и работы.',es:'Crea vídeos para ti, tus seres queridos y el trabajo.'}[selected]
-  const [section, setSection] = useState('clarity')
+  const [localSection, setSection] = useState('clarity')
+  const section = embeddedSection || localSection
   const [openedStage, setOpenedStage] = useState(null)
   const [selectedNeed, setSelectedNeed] = useState(null)
   const c = CLARITY[selected]
@@ -217,7 +218,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   ]
   const cards = [
     { id: 'state', icon: Target, href: root + '/my-coaching-plan', title: t.state, detail: t.stateDetail },
-    { id: 'courses', icon: BookOpen, href: root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
+    { id: 'courses', icon: BookOpen, href: accountId ? '/'+selected+'/my-page#my-courses' : root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
     { id: 'reports', icon: Brain, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
     { id: 'sessions', icon: CalendarDays, href: root + '/portrait?space=sessions', title: t.sessions, detail: t.sessionsDetail },
   ]
@@ -238,14 +239,16 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     if (index !== null) requestAnimationFrame(()=>document.getElementById('clarity-stage-'+index)?.scrollIntoView({block:'nearest',behavior:'smooth'}))
   }
 
-  return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
-    <nav className={styles.profileTabs} aria-label={navigation.label} data-goal-profile-tabs data-profile-mode-switch>
+  // Signed-in course management lives only in My Page. Guest discovery remains available.
+  if (accountId && !embeddedSection) return <Link href={profile+'#my-courses'} className={styles.profileInsight} prefetch={false} data-profile-my-page-courses-entry><BookOpen size={23} aria-hidden="true"/>{t.courses}<ArrowRight size={19} aria-hidden="true"/></Link>
+  return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section} data-my-page-embedded-program={embeddedSection || undefined}>
+    {!embeddedSection && <nav className={styles.profileTabs} aria-label={navigation.label} data-goal-profile-tabs data-profile-mode-switch>
       {tabs.map(({ id, title, icon: Icon }) => <button key={id} type="button"
         className={section === id ? styles.profileTabActive : styles.profileTab}
         onClick={() => setSection(id)} aria-pressed={section === id} data-goal-profile-tab={id}>
         <Icon size={23} aria-hidden="true"/><strong>{title}</strong>
       </button>)}
-    </nav>
+    </nav>}
     {section === 'business' && <section className={styles.businessProgram} aria-label={b.title} data-profile-business>
       <header className={styles.businessHero}>
         <p className={styles.businessEyebrow}><BriefcaseBusiness size={19} aria-hidden="true"/>{b.label}</p>
@@ -334,9 +337,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <ClarityStartLink locale={selected} className={styles.clarityPersonal}>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
       </ClarityStartLink>
-      <ReikiProfileCourseCard locale={selected} />
+      {!embeddedSection && <ReikiProfileCourseCard locale={selected} />}
       <p className={styles.clarityNotice}>{c.notice}</p>
-      <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
+      {!embeddedSection && <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
         <UserRound size={23} aria-hidden="true"/>{t.insights}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
@@ -371,15 +374,15 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       </Link>
     </nav>
     <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false} data-profile-space-work><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
-      </details>
+      </details>}
     </section>}
     {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
       <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
     </Link>}
-    <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
+    {!embeddedSection && <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
       <span className={styles.myVideoIcon}><Film size={25} strokeWidth={1.8} aria-hidden="true"/></span>
       <span className={styles.myVideoCopy}><strong>MyVideo</strong><small>{videoHint}</small></span>
       <ArrowRight size={20} aria-hidden="true"/>
-    </Link>
+    </Link>}
   </div>
 }

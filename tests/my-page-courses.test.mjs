@@ -14,3 +14,19 @@ test('independent coaching runs use total server time and do not show ready unst
  assert.deepEqual(summarizeClarityRuns(runs).map(c=>[c.id,c.percent]),[['r1',50],['r3',100]])
  assert.equal(combineMyPageCourses([{key:'x',state:'closed'}],runs).at(0).id,'r1')
 })
+
+import {readFileSync} from 'node:fs'
+test('My Page is the private course hub; real goal selection and saved lesson routing survive',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const courses=read('components/app/my-page-courses.jsx'),goal=read('components/app/profile-goal-console.jsx'),dashboard=read('components/app/profile-space-dashboard.jsx'),dock=read('lib/unified-mobile-dock.mjs')
+ assert.ok(courses.includes('aria-expanded={expanded} aria-controls={region}'))
+ assert.ok(courses.includes('hidden={!expanded}>{expanded&&content}'))
+ assert.ok(courses.includes('guideGoalProgress(goalSnapshot?.entries,id)'))
+ assert.ok(courses.includes('selectedGoalId={c.id} cabinetSnapshot={snapshot}'))
+ assert.ok(goal.includes('goals.find(goal => String(goal.id) === selectedGoalId)'))
+ assert.ok(goal.includes('profileDaybookHref(root, goalId, next.week, next.step)'))
+ assert.ok(dashboard.includes('if (accountId && !embeddedSection) return <Link'))
+ assert.ok(dock.includes('case "profile": return prefix+"/my-page";'))
+ assert.ok(courses.includes("data-my-page-courses"))
+ assert.ok(courses.includes("accountId,signal:controller.signal"))
+})
