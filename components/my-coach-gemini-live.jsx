@@ -13,7 +13,7 @@ import {
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
-  geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
+  geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupForToken,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,
@@ -1107,7 +1107,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     socket.onopen=()=>{
       if(r.ended||r.socket!==socket)return
       try{
-        const setup=geminiLiveSetupMessage(token.model,r.voiceName)
+        const setup=geminiLiveSetupForToken(token,r)
         if(resume)setup.setup.sessionResumption={handle}
         if(!sendSocket(r,setup))throw Error('SETUP_SEND_FAILED')
       }catch{if(resume||r.paused)failPausedResume(r);else{notify(t.setupInvalid);stop()}}
@@ -1411,11 +1411,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
-  },[personaId,lang,voiceName,enabled])
+  },[personaId,lang,voiceName,courseSessionId,enabled])
   const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]
   return <div className={styles.root} data-my-coach-voice={phase}
-    data-gemini-free-live-audio="true" data-coach-audio-recovering={audioNeedsGesture?'true':undefined}>
+    data-gemini-free-live-audio="true"
+    data-coach-audio-profile-version={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.version:undefined}
+    data-coach-audio-profile-mode={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.mode:undefined}
+    data-coach-audio-profile-voice={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.voiceName:undefined}
+    data-coach-audio-recovering={audioNeedsGesture?'true':undefined}>
     <button type="button" className={styles.button}
       disabled={(phase==='idle'||phase==='paused')&&!canStart}
       aria-pressed={phase!=='idle'&&phase!=='paused'} aria-label={label}

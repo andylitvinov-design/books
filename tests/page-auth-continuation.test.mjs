@@ -71,3 +71,9 @@ test('opaque Clarity run continuation keeps its exact day and rejects unrelated 
  assert.equal(safePageAuthReturnPath('/en/app/daybook?clarityDay=2&courseRunId='+id,'my-coach-action','en'),false)
  assert.equal(safePageAuthReturnPath('/en/coaching/sessions?coach=mira&clarityDay=2&courseRunId=unknown','my-coach-action','en'),false)
 })
+
+
+test('selected greeting program survives Google return without accepting arbitrary program values',()=>{
+ assert.equal(safePageAuthReturnPath('/en/coaching/sessions?coach=mira&greetingProgram=business','my-coach-action','en'),true)
+ assert.equal(safePageAuthReturnPath('/en/coaching/sessions?coach=mira&greetingProgram=unknown','my-coach-action','en'),false)
+})

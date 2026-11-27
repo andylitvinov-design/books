@@ -10,15 +10,19 @@ test('every AI coach hero and card uses the same intentional guest-only Google g
  assert.match(gate,/continuation:'my-coach-action',kind:'coach-link'/)
  assert.match(gate,/<ReikiJoinDialog mode="coach"/)
  assert.match(greeting,/if\(!accountSaving\)\{topicDialog.current\?\.close\(\);void gate.begin\(\{id\}\);return\}/)
- // Authorization restores only a valid topic; it must not skip the coach
- // presentation or start a different existing course run automatically.
- const authorized=greeting.slice(greeting.indexOf('onAuthorized:action=>{'),greeting.indexOf('}})',greeting.indexOf('onAuthorized:action=>{')))
- assert.match(authorized,/if\(courseRunId\)return/)
- assert.match(authorized,/if\(clarityDay&&action.id!==clarityCourseId\(clarityDay\)\)return/)
- assert.match(authorized,/COACH_PROGRAM_GROUPS.some\(group=>group.sessions.some\(item=>item.id===action.id\)\)\)setReadyTopic\(action.id\)/)
- assert.doesNotMatch(authorized,/setPhase|onStart|chooseSession/)
- assert.match(greeting,/phase==='complete'&&/)
- assert.match(greeting,/onClick=\{\(\)=>chooseSession\(clarityCourseId\(clarityDay\)\|\|readyTopic\|\|INTRODUCTORY_COACH_SESSION_ID\)\}/)
+ const authorization=greeting.slice(greeting.indexOf('onAuthorized:action=>{'),greeting.indexOf('useEffect(()=>()=>{audioRun.current++'))
+ assert.match(authorization,/setReadyTopic\(action.id\)/)
+ assert.doesNotMatch(authorization,/setPhase\(|onStart\?\.|chooseSession\(/)
+ // OAuth restores the intended topic, not a fabricated completed presentation.
+ // A fresh screen after redirect must play the greeting before starting.
+ assert.match(greeting,/if\(phase!=='complete'\|\|entryPending\|\|chosen.current\|\|switching.current\|\|gate.busy\|\|courseRunId\)return/)
+ assert.match(authorization,/if\(courseRunId\)return/)
+ assert.match(authorization,/if\(clarityDay&&action.id!==clarityCourseId\(clarityDay\)\)return/)
+ assert.match(greeting,/chooseSession\(clarityCourseId\(clarityDay\)\|\|readyTopic\|\|INTRODUCTORY_COACH_SESSION_ID\)/)
+ assert.match(greeting,/onEnd:\(\)=>\{if\(audioRun.current===generation\).*audio\?\.ended.*setPhase\('complete'\)/)
+ assert.equal((greeting.match(/setPhase\('complete'\)/g)||[]).length,1)
+ assert.match(greeting,/url.searchParams.set\('greetingProgram',id\)/)
+ assert.match(greeting,/window.history.replaceState\(window.history.state,'',url.pathname\+url.search\+url.hash\)/)
  assert.doesNotMatch(gate,/signInAnonymously|SUPABASE_SERVICE_ROLE_KEY|localStorage/)
 })
 test('coach auth reuses verified status and Google PKCE, and returns to the exact first-party source',()=>{

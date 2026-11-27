@@ -14,7 +14,6 @@ import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
-import { coachCourseLaunchHref } from '@/lib/coach-course-launch.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import { HeaderCreditProfile } from './header-credit-profile'
 import { MandatoryMessengerActions } from './mandatory-messenger-actions'
@@ -126,9 +125,9 @@ const designCopy = {
   },
 }
 const programLandingCopy = {
-  en: { free: 'Start Free Program', details: 'Program Details & Options', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
-  ru: { free: 'Начать бесплатно', details: 'Программы и подробности', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
-  es: { free: 'Empezar programa gratis', details: 'Programas y detalles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
+  en: { details: 'All programs available', mira: 'Gentle clarity and support for your next step.', clarity: 'Clarity & Support', goal: 'Achieving My Goal', business: 'Business Support' },
+  ru: { details: 'Все доступные программы', mira: 'Мягкая поддержка и ясность для вашего следующего шага.', clarity: 'Ясность и опора', goal: 'Достижение моей цели', business: 'Поддержка бизнеса' },
+  es: { details: 'Todos los programas disponibles', mira: 'Claridad y apoyo para tu próximo paso.', clarity: 'Claridad y apoyo', goal: 'Alcanzar mi meta', business: 'Apoyo empresarial' },
 }
 
 const miraCopy = {
@@ -416,11 +415,8 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null, cours
           </div>
           <div className={heroStyles.programPanel} data-my-coach-program-panel>
             <div className={heroStyles.programActions}>
-              <Link href={coachCourseLaunchHref(lang,'clarity',selected.id)} prefetch={false} className={heroStyles.freeProgram} data-my-coach-free-course>
-                <BookOpen size={20} aria-hidden="true"/><span>{programs.free}</span>
-              </Link>
               <Link href={'/' + lang + '/my-coach/programs'} prefetch={false} className={heroStyles.programDetails} data-my-coach-program-details>
-                <ClipboardCheck size={20} aria-hidden="true"/><span>{programs.details}</span>
+                <ClipboardCheck size={16} aria-hidden="true"/><span>{programs.details}</span><ArrowRight size={15} aria-hidden="true"/>
               </Link>
             </div>
           </div>
@@ -429,7 +425,7 @@ export default function MyCoachCatalog({ locale = 'en', clarityDay = null, cours
           <h2>{hw.choose}</h2>
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
-        <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
+        <div className={heroStyles.coachRail} data-my-coach-rail role="group" aria-label={hw.choose}>
           {PUBLIC_COACH_RAIL_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null

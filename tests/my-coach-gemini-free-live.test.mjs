@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './coach-audio-profiles.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
