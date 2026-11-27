@@ -262,7 +262,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
      if(!duplex||!context){manualHint();return;}
      monitor=startAliCallBarge({environment:window,context,locale:speechLocale,spokenText:text,isCurrent:current,
       onDuck:volume=>ownerAudioJob.current?.setVolume(volume),
-      onReady:()=>{if(current())setPhoneAutoInterrupt(true)},
+      onReady:()=>{if(current()){setPhoneAutoInterrupt(true);setNotice('')}},
+      onRecovering:()=>{if(current()){setPhoneAutoInterrupt(false);manualHint()}},
       onInterrupt:()=>{if(!current())return;ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
        setSpeaking(false);setPhoneAutoInterrupt(false);setPhoneReplayAvailable(false);listen();},
       onListen:listen,
