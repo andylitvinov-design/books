@@ -88,6 +88,13 @@ test('separate meditation requires safe completion, preserves client edits and r
  run=tick(run,1,0,900000)
  assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,null,{...create,safeClosureVerified:false}),/CONFLICT/)
  assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,null,{...create,storageConsentVerified:false}),/CONFLICT/)
+ const reviewLedger={...ledger,revision:8}
+ const request={type:'owner_request',expectedRevision:0,expectedReviewRevision:8,ownerConfirmed:true,storageConsent:true,readyToRead:true,atMs:900000}
+ assert.deepEqual(antiStressMeditationArtifact(run,pid,reviewLedger,null,{type:'availability'}),{eligible:true,reviewRevision:8})
+ for(const change of [{ownerConfirmed:false},{storageConsent:false},{readyToRead:false},{expectedReviewRevision:7}])assert.throws(()=>antiStressMeditationArtifact(run,pid,reviewLedger,null,{...request,...change}),/CONFLICT/)
+ const requested=antiStressMeditationArtifact(run,pid,reviewLedger,null,request,'ru')
+ assert.equal(requested.origin,'owner_requested_after_session');assert.match(requested.body,/quiet shore/)
+ assert.equal(antiStressMeditationArtifact(run,pid,reviewLedger,requested,{type:'availability'}),null)
  const draft=antiStressMeditationArtifact(run,pid,ledger,null,create,'ru')
  assert.equal(draft.status,'draft');assert.match(draft.body,/quiet shore/)
  assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,draft,create),/CONFLICT/)

@@ -42,6 +42,26 @@ function MeditationEditor({accountId,locale,run,day,meditation,onSaved,t}){
   {error&&<p role="alert">{t.error}</p>}
  </div>
 }
+function MeditationRequest({accountId,locale,run,day,availability,onSaved,t}){
+ const [confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(false)
+ const pending=useRef(null)
+ useEffect(()=>()=>pending.current?.abort(),[])
+ if(availability?.eligible!==true||!Number.isSafeInteger(availability.reviewRevision)||availability.reviewRevision<1)return null
+ const words=({en:['My personal meditation','Use only the confirmed resources from my first session. I feel comfortable reading the text now and agree to save a private draft.','Create my meditation'],ru:['Моя персональная медитация','Использовать только подтверждённые ресурсы первого занятия. Мне комфортно прочитать текст сейчас, и я согласен сохранить приватный черновик.','Создать мою медитацию'],es:['Mi meditación personal','Usar solo los recursos confirmados de mi primera sesión. Me siento cómodo leyendo el texto ahora y acepto guardar un borrador privado.','Crear mi meditación']}[locale])
+ async function create(){
+  if(!confirmed||pending.current)return
+  const c=new AbortController();pending.current=c;setBusy(true);setError(false)
+  try{
+   const value=await appFetch('anti-stress/session',{runId:run.id,protocolId:day.protocolId,type:'owner_request',expectedRevision:0,expectedReviewRevision:availability.reviewRevision,locale,ownerConfirmed:true,storageConsent:true,readyToRead:true},'PATCH',{accountId,signal:c.signal})
+   if(c.signal.aborted)return
+   const m=value?.meditation
+   if(m?.courseRunId!==run.id||m.protocolId!==day.protocolId||m.revision!==1||m.status!=='draft'||m.origin!=='owner_requested_after_session')throw Error('binding')
+   onSaved()
+  }catch{if(!c.signal.aborted)setError(true)}
+  finally{if(!c.signal.aborted){pending.current=null;setBusy(false)}}
+ }
+ return <div data-anti-stress-meditation-request><h4>{words[0]}</h4><label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>{words[1]}</label><button type="button" disabled={!confirmed||busy} onClick={create}>{words[2]}</button>{error&&<p role="alert">{t.error}</p>}</div>
+}
 function SessionView({accountId,locale,run,day,t}){
  const [view,setView]=useState('result'),[retry,setRetry]=useState(0),[state,setState]=useState(null)
  useEffect(()=>{
@@ -60,7 +80,7 @@ function SessionView({accountId,locale,run,day,t}){
   <AntiStressMemoryPanel key={accountId+':'+day.protocolId} accountId={accountId} exclude={day.protocolId} locale={locale}/>
   {process.env.NEXT_PUBLIC_HH_ANTI_STRESS_LIVE_ENABLED==='true'&&data&&data.run.currentDay===day.day&&data.run.access==='free'&&['paused','not_started'].includes(data.run.days[day.day-1]?.status)&&<AntiStressLivePanel key={accountId+':'+day.protocolId+':'+retry} accountId={accountId} locale={locale} run={data.run} day={data.run.days[day.day-1]} onRefresh={()=>setRetry(n=>n+1)}/>}
   <div className={styles.tabs}>{['result','protocol','log'].map(v=><button type="button" key={v} aria-pressed={view===v} onClick={()=>{setState(null);setView(v);if(view===v)setRetry(n=>n+1)}}>{t[v]}</button>)}</div>
-  {state?.view===view&&state.error?<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>:!data?<p>{t.loading}</p>:view==='result'?<><AntiStressResult result={data.result} locale={locale} hideMeditation/>{data.result?.meditation&&<MeditationEditor key={data.result.meditation.revision} accountId={accountId} locale={locale} run={run} day={day} meditation={data.result.meditation} onSaved={()=>setRetry(n=>n+1)} t={t}/>}</>:view==='protocol'?<dl>{data.protocol?.rows?.map(row=><div key={row.fieldId}><dt>{row.label} · {t.states[row.status]||t.missing}</dt><dd>{row.value===null||row.value===undefined?t.missing:String(row.value)}</dd></div>)}</dl>:data.log?.turns?.length?<div>{data.log.turns.map(turn=><p key={turn.turnId}><strong>{turn.role==='client'?t.client:(turn.coachId||t.coach)}</strong> — {turn.text}</p>)}</div>:<p>{t.missing}</p>}
+  {state?.view===view&&state.error?<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>:!data?<p>{t.loading}</p>:view==='result'?<><AntiStressResult result={data.result} locale={locale} hideMeditation/>{!data.result?.meditation&&data.result?.meditationAvailability?.eligible===true&&<MeditationRequest key={data.result.meditationAvailability.reviewRevision} accountId={accountId} locale={locale} run={run} day={day} availability={data.result.meditationAvailability} onSaved={()=>setRetry(n=>n+1)} t={t}/>} {data.result?.meditation&&<MeditationEditor key={data.result.meditation.revision} accountId={accountId} locale={locale} run={run} day={day} meditation={data.result.meditation} onSaved={()=>setRetry(n=>n+1)} t={t}/>}</>:view==='protocol'?<dl>{data.protocol?.rows?.map(row=><div key={row.fieldId}><dt>{row.label} · {t.states[row.status]||t.missing}</dt><dd>{row.value===null||row.value===undefined?t.missing:String(row.value)}</dd></div>)}</dl>:data.log?.turns?.length?<div>{data.log.turns.map(turn=><p key={turn.turnId}><strong>{turn.role==='client'?t.client:(turn.coachId||t.coach)}</strong> — {turn.text}</p>)}</div>:<p>{t.missing}</p>}
  </div>
 }
 export default function AntiStressArchive({accountId,locale='en',runId=null}){

@@ -49,3 +49,14 @@ test('My Page reads exact owned therapy run without relying on catalog paginatio
  assert.match(cards,/tab=reports&antiStressRun=/)
  assert.match(server,/antiStressStorageEnabled\(\)\?listAntiStressRuns/)
 })
+
+test('owner-requested meditation is a separate revision-bound private action, not a fabricated closure receipt',()=>{
+ const route=read('app/api/app/anti-stress/session/route.js'),store=read('lib/app/anti-stress-runs.js'),ui=read('components/app/anti-stress-archive.jsx')
+ assert.match(route,/body\.type==='owner_request'/)
+ assert.match(route,/body\.expectedRevision!==0/)
+ assert.match(route,/body\.expectedReviewRevision/)
+ assert.match(store,/type==='owner_request'/)
+ assert.match(ui,/data-anti-stress-meditation-request/)
+ assert.match(ui,/expectedReviewRevision:availability\.reviewRevision/)
+ assert.doesNotMatch(route,/safeClosureVerified:true/)
+})

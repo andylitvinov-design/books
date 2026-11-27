@@ -55,7 +55,10 @@ export async function PATCH(request){
   if(!antiStressStorageEnabled())throw new AppError('ANTI_STRESS_UNAVAILABLE',503)
   await consumeRate(config,{op:'anti-stress-meditation-edit',actor:actor.id},20,3600)
   const body=await readBody(request,65536)
-  if(!['save','decline'].includes(body.type)||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','body'].includes(k))||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<1||typeof body.runId!=='string'||typeof body.protocolId!=='string'||(body.type==='save'&&(typeof body.body!=='string'||body.body.length>12000||!body.body.trim()))||(body.type==='decline'&&body.body!==undefined))throw new AppError('ANTI_STRESS_INVALID',400)
+  const ids=typeof body.runId==='string'&&typeof body.protocolId==='string'
+  if(body.type==='owner_request'){
+   if(!ids||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','expectedReviewRevision','locale','ownerConfirmed','storageConsent','readyToRead'].includes(k))||body.expectedRevision!==0||!Number.isSafeInteger(body.expectedReviewRevision)||body.expectedReviewRevision<1||!['en','ru','es'].includes(body.locale)||body.ownerConfirmed!==true||body.storageConsent!==true||body.readyToRead!==true)throw new AppError('ANTI_STRESS_INVALID',400)
+  }else if(!ids||!['save','decline'].includes(body.type)||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','body'].includes(k))||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<1||(body.type==='save'&&(typeof body.body!=='string'||body.body.length>12000||!body.body.trim()))||(body.type==='decline'&&body.body!==undefined))throw new AppError('ANTI_STRESS_INVALID',400)
   const meditation=await editOwnedAntiStressMeditation(config,actor,body)
   return auth.apply(NextResponse.json({meditation},{headers:PRIVATE_HEADERS}))
  }catch(error){
