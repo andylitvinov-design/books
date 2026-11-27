@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach} from '../lib/coach-course-launch.mjs'
+import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach,courseLaunchNeighbor,courseLaunchPresentation} from '../lib/coach-course-launch.mjs'
 import {projectCourseSession} from '../lib/coach-course-session-progress.mjs'
 import {courseCoachChoice,verifyCourseCoachChoice} from '../lib/app/coach-course-choice.mjs'
 import {isUnifiedMobileDockAppPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
@@ -109,4 +109,17 @@ test('My Daybook is a plain localized peer navigation link to the protected free
  assert.doesNotMatch(nav,/ClarityStartLink|onClick|<button/)
  assert.ok(view.indexOf('data-course-nav')<view.indexOf('className={styles.intro}'))
  assert.match(css,/\.courseNav\{display:flex;align-items:center;justify-content:space-between;/)
+})
+
+test('greeting course metadata is real and course selection wraps without changing coach',()=>{
+ for(const lang of ['en','ru','es']){
+  const p=courseLaunchPresentation(lang,getCoachCourseLaunch(lang,'clarity').course)
+  assert.equal(p.bonus,'+ Bonus: 18 Practices in Daybook.')
+  assert.match(p.duration,/3.*20/)
+  assert.equal(courseLaunchPresentation(lang,getCoachCourseLaunch(lang,'business').course).bonus,null)
+ }
+ assert.equal(courseLaunchPresentation('ru',getCoachCourseLaunch('ru','clarity').course).title,'Ясность в своих желаниях')
+ assert.equal(courseLaunchNeighbor('clarity',-1),'health')
+ assert.equal(courseLaunchNeighbor('clarity',1),'business')
+ assert.equal(courseLaunchNeighbor('health',1),'clarity')
 })
