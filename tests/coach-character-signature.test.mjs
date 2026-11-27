@@ -1,3 +1,5 @@
+import './coach-personality-core.test.mjs'
+import './coach-personality-core-wiring.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {COACH_CHARACTER_SIGNATURE,COACH_CHARACTER_SCENARIO,getCoachCharacterSignature,normalizeCoachCharacterSeenIds,coachCharacterObservedIds,coachCharacterTurn,coachCharacterReplyGuidance,coachCharacterSetupGuidance,insertCoachCharacterLine} from '../lib/coaching/coach-character-signature.mjs'
