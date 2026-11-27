@@ -415,7 +415,13 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive,courseClockHeld,resumePending\]\)/)
   assert.match(source,/!clarityCourseActive\|\|\(clarityOpeningReady&&clarityVoiceActive&&speechRef\.current\?\.isConnected\?\.\(\)===true\)/)
   assert.match(source,/const limit=clarityCourseActive\?CLARITY_COURSE_SECONDS:7200/)
-  assert.doesNotMatch(source,/clarityTimeLimit\.current=true/)
+  // The presentation clock cannot complete a logical session. The sole
+  // exception is readback of the exact owner-bound server clock on resume.
+  const resume=source.slice(source.indexOf('async function restorePrivateDraft('),source.indexOf('function beginRestoredConversation('))
+  assert.ok(resume.includes("restoredTime.status==='time_limit'&&restoredTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&restoredTime.remainingSeconds===0"))
+  assert.match(resume,/if\(timedEnd\)\{\s*clarityTimeLimit\.current=true/)
+  assert.doesNotMatch(source.replace(resume,''),/clarityTimeLimit\.current\s*=\s*true/)
+  assert.equal((resume.match(/clarityTimeLimit\.current\s*=\s*true/g)||[]).length,1)
   assert.match(source,/sole authority for course grants, completion and homework/)
   assert.match(source,/data-coach-pause-control/)
   assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
