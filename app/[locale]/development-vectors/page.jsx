@@ -8,8 +8,9 @@ export async function generateMetadata({params}){
  return {title:(locale==='ru'?'Два вектора развития':locale==='es'?'Dos vectores de desarrollo':'Two development vectors')+' | Holistic House',
   robots:{index:false,follow:false},referrer:'no-referrer'}
 }
-export default async function DevelopmentVectorsPage({params}){
+export default async function DevelopmentVectorsPage({params,searchParams}){
  const {locale}=await params
  if(!['en','ru','es'].includes(locale))notFound()
- return <DevelopmentVectors locale={locale}/>
+ const query=await searchParams
+ return <DevelopmentVectors locale={locale} selfDiscovery={query?.mode==='self-discovery'} initialTrack={query?.track==='outer'?'outer':'inner'}/>
 }

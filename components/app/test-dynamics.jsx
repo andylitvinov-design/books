@@ -134,7 +134,7 @@ function ScaleRow({ item, result, c, locale, hasRepeat }) {
   </div>
 }
 
-export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake, busy = false }) {
+export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake, busy = false, resultSourceQuery = '' }) {
   const c = TEXT[locale] || TEXT.en
   const [period, setPeriod] = useState('all')
   const [from, setFrom] = useState('')
@@ -176,7 +176,7 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
           {view.groups.map(group => <article key={group.key} className={styles.card} data-dynamics-test={group.key}>
             <header className={styles.cardHeader}>
               <div><h3>{group.title}</h3><small>{group.count} {c.attemptsLabel}</small></div>
-              <Link href={'/' + locale + '/app/results/' + encodeURIComponent(group.latest.id)} prefetch={false}>
+              <Link href={'/' + locale + '/app/results/' + encodeURIComponent(group.latest.id)+(resultSourceQuery?'?'+resultSourceQuery:'')} prefetch={false}>
                 {c.report} <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </header>
