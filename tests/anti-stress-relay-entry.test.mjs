@@ -91,3 +91,28 @@ test('Therapy browser transport uses exact run, session and server visit, never 
  assert.equal(closed[0].binding.sessionId,sessionId)
  assert.equal(clocks.length,2)
 })
+
+test('Therapy panel binds real clock receipts to its own session and shares the existing PCM runner without direct fallback',async()=>{
+ const {projectAntiStressPanelClock}=await import('../lib/coaching/anti-stress-relay-client.mjs')
+ const selection={accountId:owner,runId:id(1),protocolId:id(2),sessionId,personaId:'mira',minimumElapsedMs:5000}
+ const ack={kind:'clock',binding:{runId:id(1),protocolId:id(2),sessionId,day:1},status:'active',elapsedMs:5000,visitId:id(11),coachId:'mira'}
+ const first=projectAntiStressPanelClock({selection,owner,ack})
+ assert.equal(first.elapsedMs,5000);assert.equal(first.protocolId,id(2))
+ for(const bad of [{...ack,coachId:'alex'},{...ack,elapsedMs:4999},{...ack,status:'time_limit'},{...ack,binding:{...ack.binding,protocolId:id(3)}},{...ack,binding:{...ack.binding,sessionId:'anti_stress_calm'}}])
+  assert.equal(projectAntiStressPanelClock({selection,owner,ack:bad}),null)
+ assert.equal(projectAntiStressPanelClock({selection,owner:id(99),ack}),null)
+ const paused=projectAntiStressPanelClock({previous:first,selection,owner,ack:{...ack,status:'paused',elapsedMs:6000}})
+ assert.equal(paused.elapsedMs,6000)
+ assert.equal(projectAntiStressPanelClock({previous:paused,selection,owner,ack}),null)
+ const done=projectAntiStressPanelClock({previous:paused,selection,owner,ack:{...ack,status:'time_limit',elapsedMs:900000}})
+ assert.equal(done.status,'time_limit')
+ const {readFileSync}=await import('node:fs')
+ const voice=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const panel=readFileSync(new URL('../components/app/anti-stress-live-panel.jsx',import.meta.url),'utf8')
+ assert.match(voice,/const connect=r\.therapyMode\?connectAntiStressBrowserRelay:connectClarityBrowserRelay/)
+ assert.match(voice,/if\(\(therapyMode\|\|clarityDay\)&&\(!selected/)
+ assert.match(voice,/audioGate:new GeminiLiveBargeGate\(\),claritySelection:selected,therapyMode/)
+ assert.match(panel,/therapyRelaySelection=\{selection\} onTherapyRelayClock=\{onClock\}/)
+ assert.match(panel,/await speech\.current\?\.finishCourseSegment/)
+ assert.doesNotMatch(panel,/localStorage|sessionStorage|liveContextAccess=|live-token/)
+})

@@ -4,6 +4,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {ANTI_STRESS_COURSE} from '@/lib/coaching/anti-stress-course.mjs'
 import AntiStressResult from '../anti-stress-result'
 import AntiStressMemoryPanel from './anti-stress-memory-panel'
+import AntiStressLivePanel from './anti-stress-live-panel'
 import styles from './anti-stress-archive.module.css'
 const copy={
  en:{title:'My Anti-Stress courses',result:'Result',protocol:'Protocol',log:'Dialogue',loading:'Loading…',error:'Could not verify saved data.',retry:'Retry',more:'Load more',missing:'Not recorded',client:'You',coach:'Coach',minutes:'min',states:{not_started:'Not started',active:'Active',paused:'Paused',time_limit:'Time completed',confirmed:'Confirmed',skipped:'Skipped',not_explored:'Not explored',needs_confirmation:'Needs confirmation'}},
@@ -57,6 +58,7 @@ function SessionView({accountId,locale,run,day,t}){
  const data=state?.view===view?state.data:null
  return <div className={styles.session}>
   <AntiStressMemoryPanel key={accountId+':'+day.protocolId} accountId={accountId} exclude={day.protocolId} locale={locale}/>
+  {process.env.NEXT_PUBLIC_HH_ANTI_STRESS_LIVE_ENABLED==='true'&&data&&data.run.currentDay===day.day&&data.run.access==='free'&&['paused','not_started'].includes(data.run.days[day.day-1]?.status)&&<AntiStressLivePanel key={accountId+':'+day.protocolId+':'+retry} accountId={accountId} locale={locale} run={data.run} day={data.run.days[day.day-1]} onRefresh={()=>setRetry(n=>n+1)}/>}
   <div className={styles.tabs}>{['result','protocol','log'].map(v=><button type="button" key={v} aria-pressed={view===v} onClick={()=>{setState(null);setView(v);if(view===v)setRetry(n=>n+1)}}>{t[v]}</button>)}</div>
   {state?.view===view&&state.error?<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>:!data?<p>{t.loading}</p>:view==='result'?<><AntiStressResult result={data.result} locale={locale} hideMeditation/>{data.result?.meditation&&<MeditationEditor key={data.result.meditation.revision} accountId={accountId} locale={locale} run={run} day={day} meditation={data.result.meditation} onSaved={()=>setRetry(n=>n+1)} t={t}/>}</>:view==='protocol'?<dl>{data.protocol?.rows?.map(row=><div key={row.fieldId}><dt>{row.label} · {t.states[row.status]||t.missing}</dt><dd>{row.value===null||row.value===undefined?t.missing:String(row.value)}</dd></div>)}</dl>:data.log?.turns?.length?<div>{data.log.turns.map(turn=><p key={turn.turnId}><strong>{turn.role==='client'?t.client:(turn.coachId||t.coach)}</strong> — {turn.text}</p>)}</div>:<p>{t.missing}</p>}
  </div>
