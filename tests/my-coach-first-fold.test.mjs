@@ -83,15 +83,17 @@ test('mobile coach thumbnails preserve their photo proportions and the Mira CTA 
 })
 
 
-test('approved My Coach landing prioritizes the original portrait, talk and free program', () => {
+test('approved My Coach landing prioritizes the portrait, talk and a single programs link', () => {
   const jsx = read('components/my-coach-catalog.jsx')
   const css = read('components/my-coach-mira-landing.module.css')
   const hero = jsx.slice(jsx.indexOf('className={heroStyles.heroStage}'), jsx.indexOf('className={heroStyles.coachRailHeading}'))
   assert.match(hero, /<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
   assert.match(hero, /<h2>\{selectedName\}<\/h2>/)
   assert.doesNotMatch(hero, /hw\.hello|stageTopics|liveLabel/)
-  assert.match(hero, /coachCourseLaunchHref\(lang,'clarity',selected\.id\)/)
-  assert.match(jsx, /Start Free Program/)
+  assert.doesNotMatch(hero, /data-my-coach-free-course|coachCourseLaunchHref/)
+  assert.doesNotMatch(jsx, /Start Free Program|Program Details & Options/)
+  for (const label of ['All programs available','Все доступные программы','Todos los programas disponibles'])
+    assert.ok(jsx.includes(label), label)
   assert.match(hero, /data-my-coach-program-details/)
   assert.ok(hero.includes("'/my-coach/programs'"))
   assert.ok(hero.indexOf('className={heroStyles.stageActions}') < hero.indexOf('data-my-coach-program-panel'))
@@ -123,14 +125,17 @@ test('compact landing filters share the real directory and keep language and hel
   assert.match(css, /\.landingKindButton\[aria-pressed=true\] span\{\s*background:#dfe4d5/)
 })
 
- test('program actions are two equal translucent white tiles over full-size public video', () => {
+ test('one compact horizontal programs action keeps the coach rail above the dock', () => {
  const jsx=read('components/my-coach-catalog.jsx')
  const css=read('components/my-coach-mira-landing.module.css')
  const motion=read('components/my-coach-motion-media.module.css')
  assert.doesNotMatch(jsx,/heroStyles\.programArt/)
  assert.match(css,/\.programPanel\{[^}]*background:none;border:0/)
- assert.match(css,/\.programActions\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
- assert.match(css,/\.freeProgram,\.programDetails\{[^}]*background:rgba\(255,252,246,\.76\)/)
- assert.match(css,/\.freeProgram,\.programDetails\{[^}]*backdrop-filter:blur\(6px\)/)
+ assert.match(css,/\.programActions\{display:flex;justify-content:center/)
+ assert.match(css,/\.programDetails\{[^}]*flex-direction:row;[^}]*min-height:44px/)
+ assert.match(css,/\.heroStage\[data-my-coach-hero\]\{height:auto;min-height:clamp\(208px,calc\(100svh - 470px\),350px\)/)
+ assert.match(css,/\.railPortrait\{height:clamp\(48px,9svh,66px\)!important;aspect-ratio:auto/)
+ assert.doesNotMatch(jsx,/data-my-coach-free-course/)
+ assert.match(jsx,/data-my-coach-rail role="group"/)
  assert.match(motion,/\.media\[data-coach-motion-context='hero'\] :is\(\.poster,\.video\)\{object-fit:cover;object-position:60% 22%\}/)
  })
