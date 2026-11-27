@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {clarityScenarioVersion,clarityScenarioReviewVersion,clarityVersionedScenario,clarityScenarioGateFields,clarityScenarioReviewOf,clarityScenarioGuidance,clarityScenarioTimeGuidance,clarityMetricScore,clarityPracticeStatus} from '../lib/coaching/clarity-course-scenarios.mjs'
-import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview,clarityDayOneReviewPrompt,coachCourseProtocolGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview,clarityDayOneReviewPrompt,coachCourseProtocolGuidance,coachCourseCheckpointGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
 import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
 import {courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
@@ -166,6 +166,25 @@ test('all Clarity time hints fit the Gemini Director sideband budget',()=>{
   for(let seconds=0;seconds<=1200;seconds++){
    const hint=clarityScenarioTimeGuidance(course,seconds)
    assert.ok(hint.length<=450,course+' '+seconds+' '+hint.length)
+  }
+ }
+})
+
+test('a current answer is verified before a timed transition, while closing remains protected',()=>{
+ const opening={completed:true,answers:{focus:{kind:'goal'}}}
+ for(const locale of ['ru','en','es']){
+  for(const [course,field,seconds,closeAt] of [['clarity_day_1','situation',240,960],['clarity_day_2','episode',240,1020],['clarity_day_3','priority',180,1020]]){
+   const schema=coachCourseProtocolSchema(course,locale,{scenarioVersion:clarityScenarioVersion(course)})
+   const row=schema.checkpoints.find(x=>x.id===field)
+   assert.ok(row)
+   const turns=[{role:'assistant',content:row.question}]
+   const directive={conversationAct:'substantive_reply',timebox:{elapsedSeconds:seconds}}
+   const hint=coachCourseCheckpointGuidance(course,locale,opening,directive,turns,'I have been considering my work and relationships.')
+   assert.match(hint,/Current field:/)
+   assert.match(hint,/Finish or leave this field open/)
+   assert.ok(hint.length<=450)
+   assert.equal(coachCourseCheckpointGuidance(course,locale,opening,{...directive,timebox:{elapsedSeconds:closeAt}},turns,'I need more time.'),clarityScenarioTimeGuidance(course,closeAt))
+   assert.equal(coachCourseCheckpointGuidance(course,locale,opening,{...directive,conversationAct:'correction'},turns,'No'), '')
   }
  }
 })
