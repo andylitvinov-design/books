@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
+import {downloadCoachQualityTranscript} from '@/lib/personal-coaching/protocol-quality.mjs'
 import {coachIsNameRepairUtterance} from '@/lib/coaching/coach-opening-protocol.mjs'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import MyCoachCourseFieldReview from '../my-coach-course-field-review'
@@ -28,6 +29,7 @@ function DraftRow({item,t,lang,onAction,busy}){
  return <article className={styles.reportCard} data-coach-unreviewed-draft={item.id}>
   <div className={styles.reportTop}><div><span>{t.unreviewed}</span><h2>{p.personaId}</h2><small>{new Date(item.updatedAt).toLocaleDateString(lang)} · {p.turns.length}</small></div></div>
   <details className={styles.reportDetails}><summary>{t.review}</summary>
+   <button type="button" className={styles.primaryButton} disabled={busy} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(p)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
    <MyCoachSavedProfileV3 protocol={p} locale={lang}/>
    <MyCoachCourseFieldReview courseSessionId={item.courseSessionId} turns={p.turns} locale={lang} value={lockedGate?lockedGate.review:courseFieldReview} onChange={value=>{if(!lockedGate){setCourseFieldReview(value);setChecked(false)}}} disabled={busy||Boolean(lockedGate)}/>

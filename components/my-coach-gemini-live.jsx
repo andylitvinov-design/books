@@ -114,7 +114,7 @@ const MAX_PENDING_AUDIO_CHARS=60*24000*2*4/3
 const LIVE_CONTEXT_CHECK_MS=5*60*1000
 const LIVE_CONTEXT_PACKET_MAX_AGE_MS=60*1000
 const safeLocale=locale=>['en','ru','es'].includes(locale)?locale:'en'
-function audioTranscription(value){return typeof value==='string'?value.trim().slice(0,1200):''}
+function audioTranscription(value){return typeof value==='string'?value.trim():''}
 
 // Owns exactly ONE microphone track, ONE short-lived Google WebSocket and
 // ONE unlocked AudioContext. No server audio proxy, retrying cloud TTS,
@@ -435,7 +435,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
   async function checkpoint(r,message,preceding=null){
-    const text=audioTranscription(message)
+    const text=audioTranscription(message).slice(0,1200)
     if(!text||r.ended)return
     const p=propsRef.current
     const ticket=++r.checkpointSerial

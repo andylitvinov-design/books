@@ -19,7 +19,7 @@ async function handle(request,write){
   if(request.headers.get('x-hh-account-id')!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
   let result
   if(write){
-   const input=await readBody(request,260000)
+   const input=await readBody(request,1800000)
    if(!input||typeof input!=='object'||Array.isArray(input))throw new AppError('MY_COACH_DRAFT_INVALID',400)
    if(input.action==='checkpoint'&&Object.keys(input).every(k=>['action','consent','revision','value'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-checkpoint',actor:actor.id},240,3600)

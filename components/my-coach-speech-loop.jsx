@@ -3,6 +3,7 @@
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
+import {MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '@/lib/personal-coaching/session-protocol.mjs'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {startCoachRecordedTurn,coachRecordedSupported} from '@/lib/personal-coaching/coach-recorded-turn.mjs'
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '@/lib/personal-coaching/coach-voice-turn-quality.mjs'
@@ -232,7 +233,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     const cancelTurn=['thinking','loading'].includes(phaseRef.current)||Boolean(earlySpeechRef.current)
     if(['speaking','loading'].includes(phaseRef.current))interruptedRef.current?.(lastSpokenCoachRef.current)
     if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
-      draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
+      draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),MY_COACH_PROTOCOL_MAX_TURN_CHARS))
       setNotice(t.review)
     }else setNotice('')
     heardRef.current=''
@@ -382,7 +383,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           lastHeardRef.current=value
           heardRef.current=value
           transcriptRef.current?.(value)
-          void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))
+          void deliver(appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
         },
         onFailure:code=>{
           if(!activeRef.current||generationRef.current!==monitorGeneration)return
@@ -659,7 +660,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function holdRecognizedDraft(value){
-    const candidate=appendSpokenAnswer(draftAtStartRef.current,value,1200)
+    const candidate=appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS)
     // Never silently append an unchanged unverified fragment or backchannel
     // to a later substantive turn. Explicit typed review/send still works.
     uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}
@@ -719,7 +720,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             lastHeardRef.current=value
             heardRef.current=value
             transcriptRef.current?.(value)
-            void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))
+            void deliver(appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
           },
           onFailure:code=>{
             if(!activeRef.current||generationRef.current!==generation)return
@@ -806,7 +807,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(recognitionRef.current!==recognition||!activeRef.current)return
         if(phaseRef.current==='starting')changePhase('listening')
       if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
-      const {final,interim,visible}=readDictationResults(event.results,1200)
+      const {final,interim,visible}=readDictationResults(event.results,MY_COACH_PROTOCOL_MAX_TURN_CHARS)
       heardRef.current=visible
       transcriptRef.current?.(visible)
       // Safari interim words are editable even without a later final event.
@@ -826,7 +827,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           if(recognitionRef.current!==recognition||!activeRef.current)return
           const heard=heardRef.current.trim()
           if(hasCoachSpokenAnswer(heard)){
-            draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+            draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
             transcriptRef.current?.('') // One visible copy in the editable Text field
           }
           // Safari must end every recognition naturally, even one-letter noise.
@@ -852,7 +853,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             recognition.onresult=null;recognition.onend=null;recognition.onerror=null
             try{recognition.abort()}catch{}
             lastHeardRef.current=heard
-            void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+            void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
           },final?500:1900)
         }
       }
@@ -865,7 +866,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         recognition.onresult=null;recognition.onend=null;recognition.onerror=null
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
         lastHeardRef.current=heard
-        void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+        void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
         return
       }
       if(event.error==='audio-capture'){
@@ -904,14 +905,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(recognitionRef.current!==recognition)return
       recognitionRef.current=null
       if(!activeRef.current)return
-        if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
+        if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
       else{
         const recovered=heardRef.current.trim()
         if(hasCoachSpokenAnswer(recovered)){
           // Safari sometimes ends after interim words without a final event.
           // A natural recognizer end commits that one turn; Stop/error never do.
           lastHeardRef.current=recovered
-          void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))
+          void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
         }else{
           transcriptRef.current?.('')
           heardRef.current=''
