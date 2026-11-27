@@ -1,0 +1,24 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+test('private therapy archive is wired to owner-scoped no-store reads, never browser writes',()=>{
+ const route=read('app/api/app/anti-stress/session/route.js'),store=read('lib/app/anti-stress-runs.js'),ui=read('components/app/anti-stress-archive.jsx'),plan=read('components/app/my-coaching-plan.jsx')
+ assert.match(route,/await auth\.verified\(\)/)
+ assert.match(route,/request\.headers\.get\('x-hh-account-id'\)!==actor\.id/)
+ assert.match(route,/await consumeRate/)
+ assert.match(route,/headers:PRIVATE_HEADERS/)
+ assert.doesNotMatch(route,/export (?:async function|function|const) (?:POST|PUT|PATCH|DELETE)/)
+ assert.match(store,/where account_id=\$1/)
+ assert.match(store,/where account_id=\$1 and course_run_id=\$2 and session_number=\$3/)
+ assert.match(store,/view==='log'\?'log_ciphertext':'ledger_ciphertext'/)
+ assert.match(store,/TRUSTED_ANTI_STRESS_ADAPTER_READY=false/)
+ assert.match(ui,/view=catalog/)
+ assert.match(ui,/activeOwner\.current!==accountId/)
+ assert.match(ui,/data\.binding\.protocolId!==day\.protocolId/)
+ assert.match(ui,/signal:c\.signal/)
+ assert.match(ui,/state\.accountId!==accountId/)
+ assert.match(ui,/\['result','protocol','log'\]/)
+ assert.match(plan,/<AntiStressArchive key=\{'anti-stress:'\+accountId\}/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|['"]POST['"]/)
+})
