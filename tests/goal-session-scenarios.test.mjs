@@ -1,3 +1,4 @@
+import './coach-supervisor.test.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {GOAL_SESSION_SCENARIOS,goalScenarioGuidance,goalScenarioTimeGuidance,goalResultOutline} from '../lib/coaching/goal-session-scenarios.mjs';
