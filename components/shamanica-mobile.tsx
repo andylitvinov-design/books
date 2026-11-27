@@ -194,6 +194,16 @@ const personalSubcategories:Record<ShelfId,readonly PersonalChoice[]>={
  ]
 };
 const personalUi={"ru":{"back":"Все 6 направлений","choose":"Выберите подходящее направление","all":"Все услуги категории"},"en":{"back":"All 6 categories","choose":"Choose a specific service","all":"All services in this category"},"es":{"back":"Las 6 categorías","choose":"Elige un servicio","all":"Todos los servicios de la categoría"}} as const;
+const artifactsUi={
+ en:{title:"Rituals & Artifacts",lead:"Sacred tools, rituals and symbolic objects for reflection, focus and transformation.",explore:"Explore Artifacts",request:"Request Details",heading:"What will you find here?",popular:"Popular Artifacts",all:"See All",other:"More practices"},
+ ru:{title:"Ритуалы и артефакты",lead:"Сакральные инструменты, ритуалы и символы для размышления, ясности и перемен.",explore:"Смотреть артефакты",request:"Узнать подробнее",heading:"Что вы найдёте здесь?",popular:"Популярные артефакты",all:"Все",other:"Другие практики"},
+ es:{title:"Rituales y artefactos",lead:"Herramientas sagradas, rituales y objetos simbólicos para la reflexión, el enfoque y el cambio.",explore:"Explorar artefactos",request:"Más detalles",heading:"¿Qué encontrarás aquí?",popular:"Artefactos destacados",all:"Ver todos",other:"Más prácticas"}
+} as const;
+const featuredArtifacts=[
+ {id:"personal",title:{en:"Personal talisman",ru:"Личный талисман",es:"Talismán personal"},image:"/academy/reiki-yggdrasil/source/advanced-runes.png",path:"holistic-support#talismans"},
+ {id:"fu",title:{en:"Daoist Fu",ru:"Талисман Фу",es:"Talismán Fu"},image:"/images/holistic-house/tao-fu-balance.webp",path:"holistic-support#talismans"},
+ {id:"mandala",title:{en:"Personal mandala",ru:"Личная мандала",es:"Mandala personal"},image:"/images/holistic-house/mandala-gold-reference.webp",path:"holistic-support/mandala"}
+] as const;
 const geanieCopy={
  en:{headline:"Need Hint? Help?",invitation:"Ask our AI Geanie.",cta:"Ask a question"},
  ru:{headline:"Нужна подсказка? Помощь?",invitation:"Спросите нашего AI-Джина.",cta:"Задать вопрос"},
@@ -292,7 +302,7 @@ const quizPhotos={
 
 export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;audience?:"self"|"business"}){
  const business=audience==="business";
- const router=useRouter(),t=copy[locale];
+ const router=useRouter(),t=copy[locale],a=artifactsUi[locale];
  const [step,setStep]=useState(0);
  const [goal,setGoal]=useState<Goal>("energy");
  const [method,setMethod]=useState<Method>("energy");
@@ -360,6 +370,18 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
     {business?<button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
    </nav>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
+    {!business?<div className={styles.artifactHero} data-shamanic-artifact-hero>
+     <div className={styles.artifactHeroArt} aria-hidden="true"/>
+     <div className={styles.artifactHeroText}>
+      <span className={styles.artifactEyebrow}><Sparkles size={17} aria-hidden="true"/>{a.title}</span>
+      <h1 id="shamanica-hero-title">{a.title}</h1>
+      <p>{a.lead}</p>
+     </div>
+     <div className={styles.artifactActions}>
+      <button type="button" onClick={()=>setSelectedShelf("rituals")}>{a.explore}<ArrowRight size={18} aria-hidden="true"/></button>
+      <button type="button" onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}>{a.request}<ChevronDown size={17} aria-hidden="true"/></button>
+     </div>
+    </div>:<>
     <div className={styles.mirrorIntro}>
      <span className={styles.mirrorSymbol} aria-hidden="true"><span className={styles.moonLeft}>☾</span><Image src="/images/holistic-house/shamanic-sun-hd.avif" width={66} height={48} alt="" unoptimized/><span className={styles.moonRight}>☽</span></span>
      <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}
@@ -379,10 +401,11 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       </button>
      </div>
     </aside>
+    </>}
    </section>
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
-    <h2 id="shamanica-services-title" className={styles.sectionTitle}>{cabinetCopy[locale].shelves}</h2>
+    <h2 id="shamanica-services-title" className={styles.sectionTitle}>{a.heading}</h2>
     {selectedShelf?<div id="shamanica-subcategory-panel" className={styles.subcategoryPanel} data-shamanica-subcategories={selectedShelf} aria-live="polite">
       <button ref={shelfBackRef} type="button" className={styles.subcategoryBack} onClick={()=>setSelectedShelf(null)}><ArrowLeft size={18} aria-hidden="true"/>{personalUi[locale].back}</button>
       <h3>{shelfCatalog.find(item=>item.id===selectedShelf)?.title[locale]}</h3>
@@ -402,9 +425,17 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       return <button key={id} type="button" onClick={()=>setSelectedShelf(id)}
        className={styles.serviceCard} data-shamanica-service={id} aria-controls="shamanica-subcategory-panel" aria-expanded={false}>
        <span className={styles.servicePhoto} aria-hidden="true"/>
-       <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
+       <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span><ArrowRight className={styles.artifactCardArrow} size={16} aria-hidden="true"/></span>
       </button>;
-     })}</div>}
+     })}
+     <section className={styles.featuredArtifacts} data-shamanic-featured-artifacts aria-labelledby="shamanic-featured-title">
+      <div className={styles.featuredHeader}><h2 id="shamanic-featured-title"><Sparkles size={20} aria-hidden="true"/>{a.popular}</h2>
+       <Link href={shamanicaCategoryHref(locale,"artifacts")} prefetch={false}>{a.all}<ArrowRight size={15} aria-hidden="true"/></Link></div>
+      <div className={styles.featuredGrid}>{featuredArtifacts.map(item=><Link key={item.id} href={"/"+locale+"/"+item.path} prefetch={false} data-shamanic-featured={item.id}>
+       <span className={styles.featuredPhoto}><Image src={item.image} alt="" fill sizes="(max-width:640px) 30vw, 190px"/></span><strong>{item.title[locale]}</strong>
+      </Link>)}</div>
+     </section>
+     </div>}
    </section>
    <details className={styles.toolsDrawer} data-shamanica-extras>
     <summary><Sparkles size={18} aria-hidden="true"/>{cabinetCopy[locale].open}<ChevronDown size={18} aria-hidden="true"/></summary>

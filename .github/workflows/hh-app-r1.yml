@@ -217,7 +217,8 @@ jobs:
         with: {node-version: 22, cache: npm}
       # This fixture renders two reviewed components with synthetic local DOM.
       # The two real browser jobs need only locked React/ReactDOM/Scheduler/TS.
-      # Any changed source or dependency manifest restores the original full install.
+      # Changed reviewed source or dependency metadata restores the original full install.
+      # Unrelated package scripts and lock entries must not invalidate the four exact packages.
       - name: Plan reviewed minimal Course Banner dependencies
         id: banner-deps
         if: needs.impact.outputs.banner == 'true' && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library'
@@ -229,12 +230,26 @@ jobs:
           if node --input-type=commonjs - <<'HH_BANNER_LOCK'
           const {execFileSync}=require('node:child_process');
           const fs=require('node:fs'),path=require('node:path');
-          const reviewed={"tests/course-banner/browser.mjs":"5d7450ef09c1102f0279ae4a18e48d66c52f8f2a","components/app/free-course-banner.jsx":"cf33e706c6200c8fa50f93ed1eb1d495dfe2db5d","components/app/compact-assessment-report.jsx":"cb56338d5b8535a4aa06d688c2af75dbb7c7594a","lib/assessments/result-overview.js":"f8d87d560719a26fa34b564263bdf49b14662779","lib/assessments/assessment-evidence-status.js":"1fde5893de9bd45b955623c2d64a6dc7572d69ec","package.json":"5cd2fa9b3778f5d7b0a22aaaa27d6eef0cace73a","package-lock.json":"c68e4bb81338c2ce968b3d35a3b281de83bab7c4"};
+          const reviewed={"tests/course-banner/browser.mjs":"5d7450ef09c1102f0279ae4a18e48d66c52f8f2a","components/app/free-course-banner.jsx":"cf33e706c6200c8fa50f93ed1eb1d495dfe2db5d","components/app/compact-assessment-report.jsx":"cb56338d5b8535a4aa06d688c2af75dbb7c7594a","lib/assessments/result-overview.js":"f8d87d560719a26fa34b564263bdf49b14662779","lib/assessments/assessment-evidence-status.js":"1fde5893de9bd45b955623c2d64a6dc7572d69ec"};
           for(const [file,sha] of Object.entries(reviewed)){
             if(execFileSync('git',['hash-object','--',file],{encoding:'utf8'}).trim()!==sha) process.exit(1);
           }
           const full=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
-          if(full.lockfileVersion!==3) process.exit(1);
+          // HH_BANNER_DEPENDENCY_PROOF_BEGIN
+          function reviewedBannerDependencies(manifest, lock) {
+            const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+            const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+            const reviewedManifest={"name":"books-catalog","version":"0.1.0","private":true,"type":"module","dependencies":{"@capacitor/android":"^7.6.9","@capacitor/app":"^7.1.2","@capacitor/browser":"^7.0.5","@capacitor/cli":"^7.6.9","@capacitor/core":"^7.6.9","@capacitor/ios":"^7.6.9","@capacitor/preferences":"^7.0.4","@capacitor/share":"^7.0.4","@radix-ui/react-accordion":"^1.2.12","@radix-ui/react-scroll-area":"^1.2.10","@radix-ui/react-separator":"^1.1.8","@radix-ui/react-slot":"^1.2.4","@supabase/ssr":"0.12.7","@supabase/supabase-js":"2.114.0","class-variance-authority":"^0.7.1","clsx":"^2.1.1","ffmpeg-static":"5.3.0","livekit-client":"2.23.0","livekit-server-sdk":"2.19.2","lucide-react":"^0.511.0","mediabunny":"1.65.0","next":"^15.5.21","pg":"8.16.3","react":"^19.0.0","react-dom":"^19.0.0","server-only":"0.0.1","simli-client":"3.2.0","stripe":"^23.0.0","tailwind-merge":"^3.3.0","web-push":"^3.6.7"},"devDependencies":{"@types/node":"^22.15.21","@types/react":"^19.0.12","@types/react-dom":"^19.0.4","acorn":"8.16.0","autoprefixer":"^10.4.21","eslint":"^9.25.0","eslint-config-next":"^15.3.2","postcss":"^8.5.23","tailwindcss":"^3.4.17","typescript":"^5.8.3"},"allowScripts":{"ffmpeg-static@5.3.0":true},"overrides":{"nanoid":"3.3.18","postcss":"$postcss","sharp":"0.35.0"},"engines":{"node":">=22"}};
+            const reviewedRoot={"name":"books-catalog","version":"0.1.0","dependencies":{"@capacitor/android":"^7.6.9","@capacitor/app":"^7.1.2","@capacitor/browser":"^7.0.5","@capacitor/cli":"^7.6.9","@capacitor/core":"^7.6.9","@capacitor/ios":"^7.6.9","@capacitor/preferences":"^7.0.4","@capacitor/share":"^7.0.4","@radix-ui/react-accordion":"^1.2.12","@radix-ui/react-scroll-area":"^1.2.10","@radix-ui/react-separator":"^1.1.8","@radix-ui/react-slot":"^1.2.4","@supabase/ssr":"0.12.7","@supabase/supabase-js":"2.114.0","class-variance-authority":"^0.7.1","clsx":"^2.1.1","ffmpeg-static":"5.3.0","livekit-client":"2.23.0","livekit-server-sdk":"2.19.2","lucide-react":"^0.511.0","mediabunny":"1.65.0","next":"^15.5.21","pg":"8.16.3","react":"^19.0.0","react-dom":"^19.0.0","server-only":"0.0.1","simli-client":"3.2.0","stripe":"^23.0.0","tailwind-merge":"^3.3.0","web-push":"^3.6.7"},"devDependencies":{"@types/node":"^22.15.21","@types/react":"^19.0.12","@types/react-dom":"^19.0.4","acorn":"8.16.0","autoprefixer":"^10.4.21","eslint":"^9.25.0","eslint-config-next":"^15.3.2","postcss":"^8.5.23","tailwindcss":"^3.4.17","typescript":"^5.8.3"},"engines":{"node":">=22"}};
+            const reviewedEntries={"react":{"version":"19.2.5","resolved":"https://registry.npmjs.org/react/-/react-19.2.5.tgz","integrity":"sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA==","license":"MIT","engines":{"node":">=0.10.0"}},"react-dom":{"version":"19.2.5","resolved":"https://registry.npmjs.org/react-dom/-/react-dom-19.2.5.tgz","integrity":"sha512-J5bAZz+DXMMwW/wV3xzKke59Af6CHY7G4uYLN1OvBcKEsWOs4pQExj86BBKamxl/Ik5bx9whOrvBlSDfWzgSag==","license":"MIT","dependencies":{"scheduler":"^0.27.0"},"peerDependencies":{"react":"^19.2.5"}},"scheduler":{"version":"0.27.0","resolved":"https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz","integrity":"sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==","license":"MIT"},"typescript":{"version":"5.9.3","resolved":"https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz","integrity":"sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==","dev":true,"license":"Apache-2.0","bin":{"tsc":"bin/tsc","tsserver":"bin/tsserver"},"engines":{"node":">=14.17"}}};
+            if(!manifest||typeof manifest!=='object'||!manifest.scripts||typeof manifest.scripts!=='object'||!lock||lock.lockfileVersion!==3||!lock.packages) return false;
+            const {scripts,...metadata}=manifest;
+            if(!same(metadata,reviewedManifest)||!same(lock.packages[''],reviewedRoot)) return false;
+            if(Object.keys(lock.packages).some(p=>/^node_modules\/(?:react|react-dom|scheduler|typescript)\/node_modules\//.test(p))) return false;
+            return Object.entries(reviewedEntries).every(([name,entry])=>same(lock.packages['node_modules/'+name],entry));
+          }
+          // HH_BANNER_DEPENDENCY_PROOF_END
+          if(fs.existsSync('.npmrc') || !reviewedBannerDependencies(JSON.parse(fs.readFileSync('package.json','utf8')),full)) process.exit(1);
           const names=['react','react-dom','scheduler','typescript'];
           const entries=Object.fromEntries(names.map(name=>[name,full.packages['node_modules/'+name]]));
           if(names.some(name=>!entries[name]||!/^sha512-[A-Za-z0-9+/=]+$/.test(entries[name].integrity||'')||

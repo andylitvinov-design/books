@@ -1,46 +1,35 @@
 'use client'
 
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,CalendarDays,ChevronDown,PlayCircle,Sparkles} from 'lucide-react'
+import {useState} from 'react'
+import {ArrowLeft,ArrowRight,CalendarDays,ChevronDown,Sparkles} from 'lucide-react'
 import {coachCourseLaunchHref} from '@/lib/coach-course-launch.mjs'
-import {COACH_COMPARISON_LOCALES,getCoachProgramComparison} from '@/lib/coach-program-comparison.mjs'
+import {COACH_COMPARISON_LOCALES,getVisibleCoachPrograms} from '@/lib/coach-program-comparison.mjs'
 import styles from './my-coach-program-comparison.module.css'
 
-function ComparisonCard({program:p,copy,lang}){
- return <details className={styles.card} data-coach-comparison-program={p.id} open={p.id==='clarity'}>
-  <summary className={styles.summary}>
-   <span className={styles.art} data-art={p.id} aria-hidden="true"/>
-   <span className={styles.intro}>
-    {p.id==='clarity'&&<span className={styles.startHere}><Sparkles size={13} aria-hidden="true"/>{copy.startHere}</span>}
+function ComparisonCard({program:p,copy,lang,selected,onSelect}){
+ const selectLabel=p.title
+ return <article className={styles.card} data-coach-comparison-program={p.id} data-selected={selected}>
+  <span className={styles.art} data-art={p.id} aria-hidden="true"/>
+  <div className={styles.intro}>
+   <button type="button" className={styles.select} onClick={onSelect} aria-pressed={selected} aria-label={selectLabel}>
+    {p.tag&&<span className={styles.startHere}><Sparkles size={13} aria-hidden="true"/>{p.tag}</span>}
     <span className={styles.name}>{p.title}</span>
     <span className={styles.description}>{p.description}</span>
-   </span>
-   <span className={styles.meta}>
+    <ChevronDown className={styles.chevron} size={19} aria-hidden="true"/>
+   </button>
+   <div className={styles.meta}>
     <span className={styles.count}><CalendarDays size={15} aria-hidden="true"/>{p.count} {copy.sessions}</span>
     <span className={styles.price}>{p.price}</span>
-   </span>
-   <ChevronDown className={styles.chevron} size={19} aria-hidden="true"/>
-  </summary>
-  <div className={styles.expanded}>
-   {p.id!=='clarity'&&<p className={styles.status}>{p.draft?copy.draft:copy.preview}</p>}
-   <ol className={styles.sessions}>
-    {p.rows.map((row,index)=><li key={index}>
-     {p.id==='clarity'&&<span className={styles.sessionArt} data-session-art={index+1} aria-hidden="true"/>}
-     <span className={styles.sessionText}><strong>{index+1}. {row.title}</strong>{row.description&&<span>{row.description}</span>}</span>
-    </li>)}
-   </ol>
-   {p.id==='clarity'&&<>
-    <Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.start} data-coach-comparison-launch={p.id}><PlayCircle size={21} aria-hidden="true"/><span>{copy.start}</span><ArrowRight size={20} aria-hidden="true"/></Link>
-    <p className={styles.terms}>{copy.terms}</p>
-   </>}
-   {p.id!=='clarity'&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.programPreviewLink} data-coach-comparison-launch={p.id}>{({en:'View course & coaches',ru:'Курс и коучи',es:'Ver curso y coaches'})[lang]}<ArrowRight size={18} aria-hidden="true"/></Link>}
-   {p.id==='health'&&<p className={styles.terms}>{copy.healthNote}</p>}
+    {selected&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.start} data-coach-comparison-launch={p.id} aria-label={copy.start+' · '+p.title}>{copy.start}<ArrowRight size={15} aria-hidden="true"/></Link>}
+   </div>
   </div>
- </details>
+ </article>
 }
 
 export default function CoachProgramComparison({locale='en'}){
- const {lang,copy,programs}=getCoachProgramComparison(locale)
+ const {lang,copy,programs}=getVisibleCoachPrograms(locale)
+ const [selected,setSelected]=useState(null)
  return <main className={styles.page} data-my-coach-program-comparison lang={lang}>
   <div className={styles.frame}>
    <header className={styles.header}>
@@ -64,9 +53,8 @@ export default function CoachProgramComparison({locale='en'}){
     <div><h1>{copy.title}</h1><p>{copy.subtitle}</p></div>
    </div>
    <section className={styles.cards} aria-label={copy.title}>
-    {programs.map(p=><ComparisonCard key={p.id} program={p} copy={copy} lang={lang}/>)}
+    {programs.map(p=><ComparisonCard key={p.id} program={p} copy={copy} lang={lang} selected={selected===p.id} onSelect={()=>setSelected(previous=>previous===p.id?null:p.id)}/>)}
    </section>
-   <p className={styles.priceNote}>{copy.priceNote}</p>
   </div>
  </main>
 }
