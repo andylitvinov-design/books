@@ -94,6 +94,13 @@ test('separate meditation requires safe completion, preserves client edits and r
  assert.equal(saved.body,'My own words');assert.equal(saved.revision,2)
  assert.equal(antiStressMeditationArtifact(run,pid,ledger,saved,{type:'view'},'ru').body,'My own words')
  assert.throws(()=>antiStressMeditationArtifact(run,pid,ledger,saved,{type:'save',expectedRevision:1,atMs:900002,body:'stale'}),/CONFLICT/)
+ // Changed or newly issued consent/comfort/type invalidates the earlier
+ // version without destroying a client's edited text behind their back.
+ for(const fieldId of ['meditation_consent','practice_consent','practice_status','resource_kind','resource_response']){
+  const revised={...ledger,rows:ledger.rows.map(row=>row.fieldId===fieldId?{...row,evidenceId:fieldId+':new'}:row)}
+  assert.equal(antiStressMeditationArtifact(run,pid,revised,saved,{type:'view'},'ru').status,'needs_review')
+  assert.throws(()=>antiStressMeditationArtifact(run,pid,revised,saved,{type:'save',expectedRevision:2,atMs:900002,body:'stale'}),/CONFLICT/)
+ }
  const revoked={...ledger,rows:ledger.rows.map(r=>r.fieldId==='meditation_consent'?{...r,value:'declined'}:r)}
  assert.equal(antiStressMeditationArtifact(run,pid,revoked,saved,{type:'view'},'ru').body,null)
  const declined=antiStressMeditationArtifact(run,pid,revoked,saved,{type:'decline',expectedRevision:2,atMs:900002})

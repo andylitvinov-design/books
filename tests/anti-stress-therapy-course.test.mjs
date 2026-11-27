@@ -75,6 +75,7 @@ test('personal meditation is based on explicitly confirmed tried resource only',
   const m=antiStressResult(id,base,locale).meditation
   assert.equal(m.status,'draft');assert.equal(m.language,locale);assert.match(m.body,/quiet shore/)
   assert.deepEqual(m.sourceFieldIds,['resource_selected'])
+  assert.deepEqual(m.gateEvidenceIds,['verified-practice_consent','verified-practice_status','verified-resource_kind','verified-resource_response','verified-meditation_consent'])
  }
  assert.equal(antiStressResult(id,base.filter(x=>x.fieldId!=='meditation_consent')).meditation.body,null)
  for(const [field,value] of [['resource_response','uncomfortable'],['practice_status','stopped'],['practice_consent','declined'],['meditation_consent','declined']]){
@@ -95,4 +96,9 @@ test('meditation uses only confirmed optional sensory details, quality and phras
  assert.match(m.body,/warm stone/);assert.match(m.body,/steadiness/);assert.ok(!m.body.includes('I can rest'))
  assert.deepEqual(m.sourceFieldIds,['resource_selected','resource_details','resource_quality'])
  assert.deepEqual(m.sourceEvidenceIds,['verified-resource_selected','verified-resource_details','verified-resource_quality'])
+})
+
+test('ambiguous shared evidence cannot create a personal meditation',()=>{
+ const base=[row('practice_consent','accepted'),row('practice_status','attempted'),row('resource_kind','imagery'),row('resource_selected','quiet shore'),row('resource_response','comfortable'),row('meditation_consent','accepted',{evidenceId:'verified-resource_selected'})]
+ assert.equal(antiStressResult(id,base).meditation.body,null)
 })

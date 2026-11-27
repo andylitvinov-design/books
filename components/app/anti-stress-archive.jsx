@@ -29,7 +29,10 @@ function MeditationEditor({accountId,locale,run,day,meditation,onSaved,t}){
   finally{if(!c.signal.aborted){pending.current=null;setBusy(false)}}
  }
  if(meditation.status==='declined')return null
- if(meditation.status==='needs_review')return <p>{words[4]}</p>
+ if(meditation.status==='needs_review')return <div><p>{words[4]}</p>
+  {confirm?<div><button type="button" disabled={busy} onClick={()=>send('decline')}>{words[3]}</button><button type="button" disabled={busy} onClick={()=>setConfirm(false)}>{words[2]}</button></div>:<button type="button" disabled={busy} onClick={()=>setConfirm(true)}>{words[3]}</button>}
+  {error&&<p role="alert">{t.error}</p>}
+ </div>
  if(!['draft','saved'].includes(meditation.status)||typeof meditation.body!=='string')return null
  return <div><h4>{meditation.title}</h4>{meditation.status==='saved'&&<p>{words[5]}</p>}
   {editing?<div><textarea aria-label={words[0]} value={body} rows={8} maxLength={12000} disabled={busy} onChange={e=>setBody(e.target.value)}/><button type="button" disabled={busy||!body.trim()} onClick={()=>send('save')}>{words[1]}</button><button type="button" disabled={busy} onClick={()=>{setEditing(false);setBody(meditation.body)}}>{words[2]}</button></div>:<div>{meditation.body.split('\n\n').map((p,i)=><p key={i}>{p}</p>)}<button type="button" disabled={busy||confirm} onClick={()=>setEditing(true)}>{words[0]}</button>{meditation.status==='draft'&&<button type="button" disabled={busy||confirm} onClick={()=>send('save')}>{words[1]}</button>}</div>}
