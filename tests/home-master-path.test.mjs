@@ -8,14 +8,14 @@ const spanish = read("app/es/page.tsx");
 const widget = read("components/home-master-path.tsx");
 const styles = read("components/home-master-path.module.css");
 
-test("Master is the final immersion stage, not a repeated footer promotion", () => {
+test("Master remains the final retained catalogue stage, not a Home footer promotion", () => {
   const feature = read("components/home-featured-workspace.tsx");
   const expanded=read("components/home-expanded-catalog.tsx");
   for(const page of [home,spanish]){
-    assert.match(page,/<HomeDialogueEntry locale=/);
-    assert.match(page,/<HomeDeferredSections locale=/);
+    assert.match(page,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+    assert.doesNotMatch(page,/<HomeDeferredSections|<HomeDialogueEntry/);
     assert.doesNotMatch(page,/<HomeFeaturedWorkspace|<HomeMasterPath\b/);
-    assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<footer"));
+    assert.doesNotMatch(page,/<HomeMasterPath|<HomeDeferredSections/);
   }
   assert.equal((expanded.match(/<HomeFeaturedWorkspace\b/g)||[]).length,1);
   assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);

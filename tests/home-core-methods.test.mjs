@@ -9,14 +9,13 @@ const enRu = read("components/holistic-house-home.tsx");
 const es = read("app/es/page.tsx");
 
 
-test("the three source-backed approaches remain accessible after optional discovery, not on first paint", () => {
+test("the three source-backed approaches are retained separately from the new program-only Home", () => {
   const feature=read("components/home-featured-workspace.tsx");
   const catalog=read("components/home-expanded-catalog.tsx");
   for(const home of [enRu,es]){
-    assert.match(home,/<HomeDialogueEntry locale=/);
-    assert.match(home,/<HomeDeferredSections locale=/);
+    assert.match(home,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+    assert.doesNotMatch(home,/<HomeDeferredSections|<HomeDialogueEntry/);
     assert.doesNotMatch(home,/<HomeFeaturedWorkspace|<HomeCoreMethods/);
-    assert.ok(home.indexOf("<HomeDialogueEntry")<home.indexOf("<HomeDeferredSections"));
   }
   assert.match(catalog,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
   for(const stage of ["coaching","alchemy","energy"])

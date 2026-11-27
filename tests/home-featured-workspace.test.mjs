@@ -17,7 +17,7 @@ const facts = catalog("offerDetails");
 const ids = JSON.parse(component.match(/const moduleIds: ModuleKey\[\] = (\[[^;]+\]);/)[1]);
 const expected = ["courses","personality","situation","coaching","alchemy","energy","master"];
 
-test("seven ordered stages with unique media and one visible journey in EN/RU/ES", () => {
+test("retained catalogue has seven ordered stages; EN/RU/ES Home mounts only program discovery", () => {
   assert.deepEqual(ids, expected);
   assert.match(component, /data-home-journey-count=\{moduleIds\.length\}/);
   assert.match(component, /<h1 id="hh-home-features-title">/);
@@ -26,10 +26,8 @@ test("seven ordered stages with unique media and one visible journey in EN/RU/ES
   const deferred=read("components/home-deferred-sections.tsx");
   for(const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]){
     const home=read(page);
-    assert.match(home,/<HomeDialogueEntry locale=/);
-    assert.match(home,/<HomeDeferredSections locale=/);
-    assert.ok(home.indexOf("<HomeDialogueEntry")<home.indexOf("<HomeDeferredSections"),
-      page+" first interactive paint must precede the catalogue");
+    assert.match(home,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+    assert.doesNotMatch(home,/<HomeDeferredSections|<HomeDialogueEntry/);
     assert.doesNotMatch(home,/<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace/);
     for(const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
       assert.ok(!home.includes("<"+removed),page+" repeats "+removed);
