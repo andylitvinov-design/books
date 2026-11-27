@@ -126,7 +126,14 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
    setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
  useEffect(()=>{if(!expanded)return;const escape=e=>{if(e.key==='Escape')setExpanded(false)};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[expanded])
- function selectProgram(id){if(COACH_COMPARISON_IDS.includes(id))setProgram(id)}
+ function selectProgram(id){
+   if(!COACH_COMPARISON_IDS.includes(id)||id===program||gate.busy)return
+   setProgram(id);setReadyTopic(null)
+   // Public course preference only; retain it across the existing Google return.
+   const url=new URL(window.location.href)
+   url.searchParams.set('greetingProgram',id)
+   window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+ }
  function switchCoach(direction){
    if(!canSwitch||chosen.current||switching.current)return
    const nextId=greetingCoachNeighbor(PUBLIC_COACH_RAIL_IDS,personaId,direction)
