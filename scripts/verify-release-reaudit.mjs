@@ -742,11 +742,36 @@ async function exercise(engine, browserType, width) {
           // The unified Profile dock opens My Page. A guest must see the
           // sign-in gate, not private account content. Exercise its real
           // discovery link into the private CSP boundary, not an invented URL.
+          const myPageApi = origin + '/api/app/my-page';
+          const accountRead = cspPage.waitForResponse(response => response.url() === myPageApi && response.request().method() === 'GET');
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/my-page');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           await expect(cspPage.locator('[data-universal-my-page]')).toBeVisible();
+          const accountResponse = await accountRead;
+          const accountError = await accountResponse.json();
+          if (label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname) &&
+              accountResponse.status() === 503 && accountError.error === 'APP_UNAVAILABLE') {
+            // This isolated build has no private service credentials. First
+            // assert the REAL fail-closed response; only then exercise the
+            // guest UI contract with a read-only, exact-loopback 401 fixture.
+            await expect(cspPage.locator('[data-my-page-public-fallback="error"]')).toBeVisible();
+            await expect(cspPage.locator('[data-my-page-google], [data-my-page-private-feed], [data-my-page-media-library], [data-my-page-anti-stress-practices]')).toHaveCount(0);
+            const guestFixture = async route => {
+              assert.equal(route.request().url(), myPageApi);
+              assert.equal(route.request().method(), 'GET');
+              await route.fulfill({status:401, contentType:'application/json', headers:{'cache-control':'no-store'}, body:JSON.stringify({error:'SIGN_IN_REQUIRED'})});
+            };
+            await cspPage.route(myPageApi, guestFixture);
+            try {
+              await cspPage.locator('[data-my-page-public-fallback="error"] button').click();
+              await expect(cspPage.locator('[data-my-page-public-fallback="guest"]')).toBeVisible();
+            } finally { await cspPage.unroute(myPageApi, guestFixture); }
+          } else {
+            assert.equal(accountResponse.status(), 401, 'Real signed-out account request must be denied');
+            assert.equal(accountError.error, 'SIGN_IN_REQUIRED');
+          }
           await expect(cspPage.locator('[data-my-page-public-fallback="guest"]')).toBeVisible();
           await expect(cspPage.locator('[data-my-page-google]')).toBeVisible();
           await expect(cspPage.locator('[data-my-page-anti-stress-practices], [data-my-page-media-library]')).toHaveCount(0);

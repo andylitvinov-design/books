@@ -163,7 +163,7 @@ export default function MyCoachSessionStateCard({
       </h3>
       <p className={styles.captureCount}>{captureT.confirmed}: {openingCounts.confirmed}/{openingCounts.total}{openingCounts.skipped>0?' · '+captureT.skipped+': '+openingCounts.skipped:''}</p>
       <ol className={styles.stageList}>
-        {openingPosition.rows.map(({id:key,label,status,active,quote,automatic},index)=>{
+        {openingPosition.rows.map(({id:key,label,status,active,quote,automatic,value},index)=>{
           const done=status==='done'
           const state=done?t.done:status==='skipped'?captureT.skipped:status==='needs_confirmation'?t.mentioned:active?t.current:t.waiting
           const lamp=openingLampKey[key]
@@ -174,6 +174,7 @@ export default function MyCoachSessionStateCard({
               {label}
               {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
                 aria-hidden="true"/>}
+              {key==='name'&&value&&<small className={styles.openingValue} data-coach-opening-name>{value}</small>}
               {quote&&<small className={styles.openingValue} data-coach-opening-answer>{captureT.quote}: «{quote}»</small>}
               {automatic&&<small className={styles.openingValue}>{captureT.automatic}</small>}
             </span>
