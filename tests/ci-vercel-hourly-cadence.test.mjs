@@ -3,18 +3,19 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const workflow=readFileSync(new URL('../.github/workflows/hh-hourly-vercel-production.yml',import.meta.url),'utf8')
 
-test('hourly Vercel workflow re-registers one hourly off-peak cron at minute 37',()=>{
-  assert.match(workflow,/cron:\s*'37 \* \* \* \*'/)
+test('Vercel workflow uses two off-peak ticks every two hours',()=>{
+  assert.match(workflow,/cron:\s*'13,43 \*\/2 \* \* \*'/)
   assert.doesNotMatch(workflow,/cron:\s*'0 \* \* \* \*'/)
   assert.match(workflow,/HH_VERCEL_HOURLY_ENABLED/)
   assert.match(workflow,/refs\/heads\/codex\/public-book-library/)
 })
 
-test('routine production releases skip any build already started in rolling hour',()=>{
-  assert.match(workflow,/cutoff_ms="\$\(\( \$\(date -u \+%s\) \* 1000 - 3600000 \)\)"/)
+test('routine production releases skip any build already started in rolling two-hour window',()=>{
+  assert.match(workflow,/cutoff_ms="\$\(\( \$\(date -u \+%s\) \* 1000 - 7200000 \)\)"/)
   assert.match(workflow,/\.created \/\/ \.createdAt \/\/ 0/)
+  assert.match(workflow,/slot_start_ms=.*\/ 7200\) \* 7200000/)
   assert.match(workflow,/\.target == "production"/)
-  assert.match(workflow,/Production deployment created within the last 60 minutes/)
+  assert.match(workflow,/Production deployment created within the last 120 minutes/)
   assert.match(workflow,/Already deployed or in progress:/)
   assert.match(workflow,/concurrency:[\s\S]*cancel-in-progress: false/)
 })
@@ -22,7 +23,7 @@ test('routine production releases skip any build already started in rolling hour
 test('emergency Deploy Now and manual-only guarded cleanup remain available',()=>{
   assert.match(workflow,/workflow_dispatch:/)
   assert.match(workflow,/emergency:[\s\S]*type: boolean/)
-  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/)
+  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/)
   assert.match(workflow,/if \[\[ "\$EMERGENCY" == "true" \]\]; then url="\$url&forceNew=1"/)
   assert.match(workflow,/github\.event_name == 'workflow_dispatch' && inputs\.cleanup_mode != 'off'/)
   assert.doesNotMatch(workflow,/push:\s*\n\s*branches:/)
@@ -49,27 +50,48 @@ test('hourly 400 diagnostics preserve fields without leaking error text or retry
   assert.doesNotMatch(workflow,/echo "\$\(cat "\$response_file"\)"/);
   assert.doesNotMatch(workflow,/\bcurl[^\n]*--retry[^\n]*-X POST|\bcurl[^\n]*-X POST[^\n]*--retry/);
   assert.match(workflow,/No automatic retry/);
-  assert.match(workflow,/Production deployment created within the last 60 minutes/);
+  assert.match(workflow,/Production deployment created within the last 120 minutes/);
   assert.match(workflow,/Already deployed or in progress:/);
   assert.doesNotMatch(workflow,/skipAutoDetectionConfirmation|forceNew=1.*cron/);
 });
 
-test('verified production merge wakes the SAME one-per-hour batch without an extra workflow or CI wave',()=>{
+test('trusted closed-PR completion wakes the same guarded publisher',()=>{
   const top=workflow.slice(0,workflow.indexOf('jobs:'))
-  const pub=workflow.slice(workflow.indexOf('  publish:'),
-    workflow.indexOf('  cleanup:'))
-  assert.match(top,/pull_request_target:\s*\n\s*types: \[closed\]/)
-  assert.match(top,/branches: \['codex\/public-book-library'\]/)
-  assert.doesNotMatch(top,/types: \[opened|types: \[synchronize/)
-  assert.match(pub,/github\.event_name == 'pull_request_target'/)
-  assert.match(pub,/github\.event\.pull_request\.merged == true/)
-  assert.match(pub,/github\.event\.pull_request\.draft == false/)
-  assert.match(pub,/github\.event\.pull_request\.base\.repo\.full_name == github\.repository/)
-  assert.match(pub,/github\.event\.pull_request\.head\.repo\.full_name == github\.repository/)
-  assert.match(pub,/vars\.HH_VERCEL_HOURLY_ENABLED == 'true'/)
-  assert.match(pub,/cutoff_ms=.*3600000/)
-  assert.match(pub,/Production deployment created within the last 60 minutes/)
-  assert.match(pub,/Already deployed or in progress:/)
-  assert.match(pub,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/)
-  assert.doesNotMatch(pub,/actions\/checkout|checkout.*pull_request|github\.event\.pull_request\.head\.sha/)
+  const pub=workflow.slice(workflow.indexOf('  publish:'),workflow.indexOf('  cleanup:'))
+  assert.match(top,/workflow_run:\s*\n\s*workflows: \['HH closed PR Actions cleanup'\]/)
+  assert.match(pub,/github\.ref == 'refs\/heads\/codex\/bootstrap-books'/)
+  assert.match(pub,/github\.event\.workflow_run\.event == 'pull_request_target'/)
+  assert.match(pub,/github\.event\.workflow_run\.conclusion == 'success'/)
+  assert.match(pub,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/)
+  assert.match(pub,/cutoff_ms=.*7200000/)
+  assert.match(pub,/slot_start_ms=.*\/ 7200\) \* 7200000/)
+  assert.match(pub,/ref: \$\{\{ steps\.gate\.outputs\.sha \}\}/)
+  assert.doesNotMatch(pub,/github\.event\.pull_request\.head\.sha|github\.event\.workflow_run\.head_sha/)
+})
+
+test('prebuilt pilot never deploys, never uploads artifacts and is isolated from emergency',()=>{
+  const pub=workflow.slice(workflow.indexOf('  publish:'),workflow.indexOf('  cleanup:'))
+  assert.match(pub,/inputs\.prebuilt_test == true &&\s*inputs\.emergency != true/)
+  assert.match(pub,/node-version: '24'/)
+  assert.match(pub,/npm install --global vercel@66\.6\.0/)
+  assert.match(pub,/vercel pull --yes --environment=production/)
+  assert.match(pub,/vercel build --prod/)
+  assert.match(pub,/test -s \.vercel\/output\/config\.json/)
+  assert.match(pub,/vars\.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs\.prebuilt_test != true && inputs\.emergency != true/)
+  assert.match(pub,/inputs\.prebuilt_test != true && \(vars\.HH_VERCEL_PREBUILT_ENABLED != 'true' \|\| inputs\.emergency == true\)/)
+  assert.doesNotMatch(pub,/actions\/upload-artifact|actions\/cache|--token\s/)
+  assert.match(pub,/run: rm -rf \.vercel/)
+})
+
+test('prebuilt promotion is fail closed on exact deployment, smoke and provider status',()=>{
+  const stage=workflow.slice(workflow.indexOf('      - name: Stage prebuilt'),workflow.indexOf('      - name: Remove pulled'))
+  assert.match(stage,/vercel deploy --prebuilt --prod --skip-domain/)
+  assert.match(stage,/\.meta\.githubCommitSha == \$sha/)
+  assert.match(stage,/vercel curl \/ --deployment/)
+  assert.match(stage,/vercel curl \/api\/public\/release-evidence/)
+  assert.match(stage,/\.deployment_id == \$id/)
+  assert.match(stage,/\.state == "success" and \.target_url == \$url/)
+  assert.ok(stage.indexOf('vercel promote')>stage.indexOf('.state == "success"'))
+  assert.match(stage,/\/v4\/aliases\/holistichouse\.vercel\.app/)
+  assert.match(stage,/https:\/\/holistichouse\.vercel\.app\/api\/public\/release-evidence/)
 })
