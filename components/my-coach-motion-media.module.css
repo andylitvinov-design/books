@@ -70,4 +70,4 @@
 
 /* Public catalog only: video and poster fill the enlarged cinematic hero.
    Preserve session/HD camera composition and all other motion contexts. */
-.media[data-coach-motion-context='hero'] :is(.poster,.video){object-fit:cover;object-position:60% 22%}
+:global([data-my-coach-catalog]) .media[data-coach-motion-context='hero'] :is(.poster,.video){object-fit:cover;object-position:60% 22%}
