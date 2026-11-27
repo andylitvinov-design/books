@@ -57,3 +57,21 @@ test('native live setup declares character-first brevity with safety overrides',
  assert.match(source,/two short sentences total: one supportive reaction/)
  assert.match(source,/Mandatory opening, profile, consent, safety, refusals/)
 })
+
+test('four contemporary coaches have distinctive first reactions in each supported language',()=>{
+ const expectations={mira:['Guardian of inner strength','Забота о себе — тоже форма смелости'],max:['Playful field coach and experimenter','Неудачная попытка — тоже разведка'],sofia:['Advocate of human dignity','Для меня искренность важнее удобного молчания'],alex:['Strategist and intellectual sparring partner','Хорошая стратегия начинается с правильного вопроса']}
+ for(const [id,[title,ru]] of Object.entries(expectations)){
+  for(const locale of ['en','ru','es']){
+   const prompt=coachPersonalityBaseInstruction(id,locale)
+   assert.ok(prompt.includes('DISTINCTIVE CHARACTER: '+title))
+   assert.match(prompt,/Express this lens in the first brief reaction/)
+   if(locale==='ru')assert.ok(prompt.includes(ru))
+  }
+  const turn=coachPersonalityTurn({personaId:id,stage:'reality',locale:'ru'})
+  assert.ok(coachPersonalityTurnGuidance(turn).includes('First reaction lens: '+title))
+  const distressed=coachPersonalityTurn({personaId:id,stage:'reality',locale:'ru',empathy:{evidence:'explicit_current_self_report',certainty:'explicit',emotion:'fear'}})
+  assert.equal(distressed.humorAllowed,false)
+  assert.equal(distressed.metaphorAllowed,false)
+ }
+ for(const id of ['merlin','harry','genie','caesar'])assert.doesNotMatch(coachPersonalityBaseInstruction(id,'ru'),/DISTINCTIVE CHARACTER:/)
+})
