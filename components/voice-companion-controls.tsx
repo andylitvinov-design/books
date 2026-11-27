@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback,useEffect,useRef,useState} from "react";
+import {unlockAliOwnerAudio,startAliOwnerAudio} from '@/lib/voice-companion/ali-owner-audio.mjs';
 import type {PublicLocale} from "@/lib/public-locales";
 import {createDeviceSpeech,type SpeechController} from "@/lib/assistant-avatar/device-speech";
 import {browserSpeechLanguage,speechSegments,chooseVoiceRoute,createRecognitionGate} from "@/lib/voice-companion/browser-voice.mjs";
@@ -97,6 +98,15 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const speaker=useRef<SpeechController|null>(null);
  const lastSpoken=useRef('');
  const phoneRetryVoice=useRef(false);
+ const ownerAudioPersona=useRef<string|null>(null);
+ const ownerAudioContext=useRef<AudioContext|null>(null);
+ const ownerAudioJob=useRef<{cancel:()=>void}|null>(null);
+ const closeOwnerAudio=useCallback(()=>{
+  ownerAudioPersona.current=null;
+  ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
+  const context=ownerAudioContext.current;ownerAudioContext.current=null;
+  if(context&&context.state!=='closed')void context.close().catch(()=>{});
+ },[]);
  const [phoneReplayAvailable,setPhoneReplayAvailable]=useState(false);
  const mounted=useRef(true);
  const stop=useCallback(()=>{
@@ -105,6 +115,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   generation.current++;
   // Reuse Emotional Avatar's single browser speech adapter. It only cancels
   // utterances that it actually owns, never unrelated coaching/site audio.
+  ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
   speaker.current?.stop();
   recordedTurn.current?.cancel();recordedTurn.current=null;
   recognition.current?.abort();recognition.current=null;
@@ -115,17 +126,17 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   pauseOnHide.current=false;
   const wasPhone=phoneCall.current;phoneCall.current=false;phoneRetryVoice.current=false;lastSpoken.current='';
   if(mounted.current){setConversing(false);setPaused(false);setNotice('');setPhoneReplayAvailable(false);}
-  stop();
+  stop();closeOwnerAudio();
   if(wasPhone&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
- },[stop]);
+ },[stop,closeOwnerAudio]);
  const pauseDialogue=useCallback(()=>{
   if(!dialogueActive.current)return;
   // Retire every capture/playback callback, retaining only the UI pause state.
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   if(mounted.current){setConversing(false);setPaused(true);setNotice('');setPhoneReplayAvailable(false);}
-  stop();
+  stop();closeOwnerAudio();
   if(phoneCall.current&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
- },[stop]);
+ },[stop,closeOwnerAudio]);
  const setVoiceId=useCallback((value:string)=>{
   stopDialogue();setVoiceIdState(value);
  },[stopDialogue]);
@@ -215,6 +226,20 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     setNotice(speechLocale==='ru'?'Нет звука? Нажмите «Повторить звук».':speechLocale==='es'?'¿Sin sonido? Pulsa Repetir audio.':'No sound? Tap Replay audio.');
    }else{if(dialogueActive.current)stopDialogue();setNotice(t.error);}
   };
+  // The optional owner-only test uses a decoded non-silent audio buffer, not a
+  // speechSynthesis event. All ordinary client conversations remain local.
+  if(phone&&ownerAudioPersona.current&&!retryVoice){
+   refreshCoachIos27PlaybackRoute(window.navigator);
+   ownerAudioJob.current=startAliOwnerAudio({environment:window,context:ownerAudioContext.current,
+    personaId:ownerAudioPersona.current,locale:speechLocale,text:parts.join(' '),
+    onStart:()=>{if(seq===generation.current)setSpeaking(true)},
+    onEnd:()=>{if(seq!==generation.current)return;ownerAudioJob.current=null;setSpeaking(false);
+     resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;
+      if(dialogueActive.current&&!document.hidden)resumeDialogue.current?.();},160);},
+    onError:()=>{if(seq===generation.current){ownerAudioJob.current=null;outputFailed();}}
+   });
+   return;
+  }
   let index=0,busyRetries=0;
   const playNext=()=>{
    if(seq!==generation.current)return;
@@ -266,9 +291,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(!phoneCall.current||!dialogueActive.current||!phoneReplayAvailable||document.hidden||!lastSpoken.current)return;
   // Safari's direct tap permits a fresh audio route and default local voice.
   phoneRetryVoice.current=true;
+  closeOwnerAudio(); // Explicit local replay; do not charge/retry a remote request.
   // speak() cancels the active capture before switching the route.
   speak(lastSpoken.current,false,true);
- },[phoneReplayAvailable,speak]);
+ },[phoneReplayAvailable,speak,closeOwnerAudio]);
  const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
   if(!sttConsent&&!consentOnStart){setNotice(t.sttConsent);return;}
@@ -358,7 +384,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   }
   else{stopDialogue();setNotice(t.inputUnavailable);}
  },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string}={})=>{
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string;ownerAudioPersona?:string}={})=>{
   if(!enabled||document.hidden)return false;
   const consentOnStart=options.consentOnStart===true;
   if(!supported||(!consentOnStart&&(!playbackConsent||!sttConsent))){setNotice(t.permission);return false;}
@@ -375,6 +401,13 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
   pauseOnHide.current=options.pauseOnHide===true;
   phoneCall.current=options.phoneCall===true;emptyListenRetries.current=0;
+  closeOwnerAudio();
+  if(phoneCall.current&&consentOnStart&&options.ownerAudioPersona){
+   setCoachIos27AudioSession(window.navigator,'playback');
+   const context=unlockAliOwnerAudio(window);
+   if(!context){setNotice(t.unavailable);return false;}
+   ownerAudioContext.current=context;ownerAudioPersona.current=options.ownerAudioPersona;
+  }
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setPaused(false);setConversing(true);
   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
   // Opening speech is local and audible before capture begins. The normal
@@ -384,7 +417,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   else dictate(receive,consentOnStart);
   return true;
  },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
-   recordedSupported,prefersRecorded,sttConsent,supported,t,speak]);
+   recordedSupported,prefersRecorded,sttConsent,supported,t,speak,closeOwnerAudio]);
  resumeDialogue.current=()=>{
   if(dialogueActive.current&&dialogueOnTurn.current){
    const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
@@ -412,7 +445,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,paused,pauseDialogue,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,ownerAudioActive:()=>Boolean(ownerAudioPersona.current),conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 
