@@ -27,7 +27,7 @@ test('four approved comparison cards have three free and eight planned sessions,
   assert.equal(unifiedMobileDockActive('/'+lang+'/my-coach/programs'),'coach')
  }
 })
-test('comparison entry uses real route, native expandable cards and existing auth-protected free program start',()=>{
+test('comparison entry uses real route, native expandable cards and shared course launch',()=>{
  const landing=read('components/my-coach-catalog.jsx')
  const page=read('app/[locale]/my-coach/programs/page.jsx')
  const view=read('components/my-coach-program-comparison.jsx')
@@ -38,7 +38,8 @@ test('comparison entry uses real route, native expandable cards and existing aut
  assert.match(view,/<details className=\{styles.card\}/)
  assert.match(view,/open=\{p.id==='clarity'\}/)
  assert.match(view,/<summary className=\{styles.summary\}/)
- assert.match(view,/<ClarityStartLink locale=\{lang\}/)
+ assert.match(view,/coachCourseLaunchHref\(lang,p\.id\)/)
+ assert.match(view,/data-coach-comparison-launch=\{p\.id\}/)
  assert.match(view,/p.id==='clarity'&&<>/)
  assert.match(view,/nativeHelp.click\(\)/)
  assert.match(view,/copy.priceNote/)

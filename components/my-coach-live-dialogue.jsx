@@ -1623,25 +1623,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       freezeActiveClock();speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!retainPendingClient())throw Error('PENDING_CLIENT')
-      if(earlyExit.completion){
-        if(choice==='results'){
-          setProtocolOpen(true);setEarlyExit(null);return
-        }
-        if(choice!=='daybook'&&choice!=='exit')throw Error('INVALID_DESTINATION')
-        // Retention remains bound to the client's existing first-party consent.
-        // Do not claim saved before the current protocol API acknowledges its ID.
-        if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
-          if(await saveProtocol()!==true)throw Error('REPORT_NOT_SYNCED')
-        }
-        window.location.assign(coachCompletionDestination(lang,choice));return
+      if(earlyExit.completion&&choice==='results'){
+        setProtocolOpen(true);setEarlyExit(null);return
       }
+      if(earlyExit.completion?!['daybook','exit'].includes(choice):!['switch','exit'].includes(choice))throw Error('INVALID_DESTINATION')
+      // Leaving is not a review. Retain only the consented, acknowledged draft;
+      // a reviewed report requires the explicit Results/Save action.
       if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
         const structured=profileV3Ref.current
         const queued=!profileV3FaultRef.current&&!(structured&&!structured.step.closed)&&queuePrivateDraft(turnsRef.current)
         const revision=courseGateAttemptRef.current?null:courseGateRef.current?courseGateRef.current.revision:profileV3FaultRef.current?null:structured&&!structured.step.closed?structured.revision:queued?await autoSaveQueueRef.current?.flush():null
         if(!revision)throw Error('DRAFT_NOT_SYNCED')
       }
-      window.location.assign(coachEarlyExitDestination(lang,selectedCourseId,choice))
+      window.location.assign(earlyExit.completion?coachCompletionDestination(lang,choice):coachEarlyExitDestination(lang,selectedCourseId,choice))
     }catch{setEarlyExitError(true)}finally{earlyExitBusyRef.current=false;setEarlyExitBusy(false)}
   }
   function endWithProtocol(){

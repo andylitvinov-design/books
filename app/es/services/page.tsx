@@ -30,7 +30,7 @@ export const metadata = spanishMetadata(
   "Comienza con pruebas gratuitas, una revisión escrita o Wu Xing. Sesiones personales con Andrey Litvinov en Toronto y en línea desde €50."
 );
 
-export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string;assist?:string}> }) {
+export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string;assist?:string;consultation?:string}> }) {
   const query = await searchParams;
   if (query?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
@@ -39,7 +39,7 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
       <ServicesExplorerProvider>
         {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale="es" /> : <ServicesAssistQuiz locale="es" />}
-        <ServicesCompactCatalog locale="es">
+        <ServicesCompactCatalog locale="es" initialConsultationOpen={query?.consultation === "1"}>
           <ServicesCompactPanel id="consultation">
             <ServicesPersonalConsultationMobile locale="es" />
             <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />

@@ -98,7 +98,7 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
         </article>
         <article className={styles.card} data-support-uniform-card data-consultation-choice="remote-photo">
           <div className={styles.photo} data-support-uniform-photo>
-            <Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="(max-width:760px) 34vw, 110px" />
+            <Image src="/images/holistic-house/report-lighthouse-coast.avif" alt="" fill unoptimized loading="lazy" sizes="(max-width:760px) 34vw, 110px" />
           </div>
           <div className={styles.content} data-support-uniform-copy>
             <h3>{t.remote.title}</h3>
