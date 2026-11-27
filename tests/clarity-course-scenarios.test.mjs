@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {clarityScenarioVersion,clarityScenarioReviewVersion,clarityVersionedScenario,clarityScenarioGateFields,clarityScenarioReviewOf,clarityScenarioGuidance,clarityScenarioTimeGuidance,clarityMetricScore,clarityPracticeStatus} from '../lib/coaching/clarity-course-scenarios.mjs'
 import {coachCourseProtocolSchema,coachCourseProtocolRows,normalizeCoachCourseFieldReview,clarityDayOneReviewPrompt,coachCourseProtocolGuidance,coachCourseCheckpointGuidance} from '../lib/coaching/coach-course-protocol-schema.mjs'
 import {checkpointConfirmation,checkpointQuestionMatches,checkpointLiveAnswerMismatch} from '../lib/coaching/coach-course-question-binding.mjs'
-import {createCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
+import {createCoachProtocolGate,coachProtocolGateNext,transitionCoachProtocolGate} from '../lib/coaching/coach-protocol-validation-gate.mjs'
 import {courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs'
 import {claritySemanticResult,clarityMethodOutcome} from '../lib/coaching/clarity-session-fields.mjs'
 import {claritySessionProtocol} from '../lib/coaching/clarity-course-protocol.mjs'
@@ -241,4 +241,38 @@ test('resume recap prioritizes recent verified answers and the exact outstanding
  assert.ok(recap.includes('Ask about one task'));assert.ok(!recap.includes('I worked late twice'));assert.ok(recap.includes(prompt.text));assert.ok(recap.includes('Continue this same coaching session?'))
  const fallback=coachCourseResumeRecap({...value,courseGate:{...value.courseGate,prompt:null}})
  assert.ok(fallback.includes(f.schema.checkpoints.find(r=>r.id==='timing_or_condition').label))
+})
+
+test('B observation requires a confirmed attempt in the real gate and review ledger',()=>{
+ const course=ids[0]
+ for(const [status,expected] of [['planned for later',false],['just talked',false],['declined',false],['tried',true],['stopped',true]]){
+  const f=fixture(course)
+  f.add('practice_consent','yes','consent','accepted')
+  f.add('test_status',status)
+  const rows=coachCourseProtocolRows(course,f.turns,f.review())
+  assert.equal(rows.find(r=>r.id==='test_observation').status,'not_explored')
+  f.add('test_observation','No change in how I felt')
+  if(expected)assert.equal(coachCourseProtocolRows(course,f.turns,f.review()).find(r=>r.id==='test_observation').status,'confirmed')
+  else assert.throws(()=>normalizeCoachCourseFieldReview(f.review(),course,f.turns))
+  const fields=clarityScenarioGateFields(course).filter(x=>['practice_consent','test_status','test_observation','transfer_action'].includes(x.id))
+  let gate=createCoachProtocolGate({sessionId:'s1',courseSessionId:course,fields})
+  let seq=0
+  const transition=(type,fieldId,extra={})=>{gate=transitionCoachProtocolGate(gate,{id:'e:'+String(++seq),type,fieldId,sessionId:'s1',courseSessionId:course,coachId:'mira',expectedRevision:gate.revision,...extra})}
+  const answer=(id,quote,revision)=>{
+   const q='q:'+id,d='d:'+id
+   transition('issue',id,{questionId:q})
+   transition('delivery',id,{questionId:q,deliveryId:d,final:true})
+   transition('answer',id,{questionId:q,deliveryId:d,turnId:'t:'+id,text:quote,final:true,explicitFieldEntry:true})
+   transition('save_ack',id,{questionId:q,receipt:gate.pending.candidate.receipt,durableRevision:revision})
+  }
+  answer('practice_consent','yes',1)
+  answer('test_status',status,2)
+  assert.equal(coachProtocolGateNext(gate).fieldId,expected?'test_observation':'transfer_action')
+  if(expected){
+   answer('test_observation','No change in how I felt',3)
+   transition('reopen','test_status',{turnId:'correction:1',explicitCorrection:true})
+   assert.equal(gate.accepted.test_observation,undefined)
+   assert.equal(coachProtocolGateNext(gate).fieldId,'test_status')
+  }
+ }
 })
