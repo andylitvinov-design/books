@@ -223,3 +223,18 @@ test('stale connection recovery uses owner lock, database time and CAS, never a 
  assert.doesNotMatch(api,/recoverExpiredClarityRun|export (?:const|async function|function) POST/)
  assert.match(store,/TRUSTED_RUN_ADAPTER_READY=false/)
 })
+
+
+test('private credential reservation is account-locked, bounded and cannot expose a public mint or early release',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js'),sql=read('docs/coaching/clarity-course-runs.proposal.sql')
+ const body=store.slice(store.indexOf('export async function reserveClarityCredentialInTransaction'),store.indexOf('export async function reserveClarityRunCredential'))
+ assert.ok(body.indexOf('await lockCourseOwner')<body.indexOf('for update'))
+ assert.ok(body.indexOf('clarityRunCredentialWindow(')<body.indexOf('insert into '))
+ assert.match(body,/possible_expires_at_ms<=excluded\.reserved_at_ms/)
+ assert.match(body,/previousCredentialExpiresAt/)
+ assert.match(sql,/clarity_live_credential_windows force row level security/)
+ assert.match(sql,/account_id uuid primary key references app.accounts\(id\) on delete cascade/)
+ assert.doesNotMatch(sql,/grant delete[^\n]*clarity_live_credential_windows/i)
+ assert.match(store,/const TRUSTED_RUN_ADAPTER_READY=false/)
+})

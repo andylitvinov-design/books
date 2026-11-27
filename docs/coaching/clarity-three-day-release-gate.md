@@ -53,3 +53,7 @@ Clarity's Free token helper now fails closed without an internal run lease; the 
 
 ## Disabled entry and shared quota (27 Nov)
 While the trusted transport adapter and release flags are disabled, the normalized authenticated Clarity token request fails closed before reserving any shared Gemini attempt, successful grant, or provider credential. Existing ordinary coach limits and the additional remaining-time lease validation remain unchanged. No production flag, migration or paid provider change.
+
+
+## Durable credential reservation (27 Nov)
+One owner-locked SQL proposal row records each possible Clarity credential expiry across devices/coaches, before any provider mint. First candidate identity does not create a course or consume the daily slot; later reservations load the exact persisted run. Atomic conflict/CAS rejects overlap, retains ambiguous provider issuance until expiry, and returns a server timestamp for the bounded mint. No token storage, early release, public mutation route or production migration. The remaining adapter must bind the reservation to the actual provider connection, explicit consent, trusted observation and shared exclusion with non-Clarity transports; all activation vetoes remain. Native CI must rehearse the new SQL and concurrency test in disposable PostgreSQL.
