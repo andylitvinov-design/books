@@ -12,6 +12,8 @@ on:
       - 'components/app/anti-stress-archive*'
       - 'components/anti-stress-result*'
       - 'tests/anti-stress-*.test.mjs'
+      - 'tests/anti-stress-rls-isolated.sql'
+      - 'docs/coaching/anti-stress-runs.proposal.sql'
       - '.github/workflows/hh-anti-stress-contract.yml'
 permissions:
   contents: read
@@ -21,7 +23,7 @@ concurrency:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,3 +36,18 @@ jobs:
           node --check lib/app/anti-stress-runs.js
           node --check app/api/app/anti-stress/session/route.js
           node --test tests/anti-stress-therapy-course.test.mjs tests/anti-stress-runs.test.mjs tests/anti-stress-archive.test.mjs tests/clarity-course-clock.test.mjs
+      - name: Rehearse exact proposed therapy SQL on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          name=hh-anti-stress-ci
+          docker run --rm -d --name "$name" -e POSTGRES_DB=hh_anti_stress_test -e POSTGRES_PASSWORD=synthetic-only -v "$PWD:/workspace:ro" postgres:17-alpine >/dev/null
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          ready=false
+          for attempt in $(seq 1 40); do
+            if docker exec "$name" pg_isready -U postgres -d hh_anti_stress_test >/dev/null 2>&1; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+          docker exec "$name" psql -U postgres -d hh_anti_stress_test -v ON_ERROR_STOP=1 -f /workspace/tests/anti-stress-rls-isolated.sql | tee /tmp/hh-anti-stress-rls.log
+          grep -q ANTI_STRESS_RLS_SYNTHETIC_PASS /tmp/hh-anti-stress-rls.log

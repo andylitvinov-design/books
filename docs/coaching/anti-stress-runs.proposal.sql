@@ -19,6 +19,8 @@ create table app_private.anti_stress_sessions (
  review_revision bigint not null default 0 check(review_revision>=0),
  ledger_ciphertext text,
  log_ciphertext text,
+ check((review_revision=0)=(ledger_ciphertext is null)),
+ check((review_revision=0)=(log_ciphertext is null)),
  meditation_revision bigint not null default 0 check(meditation_revision>=0),
  meditation_ciphertext text,
  check((meditation_revision=0)=(meditation_ciphertext is null)),
