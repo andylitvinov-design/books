@@ -12,19 +12,20 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null}={}){
- const base=1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
- let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
- const lease={leaseId:id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt:null,
-  ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt:null})}
- let now=base,seq=20,tid=0;const timers=new Map(),events=[],retirements=[]
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null}={}){
+ const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
+ let run=previousRun||createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
+ const previousCredentialExpiresAt=previousRun?base:null
+ const lease={leaseId:previousRun?id(11):id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt,
+  ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt})}
+ let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retirements=[]
  const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async binding=>{retirements.push({binding,status:run.clock.days[0].status,elapsed:run.clock.days[0].elapsedMs})},
   persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
  function advance(ms){now+=ms;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
- const consent=()=>client.input({type:'hh_clarity_consent',decision:'start'})
+ const consent=()=>client.input({type:'hh_clarity_consent',decision:previousRun?'continue':'start'})
  return {client,provider,relay,events,retirements,advance,ready,consent,base,get run(){return run}}
 }
 test('server provider setup and explicit client consent are both required; paired real socket pongs alone credit time',async()=>{
@@ -127,7 +128,7 @@ test('failed durable pause never retires the credential',async()=>{
 
 test('trusted course cues use durable time only, never trigger speech or interrupt audio',async()=>{
  const f=fixture(),audio={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
- const cues=()=>f.provider.messages.filter(m=>m.clientContent)
+ const cues=()=>f.provider.messages.filter(m=>m.clientContent?.turnComplete===false)
  f.ready();assert.equal(cues().length,0)
  f.consent();await f.relay.settled()
  assert.equal(cues().length,1)
@@ -172,4 +173,39 @@ test('hosting segment deadline pauses the same logical protocol without completi
  assert.equal(f.events.at(-1).type,'pause')
  assert.equal(f.retirements.length,1)
  assert.equal(f.client.messages.at(-1).status,'paused')
+})
+
+test('one trusted spoken start follows committed consent and ACK; resume retains protocol without replay',async()=>{
+ const f=fixture(),order=[]
+ const clientSend=f.client.send.bind(f.client),providerSend=f.provider.send.bind(f.provider)
+ f.client.send=value=>{if(JSON.parse(value).type==='hh_clarity_clock')order.push('ack');clientSend(value)}
+ f.provider.send=value=>{if(JSON.parse(value).clientContent?.turnComplete===true)order.push('spoken');providerSend(value)}
+ const speech=s=>s.messages.filter(m=>m.clientContent?.turnComplete===true)
+ f.ready();assert.equal(speech(f.provider).length,0)
+ f.consent();await f.relay.settled()
+ assert.deepEqual(order,['ack','spoken'])
+ assert.equal(speech(f.provider).length,1)
+ assert.match(speech(f.provider)[0].clientContent.turns[0].parts[0].text,/APPLICATION START EVENT/)
+ f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+ f.client.input({type:'hh_clarity_change_coach'});await f.relay.settled()
+ const g=fixture({previousRun:f.run})
+ g.ready();assert.equal(g.client.messages.at(-1).decision,'continue')
+ g.consent();await g.relay.settled()
+ assert.equal(g.run.clock.days[0].protocolId,f.run.clock.days[0].protocolId)
+ assert.equal(g.run.clock.days[0].elapsedMs,5000)
+ assert.equal(speech(g.provider).length,1)
+ assert.match(speech(g.provider)[0].clientContent.turns[0].parts[0].text,/APPLICATION CONTINUATION EVENT/)
+ assert.match(speech(g.provider)[0].clientContent.turns[0].parts[0].text,/Never claim to remember facts you cannot access/)
+ g.consent();await g.relay.settled()
+ assert.equal(speech(g.provider).length,1)
+ assert.equal(g.run.clock.days[0].status,'paused')
+})
+test('failed delivery of start ACK stops without opening speech or adding time',async()=>{
+ const f=fixture();f.ready()
+ f.client.send=()=>{throw Error('synthetic closed client')}
+ f.consent();await f.relay.settled()
+ assert.equal(f.provider.messages.filter(m=>m.clientContent?.turnComplete===true).length,0)
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,0)
+ assert.equal(f.provider.readyState,3)
 })
