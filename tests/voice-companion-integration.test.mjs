@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {startAliOwnerAudio} from '../lib/voice-companion/ali-owner-audio.mjs';
 import {createDeviceSpeech} from '../lib/assistant-avatar/device-speech.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('Web/iHelp/Client share one canonical assistant and Web Voice UI',()=>{
@@ -191,4 +192,38 @@ test('owned queued speech timeout is bounded and permits fresh playback',()=>{
  synth.speaking=false;current.onend();
  assert.deepEqual(events,['timeout','start','ended']);
  speech.destroy();
+});
+
+test('owner natural audio is explicitly consented, fresh and never a second assistant turn',()=>{
+ const chat=source('components/holistic-agent-chat.tsx'),call=source('components/ali-audio-call.tsx');
+ const voice=source('components/voice-companion-controls.tsx'),audio=source('lib/voice-companion/ali-owner-audio.mjs');
+ assert.match(chat,/if\(!authenticated\|\|messages\.length!==0\|\|ownerAudioBlocked\|\|voice\.conversing\|\|voice\.paused\)return/);
+ assert.match(chat,/ownerAudio&&phone&&authenticated&&!ownerAudioBlocked&&messages\.length===0/);
+ assert.match(chat,/if\(voice\.ownerAudioActive\(\)\)\{voice\.stopDialogue\(\);return;\}/);
+ assert.match(chat,/ownerAudioBlocked[\s\S]*?useAgentMemory\|\|useSavedTests\|\|useSavedHistory/);
+ assert.match(call,/possible training use/);
+ assert.match(call,/ownerReady&&ownerTestEligible&&onOwnerStart/);
+ assert.match(voice,/closeOwnerAudio\(\); \/\/ Explicit local replay/);
+ assert.match(audio,/freeOnly:true,nonSensitiveTest:true,privacyConsent:true,trainingConsent:true/);
+ assert.doesNotMatch(audio,/localStorage|sessionStorage|sendSelectedTurn|gemini_tts_paid/);
+});
+test('real owner PCM output rejects digital silence and cancels stale completion',async()=>{
+ const events=[],calls=[];
+ const env={AbortController,setTimeout:()=>1,clearTimeout(){},fetch:async(url,init)=>{
+  calls.push({url,body:JSON.parse(init.body)});
+  return {ok:true,headers:{get:()=> 'audio/wav'},arrayBuffer:async()=>new ArrayBuffer(80)};
+ }};
+ let sourceNode;
+ const context={state:'running',destination:{},decodeAudioData:async()=>({numberOfChannels:1,duration:1,getChannelData:()=>new Float32Array([0,0.1])}),
+ createBufferSource:()=>sourceNode={connect(){},disconnect(){},start(){events.push('graph')},stop(){},onended:null}};
+ const opts={environment:env,context,personaId:'max',locale:'en',text:'Hello',onStart:()=>events.push('start'),onEnd:()=>events.push('end'),onError:()=>events.push('error')};
+ const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve()};
+ startAliOwnerAudio(opts);await flush();
+ assert.deepEqual(events,['graph','start']);assert.equal(calls.length,1);
+ assert.equal(calls[0].body.text,'Hello');
+ sourceNode.onended();assert.deepEqual(events,['graph','start','end']);
+ events.length=0;context.decodeAudioData=async()=>({numberOfChannels:1,duration:1,getChannelData:()=>new Float32Array([0,0])});
+ startAliOwnerAudio(opts);await flush();assert.deepEqual(events,['error']);
+ events.length=0;const cancelled=startAliOwnerAudio(opts);cancelled.cancel();await flush();
+ assert.deepEqual(events,[]);assert.equal(calls.length,2);
 });
