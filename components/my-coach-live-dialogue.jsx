@@ -2236,10 +2236,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             aria-valuemin={0} aria-valuemax={Math.max(1,visibleProgressTotal)} aria-valuenow={visibleProgressStep}
             aria-valuetext={visibleProgressDescription}>
             {stagePosition.rows.map(row=><span key={row.id} data-stage-id={row.id} data-group-progress
-              data-stage-status={row.active?'current':row.status} data-stage-resolution={row.status}
+              data-stage-status={row.active?'current':row.status} data-stage-resolution={row.status} data-stage-tone={row.tone}
               title={row.label+' · '+row.recorded+'/'+row.total+' · '+row.confirmed+'/'+row.total}
-              style={{'--recorded':(row.recordedFraction*100)+'%','--verified':(row.verifiedFraction*100)+'%','--skipped':(row.skippedFraction*100)+'%'}}
-              data-complete={row.status==='done'?'true':undefined}
+              data-complete={row.tone==='green'?'true':undefined}
               data-current={row.active?'true':undefined}/>)}
 
           </div>
@@ -2256,7 +2255,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           opening={openingProgress} profile={profileProgress} openingPosition={openingPosition}
           profilePosition={profilePosition} stagePosition={detailPosition} progressMode={progressMode} stageGroups={stagePosition.rows}/>
-        {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.kind==='core')} provisional={plannedCourse}/>} 
+        {coreMode==='course'&&<MyCoachCourseProgress courseSessionId={selectedCourseId} turns={turns} review={courseFieldReview} locale={lang} position={detailPosition} groups={stagePosition.rows.filter(row=>row.coreChildren.length>0).map(row=>({...row,children:row.coreChildren}))} provisional={plannedCourse}/>} 
         {profileV3&&<p data-coach-profile-v3-progress style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{coachSavedProfileV3Text(profileV3.protocol,lang)}</p>}
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
