@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import {ProgramStartLink} from '@/components/app/clarity-program'
 import {ReikiDaybookStart} from '@/components/reiki-practitioner-entry'
-import {ArrowLeft,ArrowRight,BarChart3,BriefcaseBusiness,ChevronDown,ChevronRight,Compass,Flag,Flame,Flower2,Layers,Leaf,Route,Settings2,Sparkles,Sunrise,Target,TrendingUp} from 'lucide-react'
+import {ArrowLeft,ArrowRight,BarChart3,BriefcaseBusiness,ChevronDown,Compass,Flag,Flame,Flower2,Layers,Leaf,Route,Settings2,Sparkles,Sunrise,Target,TrendingUp} from 'lucide-react'
 import {SiteNavigation} from '@/components/site-navigation'
 import {PROGRAM_LOCALES} from '@/lib/public-coaching-programs.mjs'
 import styles from './public-program-overview.module.css'
+import GoalLandingSections,{GoalLandingBenefits} from './goal-landing-sections'
 
 const icons={
  clarity:[Flower2,Leaf,Target],
@@ -16,6 +17,7 @@ const programIcons={clarity:Flower2,goal:Target,business:TrendingUp,reiki:Flower
 
 export default function ProgramOverview({program:p}){
  const Icon=programIcons[p.id]
+ const start=<ProgramStartLink locale={p.locale} program={p.id} className={styles.cta}>{p.start}<ArrowRight size={22} aria-hidden="true"/></ProgramStartLink>
  return <main className={styles.page} lang={p.locale} data-public-program={p.id}>
   <header className={styles.header}>
    <Link href={p.home} prefetch={false} className={styles.brand} aria-label="Holistic House">
@@ -41,22 +43,14 @@ export default function ProgramOverview({program:p}){
   </section>
   <section className={styles.body} aria-label={p.outline}>
    {p.id==='reiki'&&<div className={styles.reikiEntry}><ReikiDaybookStart locale={p.locale} className={styles.cta}/></div>}
-   <ol className={styles.sessions}>
+   {p.id==='goal'?<>{start}<GoalLandingBenefits locale={p.locale}/><GoalLandingSections locale={p.locale}/></>:<ol className={styles.sessions}>
     {p.rows.map(([title,description],index)=>{
      const RowIcon=icons[p.id]?.[index]??programIcons[p.id]
      return <li key={index} data-program-session={index+1}>
       {p.id==='reiki'?<article className={styles.reikiWeek}>
        <div className={styles.reikiPhoto} aria-hidden="true"><RowIcon size={26}/></div>
        <div className={styles.reikiWeekCopy}><small>{p.week} {index+1}</small><h2>{title}</h2><p>{description}</p></div>
-      </article>:p.id==='goal'?<details className={styles.session}>
-       <summary className={styles.row}>
-        <RowIcon className={styles.sessionIcon} size={25} aria-hidden="true"/>
-        <span className={styles.number} aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
-        <span className={styles.sessionTitle}>{title}</span>
-        <ChevronRight size={20} className={styles.chevron} aria-hidden="true"/>
-       </summary>
-       <p className={styles.detail}>{description}</p>
-      </details>:<div className={styles.session}>
+      </article>:<div className={styles.session}>
        <div className={styles.row}>
         <RowIcon className={styles.sessionIcon} size={25} aria-hidden="true"/>
         <span className={styles.number} aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
@@ -65,8 +59,8 @@ export default function ProgramOverview({program:p}){
       </div>}
      </li>
     })}
-   </ol>
-   {p.id==='reiki'?<p className={styles.reikiNote}><Flower2 size={22} aria-hidden="true"/>{p.note}</p>:<ProgramStartLink locale={p.locale} program={p.id} className={styles.cta}>{p.start}<ArrowRight size={22} aria-hidden="true"/></ProgramStartLink>}
+   </ol>}
+   {p.id==='reiki'?<p className={styles.reikiNote}><Flower2 size={22} aria-hidden="true"/>{p.note}</p>:p.id==='goal'?null:start}
   </section>
  </main>
 }
