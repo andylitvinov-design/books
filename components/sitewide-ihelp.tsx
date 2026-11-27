@@ -6,7 +6,7 @@ import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
 
 import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
-import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
+import {IHelpTopics} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
 import {isPublicInstallPath, type PublicLocale} from "@/lib/public-locales";
@@ -233,7 +233,6 @@ function PageHelp({pathname}:{pathname:string}){
          <button type="button" ref={closeButton} className={styles.close} onClick={close}
            aria-label={t.close}><X size={21} aria-hidden="true"/></button>
        </header>
-       <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
          <Suspense fallback={null}><HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/></Suspense>
        </div>
