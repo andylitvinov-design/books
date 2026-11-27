@@ -15,6 +15,7 @@ import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,Clipboa
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
 import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
+import {downloadCoachQualityTranscript} from '@/lib/personal-coaching/protocol-quality.mjs'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 
@@ -484,6 +485,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
+      <button type="button" className={styles.primaryButton} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(protocol)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
       <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>

@@ -453,21 +453,21 @@
 }
 .heroStage[data-my-coach-hero]{
  display:flex;flex-direction:column;box-sizing:border-box;
- height:clamp(380px,54vw,590px);min-height:380px;max-height:590px;aspect-ratio:auto;
+ height:clamp(420px,62vw,590px);min-height:420px;max-height:590px;aspect-ratio:auto;
  padding:22px 22px 14px;gap:12px;border:1px solid #ddbd76;border-radius:28px;
  background:#20392e;box-shadow:0 8px 24px #4f39251a;
 }
 .heroStage[data-my-coach-hero] .heroPortrait{
- inset:0 0 0 auto!important;height:100%;width:auto!important;aspect-ratio:9 / 16;
- max-width:73%;background-size:contain!important;background-position:center!important;
+ inset:0!important;height:100%;width:100%!important;aspect-ratio:auto;
+ max-width:none;background-size:cover!important;background-position:60% 22%!important;
  -webkit-mask-image:none!important;mask-image:none!important;filter:none;
 }
 .heroStage[data-my-coach-hero]::before{
- background:linear-gradient(90deg,#20392e 0%,rgba(32,57,46,.88) 25%,transparent 55%),
- linear-gradient(0deg,rgba(19,37,29,.34),transparent 45%)!important;
+ background:linear-gradient(90deg,rgba(18,40,31,.77) 0%,rgba(18,40,31,.37) 32%,transparent 61%),
+ linear-gradient(0deg,rgba(15,31,24,.48),transparent 45%)!important;
 }
 .heroStage[data-my-coach-hero] .stageGreeting{
- position:relative;inset:auto;margin:12px 0 0;padding:0;z-index:2;
+ position:relative;inset:auto;margin:clamp(56px,14vw,130px) 0 0;padding:0;z-index:2;
  width:43%;max-width:17rem;flex-shrink:0;background:none;border-radius:0;
 }
 .heroStage[data-my-coach-hero] .stageGreeting h2{
@@ -494,31 +494,21 @@
  font:700 clamp(14px,2vw,19px)/1.18 Georgia,'Times New Roman',serif;
 }
 .programPanel{
- position:relative;z-index:2;display:grid;grid-template-columns:minmax(42px,21%) minmax(0,1fr);
- align-items:center;gap:10px;flex-shrink:0;min-width:0;padding:10px;
- background:rgba(255,249,235,.94);border:1px solid #e4c996;border-radius:20px;
+ position:relative;z-index:2;display:block;flex-shrink:0;min-width:0;
+ width:min(84%,400px);align-self:center;padding:0;background:none;border:0;
 }
-.programArt{
- align-self:stretch;display:grid;place-items:center;min-height:84px;
- background:url('/images/holistic-house/messenger-zen-stones.svg') center/contain no-repeat;
- border-right:1px solid #e6d4ad;color:#aa843f;
-}
-.programArt svg{filter:drop-shadow(0 2px 3px #fff7e8);align-self:start;margin-top:4px}
-.programActions{display:grid;gap:6px;min-width:0}
+.programActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
 .freeProgram,.programDetails{
- display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:44px;
- box-sizing:border-box;padding:7px 10px;border-radius:999px;text-decoration:none;
- text-align:center;color:#103e31;cursor:pointer;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+ min-width:0;min-height:76px;aspect-ratio:1.65;box-sizing:border-box;padding:8px 7px;
+ border-radius:17px;text-decoration:none;text-align:center;color:#103e31;cursor:pointer;
+ background:rgba(255,252,246,.76);border:1px solid rgba(255,255,255,.66);
+ -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+ font:700 clamp(12px,1.65vw,16px)/1.15 Georgia,'Times New Roman',serif;
 }
-.freeProgram{
- background:linear-gradient(105deg,#ffe28a,#ffc02b);border:1px solid #f5c450;
- font:700 clamp(14px,2vw,19px)/1.15 Georgia,'Times New Roman',serif;
-}
-.programDetails{
- background:transparent;border:1px solid #c7aa71;font:600 clamp(12px,1.6vw,15px)/1.2 system-ui;
-}
-.freeProgram span,.programDetails span{min-width:0;overflow-wrap:normal}
-.freeProgram svg,.programDetails svg{flex-shrink:0}
+.freeProgram span,.programDetails span{min-width:0;overflow-wrap:anywhere;max-width:100%}
+.freeProgram svg,.programDetails svg{flex-shrink:0;width:21px;height:21px}
+.freeProgram:hover,.programDetails:hover{background:rgba(255,252,246,.9)}
 .freeProgram:focus-visible,.programDetails:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 .programOptions:not([hidden]){display:grid;gap:6px;margin:9px 0 0}
 .programOptions a{
@@ -540,25 +530,22 @@
  background:#267554!important;color:#fff9e8!important;
 }
 @media(max-width:540px){
- .heroStage[data-my-coach-hero]{height:clamp(330px,86vw,390px);min-height:330px;max-height:none;padding:12px 10px 10px;gap:8px;border-radius:24px}
- .heroStage[data-my-coach-hero] .stageGreeting{margin:13px 0 0 6px;width:42%;max-width:42%}
+ .heroStage[data-my-coach-hero]{height:clamp(365px,110vw,445px);min-height:365px;max-height:none;padding:12px 10px 12px;gap:8px;border-radius:24px}
+ .heroStage[data-my-coach-hero] .stageGreeting{margin:clamp(65px,20vw,98px) 0 0 6px;width:40%;max-width:40%}
  .heroStage[data-my-coach-hero] .stageGreeting h2{font-size:clamp(29px,9vw,40px);margin-bottom:8px}
  .heroStage[data-my-coach-hero] .stageGreeting p{font-size:clamp(12px,3.3vw,15px);line-height:1.28}
  .heroStage[data-my-coach-hero] .stageActions{margin-bottom:4px}
- .programPanel{padding:7px;gap:7px;border-radius:16px;grid-template-columns:minmax(35px,19%) minmax(0,1fr)}
- .programArt{min-height:72px}
- .programArt svg{width:24px;height:24px}
- .freeProgram,.programDetails{padding:5px 7px;gap:5px;min-height:44px}
- .freeProgram{font-size:clamp(13px,3.6vw,16px)}
- .programDetails{font-size:clamp(11px,3.1vw,13px)}
- .freeProgram svg,.programDetails svg{width:15px;height:15px}
+ .programPanel{width:min(84%,320px)}
+ .programActions{gap:8px}
+ .freeProgram,.programDetails{padding:6px;gap:4px;min-height:72px;aspect-ratio:1.65;font-size:clamp(12px,3.4vw,15px);border-radius:15px}
+ .freeProgram svg,.programDetails svg{width:19px;height:19px}
  .coachRailHeading{margin-top:15px}
 }
 @media(max-width:355px){
- .heroStage[data-my-coach-hero]{height:340px}
- .programPanel{grid-template-columns:30px minmax(0,1fr);gap:5px}
- .programArt svg{width:20px;height:20px}
- .freeProgram svg:first-child{display:none}
+ .heroStage[data-my-coach-hero]{height:365px}
+ .heroStage[data-my-coach-hero] .stageGreeting{margin-top:53px}
+ .programPanel{width:88%}
+ .freeProgram,.programDetails{font-size:12px}
  .heroStage[data-my-coach-hero] .stageGreeting h2{font-size:29px}
 }
 

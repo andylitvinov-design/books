@@ -6,6 +6,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {MY_COACH_PROTOCOL_MAX_TURN_CHARS} from '../lib/personal-coaching/session-protocol.mjs'
 import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
@@ -84,7 +85,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     // Feed the real category-reset logic into the evaluated controller, while
     // using a synthetic browser microtask instead of touching real hardware.
     refreshCoachIos27PlaybackRoute:(nav)=>refreshCoachIos27PlaybackRoute(nav,fn=>queueMicrotask(fn)),
-    readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
+    readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,MY_COACH_PROTOCOL_MAX_TURN_CHARS,
     // The VM runs the real controller body; inject its real pure imports.
     coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech,
     createCoachBasicEndpointPolicy,coachBasicListeningMode,coachBasicBackchannel,isCoachBargeEcho,
@@ -323,7 +324,7 @@ test('one Play exposes informed free-only speech fallback without second consent
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8');
   const provider=readFileSync(new URL('../app/api/holistic-support/audio-storyboard/route.js',import.meta.url),'utf8');
   assert.ok(speech.includes('startCoachRecordedTurn({locale:transcriptLocale'));
-  assert.ok(speech.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))"));
+  assert.ok(speech.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS))"));
   assert.ok(ui.includes('data-coach-voice-consent-one-play'));
   assert.ok(ui.includes('Groq Whisper'));
   assert.match(provider,/HH_AUDIO_STT_FREE_CONFIRMED/);
@@ -496,4 +497,18 @@ test('all public coaches retain approved voice or text, never Fish/device substi
     assert.equal(session.intros,1)
     session.ref.current.stop()
   }
+})
+
+
+test('full captured utterances remain separate from the bounded model window',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  const long='long spoken statement '.repeat(150).trim()
+  const visible=readDictationResults([{isFinal:true,0:{transcript:long}}],MY_COACH_PROTOCOL_MAX_TURN_CHARS).final
+  assert.equal(visible,long)
+  assert.equal(appendSpokenAnswer('',visible,MY_COACH_PROTOCOL_MAX_TURN_CHARS),long)
+  assert.ok(speech.includes('readDictationResults(event.results,MY_COACH_PROTOCOL_MAX_TURN_CHARS)'))
+  assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory\.filter\(row=>row\.content\.length<=1200\),10\)/)
+  assert.match(ui,/if\(message\.length>1200\)\{\s*retainPendingClient\(\)/)
+  assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);captureBasicIntroduction\(\)\}\}/)
 })
