@@ -848,3 +848,22 @@ test('Spanish Services source contract belongs to Core; real billing changes sta
     'app/[locale]/services/page.tsx', 'app/[locale]/services/catalog/page.tsx',
     'components/services-directory-page.tsx']) assert.ok(step.includes(path), path);
 });
+
+test('IA diagnostic source contracts run in mandatory preflight, not twice in explicit jobs', () => {
+  const ia = workflow('ia-v2.yml');
+  const preflight = ia.split('\n  browser_preflight:')[1]?.split('\n  verify:')[0];
+  const verify = ia.split('\n  verify:')[1];
+  assert.ok(preflight && verify);
+  const exact = 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"';
+  assert.ok(preflight.includes(exact));
+  assert.ok(verify.includes(exact));
+  assert.match(verify, /needs: \[browser_preflight\]/);
+  for (const file of ['tests/ia-v2-loopback-proxy.test.mjs','tests/ia-public-navigation-diagnostics.test.mjs']) {
+    assert.ok(preflight.includes(file), file);
+    assert.ok(!verify.includes(file), file + ' must not be repeated in the explicit heavy job');
+  }
+  assert.ok(verify.includes('tests/app-auth-pkce.integration.mjs'));
+  assert.ok(verify.includes('tests/manual-billing-security.test.mjs'));
+  assert.ok(verify.includes('npm run test:app'));
+  assert.ok(verify.includes('npm run verify:ia-v2'));
+});
