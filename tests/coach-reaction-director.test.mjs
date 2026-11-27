@@ -515,7 +515,7 @@ test('Harry catalog preserves the approved native source and avoids 3x mobile ov
  const original=coachPresentationOpening('harry')
  assert.equal(original.width,768)
  assert.equal(original.height,1344)
- assert.match(original.src,/harry-greeting-real-v2\\.mp4$/)
+ assert.match(original.src,/harry-greeting-real-v2\.mp4$/)
  assert.ok(css.includes(".heroStage[data-my-coach-hero='harry'] .heroPortrait[data-persona='harry']"))
  assert.ok(css.includes('@media(max-width:540px) and (min-resolution:3dppx)'))
  assert.ok(css.includes('width:min(100%,256px)!important;max-width:256px!important;'))
