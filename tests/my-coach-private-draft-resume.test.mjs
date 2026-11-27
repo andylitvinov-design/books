@@ -61,6 +61,7 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 
 
 import {coachDraftListSummary,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+import {CLARITY_DAY_ONE_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
  const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
  assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1})
@@ -70,7 +71,15 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
  assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
- assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId"))
+ // Normal resume remains persona-scoped; Clarity may list only metadata for
+ // other coaches, with eligibility determined by the persisted v5 gate.
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',...(!clarityDay?{personaId}:{}),...(cursor||{})})"))
+ assert.ok(ui.includes("row?.personaId===personaId||(clarityDay&&row?.crossCoach===true)"))
+ assert.ok(ui.includes("row.courseSessionId===clarityCourseId(clarityDay)"))
+ assert.ok(ui.includes("headers:{'X-HH-Account-ID':owner}"))
+ assert.ok(route.includes("auth.verified()"))
+ assert.ok(route.includes("request.headers.get('x-hh-account-id')!==actor.id"))
+ assert.ok(store.includes("where account_id=$1 and state='active'"))
  assert.ok(ui.includes("action:'resume',id:item.id,revision:item.revision,confirmed:true"))
 })
 test('checkpoint cannot erase a known interruption but may append an answer or record a new interruption',()=>{
@@ -79,4 +88,14 @@ test('checkpoint cannot erase a known interruption but may append an answer or r
  assert.equal(draftTranscriptPrefix(a,b),false)
  assert.equal(draftTranscriptPrefix(b,a),true)
  assert.equal(draftTranscriptPrefix(a,{...a,turns:[...a.turns,{role:'user',content:'Next'}]}),true)
+})
+
+test('cross-coach greeting metadata excludes ledger and transcript, and safety-paused drafts cannot hand off',()=>{
+ const item={id:'draft',revision:4,updatedAt:'2026-11-26T12:00:00Z',courseSessionId:'clarity_day_1',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}},courseGate:{scenarioVersion:CLARITY_DAY_ONE_VERSION,activeCoachId:'genie',paused:false,gate:{private:'secret'},review:{private:'secret'}}}
+ const common={id:item.id,revision:item.revision,updatedAt:item.updatedAt,courseSessionId:item.courseSessionId,personaId:'mira',locale:'ru',turnCount:1}
+ assert.deepEqual(coachDraftListSummary(item),{...common,crossCoach:true,activeCoachId:'genie'})
+ assert.deepEqual(coachDraftListSummary({...item,courseGate:{...item.courseGate,paused:true}}),common)
+ assert.deepEqual(coachDraftListSummary({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}}),common)
+ assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('secret'))
+ assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
 })
