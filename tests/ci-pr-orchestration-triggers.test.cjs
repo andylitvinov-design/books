@@ -646,8 +646,8 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
  assert.match(workflow,/cron: '13,43 \* \* \* \*'/);
   assert.ok(workflow.includes("github.event.schedule == '13,43 * * * *'"),
     'publisher schedule predicate must match its only routine cron');
-  assert.match(workflow,/cutoff_ms=.*3600000/,
-    'rolling 60-minute budget cap remains enforceable for both cron chances');
+  assert.match(workflow,/cutoff_ms=.*5400000/,
+    'rolling 90-minute budget cap remains enforceable for both cron chances');
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
    'protect latest source HEAD before Vercel release');
@@ -773,6 +773,6 @@ test('hourly Vercel skips only fully proven CI-only delta including existing CI 
  check(Array.from({length:300},()=>y),false);
  check([a],false,{ahead_by:2,total_commits:2});
  check([],false); check([a],false,{status:'diverged'});
- assert.match(workflow,/cutoff_ms=.*3600000/);
+ assert.match(workflow,/cutoff_ms=.*5400000/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/);
 });
