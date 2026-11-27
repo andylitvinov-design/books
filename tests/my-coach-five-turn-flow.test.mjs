@@ -6,6 +6,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
+import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
@@ -21,7 +23,7 @@ const end=source.indexOf("  const isPaused=phase==='paused',active=phase!=='idle
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
+function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
   const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
@@ -89,8 +91,9 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
-    coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
+    coachSessionOpeningAudioPath,lockedCoachSessionVoice,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
+      assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=7','only the short session opening, never the full presentation')
       intros++
       queueMicrotask(()=>{onStart?.();onEnd?.()})
       return {cancel(){}}
@@ -112,8 +115,8 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
   const reply=respond||((text,index)=>({reply:'Мира отвечает на ход '+index,mode:'ai'}))
   Component({
     locale:'ru',speechLocale:'ru',initialDraft:'',enabled:true,canStart:true,
-    cloudAvailable:true,cloudAgreed:true,cloudProvider:'fish_free',
-    personaId:'mira',introduction:'Здравствуйте! Я Мира.',
+    cloudAvailable:true,cloudAgreed:true,cloudProvider,
+    personaId,introduction:'Я рядом. Готовы начать?',
     onSessionStart:()=>{starts++},
     onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
@@ -163,7 +166,7 @@ test('one Play sustains five iOS 27 synthetic turns and recovers one failed natu
   assert.deepEqual(session.inputs,phrases,'all five user turns reach the model exactly once')
   assert.equal(session.ttsCalls,5,'one synthesis attempt per answer, no paid retry')
   assert.equal(session.spoken,4,'natural TTS still streams on four successful turns')
-  assert.equal(session.deviceSpoken,1,'the failed natural turn is spoken by device instead of going silent')
+  assert.equal(session.deviceSpoken,0,'approved voice failure preserves text instead of substituting a device voice')
   assert.equal(session.cues,6,'first post-MP3 mic and all five follow-ups each get a real recovery cue')
   assert.ok(session.cueVolumes.every(volume=>volume>0&&volume<=0.3),'a muted cue does not reset iOS audio')
   assert.ok(session.phases.includes('listening'))
@@ -234,7 +237,7 @@ test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS
   assert.deepEqual(session.inputs,phrases,'all ten distinct user phrases delivered once')
   assert.equal(session.ttsCalls,10,'no hidden provider retries')
   assert.equal(session.spoken,8,'successful natural audio remains primary')
-  assert.equal(session.deviceSpoken,2,'two natural failures receive audible device fallback')
+  assert.equal(session.deviceSpoken,0,'failed approved audio never substitutes a device voice')
   assert.equal(session.cues,11,'the first Safari turn also follows a recovery cue')
   session.ref.current.stop()
   assert.equal(mic.aborted,true)
@@ -404,10 +407,10 @@ test('End during a recorded turn stops the track without sending any speech',asy
 });
 test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(source,/document\.visibilityState==='visible'&&!paused/)
+  assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
   assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen\]\)/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined\]\)/)
   assert.match(source,/data-coach-pause-control/)
   assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
 })
@@ -478,4 +481,19 @@ test('background and pagehide require explicit Play and do not consume another i
   assert.equal(session.intros,introductions)
   assert.equal(session.starts,starts)
   session.ref.current.stop()
+})
+
+
+test('all public coaches retain approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
+  for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const provider of ['fish_free','gemini_tts_free']){
+    const session=createSession({personaId,cloudProvider:provider,ttsFailures:[1]})
+    assert.equal(session.ref.current.startSession('Я рядом и внимательно вас слушаю. Готовы начать?',{naturalVoice:true}),true)
+    const mic=await nextMic(session,1)
+    mic.hear('Да, я готов начать')
+    await nextMic(session,2)
+    assert.equal(session.ttsCalls,provider==='gemini_tts_free'?1:0)
+    assert.equal(session.deviceSpoken,0)
+    assert.equal(session.intros,1)
+    session.ref.current.stop()
+  }
 })

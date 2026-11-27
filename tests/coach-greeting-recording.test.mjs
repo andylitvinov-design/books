@@ -1,6 +1,6 @@
 import './my-coach-greeting-mp3-store.test.mjs'
 import test from 'node:test'
-import {coachIntroAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
+import {coachIntroAudioPath,coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
@@ -8,7 +8,7 @@ import ffmpeg from 'ffmpeg-static'
 import {encodeCoachGreetingMp3} from '../lib/coaching/coach-greeting-mp3.mjs'
 import {geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,validCoachWav} from '../lib/coaching/gemini-coach-tts.mjs'
 import {approvedGeminiVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
-import {COACH_OPENING_PUBLIC_IDS,coachOpeningIntro} from '../lib/coaching/coach-opening-protocol.mjs'
+import {COACH_OPENING_PUBLIC_IDS,coachOpeningIntro,coachSessionOpeningLine} from '../lib/coaching/coach-opening-protocol.mjs'
 import {getCoachPresentation} from '../lib/coaching/persona-presentations.mjs'
 import {coachSpokenText} from '../lib/coaching/coach-spoken-text.mjs'
 import {isMp3Bytes,readSavedCoachGreeting,saveCoachGreetingOnce} from '../lib/coaching/coach-greeting-mp3-store.mjs'
@@ -59,7 +59,7 @@ function harness({env=free,lookupError=false,writeError=false,synthError=false}=
   const deps={NextResponse:Response,URL,Buffer,AbortSignal,process:{env},
     getAppConfig:()=>config,consumeRate:async(_c,bucket,limit,seconds)=>rates.push({bucket,limit,seconds}),
     safeError:error=>({code:error.code||'INTERNAL_ERROR',status:error.status||500}),AppError,
-    getCoachPresentation,coachOpeningIntro,coachSpokenText,
+    getCoachPresentation,coachOpeningIntro,coachSessionOpeningLine,coachSpokenText,
     readSavedCoachGreeting:(c,id,locale,_fetch,range,version)=>readSavedCoachGreeting(c,id,locale,fetcher,range,version),
     saveCoachGreetingOnce:(c,id,locale,audio,_fetch,version)=>saveCoachGreetingOnce(c,id,locale,audio,fetcher,version),isMp3Bytes,
     approvedGeminiVoice,geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,
@@ -256,6 +256,50 @@ test('Russian Alex and Max record new immutable v4 tracks while old v2 retains h
     assert.equal((await disabled.GET(request)).status,503)
     assert.equal(disabled.fishCalls,0)
   }
+})
+
+test('short in-session audio is cached separately, uses the approved voice and never replays the biography',async()=>{
+  const h=harness()
+  for(const id of COACH_OPENING_PUBLIC_IDS)for(const locale of ['ru','en']){
+    const path=coachSessionOpeningAudioPath(id,locale)
+    assert.equal(path,'/api/coaching/intro/'+locale+'/'+id+'?v=7')
+    const request=new Request('https://holistichouse.vercel.app'+path)
+    const line=coachSessionOpeningLine(id,locale)
+    assert.ok(line.length<110)
+    assert.equal((line.match(/\?/g)||[]).length,1)
+    assert.notEqual(line,coachOpeningIntro(id,locale))
+    const first=await h.GET(request)
+    assert.equal(first.status,200,id+'/'+locale)
+    const bytes=Buffer.from(await first.arrayBuffer())
+    assert.equal(h.syntheses.at(-1).text,line)
+    assert.equal(h.syntheses.at(-1).voiceName,approvedGeminiVoice(id,locale))
+    assert.ok(h.objects.has('v7/'+locale+'/'+id+'.mp3'))
+    const count=h.syntheses.length
+    assert.deepEqual(Buffer.from(await (await h.GET(request)).arrayBuffer()),bytes)
+    assert.equal(h.syntheses.length,count)
+  }
+  assert.equal(h.objects.size,16)
+  assert.equal((await harness({env:{}}).GET(new Request('https://holistichouse.vercel.app'+coachSessionOpeningAudioPath('merlin','ru')))).status,503)
+})
+
+test('all eight missing approved greetings never substitute a different provider',async()=>{
+  const h=harness({env:{}})
+  for(const id of COACH_OPENING_PUBLIC_IDS)for(const locale of ['ru','en']){
+    const response=await h.GET(new Request('https://holistichouse.vercel.app'+coachIntroAudioPath(id,locale)))
+    assert.equal(response.status,503,id+'/'+locale)
+  }
+  assert.equal(h.fishCalls,0)
+})
+
+test('all eight session openings are distinct, short and do not re-introduce the character',()=>{
+ for(const locale of ['ru','en','es']){
+   const lines=COACH_OPENING_PUBLIC_IDS.map(id=>coachSessionOpeningLine(id,locale))
+   assert.equal(new Set(lines).size,8)
+   for(const line of lines){assert.ok(line.length<110);assert.equal((line.match(/\?/g)||[]).length,1)}
+ }
+ const gate=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ assert.match(gate,/coachIntroAudioPath\(personaId,lang\)/)
+ assert.doesNotMatch(gate,/greetingQuote|fullGreeting|fallbackText:/)
 })
 
 
