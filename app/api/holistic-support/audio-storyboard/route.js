@@ -98,7 +98,8 @@ export async function POST(request){
     if(!provider.ok)throw new AppError("AUDIO_STT_PROVIDER_UNAVAILABLE",503);
     const result=await provider.json();
     if(textOnly){
-      const text=typeof result?.text==="string"?result.text.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/gu," ").trim().slice(0,2000):"";
+      const recognized=typeof result?.text==="string"?result.text.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\s+/gu," ").trim():"";
+      const text=purpose==="my_coach"?recognized:recognized.slice(0,2000);
       if(!text)throw new AppError("AUDIO_STT_EMPTY",422);
       if(purpose==="my_coach"&&isSpeechTranscriptLanguageMismatch({requested:language,detected:result.language,text}))
         throw new AppError("AUDIO_STT_LANGUAGE_MISMATCH",422);
