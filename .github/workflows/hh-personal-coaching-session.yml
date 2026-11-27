@@ -181,6 +181,7 @@ jobs:
           ready=false
           for attempt in $(seq 1 40); do
             if docker exec "$name" pg_isready -h 127.0.0.1 -U postgres -d hh_app_test >/dev/null 2>&1; then ready=true; break; fi
+            echo "Waiting for isolated PostgreSQL ($attempt/40)"
             sleep 1
           done
           test "$ready" = true
