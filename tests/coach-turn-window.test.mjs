@@ -156,7 +156,7 @@ test('My Coach UI sends an authored goal visibly and does not create account per
  assert.match(ui,/const profileActive=Boolean\(profileSelected&&profileProgress&&!profileV3&&!restoredProfileProof\.current\)/)
  assert.match(ui,/const profileV3Active=Boolean\(profileV3&&!profileV3\.step\.closed\)/)
  assert.match(body,/if\(profileV3BusyRef\.current\|\|profileV3FaultRef\.current\|\|\(profileV3Ref\.current&&!profileV3Ref\.current\.step\.closed\)\)return null/)
- assert.match(body,/const goalEligible=openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
+ assert.match(body,/const goalEligible=!isNameCorrection&&openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
  assert.match(body,/openingProgress\.completed/)
  assert.equal((body.match(/commitGoalTurn\(\)/g)||[]).length,2)
  assert.match(body,/lastSharedGoalRef\.current=goalTurn\.goal/)
@@ -168,7 +168,7 @@ test('goal state remains held during every Session 0 turn, including a completed
  const fs=await import('node:fs')
  const ui=fs.readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const body=ui.slice(ui.indexOf('async function sendMessage(raw'))
- assert.match(body,/const goalEligible=openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
+ assert.match(body,/const goalEligible=!isNameCorrection&&openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
  assert.match(body,/const commitGoalTurn=\(\)=>\{\s*if\(!goalEligible\)return/)
 })
  
@@ -228,8 +228,8 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.match(ui,/sessionContext:coachEphemeralContext\(providerHistory,providerWindow,responseLocale,message\)/)
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
   const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
-  assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
-  // The sixth exit is the local verified-course opening handoff, not another
+  assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+  // Two extra exits are first-party name correction and confirmation. The course exit is the local verified-course opening handoff, not another
   // provider call or unguarded write. Keep the safety/boundary and commit gates.
   const handoff=send.slice(send.indexOf('if(courseGateOpeningAfter('),send.indexOf('// The review of an existing profile'))
   assert.match(handoff,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
