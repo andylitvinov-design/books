@@ -375,6 +375,7 @@ jobs:
           node --check scripts/ci-pr-merged-queue-cleanup.cjs
           node --check scripts/ci-vercel-deployment-prune.mjs
           node --check tests/ci-vercel-deployment-prune.test.mjs
+          node --check tests/ci-vercel-hourly-cadence.test.mjs
           node --check tests/ci-pr-closed-run-cleanup.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-core-metadata-wake.cjs

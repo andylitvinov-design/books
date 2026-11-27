@@ -1,11 +1,11 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '13,43 */2 * * *' # two off-peak chances per two-hour UTC slot; at most one routine release/120m
+    - cron: '13,43 * * * *' # off-peak wakeups only; Toronto release window and rolling 90m cap
     - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
   # GitHub can drop schedule ticks under load. Reuse this SAME publisher after a
   # trusted closed-PR cleanup completes; this is NOT another deploy workflow.
-  # The existing rolling-120-minute, UTC two-hour slot and exact-SHA guards apply equally.
+  # The existing rolling-90-minute, Toronto window and UTC-hour and exact-SHA guards apply equally.
   workflow_run:
     workflows: ['HH closed PR Actions cleanup']
     types: [completed]
@@ -35,14 +35,14 @@ concurrency:
 jobs:
   publish:
     # Off-peak schedule plus a trusted merged-PR completion event tolerate missed
-    # GitHub cron ticks; the same Vercel history, rolling-120-minute and UTC two-hour slot
-    # guards allow at most one normal release.
-    # An explicit emergency=true manual action is the sole off-schedule exception.
+    # GitHub cron ticks; the same Vercel history, rolling-90-minute, Toronto window and UTC-hour
+    # guards allow at most one normal paid build.
+    # Explicit emergency=true bypasses cadence only, NEVER the Toronto night window.
     # Manual dry-run/apply cleanup remains separate and never starts a build.
-    # Exact HEAD, last-120-minutes and UTC two-hour slot guards remain unchanged.
+    # Exact HEAD, last-90-minutes and UTC-hour guards apply.
     if: >-
       github.ref == 'refs/heads/codex/bootstrap-books' && (
-      (github.event_name == 'schedule' && github.event.schedule == '13,43 */2 * * *' &&
+      (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.name == 'HH closed PR Actions cleanup' &&
@@ -67,8 +67,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 0
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 0
+          fi
           if [[ -z "$VERCEL_TOKEN" ]]; then
-            echo 'Two-hour batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
+            echo 'Hourly batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
             exit 1
           fi
           head_sha="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
@@ -81,29 +94,33 @@ jobs:
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
             fi
-            # Never schedule a second production release in a rolling 120-minute window.
+            if ! printf '%s' "$response" | jq -e '[.deployments[] | ((.created // .createdAt) | type == "number")] | all' >/dev/null; then
+              echo 'Vercel production timestamps unverified; refusing speculative hourly release.'
+              exit 1
+            fi
+            # Never schedule a second production build in a rolling 90-minute window.
             # This is defense-in-depth against manual non-emergency dispatches,
             # GitHub cron delays, and already-existing Vercel production builds.
             # Emergency Deploy Now deliberately remains outside this limit.
-            cutoff_ms="$(( $(date -u +%s) * 1000 - 7200000 ))"
+            cutoff_ms="$(( $(date -u +%s) * 1000 - 5400000 ))"
             if printf '%s' "$response" | jq -e --argjson cutoff "$cutoff_ms" \
-              '[.deployments[] | select((.created // .createdAt // 0) >= $cutoff and .target == "production" and ((.readyState // .state) != "BLOCKED"))] | length > 0' >/dev/null; then
-              echo 'Production deployment created within the last 120 minutes; skip routine build.'
+              '[.deployments[] | select((.created // .createdAt // 0) >= $cutoff and .target == "production")] | length > 0' >/dev/null; then
+              echo 'Production deployment created within the last 90 minutes; skip routine build.'
+              exit 0
+            fi
+            if printf '%s' "$response" | jq -e '[.deployments[] | select(.target == "production" and ((.readyState // .state) == "BUILDING" or (.readyState // .state) == "QUEUED" or (.readyState // .state) == "INITIALIZING"))] | length > 0' >/dev/null; then
+              echo 'Production build still in progress; do not overlap builds.'
               exit 0
             fi
             if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | (.readyState // .state) as $status | select(.meta.githubCommitSha == $sha and ($status == "READY" or $status == "BUILDING" or $status == "QUEUED" or $status == "INITIALIZING"))] | length > 0' >/dev/null; then
               echo "Already deployed or in progress: $head_sha"
               exit 0
             fi
-            # One NORMAL production request per UTC two-hour slot, across changing SHAs.
+            # One NORMAL production request per UTC hour, across changing SHAs.
             # Fail closed on missing Vercel timestamps; emergency bypass is separate.
-            if ! printf '%s' "$response" | jq -e '[.deployments[] | ((.created // .createdAt) | type == "number")] | all' >/dev/null; then
-              echo 'Vercel production timestamps unverified; refusing speculative two-hour release.'
-              exit 1
-            fi
-            slot_start_ms="$(( ($(date -u +%s) / 7200) * 7200000 ))"
-            if printf '%s' "$response" | jq -e --argjson slot_start_ms "$slot_start_ms" '[.deployments[] | select(.target == "production" and ((.created // .createdAt) >= $slot_start_ms))] | length > 0' >/dev/null; then
-              echo 'Production already requested this UTC two-hour slot; defer pending changes to next two-hour run.'
+            hour_start_ms="$(( ($(date -u +%s) / 3600) * 3600000 ))"
+            if printf '%s' "$response" | jq -e --argjson hour_start_ms "$hour_start_ms" '[.deployments[] | select(.target == "production" and ((.created // .createdAt) >= $hour_start_ms))] | length > 0' >/dev/null; then
+              echo 'Production already requested this UTC hour; defer pending changes to next eligible run.'
               exit 0
             fi
           # Prove that the whole LIVE-to-HEAD delta is CI-only before skipping.
@@ -198,6 +215,29 @@ jobs:
           set -euo pipefail
           # No remote-build fallback, no automatic second deployment, and no
           # upload of pulled env files. Stage the same prebuilt production output.
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 1
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 1
+          fi
+          # Recheck protected HEAD and the rolling limit after the local build, before any upload.
+          latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Protected production advanced during build; defer.'; exit 0; }
+          response="$(curl -fsS --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=100')"
+          jq -e '.deployments | type == "array" and all((.created // .createdAt) | type == "number")' <<< "$response" >/dev/null
+          cutoff_ms="$(( $(date -u +%s) * 1000 - 5400000 ))"
+          if jq -e --argjson cutoff "$cutoff_ms" '[.deployments[] | select(.target == "production" and (((.created // .createdAt) >= $cutoff) or ((.readyState // .state) == "BUILDING" or (.readyState // .state) == "QUEUED" or (.readyState // .state) == "INITIALIZING")))] | length > 0' <<< "$response" >/dev/null; then
+            echo 'Another production request occurred during local build; defer.'
+            exit 0
+          fi
           deployment_url="$(vercel deploy --prebuilt --prod --skip-domain --yes --meta "githubCommitSha=$EXPECTED_SHA" --meta githubCommitRef=codex/public-book-library --meta githubOrg=andylitvinov-design --meta githubRepo=books)"
           [[ "$deployment_url" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]]
           deployment_host="${deployment_url#https://}"
@@ -215,6 +255,21 @@ jobs:
           # Existing independent verifier requires a real provider GitHub status.
           # Never manufacture that status. If prebuilt is incompatible, stop before LIVE.
           gh api "repos/andylitvinov-design/books/commits/$EXPECTED_SHA/status?per_page=100" | jq -e --arg url "https://vercel.com/super10/codex-public-book-library/${deployment_id#dpl_}" '.statuses | any((.context == "Vercel" or .context == "Vercel – codex-public-book-library") and .state == "success" and .target_url == $url)' >/dev/null
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 1
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 1
+          fi
+          latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Protected production advanced; leave staged deployment unassigned.'; exit 1; }
           vercel promote "$deployment_url" --yes
           live="$(curl -fsS --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v4/aliases/holistichouse.vercel.app$suffix")"
           jq -e --arg id "$deployment_id" '(.deploymentId // .deployment.id) == $id and .projectId == "prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b"' <<< "$live" >/dev/null
@@ -232,9 +287,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 0
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 0
+          fi
           latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
-          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next two-hour run will publish latest SHA.'; exit 0; }
-          # Restore the GitSource payload from the last successful two-hour run.
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next eligible run will publish latest SHA.'; exit 0; }
+          # Restore the GitSource payload from the last successful hourly run.
           # Custom metadata preceded repeated HTTP 400 responses; keep its
           # diagnostic context in the GitHub Actions run rather than the POST.
           payload="$(jq -cn --arg sha "$EXPECTED_SHA" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha}}')"
@@ -259,9 +327,9 @@ jobs:
             error_field="$(jq -r '(.error.errors // .error.details // .error.validationErrors // []) | if type == "array" then (.[0].path // .[0].field // "unavailable") else "unavailable" end | if type == "array" then join(".") else . end' "$response_file" 2>/dev/null || true)"
             [[ "$error_field" =~ ^[A-Za-z_][A-Za-z0-9_.-]{0,79}$ ]] || error_field="unavailable"
             case "$error_field" in gitSource|gitSource.*|name|project|target) ;; *) error_field="unavailable" ;; esac
-            echo "Vercel rejected two-hour release: HTTP $http_status, code=$error_code, field=$error_field."
+            echo "Vercel rejected hourly release: HTTP $http_status, code=$error_code, field=$error_field."
             # Even a 400 could accompany a concurrent Git-backed deployment.
-            # Fail closed without a second POST: routine next-slot gating uses
+            # Fail closed without a second POST: routine next-hour gating uses
             # authoritative Vercel production history before any new build.
             exit 1
           fi
@@ -271,7 +339,7 @@ jobs:
   cleanup:
     # Daily bounded cleanup uses the already validated owner cleanup code.
     # Dedicated daily cron NEVER activates the publish job or a paid Vercel build.
-    # Preserve LIVE, active aliases, ten READY rollbacks, and ten newest deployments.
+    # Preserve LIVE, active aliases, six newest READY versions (LIVE + five rollbacks), and six newest deployments.
     if: >-
       github.ref == 'refs/heads/codex/bootstrap-books' && ((github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' && inputs.prebuilt_test != true && inputs.emergency != true) ||
       (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *'))
