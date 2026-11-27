@@ -2,19 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
-test("Reiki join is an intentional guest-only dialog and reuses canonical OAuth",()=>{
+test("Reiki join is an intentional guest-only dialog with canonical OAuth and source continuation",()=>{
  const entry=read("components/reiki-practitioner-entry.tsx");
+ const hook=read("components/use-google-page-action.js");
  const dialog=read("components/reiki-join-dialog.tsx");
  const css=read("components/reiki-join-dialog.module.css");
- const begin=entry.slice(entry.indexOf("async function begin()"),entry.indexOf("async function signIn()"));
- const signin=entry.slice(entry.indexOf("async function signIn()"),entry.indexOf("return <div"));
- assert.ok(begin.includes('await appFetch("bootstrap?view=portrait")'));
- assert.ok(begin.indexOf("window.location.assign(destination)")<begin.indexOf("setJoinOpen(true)"));
- assert.ok(begin.includes("?.status !== 401"));
- assert.ok(!begin.includes('appFetch("auth/start"'));
- assert.ok(signin.includes('continueTo: "energywork-daybook"'));
- assert.ok(signin.includes('appFetch("auth/start"'));
- assert.ok(signin.includes('if (pending.current || !joinOpen) return'));
+ assert.ok(entry.includes('check: "bootstrap?view=portrait", reikiRegistration: locale'));
+ assert.ok(entry.includes('continuation: "energywork-daybook", kind: "reiki"'));
+ assert.ok(entry.includes("onAuthorized: () => window.location.assign(destination)"));
+ assert.ok(hook.includes("failure?.status!==401||resumed"));
+ assert.ok(hook.includes("rememberPageAuthAction")&&hook.includes("takePageAuthAction"));
+ assert.ok(hook.includes("provider:'google',returnPath")&&hook.includes("pending.current||!open"));
  assert.ok(entry.includes("{joinOpen && <ReikiJoinDialog"));
  assert.ok(dialog.includes("showModal()")&&dialog.includes("onCancel=")&&dialog.includes("aria-labelledby={titleId}"));
  assert.ok(dialog.includes("data-reiki-join-google")&&dialog.includes("onClick={onGoogle}"));
@@ -22,7 +20,7 @@ test("Reiki join is an intentional guest-only dialog and reuses canonical OAuth"
  for(const locale of ["en","ru","es"])assert.ok(dialog.includes(locale+": { badge:"));
  assert.ok(css.includes("100dvh")&&css.includes("overflow:auto")&&css.includes("minmax(0,1fr)"));
 });
-test("Existing backend still creates the account after verified OAuth; teacher sharing remains consented",()=>{
+test("Existing backend creates the account after verified OAuth; teacher sharing remains consented",()=>{
  const api=read("app/api/app/[...path]/route.js");
  const repo=read("lib/app/repository.js");
  const course=read("lib/academy/energywork-course-repository.js");

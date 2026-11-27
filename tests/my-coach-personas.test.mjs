@@ -1,5 +1,8 @@
 import test from 'node:test'
 import './coach-character-signature.test.mjs'
+import './page-auth-continuation.test.mjs'
+import './my-coach-express-auth.test.mjs'
+import './reiki-join-dialog.test.mjs'
 import './coach-session-director.test.mjs'
 import './coach-signature-speech.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
