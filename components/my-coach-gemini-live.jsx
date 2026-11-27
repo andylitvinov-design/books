@@ -24,7 +24,7 @@ const ui={
     interrupt:'Перебить коуча',stop:'Завершить разговор',mic:'Микрофон недоступен',micRecovering:'Восстанавливаем микрофон…',micResumeFailed:'Микрофон не восстановился. Нажмите Play ещё раз или продолжите текстом. История сохранена.',
     failure:'Живой голос недоступен. Можно продолжить текстом.',
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
-    reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Восстанавливаем звук…',audioUnavailable:'Устройство пока не восстановило звук. История разговора сохранена.',
+    reconnecting:'Восстанавливаю голосовую связь…',resumeRetry:'Связь пока не восстановилась. Нажмите Play, когда интернет будет доступен. Разговор сохранён.',audioRoute:'Восстанавливаем звук…',audioUnavailable:'Устройство пока не восстановило звук. История разговора сохранена.',
     resumedEarlier:'Разговор восстановлен. Если связь прервалась посреди фразы, повторите её последние слова.',
     networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
     playbackInterrupted:'Ответ прервался (G-L11). Можно продолжать говорить.',
@@ -51,7 +51,7 @@ const ui={
     interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',micRecovering:'Restoring microphone…',micResumeFailed:'The microphone did not recover. Press Play again or continue by text. Your conversation is preserved.',
     failure:'Live voice is unavailable. You can continue by text.',
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
-    reconnecting:'Restoring live voice…',audioRoute:'Restoring audio…',audioUnavailable:'The device has not restored audio yet. Your conversation is preserved.',
+    reconnecting:'Restoring live voice…',resumeRetry:'Voice has not reconnected yet. Press Play when your connection is available. Your conversation is preserved.',audioRoute:'Restoring audio…',audioUnavailable:'The device has not restored audio yet. Your conversation is preserved.',
     resumedEarlier:'The conversation has resumed. If the connection cut out mid-sentence, repeat the last few words.',
     networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
     playbackInterrupted:'Reply interrupted (G-L11). You can keep talking.',
@@ -78,7 +78,7 @@ const ui={
     interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',micRecovering:'Restableciendo el micrófono…',micResumeFailed:'El micrófono no se recuperó. Pulsa Play de nuevo o continúa por texto. Tu conversación se conserva.',
     failure:'La voz en vivo no está disponible. Puedes seguir por texto.',
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
-    reconnecting:'Restableciendo la voz…',audioRoute:'Restableciendo el audio…',audioUnavailable:'El dispositivo aún no ha restablecido el audio. La conversación se conserva.',
+    reconnecting:'Restableciendo la voz…',resumeRetry:'La voz aún no se ha restablecido. Pulsa Play cuando tengas conexión. Tu conversación se conserva.',audioRoute:'Restableciendo el audio…',audioUnavailable:'El dispositivo aún no ha restablecido el audio. La conversación se conserva.',
     resumedEarlier:'Se ha retomado la conversación. Si se cortó la conexión a mitad de una frase, repite las últimas palabras.',
     networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
     playbackInterrupted:'Respuesta interrumpida (G-L11). Puedes seguir hablando.',
@@ -292,18 +292,21 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.resumeUnavailable=denied||!r.resumeHandle||r.reconnects>=3||
       !(Date.parse(r.liveToken?.expiresAt)>Date.now())
   }
-  function failPausedResume(r){
+  function failPausedResume(r,{denied=false}={}){
     if(r.ended)return
     pauseSession()
     const socket=r.socket
-    parkPausedSocket(r,true)
+    parkPausedSocket(r,denied)
     try{socket?.close(1000,'coach-resume-unavailable')}catch{}
-    notify(t.resumeUnavailable)
+    // A transport timeout is not policy denial. Keep the previous checkpoint
+    // available for another explicit Play within the original retry budget.
+    notify(r.resumeUnavailable?t.resumeUnavailable:t.resumeRetry)
   }
   async function resumePausedSession(r){
     if(!r||r.ended||!r.paused||r.resumeInFlight||
        !propsRef.current.enabled||!propsRef.current.canStart||
        document.visibilityState==='hidden')return false
+    if(typeof navigator!=='undefined'&&navigator.onLine===false){notify(t.resumeRetry);return false}
     // Safari can delay close events while the page is suspended. Do not
     // report Listening on a socket that has already started closing.
     if(r.socket?.readyState>=2)parkPausedSocket(r)
@@ -1115,7 +1118,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         const setup=geminiLiveSetupForToken(token,r)
         if(resume)setup.setup.sessionResumption={handle}
         if(!sendSocket(r,setup))throw Error('SETUP_SEND_FAILED')
-      }catch{if(resume||r.paused)failPausedResume(r);else{notify(t.setupInvalid);stop()}}
+      }catch(error){if(resume||r.paused)failPausedResume(r,{denied:error?.message!=='SETUP_SEND_FAILED'});else{notify(t.setupInvalid);stop()}}
     }
     socket.onmessage=event=>{
       if(r.ended||r.socket!==socket)return
@@ -1132,7 +1135,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.
       const denied=event?.code===1008
-      if(r.paused){parkPausedSocket(r,denied);if(r.resumeUnavailable)notify(t.resumeUnavailable);return}
+      if(r.paused){parkPausedSocket(r,denied);notify(r.resumeUnavailable?t.resumeUnavailable:t.resumeRetry);return}
       if(!denied&&r.reconnects<3&&r.resumeHandle&&r.stream?.active!==false&&
          Date.parse(r.liveToken?.expiresAt)>Date.now()){
         // A partial ASR fragment cannot become the client's next answer/name.
@@ -1145,7 +1148,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         else if(r.player?.playing||r.speaking||r.pendingAudio?.length)interrupt()
         else if(r.outputText){r.interrupted=true;commitOutput(r)}
         scheduleReconnect(r)
-      }else if(resume){failPausedResume(r)}else{
+      }else if(resume||r.sessionStarted){failPausedResume(r,{denied})}else{
         notify(denied?t.providerAccess:
           event?.code===1011?t.providerUnavailable:t.connection)
         stop()
@@ -1173,6 +1176,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.paused){r.reconnects=Math.max(0,r.reconnects-1);r.resumePending=true;return}
       // Google permits resumption on the original one-use credential until
       // expireTime. Never mint a new logical session or consume another quota.
+      if(typeof navigator!=='undefined'&&navigator.onLine===false){
+        // No socket attempt was made: do not spend a reconnect on offline time.
+        r.reconnects=Math.max(0,r.reconnects-1);failPausedResume(r);return
+      }
       if(!r.resumeHandle||!(Date.parse(r.liveToken?.expiresAt)>Date.now())){
         failPausedResume(r);return
       }
