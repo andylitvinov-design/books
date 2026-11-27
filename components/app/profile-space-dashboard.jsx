@@ -226,7 +226,7 @@ const BUSINESS_PROGRAM_COPY={
 }
 const businessTopicSessions=[0,1,3,7]
 
-export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null, embeddedSection = null }) {
+export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null, embeddedSection = null, homeDiscovery = false }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const videoHint = {en:'Create videos for yourself, loved ones and work.',ru:'Создавайте видео для себя, близких и работы.',es:'Crea vídeos para ti, tus seres queridos y el trabajo.'}[selected]
@@ -254,7 +254,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     es: { label: 'Mi espacio', clarity: 'Exprés', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
   }[selected]
   const tabs = [
-    { id: 'clarity', title: navigation.clarity, icon: Compass },
+    { id: 'clarity', title: homeDiscovery ? {en:'Clarity',ru:'Ясность',es:'Claridad'}[selected] : navigation.clarity, icon: Compass },
     { id: 'goals', title: navigation.goal, icon: Target },
     { id: 'business', title: navigation.business, icon: BriefcaseBusiness },
   ]
@@ -379,7 +379,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <ExpressProgramOverview locale={selected} copy={c}/>
       {!embeddedSection && <ReikiProfileCourseCard locale={selected} />}
       <p className={styles.clarityNotice}>{c.notice}</p>
-      {!embeddedSection && <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
+      {!embeddedSection && !homeDiscovery && <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
         <UserRound size={23} aria-hidden="true"/>{t.insights}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
@@ -419,7 +419,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     {section === 'business' && <Link href={root+'/daybook/business'} className={styles.profileInsight} prefetch={false} data-business-daybook-link>
       <BriefcaseBusiness size={23} aria-hidden="true"/>{{en:'Open Business Daybook',ru:'Открыть бизнес-дайбук',es:'Abrir diario empresarial'}[selected]}<ArrowRight size={19} aria-hidden="true"/>
     </Link>}
-    {!embeddedSection && <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
+    {!embeddedSection && !homeDiscovery && <Link href={'/' + selected + '/holistic-support/mandala'} prefetch={false} className={styles.myVideoCard} data-profile-my-video>
       <span className={styles.myVideoIcon}><Film size={25} strokeWidth={1.8} aria-hidden="true"/></span>
       <span className={styles.myVideoCopy}><strong>MyVideo</strong><small>{videoHint}</small></span>
       <ArrowRight size={20} aria-hidden="true"/>
