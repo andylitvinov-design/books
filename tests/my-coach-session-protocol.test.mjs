@@ -1,3 +1,4 @@
+import './coach-private-recall.test.mjs'
 import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
@@ -523,7 +524,22 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,9)
+ // Explicit recall is the ninth typed path. It must remain first-party,
+ // guarded by safety/boundary checks, and persist only a neutral acknowledgement.
+ const recallStart=send.indexOf('if(coachExplicitRecall(message)&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput))')
+ const recallEnd=send.indexOf('if(isNameCorrection&&!coachingBrainSafety',recallStart)
+ assert.ok(recallStart>=0&&recallEnd>recallStart)
+ const recall=send.slice(recallStart,recallEnd)
+ assert.match(recall,/await loadPrivateRecall\(responseLocale\)/)
+ assert.match(recall,/if\(!reply\|\|turnRequestRef.current!==requestId\)\{retainPendingClient\(\);return null\}/)
+ assert.match(recall,/const acknowledgment=privateRecallReceipt\(responseLocale\)/)
+ assert.match(recall,/!commitCompletedClientTurn\(requestId,message,\{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline',stage:'memory',requestedSavedContext:true\}\)/)
+ assert.doesNotMatch(recall,/content:reply\b/)
+ assert.match(recall,/return \{reply,mode:'identity',locale:responseLocale\}/)
+ assert.doesNotMatch(recall,/appFetch\(|fetch\(|setTurns\(/)
+ assert.equal((recall.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,1)
+ assert.equal((send.slice(0,recallStart).concat(send.slice(recallEnd)).match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
  const identity=send.slice(send.indexOf('if(isNameCorrection&&!coachingBrainSafety'),send.indexOf('// The last opening turn'))
  assert.match(identity,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
  assert.match(identity,/!commitCompletedClientTurn\(requestId,message,/)
@@ -611,8 +627,8 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
- assert.ok(output.includes("if(!r.interrupted){r.history.push({role:'assistant',content:value})"))
- assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted})'))
+ assert.ok(output.includes("if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value})"))
+ assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})'))
 })
 test('review dropdown distinguishes unreviewed and explicitly reopened checkpoints',()=>{
  const ui=readFileSync(new URL('../components/my-coach-course-field-review.jsx',import.meta.url),'utf8')
@@ -750,8 +766,9 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
- assert.match(native,/if\(propsRef.current.onInputFinal\?\.\(value\)===true\)\{stop\(\);return true\}/)
- assert.equal((native.match(/if\(r.inputText&&commitInput\(r\)\)return/g)||[]).length,3)
+ assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value\)/)
+  assert.match(native,/if\(decision===true\)\{stop\(\);return true\}/)
+ assert.equal((native.match(/if\(r.inputText&&commitInput\(r,frame.turnComplete\)\)return/g)||[]).length,3)
 })
 
 import {authoredCheckpointQuestion,checkpointAnswerMismatch,checkpointClarification,checkpointQuestionMatches,checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
