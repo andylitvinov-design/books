@@ -6,6 +6,7 @@ import { CheckCircle2, PlayCircle, CalendarDays, ChevronDown, ChevronRight, Clip
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 import ProfileProgramRequest from './profile-program-request'
+import GoalLandingSections from '@/components/goal-landing-sections'
 import { guideGoalProgress } from '@/lib/app/daybook-guide.mjs'
 import { collectJournalExport } from '@/lib/app/daybook-journal-export.mjs'
 import { profileDaybookHref } from '@/lib/profile/profile-daybook-route.mjs'
@@ -169,7 +170,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
         </div>
         <div className={css.activeUtilities}>
           <Link href={startHref} prefetch={false} data-goal-vector-entry><Plus size={20} aria-hidden="true"/>{t.add}</Link>
-          <a href="#goal-program-stages"><Info size={20} aria-hidden="true"/>{landing.details}</a>
+          <Link href={'/'+lang+'/programs/goal'} prefetch={false} data-goal-public-details><Info size={20} aria-hidden="true"/>{landing.details}</Link>
         </div>
       </>}
     {showLanding && <section className={css.benefits} aria-label={landing.benefits}>
@@ -214,5 +215,6 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
     {selected && children && <div className={css.focusDetails}>{children}</div>}
     </div>
+    {showLanding && <GoalLandingSections locale={lang} showHeading={false}/> }
   </section>
 }
