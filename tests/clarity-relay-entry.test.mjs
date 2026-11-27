@@ -340,3 +340,46 @@ test('exact paused restored course can continue by voice only with fresh Play; o
  assert.match(voice,/if\(!verified\)relayStopUnverified\.current=true/)
  assert.match(voice,/relayClosing\.current\|\|relayStopUnverified\.current/)
 })
+
+test('committed relay visits preserve authorship across the same protocol and reject forged attribution',async()=>{
+ const {createClarityRelayClient,projectClarityPanelClock,restoredClarityRelayBinding}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const {clarityRelayArchiveMatches,clarityRelayHandoffEligible}=await import('../lib/coaching/clarity-course-runs.mjs')
+ const runId=id(10),protocolId=id(11),v1=id(21),v2=id(22)
+ const selection={accountId:owner,runId,protocolId,day:1,personaId:'genie',minimumElapsedMs:5000}
+ const h=createClarityRelayClient({...selection,body:{...body,personaId:'genie'}})
+ h.receive(JSON.stringify({type:'hh_clarity_selection',runId,day:1,protocolId}))
+ h.receive(JSON.stringify({type:'hh_clarity_ready',decision:'continue'}))
+ h.consent({foreground:true,explicitPlay:true})
+ const frame={type:'hh_clarity_clock',day:1,elapsedMs:5000,status:'active',visitId:v2,coachId:'genie'}
+ assert.throws(()=>h.receive(JSON.stringify({...frame,coachId:'mira'})),/INVALID/)
+ const ack=h.receive(JSON.stringify(frame))
+ assert.equal(ack.visitId,v2);assert.equal(ack.coachId,'genie')
+ const projected=projectClarityPanelClock({selection,owner,ack})
+ assert.equal(projected.visitId,v2);assert.equal(projected.protocolId,protocolId)
+ assert.equal(projectClarityPanelClock({selection,owner,ack:{...ack,visitId:undefined}}),null)
+ assert.throws(()=>h.receive(JSON.stringify({...frame,visitId:v1})),/INVALID/)
+ const binding={day:1,protocolId,clarityTime:{status:'paused',elapsedSeconds:5,remainingSeconds:1195},relayVisits:[{visitId:v1,coachId:'mira'},{visitId:v2,coachId:'genie'}]}
+ const first={role:'assistant',content:'First',coachId:'mira',visitId:v1,authorPersonaId:'mira',inference:{provider:'gemini_live_free'}}
+ const second={role:'assistant',content:'Second',coachId:'genie',visitId:v2,authorPersonaId:'genie',inference:{provider:'gemini_live_free'}}
+ const protocol={id:protocolId,courseSessionId:'clarity_day_1',personaId:'mira',turns:[first,second]}
+ assert.equal(clarityRelayArchiveMatches(binding,protocol),true)
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,turns:[first,{...second,authorPersonaId:'mira'}]}),false)
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,turns:[first,{...second,visitId:id(99)}]}),false)
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,turns:[second,first]}),false)
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,id:id(99)}),false)
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,personaId:'genie'}),false)
+ const untagged={role:'assistant',content:'New',inference:{provider:'gemini_live_free'}}
+ assert.equal(clarityRelayArchiveMatches(binding,{...protocol,turns:[first,untagged]},{from:1}),false)
+ assert.equal(clarityRelayHandoffEligible({protocol},binding),true)
+ assert.equal(clarityRelayHandoffEligible({protocol,courseGate:{}},binding),false)
+ assert.equal(clarityRelayHandoffEligible({protocol},{...binding,clarityTime:{status:'active'}}),false)
+ const restored={owner,runId,protocol,courseSessionId:protocol.courseSessionId,time:binding.clarityTime,personaId:'genie'}
+ assert.equal(restoredClarityRelayBinding(restored),null)
+ assert.equal(restoredClarityRelayBinding({...restored,handoff:true}).protocolId,protocolId)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(ui,/protocolOriginPersonaRef\.current=p\.personaId/)
+ assert.match(ui,/personaId:protocolOriginPersonaRef\.current\|\|personaId/)
+ assert.match(ui,/item\.relayHandoff===true&&result\.relayHandoff===true/)
+ assert.match(store,/clarityRelayArchiveMatches\(relayBinding,value\.protocol,\{from:old\.protocol\.turns\.length\}\)/)
+})

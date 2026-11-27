@@ -129,7 +129,7 @@ test('server reads run bindings in the same owner-scoped draft transaction',()=>
  assert.match(store,/requested.get\(id\)!=='clarity_day_'\+day/)
  assert.match(store,/clarityRunResumeMetadata\(run,day,id\)/)
  assert.match(draft,/day&&!binding\?await readClarityCourseClockInTransaction/)
- assert.match(draft,/await readClarityResumeBindings\(db,actor,config,courseItems\)/)
+ assert.match(draft,/await readClarityResumeBindings\(db,actor,config,courseItems,\{includeVisits:true\}\)/)
 })
 
 test('bound early archive review preserves the draft until a genuine trusted timed end',()=>{

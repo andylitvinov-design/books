@@ -364,7 +364,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
-  const relayClockRef=useRef(null)
+  const relayClockRef=useRef(null),protocolOriginPersonaRef=useRef(null)
   const [restoredCourseRunId,setRestoredCourseRunId]=useState(null)
   const activeCourseRunId=restoredCourseRunId||courseRunId
   const protocolStartedRef=useRef(null)
@@ -1223,10 +1223,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       clarityCourseDay(selectedCourseId)!==selection?.day)return false
     const owner=protocolOwnerRef.current
     const next=projectClarityPanelClock({previous:relayClockRef.current,selection,owner,ack})
-    if(!next||(protocolIdRef.current&&protocolIdRef.current!==next.protocolId)||
+    if(!next||next.coachId!==personaId||!next.visitId||(protocolIdRef.current&&protocolIdRef.current!==next.protocolId)||
        (activeCourseRunId&&activeCourseRunId!==next.runId))return false
     if(!relayClockRef.current&&!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     relayClockRef.current=next;protocolIdRef.current=next.protocolId
+    if(!protocolOriginPersonaRef.current)protocolOriginPersonaRef.current=personaId
     setRestoredCourseRunId(next.runId);setRestoredClarityTimeKnown(true)
     setActiveSessionSeconds(activeClockRef.current.restore(Math.floor(next.elapsedMs/1000)))
     setSessionClockStarted(true)
@@ -1254,7 +1255,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let value
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,...(freshPrivateProfile?{privateProfileV3Requested:true}:{}),protocol:{
-        id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
+        id:protocolIdRef.current,personaId:protocolOriginPersonaRef.current||personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
         courseSessionId:selectedCourseId,
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeClockRef.current.sample(window.performance.now())),turnLayout:'chronological',
@@ -1395,7 +1396,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // The transport emits final utterances once; identical consecutive words
     // can be legitimate client answers. Preserve them and the original opening.
     // Use the synchronous ref so End immediately after an audio packet sees it.
+    const relayVisit=clarityCourseDay(selectedCourseId)?relayClockRef.current:null
+    if(clarityCourseDay(selectedCourseId)&&(!relayVisit?.visitId||relayVisit.coachId!==personaId))return false
     const entry={role,content:value,locale:conversationLang,capturedAt:new Date().toISOString(),
+      ...(relayVisit?{visitId:relayVisit.visitId,coachId:relayVisit.coachId,...(role==='assistant'?{authorPersonaId:relayVisit.coachId}:{})}:{}),
       ...(role==='assistant'?{coachId:personaId,mode:'ai',inference:{
         provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
         ...(interrupted?{interrupted:true}:{})}:{})}
@@ -1915,7 +1919,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     const locked=courseGateRef.current?.protocol
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId:locked?.personaId||personaId,methodId:locked?.methodId||visibleMethodId,locale:locked?.locale||restoredProfileProof.current?.value.block.locale||conversationLang,
+      id:protocolIdRef.current,personaId:locked?.personaId||protocolOriginPersonaRef.current||personaId,methodId:locked?.methodId||visibleMethodId,locale:locked?.locale||restoredProfileProof.current?.value.block.locale||conversationLang,
       courseSessionId:selectedCourseId,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(clarityCourseDay(selectedCourseId)?activeSessionSeconds:activeClockRef.current.sample(window.performance.now())),
@@ -2079,7 +2083,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null)
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
-      const items=result.drafts.filter(row=>getCoachPersona(row?.personaId)&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!courseRunId||row.courseRunId===courseRunId)&&(!clarityDay||((row?.personaId===personaId||(clarityDay&&row?.crossCoach===true))&&row.courseSessionId===clarityCourseId(clarityDay))))
+      const items=result.drafts.filter(row=>getCoachPersona(row?.personaId)&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!courseRunId||row.courseRunId===courseRunId)&&(!clarityDay||((row?.personaId===personaId||(clarityDay&&(row?.crossCoach===true||row?.relayHandoff===true)))&&row.courseSessionId===clarityCourseId(clarityDay))))
       setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
@@ -2207,7 +2211,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null)
       if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==item.personaId||result.draft.courseSessionId!==item.courseSessionId||
          (result.courseRunId||null)!==(item.courseRunId||null)||(result.courseOrdinal||null)!==(item.courseOrdinal||null)||
-         (item.personaId!==personaId&&!(clarityDay&&item.crossCoach===true&&result.draft.courseGateStep?.crossCoach===true&&!result.draft.courseGateStep.paused&&result.draft.courseSessionId===clarityCourseId(clarityDay))))throw Error('RESUME_CONFLICT')
+         (item.personaId!==personaId&&!(clarityDay&&result.draft.courseSessionId===clarityCourseId(clarityDay)&&((item.crossCoach===true&&result.draft.courseGateStep?.crossCoach===true&&!result.draft.courseGateStep.paused)||(item.relayHandoff===true&&result.relayHandoff===true)))))throw Error('RESUME_CONFLICT')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       const restoredTime=result.clarityTime
@@ -2220,6 +2224,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
+      protocolOriginPersonaRef.current=p.personaId
       setRestoredCourseRunId(result.courseRunId||null)
       initialDraftRevision.current=result.draft.revision
       restoredOpeningScope.current=recoverPrivateOpeningScope(p)
@@ -2232,7 +2237,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setCourseFieldReview(thematic?.step.review||result.draft.draftCourseReview||null);setCourseGateEnabled(result.courseGateEnabled===true)
       setCourseResumeRequired(Boolean(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused))
       const structured=readProfileV3Step(result.draft,p)
-      const relay=restoredClarityRelayBinding({owner,runId:result.courseRunId,protocol:p,courseSessionId:recovered.courseSessionId,time:restoredTime,personaId,structured:Boolean(thematic||structured||recovered.privateProfileV3Requested)})
+      const relay=restoredClarityRelayBinding({owner,runId:result.courseRunId,protocol:p,courseSessionId:recovered.courseSessionId,time:restoredTime,personaId,handoff:result.relayHandoff===true,structured:Boolean(thematic||structured||recovered.privateProfileV3Requested)})
       relayClockRef.current=relay;setRestoredRelay(Boolean(relay))
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
@@ -2367,7 +2372,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
-      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(item=>item.personaId===personaId||(clarityDay&&item.crossCoach===true)).map(item=>item.courseSessionId):[]}
+      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(item=>item.personaId===personaId||(clarityDay&&(item.crossCoach===true||item.relayHandoff===true))).map(item=>item.courseSessionId):[]}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         <button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume()}>{({ru:'Продолжить сохранённую сессию',en:'Continue a saved session',es:'Continuar una sesión guardada'})[lang]}</button>
         {resumeBusy&&<p role="status">{({ru:'Проверяем сохранённые сессии…',en:'Checking saved sessions…',es:'Buscando sesiones guardadas…'})[lang]}</p>}
@@ -2378,7 +2383,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           const duration=day?(Number.isInteger(item.clarityTime?.elapsedSeconds)?coachDraftMinuteLabel(item.clarityTime.elapsedSeconds,lang):timeUnverifiedText):coachDraftMinuteLabel(item.durationSeconds,lang)
           const completedReview=day&&item.clarityTime?.status==='time_limit'&&item.clarityTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&item.clarityTime.remainingSeconds===0
           const label=<><strong>{(completedReview?{ru:'Открыть итоги',en:'Open results',es:'Abrir resultados'}:{ru:'Продолжить сессию',en:'Continue session',es:'Continuar sesión'})[lang]} · <span data-clarity-resume-time={day?true:undefined}>{duration}</span></strong><br/><small>{item.courseOrdinal?('#'+item.courseOrdinal+' · '):''}{title} · {previousCoach} · {new Date(item.updatedAt).toLocaleDateString(lang)}</small></>
-          const direct=item.personaId===personaId||(clarityDay&&day===clarityDay&&item.crossCoach===true)
+          const direct=item.personaId===personaId||(clarityDay&&day===clarityDay&&(item.crossCoach===true||item.relayHandoff===true))
           return direct?<button key={item.id} type="button" disabled={resumeBusy} data-coach-resume-minutes={day?item.clarityTime?.elapsedSeconds??'':item.durationSeconds??''} onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8,textAlign:'start'}}>{label}</button>:
             <Link key={item.id} href={clarityCoachHref(coachSessionHref(lang,item.personaId)||'/'+lang+'/my-coach',day,item.courseRunId)} style={{display:'block',marginTop:8}}>{label}<br/><small>{({ru:'Открыть у прежнего коуча',en:'Open with previous coach',es:'Abrir con el coach anterior'})[lang]}</small></Link>
         })}
@@ -2455,7 +2460,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {privateTextOnly?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
-            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
+            clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,personaId,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
             onClarityRelayClock={acceptClarityRelayClock}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}

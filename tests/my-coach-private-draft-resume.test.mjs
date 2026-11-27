@@ -81,7 +81,7 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  assert.ok(route.includes("courseSessionId:params.get('courseSessionId')"))
  assert.ok(store.includes("coachDraftMatchesResume(item,personaId,courseSessionId)"))
  assert.ok(store.includes("!clarityCourseDay(courseSessionId)"))
- assert.ok(ui.includes("row?.personaId===personaId||(clarityDay&&row?.crossCoach===true)"))
+ assert.ok(ui.includes("row?.personaId===personaId||(clarityDay&&(row?.crossCoach===true||row?.relayHandoff===true))"))
  assert.ok(ui.includes("row.courseSessionId===clarityCourseId(clarityDay)"))
  assert.ok(ui.includes("headers:{'X-HH-Account-ID':owner}"))
  assert.ok(route.includes("auth.verified()"))
