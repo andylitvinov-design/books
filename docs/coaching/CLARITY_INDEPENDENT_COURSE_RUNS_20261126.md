@@ -31,3 +31,6 @@ Bound Clarity session promotion now reads the exact persisted course/run clock i
 
 ## Draft-only real database rehearsal routing (27 Nov)
 The existing Coaching CI runner now executes the disposable PostgreSQL rehearsal for a changed Clarity SQL/runtime/test diff while the PR is Draft. It uses the same synthetic loopback credentials and existing guarded runner; no new job, production access, paid resource or release-gate bypass. Ready PRs retain the full original App R1 SQL/RLS acceptance. A completed native run is still required before asserting success.
+
+## Server-validated journal scope
+The existing owner-locked journal save transaction validates the reserved cr:UUID tag, exact course ownership and homework report binding, refuses cross-course/day retagging and unscoped edits of bound homework, and preserves normal legacy journal behavior. Scoped writes fail closed while the run adapter is disabled. This is a server write guard, not payment, enrollment, transcript, or runtime activation.

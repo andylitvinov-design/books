@@ -190,3 +190,32 @@ test('a bound but unstarted course cannot inherit the legacy clock',()=>{
  assert.ok(ui.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
  assert.ok(ui.includes('result.draft.courseSessionId!==item.courseSessionId'))
 })
+
+
+import {deriveCoachDraftReview} from '../lib/personal-coaching/protocol-draft.mjs'
+import {coachCourseProtocolSchema} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
+test('unfinished thematic draft recovers verified answers without erasing them on a later interrupted question',()=>{
+ const scope={locale:'en',personaId:'mira',allowPrior:true,priorSession:{name:'Mary',topic:'Work'}}
+ const messages=['Yes','Correct','Continue','goal','I feel calm','Yes']
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({...scope,turns:messages}))
+ assert.equal(opening.completed,true)
+ const course='life_direction',question=coachCourseProtocolSchema(course,'en').checkpoints.find(f=>f.id==='situation').question
+ const answer='I am looking for stable income'
+ const history=messages.flatMap(content=>[{role:'user',content},{role:'assistant',content:'next'}])
+ const confirmed=[{role:'assistant',content:question},{role:'user',content:answer},{role:'assistant',content:checkpointConfirmation(question,answer,'en')},{role:'user',content:'Yes'},{role:'assistant',content:'Next'}]
+ const protocol={locale:'en',personaId:'mira',opening,turns:[...history,...confirmed,{role:'assistant',content:question},{role:'user',content:'A different answer',unanswered:true}]}
+ const review=deriveCoachDraftReview(protocol,course)
+ assert.equal(review.events.length,1)
+ assert.equal(review.events[0].quote,answer)
+ assert.equal(review.events[0].fieldId,'situation')
+ assert.equal(deriveCoachDraftReview({...protocol,turns:[...history,...confirmed.slice(0,2)]},course),null)
+ assert.equal(deriveCoachDraftReview({...protocol,opening:{...opening,completed:false}},course),null)
+ assert.equal(deriveCoachDraftReview(protocol,'clarity_day_1'),null)
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ assert.ok(store.includes('seal(checkpoint,context(actor,id),config)'))
+ assert.ok(ui.includes('result.draft.draftCourseReview'))
+ assert.ok(archive.includes('useState(item.draftCourseReview||null)'))
+})
