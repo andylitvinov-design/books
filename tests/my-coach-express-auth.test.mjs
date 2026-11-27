@@ -10,7 +10,16 @@ test('every AI coach hero and card uses the same intentional guest-only Google g
  assert.match(gate,/continuation:'my-coach-action',kind:'coach-link'/)
  assert.match(gate,/<ReikiJoinDialog mode="coach"/)
  assert.match(greeting,/if\(!accountSaving\)\{topicDialog.current\?\.close\(\);void gate.begin\(\{id\}\);return\}/)
- assert.match(greeting,/setReadyTopic\(action.id\);setPhase\('complete'\)/)
+ const authorization=greeting.slice(greeting.indexOf('onAuthorized:action=>{'),greeting.indexOf('useEffect(()=>()=>{audioRun.current++'))
+ assert.match(authorization,/setReadyTopic\(action.id\)/)
+ assert.doesNotMatch(authorization,/setPhase\(|onStart\?\.|chooseSession\(/)
+ // OAuth restores the intended topic, not a fabricated completed presentation.
+ // A fresh screen after redirect must play the greeting before starting.
+ assert.match(greeting,/if\(phase!=='complete'\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
+ assert.match(greeting,/onEnd:\(\)=>\{if\(audioRun.current===generation\).*audio\?\.ended.*setPhase\('complete'\)/)
+ assert.equal((greeting.match(/setPhase\('complete'\)/g)||[]).length,1)
+ assert.match(greeting,/url.searchParams.set\('greetingProgram',id\)/)
+ assert.match(greeting,/window.history.replaceState\(window.history.state,'',url.pathname\+url.search\+url.hash\)/)
  assert.doesNotMatch(gate,/signInAnonymously|SUPABASE_SERVICE_ROLE_KEY|localStorage/)
 })
 test('coach auth reuses verified status and Google PKCE, and returns to the exact first-party source',()=>{
