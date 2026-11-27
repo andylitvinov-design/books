@@ -159,14 +159,16 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    detachAudio.current();player.current?.cancel?.()
    player.current=null
    setError('');setTime(0);setDuration(null);setAudioActive(false);setPhase('playing')
-   function fail(){if(audioRun.current!==generation)return;detachAudio.current();player.current=null;setAudioActive(false);setError(ui.error);setPhase('preview')}
+   let failed=false
+   function fail(){if(audioRun.current!==generation)return;failed=true;detachAudio.current();player.current=null;setAudioActive(false);setError(ui.error);setPhase('preview')}
    try{
      const active=startDirectCoachIntroAudio(url,{
        locale:lang,muted:muteRef.current,
        onStart:()=>{if(audioRun.current===generation){setAudioActive(true);setPhase('playing')}},
-       onEnd:()=>{if(audioRun.current===generation){const d=player.current?.audio?.duration;if(Number.isFinite(d)){setDuration(d);setTime(d)}detachAudio.current();player.current=null;setAudioActive(false);setPhase('complete')}},
+       onEnd:()=>{if(audioRun.current===generation){const audio=player.current?.audio;if(!audio?.ended||!Number.isFinite(audio.duration)||audio.duration<=0){fail();return}setDuration(audio.duration);setTime(audio.duration);detachAudio.current();player.current=null;setAudioActive(false);setPhase('complete')}},
        onBlocked:fail,onError:fail,
      })
+     if(failed){active.cancel();return}
      player.current=active
      const audio=active.audio
      function position(){if(audioRun.current!==generation)return;if(Number.isFinite(audio.duration)){setDuration(audio.duration);setTime(audio.currentTime)}}

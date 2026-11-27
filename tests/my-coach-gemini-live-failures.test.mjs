@@ -442,6 +442,7 @@ test('approved cinematic greeting retains course and controls before, during and
  assert.match(slot,/<ClarityStartLink locale=\{lang\} coachId=\{personaId\}/)
  assert.match(gate,/onEnd:\(\)=>\{if\(audioRun.current===generation\).*setPhase\('complete'\)/)
  assert.match(gate,/function fail\(\).*setPhase\('preview'\)/)
+ assert.match(gate,/if\(!audio\?\.ended\|\|!Number.isFinite\(audio.duration\)/)
  assert.match(gate,/phase==='preview'\|\|phase==='paused'/)
  assert.match(gate,/data-coach-greeting-course-previous/)
  assert.match(gate,/data-coach-greeting-course-next/)
