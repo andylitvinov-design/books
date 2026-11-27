@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,CalendarDays,ChevronDown,PlayCircle,Sparkles} from 
 import {coachCourseLaunchHref} from '@/lib/coach-course-launch.mjs'
 import {COACH_COMPARISON_LOCALES,getCoachProgramComparison} from '@/lib/coach-program-comparison.mjs'
 import styles from './my-coach-program-comparison.module.css'
+import {ANTI_STRESS_COURSE} from '@/lib/coaching/anti-stress-course.mjs'
 
 function ComparisonCard({program:p,copy,lang}){
  return <details className={styles.card} data-coach-comparison-program={p.id} open={p.id==='clarity'}>
@@ -13,6 +14,7 @@ function ComparisonCard({program:p,copy,lang}){
    <span className={styles.intro}>
     {p.id==='clarity'&&<span className={styles.startHere}><Sparkles size={13} aria-hidden="true"/>{copy.startHere}</span>}
     <span className={styles.name}>{p.title}</span>
+    <span className={styles.status}>Coaching</span>
     <span className={styles.description}>{p.description}</span>
    </span>
    <span className={styles.meta}>
@@ -35,6 +37,28 @@ function ComparisonCard({program:p,copy,lang}){
    </>}
    {p.id!=='clarity'&&<Link href={coachCourseLaunchHref(lang,p.id)} prefetch={false} className={styles.programPreviewLink} data-coach-comparison-launch={p.id}>{({en:'View course & coaches',ru:'Курс и коучи',es:'Ver curso y coaches'})[lang]}<ArrowRight size={18} aria-hidden="true"/></Link>}
    {p.id==='health'&&<p className={styles.terms}>{copy.healthNote}</p>}
+  </div>
+ </details>
+}
+
+const therapyCopy={
+ en:{mode:'Therapy · AI-guided self-regulation',duration:'3 × 15 minutes',pending:'Enrollment not yet available',note:'Learn gentle self-regulation skills. AI support is not diagnosis, treatment or a substitute for professional care.',price:'Price not set'},
+ ru:{mode:'Therapy · навыки саморегуляции с AI',duration:'3 × 15 минут',pending:'Запись пока недоступна',note:'Практики бережной саморегуляции. AI-поддержка не является диагностикой, лечением или заменой профессиональной помощи.',price:'Цена не установлена'},
+ es:{mode:'Therapy · autorregulación guiada por IA',duration:'3 × 15 minutos',pending:'Inscripción aún no disponible',note:'Practica habilidades suaves de autorregulación. El apoyo de IA no diagnostica, trata ni sustituye la atención profesional.',price:'Precio por definir'}
+}
+function AntiStressPreview({lang}){
+ const t=therapyCopy[lang],p=ANTI_STRESS_COURSE
+ return <details className={styles.card} data-anti-stress-preview data-program-type="therapy">
+  <summary className={styles.summary}>
+   <span className={styles.art} data-art="health" aria-hidden="true"/>
+   <span className={styles.intro}><span className={styles.startHere}>{t.mode}</span><span className={styles.name}>{p.title[lang]}</span><span className={styles.description}>{t.duration}</span></span>
+   <span className={styles.meta}><span className={styles.count}><CalendarDays size={15} aria-hidden="true"/>{t.duration}</span><span className={styles.price}>{t.price}</span></span>
+   <ChevronDown className={styles.chevron} size={19} aria-hidden="true"/>
+  </summary>
+  <div className={styles.expanded}>
+   <p className={styles.status}>{t.pending}</p>
+   <ol className={styles.sessions}>{p.sessions.map(s=><li key={s.id}><span className={styles.sessionText}><strong>{s.number}. {s.title[lang]}</strong><span>{s.description[lang]}</span></span></li>)}</ol>
+   <p className={styles.terms}>{t.note}</p>
   </div>
  </details>
 }
@@ -65,6 +89,7 @@ export default function CoachProgramComparison({locale='en'}){
    </div>
    <section className={styles.cards} aria-label={copy.title}>
     {programs.map(p=><ComparisonCard key={p.id} program={p} copy={copy} lang={lang}/>)}
+    <AntiStressPreview lang={lang}/>
    </section>
    <p className={styles.priceNote}>{copy.priceNote}</p>
   </div>
