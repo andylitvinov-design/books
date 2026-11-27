@@ -10,7 +10,15 @@ test('every AI coach hero and card uses the same intentional guest-only Google g
  assert.match(gate,/continuation:'my-coach-action',kind:'coach-link'/)
  assert.match(gate,/<ReikiJoinDialog mode="coach"/)
  assert.match(greeting,/if\(!accountSaving\)\{topicDialog.current\?\.close\(\);void gate.begin\(\{id\}\);return\}/)
- assert.match(greeting,/setReadyTopic\(action.id\);setPhase\('complete'\)/)
+ // Authorization restores only a valid topic; it must not skip the coach
+ // presentation or start a different existing course run automatically.
+ const authorized=greeting.slice(greeting.indexOf('onAuthorized:action=>{'),greeting.indexOf('}})',greeting.indexOf('onAuthorized:action=>{')))
+ assert.match(authorized,/if\(courseRunId\)return/)
+ assert.match(authorized,/if\(clarityDay&&action.id!==clarityCourseId\(clarityDay\)\)return/)
+ assert.match(authorized,/COACH_PROGRAM_GROUPS.some\(group=>group.sessions.some\(item=>item.id===action.id\)\)\)setReadyTopic\(action.id\)/)
+ assert.doesNotMatch(authorized,/setPhase|onStart|chooseSession/)
+ assert.match(greeting,/phase==='complete'&&/)
+ assert.match(greeting,/onClick=\{\(\)=>chooseSession\(clarityCourseId\(clarityDay\)\|\|readyTopic\|\|INTRODUCTORY_COACH_SESSION_ID\)\}/)
  assert.doesNotMatch(gate,/signInAnonymously|SUPABASE_SERVICE_ROLE_KEY|localStorage/)
 })
 test('coach auth reuses verified status and Google PKCE, and returns to the exact first-party source',()=>{

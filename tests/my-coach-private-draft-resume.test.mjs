@@ -73,7 +73,10 @@ test('greeting list summary never returns a transcript or private profile',()=>{
  assert.ok(store.includes("view==='summary'?selected.map(item=>coachDraftListSummary(item,clock,bindings.get(item.id.toLowerCase()))):selected"))
  // Normal resume remains persona-scoped; a course query is explicitly
  // constrained by both coach and course on the owner-scoped server page.
- assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(cursor||{})})"))
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(courseRunId?{courseRunId}:{}),...(cursor||{})})"))
+  assert.ok(route.includes("courseRunId:params.get('courseRunId')"))
+  assert.ok(ui.includes('(!courseRunId||row.courseRunId===courseRunId)'))
+  assert.ok(store.includes('!clarityResumeMatches(bindings.get(item.id.toLowerCase()),courseRunId)'))
  assert.ok(ui.includes("new URLSearchParams({view:'summary',...(cursor||{})})"))
  assert.ok(route.includes("courseSessionId:params.get('courseSessionId')"))
  assert.ok(store.includes("coachDraftMatchesResume(item,personaId,courseSessionId)"))
