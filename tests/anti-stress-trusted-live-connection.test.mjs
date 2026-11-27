@@ -12,14 +12,14 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,persistTurn=null}={}){
  const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=previousRun||createAntiStressRun({id:id(1),access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const previousCredentialExpiresAt=previousRun?base:null
  const lease={leaseId:previousRun?id(11):id(10),run,sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt,
   ...antiStressRunCredentialWindow(run,{sessionId:'anti_stress_ground',protocolId,now:base,previousCredentialExpiresAt})}
  let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retired=[]
- const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
+ const relay=bindAntiStressTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),persistTurn,
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async b=>{retired.push(b);return true},persist:async e=>{events.push(e);await beforePersist(e);run=advanceAntiStressRun(run,e);return antiStressRunSummary(run)}})
  function advance(ms,fireTimers=true){now+=ms;if(!fireTimers)return;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
@@ -190,4 +190,37 @@ test('failed start receipt or backpressure stops therapy without granting unobse
   assert.equal(g.run.clock.days[0].status,'paused');assert.equal(g.run.clock.days[0].elapsedMs,0)
   assert.equal(g.provider.readyState,3)
  }
+})
+
+test('storage consent adapter saves complete upstream turns only inside durable clock observations',async()=>{
+ const rows=[],f=fixture({persistTurn:async e=>rows.push(e)})
+ f.ready();f.consent();await f.relay.settled()
+ f.provider.input({serverContent:{interimInputTranscription:{text:'interim'}}})
+ f.provider.input({serverContent:{inputTranscription:{text:'I feel tired'}}})
+ f.provider.input({serverContent:{outputTranscription:{text:'I hear you'}}})
+ f.provider.input({serverContent:{turnComplete:true}})
+ assert.equal(rows.length,0)
+ f.advance(5000);f.client.pong();await f.relay.settled();assert.equal(rows.length,0)
+ f.provider.pong();await f.relay.settled()
+ assert.equal(rows.length,2)
+ assert.deepEqual(rows.map(r=>r.role),['client','coach'])
+ assert.equal(rows[0].text,'I feel tired');assert.equal(rows[1].text,'I hear you')
+ assert.equal(rows[0].protocolId,id(2));assert.equal(rows[1].coachId,'mira')
+ assert.equal(rows[0].proof,'server_observed_final_turn');assert.equal(rows[0].atMs,f.base)
+ assert.ok(rows.every(r=>r.kind==='turn'&&r.fieldId===undefined))
+ f.provider.input({serverContent:{outputTranscription:{text:'cut'}}})
+ f.provider.input({serverContent:{interrupted:true,turnComplete:true}})
+ f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled();assert.equal(rows.length,2)
+ f.provider.input({serverContent:{outputTranscription:{text:'not yet complete'}}})
+ f.client.input({type:'hh_anti_stress_pause'});await f.relay.settled()
+ assert.equal(rows.length,2)
+})
+test('failed private log write stops the segment without claiming a reviewed result',async()=>{
+ const f=fixture({persistTurn:async()=>{throw Error('synthetic log failure')}})
+ f.ready();f.consent();await f.relay.settled()
+ f.provider.input({serverContent:{outputTranscription:{text:'Complete'},turnComplete:true}})
+ f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,5000)
+ assert.equal(f.provider.readyState,3)
 })

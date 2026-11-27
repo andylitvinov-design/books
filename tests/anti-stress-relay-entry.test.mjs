@@ -116,3 +116,10 @@ test('Therapy panel binds real clock receipts to its own session and shares the 
  assert.match(panel,/await speech\.current\?\.finishCourseSegment/)
  assert.doesNotMatch(panel,/localStorage|sessionStorage|liveContextAccess=|live-token/)
 })
+
+test('private transcript storage is independent of voice consent and defaults to off',()=>{
+ assert.equal(normalizeAntiStressRelayEntry(wire(),owner).storageConsent,false)
+ assert.equal(normalizeAntiStressRelayEntry(wire({storageConsent:true}),owner).storageConsent,true)
+ assert.equal(normalizeAntiStressRelayEntry(wire({storageConsent:false}),owner).storageConsent,false)
+ assert.throws(()=>normalizeAntiStressRelayEntry(wire({storageConsent:'true'}),owner),/INVALID/)
+})
