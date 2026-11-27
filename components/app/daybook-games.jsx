@@ -6,6 +6,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {daybookGames,gameNotes,gameProgress,gameTag,validGameAnswer,gameResult,decodeSavedGame} from '@/lib/app/daybook-games.mjs'
+import {clarityRunScopeTag} from '@/lib/coaching/clarity-course-runs.mjs'
 import css from './clarity-practice.module.css'
 const EXTRA={ru:{start:'Начать практику',pause:'Пауза',resume:'Продолжить практику',reset:'Сначала',ready:'Время вышло. Отметьте, как всё прошло.',result:'Твой результат',before:'До',after:'После',saved:'Результат сохранён',copy:'Скопировать результат для коуча',copied:'Скопировано',copyError:'Не удалось скопировать. Можно открыть запись в дневнике.'},en:{start:'Start practice',pause:'Pause',resume:'Resume practice',reset:'Restart',ready:'Time is up. Mark how it went.',result:'Your result',before:'Before',after:'After',saved:'Result saved',copy:'Copy result for your coach',copied:'Copied',copyError:'Could not copy. Open the note in your journal.'},es:{start:'Iniciar práctica',pause:'Pausa',resume:'Continuar práctica',reset:'Reiniciar',ready:'Terminó el tiempo. Indica cómo te fue.',result:'Tu resultado',before:'Antes',after:'Después',saved:'Resultado guardado',copy:'Copiar resultado para tu coach',copied:'Copiado',copyError:'No se pudo copiar. Abre la nota en tu diario.'}}
 const C={
@@ -16,7 +17,7 @@ const C={
 export default function DaybookGames(props){
  const lang=Object.hasOwn(C,props.locale)?props.locale:'en',t=C[lang]
  if(props.hasMore)return <div className={css.flow}><button className={css.secondary} onClick={props.onClose}>{t[0]}</button><section className={css.paper}><button className={css.primary} disabled={props.loadingAll} onClick={props.onLoadAll}>{t[9]}</button>{props.loadError&&<p role="alert">{t[10]}</p>}</section></div>
- return <Games key={props.accountId+':'+props.day} {...props} lang={lang} t={t}/>
+ return <Games key={props.accountId+':'+(props.courseRunId||'legacy')+':'+props.day} {...props} lang={lang} t={t}/>
 }
 function PracticeTimer({seconds,x}){
  const [left,setLeft]=useState(seconds),[running,setRunning]=useState(false)
@@ -50,13 +51,13 @@ function SavedGame({note,day,game,x}){
  async function copy(){try{await navigator.clipboard.writeText(note.text);setStatus(x.copied)}catch{setStatus(x.copyError)}}
  return <><h2>{game.icon} {game.title}</h2>{answers?<VisualResult day={day} game={game} answers={answers} x={x}/>:<p>{note.text}</p>}<p role="status">✓ {x.saved}</p><button type="button" className={css.secondary} onClick={()=>void copy()}>{x.copy}</button>{status&&<p role="status">{status}</p>}</>
 }
-function Games({accountId,day,lang,t,entries,onSaved,onSessionLost,onClose,onNextDay}){
- const games=daybookGames(lang,day),progress=gameProgress(entries,day),x=EXTRA[lang]
+function Games({accountId,day,lang,t,entries,onSaved,onSessionLost,onClose,onNextDay,courseRunId=null}){
+ const games=daybookGames(lang,day),progress=gameProgress(entries,day,courseRunId),x=EXTRA[lang]
  const [id,setId]=useState(null),[step,setStep]=useState(0),[answers,setAnswers]=useState({}),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
  const saver=useRef(null),pending=useRef(null),active=useRef(false),flight=useRef(false),paper=useRef(null)
  useEffect(()=>{active.current=true;const s=createJournalSaver(appFetch,accountId);saver.current=s;return()=>{active.current=false;s.discard();saver.current=null}},[accountId])
  useEffect(()=>{if(paper.current)paper.current.scrollTop=0},[id,step])
- const game=id===null?null:games[id-1],notes=game?gameNotes(entries,day,id):[],slide=game?.steps[step],review=game&&step===game.steps.length
+ const game=id===null?null:games[id-1],notes=game?gameNotes(entries,day,id,courseRunId):[],slide=game?.steps[step],review=game&&step===game.steps.length
  const result=review?gameResult(game,answers):null
  function exit(action){if(flight.current)return;if((Object.keys(answers).length||failed)&&!window.confirm(t[16]))return;action()}
  function open(n){if(flight.current||failed)return;setId(n);setStep(0);setAnswers({})}
@@ -66,7 +67,7 @@ function Games({accountId,day,lang,t,entries,onSaved,onSessionLost,onClose,onNex
   if(flight.current||!saver.current||!review||notes.length)return
   flight.current=true;setBusy(true)
   try{
-   if(!pending.current){const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;pending.current={id:crypto.randomUUID(),revision:0,text:result,tags:[gameTag(day,id)],kind:'note',locale:lang,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null}}
+   if(!pending.current){const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;pending.current={id:crypto.randomUUID(),revision:0,text:result,tags:[gameTag(day,id),...(courseRunId?[clarityRunScopeTag(courseRunId)]:[])],kind:'note',locale:lang,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null}}
    const saved=await saver.current.save(pending.current)
    if(!active.current)return
    pending.current=null;setFailed(false);onSaved(saved);setAnswers({});setStep(0);setId(null)
@@ -79,7 +80,7 @@ function Games({accountId,day,lang,t,entries,onSaved,onSessionLost,onClose,onNex
   <div className={css.course}><Flower2 size={28}/><div><small>Find Clarity &amp; Support</small><strong>{t[2]} {day} · {t[1]}</strong><span>{progress.done}/3</span></div></div>
   {game&&!notes.length&&<nav className={css.gameDots} aria-label={t[1]}>{Array.from({length:5},(_,i)=><span key={i} data-current={i===step} data-past={i<step}/>)}</nav>}
   <section className={css.paper} ref={paper}>
-   {!game?<><h2>{progress.complete?t[13]:t[1]}</h2>{games.map(g=>{const n=gameNotes(entries,day,g.id);return <button key={g.id} type="button" className={css.gameTile} onClick={()=>open(g.id)}><span aria-hidden="true">{g.icon}</span><strong>{g.title}</strong>{n.length===1?<Check size={22}/>:<ArrowRight size={20}/>}</button>})}{progress.complete&&<p role="status">✓ {t[21]} · 3/3</p>}{day===3&&progress.complete&&<Link className={css.tool} href={'/'+lang+'/app/daybook?start=vector'}>{t[15]}<ArrowRight size={18}/></Link>}{day!==2&&<Link className={css.tool} href={'/'+lang+'/development-vectors'} target="_blank" rel="noopener noreferrer">{t[23]}</Link>}</>:notes.length>1?<p role="alert">{t[11]}</p>:notes.length===1?<SavedGame key={notes[0].id} note={notes[0]} day={day} game={game} x={x}/>:review?<><h2>{t[5]}</h2><VisualResult day={day} game={game} answers={answers} x={x}/>{failed&&<p role="alert">{t[18]}</p>}</>:<>
+   {!game?<><h2>{progress.complete?t[13]:t[1]}</h2>{games.map(g=>{const n=gameNotes(entries,day,g.id,courseRunId);return <button key={g.id} type="button" className={css.gameTile} onClick={()=>open(g.id)}><span aria-hidden="true">{g.icon}</span><strong>{g.title}</strong>{n.length===1?<Check size={22}/>:<ArrowRight size={20}/>}</button>})}{progress.complete&&<p role="status">✓ {t[21]} · 3/3</p>}{day===3&&progress.complete&&<Link className={css.tool} href={'/'+lang+'/app/daybook?start=vector'}>{t[15]}<ArrowRight size={18}/></Link>}{day!==2&&<Link className={css.tool} href={'/'+lang+'/development-vectors'} target="_blank" rel="noopener noreferrer">{t[23]}</Link>}</>:notes.length>1?<p role="alert">{t[11]}</p>:notes.length===1?<SavedGame key={notes[0].id} note={notes[0]} day={day} game={game} x={x}/>:review?<><h2>{t[5]}</h2><VisualResult day={day} game={game} answers={answers} x={x}/>{failed&&<p role="alert">{t[18]}</p>}</>:<>
     <div className={css.gameIcon} aria-hidden="true">{game.icon}</div><h2>{slide.prompt}</h2>{seconds>0&&<PracticeTimer key={id+':'+step} seconds={seconds} x={x}/>}
     {slide.kind==='scale'?<><div className={css.gameMeter} aria-live="polite"><strong>{value===undefined?'—':value+'/10'}</strong><div><span style={{width:(value??0)*10+'%'}}/></div></div><div className={css.gameScale} role="group" aria-label={t[20]}>{Array.from({length:11},(_,i)=><button key={i} type="button" aria-pressed={value===i} onClick={()=>choose(i)}>{i}</button>)}</div></>:<><div className={css.gameChoices} role="group" aria-label={slide.prompt}>{slide.options.map((option,i)=>{const selected=slide.kind==='multi'?(value||[]).includes(i):value===i;return <button type="button" key={i} aria-pressed={selected} onClick={()=>slide.kind==='multi'?choose(selected?value.filter(x=>x!==i):(value||[]).length<3?[...(value||[]),i]:value):choose(i)}>{option}{selected&&<Check size={19}/>}</button>})}</div>{slide.kind==='multi'&&<small>{t[22]} · {(value||[]).length}/3</small>}</>}
    </>}

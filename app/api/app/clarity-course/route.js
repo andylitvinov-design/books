@@ -1,4 +1,5 @@
 import {readClarityCourseClock} from '@/lib/app/clarity-course-clock-store.js'
+import {clarityRunStorageEnabled,listClarityRuns,excludeBoundClarityResults} from '@/lib/app/clarity-course-runs.js'
 import {NextResponse} from 'next/server'
 import {getAppConfig,requestOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
@@ -32,7 +33,9 @@ export async function GET(request){
    if(!page.nextCursor)break
    cursor=page.nextCursor
   }
-  return auth.apply(NextResponse.json({grant,results,complete},{headers:PRIVATE_HEADERS}))
+  const runCatalog=clarityRunStorageEnabled()?await listClarityRuns(config,actor):null
+  const legacyResults=runCatalog?await excludeBoundClarityResults(config,actor,results):results
+  return auth.apply(NextResponse.json({grant,results:legacyResults,complete,...(runCatalog?{runCatalog}:{})},{headers:PRIVATE_HEADERS}))
  }catch(error){
   const safe=safeError(error),response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
   return auth?auth.apply(response):response

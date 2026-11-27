@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun} from '../lib/coaching/clarity-course-runs.mjs'
+import {createClarityRun,beginFreeClarityRun,advanceClarityRun,clarityRunSummary,clarityRunNotes,clarityRunScopeTag,validateClarityRun,clarityRunTranscript} from '../lib/coaching/clarity-course-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n,access,ordinal)=>({id:id(n),access,ordinal,protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0})
 function event(run,day,type,atMs,{seg=50,coachId='mira',decision='start',turn='consent:'+seg}={}){
@@ -57,4 +57,17 @@ test('journal scope isolates both runs and keeps ambiguous and legacy notes sepa
  assert.deepEqual(clarityRunNotes(notes,b).map(n=>n.id),['b'])
  assert.deepEqual(clarityRunNotes(notes).map(n=>n.id),['old'])
  assert.throws(()=>clarityRunScopeTag('wrong'),/INVALID/)
+})
+
+test('transcript is scoped to exact run and logical day; retains coach authorship',()=>{
+ const run=createClarityRun(input(1,'free',1))
+ const protocol={id:run.protocolIds[0],courseSessionId:'clarity_day_1',personaId:'mira',provenance:'client_autosaved_unreviewed_draft',turns:[{role:'user',content:'hello'},{role:'assistant',content:'hi',authorPersonaId:'caesar',visitId:id(98)}]}
+ const result=clarityRunTranscript(protocol,1,run,'2026-11-26T20:00:00Z')
+ assert.equal(result.reviewed,false)
+ assert.equal(result.courseRunId,run.id)
+ assert.equal(result.turns[1].personaId,'caesar')
+ assert.equal(result.turns[1].visitId,id(98))
+ assert.equal(clarityRunTranscript(protocol,2,run,'now'),null)
+ assert.equal(clarityRunTranscript(protocol,1,createClarityRun(input(10,'paid',2)),'now'),null)
+ assert.equal(clarityRunTranscript({...protocol,provenance:'unverified'},1,run,'now'),null)
 })
