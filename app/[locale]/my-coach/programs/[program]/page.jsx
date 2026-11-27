@@ -1,10 +1,10 @@
 import {notFound} from 'next/navigation'
 import {metadataBaseFor} from '@/data/site-metadata'
-import {COACH_COMPARISON_IDS,COACH_COMPARISON_LOCALES} from '@/lib/coach-program-comparison.mjs'
+import {COACH_LAUNCH_IDS,COACH_COMPARISON_LOCALES} from '@/lib/coach-program-comparison.mjs'
 import {getCoachCourseLaunch,normalizeLaunchCoach,coachCourseLaunchHref} from '@/lib/coach-course-launch.mjs'
 import MyCoachCourseLaunch from '@/components/my-coach-course-launch'
 
-export function generateStaticParams(){return COACH_COMPARISON_LOCALES.flatMap(locale=>COACH_COMPARISON_IDS.map(program=>({locale,program})))}
+export function generateStaticParams(){return COACH_COMPARISON_LOCALES.flatMap(locale=>COACH_LAUNCH_IDS.map(program=>({locale,program})))}
 export async function generateMetadata({params}){
  const {locale,program}=await params
  const launch=getCoachCourseLaunch(locale,program)
