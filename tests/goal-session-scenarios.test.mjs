@@ -1,3 +1,4 @@
+import './coach-archive-quality.test.mjs';
 import './coach-supervisor.test.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
