@@ -287,8 +287,8 @@ async function inspect(browserType,locale,width){
     overflow,publishedCards:publishedCount,playerClick,approvedCatalogEmpty:publishedCount===0});
   // Route matrix reuses the existing WebKit/Chromium context, avoiding another
   // runner or browser launch. Exercise Safari scrolling at 320/390/430 in RU,
-  // and check EN/ES at 390. ES Profile intentionally uses the existing EN
-  // account route; never add an unauthorised new private locale.
+  // and check EN/ES at 390. My Page is localized; legacy ES Profile keeps
+  // its existing EN account route.
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
@@ -297,7 +297,8 @@ async function inspect(browserType,locale,width){
       ["video-profile",prefix+"/holistic-support/mandala","profile"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
-      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["profile",prefix+"/my-page","profile"],
+      ["legacy-profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
       ["development-vectors",prefix+"/development-vectors","profile"],
       ["services",prefix+"/services","services"],
       ["services-review",prefix+"/services/free-situation-review","services"],
@@ -615,8 +616,8 @@ try{
  await expect(page.locator('[data-unified-dock-item="reiki"]')).toHaveAttribute("aria-current","page");
  await expect(page.locator('[data-energywork-screen="intro"]')).toBeVisible({timeout:30000});
  await page.locator('[data-unified-dock-item="profile"]').click();
- await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
- const myVideo=page.locator('[data-profile-my-video]');
+ await page.waitForURL(/\/ru\/my-page\/?$/,{timeout:45000});
+ const myVideo=page.locator('[data-my-page-my-video]');
  await expect(myVideo).toBeVisible({timeout:45000});
  await expect(myVideo).toHaveAttribute("href","/ru/holistic-support/mandala");
  await myVideo.click();
@@ -1484,8 +1485,16 @@ try{
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
  const unifiedProfile=page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]');
  await unifiedProfile.waitFor({state:"visible",timeout:30000});
- assert.equal(await unifiedProfile.getAttribute("href"),"/ru/app/portrait");
+ assert.equal(await unifiedProfile.getAttribute("href"),"/ru/my-page");
  await unifiedProfile.click();
+ await page.waitForURL(/\/ru\/my-page\/?$/,{timeout:45000});
+ await expect(page.locator('[data-universal-my-page]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-google]')).toBeVisible({timeout:45000});
+ await expect(page.locator('[data-my-page-courses]')).toHaveCount(0);
+ await expect(page.locator('[data-unified-dock-item="profile"]')).toHaveAttribute("aria-current","page");
+ const discovery=page.locator('[data-my-page-discover]');
+ await expect(discovery).toHaveAttribute("href","/ru/app/portrait");
+ await discovery.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
  // #4301 restored My Space / Today as the canonical Profile landing.
@@ -1535,7 +1544,7 @@ try{
  }
  await page.locator('[data-profile-my-video]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/,{timeout:45000});
- results.push({journey:"Public Profile → private action opens OAuth choice → dismiss → program modes → public MyVideo",passed:true});
+ results.push({journey:"Profile → private My Page guest gate → explicit program discovery → OAuth choice → public MyVideo",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));

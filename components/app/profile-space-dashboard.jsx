@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MandatoryMessengerActions } from '@/components/mandatory-messenger-actions'
-import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
-import { telegramBusinessServiceTitle, telegramServiceRequestUrl } from '@/lib/assist/telegram-business-request.mjs'
+import ProfileProgramRequest from './profile-program-request'
 import { BUSINESS_SYLLABUS, BUSINESS_REPORT_ROOT, businessSessionScreenshot } from '@/lib/app/business-daybook.mjs'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
@@ -14,7 +12,7 @@ import {
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
 import ProfileGoalConsole from './profile-goal-console'
-import { ClarityStartButton, ClarityStartLink } from './clarity-program'
+import { ClarityStartLink } from './clarity-program'
 import { ReikiProfileCourseCard, reikiLandingPath } from '@/components/reiki-practitioner-entry'
 
 const TEXT = {
@@ -254,15 +252,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <p className={styles.businessEyebrow}><BriefcaseBusiness size={19} aria-hidden="true"/>{b.label}</p>
         <h1>{b.title}</h1>
         <p className={styles.businessIntro}>{b.intro}</p>
-        <div className={styles.businessActions}>
-          <Link href={root+'/daybook/business'} prefetch={false} data-business-start>{b.start}<ArrowRight size={19} aria-hidden="true"/></Link>
-          <button type="button" data-business-details aria-expanded={businessContactOpen} aria-controls="business-contact-options" onClick={()=>setBusinessContactOpen(open=>!open)}>{b.details}<ChevronDown size={17} aria-hidden="true"/></button>
-        </div>
-        <div id="business-contact-options" className={styles.businessContactOptions} data-business-contact-options hidden={!businessContactOpen}>
-          {businessContactOpen&&<><MandatoryMessengerActions locale={selected} compact label={bp.book}
-            whatsappUrl={whatsappEnquiryUrl({locale:selected,service:telegramBusinessServiceTitle('business',selected),request:bp.request,option:b.program})}
-            telegramUrl={telegramServiceRequestUrl('business',selected)}/><p>{bp.note}</p></>}
-        </div>
+        <ProfileProgramRequest locale={selected} program="business" open={businessContactOpen} onOpenChange={setBusinessContactOpen} request={bp.request} option={b.program}/>
       </header>
       <BusinessReportDownloads locale={selected} position="top"/>
       <h2 className={styles.businessHeading}>{b.question}</h2>
@@ -306,10 +296,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <header className={styles.clarityHero}>
         <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{c.start}</p>
         <h1>{c.tab}</h1><p>{c.intro}</p>
-        <div className={styles.clarityHeroActions}>
-          <ClarityStartButton locale={selected}>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></ClarityStartButton>
-          <Link data-clarity-details href={'/'+selected+'/coaching/clarity'} prefetch={false} className={styles.clarityDetailsLink}>{({en:'Details',ru:'Подробнее',es:'Detalles'})[selected]}<ArrowRight size={17} aria-hidden="true"/></Link>
-        </div>
+        <ProfileProgramRequest locale={selected} program="clarity"/>
       </header>
       <h2 className={styles.clarityHeading}>{c.question}</h2>
       <div className={styles.clarityNeeds}>{c.needs.map(([title,detail],index)=>{

@@ -17,7 +17,7 @@ test("one seven-button dock includes Services and My Coach on existing destinati
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/services",
    "/"+locale+"/shamanica",
-   "/"+(locale==="es"?"en":locale)+"/app/portrait"
+   "/"+locale+"/my-page"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
  }
@@ -104,6 +104,8 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/my-page"),"profile");
+  assert.equal(isUnifiedMobileDockPath("/"+locale+"/my-page"),true);
   assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
    assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);

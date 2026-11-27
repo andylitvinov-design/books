@@ -30,3 +30,11 @@ test('My Page is the private course hub; real goal selection and saved lesson ro
  assert.ok(courses.includes("data-my-page-courses"))
  assert.ok(courses.includes("accountId,signal:controller.signal"))
 })
+
+test('guest cabinet does not require login for public program discovery or MyVideo',()=>{
+ const source=readFileSync(new URL('../components/app/my-page-client.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('data-my-page-google'))
+ assert.ok(source.includes('data-my-page-discover'))
+ assert.ok(source.includes('data-my-page-my-video'))
+ assert.ok(source.includes("status==='ready'&&data"))
+})
