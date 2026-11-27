@@ -44,7 +44,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(route.includes('<TopicJourneySelector'))
   assert.ok(home.includes("{ id: 'love-relationships', route: 'love'"), 'Keep canonical love category with legacy SEO route')
   assert.ok(home.includes("{ id: 'goals-money', route: 'business'"), 'Keep canonical money category with legacy SEO route')
-  assert.ok(spanish.includes('<HomeDeferredSections locale="es" />'))
+  assert.ok(spanish.includes('<HolisticHouseHome locale="es" />'))
   assert.ok(!more.includes('<HomepageTopicJourneys locale='))
   assert.ok(more.includes('data-home-topic-filter={category.id}'), 'Filter cards use the canonical category IDs')
   assert.ok(more.includes('"energy-confidence": "energy"'), 'Legacy energy landing route stays reachable')

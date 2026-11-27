@@ -5,14 +5,15 @@ import test from "node:test";
 
 const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments), "utf8");
 
-test("homepage keeps four matching-audio videos; Services uses four and preserves more in a disclosure", () => {
+test("Home retires the testimonial gallery; Services retains matching-audio videos and disclosure", () => {
   const home = read("components", "holistic-house-home.tsx");
   const services = read("app", "[locale]", "services", "page.tsx");
   const extra = read("components", "services-studio-extras.tsx");
   const testimonials = read("components", "personal-testimonials.tsx");
   const expanded=read("components","home-expanded-catalog.tsx");
   assert.match(expanded,/<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(home,/<HomeDeferredSections locale=\{locale\}/);
+  assert.match(home,/<HomeProgramEntry locale=\{locale\}/);
+  assert.doesNotMatch(home,/<HomeDeferredSections/);
   assert.doesNotMatch(home,/<PersonalTestimonials/);
   assert.match(services, /<PersonalTestimonials locale=\{locale\} variant="services"/);
   assert.ok(expanded.indexOf("PersonalTestimonials locale")>expanded.indexOf("HomeFeaturedWorkspace"));
@@ -124,13 +125,11 @@ test("mobile video testimonials keep real YouTube thumbnail images with a same-o
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
 });
 
-test("the real practitioner photo stays full-width on mobile", () => {
+test("the retired home portrait is not mounted; retained mobile styling is unchanged", () => {
   const home = read("components", "holistic-house-home.tsx");
   const css = read("app", "holistic-house-home.css");
-  assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(home, /className="service-home-about__image"/);
-  assert.match(home, /width=\{900\}/);
-  assert.match(home, /height=\{720\}/);
+  assert.match(home, /<HomeProgramEntry/);
+  assert.doesNotMatch(home, /<StaticPortrait|service-home-about__image/);
   assert.match(css, /\.house-home--services \.service-home-about__image/);
   assert.match(css, /aspect-ratio:16\/9/);
 });

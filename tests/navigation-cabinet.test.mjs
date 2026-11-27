@@ -64,11 +64,12 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
     readFile('lib/home-seo.ts', 'utf8'),
   ])
 
-  assert.match(home, /восстановление · практика · поддержка/)
-  assert.match(home, /healing · practice · guidance/)
+  const programHome = await readFile('components/home-program-entry.tsx', 'utf8')
+  assert.match(programHome, /Терапия · Коучинг · Развитие/)
+  assert.match(programHome, /Therapy · Coaching · Growth/)
   const explore = await readFile('components/home-explore-sections.tsx', 'utf8')
   const more = await readFile("components/home-more-disclosure.tsx", "utf8")
-  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.match(home, /<HomeProgramEntry locale=\{locale\} \/>/)
   const deferred = await readFile('components/home-deferred-sections.tsx','utf8')
   const expanded = await readFile('components/home-expanded-catalog.tsx','utf8')
   assert.match(deferred, /IntersectionObserver/)
@@ -290,13 +291,12 @@ test('My Space Home has compact real navigation while other site headers retain 
     readFile('components/app/app-workspace.jsx', 'utf8'),
   ])
 
-  // The owner removed only the legacy marketing header from Home.
-  // Home starts with the lightweight Ali entry; the real signed-in Profile
+  // Home now presents public program discovery; the real signed-in Profile
   // retains its full private account navigation.
-  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.match(home, /<HomeProgramEntry locale=\{locale\} \/>/)
   assert.doesNotMatch(home, /<SiteNavigation locale=\{locale\}/)
   assert.doesNotMatch(home, /className="house-header house-header--services"/)
-  assert.match(spanishHome, /<HomeDialogueEntry locale="es" \/>/)
+  assert.match(spanishHome, /<HolisticHouseHome locale="es" \/>/)
   assert.doesNotMatch(spanishHome, /<PublicSiteHeader locale="es" \/>/)
   assert.match(hub, /<SiteNavigation locale=\{selected\} compact \/>/)
   assert.match(nav, /<SiteSearch locale=\{activeLocale\} pathname=\{pathname\} \/>/)

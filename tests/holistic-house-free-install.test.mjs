@@ -25,14 +25,15 @@ test('localized public installation uses the Holistic House manifest and a singl
   assert.match(css,/:focus-visible/)
 })
 
-test('all three Home pages offer exactly the same free installer without duplicating app identity',()=>{
+test('all three Home pages share the same installer via the site menu without duplicating app identity',()=>{
   const home=read('components/holistic-house-home.tsx')
   const es=read('app/es/page.tsx')
   const banner=read('components/free-mobile-app-banner.tsx')
   const css=read('components/free-mobile-app-banner.module.css')
   const expanded=read('components/home-expanded-catalog.tsx')
-  assert.match(home,/<HomeDeferredSections locale=\{locale\}\s*\/>/)
-  assert.match(es,/<HomeDeferredSections locale="es"\s*\/>/)
+  assert.match(home,/<HomeProgramEntry locale=\{locale\}\s*\/>/)
+  assert.match(es,/<HolisticHouseHome locale="es"\s*\/>/)
+  assert.doesNotMatch(home,/<HomeDeferredSections/)
   assert.doesNotMatch(home,/<FreeMobileAppBanner/)
   assert.doesNotMatch(es,/<FreeMobileAppBanner/)
   assert.match(expanded,/<FreeMobileAppBanner locale=\{locale\}\s*\/>/)
