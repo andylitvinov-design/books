@@ -771,3 +771,41 @@ test('continuous protocol voice rejects echo and interrupted delivery and waits 
  assert.equal(courseGateVoiceNext(next),true)
  for(const changes of [{waiting:true},{blocked:true},{enabled:false},{promptId:'p1'},{promptId:null}])assert.equal(courseGateVoiceNext({...next,...changes}),false)
 })
+
+import {coachTranscriptQualityFields,coachTranscriptQualityExtends,coachQualityTranscript} from '../lib/personal-coaching/protocol-quality.mjs'
+test('quality capture retains visible text, timestamps, persona and allowlisted inference through draft and reviewed archive',()=>{
+ const data=sample(),capturedAt='2026-11-19T20:01:00.000Z'
+ Object.assign(data.turns[0],{locale:'ru',capturedAt})
+ Object.assign(data.turns[1],{locale:'ru',capturedAt,coachId:'mira',inference:{provider:'groq',model:'openai/gpt-oss-120b',secret:'private token'},interrupted:true})
+ const reviewed=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol:data}).protocol
+ assert.deepEqual(draft.turns,reviewed.turns)
+ assert.deepEqual(reviewed.turns[1].inference,{provider:'groq',model:'openai/gpt-oss-120b'})
+ assert.equal(reviewed.turns[0].capturedAt,capturedAt)
+ assert.equal(reviewed.turns[1].coachId,'mira')
+ const qa=coachQualityTranscript(draft)
+ assert.equal(qa.reviewStatus,'unreviewed')
+ assert.equal(qa.counts.interrupted,1)
+ assert.deepEqual(qa.turns.map(t=>t.content),data.turns.map(t=>t.content))
+ assert.equal(qa.turns[1].stage,'explore')
+ assert.equal(qa.turns[1].sequence,2)
+ assert.equal(qa.clientSummary,undefined)
+ assert.doesNotMatch(JSON.stringify(qa),/private token|hidden reasoning|secret.wav/)
+ assert.equal(coachQualityTranscript(reviewed).reviewStatus,'reviewed')
+})
+test('legacy records stay readable; known QA metadata cannot be removed or rewritten',()=>{
+ const before={role:'assistant',content:'Reply',coachId:'mira',inference:{provider:'groq',model:'model-a'}}
+ assert.equal(coachTranscriptQualityExtends(before,{...before,coachId:'caesar'}),false)
+ assert.equal(coachTranscriptQualityExtends(before,{role:'assistant',content:'Reply'}),false)
+ assert.equal(coachTranscriptQualityExtends({role:'assistant'},before),true)
+ assert.deepEqual(coachTranscriptQualityFields({role:'user',capturedAt:'invalid',locale:'xx',coachId:'mira'}),{})
+ assert.deepEqual(coachTranscriptQualityFields({role:'assistant',inference:{provider:'unknown',model:'secret'}}),{})
+ const legacy=coachQualityTranscript(normalizeMyCoachProtocol(sample()))
+ assert.equal(legacy.turns[1].capturedAt,undefined)
+})
+test('assistant-only captured introduction is an unreviewed chronological transcript, not a result',()=>{
+ const protocol={...sample(),turnLayout:'chronological',turns:[{role:'assistant',content:'Welcome',coachId:'mira'}]}
+ const draft=normalizeMyCoachDraft({courseSessionId:'introductory',protocol}).protocol
+ assert.equal(draft.turns.length,1)
+ assert.equal(coachQualityTranscript(draft).counts.client,0)
+ assert.equal(coachQualityTranscript(draft).reviewStatus,'unreviewed')
+})
