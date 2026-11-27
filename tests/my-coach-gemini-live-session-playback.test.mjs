@@ -768,7 +768,9 @@ test('visibility pause parks microphone and preserves same socket, token and his
   assert.equal(r.history,history)
   assert.equal(sent.length,1)
   assert.equal(sent[0].realtimeInput.audioStreamEnd,true)
+  const stableEpoch=r.pauseEpoch
   methods.pauseSession()
+  assert.equal(r.pauseEpoch,stableEpoch,'duplicate lifecycle event does not invalidate a stable pause')
   assert.equal(sent.length,1)
   assert.equal(closed.length,0)
   methods.pauseSession({disconnect:true})
@@ -890,9 +892,64 @@ test('a stalled permission prompt times out and its late stream is stopped',asyn
 test('page lifecycle routes visibility and pagehide to pause, retaining explicit stop on unmount',()=>{
   const lifecycle=section('  useEffect(()=>{\n    const onHidden=', '  useEffect(()=>{\n    const r=runtime.current')
   assert.match(lifecycle,/visibilityState==='hidden'\)pauseSession\(\)/)
-  assert.match(lifecycle,/onPageHide=\(\)=>pauseSession\(\{disconnect:true\}\)/)
+  assert.match(lifecycle,/onPageHide=event=>pauseSession\(\{disconnect:event\?\.persisted!==true\}\)/)
   assert.match(lifecycle,/removeEventListener\('pagehide',onPageHide\)[\s\S]*stop\(\)/)
   assert.match(component,/if\(runtime\.current\?\.paused\)\{[\s\S]*?void resumePausedSession\(runtime\.current\)/)
+})
+
+test('a delayed close event cannot turn a dead socket into a listening microphone',async()=>{
+  const socket={readyState:3}
+  const r={paused:true,ended:false,ready:true,socket,reconnects:0,modelTurnComplete:true}
+  const notices=[]
+  const resume=runInNewContext(section('  function parkPausedSocket(','  function interrupt(){')+'\nresumePausedSession',{
+    propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},Date,
+    preserveUnconfirmedInput(){},notify:text=>notices.push(text),t:{resumeUnavailable:'unavailable'},
+    navigator:{mediaDevices:{getUserMedia(){assert.fail('must not reopen a mic on a dead socket without a checkpoint')}}}
+  })
+  assert.equal(await resume(r),false)
+  assert.equal(r.socket,null)
+  assert.equal(r.ready,false)
+  assert.equal(r.paused,true)
+  assert.equal(notices.at(-1),'unavailable')
+})
+
+test('temporary resume timeout preserves the original checkpoint for explicit retry',()=>{
+  const notices=[],closed=[]
+  const token={expiresAt:'2099-01-01T00:00:00Z'}
+  const r={ended:false,paused:true,socket:{close:(...args)=>closed.push(args)},
+    resumeHandle:'same-checkpoint',liveToken:token,reconnects:1,modelTurnComplete:true}
+  const fail=runInNewContext(section('  function parkPausedSocket(','  async function resumePausedSession(')+
+    '\nfailPausedResume',{Date,pauseSession(){},preserveUnconfirmedInput(){},
+      notify:value=>notices.push(value),t:{resumeUnavailable:'unavailable',resumeRetry:'retry'}})
+  fail(r)
+  assert.equal(r.resumeUnavailable,false)
+  assert.equal(r.resumePending,true)
+  assert.equal(r.resumeHandle,'same-checkpoint')
+  assert.equal(r.liveToken,token)
+  assert.equal(r.reconnects,1)
+  assert.equal(r.socket,null)
+  assert.equal(notices.at(-1),'retry')
+  assert.equal(closed.length,1)
+  fail(r,{denied:true})
+  assert.equal(r.resumeUnavailable,true)
+  assert.equal(notices.at(-1),'unavailable')
+})
+
+test('offline Play does not reopen capture or spend a reconnect',async()=>{
+  const r={paused:true,ended:false,resumePending:true,resumeHandle:'checkpoint',reconnects:1,
+    liveToken:{expiresAt:'2099-01-01T00:00:00Z'}}
+  const notices=[]
+  const resume=runInNewContext(section('  async function resumePausedSession(','  function interrupt(){')+
+    '\nresumePausedSession',{
+      propsRef:{current:{enabled:true,canStart:true}},document:{visibilityState:'visible'},
+      navigator:{onLine:false,mediaDevices:{getUserMedia(){assert.fail('offline capture')}}},
+      notify:value=>notices.push(value),t:{resumeRetry:'retry'},Date
+    })
+  assert.equal(await resume(r),false)
+  assert.equal(r.paused,true)
+  assert.equal(r.reconnects,1)
+  assert.equal(r.resumeUnavailable,undefined)
+  assert.equal(notices.at(-1),'retry')
 })
 
 test('expired parked credential remains paused and enables explicit text fallback',async()=>{

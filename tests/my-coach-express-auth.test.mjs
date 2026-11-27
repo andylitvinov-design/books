@@ -15,7 +15,7 @@ test('every AI coach hero and card uses the same intentional guest-only Google g
  assert.doesNotMatch(authorization,/setPhase\(|onStart\?\.|chooseSession\(/)
  // OAuth restores the intended topic, not a fabricated completed presentation.
  // A fresh screen after redirect must play the greeting before starting.
- assert.match(greeting,/if\(phase!=='complete'\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
+ assert.match(greeting,/if\(entryPending\|\|phase!=='complete'\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
  assert.match(greeting,/onEnd:\(\)=>\{if\(audioRun.current===generation\).*audio\?\.ended.*setPhase\('complete'\)/)
  assert.equal((greeting.match(/setPhase\('complete'\)/g)||[]).length,1)
  assert.match(greeting,/url.searchParams.set\('greetingProgram',id\)/)

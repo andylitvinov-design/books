@@ -14,6 +14,8 @@ import MyCoachCourseDirectory,{courseCoachPortrait} from './my-coach-course-dire
 import {appFetch} from '@/lib/app/client-fetch'
 import {projectCourseSession} from '@/lib/coach-course-session-progress.mjs'
 import {programDaybookPath} from '@/lib/app/program-daybook-entry.mjs'
+import {CourseCartButton} from './commerce/course-cart-button'
+import {coachCourseOffer} from '@/lib/commerce/course-cart.mjs'
 
 const progressWords={
  en:{unknown:'Session progress unavailable',known:(n,p)=>'Session '+n+': '+p+'% of 20 minutes',complete:'Course time completed',resume:'Continue Session {session} with {name}'},
@@ -58,6 +60,7 @@ function SessionProgressRing({progress,lang}){
 }
 export default function MyCoachCourseLaunch({launch,initialCoach='mira'}){
  const {lang,course,copy,intro}=launch
+ const paidOffer=coachCourseOffer(course.id,lang)
  const [selectedId,setSelectedId]=useState(()=>normalizeLaunchCoach(initialCoach))
  const [all,setAll]=useState(false)
  const stage=useRef(null),directoryTrigger=useRef(null)
@@ -92,7 +95,7 @@ export default function MyCoachCourseLaunch({launch,initialCoach='mira'}){
      <SessionProgressRing progress={progress} lang={lang}/>
      <div className={heroStyles.stageGreeting}><h2>{name}</h2><p>{selected.id==='mira'?copy.mira:localCoachText(selected.role,lang)}</p></div>
      <div className={[heroStyles.stageActions,styles.action].join(' ')}>
-      {course.available&&course.id==='clarity'?<ClarityStartLink locale={lang} coachId={selected.id} className={[heroStyles.talkButton,styles.start].join(' ')}><PlayCircle size={22} aria-hidden="true"/><span>{(progress&&!progress.complete&&(progress.percent>0||progress.session>1)?progressWords[lang].resume.replace('{session}',progress.session):copy.start).replace('{name}',name)}</span><ArrowRight size={19} aria-hidden="true"/></ClarityStartLink>:<p className={styles.unavailable} role="status">{copy.unavailable}</p>}
+      {course.available&&course.id==='clarity'?<ClarityStartLink locale={lang} coachId={selected.id} className={[heroStyles.talkButton,styles.start].join(' ')}><PlayCircle size={22} aria-hidden="true"/><span>{(progress&&!progress.complete&&(progress.percent>0||progress.session>1)?progressWords[lang].resume.replace('{session}',progress.session):copy.start).replace('{name}',name)}</span><ArrowRight size={19} aria-hidden="true"/></ClarityStartLink>:paidOffer?<CourseCartButton sku={paidOffer.id} locale={lang} className={[heroStyles.talkButton,styles.start].join(' ')}/>:<p className={styles.unavailable} role="status">{copy.unavailable}</p>}
      </div>
     </div>
     <div className={heroStyles.coachRailHeading}>

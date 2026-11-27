@@ -14,6 +14,7 @@ import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27Du
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachSessionOpeningLine} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
@@ -1111,7 +1112,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // A user-muted speaker is not a muted microphone. Keep the dialogue moving.
     if(outputMutedRef.current){afterSpeech();return}
 
-    function playDeviceFallback(){
+    function playDeviceFallback(localOnly=false){
       if(outputMutedRef.current){afterSpeech();return true}
       // Only after the consented natural voice fails. No second provider request.
       const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
@@ -1124,7 +1125,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // A device without a RU/ES voice must not silently pronounce translated
       // coach text with the phone's English default voice.
       if(replyLocale!=='en'&&!matches.length)return false
-      voice.voice=matches.find(item=>item.localService)||matches[0]||null
+      const localVoice=matches.find(item=>item.localService===true)
+      if(localOnly&&!localVoice)return false
+      voice.voice=localVoice||matches[0]||null
       const clear=()=>{
         if(speechTimerRef.current)clearTimeout(speechTimerRef.current)
         speechTimerRef.current=null
@@ -1210,7 +1213,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // Initial Play requests only the short authored in-session line from
     // the existing globally rate-limited public audio route. No client audio,
     // client transcript or arbitrary text is exposed through this endpoint.
+    if(result.mode==='identity'){
+      if(!playDeviceFallback(true)){afterSpeech();setNotice(t.fallback)}
+      return
+    }
     if(result.mode==='intro'){
+      if(String(result.reply||'')!==coachSessionOpeningLine(personaId,lang)){
+        if(!playDeviceFallback(true)){afterSpeech();setNotice(t.fallback)}
+        return
+      }
       const url=coachSessionOpeningAudioPath(personaId,lang)
       if(!url){showTextOnly();return}
       const controller=new AbortController()

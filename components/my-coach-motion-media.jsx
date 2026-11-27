@@ -40,7 +40,10 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
   const presentation=useMemo(()=>pinnedPresentation?qualityScreenedPresentation(pinnedPresentation,releasedReactionMedia(personaId,REACTION_V4_RELEASED,pinnedPresentation.group)):null,[pinnedPresentation,personaId])
-  const opening=presentationActive?coachPresentationOpening(personaId):null
+  // Mira's protected original is 480x672 and visibly soft on Retina.
+  // Keep its immutable asset/registry for archival and other consumers; only
+  // the public presentation begins directly with the screened same-camera HD loop.
+  const opening=presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null
   const openingActive=Boolean(opening&&openingDone!==personaId)
   const activePresentation=openingActive?opening:presentation
   // Lock the released HD camera for the whole session. Exhaustion holds its
@@ -77,7 +80,11 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const framePoster = presentationActive?null:coachVideoPosterPath(src)
   // Keep the initial poster stable beneath the two presentation layers.
   const preferredPoster=presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
-  const poster=preferredPoster&&preferredPoster!==missingPoster?preferredPoster:fallbackPoster
+  // Large Harry surfaces must not reveal the old tiny rail poster on error.
+  const harryOriginalPoster=MEDIA_ROOT+'harry-greeting-real-v2.webp'
+  const largeHarryFallback=personaId==='harry'&&(presentationActive||sessionContext)
+    ? (preferredPoster===harryOriginalPoster?(pinnedPresentation?.poster||sessionPoster||harryOriginalPoster):harryOriginalPoster):fallbackPoster
+  const poster=preferredPoster&&preferredPoster!==missingPoster?preferredPoster:largeHarryFallback
   const mediaIdentity=presentationActive?personaId+'-presentation':released?.anchorHash||src
 
   useEffect(()=>{
