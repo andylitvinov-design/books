@@ -825,3 +825,27 @@ test('CI reduction phase 2: defer only Draft expensive jobs and duplicate produc
     assert.doesNotMatch(y,/continue-on-error:\s*true/);
   }
 });
+
+test('Spanish Services source contract belongs to Core; real billing changes stay isolated', () => {
+  const billing = parsePrTrigger(workflow('hh-billing-isolated.yml'));
+  const target = 'codex/public-book-library';
+  const spanish = 'tests/service-spanish-entry-regression.test.mjs';
+  assert.equal(matchesTrigger(billing, [spanish], target), false);
+  assert.equal(matchesTrigger(billing, [spanish, 'lib/app/coaching-brain.js'], target), false);
+  for (const path of ['app/api/payments/square/checkout/route.js',
+    'lib/billing/checkout.js', 'lib/commerce/square-gateway.js',
+    'tests/service-commerce-paypal.test.mjs', 'tests/service-square-api-cart.test.mjs',
+    'supabase/migrations/new.sql', 'middleware.ts', 'next.config.ts', 'package-lock.json',
+    '.github/workflows/hh-billing-isolated.yml']) {
+    assert.equal(matchesTrigger(billing, [spanish, path], target), true, path);
+  }
+  const core = workflow('hh-pr-core-release.yml');
+  const step = core.split('      - name: Spanish Services route source contract')[1]
+    ?.split('      - name:')[0];
+  assert.ok(step);
+  assert.ok(step.includes('node --test ' + spanish));
+  assert.ok(step.includes('Missing verified Core changed-file list'));
+  for (const path of [spanish, 'app/es/services/page.tsx', 'app/es/services/catalog/page.tsx',
+    'app/[locale]/services/page.tsx', 'app/[locale]/services/catalog/page.tsx',
+    'components/services-directory-page.tsx']) assert.ok(step.includes(path), path);
+});
