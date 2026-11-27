@@ -89,7 +89,7 @@ test('free Gemini TTS requires distinct feature consent and uses a fixed public 
     voiceName:'Sulafat',preview:true,voiceConsent:true,cloudVoiceConsent:true}
   assert.throws(()=>normalizeGeminiCoachTtsInput(common),{message:'GEMINI_COACH_TTS_INVALID'})
   const valid=normalizeGeminiCoachTtsInput({...common,trainingUseConsent:true})
-  assert.match(valid.text,/Столько/)
+  assert.equal(valid.text,'Я за цели, в которых остаётся место и для вас.')
   assert.throws(()=>normalizeGeminiCoachTtsInput({...common,trainingUseConsent:true,
     text:'An injected text'}),{message:'GEMINI_COACH_TTS_INVALID'})
 })
@@ -120,7 +120,7 @@ test('one Gemini TTS request selects exact approved voice and returns real-forma
       assert.deepEqual(body.response_format,{type:'audio'},'unary WAV is the documented default')
       assert.deepEqual(body.generation_config,{speech_config:[{voice:'Sulafat'}]},
         'undocumented language/max_output_tokens must not break Google Free TTS')
-      assert.match(body.input[0].content[0].text,/There is a lot/)
+      assert.equal(body.input[0].content[0].text,'I want your goals to leave room for you, too.')
       return {ok:true,status:200,json:async()=>({
         steps:[{type:'model_output',content:[{type:'audio',data:wav.toString('base64')}]}]})}
     }})
