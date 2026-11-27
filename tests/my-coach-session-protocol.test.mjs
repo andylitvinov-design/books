@@ -521,7 +521,15 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,6)
+ assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ const identity=send.slice(send.indexOf('if(isNameCorrection&&!coachingBrainSafety'),send.indexOf('// The last opening turn'))
+ assert.match(identity,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
+ assert.match(identity,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.ok(identity.indexOf('result.saved!==true')<identity.indexOf('confirmedNameRef.current=candidate'))
+ const knownOpening=send.slice(send.indexOf('if(greetingIdentity.name&&!openingProgress.completed'),send.indexOf('// The review of an existing profile'))
+ assert.match(knownOpening,/coachOpeningTurn\(/)
+ assert.match(knownOpening,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.doesNotMatch(knownOpening,/fetch\(|appFetch\(|setTurns\(/)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
@@ -889,6 +897,31 @@ test('ordinary opening questions never proactively offer an exit, in all persona
     }
   }
   assert.match(COACH_SAFETY_RULES.join(' '),/Honor client-initiated pauses/)
+})
+
+
+test('an early actual name question retains the literal name without granting session consent',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'}
+ ]
+ const run=rows=>coachOpeningProgress({turns:rows,locale:'ru',personaId:'mira'})
+ assert.equal(run(turns).checkmarks.invitation,false)
+ assert.equal(run(turns).checkmarks.name,false)
+ const agreed=run([...turns,{role:'user',content:'Да, давайте начнём.'}])
+ assert.equal(agreed.checkmarks.invitation,true)
+ assert.equal(agreed.checkmarks.name,true)
+ assert.equal(agreed.answers.name.value,'Alex')
+ assert.equal(coachOpeningProtocolSnapshot(agreed).name,'Alex')
+ for(const invalid of [
+  [{...turns[0],interrupted:true},...turns.slice(1)],
+  [{...turns[0],content:'Как ваше самочувствие?'},...turns.slice(1)],
+  [turns[0],{...turns[1],unanswered:true},turns[2]]
+ ]){
+  const progress=run([...invalid,{role:'user',content:'Да, давайте начнём.'}])
+  assert.equal(progress.checkmarks.name,false)
+ }
 })
 
 
