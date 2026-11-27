@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowRight,BookOpen,Briefcase,ChevronDown,Flower2,MessageCircle,Target} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {combineMyPageCourses} from '@/lib/app/my-page-courses.mjs'
+import {clarityMyPageRunHref} from '@/lib/coaching/clarity-resume-scope.mjs'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import {guideGoalProgress} from '@/lib/app/daybook-guide.mjs'
 import {profileDaybookHref} from '@/lib/profile/profile-daybook-route.mjs'
@@ -31,7 +32,10 @@ function courseView(c,locale,t){
   case 'growth':return {title:t[c.presetId]||t.growth,detail:fallback?fallback+' '+t.lessons:'',href:appRoot+'/course?view=courses&courseId='+encodeURIComponent(c.id),Icon:BookOpen}
   case 'reiki':return {title:t.reiki,detail:fallback?t.slides+' · '+fallback:'',href:root+'/academy/principles-of-energywork/learn'+(c.slideId?'?slide='+encodeURIComponent(c.slideId):''),Icon:Flower2}
   case 'business':return {title:t.business,detail:fallback+' '+t.days,href:root+'/app/daybook/business',Icon:Briefcase}
-  case 'clarity':return {title:t.clarity+' · '+t.run+' '+c.ordinal,detail:[c.day?t.session+' '+c.day+'/3':'',t.time+' '+Math.floor(c.done/60000)+'/60 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/daybook?program=clarity',Icon:MessageCircle}
+  case 'clarity':{
+   const href=clarityMyPageRunHref(locale,c)
+   return href?{title:t.clarity+' · '+t.run+' '+c.ordinal,detail:[c.day?t.session+' '+c.day+'/3':'',t.time+' '+Math.floor(c.done/60000)+'/60 '+t.minutes].filter(Boolean).join(' · '),href,Icon:MessageCircle}:null
+  }
   case 'legacy':return {title:c.group==='clarity'?t.legacyClarity:t[c.group]||t.coach,detail:t.saved+' · '+c.done,href:c.group==='goal'?root+'/app/daybook?start=vector':c.group==='clarity'?root+'/app/daybook?program=clarity':root+'/my-coach',Icon:c.group==='goal'?Target:MessageCircle}
   default:return null
  }

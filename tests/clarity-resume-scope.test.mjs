@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {clarityResumeRunId,clarityResumeMatches,clarityDaybookRunSelection,validClarityRunSummary} from '../lib/coaching/clarity-resume-scope.mjs'
+import {clarityResumeRunId,clarityResumeMatches,clarityDaybookRunSelection,validClarityRunSummary,clarityMyPageRunHref} from '../lib/coaching/clarity-resume-scope.mjs'
 const a='00000000-0000-4000-8000-000000000001',b='00000000-0000-4000-8000-000000000002'
 test('explicit run binding never silently restores a different course or legacy draft',()=>{
  assert.equal(clarityResumeRunId(a),a)
@@ -38,4 +38,20 @@ test('exact readback rejects other run and inconsistent minutes',()=>{
  assert.equal(validClarityRunSummary({...run,totalElapsedMs:1},a),false)
  assert.equal(validClarityRunSummary({...run,days:[days[0],days[1],{...days[2],protocolId:days[0].protocolId}]},a),false)
  assert.equal(validClarityRunSummary({...run,days:[days[0],days[1],{...days[2],remainingMs:0}]},a),false)
+})
+
+test('each My Page Express card opens its own saved run and logical day',()=>{
+ for(const locale of ['en','ru','es']){
+  const first=clarityMyPageRunHref(locale,{kind:'clarity',id:a,day:2})
+  const second=clarityMyPageRunHref(locale,{kind:'clarity',id:b,day:null})
+  assert.equal(first,'/'+locale+'/app/daybook?program=clarity&courseRunId='+a+'&clarityDay=2')
+  assert.equal(second,'/'+locale+'/app/daybook?program=clarity&courseRunId='+b)
+  assert.deepEqual(clarityDaybookRunSelection(new URL(first,'https://test.invalid').searchParams),{requested:true,id:a,day:2,invalid:false})
+  assert.deepEqual(clarityDaybookRunSelection(new URL(second,'https://test.invalid').searchParams),{requested:true,id:b,day:null,invalid:false})
+ }
+ for(const card of [{kind:'clarity',id:'bad',day:1},{kind:'clarity',id:a,day:4},{kind:'legacy',id:a,day:1},{kind:'clarity',id:a,day:'2'},null])assert.equal(clarityMyPageRunHref('en',card),null)
+ assert.equal(clarityMyPageRunHref('bad',{kind:'clarity',id:a,day:1}),null)
+ const ui=readFileSync(new URL('../components/app/my-page-courses.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('const href=clarityMyPageRunHref(locale,c)'))
+ assert.ok(ui.includes('const view=courseView(c,lang,t);if(!view)return null'))
 })
