@@ -76,3 +76,16 @@ test('course-first Director and Live preserve evidence and action safety',()=>{
  assert.throws(()=>enforceCoachSessionDirective(response,{...d,allowQuestion:false}));
  assert.equal(vetoMethodStepQuestion('When will you start?',{methodId:'oskar',methodStepId:'oskar:outcome'},{courseOwnedQuestion:true}),true);
 });
+
+import {goalCheckpointStage} from '../lib/coaching/goal-session-scenarios.mjs';
+import {openingStagePosition,courseStagePosition,groupedSessionPosition} from '../lib/coaching/coach-session-stage-view.mjs';
+test('Goal detailed questions and six UI segments share the scenario mapping without inventing archive answers',()=>{
+ const required={goal_result:['why','next','timing'],goal_motivation:['future_scene','next','timing'],goal_plan:['success','review'],goal_resources:['practices','resource_observation'],goal_obstacles:['facts','stop_rule'],goal_possibilities:['stop_rule','decision_rule'],goal_acceleration:['learning','sustainable_pace'],goal_integration:['outcome_status','changes','resources','review']};
+ for(const s of GOAL_SESSION_SCENARIOS)for(const locale of ['en','ru','es']){
+  const fields=coachCourseProtocolSchema(s.id,locale).checkpoints;
+  for(const id of required[s.id]){const row=fields.find(r=>r.id===id);assert.ok(row?.question);assert.ok(goalCheckpointStage(s.id,id));assert.ok(!row.question.includes('What would you like to record about'))}
+  const ui=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(fields.map(f=>({...f,status:'not_explored'}))),{mode:'course',courseId:s.id,locale});
+  assert.equal(ui.total,6);assert.ok(ui.rows.every(r=>r.tone==='gray'));
+  for(const group of ui.rows)assert.deepEqual(group.coreChildren.map(f=>f.id),s.stages.find(t=>t.id===group.id).fields);
+ }
+});
