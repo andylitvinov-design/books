@@ -12,7 +12,7 @@ test('owner/revision guard and private text-only resume',()=>{
  const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  assert.match(ui,/initialDraftRevision.current=result.draft.revision/)
  // Both restored and fresh private sessions must bypass the provider path.
- assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
+ assert.match(ui,/const privateTextOnly=\(restoredDraft&&!restoredRelay\)\|\|freshPrivateProfile/)
  assert.match(ui,/if\(privateTextOnly\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
  assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
  assert.match(ui,/if\(restoredDraft\)forceLocal=true/)

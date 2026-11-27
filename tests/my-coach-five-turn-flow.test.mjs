@@ -423,7 +423,7 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   const relay=source.slice(source.indexOf('  function acceptClarityRelayClock('),source.indexOf('  function queuePrivateDraft('))
   assert.match(relay,/projectClarityPanelClock\(\{previous:relayClockRef\.current,selection,owner,ack\}\)/)
   assert.match(relay,/if\(next\.status==='time_limit'\)\{\s*clarityTimeLimit\.current=true/)
-  assert.match(source,/if\(clarityCourseActive&&!restoredDraft\)\{clock\.setRunning\(window\.performance\.now\(\),false\);return\}/)
+  assert.match(source,/if\(clarityCourseActive\)\{clock\.setRunning\(window\.performance\.now\(\),false\);return\}/)
   assert.doesNotMatch(source.replace(resume,'').replace(relay,''),/clarityTimeLimit\.current\s*=\s*true/)
   assert.equal((resume.match(/clarityTimeLimit\.current\s*=\s*true/g)||[]).length,1)
   assert.match(source,/sole authority for course grants, completion and homework/)

@@ -646,7 +646,7 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  const toggle=ui.slice(start,ui.indexOf('</button>',start))
  assert.ok(ui.indexOf('data-coach-pro-same-tap-disclosure')<start,'provider disclosure must precede engine switch')
  assert.match(toggle,/aria-describedby=\{[^\n]*'hh-coach-pro-disclosure'/)
- assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
+ assert.match(ui,/const privateTextOnly=\(restoredDraft&&!restoredRelay\)\|\|freshPrivateProfile/)
  assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|voicePaused\|\|protocolOpen\|\|clarityCourseActive\}/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
  assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
