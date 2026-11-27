@@ -509,6 +509,7 @@ test('Mira public presentation starts in screened HD, never the 480px opening',(
 
 
 test('Harry catalog preserves the approved native source and avoids 3x mobile over-enlargement',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
  const css=read('components/my-coach-mira-landing.module.css')
  const media=read('components/my-coach-motion-media.jsx')
  const original=coachPresentationOpening('harry')
