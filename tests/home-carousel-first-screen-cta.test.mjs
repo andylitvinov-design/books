@@ -5,15 +5,14 @@ import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
 
-test("all Home locales begin with Ali and defer the six-slide carousel and seven-stage catalog",()=>{
+test("all Home locales mount the new three-tab page without legacy carousel or catalog",()=>{
  const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
  const carousel=read("components/home-section-carousel.tsx");
  const expanded=read("components/home-expanded-catalog.tsx");
  const deferred=read("components/home-deferred-sections.tsx");
  for(const page of [home,es]){
-  assert.match(page,/<HomeDialogueEntry locale=/);
-  assert.match(page,/<HomeDeferredSections locale=/);
-  assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<HomeDeferredSections"));
+  assert.match(page,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+  assert.doesNotMatch(page,/<HomeDeferredSections|<HomeDialogueEntry/);
   assert.doesNotMatch(page,/<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure/);
   assert.doesNotMatch(page,/<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard/);
  }
@@ -77,7 +76,7 @@ test("slider and benefit-rich banner fit the first mobile fold without impacting
 
 
 
-test("paid consultations remain reachable in optional carousel, Ali input owns first Home screen",()=>{
+test("legacy carousel retains its service link; the new Home owns the first screen",()=>{
  const carousel=read("components/home-section-carousel.tsx");
  const browser=read("scripts/verify-home-consultation-first-screen.mjs");
  const entry=read("components/home-dialogue-entry.tsx");
@@ -86,7 +85,7 @@ test("paid consultations remain reachable in optional carousel, Ali input owns f
   assert.ok(carousel.includes('action: "'+label+'"'),"Optional paid action missing: "+label);
  assert.match(carousel,/data-home-first-screen-cta=\{slide\.key === "services" \? "paid" : undefined\}/);
  assert.match(carousel,/key === "cabinet" && locale === "es" \? "\/en\/app"/);
- assert.match(home,/<HomeDialogueEntry locale=\{locale\}/);
+ assert.match(home,/<HomeProgramEntry locale=\{locale\}/);
  assert.doesNotMatch(home,/<HomeSectionCarousel/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);

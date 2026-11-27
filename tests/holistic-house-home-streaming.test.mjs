@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU homepage uses only the newly approved presentation and keeps withdrawn legacy introductions retired", () => {
+test("All Home locales retire legacy introduction and presentation; approved media components remain intact", () => {
   const en = read("app/page.tsx"), ru = read("app/[locale]/page.tsx");
   const es = read("app/es/page.tsx");
   const home = read("components/holistic-house-home.tsx");
@@ -11,12 +11,12 @@ test("EN/RU homepage uses only the newly approved presentation and keeps withdra
     assert.doesNotMatch(page,/HomeIntroVideoSection|introVideoContent|service-home-video|getPublishedSiteVideo/);
   assert.match(en,/<HolisticHouseHome locale="en"/);
   assert.match(ru,/<HolisticHouseHome locale="ru"/);
-  assert.match(es,/<HomeDialogueEntry locale="es"/);
-  assert.match(home,/<HomeDialogueEntry locale=\{locale\}/);
-  assert.match(home,/data-home-video-below-fold/);
+  assert.match(es,/<HolisticHouseHome locale="es"/);
+  assert.match(home,/<HomeProgramEntry locale=\{locale\}/);
+  assert.doesNotMatch(home,/data-home-video-below-fold/);
   assert.doesNotMatch(home,/introVideoContent|HomeIntroVideoSection|SiteVideoPlayer|<PersonalTestimonials/);
   assert.match(read("components/home-expanded-catalog.tsx"),/<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(home,/<HomePresentationVideoSection locale=\{locale\}\s*\/>/);
+  assert.doesNotMatch(home,/<HomePresentationVideoSection/);
   const presentation = read("components/home-presentation-video-section.tsx");
   assert.match(read("lib/crm/telegram-presentation.mjs"), /youtubeId: 'G0Db6yOCMto'/);
   assert.match(presentation, /youtubeId: approvedTelegramPresentation\("ru"\)\?\.youtubeId \?\? ""/);
@@ -37,15 +37,14 @@ test("EN/RU homepage uses only the newly approved presentation and keeps withdra
   assert.match(read("lib/site-videos/defaults.js"), /existingHomeIntroVideoRu/);
 });
 
-test("EN/RU/ES first screen presents seven visible steps and genuine free/paid routes", () => {
+test("EN/RU/ES first screen presents program discovery; existing free/paid offer routes remain valid", () => {
   const en = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   const stage = read("components/home-featured-workspace.tsx");
   const seo = read("lib/home-seo.ts");
   for(const page of [en,es]){
-    assert.match(page,/<HomeDialogueEntry locale=/);
-    assert.match(page,/<HomeDeferredSections locale=/);
-    assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<HomeDeferredSections"));
+    assert.match(page,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+    assert.doesNotMatch(page,/<HomeDeferredSections|<HomeDialogueEntry/);
     assert.doesNotMatch(page,/<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<HomeFreeDiagnosisBanner|service-home-hero/);
   }
   const expanded=read("components/home-expanded-catalog.tsx");

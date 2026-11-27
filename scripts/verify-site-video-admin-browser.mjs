@@ -261,9 +261,9 @@ try{
           await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
           assert.ok(!(await page.content()).includes(title),
             'Retired Home intro must not leak a published admin title: '+locale)
-          // The approved dialogue-first Home has no legacy testimonial gallery.
+          // The approved program-first Home has no legacy testimonial gallery.
           // Keep testing the real published home and the withdrawn video gate.
-          await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1);
+          await expect(page.locator('[data-home-program-page]')).toHaveCount(1);
           await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0);
           continue
         }
@@ -315,8 +315,8 @@ try{
     pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
     assert.equal(await page.locator('iframe').count(), 0)
     // Even after an owner republish, the withdrawn intro stays absent from the
-    // new Ali-first Home; do not require the retired testimonial gallery.
-    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    // new program-first Home; do not require the retired testimonial gallery.
+    await expect(page.locator('[data-home-program-page]')).toHaveCount(1)
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0)
     pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)

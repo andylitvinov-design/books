@@ -31,16 +31,16 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage keeps one free-first journey and the original consented final enquiry", () => {
+test("homepage mounts program discovery; retained consented enquiry is unchanged", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   const stage = read("components/home-featured-workspace.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home,/<HomeDialogueEntry locale=\{locale\}\s*\/>/);
-  assert.match(spanish,/<HomeDialogueEntry locale="es"\s*\/>/);
-  assert.match(home,/<HomeDeferredSections locale=\{locale\}\s*\/>/);
-  assert.match(spanish,/<HomeDeferredSections locale="es"\s*\/>/);
+  assert.match(home,/<HomeProgramEntry locale=\{locale\}\s*\/>/);
+  assert.match(spanish,/<HolisticHouseHome locale="es"\s*\/>/);
+  assert.doesNotMatch(home,/<HomeDeferredSections|<HomeDialogueEntry/);
+  assert.doesNotMatch(spanish,/<HomeDeferredSections|<HomeDialogueEntry/);
   const expanded=read("components/home-expanded-catalog.tsx");
   assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
   assert.match(expanded,/<HomepageContactCta locale=\{locale\}\s*\/>/);
@@ -55,7 +55,7 @@ test("homepage keeps one free-first journey and the original consented final enq
   assert.doesNotMatch(home,/<HomeFeaturedWorkspace|<HomepageContactCta/);
   assert.doesNotMatch(spanish,/<HomeFeaturedWorkspace/);
   assert.ok(expanded.indexOf("<HomeFeaturedWorkspace")<expanded.indexOf("<HomepageContactCta"));
-  assert.match(spanish,/<PublicConsultationCta locale="es"\s*\/>/);
+  assert.match(read("app/es/services/page.tsx"),/<PublicConsultationCta locale="es"/);
   assert.doesNotMatch(home, /<HomeFreeDiagnosisBanner|service-home-hero/);
 });
 
@@ -67,8 +67,8 @@ test("bypass transformations only for owned WebP images and the exact approved l
   assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
   // Verified portrait and YouTube stills bypass unneeded runtime transforms.
-  assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
-  assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
+  assert.doesNotMatch(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
+  assert.match(read("components/static-portrait.tsx"), /srcSet/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
 });
 
@@ -111,7 +111,6 @@ test('private Cabinet loads heavyweight tab modules on demand', () => {
 
 test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
   const stage = read("components/home-featured-workspace.tsx");
   const css = read("components/home-featured-workspace.module.css");
   assert.match(stage, /<h1 id="hh-home-features-title">/);
@@ -123,5 +122,5 @@ test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   assert.match(stage, /This is a request for a written response, not a call/);
   assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
   assert.doesNotMatch(home, /force-static|s-maxage/);
-  assert.match(es, /<PublicConsultationCta locale="es" \/>/);
+  assert.match(read("app/es/services/page.tsx"), /<PublicConsultationCta locale="es"/);
 });

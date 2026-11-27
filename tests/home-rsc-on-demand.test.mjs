@@ -4,16 +4,15 @@ import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
 
-test("Home ships only Ali first; seven-offer catalog remains explicitly deferred and source-backed",()=>{
+test("Home mounts only program discovery; retained catalog components remain source-backed",()=>{
  const filters=read("components/home-more-disclosure.tsx");
  const expanded=read("components/home-expanded-catalog.tsx");
  const deferred=read("components/home-deferred-sections.tsx");
  const content=read("components/home-deferred-content.tsx");
  for(const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]){
   const source=read(page);
-  assert.match(source,/<HomeDialogueEntry locale=/);
-  assert.match(source,/<HomeDeferredSections locale=/);
-  assert.ok(source.indexOf("<HomeDialogueEntry")<source.indexOf("<HomeDeferredSections"));
+  assert.match(source,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+  assert.doesNotMatch(source,/<HomeDeferredSections|<HomeDialogueEntry/);
   assert.doesNotMatch(source,/<HomeFeaturedWorkspace|<HomeMoreDisclosure|<HomeSectionCarousel|<PersonalTestimonials/);
   assert.doesNotMatch(source,/<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|<HomeCoreMethods|<HomeMasterPath|service-home-hero/);
   assert.doesNotMatch(source,/<ServicesSolutions|<HomeExploreSections|<TestSelectionCourseBanner/);
@@ -58,5 +57,5 @@ test("filter chips link existing localized routes with compact, accessible styli
     assert.ok(css.includes(style));
   assert.match(read("components/home-expanded-catalog.tsx"),/<HomepageContactCta locale=\{locale\}\s*\/>/);
   assert.doesNotMatch(read("components/holistic-house-home.tsx"),/<HomepageContactCta/);
-  assert.match(read("app/es/page.tsx"), /<PublicConsultationCta locale="es" \/>/);
+  assert.match(read("app/es/services/page.tsx"), /<PublicConsultationCta locale="es"/);
 });

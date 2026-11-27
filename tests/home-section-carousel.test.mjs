@@ -38,8 +38,8 @@ test("six-slide localized carousel retains destinations but is not on first Home
  const lazy=read("components/home-deferred-content.tsx");
  for(const lang of ["en:","ru:","es:"])assert.ok(carousel.includes(lang));
  for(const page of [home,spanish]){
-  assert.match(page,/<HomeDialogueEntry locale=/);
-  assert.match(page,/<HomeDeferredSections locale=/);
+  assert.match(page,/<(?:HomeProgramEntry|HolisticHouseHome) locale=/);
+  assert.doesNotMatch(page,/<HomeDeferredSections|<HomeDialogueEntry/);
   assert.doesNotMatch(page,/<HomeSectionCarousel|<HomeFeaturedWorkspace/);
  }
  assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
