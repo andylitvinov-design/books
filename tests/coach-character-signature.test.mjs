@@ -47,7 +47,7 @@ test('two early distinct opportunities and optional third, inclusive 420 boundar
   assert.equal(withCoachLivePersonality({guidance:'X'.repeat(620),openingProgress:{completed:true}},turn).guidance,'X'.repeat(620))
   const reflection='That sounds like a difficult choice. What matters now?'
   const final=insertCoachCharacterLine(reflection,turn)
-  assert.ok(final.startsWith('That sounds like a difficult choice.')&&final.endsWith('What matters now?')&&final.includes(a.text))
+  assert.equal(final,reflection) // Do not turn a complete reaction and question into three sentences.
   assert.equal(insertCoachCharacterLine(final,turn),final)
   assert.equal(insertCoachCharacterLine('What matters now?',turn),'What matters now?')
  }

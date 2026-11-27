@@ -133,7 +133,7 @@ test("the canonical Reiki Yggdrasil landing has no obsolete site/archive footer 
   assert.ok(!program.includes("yggdrasil-source-footer-panel"));
 });
 
-test("Higher Magic adopts the My Reiki chrome and keeps canonical curriculum and module routes", async () => {
+test("All six Pro modules adopt the My Reiki chrome and retain canonical curriculum and module routes", async () => {
   const [page, header, curriculumView, theme, detail, dock, model, data] = await Promise.all([
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
     readFile("components/my-reiki-header.tsx", "utf8"),
@@ -144,11 +144,11 @@ test("Higher Magic adopts the My Reiki chrome and keeps canonical curriculum and
     readFile("lib/unified-mobile-dock.mjs", "utf8"),
     readFile("data/academy/yggdrasil-curriculum.json", "utf8"),
   ]);
-  const branch = page.slice(page.indexOf('if (module.slug === "higher-magic")'), page.indexOf('<main className={"academy-reading-shell'));
-  assert.ok(branch.includes('data-my-reiki-module-landing="higher-magic"'));
-  assert.ok(branch.includes('<MyReikiHeader locale={locale} program="pro" modulePath="/academy/reiki/yggdrasil/higher-magic"'));
+  const branch = page.slice(page.indexOf('if (module.levelId > 1)'), page.indexOf('<main className={"academy-reading-shell'));
+  assert.ok(branch.includes('data-my-reiki-module-landing={module.slug}'));
+  assert.ok(branch.includes('<MyReikiHeader locale={locale} program="pro" modulePath={`/academy/reiki/yggdrasil/${module.slug}`}'));
   assert.ok(branch.includes('<ReikiProgramNavigation locale={locale} active="pro"'));
-  assert.ok(branch.includes('program=pro#reiki-pro-higher-magic'));
+  assert.ok(branch.includes('program=pro#reiki-pro-" + module.slug'));
   assert.ok(branch.includes('href="#yggdrasil-curriculum-title"'));
   assert.ok(branch.includes('visualTheme="my-reiki"'));
   assert.ok(branch.includes('<PublicConsultationCta locale={locale} />'));
@@ -161,7 +161,18 @@ test("Higher Magic adopts the My Reiki chrome and keeps canonical curriculum and
   assert.ok(theme.includes('white-space: normal') && theme.includes('overflow-wrap: anywhere'));
   assert.ok(detail.includes('support-therapy-cabinet-hd.webp') && detail.includes('#fff19b,#ffc520 44%,#e99000'));
   assert.ok(dock.includes('body:has([data-my-reiki-module-landing])'));
-  assert.ok(model.includes('higher-magic') && model.includes('return "reiki"'));
+  assert.ok(model.includes('(?:instructor-course|temple-magic|eastern-magic|western-magic|rune-magic|higher-magic)') && model.includes('return "reiki"'));
+  assert.ok(branch.includes('scope="instructor"') && branch.includes('module.levelId === 2'));
+  assert.ok(branch.includes('next.slug') && branch.includes('previous.slug'));
+  const { isUnifiedMobileDockAppPath, unifiedMobileDockActive } = await import("../lib/unified-mobile-dock.mjs");
+  for (const locale of ["en", "ru", "es"]) {
+    for (const slug of ["instructor-course", "temple-magic", "eastern-magic", "western-magic", "rune-magic", "higher-magic"]) {
+      const path = "/" + locale + "/academy/reiki/yggdrasil/" + slug;
+      assert.equal(isUnifiedMobileDockAppPath(path), true);
+      assert.equal(unifiedMobileDockActive(path), "reiki");
+    }
+    assert.equal(isUnifiedMobileDockAppPath("/" + locale + "/academy/reiki/yggdrasil/basic-course"), false);
+  }
   const level = JSON.parse(data).levels.find(item => item.id === 7);
   assert.equal(level.steps.length, 6);
   assert.equal(level.steps.reduce((sum, step) => sum + step.settings.length, 0), 32);
