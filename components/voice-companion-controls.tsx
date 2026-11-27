@@ -1,13 +1,15 @@
 "use client";
 
 import {useCallback,useEffect,useRef,useState} from "react";
+import {unlockAliOwnerAudio,startAliOwnerAudio} from '@/lib/voice-companion/ali-owner-audio.mjs';
+import {startAliCallBarge} from '@/lib/voice-companion/ali-call-barge.mjs';
 import type {PublicLocale} from "@/lib/public-locales";
 import {createDeviceSpeech,type SpeechController} from "@/lib/assistant-avatar/device-speech";
 import {browserSpeechLanguage,speechSegments,chooseVoiceRoute,createRecognitionGate} from "@/lib/voice-companion/browser-voice.mjs";
 import {normalizeDeviceVoiceId,normalizeSpeechRate,publicPreviewText} from "@/lib/voice-companion/voice-catalog.mjs";
 import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
 import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
-import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from "@/lib/personal-coaching/coach-ios-audio-route.mjs";
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from "@/lib/personal-coaching/coach-ios-audio-route.mjs";
 
 type RecognitionResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
 type VoiceRecognition={lang:string;continuous:boolean;interimResults:boolean;
@@ -96,6 +98,26 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const recordedPurpose=useRef<'ali_chat'|'public'>('ali_chat');
  const speaker=useRef<SpeechController|null>(null);
  const lastSpoken=useRef('');
+ const phoneRetryVoice=useRef(false);
+ const [phoneAutoInterrupt,setPhoneAutoInterrupt]=useState(false);
+ const phoneTurnReadyAt=useRef<number|null>(null);
+ const markPhoneTurn=useCallback(()=>{if(phoneCall.current)phoneTurnReadyAt.current=window.performance.now()},[]);
+ const markPhoneOutput=useCallback((kind:'pcm-graph'|'device-speech-event')=>{
+  const start=phoneTurnReadyAt.current;phoneTurnReadyAt.current=null;
+  if(!phoneCall.current||start===null)return;
+  try{window.performance.measure('hh-ali-text-to-'+kind,{start,end:window.performance.now()});}catch{}
+ },[]);
+ const ownerAudioPersona=useRef<string|null>(null);
+ const ownerAudioActive=useCallback(()=>Boolean(ownerAudioPersona.current),[]);
+ const ownerAudioContext=useRef<AudioContext|null>(null);
+ const ownerAudioJob=useRef<{cancel:()=>void;setVolume:(value:number)=>void}|null>(null);
+ const closeOwnerAudio=useCallback(()=>{
+  ownerAudioPersona.current=null;
+  ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
+  const context=ownerAudioContext.current;ownerAudioContext.current=null;
+  if(context&&context.state!=='closed')void context.close().catch(()=>{});
+ },[]);
+ const [phoneReplayAvailable,setPhoneReplayAvailable]=useState(false);
  const mounted=useRef(true);
  const stop=useCallback(()=>{
   if(resumeTimer.current!==null){clearTimeout(resumeTimer.current);resumeTimer.current=null;}
@@ -103,27 +125,28 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   generation.current++;
   // Reuse Emotional Avatar's single browser speech adapter. It only cancels
   // utterances that it actually owns, never unrelated coaching/site audio.
+  ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
   speaker.current?.stop();
   recordedTurn.current?.cancel();recordedTurn.current=null;
   recognition.current?.abort();recognition.current=null;
-  if(mounted.current){setSpeaking(false);setRecording(false)}
+  if(mounted.current){setSpeaking(false);setRecording(false);setPhoneAutoInterrupt(false)}
  },[]);
  const stopDialogue=useCallback(()=>{
   dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   pauseOnHide.current=false;
-  const wasPhone=phoneCall.current;phoneCall.current=false;
-  if(mounted.current){setConversing(false);setPaused(false);setNotice('');}
-  stop();
+  const wasPhone=phoneCall.current;phoneCall.current=false;phoneRetryVoice.current=false;lastSpoken.current='';phoneTurnReadyAt.current=null;
+  if(mounted.current){setConversing(false);setPaused(false);setNotice('');setPhoneReplayAvailable(false);}
+  stop();closeOwnerAudio();
   if(wasPhone&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
- },[stop]);
+ },[stop,closeOwnerAudio]);
  const pauseDialogue=useCallback(()=>{
   if(!dialogueActive.current)return;
   // Retire every capture/playback callback, retaining only the UI pause state.
-  dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
-  if(mounted.current){setConversing(false);setPaused(true);setNotice('');}
-  stop();
+  dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;phoneTurnReadyAt.current=null;
+  if(mounted.current){setConversing(false);setPaused(true);setNotice('');setPhoneReplayAvailable(false);}
+  stop();closeOwnerAudio();
   if(phoneCall.current&&typeof navigator!=='undefined')setCoachIos27AudioSession(navigator,'auto');
- },[stop]);
+ },[stop,closeOwnerAudio]);
  const setVoiceId=useCallback((value:string)=>{
   stopDialogue();setVoiceIdState(value);
  },[stopDialogue]);
@@ -202,6 +225,66 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   setNotice('');lastSpoken.current=text;
   const seq=generation.current;
   const phone=phoneCall.current&&dialogueActive.current;
+  const retryVoice=phoneRetryVoice.current;phoneRetryVoice.current=false;
+  if(phone)setPhoneReplayAvailable(true);
+  const outputFailed=()=>{
+   setSpeaking(false);
+   if(phone&&dialogueActive.current){
+    // Keep the exact canonical reply available for a real user-gesture retry.
+    // Never re-send the message or auto-open the microphone on failed output.
+    setPhoneReplayAvailable(true);
+    setNotice(speechLocale==='ru'?'Нет звука? Нажмите «Повторить звук».':speechLocale==='es'?'¿Sin sonido? Pulsa Repetir audio.':'No sound? Tap Replay audio.');
+   }else{if(dialogueActive.current)stopDialogue();setNotice(t.error);}
+  };
+  // The optional owner-only test uses a decoded non-silent audio buffer, not a
+  // speechSynthesis event. All ordinary client conversations remain local.
+  if(phone&&ownerAudioPersona.current&&!retryVoice){
+   const context=ownerAudioContext.current;
+   // Only the existing separately consented recorded input can monitor speech.
+   // Keep the duplex route stable across the actual PCM graph and the mic.
+   const duplex=Boolean(context?.createGain&&recordedSupported&&useRecordedDialogue.current&&
+    recordedPurpose.current==='ali_chat'&&setCoachIos27DuplexRoute(window.navigator));
+   if(!duplex){if(openingConsent)setCoachIos27AudioSession(window.navigator,'playback');
+    else refreshCoachIos27PlaybackRoute(window.navigator);}
+   let monitor:ReturnType<typeof startAliCallBarge>=null;
+   const current=()=>seq===generation.current&&dialogueActive.current&&!document.hidden;
+   const clearIdle=()=>{if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}};
+   const listen=()=>{if(!current())return;setRecording(true);setNotice('');clearIdle();
+    idleTimer.current=setTimeout(()=>{if(current()){stopDialogue();setNotice(t.micSilent);}},90000);};
+   const releaseMonitor=()=>{monitor?.cancel();if(recordedTurn.current===monitor)recordedTurn.current=null;monitor=null;setPhoneAutoInterrupt(false);};
+   const manualHint=()=>setNotice(speechLocale==='ru'?'Перебить: нажмите микрофон':speechLocale==='es'?'Pulsa Mic para interrumpir':'Tap Mic to interrupt');
+   const nextListen=()=>{resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;if(current())resumeDialogue.current?.();},160);};
+   ownerAudioJob.current=startAliOwnerAudio({environment:window,context,
+    personaId:ownerAudioPersona.current,locale:speechLocale,text:parts.join(' '),
+    onStart:()=>{
+     if(!current())return;
+     setSpeaking(true);markPhoneOutput('pcm-graph');
+     if(!duplex||!context){manualHint();return;}
+     monitor=startAliCallBarge({environment:window,context,locale:speechLocale,spokenText:text,isCurrent:current,
+      onDuck:volume=>ownerAudioJob.current?.setVolume(volume),
+      onReady:()=>{if(current()){setPhoneAutoInterrupt(true);setNotice('')}},
+      onRecovering:()=>{if(current()){setPhoneAutoInterrupt(false);manualHint()}},
+      onInterrupt:()=>{if(!current())return;ownerAudioJob.current?.cancel();ownerAudioJob.current=null;
+       setSpeaking(false);setPhoneAutoInterrupt(false);setPhoneReplayAvailable(false);listen();},
+      onListen:listen,
+      onTranscribing:()=>{if(current()){clearIdle();setRecording(false);setNotice(t.transcribing)}},
+      onResult:value=>{if(!current())return;clearIdle();releaseMonitor();setRecording(false);setNotice('');
+       setPhoneReplayAvailable(false);emptyListenRetries.current=0;markPhoneTurn();dialogueOnTurn.current?.(value);},
+      onEcho:()=>{if(current()){clearIdle();releaseMonitor();setRecording(false);nextListen();}},
+      onFailure:(code,clientCapture)=>{if(!current())return;clearIdle();releaseMonitor();
+       ownerAudioJob.current?.setVolume(1);
+       if(!clientCapture){manualHint();return;}
+       stopDialogue();setNotice(code==='MIC_PERMISSION'?t.micDenied:code==='STT_RATE_LIMIT'?t.sttQuota:code==='STT_SIGN_IN'?t.sttSignIn:code==='MIC_NO_SIGNAL'?t.micSilent:t.error);}
+     });
+     if(monitor)recordedTurn.current=monitor;else manualHint();
+    },
+    onEnd:()=>{if(!current())return;ownerAudioJob.current=null;setSpeaking(false);setPhoneAutoInterrupt(false);
+     if(monitor?.continueAfterCoach())return;
+     releaseMonitor();nextListen();},
+    onError:()=>{if(current()){ownerAudioJob.current=null;releaseMonitor();outputFailed();}}
+   });
+   return;
+  }
   let index=0,busyRetries=0;
   const playNext=()=>{
    if(seq!==generation.current)return;
@@ -211,37 +294,32 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
      resumeTimer.current=setTimeout(()=>{
       resumeTimer.current=null;
       if(dialogueActive.current&&!document.hidden)resumeDialogue.current?.();
-     },450);
+     },phone?160:450);
     }
     return;
    }
    let segmentStarted=false;
    const result=speaker.current?.speak(parts[index++],speechLocale,{
-    onStart:()=>{if(seq===generation.current){segmentStarted=true;setSpeaking(true);}},
+    onStart:()=>{if(seq===generation.current){segmentStarted=true;setSpeaking(true);if(phone)markPhoneOutput('device-speech-event');}},
     onEnd:(reason)=>{
      if(seq!==generation.current)return;
      if(reason==='ended'&&(!phone||segmentStarted)){
       busyRetries=0;
       // Safari can keep speechSynthesis.speaking true until after onend.
       // Leave the event stack before scheduling the next spoken segment.
-      resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},100);
+      resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},phone?60:100);
       return;
      }
-     setSpeaking(false);
-     if(dialogueActive.current)stopDialogue();
-     // An unexpected watchdog cancellation is also a playback failure.
      // Our own explicit stop increments generation before cancelling.
-     setNotice(t.error);
+     outputFailed();
     },
-   },{rate:normalizeSpeechRate(rate),voiceURI:normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
+   },{rate:normalizeSpeechRate(rate),voiceURI:retryVoice?'':normalizeDeviceVoiceId(voiceId,voices,speechLocale),startTimeoutMs:phone?4000:undefined});
    if(!result?.ok&&seq===generation.current){
     // iOS can briefly retain the old synthesis queue between spoken chunks.
     if(phone&&result?.reason==='busy'&&busyRetries++<2){
      index--;resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},180);return;
     }
-    setSpeaking(false);
-    if(dialogueActive.current)stopDialogue();
-    setNotice(t.error);
+    outputFailed();
    }
   };
   // Release the capture route before output. A newly opened call speaks
@@ -253,7 +331,15 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
     resumeTimer.current=setTimeout(()=>{resumeTimer.current=null;playNext();},50);
    }
   }else playNext();
- },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
+ },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices,recordedSupported,markPhoneOutput,markPhoneTurn]);
+ const replayPhoneReply=useCallback(()=>{
+  if(!phoneCall.current||!dialogueActive.current||!phoneReplayAvailable||document.hidden||!lastSpoken.current)return;
+  // Safari's direct tap permits a fresh audio route and default local voice.
+  phoneRetryVoice.current=true;phoneTurnReadyAt.current=null;
+  closeOwnerAudio(); // Explicit local replay; do not charge/retry a remote request.
+  // speak() cancels the active capture before switching the route.
+  speak(lastSpoken.current,false,true);
+ },[phoneReplayAvailable,speak,closeOwnerAudio]);
  const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
   if(!sttConsent&&!consentOnStart){setNotice(t.sttConsent);return;}
@@ -272,10 +358,10 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
     const text=capture.accept(event.results?.[0]?.[0]?.transcript);
-    if(text){hadSpeech=true;emptyListenRetries.current=0;
+    if(text){hadSpeech=true;emptyListenRetries.current=0;setPhoneReplayAvailable(false);
     if(idleTimer.current!==null){clearTimeout(idleTimer.current);idleTimer.current=null;}
     const live=dialogueActive.current;
-    setRecording(false);setNotice(live?'':t.captured);onTranscript(text);}
+    setRecording(false);setNotice(live?'':t.captured);if(live)markPhoneTurn();onTranscript(text);}
    };
    instance.onerror=event=>{if(!capture.isActive()||hadSpeech)return;
      // A quiet browser capture ends normally; the call gets one local
@@ -301,7 +387,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    if(phoneCall.current)idleTimer.current=setTimeout(()=>{if(capture.isActive()){stopDialogue();setNotice(t.inputUnavailable);}},30000);
    instance.start();if(!phoneCall.current)setRecording(true);
   }catch{stopDialogue();recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
- },[enabled,speechLocale,sttConsent,stop,stopDialogue,t]);
+ },[enabled,speechLocale,sttConsent,stop,stopDialogue,t,markPhoneTurn]);
  // iOS Safari 27 can report a live WebSpeech session without delivering text.
  // Reuse My Coach's ephemeral capture, with its own signed-in, free-tier quota.
  const dictateRecorded=useCallback((onTranscript:(text:string)=>void)=>{
@@ -310,7 +396,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(phoneCall.current)setCoachIos27AudioSession(window.navigator,'auto');
   const epoch=generation.current;
   const capture=startCoachRecordedTurn({
-   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,
+   locale:speechLocale,environment:window,purpose:recordedPurpose.current,textOnly:true,fastConversation:phoneCall.current,
    onState:state=>{
     if(epoch!==generation.current)return;
     if(state==='listening'||state==='hearing'){
@@ -326,8 +412,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    },
    onResult:text=>{
     if(epoch!==generation.current)return;
-    recordedTurn.current=null;emptyListenRetries.current=0;setRecording(false);setNotice('');
-    if(dialogueActive.current)onTranscript(text);
+    recordedTurn.current=null;emptyListenRetries.current=0;setRecording(false);setNotice('');setPhoneReplayAvailable(false);
+    if(dialogueActive.current){markPhoneTurn();onTranscript(text);}
    },
    onFailure:code=>{
     if(epoch!==generation.current)return;
@@ -342,8 +428,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    else if(idleTimer.current===null)idleTimer.current=setTimeout(()=>{if(epoch===generation.current){stopDialogue();setNotice(t.inputUnavailable);}},30000);
   }
   else{stopDialogue();setNotice(t.inputUnavailable);}
- },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string}={})=>{
+ },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t,markPhoneTurn]);
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean;pauseOnHide?:boolean;phoneCall?:boolean;opening?:string;ownerAudioPersona?:string}={})=>{
   if(!enabled||document.hidden)return false;
   const consentOnStart=options.consentOnStart===true;
   if(!supported||(!consentOnStart&&(!playbackConsent||!sttConsent))){setNotice(t.permission);return false;}
@@ -359,7 +445,14 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   useRecordedDialogue.current=recordedNeeded;
   recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
   pauseOnHide.current=options.pauseOnHide===true;
-  phoneCall.current=options.phoneCall===true;emptyListenRetries.current=0;
+  phoneCall.current=options.phoneCall===true;emptyListenRetries.current=0;phoneTurnReadyAt.current=null;
+  closeOwnerAudio();
+  if(phoneCall.current&&consentOnStart&&options.ownerAudioPersona){
+   setCoachIos27AudioSession(window.navigator,'playback');
+   const context=unlockAliOwnerAudio(window);
+   if(!context){phoneCall.current=false;pauseOnHide.current=false;useRecordedDialogue.current=false;setCoachIos27AudioSession(window.navigator,'auto');setNotice(t.unavailable);return false;}
+   ownerAudioContext.current=context;ownerAudioPersona.current=options.ownerAudioPersona;
+  }
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setPaused(false);setConversing(true);
   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
   // Opening speech is local and audible before capture begins. The normal
@@ -369,7 +462,7 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   else dictate(receive,consentOnStart);
   return true;
  },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
-   recordedSupported,prefersRecorded,sttConsent,supported,t,speak]);
+   recordedSupported,prefersRecorded,sttConsent,supported,t,speak,closeOwnerAudio]);
  resumeDialogue.current=()=>{
   if(dialogueActive.current&&dialogueOnTurn.current){
    const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
@@ -392,12 +485,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  },[stop]);
  const interruptReply=()=>{
   if(!dialogueActive.current||!speaking||document.hidden)return;
-  stop();
+  setPhoneReplayAvailable(false);phoneTurnReadyAt.current=null;stop();
   resumeDialogue.current?.();
  };
  return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,paused,pauseDialogue,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,phoneReplayAvailable,replayPhoneReply,ownerAudioActive,phoneAutoInterrupt,conversing,startDialogue,stopDialogue,interruptReply,markExternalSpeaking,resumeAfterExternalReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 

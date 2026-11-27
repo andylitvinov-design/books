@@ -78,7 +78,7 @@
 .cinemaMedia :global([data-coach-motion-context=greeting]){inset:0!important;width:100%!important;height:100%!important;max-width:none!important;background:#06291f}
 .cinemaMedia :global([data-coach-motion-context=greeting]) :is(img,video){object-fit:cover!important;object-position:50% 20%!important}
 .cinemaShade{z-index:-1;background:linear-gradient(180deg,#06271d18 0%,transparent 22%,transparent 35%,#06291f30 47%,#05291fe8 68%,#041e18 100%)}
-.cinemaTop{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+.cinemaTop{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex:none;min-height:44px}
 .videoLabel{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:5px 12px;border:1px solid #d5e7d599;border-radius:99px;background:#06563dd4;font:600 13px/1.2 system-ui}
 .coachArrow,.courseArrow{display:grid;place-items:center;flex:none;box-sizing:border-box;width:44px;height:44px;border:1px solid #e7ecdb9e;border-radius:50%;background:#0b483a9c;color:#fff9e8;cursor:pointer;text-decoration:none}
 .portraitSpace{flex:1 1 auto;min-height:clamp(250px,42svh,520px);display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -119,10 +119,10 @@
 @media(max-width:355px){.cinema{padding-inline:8px;border-radius:22px}.overlay{gap:9px}.mainAction{padding-inline:8px;gap:5px;grid-template-columns:23px minmax(0,1fr) 19px}.portraitSpace{min-height:250px}.tiles{gap:5px}.tile{min-height:70px}.offer{column-gap:8px}.player{gap:2px}}
 @media(prefers-reduced-motion:reduce){.cinema{scroll-behavior:auto}}
 
-/* Fixed overlay geometry: the reserved CTA slot appears only after a real end. */
+/* Fixed overlay geometry: the reserved CTA slot appears once greeting playback actually starts. */
 .cinema{flex:none;max-width:100%;min-height:calc(var(--hh-coach-visible-height,100dvh) - 76px)}
 .portraitSpace{position:relative;touch-action:pan-y pinch-zoom;min-height:clamp(240px,36svh,520px)}
-.centerPlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:74px;height:74px;border:1px solid #e8fff0;border-radius:50%;background:#eaffefdd;color:#075c45;box-shadow:0 0 0 6px #fff3;cursor:pointer}
+.centerPlay{position:absolute;top:58%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:74px;height:74px;border:1px solid #e8fff0;border-radius:50%;background:#eaffefdd;color:#075c45;box-shadow:0 0 0 6px #fff3;cursor:pointer}
 .ctaArea{min-height:68px}
 .ctaArea[data-ready=false]{pointer-events:none}
 .courseArrow::before{z-index:0}.courseArrow svg{position:relative;z-index:1}
