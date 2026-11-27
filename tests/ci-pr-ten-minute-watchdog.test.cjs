@@ -2295,7 +2295,7 @@ test('open-PR verified 409 stays visible but never force-cancels even with exact
 
 
 test('Vercel cleanup paginates rollback evidence with bounded cursors and no destructive side effects', async()=>{
- const {appendRollbackEvidencePage,protectedDeploymentIds,eligibleForDelete}=
+ const {RETAIN_READY,appendRollbackEvidencePage,protectedDeploymentIds,eligibleForDelete}=
    await import('../scripts/ci-vercel-deployment-prune.mjs');
  const now=1794700000000;
  const project='prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
@@ -2306,25 +2306,25 @@ test('Vercel cleanup paginates rollback evidence with bounded cursors and no des
      githubCommitRef:'codex/public-book-library',githubCommitSha:'a'.repeat(40)},
  });
  const collected={recentDeployments:[],recentSeen:new Set(),readyCount:0};
- // Owner-approved Vercel cost policy retains TEN READY rollback builds.
- // First page contains only seven distinct READY rows, plus one duplicate:
+ // Owner-approved Vercel cost policy retains LIVE plus five READY rollback builds.
+ // First page contains RETAIN_READY minus one distinct READY rows, plus one duplicate:
  // pagination must continue, without counting the duplicate as a version.
  const before=appendRollbackEvidencePage({
-   deployments:[...Array.from({length:7},(_,i)=>make(i)),make(0)],
+   deployments:[...Array.from({length:RETAIN_READY-1},(_,i)=>make(i)),make(0)],
    pagination:{next:now-1000}},collected,now);
- assert.deepEqual(before,{done:false,readyCount:7,nextUntil:now-1000},
+ assert.deepEqual(before,{done:false,readyCount:RETAIN_READY-1,nextUntil:now-1000},
    'duplicate rows do not inflate rollback versions');
  const after=appendRollbackEvidencePage({
-   deployments:Array.from({length:9},(_,i)=>make(i+7)),
+   deployments:Array.from({length:9},(_,i)=>make(i+RETAIN_READY-1)),
    pagination:{next:now-2000}},{
      ...collected,readyCount:before.readyCount,
    },before.nextUntil);
- assert.deepEqual(after,{done:true,readyCount:16,nextUntil:null});
- assert.equal(collected.recentDeployments.length,16);
+ assert.deepEqual(after,{done:true,readyCount:RETAIN_READY+8,nextUntil:null});
+ assert.equal(collected.recentDeployments.length,RETAIN_READY+8);
  const guarded=protectedDeploymentIds(collected.recentDeployments);
- assert.equal(guarded.size,10);
- for(let i=0;i<10;i++)assert.ok(guarded.has(make(i).id));
- assert.equal(eligibleForDelete(make(9),{
+ assert.equal(guarded.size,RETAIN_READY);
+ for(let i=0;i<RETAIN_READY;i++)assert.ok(guarded.has(make(i).id));
+ assert.equal(eligibleForDelete(make(RETAIN_READY-1),{
    now,liveId:make(0).id,protectedIds:guarded,assignedAliases:[],
  }),false,'saved rollback READY is never a delete candidate');
  assert.throws(()=>appendRollbackEvidencePage({
