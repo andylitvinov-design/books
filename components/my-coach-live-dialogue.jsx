@@ -353,6 +353,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolSaved,setProtocolSaved]=useState(false)
   const [protocolSaveLocked,setProtocolSaveLocked]=useState(false)
   const protocolSaveSnapshotRef=useRef(null)
+  const protocolSaveRequestRef=useRef(null)
+  const protocolSaveInFlightRef=useRef(false)
   // Bind private writes to the verified account before any dialogue is collected.
   // Do not rebind an existing in-tab transcript after a sign-in/account change.
   const protocolOwnerRef=useRef(null)
@@ -1917,7 +1919,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{setProtocolError(protocolCopy[lang].pdfError)}
   }
   async function saveProtocol(){
-    if(protocolSaving||protocolSaved||profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return false
+    if(protocolSaveInFlightRef.current||protocolSaving||protocolSaved||profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return false
     const owner=protocolOwnerRef.current
     if(!owner){setProtocolError(({ru:'Не удалось подтвердить аккаунт в начале разговора. Скачайте PDF, чтобы не потерять отчёт.',en:'The account was not verified at the start of this conversation. Download the PDF to keep your report.',es:'No se verificó la cuenta al inicio de la conversación. Descarga el PDF para conservar tu informe.'})[lang]);return}
     let protocol
@@ -1931,8 +1933,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       protocolSaveSnapshotRef.current=protocol // idempotent retry even after timeout
       setProtocolSaveLocked(true)
     }catch{setProtocolError(protocolCopy[lang].error);return}
+    protocolSaveInFlightRef.current=true
     setProtocolSaving(true);setProtocolError('')
     try{
+      // A response can be lost AFTER atomic draft promotion. Retry the exact
+      // previously acknowledged revision and payload, not a fresh checkpoint.
+      // The finalized row intentionally rejects all further draft writes.
+      let request=protocolSaveRequestRef.current
+      if(request&&request.owner!==owner)throw Error('ACCOUNT_CHANGED')
+      if(!request){
       let draftRevision
       if(autoSaveRef.current){
         const structured=profileV3Ref.current
@@ -1944,16 +1953,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }
         if(draftRevision===null||draftRevision===undefined)throw Error('DRAFT_NOT_SYNCED')
       }
+      request={owner,body:JSON.stringify({action:'save',consent:true,protocol,...(draftRevision!==undefined?{draftRevision}:{})})}
+      protocolSaveRequestRef.current=request
+      }
       const response=await fetch('/api/app/my-coach/protocol',{
         method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
-        body:JSON.stringify({action:'save',consent:true,protocol,...(draftRevision!==undefined?{draftRevision}:{})}),
+        body:request.body,
       })
       const result=await response.json().catch(()=>null)
       if(response.status===409&&result?.error==='CLARITY_SESSION_STILL_OPEN'){
         // Explicit rejected promotion: the durable draft still exists. This
         // is distinct from an ambiguous timeout where the snapshot stays locked.
-        protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)
+        protocolSaveRequestRef.current=null;protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)
         setProtocolError(({ru:'Сессия сохранена как незавершённая. Продолжите оставшееся время перед итоговым отчётом.',en:'Your unfinished session is saved. Continue its remaining time before saving the final report.',es:'La sesión pendiente está guardada. Continúa el tiempo restante antes de guardar el informe final.'})[lang])
         return false
       }
@@ -1965,7 +1977,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setProtocolEditing(false)
       return true
     }catch{setProtocolError(protocolCopy[lang].error);return false}
-    finally{setProtocolSaving(false)}
+    finally{protocolSaveInFlightRef.current=false;setProtocolSaving(false)}
   }
 
   async function closeProtocolToRating(){
