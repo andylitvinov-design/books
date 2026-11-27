@@ -23,6 +23,7 @@ import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import { clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
 import {GUIDE_WEEKS,guideReadable,parseGuideEntry} from '@/lib/app/daybook-guide.mjs'
+const AntiStressDaybook=dynamic(()=>import('./anti-stress-daybook'))
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
 const DaybookWeekly=dynamic(()=>import('./daybook-weekly'))
@@ -46,6 +47,7 @@ function replaceDaybookURL(url){window.history.replaceState(null,'',url)}
 export default function DaybookJournal({locale,...serverRoute}){
  const searchParams=useSearchParams()
  const clarityMode=searchParams ? searchParams.get('program')==='clarity' : serverRoute.initialProgram==='clarity'
+ const antiStressMode=searchParams ? searchParams.get('program')==='anti-stress' : serverRoute.initialProgram==='anti-stress'
  const {autoStartVector=false,initialTab='stages',initialStage=1,initialLevel=1,initialStep=1,initialGoalId=null}=searchParams?daybookRouteOptions(Object.fromEntries(searchParams.entries())):serverRoute
  const c=copy[locale],root='/'+locale+'/app'
  const vectorDone=useCallback(()=>replaceDaybookURL(root+'/daybook?tab=goals'),[root])
@@ -95,7 +97,7 @@ export default function DaybookJournal({locale,...serverRoute}){
    if(token!==epoch.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(result.entries);setNext(result.nextCursor);setPhase('ready')
   }catch(error){if(token===epoch.current)setPhase(error.status===401?'signed-out':'error')}
- },[wipe,clarityMode,locale,autoStartVector])
+ },[wipe,clarityMode,antiStressMode,locale,autoStartVector])
  useEffect(()=>{
   void load()
   let channel
@@ -193,6 +195,12 @@ export default function DaybookJournal({locale,...serverRoute}){
   routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
   replaceDaybookURL(url)
  }
+ if(antiStressMode)return <main className={phase==='ready'&&account?clarityStyles.coursePage:styles.page} data-daybook-view="anti-stress" data-cabinet-theme="daybook" data-daybook-page data-clarity-golden={phase==='ready'&&account?true:undefined}>
+  {phase==='ready'&&account?<AntiStressDaybook key={account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} onLoadAll={()=>void collect(false)} loadError={['failed','large'].includes(exportStatus)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/>:<>
+   <header className={styles.masthead}><Link className={styles.brand} href={'/'+locale+'/my-page'}><Sparkles size={25}/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>
+   <section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={'/'+locale+'/my-page'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>
+  </>}
+ </main>
  if(clarityMode)return <main className={phase==='ready'&&account?clarityStyles.coursePage:styles.page} data-daybook-view="clarity" data-cabinet-theme="daybook" data-daybook-page data-clarity-golden={phase==='ready'&&account?true:undefined}>
   {!(phase==='ready'&&account)&&<header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>}
   {phase==='ready'&&account?<ClarityDaybook key={account} initialDay={searchParams?.get('clarityDay')} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} onLoadAll={()=>void collect(false)} loadError={['failed','large'].includes(exportStatus)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}><details><summary>{({en:'Optional: seven independent practices',ru:'Дополнительно: семь самостоятельных практик',es:'Opcional: siete prácticas autónomas'})[locale]||'Optional: seven independent practices'}</summary><DiscoverPractice key={'discover:'+account} locale={locale} accountId={account} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSessionLost={sessionLost} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}}/></details></ClarityDaybook>:
@@ -207,6 +215,7 @@ export default function DaybookJournal({locale,...serverRoute}){
   </nav>
   {tab!=='stages'&&<><h1>{c.title}</h1><p>{c.intro}</p></>}
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?(autoStartVector?<ProgramStartLink locale={locale} program="goal">{c.login}</ProgramStartLink>:<Link href={root+'/portrait'}>{c.login}</Link>):phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
+   <Link href={root+'/daybook?program=anti-stress'} prefetch={false}>{({en:'Anti-Stress · 3 days of practices',ru:'Антистресс · 3 дня практик',es:'Antiestrés · 3 días de prácticas'})[locale]}</Link>
    {tab!=='stages'&&<nav data-daybook-workspace-nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} aria-label={key==='stages'?stageLabel:undefined} onClick={()=>selectTab(key)}>{key==='stages'?({en:'Guide',ru:'Гид',es:'Guía'})[locale]:c[key]}</button>)}</nav>}
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}

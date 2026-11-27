@@ -273,6 +273,7 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   assert.ok(!brand.includes('/coaching/sessions'))
   const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
   assert.ok(back?.includes("href={clarityCoachHref('/'+lang+'/my-coach',clarityDay||clarityCourseDay(selectedCourseId),activeCourseRunId)}"))
+  assert.ok(ui.includes('const activeCourseRunId=restoredCourseRunId||courseRunId'))
   assert.ok(back?.includes('onClick={navigateBackToCoaches}'))
   assert.match(ui,/if\(!protocolSaved&&\(turnsRef\.current\.length>0\|\|speechRef\.current\?\.hasLiveSession\?\.\(\)\)\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
