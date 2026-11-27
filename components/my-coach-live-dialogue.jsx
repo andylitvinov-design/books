@@ -755,7 +755,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const liveContextAccess=liveVoiceSelected&&liveContextStage&&stagedMemory?.stageToken
     ?JSON.stringify({stage:liveContextStage,stageToken:stagedMemory.stageToken,
       shareApproved:true,consent:liveContextConsent,
-      continuity:continuityChoice==='previous'?'previous':'new',
+      continuity:continuityChoice==='previous'?'previous':continuityChoice==='new'?'new':'pending',
       ...(liveContextStage==='personal'?{
         topicKey:stagedMemory?.topicKey||
           (liveContextConsent.profile?'meaning_purpose':contextTopic),
