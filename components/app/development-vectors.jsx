@@ -71,14 +71,14 @@ const C={
  protocol:'Puedes guardar un protocolo de voz con consentimiento e importar aquí los valores.',rated:'evaluados',guidedComplete:'Has evaluado los ocho ámbitos.',guidedReview:'Puedes revisar o actualizar tus valores en el modo individual.',guidedFinished:'Puedes completar las áreas pendientes más tarde.',nextMissing:'Siguiente área pendiente',skipHint:'Puedes omitir este ámbito y regresar más tarde. Un valor vacío no es cero.'}
 }
 const options=Array.from({length:11},(_,n)=>String(n))
-export default function DevelopmentVectors({locale='en'}){
+export default function DevelopmentVectors({locale='en',selfDiscovery=false,initialTrack='inner'}){
  const lang=C[locale]?locale:'en',t=C[lang]
  const [state,setState]=useState('loading'),[accountId,setAccountId]=useState('')
  const [goals,setGoals]=useState(null),[revision,setRevision]=useState(0)
  const [vectors,setVectors]=useState(emptyDevelopmentVectors)
  const [draft,setDraft]=useState(()=>toVectorDraft(emptyDevelopmentVectors()))
  const [touched,setTouched]=useState({})
- const [track,setTrack]=useState('inner'),[guided,setGuided]=useState(false),[index,setIndex]=useState(0)
+ const [track,setTrack]=useState(initialTrack==='outer'?'outer':'inner'),[guided,setGuided]=useState(false),[index,setIndex]=useState(0)
  const [lifeAreas,setLifeAreas]=useState([]),[dirty,setDirty]=useState(false)
  const [busy,setBusy]=useState(false),[importing,setImporting]=useState(false)
  const [notice,setNotice]=useState(''),[error,setError]=useState(''),[share,setShare]=useState('')
@@ -90,7 +90,7 @@ export default function DevelopmentVectors({locale='en'}){
    if(!account){setState('guest');return}
    const [saved,life]=await Promise.all([
     appFetch('development-goals',undefined,'GET',{accountId:account}),
-    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId:account}).catch(()=>null)])
+    selfDiscovery?Promise.resolve(null):appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId:account}).catch(()=>null)])
    if(!saved?.goals||!Number.isInteger(saved.revision))throw Error('INVALID_RESPONSE')
    const x=normalizeDevelopmentVectors(saved.goals.vectors)||emptyDevelopmentVectors()
    setAccountId(account);setGoals(saved.goals);setRevision(saved.revision)
@@ -98,7 +98,7 @@ export default function DevelopmentVectors({locale='en'}){
    setLifeAreas(Array.isArray(life?.domains)?life.domains:[])
    setShare('');setNotice('');setState('ready')
   }catch(e){setState(e?.status===401?'guest':'error')}
- },[lang])
+ },[lang,selfDiscovery])
  useEffect(()=>{void load()},[load])
  const items=track==='inner'?INNER_VECTOR_ITEMS:OUTER_VECTOR_ITEMS
  const guidedProgress=vectorGuidedProgress(items,draft[track].ratings)
@@ -192,9 +192,10 @@ export default function DevelopmentVectors({locale='en'}){
  return <main className={styles.root} data-daybook-vectors data-cabinet-theme="daybook">
   <header className={styles.masthead}><Link className={styles.brand} href={lang==='es'?'/es':'/'}><Sparkles size={23} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={lang} compact/></header>
   <header className={styles.hero}><small>DAYBOOK · 8 + 8</small><h1>{t.title}</h1><p>{t.lead}</p></header>
+  {selfDiscovery?<Link className={styles.stageLink} href={'/'+lang+'/app/daybook/self-discovery'} prefetch={false}>← Self Discovery</Link>:
   <Link className={styles.stageLink} href={'/'+lang+'/app/daybook?start=vector'} prefetch={false}>
    {({en:'Stage 0 · Choose a direction and create a goal (4 + 8)',ru:'Этап 0 · Выбрать направление и создать цель (4 + 8)',es:'Etapa 0 · Elegir una dirección y crear una meta (4 + 8)'})[lang]}
-  </Link>
+  </Link>}
   {state==='ready'?<>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     {['inner','outer'].map(key=><button type="button" key={key}
@@ -228,7 +229,7 @@ export default function DevelopmentVectors({locale='en'}){
    <button type="button" className={styles.save} disabled={!dirty||busy}
      onClick={()=>void save()}>{busy?t.saving:t.save}</button>
    <p className={styles.help}>{t.privacy}</p>
-   <section className={styles.exchange}><h2>{t.coaching}</h2><p>{t.protocol}</p>
+   {!selfDiscovery&&<section className={styles.exchange}><h2>{t.coaching}</h2><p>{t.protocol}</p>
     <div className={styles.actions}>
      {track==='inner'&&<button type="button" disabled={importing}
        onClick={()=>void importScores()}>{t.import}</button>}
@@ -242,7 +243,7 @@ export default function DevelopmentVectors({locale='en'}){
        aria-label={t.share}/>
       <button type="button" onClick={()=>void copy()}>{t.copy}</button>
     </div>}
-   </section>
+   </section>}
   </>:<section className={styles.empty}>
    <p role="status">{state==='loading'?t.loading:state==='guest'?t.login:t.error}</p>
    {state==='guest'?<Link href={'/'+lang+'/app/portrait'}>{t.account}</Link>:
