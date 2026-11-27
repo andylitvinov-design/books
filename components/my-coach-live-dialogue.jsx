@@ -31,7 +31,7 @@ import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-unde
 import styles from './my-coach-live-dialogue.module.css'
 import callStyles from './my-coach-call-dock.module.css'
 import MyCoachEarlyExit from './my-coach-early-exit'
-import {coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
+import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
@@ -1592,7 +1592,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function openHangupMenu(){
     if(earlyExitBusyRef.current||earlyExit||profileV3BusyRef.current||profileV3FaultRef.current||courseGateBusyRef.current||courseGateAttemptRef.current)return
     const elapsed=Math.floor(activeClockRef.current.sample(window.performance.now()))
-    if(!coachShouldOfferEarlyExit(elapsed)){endWithProtocol();return}
+    const review=courseGateRef.current?.step
+    const reviewComplete=Boolean(review&&!review.paused&&!review.prompt&&review.total>0&&review.acceptedCount===review.total)
+    const completion=!coachShouldOfferEarlyExit(elapsed,{reviewComplete})
     const seconds=Math.floor(freezeActiveClock())
     speechRef.current?.pauseSession?.()
     replayControllerRef.current?.abort();replayPlayerRef.current?.cancel()
@@ -1600,11 +1602,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!retainPendingClient())return
     queuePrivateDraft(turnsRef.current)
     setEarlyExitError(false)
-    setEarlyExit({seconds,wasPaused:paused})
+    // The time threshold selects the closing UI only, never a trusted completion or quota grant.
+    if(completion){
+      if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
+      if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
+      setProtocolFinishedAt(new Date().toISOString())
+      setProtocolError('');setProtocolEditing(false)
+    }
+    setEarlyExit({seconds,wasPaused:paused,completion,reviewComplete})
     setPaused(true)
   }
   function dismissHangupMenu(){
-    if(earlyExitBusyRef.current||!earlyExit)return
+    if(earlyExitBusyRef.current||!earlyExit||(protocolSaveLocked&&!protocolSaved))return
+    if(earlyExit.completion)setProtocolFinishedAt(null)
     setPaused(earlyExit.wasPaused);setEarlyExit(null);setEarlyExitError(false)
   }
   async function leaveEarlySession(choice){
@@ -1613,6 +1623,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       freezeActiveClock();speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!retainPendingClient())throw Error('PENDING_CLIENT')
+      if(earlyExit.completion){
+        if(choice==='results'){
+          setProtocolOpen(true);setEarlyExit(null);return
+        }
+        if(choice!=='daybook'&&choice!=='exit')throw Error('INVALID_DESTINATION')
+        // Retention remains bound to the client's existing first-party consent.
+        // Do not claim saved before the current protocol API acknowledges its ID.
+        if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
+          if(await saveProtocol()!==true)throw Error('REPORT_NOT_SYNCED')
+        }
+        window.location.assign(coachCompletionDestination(lang,choice));return
+      }
       if(autoSaveRef.current&&!protocolSaved&&turnsRef.current.some(row=>row.role==='user')){
         const structured=profileV3Ref.current
         const queued=!profileV3FaultRef.current&&!(structured&&!structured.step.closed)&&queuePrivateDraft(turnsRef.current)
@@ -2002,7 +2024,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!resumePending||!protocolOwnerRef.current||!restoredDraft)return
     setResumePending(false);setPaused(false);toggleComposer()
   }
-  const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!protocolOpen&&!ratingOpen&&!protocolSaved
+  const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!earlyExit&&!protocolOpen&&!ratingOpen&&!protocolSaved
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
@@ -2758,7 +2780,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
-    {earlyExit&&<MyCoachEarlyExit locale={lang} seconds={earlyExit.seconds} saving={earlyExitBusy} error={earlyExitError} privateSave={autoSaveEnabled} onDismiss={dismissHangupMenu} onChoice={leaveEarlySession}/>}
+    {earlyExit&&<MyCoachEarlyExit locale={lang} seconds={earlyExit.seconds} completion={earlyExit.completion} reviewComplete={earlyExit.reviewComplete} saving={earlyExitBusy||protocolSaving} error={earlyExitError} privateSave={autoSaveEnabled&&protocolOwnerReady&&turns.some(row=>row.role==='user')} saved={protocolSaved} locked={protocolSaveLocked&&!protocolSaved} onDismiss={dismissHangupMenu} onChoice={leaveEarlySession}/>}
     {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={keyInfoUi.finish} data-my-coach-protocol>
       <div className={styles.protocolCard}>
         <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{({en:'Session Insight',ru:'Инсайт сессии',es:'Insight de sesión'})[lang]}</h2><p>{({en:'Session checkpoints and client statements',ru:'Контрольные точки и слова клиента',es:'Puntos de la sesión y palabras del cliente'})[lang]}</p></div></div>
