@@ -14,6 +14,9 @@ test('shared consultation disclosures remain available, with business session-on
  }
  assert.ok(source.includes('aria-expanded={expanded} aria-controls={id}'))
  assert.ok(source.includes('hidden={!expanded}'))
+ assert.ok(source.includes('data-program-request-ready={ready?"true":"false"}'))
+ assert.ok(source.includes('disabled={!ready}'))
+ assert.ok(source.includes('useEffect(()=>{setReady(true)},[])'))
  assert.ok(source.includes('onClick={()=>toggle(!expanded)}'))
  assert.ok(source.includes('program+\'-contact-options\''))
  assert.ok(profile.includes("getElementById('business-contact-options')"))

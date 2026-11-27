@@ -29,7 +29,9 @@ export async function verifyProgramHome(page,{locale,width}){
    assert.ok((await pdf.getAttribute('href'))?.endsWith('.pdf'),label+': real business PDF')
    assert.equal(await dashboard.locator('[data-business-daybook-link]').count(),1)
   }else{
-   const trigger=dashboard.locator('[data-program-request-trigger]').first()
+   const trigger=dashboard.locator('[data-program-request-trigger][data-program-request-ready="true"]').first()
+   await trigger.waitFor({state:'visible'})
+   assert.equal(await trigger.isEnabled(),true,label+'/'+id+': hydrated request action')
    await trigger.click()
    await dashboard.locator('[data-program-contact-options]').first().waitFor({state:'visible'})
    for(const channel of ['whatsapp','telegram']){

@@ -1,6 +1,6 @@
 'use client'
 
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import {ChevronDown} from 'lucide-react'
 import {MandatoryMessengerActions} from '@/components/mandatory-messenger-actions'
 import {whatsappEnquiryUrl} from '@/lib/whatsapp-enquiry'
@@ -17,13 +17,15 @@ export default function ProfileProgramRequest({locale='en',program,open,onOpenCh
   const lang=Object.hasOwn(copy,locale)?locale:'en'
   const t=copy[lang]
   const [localOpen,setLocalOpen]=useState(false)
+  const [ready,setReady]=useState(false)
+  useEffect(()=>{setReady(true)},[])
   const expanded=open??localOpen
   const toggle=onOpenChange??setLocalOpen
   const service=program==='business'?'business':'coaching'
   const id=program+'-contact-options'
   if(!showTrigger&&!expanded)return null
   return <div className={styles.root} data-profile-program-request={program}>
-    {showTrigger&&<button type="button" className={styles.trigger} data-program-request-trigger
+    {showTrigger&&<button type="button" className={styles.trigger} data-program-request-trigger data-program-request-ready={ready?"true":"false"} disabled={!ready}
       aria-expanded={expanded} aria-controls={id} onClick={()=>toggle(!expanded)}>
       {t.details}<ChevronDown size={20} aria-hidden="true"/>
     </button>}
