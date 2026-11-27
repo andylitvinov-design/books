@@ -451,7 +451,7 @@ test('approved cinematic greeting retains course and controls before, during and
  assert.match(gate,/data-coach-greeting-course-previous/)
  assert.match(gate,/data-coach-greeting-course-next/)
  assert.match(gate,/router.push\(href\+'&greetingProgram='\+encodeURIComponent\(program\)\)/)
- assert.match(gate,/if\(phase!=='complete'\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
+ assert.match(gate,/if\(entryPending\|\|phase!=='complete'\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
  for(const marker of ['data-coach-greeting-tiles','data-coach-greeting-player','data-coach-greeting-replay','data-coach-greeting-courses'])assert.ok(gate.indexOf(marker)>gate.indexOf('data-coach-greeting-course={program}'))
  assert.match(css,/\.cinemaMedia,\.cinemaShade\{position:absolute;inset:0/)
  assert.match(css,/\.ctaArea\{min-height:68px\}/)
