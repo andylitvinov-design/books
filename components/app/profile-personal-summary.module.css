@@ -84,3 +84,40 @@
 :global([data-universal-my-page]) .measureTop strong{font-size:16px}
 @media(max-width:430px){.shortcuts{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.shortcuts a{font-size:14px;min-height:62px;border:0!important}.guidanceBody h2{font-size:23px}:global([data-universal-my-page]) .heroActions{grid-template-columns:1fr 1fr}}
 @media(max-width:345px){.guidance{grid-template-columns:1fr}.guidancePhoto{min-height:110px}:global([data-universal-my-page]) .heroActions{grid-template-columns:1fr}}
+
+/* Approved compact profile composition. No standalone oversized banner. */
+:global([data-universal-my-page]) .root{gap:10px}
+:global([data-universal-my-page]) .hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) minmax(96px,30%);align-items:start;gap:6px;padding:12px;border-radius:19px;overflow:hidden}
+:global([data-universal-my-page]) .cover{position:absolute;inset:0;height:auto;z-index:-1;background:linear-gradient(90deg,#fff5df 0%,#fff5dff5 40%,#fff5df90 59%,#fff5df00 83%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right center/auto 100% no-repeat}
+:global([data-universal-my-page]) .identity{display:flex;gap:8px;padding:0;grid-column:1/-1;max-width:74%;align-items:flex-start}
+:global([data-universal-my-page]) .avatar{margin:2px 0 0;width:55px;height:55px;border-width:3px;font-size:29px}
+:global([data-universal-my-page]) .identityText{padding:0}
+:global([data-universal-my-page]) .identityText h1{font:700 clamp(22px,5.8vw,31px)/1.04 Georgia,serif;margin:4px 0 6px}
+:global([data-universal-my-page]) .identityText p{font-size:13px;line-height:1.35;margin:0;color:#35261d;overflow-wrap:anywhere}
+:global([data-universal-my-page]) .eyebrow{font-size:11px;line-height:1.25}
+:global([data-universal-my-page]) .heroActions{grid-column:1/-1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;padding:0;gap:7px;margin-top:4px}
+:global([data-universal-my-page]) .primary,:global([data-universal-my-page]) .outline{min-height:44px;padding:5px 8px;font-size:14px;border-radius:999px}
+.focusChip{grid-column:2;display:flex;align-items:center;gap:5px;min-height:44px;padding:6px 8px;border-radius:14px;background:#65441de6;color:#fff4dc;text-decoration:none;border:1px solid #d8b87c}
+.focusChip span{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}.focusChip strong{font:700 14px/1.2 Georgia,serif}.focusChip small{font-size:11px;line-height:1.2}.focusChip svg{flex:none;color:#f9d47b}.focusChip>svg:first-child{display:none}
+.shortcuts{grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:4px 2px;border-radius:14px}
+.shortcuts a{font-size:clamp(10px,2.85vw,12px);min-height:55px;padding:3px 2px;gap:4px;overflow-wrap:normal;hyphens:auto;word-break:normal}
+.shortcuts a svg{width:21px;height:21px;flex:none}
+.shortcuts a+a{border-left:1px solid #d9bf91!important}
+.dashboardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:stretch}
+:global([data-universal-my-page]) .dashboardGrid .card,.guidance{padding:9px;border-radius:14px;box-shadow:0 3px 9px #26170825;min-width:0}
+:global([data-universal-my-page]) .dashboardGrid .heading{gap:4px;margin:0 0 5px;align-items:flex-start}
+:global([data-universal-my-page]) .dashboardGrid .heading h2,.guidanceBody h2{font:700 clamp(16px,4.4vw,21px)/1.08 Georgia,serif;overflow-wrap:anywhere;margin:0}
+.dashboardGrid .heading svg,.guidanceBody h2 svg{width:18px;height:18px;flex:none}
+.dashboardTile{display:flex;flex-direction:column;justify-content:space-between;min-height:119px}
+.dashboardTile p,.guidanceBody p{font-size:12px;line-height:1.3;margin:3px 0;overflow-wrap:anywhere}
+.dashboardGrid .guidance{position:relative;isolation:isolate;display:block;background:linear-gradient(90deg,#005640d9,#004936fa),url('/images/holistic-house/course-focus-mountain-boy.webp') left center/cover no-repeat}
+.guidancePhoto{display:none}.guidanceBody{display:flex;flex-direction:column;gap:5px;height:100%}.guidanceBody a{font-size:12px;line-height:1.15;min-height:44px;margin-top:auto;padding:5px 6px;gap:3px}.guidanceBody a svg{width:15px;flex:none}
+.tileLink{display:flex;align-items:center;gap:4px;min-height:44px;font-size:12px;line-height:1.2;font-weight:750;color:#075c48;text-decoration:none;margin-top:auto}
+.todayList{display:grid;gap:1px}.todayList a{display:flex;align-items:center;gap:4px;min-height:44px;font-size:12px;line-height:1.25;text-decoration:none;color:#35261d;border-bottom:1px solid #dfc89e;overflow-wrap:anywhere}.todayList svg{flex:none;color:#08745b}
+.progressBody,.sessionBody{display:flex;align-items:center;gap:6px;font-size:12px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.overallRing{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:50%;background:conic-gradient(#08765b calc(var(--completed)*1%),#d9bf8d 0);position:relative;color:#075c48;font-size:13px}.overallRing::before{content:'';position:absolute;inset:5px;background:#fff4dc;border-radius:50%}.overallRing strong{position:relative;z-index:1}
+.coachPortrait{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;flex:none;background:#e5e9cd center/cover;color:#086b55}.sessionBody small{display:block;font-size:11px}
+:global([data-universal-my-page]) .settingsCard{padding:10px}
+.settingsGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.settingsGrid :is(a,button){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 1px;min-height:57px;border:0;border-radius:10px;background:#e7e9d0;color:#075c48;text-decoration:none;text-align:center;font:700 clamp(10px,2.7vw,12px)/1.2 system-ui;overflow-wrap:anywhere;cursor:pointer}
+@media(max-width:345px){:global([data-universal-my-page]) .identity{max-width:84%}.focusChip{grid-column:1/-1;justify-self:end;max-width:70%}.settingsGrid :is(a,button){font-size:10px}.dashboardGrid{gap:5px}.progressBody,.sessionBody{flex-wrap:wrap}}

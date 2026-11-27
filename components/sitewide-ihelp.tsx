@@ -159,7 +159,7 @@ function PageHelp({pathname}:{pathname:string}){
   return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
  },[pathname,locale]);
  function restoreHelpFocus(){
-  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger]");
+  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger], [data-my-page-inline-help]");
   (trigger||launcher.current)?.focus({preventScroll:true});
  }
  function chooseTopic(prompt:string){
@@ -215,7 +215,7 @@ function PageHelp({pathname}:{pathname:string}){
  // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
  if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica}
+   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica||/^\/(?:ru|en|es)\/my-page\/?$/.test(pathname)}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>
