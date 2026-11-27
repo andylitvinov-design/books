@@ -156,3 +156,19 @@ test('one expanded checklist uses method-authentic stages and no false checkmark
  assert.ok(css.includes('.root[data-session-visual-v4]:has([data-coach-progress-accordion][open])'))
  assert.ok(!card.includes('return <details'))
 })
+
+test('compact 20-minute ruler follows the existing active clock, not the stage index',async()=>{
+ const {coachMinuteRuler}=await import('../lib/coaching/session-timebox.mjs')
+ for(const [seconds,completed] of [[null,0],[0,0],[59,0],[60,1],[239,3],[240,4],[1199,19],[1200,20],[7200,20]]){
+  assert.deepEqual(coachMinuteRuler(seconds),{total:20,completed})
+ }
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+ assert.match(ui,/coachMinuteRuler\(sessionTimebox\.elapsedSeconds\)/)
+ assert.match(ui,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&document\.visibilityState/)
+ assert.ok(ui.indexOf('data-coach-progress-ruler')<ui.indexOf('data-coach-minute-ruler'))
+ assert.ok(ui.indexOf('data-coach-minute-ruler')<ui.indexOf('<ChevronDown className={styles.sessionProgressChevron}'))
+ assert.doesNotMatch(ui,/data-coach-panel=/)
+ assert.match(css,/\.sessionProgressRuler \.sessionProgressSegments\{\s*display:flex;flex:none;width:100%/)
+ assert.match(css,/\.sessionMinuteDots\{\s*display:flex;justify-content:space-between;align-items:center;\s*width:100%/)
+})
