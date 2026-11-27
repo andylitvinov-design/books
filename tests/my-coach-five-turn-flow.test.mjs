@@ -410,7 +410,7 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&!resumePending&&document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
   assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined\]\)/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined,resumePending\]\)/)
   assert.match(source,/data-coach-pause-control/)
   assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
 })
