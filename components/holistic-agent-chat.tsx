@@ -427,8 +427,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [qualityFailure,setQualityFailure]=useState(false);
   // A spoken answer and its displayed message are the SAME canonical AI turn.
   const lastSpeechTurn=useRef<Message|null>(null);
-  const ownerAudioBlocked=testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected;
-  useEffect(()=>{if(ownerAudioBlocked&&voice.ownerAudioActive())voice.stopDialogue();},[ownerAudioBlocked,voice]);
+  const ownerAudioBlocked=Boolean(supportSelection||journeyPath||projectFlow||sessionStep||contentStep)||testChatOpen||supportQuizOpen||recorderOpen||useAgentMemory||useSavedTests||useSavedHistory||psychInterview!=="off"||mode!=="rules"||proSelected;
+  useEffect(()=>{if(ownerAudioBlocked&&voice.ownerAudioActive())voice.stopDialogue();},[ownerAudioBlocked,voice.ownerAudioActive,voice.stopDialogue]);
   useEffect(()=>{
     const latest=messages[messages.length-1]||null;
     if(latest===lastSpeechTurn.current)return;
