@@ -13,6 +13,7 @@ import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27Du
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {lockedCoachSessionVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachSessionOpeningLine} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
@@ -1210,6 +1211,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // the existing globally rate-limited public audio route. No client audio,
     // client transcript or arbitrary text is exposed through this endpoint.
     if(result.mode==='intro'){
+      if(String(result.reply||'')!==coachSessionOpeningLine(personaId,lang)){
+        if(!playDeviceFallback())showTextOnly()
+        return
+      }
       const url=coachSessionOpeningAudioPath(personaId,lang)
       if(!url){showTextOnly();return}
       const controller=new AbortController()

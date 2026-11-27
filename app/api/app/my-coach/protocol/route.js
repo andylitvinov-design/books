@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {listMyCoachProtocols,saveMyCoachProtocol,deleteMyCoachProtocol} from '@/lib/app/personal-coaching'
+import {readMyCoachGreetingIdentity,listMyCoachProtocols,saveMyCoachProtocol,deleteMyCoachProtocol} from '@/lib/app/personal-coaching'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -24,6 +24,12 @@ export async function GET(request){
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
     const params=new URL(request.url).searchParams
+    if(params.get('view')==='greeting-identity'){
+      if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
+      if([...params.keys()].length!==1)throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
+      await consumeRate(config,{op:'my-coach-greeting-identity',actor:actor.id},60,3600)
+      return auth.apply(NextResponse.json(await readMyCoachGreetingIdentity(config,actor),{headers:PRIVATE_HEADERS}))
+    }
     for(const key of params.keys())
       if(!['before','beforeId'].includes(key))throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
     const result=await listMyCoachProtocols(config,actor,{

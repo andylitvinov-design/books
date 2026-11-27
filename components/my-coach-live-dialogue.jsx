@@ -395,6 +395,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const [greetingIdentity,setGreetingIdentity]=useState({status:'loading',name:''})
   const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
   const [stagedMemory,setStagedMemory]=useState(null)
   // A private preview is latched at the exact conversational turn at which
@@ -463,8 +464,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const id=value?.account?.id
       if(typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
         protocolOwnerRef.current=id;setProtocolOwnerReady(true)
+        return fetch('/api/app/my-coach/protocol?view=greeting-identity',{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':id}}).then(async response=>{
+          if(!response.ok)throw Error('GREETING_IDENTITY_UNAVAILABLE')
+          const value=await response.json()
+          if(active&&protocolOwnerRef.current===id&&!protocolStartedRef.current&&!turnsRef.current.length)
+            setGreetingIdentity({status:'ready',name:typeof value.preferredName==='string'?value.preferredName:'',returning:value.returning===true})
+        })
       }
-    }).catch(()=>{}) // Guest/offline dialogue and local PDF still work.
+      if(active)setGreetingIdentity({status:'ready',name:''})
+    }).catch(()=>{if(active)setGreetingIdentity({status:'unavailable',name:''})}) // No name guessed on failure.
     return()=>{active=false}
   },[])
   useEffect(()=>{
@@ -551,7 +559,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const name=persona?localCoachText(persona.name,conversationLang):t.coach
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
-  const introduction=coachSessionOpeningLine(personaId,conversationLang)
+  const introduction=coachSessionOpeningLine(personaId,conversationLang,greetingIdentity.name)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
@@ -583,6 +591,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
+    if(greetingIdentity.status==='loading')return
     if(privateTextOnly||courseGateRequired){toggleComposer();return}
     if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
@@ -2018,6 +2027,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
+    if(greetingIdentity.status==='loading')return
     if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
     clarityTimeLimit.current=false
     setClarityHomeworkAccepted(false)
