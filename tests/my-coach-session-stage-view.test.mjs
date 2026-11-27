@@ -88,7 +88,10 @@ test('native transcript review requires exact four-turn evidence; restore and ex
  assert.equal(get(turns.map((x,i)=>i===2?{...x,interrupted:true}:x)),null);
  assert.equal(get(turns.map((x,i)=>i===2?turn('assistant','different echo'):x)),null);
  assert.equal(get(turns,{afterIndex:0}),null);
- assert.equal(get([...turns,turn('assistant','goal?')]),null);
+ assert.deepEqual(get([...turns,turn('assistant','goal?')]),r);
+ assert.deepEqual(get([...turns,turn('assistant','goal?'),turn('user','A possible new goal'),turn('assistant','echo: A possible new goal'),turn('user','no')]),r);
+ const corrected=get([...turns,turn('assistant','goal?'),turn('user','A confirmed new goal'),turn('assistant','echo: A confirmed new goal'),turn('user','yes')]);
+ assert.equal(corrected.events.length,2);assert.equal(corrected.events.at(-1).quote,'A confirmed new goal');
  assert.equal(get(turns,{normalize:()=>{throw Error('invalid')}}),null);
  const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
  assert.deepEqual(get(turns,{existing:manual}),manual);
