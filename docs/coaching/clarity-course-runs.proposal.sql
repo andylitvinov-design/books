@@ -44,3 +44,23 @@ create policy clarity_run_session_insert on app_private.clarity_course_run_sessi
 -- moved to a different account, course or day. Account deletion cascades.
 -- Before activation add existing privacy export/delete integration and test
 -- account-close cleanup, concurrency, refunds and legacy data reconciliation.
+
+-- Shared account/day slot; intentionally independent of Clarity run or coach.
+-- All free transports must use this same immutable claim before activation.
+create table app_private.coaching_free_session_days (
+ account_id uuid not null references app.accounts(id) on delete cascade,
+ calendar_day date not null,
+ protocol_id uuid not null,
+ created_at timestamptz not null default now(),
+ primary key(account_id,calendar_day)
+);
+alter table app_private.coaching_free_session_days enable row level security;
+alter table app_private.coaching_free_session_days force row level security;
+revoke all on app_private.coaching_free_session_days from public,anon,authenticated;
+grant select,insert on app_private.coaching_free_session_days to hh_app_backend;
+create policy coaching_free_day_select on app_private.coaching_free_session_days for select to hh_app_backend
+ using(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy coaching_free_day_insert on app_private.coaching_free_session_days for insert to hh_app_backend
+ with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+-- No UPDATE or DELETE privilege; account deletion cascades. Backfill existing
+-- trusted free-day claims and rehearse cross-account RLS before enabling.
