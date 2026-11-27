@@ -6,7 +6,7 @@ import {INNER_VECTOR_ITEMS,OUTER_VECTOR_ITEMS,normalizeDevelopmentVectors,emptyD
 import {assessmentHistoryTitle} from '@/lib/assessments/personal-guidance'
 import {buildExplorerEntries} from '@/lib/assessments/test-explorer'
 import {verifiedHistoryView} from '@/lib/assessments/verified-history'
-import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults} from '@/lib/app/self-discovery-themes.mjs'
+import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults,discoveryTheme,discoveryView,discoverySourceQuery} from '@/lib/app/self-discovery-themes.mjs'
 import {Activity,ArrowLeft,ArrowRight,BarChart3,BookOpen,CheckCircle2,ChevronRight,Coins,Compass,Heart,Layers,ListChecks,MessageCircle,Play,Sparkles,Users,Zap} from 'lucide-react'
 import SelfDiscoveryPractice from './self-discovery-practice'
 import {TestDynamics} from './test-dynamics'
@@ -134,11 +134,11 @@ const DASH={
 const ICONS={love:Heart,money:Coins,energy:Zap,relationships:Users,meaning:Compass,wellbeing:Activity,personality:Sparkles,other:Layers,all:ListChecks}
 const dated=(value,locale,fallback)=>Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)):fallback
 const isAuthError=e=>e?.status===401||e?.status===403||e?.code==='ACCOUNT_CHANGED'
-export default function SelfDiscovery({locale='en'}){
+export default function SelfDiscovery({locale='en',initialTheme='love',initialView=null}){
  const t=COPY[locale]||COPY.en,accountLocale=locale==='es'?'en':locale,root='/'+accountLocale+'/app'
  const d=DASH[locale]||DASH.en
  const [state,setState]=useState({phase:'loading'}),[shown,setShown]=useState(20)
- const [themeId,setThemeId]=useState('love'),[expanded,setExpanded]=useState(false),[view,setView]=useState(null),[query,setQuery]=useState(''),[testLimit,setTestLimit]=useState(12)
+ const [themeId,setThemeId]=useState(()=>discoveryTheme(initialTheme)),[expanded,setExpanded]=useState(false),[view,setView]=useState(()=>discoveryView(initialView)),[query,setQuery]=useState(''),[testLimit,setTestLimit]=useState(12)
  const theme=DISCOVERY_THEMES.find(x=>x.id===themeId)||DISCOVERY_THEMES[0]
  const entries=useMemo(()=>state.phase==='ready'?buildExplorerEntries({locale,audience:'account'}):[],[locale,state.phase])
  const free=useMemo(()=>freeDiscoveryEntries(entries),[entries])
@@ -184,7 +184,8 @@ export default function SelfDiscovery({locale='en'}){
  const sessionLost=useCallback(()=>clear('guest'),[clear])
  function choose(id){setThemeId(id);setQuery('');setTestLimit(12);setShown(20);if(id==='all'&&view==='practice')setView(null)}
  function openView(name){setView(old=>old===name?null:name);setShown(20)}
- function testPath(key){return root+'/tests?explore=1&from=self-discovery&test='+encodeURIComponent(key)}
+ const sourceQuery=discoverySourceQuery(theme.id,locale)
+ function testPath(key){return root+'/tests?explore=1&'+sourceQuery+'&test='+encodeURIComponent(key)}
  function retakeKey(id){return free.find(e=>e.definition?.id===id)?.key}
  const task=(name,Icon,label,hint,status)=> <button type="button" className={styles.task} aria-expanded={view===name} onClick={()=>openView(name)}><span className={styles.taskIcon}><Icon size={26} aria-hidden="true"/></span><span className={styles.taskText}><strong>{label}</strong><small>{hint}</small></span>{status&&<span className={styles.status}>{status}</span>}<ChevronRight size={21} aria-hidden="true"/></button>
  return <main className={styles.page} data-cabinet-theme="daybook" data-self-discovery>
@@ -210,11 +211,11 @@ export default function SelfDiscovery({locale='en'}){
    </section>
    {view==='tests'&&<section className={styles.panel} data-self-discovery-tests><h2>{d.test}</h2><p className={styles.note}>{d.freeOnly}</p><input aria-label={d.search} className={styles.search} type="search" placeholder={d.search} value={query} onChange={e=>{setQuery(e.target.value);setTestLimit(12)}}/>
     {!tests.length?<p>{d.noTests}</p>:<ul className={styles.catalog}>{tests.slice(0,testLimit).map(e=><li key={e.key}><div><strong>{e.title}</strong><small>{e.definition?.instrumentLocale?.toUpperCase()}{e.durationMinutes?' · '+e.durationMinutes+' '+d.min:''}{completed.has(e.key)?' · ✓':''}</small></div><Link href={testPath(e.key)} prefetch={false}>{completed.has(e.key)?d.retest:d.start}<ChevronRight size={16} aria-hidden="true"/></Link></li>)}</ul>}
-    {tests.length>testLimit&&<button className={styles.refresh} onClick={()=>setTestLimit(n=>n+12)}>{d.showMore} ({tests.length-testLimit})</button>}<Link className={styles.action} href={root+'/tests?explore=1&filters=topics'} prefetch={false}>{d.open}</Link></section>}
+    {tests.length>testLimit&&<button className={styles.refresh} onClick={()=>setTestLimit(n=>n+12)}>{d.showMore} ({tests.length-testLimit})</button>}<Link className={styles.action} href={root+'/tests?explore=1&filters=topics&'+sourceQuery} prefetch={false}>{d.open}</Link></section>}
    {view==='practice'&&theme.id!=='all'&&<section className={styles.panel} data-self-discovery-practices><h2>{d.practice}</h2><SelfDiscoveryPractice key={state.id+':'+theme.id} accountId={state.id} locale={locale} theme={theme} onSessionLost={sessionLost}/></section>}
    {view==='guide'&&<section className={styles.panel}><h2>{d.guide}</h2><p>{d.themeGuide}</p>{theme.prompt&&<p>{theme.prompt[locale]}</p>}<Link className={styles.action} href={root+'/portfolio'} prefetch={false}>{t.analysis}</Link></section>}
    {view==='results'&&<><section id="test-dynamics" className={styles.panel}><TestDynamics key={theme.id} results={results} locale={accountLocale} canRetake={id=>Boolean(retakeKey(id))} onRetake={id=>{const key=retakeKey(id);if(key)window.location.assign(testPath(key))}}/></section>
-    <section id="test-history" className={styles.panel}><h2>{t.history}</h2>{results.length===0?<p>{d.noData}</p>:<ul className={styles.history}>{results.slice(0,shown).map(row=><li key={row.id}><Link href={root+'/results/'+encodeURIComponent(row.id)} prefetch={false}><strong>{assessmentHistoryTitle(row,accountLocale)||row.definitionKey||t.tests}</strong><small>{t.date}: {dated(row.measurementAt,locale,t.unknown)}</small></Link></li>)}</ul>}
+    <section id="test-history" className={styles.panel}><h2>{t.history}</h2>{results.length===0?<p>{d.noData}</p>:<ul className={styles.history}>{results.slice(0,shown).map(row=><li key={row.id}><Link href={root+'/results/'+encodeURIComponent(row.id)+'?'+sourceQuery} prefetch={false}><strong>{assessmentHistoryTitle(row,accountLocale)||row.definitionKey||t.tests}</strong><small>{t.date}: {dated(row.measurementAt,locale,t.unknown)}</small></Link></li>)}</ul>}
     {shown<results.length&&<button onClick={()=>setShown(n=>n+20)}>{t.more}</button>}<Link href={root+'/history'} prefetch={false}>{t.all}</Link></section></>}
    <button type="button" className={styles.primary} onClick={()=>{choose(next.id);setView(null)}}><Sparkles size={26} aria-hidden="true"/>{d.next} «{next.label[locale]}»<ArrowRight size={23} aria-hidden="true"/></button>
    <section className={styles.panel}><h2>{d.overview}</h2><p>{d.wheelHint}</p><p className={styles.note}>{t.snapshot}</p>

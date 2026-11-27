@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults,discoveryTag} from '../lib/app/self-discovery-themes.mjs'
+import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults,discoveryTag,discoverySourceQuery,discoveryNavigation,discoveryTheme,discoveryView} from '../lib/app/self-discovery-themes.mjs'
 import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
 test('canonical eligible free catalog is covered by themes in all display languages',()=>{
  for(const locale of ['en','ru','es']){
@@ -21,4 +21,19 @@ test('progress counts unique verified keys, not attempts or unavailable tests',(
  assert.deepEqual(themeResults([old,unknown],rows,'other'),[unknown])
  assert.deepEqual(themeResults([old,unknown],rows,'all'),[old,unknown])
  assert.equal(discoveryTag('love'),'self-discovery:love')
+})
+
+test('the fixed discovery return preserves theme, language and existing plan navigation without arbitrary URL input',()=>{
+ for(const locale of ['en','ru','es'])for(const theme of DISCOVERY_THEMES){
+  const q=new URLSearchParams(discoverySourceQuery(theme.id,locale))
+  q.set('plan','opaque-existing-plan');q.set('returnTo','https://outside.example')
+  const n=discoveryNavigation(q,locale==='es'?'en':locale)
+  assert.equal(n.href,'/'+locale+'/app/daybook/self-discovery?theme='+theme.id+'&view=results')
+  assert.equal(n.source,discoverySourceQuery(theme.id,locale))
+ }
+ assert.equal(discoveryNavigation(new URLSearchParams('from=other'),'en'),null)
+ assert.equal(discoveryNavigation(new URLSearchParams('from=self-discovery&from=other'),'en'),null)
+ const forged=discoveryNavigation(new URLSearchParams('from=self-discovery&discoveryTheme=https://outside.example&discoveryLocale=ru'),'en')
+ assert.equal(forged.href,'/en/app/daybook/self-discovery?theme=love&view=results')
+ assert.equal(discoveryTheme(['love']), 'love');assert.equal(discoveryView('https://outside.example'),null)
 })
