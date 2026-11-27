@@ -759,7 +759,7 @@ test('late opening checkpoint does not interpret the screenshot focus answer as 
 })
 
 
-test('Clarity mint requires trusted lease and uses only remaining logical time after cross-coach pause',async()=>{
+test('Clarity mint requires trusted lease and bounds the remaining time plus setup and observation allowance after cross-coach pause',async()=>{
  const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
  const base=1795100000000,protocolId=id(2),connectionId=id(8),segmentId=id(9)
  let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
@@ -793,7 +793,7 @@ test('Clarity mint requires trusted lease and uses only remaining logical time a
  assert.equal(calls,1,'no extra provider request while earlier token is potentially usable')
  const resumed=await mint(next,base+1200000,lease(base+1200000,base+1200000))
  assert.equal(calls,2)
- assert.equal(resumed.expiresAt,new Date(base+1200000+780000).toISOString())
+ assert.equal(resumed.expiresAt,new Date(base+1200000+780000+65000).toISOString())
  assert.equal(last.expireTime,resumed.expiresAt)
  assert.equal(last.newSessionExpireTime,new Date(base+1200000+45000).toISOString())
  assert.equal(run.clock.days[0].elapsedMs,420000)

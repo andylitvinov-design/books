@@ -228,3 +228,21 @@ test('relay backpressure stops both sockets and preserves only durably observed 
  const delivered=h.client.messages.length;h.client.bufferedAmount=200001;h.provider.input({serverContent:{turnComplete:true}});await h.relay.settled()
  assert.equal(h.client.messages.length,delivered);assert.equal(h.run.clock.days[0].status,'paused')
 })
+
+
+test('two host segments reach exactly 20 active minutes despite setup and consent delays',async()=>{
+ const f=fixture({segmentBudgetMs:770000});f.advance(20000);f.ready();f.consent();await f.relay.settled()
+ for(let i=0;i<149;i++){f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()}
+ f.advance(5000);await f.relay.settled()
+ assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,745000)
+ const g=fixture({previousRun:f.run,segmentBudgetMs:770000})
+ g.advance(20000);g.ready();g.consent();await g.relay.settled()
+ assert.equal(g.run.clock.days[0].elapsedMs,745000,'setup must not count as coaching')
+ for(let i=0;i<91;i++){g.advance(5000);g.client.pong();g.provider.pong();await g.relay.settled()}
+ assert.equal(g.run.clock.days[0].elapsedMs,1200000)
+ assert.equal(g.run.clock.days[0].status,'time_limit')
+ assert.equal(g.run.protocolIds[0],f.run.protocolIds[0])
+ assert.equal(g.provider.readyState,3);assert.equal(g.client.readyState,3)
+ assert.equal(g.client.messages.at(-1).status,'time_limit')
+ assert.equal(g.retirements.length,1)
+})
