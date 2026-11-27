@@ -132,3 +132,31 @@ test('explicit practice status is not inferred from a suggestion or plan',()=>{
  assert.equal(result.practiceStatus,'planned')
  assert.equal(result.nodes.find(r=>r.id==='test_observation'),undefined)
 })
+
+test('timecode guidance targets current scenario checkpoints, preserves dialogue and closing',()=>{
+ const cases=[
+ ['clarity_day_2',0,'situation','episode'],['clarity_day_2',240,'resources','resources'],
+ ['clarity_day_2',480,'practice','practice_consent'],['clarity_day_2',840,'transfer','transfer_action'],
+ ['clarity_day_3',0,'review','priority'],['clarity_day_3',180,'goal','goal_status'],
+ ['clarity_day_3',420,'reality','baseline'],['clarity_day_3',660,'action','next']
+ ]
+ for(const [course,seconds,stage,field] of cases){
+  const hint=clarityScenarioTimeGuidance(course,seconds)
+  assert.ok(hint.includes('Active phase: '+stage))
+  assert.ok(hint.includes(field))
+  assert.match(hint,/one relevant unanswered eligible checkpoint/)
+  assert.match(hint,/Time hint only/)
+ }
+ for(const course of ['clarity_day_2','clarity_day_3']){
+  assert.match(clarityScenarioTimeGuidance(course,null),/explicit consent/)
+  assert.match(clarityScenarioTimeGuidance(course,1020),/reviewed_summary/)
+  assert.match(clarityScenarioTimeGuidance(course,1140),/reserve/)
+  assert.match(clarityScenarioTimeGuidance(course,1200),/do not start another question/)
+  for(const locale of ['ru','en','es']){
+   assert.match(clarityScenarioGuidance(course,locale),/Active-time windows/)
+   assert.match(coachCourseProtocolGuidance(course,locale),/Follow the live dialogue first/)
+  }
+ }
+ assert.match(clarityScenarioTimeGuidance('clarity_day_1',1200),/do not start another coaching question/)
+ assert.match(clarityScenarioTimeGuidance('clarity_day_1',240),/4–9 min balance/)
+})
