@@ -1034,3 +1034,14 @@ test('final archive retry reuses the acknowledged revision after a lost response
  assert.ok(save.includes('protocolSaveRequestRef.current=null;protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)'))
  assert.ok(save.includes('finally{protocolSaveInFlightRef.current=false;setProtocolSaving(false)}'))
 })
+
+test('course protocol panel renders the actual grouped checkpoints, not a competing generic GROW summary',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const card=readFileSync(new URL('../components/my-coach-session-state-card.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes("courseProtocol={coreMode==='course'}"))
+ assert.ok(ui.includes('groups={stagePosition.rows.filter(row=>row.coreChildren.length>0)'))
+ assert.ok(card.includes('{!courseProtocol&&<section className={styles.informationSection}'))
+ assert.ok(card.includes('{courseProtocol?<details><summary>{captureT.title}'))
+ assert.ok(card.includes('data-coach-opening-name'))
+ assert.ok(card.includes('data-coach-profile-checklist'))
+})
