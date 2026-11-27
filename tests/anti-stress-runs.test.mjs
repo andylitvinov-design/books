@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {createClarityCourseClock,validateClarityCourseClock} from '../lib/coaching/clarity-course-clock.mjs'
 import {createAntiStressCourseClock,validateAntiStressCourseClock} from '../lib/coaching/anti-stress-clock.mjs'
 import {ANTI_STRESS_SESSION_IDS} from '../lib/coaching/coach-program-mode.mjs'
+import {antiStressScenario} from '../lib/coaching/anti-stress-course.mjs'
 import {createAntiStressRun,validateAntiStressRun,advanceAntiStressRun,antiStressRunBinding,antiStressRunSummary,antiStressRunNewDailyClaims,antiStressBoundProtocol,antiStressRunDirective,appendAntiStressObservation,antiStressMeditationArtifact,expireAntiStressRunObservation,antiStressRunCredentialWindow,assertAntiStressCredentialEvent} from '../lib/coaching/anti-stress-runs.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const input=(n=1,access='free')=>({id:id(n),protocolIds:[id(n+1),id(n+2),id(n+3)],createdAt:0,access})
@@ -151,4 +152,32 @@ test('therapy clock and reviewed turns must belong to the current shared credent
  assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901000}),reject)
  assert.throws(()=>assertAntiStressCredentialEvent(lease,{...start,kind:'turn',atMs:901000},{observation:true}),reject)
  assert.equal(assertAntiStressCredentialEvent(lease,{...start,type:'disconnect',atMs:901001}),true)
+})
+
+test('reviewed therapy outcomes override the practice time window without repeating resolved questions',()=>{
+ for(const locale of ['en','ru','es']){
+  let run=createAntiStressRun(input());
+  const sid=ANTI_STRESS_SESSION_IDS[0],pid=id(2),binding=antiStressRunBinding(run,sid,pid);
+  const ledger={courseRunId:run.id,sessionId:sid,protocolId:pid,scenarioVersion:binding.scenarioVersion,rows:[]};
+  run=advanceAntiStressRun(run,event(run,1,'begin',0));run=tick(run,1,0,360000);
+  const row=(fieldId,value,status='confirmed')=>({fieldId,value,status,scenarioVersion:binding.scenarioVersion,reviewed:true,evidenceId:'review:'+fieldId});
+  const act=(rows,context={})=>antiStressRunDirective(run,sid,pid,{...ledger,rows},{safetyState:'clear',connected:true,...context},locale);
+  const consent=row('practice_consent','accepted');
+  assert.equal(act([consent],{practiceStatus:'attempted'}).action,'guide-one-cue-and-wait','untrusted status must not override ledger');
+  for(const status of ['attempted','adapted']){
+   const next=act([consent,row('practice_status',status),row('stress_after',0),row('resource_details',null,'skipped')]);
+   assert.equal(next.action,'listen-and-reflect');assert.equal(next.stage,'reflect');assert.equal(next.maxQuestions,1);
+   assert.match(next.instruction,/Do not repeat/);
+   assert.equal(next.instruction.includes(antiStressScenario(sid,locale).fields.find(f=>f.id==='stress_after').question),false);
+   assert.equal(next.instruction.includes(antiStressScenario(sid,locale).fields.find(f=>f.id==='resource_details').question),false);
+   assert.equal(act([consent,row('practice_status',status)],{distressIncreased:true}).action,'stop-practice-and-offer-support');
+  }
+  for(const status of ['stopped','declined','not_attempted'])assert.equal(act([consent,row('practice_status',status)]).action,'respect-skip');
+  assert.equal(act([row('practice_consent',null,'skipped')]).action,'respect-skip');
+  assert.equal(act([consent,row('practice_status',null,'skipped')]).action,'respect-skip');
+  const allReflection=antiStressScenario(sid,locale).fields.filter(f=>f.stage==='reflect').map(f=>row(f.id,null,'skipped'));
+  assert.equal(act([consent,row('practice_status','attempted'),...allReflection]).maxQuestions,0);
+  run=tick(run,1,360000,300000);
+  const next=act(allReflection);assert.equal(next.action,'listen-and-reflect');assert.equal(next.maxQuestions,0);
+ }
 })
