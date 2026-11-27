@@ -443,6 +443,17 @@ jobs:
             fi
             node --test "${tests[@]}"
           fi
+      # This test reads five public source files only; no billing runtime or DB.
+      - name: Spanish Services route source contract
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -f /tmp/hh-pr-changed-files.z ]] || { echo 'Missing verified Core changed-file list' >&2; exit 1; }
+          tr '\0' '\n' < /tmp/hh-pr-changed-files.z > "$RUNNER_TEMP/hh-spanish-services-changes.txt"
+          if grep -Fxq -f <(printf '%s\n' 'tests/service-spanish-entry-regression.test.mjs' 'app/es/services/page.tsx' 'app/es/services/catalog/page.tsx' 'app/[locale]/services/page.tsx' 'app/[locale]/services/catalog/page.tsx' 'components/services-directory-page.tsx') "$RUNNER_TEMP/hh-spanish-services-changes.txt"; then
+            node --test tests/service-spanish-entry-regression.test.mjs
+          fi
       - name: Commander PR served-LIVE provenance contracts
         if: >-
           github.event_name == 'pull_request' &&
