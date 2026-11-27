@@ -17,7 +17,8 @@ import {gameProgress} from '@/lib/app/daybook-games.mjs'
 import {clarityPracticeNotes} from '@/lib/app/clarity-practice.mjs'
 import {ArrowRight,CheckCircle2,ChevronDown,Compass,NotebookPen} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
-import {isNativeHolisticHouse} from '@/lib/native/client'
+import {useGooglePageAction} from '../use-google-page-action'
+import {ReikiJoinDialog} from '../reiki-join-dialog'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {CLARITY_SYLLABUS,CLARITY_TASKS,CLARITY_DAY_COUNT,clarityDayTag,clarityDayNotes,clarityRecordedDays,clarityLegacyNotes,clarityLocale,clarityDaybookPath} from '@/lib/app/clarity-program.mjs'
@@ -132,58 +133,40 @@ const GOLDEN={
 }
 function useProgramStart(locale,program){
  const lang=clarityLocale(locale),t=COPY[lang]
- const [busy,setBusy]=useState(false),[error,setError]=useState(false)
- const live=useRef(true),pending=useRef(false)
- useEffect(()=>{live.current=true;return()=>{live.current=false}},[])
- async function begin(coachId=null){
-  if(pending.current)return
-  pending.current=true;setBusy(true);setError(false)
-  try{
-   try{
-    const boot=await appFetch('bootstrap?view=portrait')
-    if(!live.current)return
-    if(program==='clarity'&&coachId)stageCoachCourseChoice(program,coachId,boot.account.id)
-    window.location.assign(boot.account.onboardingState==='active'?programDaybookPath(lang,program):programOnboardingPath(lang,program))
-    return
-   }catch(e){if(e.status!==401)throw e}
-   if(!live.current)return
-   const native=isNativeHolisticHouse()
-   const result=await appFetch('auth/start',{locale:lang,continueTo:programContinuation(program),...(native?{native:true}:{})})
-   if(!live.current)return
-   if(program==='clarity'&&coachId)stageCoachCourseChoice(program,coachId)
-   if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:result.redirectUrl})}
-   else window.location.assign(result.redirectUrl)
-  }catch{if(live.current)setError(true)}
-  finally{pending.current=false;if(live.current)setBusy(false)}
- }
- return {lang,t,busy,error,begin}
+ const gate=useGooglePageAction({locale:lang,continuation:programContinuation(program),kind:'program',check:'bootstrap?view=portrait',
+  onAuthorized:({coachId},boot)=>{
+   if(program==='clarity'&&coachId)stageCoachCourseChoice(program,coachId,boot.account.id)
+   window.location.assign(boot.account.onboardingState==='active'?programDaybookPath(lang,program):programOnboardingPath(lang,program))
+  }})
+ return {lang,t,busy:gate.busy,error:gate.error&&!gate.open,begin:(coachId=null)=>gate.begin({coachId}),
+  join:gate.open?<ReikiJoinDialog mode="coach" locale={lang} busy={gate.busy} error={gate.error?t.authError:''} onGoogle={()=>void gate.signIn()} onDismiss={gate.dismiss}/>:null}
 }
 export function ClarityStartButton({locale='en',children}){
- const {t,busy,error,begin}=useProgramStart(locale,'clarity')
- return <><button type="button" data-clarity-start className={css.primary} onClick={()=>void begin()} disabled={busy}><Compass size={20} aria-hidden="true"/>{busy?t.working:children||t.start}</button>{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
+ const {t,busy,error,begin,join}=useProgramStart(locale,'clarity')
+ return <><button type="button" data-clarity-start className={css.primary} onClick={()=>void begin()} disabled={busy}><Compass size={20} aria-hidden="true"/>{busy?t.working:children||t.start}</button>{error&&<p role="alert" className={css.notice}>{t.authError}</p>}{join}</>
 }
 // Keep the approved guidance card's link layout while using the same Google
 // continuation as the hero. Modified clicks still open the protected Daybook.
 export function ClarityStartLink({locale='en',className,children,coachId=null}){
- const {lang,t,busy,error,begin}=useProgramStart(locale,'clarity')
+ const {lang,t,busy,error,begin,join}=useProgramStart(locale,'clarity')
  return <><Link href={clarityDaybookPath(lang)} className={className} prefetch={false}
   data-clarity-start data-clarity-personal data-course-selected-coach={coachId||undefined} aria-busy={busy}
   onClick={event=>{
    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
    event.preventDefault()
    if(!busy)void begin(coachId)
-  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
+  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}{join}</>
 }
 // All public program starts use fixed first-party destinations, never a supplied URL.
 export function ProgramStartLink({locale='en',program,className,children}){
- const {lang,t,busy,error,begin}=useProgramStart(locale,program)
+ const {lang,t,busy,error,begin,join}=useProgramStart(locale,program)
  return <><Link href={programDaybookPath(lang,program)} className={className} prefetch={false}
   data-program-start={program} aria-busy={busy}
   onClick={event=>{
    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
    event.preventDefault()
    if(!busy)void begin()
-  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}</>
+  }}>{children}</Link>{busy&&<p role="status" className={css.notice}>{t.working}</p>}{error&&<p role="alert" className={css.notice}>{t.authError}</p>}{join}</>
 }
 export function ClarityDetails({locale='en'}){
  const lang=clarityLocale(locale),t=COPY[lang]

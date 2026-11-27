@@ -46,3 +46,7 @@
 @media(max-width:360px){.inner{padding:12px;gap:9px}.hero{gap:6px}.copy h2{font-size:23px}.features>div>span{width:33px;height:33px}.google{padding:8px 11px}.brand{font-size:19px}}
 @media(max-height:600px){.inner{gap:9px;padding:12px}.art{padding:4px 5px}.tablet{max-width:125px}.features>div>span{width:32px;height:32px}.copy h2{margin:6px 0}.rule{margin:5px 0}}
 @media(prefers-reduced-motion:reduce){.dialog,.dialog *{scroll-behavior:auto}}
+
+/* Reuse the approved emerald/gold frame, with neutral Daybook artwork for coaching. */
+.dialog[data-hh-google-join=coach]{background-image:linear-gradient(125deg,#102b20,#203e2c 63%,#5b5130);}
+.dialog[data-hh-google-join=coach] .cover{background:linear-gradient(160deg,#fff4d6,#d2bb83 45%,#25523b 95%);}

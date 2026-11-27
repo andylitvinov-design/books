@@ -49,7 +49,9 @@ test('OAuth server continues only to fixed first-party screens and preserves exi
  assert.match(route,/continueTo === 'reports'/)
  // OAuth provider host is pinned and first-party continuation is allowlisted.
  assert.match(route,/new URL\(data\.url\)\.origin !== config\.supabaseUrl/)
- assert.match(route,/const destination = intentId/)
+ assert.match(route,/const destination = pageReturn \? origin\+pageReturn : intentId/)
+ assert.match(route,/safePageAuthReturnPath\(returnPath,continueTo,locale\)/)
+ assert.match(route,/pageAuthSuccessPath\(returnPath,continueTo,locale\)/)
  assert.match(route,/safeEnquiryReturnPath\(returnPath, locale\)/)
  assert.match(route,/directMessengerReturnPath\(locale,recipientSlug\)/)
  assert.match(route,/scopes: 'openid email profile'/)
