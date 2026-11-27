@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,coachCapturedClientTurns,coachStageCounts,coachEvidenceMarks,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview} from '../lib/coaching/coach-session-stage-view.mjs'
+import {clarityDayOneScenario} from '../lib/coaching/clarity-day-one-scenario.mjs'
 const keys=["invitation","name","continuity","focus","feelings","confirmation"]
 test('every opening gate maps to exactly one of six rows in all locales',()=>{for(const locale of ['en','ru','es'])for(let i=0;i<6;i++){const p=openingStagePosition({current:keys[i],checkmarks:Object.fromEntries(keys.slice(0,i).map(k=>[k,true]))},locale);assert.equal(p.total,6);assert.equal(p.step,i+1);assert.equal(p.rows.filter(r=>r.active).length,1);assert.equal(p.rows[i].id,keys[i]);assert.equal(p.rows.filter(r=>r.status==='done').length,i)}assert.equal(openingStagePosition({declined:true,current:'invitation'}).index,-1)})
 test('method completion and provisional progression share one state',()=>{assert.equal(methodStagePosition(['a','b'],['A','B'],1,true,true).finished,true);assert.equal(methodStagePosition(['a','b'],['A','B'],1,false,true).finished,false)})
@@ -38,7 +39,7 @@ test('six stable positions: Day 1 balance consent, all eight ratings and verific
   const opening=openingStagePosition({current:'complete',completed:true,fieldStatus:Object.fromEntries(keys.map(k=>[k,'confirmed'])),checkmarks:Object.fromEntries(keys.map(k=>[k,true])),answers:Object.fromEntries(keys.map(k=>[k,{quote:'client answer'}]))},locale);
   const core=courseStagePosition(ids.map(id=>({id,label:id,status:id==='outer_body_health'?'confirmed':id==='outer_emotional_wellbeing'?'needs_confirmation':'not_explored',quote:id.includes('wellbeing')||id.includes('health')?'5':''})),{promptId:'outer_emotional_wellbeing'});
   const p=groupedSessionPosition(opening,core,{mode:'course',courseId:'clarity_day_1',locale});
-  assert.deepEqual(p.rows.map(x=>x.id),['contact','situation','method','insight','support','integration']);
+  assert.deepEqual(p.rows.map(x=>x.id),['contact','situation','balance','needs','support','integration']);
   assert.equal(p.total,6);assert.equal(p.step,3);
   assert.equal(p.rows[0].tone,'green');assert.equal(p.rows[1].tone,'gray');assert.equal(p.rows[2].tone,'yellow');
   assert.equal(p.rows[2].total,10);assert.equal(p.rows[2].recorded,2);assert.equal(p.rows[2].confirmed,1);
@@ -52,7 +53,9 @@ test('single solid color only from field evidence, never elapsed time, active pr
  const make=(rows)=>groupedSessionPosition(opening,courseStagePosition(rows),{mode:'course',courseId:'clarity_day_1'});
  const rows=[{id:'outer_body_health',label:'Body',status:'confirmed',quote:'0'},{id:'outer_finance',label:'Finance',status:'not_explored'}];
  let p=make(rows);assert.equal(p.rows[2].tone,'yellow');assert.equal(p.rows[2].recorded,1);assert.equal(p.rows[1].tone,'gray');
- p=make(rows.map(r=>({...r,status:'confirmed',quote:'5'})));assert.equal(p.rows[2].tone,'green');
+ p=make(rows.map(r=>({...r,status:'confirmed',quote:'5'})));assert.equal(p.rows[2].tone,'yellow'); // other approved wheel fields remain unanswered
+ const balanceFields=clarityDayOneScenario('en').fields.filter(f=>f.progressStage==='balance').map(f=>({id:f.id,label:f.question,status:'confirmed',quote:'client evidence'}));
+ p=make(balanceFields);assert.equal(p.rows[2].tone,'green');assert.equal(p.rows[2].confirmed,balanceFields.length);
  p=make(rows.map(r=>({...r,status:'needs_confirmation',quote:'5'})));assert.equal(p.rows[2].tone,'yellow');
  p=make(rows.map(r=>({...r,status:'skipped_by_client',quote:''})));assert.equal(p.rows[2].tone,'yellow');assert.equal(p.rows[2].confirmed,0);
  p=make(rows.map(r=>({...r,status:'confirmed',quote:''})));assert.notEqual(p.rows[2].tone,'green');
@@ -105,7 +108,11 @@ test('all published courses, all languages, and opening/active states share six 
   assert.equal(start.total,6,course.id);assert.equal(running.total,6,course.id);
   assert.equal(start.step,1);assert.deepEqual(start.rows.map(g=>g.id),running.rows.map(g=>g.id));
   assert.ok(running.rows.filter(g=>g.total===0).every(g=>g.tone==='gray'));
-  assert.deepEqual(running.rows.flatMap(g=>g.coreChildren.map(r=>r.id)).sort(),rows.map(r=>r.id).sort());
+  const displayed=running.rows.flatMap(g=>g.coreChildren);
+  const expected=course.id==='clarity_day_1'?[...new Set([...rows.map(r=>r.id),...clarityDayOneScenario(locale).fields.filter(f=>f.stage!=='contact').map(f=>f.id)])]:rows.map(r=>r.id);
+  assert.deepEqual(displayed.map(r=>r.id).sort(),expected.sort());
+  assert.ok(displayed.filter(r=>r.scenarioOnly).every(r=>r.status==='pending'&&!coachEvidenceMarks(r).verified&&!coachEvidenceMarks(r).recorded));
+  assert.equal(new Set(displayed.map(r=>r.id)).size,displayed.length);
   assert.deepEqual(running.rows[0].children.slice(0,keys.length).map(r=>r.id),keys);
   assert.equal(running.rows.filter(g=>g.active).length,1);
  }
