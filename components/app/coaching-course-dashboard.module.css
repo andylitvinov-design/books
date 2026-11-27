@@ -69,3 +69,39 @@
 
 .frame .topbar .tools{margin-left:auto;width:44px;justify-content:center;border:1px solid #e1bf81;border-radius:50%;color:#fff4df}
 @media(max-height:720px){.layout{gap:5px}.cover{padding:7px 10px}.frame .cover h1{font-size:clamp(24px,6.2vw,29px);max-width:90%}.cover b{display:none}.frame .coach{min-height:58px}.portrait{width:58px;height:58px}.frame .tabs button{min-height:46px}.banner{padding:6px 9px}.frame .banner h2{font-size:21px}.card{padding:7px 8px}.frame .task{min-height:49px}.frame .materials button{min-height:68px}.frame .cta{min-height:68px}}
+
+/* Golden v4: owner-approved overview; panels retain their existing scroll and data. */
+.frame .cover{padding:10px 13px}
+.coverProgress{display:flex;align-items:center;gap:7px;margin-top:8px;max-width:76%;color:#68472a}
+.coverProgress progress{width:100%;min-width:0;height:9px;accent-color:#087553;border-radius:99px}
+.coverProgress small{font-size:10px;white-space:nowrap}
+.frame .tabs button{min-height:65px;gap:3px;padding:6px 4px}
+.tabTitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;font-weight:550;line-height:1.13;text-align:center;overflow-wrap:anywhere}
+.frame .tabs small{font-size:10px}
+.frame .card[data-course-standard]{display:flex;flex-direction:column;gap:8px;flex:none;padding:9px;border-radius:20px;background:linear-gradient(145deg,#fff9ea,#f7e4bd);box-shadow:0 3px 12px #1d120b66}
+.frame .card[data-course-standard] .banner{border:0;border-radius:13px;padding:10px 8px;background:linear-gradient(90deg,#fff5e3 15%,#fff3dfe0 67%,#fff3df60),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right center/cover;color:#412717}
+.frame .card[data-course-standard] .banner>span{font:700 11px/1.2 Georgia,serif;letter-spacing:.07em;color:#07553d}
+.frame .card[data-course-standard] .banner h2{color:#392013;font-size:clamp(23px,6.2vw,34px);margin:3px 0}
+.frame .card[data-course-standard] .banner p{margin:3px 0 7px;max-width:94%;font-size:12px;line-height:1.24;color:#6e4b2c;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.frame .card[data-course-standard] .progress{max-width:78%;color:#72512f}
+.frame .card[data-course-standard] .progress progress{height:6px;background:#dfc59b;border-color:#dfc59b}
+.frame .card[data-course-standard] .progress progress::-webkit-progress-bar{background:#dfc59b}
+.frame .card[data-course-standard] .coach,.frame .card[data-course-standard] .coach[data-coaching-coach]:not([data-coaching-coach=choose]){background:linear-gradient(145deg,#fffaf0,#f7e5c7);color:#07553d;min-height:60px;padding:4px 9px;border:1px solid #fffdf8;border-radius:17px;box-shadow:0 2px 7px #b98d4740,inset 0 0 0 1px #e1c391}
+.frame .card[data-course-standard] .portrait{height:48px;width:48px;border-width:2px}
+.frame .card[data-course-standard] .coachName small{font:700 15px/1.1 Georgia,serif;color:#392013}
+.frame .card[data-course-standard] .coachName strong{font:750 15px/1.15 system-ui,sans-serif}
+.frame .card[data-course-standard] .change{font-size:10px}
+.frame .card[data-course-standard] .cta{min-height:54px;font-size:clamp(17px,4.9vw,23px);padding:7px 11px;box-shadow:0 3px 9px #aa793c55,inset 0 0 8px #72bd6544}
+.frame .card[data-course-standard] .footer small{display:flex;align-items:center;justify-content:center;gap:4px;color:#735131;font-size:11px;line-height:1.15}
+.frame .card[data-course-standard] .task{min-height:52px;border-radius:13px;margin:0;padding:6px 7px;grid-template-columns:24px minmax(0,1fr) auto 14px}
+.taskText{min-width:0;display:grid;gap:2px}
+.taskText small{font-size:10px;line-height:1.16;color:#795831;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frame .card[data-course-standard] .task strong{font-size:clamp(16px,4.5vw,21px)}
+.frame .card[data-course-standard] .task span{font-size:10px;padding:3px 5px;max-width:85px}
+.frame .materialToggle{display:grid;grid-template-columns:24px minmax(0,1fr) 20px;align-items:center;gap:9px;min-height:48px;width:100%;text-align:left;padding:7px 10px;border:1px solid #d3ad71;border-radius:13px;background:linear-gradient(135deg,#795333,#3b2518);color:#fff3d9;margin:0;cursor:pointer}
+.materialToggle strong{font:700 19px/1.05 Georgia,serif}
+.materialToggle small{color:#efdbb4}
+.materialToggle[aria-expanded=true]>svg:last-child{transform:rotate(180deg)}
+@media(max-height:740px){.frame .cover{padding:7px 10px}.coverProgress{margin-top:4px}.frame .tabs button{min-height:56px}.frame .card[data-course-standard]{gap:5px;padding:7px}.frame .card[data-course-standard] .banner{padding:5px 7px}.frame .card[data-course-standard] .banner h2{font-size:22px}.frame .card[data-course-standard] .banner p{font-size:11px;margin:2px 0 4px}.frame .card[data-course-standard] .coach,.frame .card[data-course-standard] .coach[data-coaching-coach]:not([data-coaching-coach=choose]){min-height:49px}.frame .card[data-course-standard] .portrait{width:40px;height:40px}.frame .card[data-course-standard] .cta{min-height:48px}.frame .card[data-course-standard] .task{min-height:44px;padding:4px 6px}.frame .materialToggle{min-height:44px;padding:5px 8px}}
+@media(max-height:590px){.frame .card[data-course-standard] .banner p,.taskText small{display:none}.frame .card[data-course-standard] .banner h2{font-size:20px}.frame .tabs button{min-height:44px}.tabTitle{-webkit-line-clamp:1}.coverProgress{display:none}.frame .card[data-course-standard] .footer small{font-size:10px}}
+@media(max-width:360px){.frame .card[data-course-standard] .task span{max-width:64px;font-size:9px}.frame .card[data-course-standard] .change{font-size:0}.frame .tabs button{font-size:12px}}

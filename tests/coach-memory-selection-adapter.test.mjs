@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import * as core from '../lib/coaching/coach-memory-selection.mjs'
+import {searchOwnerReviewedEvidence} from '../lib/coaching/coach-personal-memory.mjs'
 const src=readFileSync(new URL('../lib/app/my-coach-memory-selection.js',import.meta.url),'utf8')
 const body=src.replace(/^import \{[\s\S]*?\} from '[^']+'\n/gm,'')
  .replace(/^import '[^']+'\n/gm,'').replace(/^export /gm,'')
@@ -49,7 +50,7 @@ function fixture(){
  }
  const deps={randomUUID:()=>R,AppError,transaction:async(config,actor,fn)=>fn({query}),
   operationHash:digest,ownerMemoryFingerprint:fp,projectOwnerMemoryArchiveRow:()=>({supported:true,items:[item]}),
-  OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,...core}
+  OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,...core}
  const manage=new Function(...Object.keys(deps),body+'\nreturn manageMyCoachMemorySelection')(...Object.values(deps))
  const run=raw=>manage({}, {id:A},raw)
  const save=(n=1)=>({action:'save',confirmed:true,operationId:op(n),expectedSettingsRevision:settings.revision,
@@ -106,4 +107,23 @@ test('reference view never substitutes altered source or another owner',async()=
  f.change({value:'New source'})
  const result=await f.run({action:'list'});assert.equal(result.partial,true)
  assert.equal(result.items[0].status,'source_unavailable');assert.equal(Object.hasOwn(result.items[0],'value'),false)
+})
+
+test('selected search uses canonical active references, not unselected archive answers',async()=>{
+ const f=fixture(),request={action:'search',query:{ownerReview:true,query:'quiet walk'}}
+ assert.equal((await f.run(request)).searchStatus,'no_match')
+ await f.run(f.save())
+ const selected=await f.run(request)
+ assert.equal(selected.searchStatus,'ok');assert.equal(selected.items.length,1)
+ assert.equal(selected.items[0].id,R);assert.equal(selected.items[0].providerShareable,false)
+ assert.equal((await f.run({action:'search',query:{ownerReview:true,query:'unrelated'}})).items.length,0)
+ await f.run({action:'forget',confirmed:true,operationId:op(9),id:R,expectedRevision:0})
+ assert.equal((await f.run(request)).searchStatus,'no_match')
+})
+test('selected search reports stale source and denied consent without leaking text',async()=>{
+ const f=fixture(),request={action:'search',query:{ownerReview:true,types:['resource']}}
+ await f.run(f.save());f.change({value:'Changed'})
+ const partial=await f.run(request);assert.equal(partial.searchStatus,'partial');assert.deepEqual(partial.items,[])
+ f.revoke();const denied=await f.run(request);assert.equal(denied.searchStatus,'not_authorized');assert.deepEqual(denied.items,[])
+ await assert.rejects(()=>f.run({action:'search',query:{ownerReview:true,query:'walk',provider:'groq'}}),/MY_COACH_MEMORY_SELECTION_INVALID/)
 })

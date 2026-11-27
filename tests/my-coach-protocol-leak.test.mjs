@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs'
 import './coach-personal-memory.test.mjs'
 import './coach-memory-selection.test.mjs'
 import './coach-memory-selection-adapter.test.mjs'
+import './coach-memory-stage-plan.test.mjs'
 import {coachLooksLikeProtocolText,coachReviewableStreamReply} from '../lib/coaching/coach-stream-format.mjs'
 import {readCoachTurnStream} from '../lib/coaching/coach-stream-client.mjs'
 const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
