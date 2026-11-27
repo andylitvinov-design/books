@@ -87,6 +87,7 @@ test('Director receives one localized clarification only for an exact validated 
    assert.equal(d.maySave,false);assert.equal(d.mayAdvance,false)
    assert.equal(d.kind,verdict==='MATCH'?'relevant_needs_existing_confirmation_gate':'clarify_same_field')
    assert.equal(typeof d.clarification,verdict==='MATCH'?'object':'string')
+   for(const clarificationIntent of [undefined,'forged',verdict==='MATCH'?'clarify_missing':'confirm_literal'])assert.equal(supervisorDirectorDisposition(i,{...reviewed,clarificationIntent}).kind,'unverified')
    for(const changed of [{...i,revision:i.revision+1},{...i,turnId:'other'},{...i,quote:'another answer'},{...i,quote:i.quote+', но не сейчас'},{...i,question:i.question+' другое уточнение'},{...i,context:[{turnId:'t2',quote:'I want to close the studio later',reviewed:true}]},{...i,scenario:{courseSessionId:'clarity_day_2',version:'hh-clarity-day-two-support-v1'}}])assert.equal(supervisorDirectorDisposition(changed,reviewed).kind,'unverified')
   }
   assert.equal(supervisorDirectorDisposition(i,{...validateSupervisorVerdict(p,answer),evidence:[{turnId:'t1',quote:'invented'}]}).kind,'unverified')

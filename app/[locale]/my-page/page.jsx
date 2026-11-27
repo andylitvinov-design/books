@@ -11,5 +11,6 @@ export async function generateMetadata({params}){
 export default async function UserPageOwner({params}){
  const {locale}=await params
  if(!['ru','en','es'].includes(locale))notFound()
- return <MyPageClient locale={locale}/>
+ return <MyPageClient locale={locale} ownerMemorySearch={process.env.HH_COACH_OWNER_MEMORY_SEARCH_ENABLED==='true'}
+  ownerMemorySelection={process.env.HH_COACH_MEMORY_SELECTION_ENABLED==='true'&&process.env.HH_CLIENT_MEMORY_ENABLED==='true'}/>
 }
