@@ -693,3 +693,12 @@
 
 .root .welcomeMeta:has(.lukasEntry){flex-wrap:wrap;justify-content:space-between!important}
 .root .welcomeListen.lukasEntry{background:#087b61;color:#fff;min-height:44px!important;padding:7px 10px!important;font-size:clamp(11px,3.3vw,13px)!important;white-space:nowrap}
+
+/* Shared light opening; original video and journey controls remain available. */
+.root[data-hh-ai-landing]{display:flex!important;flex-direction:column;align-items:stretch;gap:8px!important;overflow:visible!important;height:auto!important;min-height:0!important;background:#faf3e8!important;color:#123e37;padding:0 0 8px!important}
+.root[data-hh-ai-landing] .inlineComposer{background:#fffdf8!important;margin:0 10px!important;padding:5px!important;border-radius:28px!important;box-shadow:0 3px 12px #57472f15!important}
+.legacyWelcome{margin:0 10px;border:1px solid #e4ded1;border-radius:12px;padding:6px 10px;color:#285c4d;background:#fffaf1}
+.legacyWelcome>summary,.root[data-hh-ai-landing] .extraDirections>summary{cursor:pointer;min-height:44px;display:flex!important;align-items:center;color:#285c4d!important;font:650 13px/1.3 system-ui!important;gap:6px}
+.root[data-hh-ai-landing] .legacyWelcome .genieScene{min-height:310px!important;margin-top:7px;border-radius:18px;overflow:hidden;display:flex}
+.root[data-hh-ai-landing] .extraDirections{position:relative!important;inset:auto!important;width:auto!important;max-width:none!important;margin:0 10px!important;color:#285c4d;background:#fffaf1!important;border:1px solid #e4ded1;border-radius:12px;padding:6px 10px!important;overflow:visible!important;box-shadow:none!important}
+.root[data-hh-ai-landing] .extraDirections>summary svg{color:#285c4d!important}

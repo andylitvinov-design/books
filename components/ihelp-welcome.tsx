@@ -1,6 +1,6 @@
 "use client";
 
-import {BriefcaseBusiness, Heart, Leaf, Sparkles, Zap} from "lucide-react";
+import {BriefcaseBusiness, Flower2, Heart, Leaf, Sparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./ihelp-welcome.module.css";
 
@@ -48,7 +48,8 @@ const WORDS={
       body:{label:"Body",prompt:"Help me explore resources or practices for body awareness."},
       energy:{label:"Energy",prompt:"Help me find a gentle practice focused on energy."},
       love:{label:"Love",prompt:"Help me explore a relationship-related practice or resource."},
-      work:{label:"Work",prompt:"Help me find resources for a work or career question."}
+      work:{label:"Work",prompt:"Help me find resources for a work or career question."},
+      meaning:{label:"Meaning",prompt:"Help me explore my sense of meaning and personal direction."}
     }},
   ru:{hello:"Привет!",subtitle:"Расскажите, что важно. Помогу разобраться в возможностях.",
     lead:"Напишите вопрос своими словами или выберите один из вариантов ниже.",
@@ -57,7 +58,8 @@ const WORDS={
       body:{label:"Тело",prompt:"Помоги найти материалы или практики для осознания тела."},
       energy:{label:"Энергия",prompt:"Помоги подобрать мягкую практику для поддержания энергии."},
       love:{label:"Любовь",prompt:"Помоги найти практику или материал по теме отношений."},
-      work:{label:"Работа",prompt:"Помоги найти материалы по вопросу работы и карьеры."}
+      work:{label:"Работа",prompt:"Помоги найти материалы по вопросу работы и карьеры."},
+      meaning:{label:"Смысл",prompt:"Помоги разобраться в смысле и личном направлении."}
     }},
   es:{hello:"¡Hola!",subtitle:"Cuéntame lo que te importa; te ayudo a explorar opciones.",
     lead:"Escribe tu pregunta o elige una opción para comenzar.",
@@ -66,12 +68,13 @@ const WORDS={
       body:{label:"Cuerpo",prompt:"Ayúdame a encontrar recursos o prácticas de conciencia corporal."},
       energy:{label:"Energía",prompt:"Ayúdame a encontrar una práctica suave para la energía."},
       love:{label:"Amor",prompt:"Ayúdame a explorar un recurso relacionado con las relaciones."},
-      work:{label:"Trabajo",prompt:"Ayúdame a encontrar recursos sobre trabajo o carrera."}
+      work:{label:"Trabajo",prompt:"Ayúdame a encontrar recursos sobre trabajo o carrera."},
+      meaning:{label:"Sentido",prompt:"Ayúdame a explorar el sentido de mi vida y mi dirección personal."}
     }}
 } as const;
 
-const TOPIC_KEYS=["body","energy","love","work"] as const;
-const ICONS={body:Leaf,energy:Zap,love:Heart,work:BriefcaseBusiness};
+const TOPIC_KEYS=["body","energy","love","work","meaning"] as const;
+const ICONS={body:Leaf,energy:Zap,love:Heart,work:BriefcaseBusiness,meaning:Flower2};
 
 export function IHelpWelcome({locale,section="general",compact=false}:{
   locale:PublicLocale;section?:string;compact?:boolean

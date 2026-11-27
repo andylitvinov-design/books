@@ -1190,3 +1190,8 @@
  :global(.hh-messages-page) [data-keyboard-open="true"] .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"]>.thread,
  :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"][data-hh-immersive-dialogue="true"][data-hh-lukas-open]>.thread{padding-top:8px}
 }
+
+.root[data-chat-skin="messenger"]:has(:global([data-hh-assistant-start])){background:#faf3e8!important}
+.root[data-chat-skin="messenger"]:has(:global([data-hh-assistant-start]))>.thread{overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important;max-height:none!important;background:#faf3e8!important}
+.pageHelpMore{margin:0 8px 5px;padding:4px 8px;border:1px solid #dfdfd2;border-radius:12px;background:#fffaf2;color:#285c4d}
+.pageHelpMore>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font:650 13px/1.3 system-ui}
