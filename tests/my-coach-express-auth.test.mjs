@@ -1,49 +1,25 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-
-const read = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8')
-
-test('Mira hero opens the existing Google/Telegram express sign-in only for verified guests', () => {
-  const catalog = read('components/my-coach-catalog.jsx')
-  const modal = read('components/my-coach-express-start.jsx')
-  const css = read('components/my-coach-express-start.module.css')
-  assert.match(catalog, /<MyCoachExpressStart locale=\{lang\}/)
-  assert.match(modal, /data-my-coach-mira-talk/)
-  assert.match(modal, /fetch\('\/api\/app\/auth\/status'/)
-  assert.match(modal, /if \(response\.ok\) \{[\s\S]*?coachSessionHref\(lang, 'mira'\)/)
-  assert.match(modal, /if \(response\.status === 401\) \{[\s\S]*?setIsOpen\(true\)/)
-  assert.match(modal, /<dialog ref=\{dialogRef\}/)
-  assert.match(modal, /onCancel=\{\(\) => setIsOpen\(false\)\}/)
-  assert.match(css, /\.dialog::backdrop/)
-  assert.match(css, /max-width:540px/)
+import {readFileSync} from 'node:fs'
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+test('every AI coach hero and card uses the same intentional guest-only Google gate',()=>{
+ const catalog=read('components/my-coach-catalog.jsx'),gate=read('components/my-coach-express-start.jsx'),greeting=read('components/my-coach-greeting-gate.jsx')
+ assert.match(catalog,/<MyCoachExpressStart locale=\{lang\} href=\{startHref\} embedded/)
+ assert.match(catalog,/<MyCoachExpressStart locale=\{lang\} className=\{heroStyles.talkButton\}/)
+ assert.match(catalog,/<MyCoachExpressStart locale=\{lang\} className=\{styles.cardButton\}/)
+ assert.match(gate,/continuation:'my-coach-action',kind:'coach-link'/)
+ assert.match(gate,/<ReikiJoinDialog mode="coach"/)
+ assert.match(greeting,/if\(!accountSaving\)\{topicDialog.current\?\.close\(\);void gate.begin\(\{id\}\);return\}/)
+ assert.match(greeting,/setReadyTopic\(action.id\);setPhase\('complete'\)/)
+ assert.doesNotMatch(gate,/signInAnonymously|SUPABASE_SERVICE_ROLE_KEY|localStorage/)
 })
-
-test('Mira express auth reuses server PKCE and allows Telegram only when explicitly available', () => {
-  const modal = read('components/my-coach-express-start.jsx')
-  const route = read('app/api/app/[...path]/route.js')
-  assert.match(modal, /fetch\('\/api\/app\/auth\/providers'/)
-  assert.match(modal, /setTelegramAvailable\(value\?\.telegram === true\)/)
-  assert.match(modal, /telegramAvailable && <button/)
-  assert.match(modal, /continueTo: 'my-coach-mira', provider/)
-  assert.match(modal, /data-my-coach-auth-google/)
-  assert.match(modal, /data-my-coach-auth-telegram/)
-  assert.match(route, /joined === 'auth\/status' && method === 'GET'[\s\S]*?await auth\.verified\(\)/)
-  assert.match(route, /'my-coach-mira'\]\.includes\(body\.continueTo\)/)
-  assert.match(route, /'my-coach-mira'\]\.includes\(url\.searchParams\.get\('continue'\)\)/)
-  assert.match(route, /continueTo === 'my-coach-mira'[\s\S]*?coaching\/sessions\?coach=mira/)
-  assert.match(route, /continueTo === 'my-coach-mira' \? \x60\$\{origin\}\/\$\{locale\}\/my-coach\x60/)
-  assert.doesNotMatch(modal, /localStorage|sessionStorage|signInAnonymously|telegram-bot/)
-  assert.doesNotMatch(modal, /returnPath|accountToken|service_role|SUPABASE_SERVICE_ROLE_KEY/)
-})
-
-test('Mira-first hero auth gate replaces primary CTA and suppresses direct arrow bypass', () => {
-  const catalog = read('components/my-coach-catalog.jsx')
-  const component = read('components/my-coach-express-start.jsx')
-  assert.match(catalog, /selected\.id === 'mira'[\s\S]*?<MyCoachExpressStart locale=\{lang\} embedded/)
-  assert.match(catalog, /selected\.id !== 'mira' && <Link className=\{heroStyles\.circleAction\}/)
-  assert.match(catalog, /data-my-coach-hero-start=\{selected\.id\}/)
-  assert.match(component, /className=\{styles\.talkButton\} \{\.\.\.buttonProps\} onClick=\{startMira\}/)
-  assert.match(component, /await fetch|const response = await fetch/)
-  assert.doesNotMatch(component, /signInAnonymously|localStorage|SUPABASE_SERVICE_ROLE_KEY/)
+test('coach auth reuses verified status and Google PKCE, and returns to the exact first-party source',()=>{
+ const hook=read('components/use-google-page-action.js'),api=read('app/api/app/[...path]/route.js')
+ assert.match(hook,/check='auth\/status'/)
+ assert.match(hook,/failure\?\.status!==401\|\|resumed/)
+ assert.match(hook,/provider:'google',returnPath/)
+ assert.match(api,/joined === 'auth\/status' && method === 'GET'[\s\S]*?await auth\.verified\(\)/)
+ assert.match(api,/safePageAuthReturnPath\(returnPath,continueTo,locale\)/)
+ assert.match(api,/const destination = pageReturn \? origin\+pageReturn/)
+ assert.match(api,/const account=await createAppRepository\(config\)\.ensureAccount\(actor\)/)
 })

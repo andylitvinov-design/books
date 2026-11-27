@@ -12,6 +12,8 @@ import {MyCoachInlineProfile} from './my-coach-compact-profile'
 import {COACH_PROGRAM_GROUPS,INTRODUCTORY_COACH_SESSION_ID,coachCourseLocal} from '@/lib/coaching/coach-course-journey.mjs'
 import {MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
 import styles from './my-coach-greeting-gate.module.css'
+import {ReikiJoinDialog} from './reiki-join-dialog'
+import {useGooglePageAction} from './use-google-page-action'
 
 const words={
  en:{eyebrow:'MEET YOUR AI COACH',play:'Hear my greeting',playing:'Your coach is speaking…',
@@ -50,6 +52,11 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const touchOrigin=useRef(null)
  const switching=useRef(false)
  const canSwitch=PUBLIC_COACH_RAIL_IDS.includes(personaId)&&PUBLIC_COACH_RAIL_IDS.length>1
+ const [readyTopic,setReadyTopic]=useState(null)
+ const gateError=({en:'Could not continue. Please try again.',ru:'Не удалось продолжить. Попробуйте ещё раз.',es:'No pudimos continuar. Inténtalo de nuevo.'})[lang]
+ const gate=useGooglePageAction({locale:lang,continuation:'my-coach-action',kind:'coach-topic',onAuthorized:action=>{
+   if(action.id===INTRODUCTORY_COACH_SESSION_ID||COACH_PROGRAM_GROUPS.some(group=>group.sessions.some(item=>item.id===action.id))){setReadyTopic(action.id);setPhase('complete')}
+ }})
  useEffect(()=>()=>{audioRun.current++;player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;player.current?.cancel?.();player.current=null;
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
@@ -105,7 +112,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    }catch{if(audioRun.current===generation){setPhase('complete');setError(t.failed)}}
  }
  function chooseSession(id,options){
-   if(chosen.current||switching.current)return
+   if(chosen.current||switching.current||gate.busy)return
+   if(!accountSaving){topicDialog.current?.close();void gate.begin({id});return}
    if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
    chosen.current=true
    topicDialog.current?.close()
@@ -152,8 +160,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
      {phase==='complete'&&<div className={styles.completed}>
        <button type="button" className={styles.primary} data-coach-greeting-start
-         onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
-         <span>{draftCourses.includes(INTRODUCTORY_COACH_SESSION_ID)?({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]:({ru:'Начать сессию',en:'Start session',es:'Iniciar sesión'})[lang]} · {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
+         onClick={()=>chooseSession(readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={23} fill="currentColor" aria-hidden="true"/>
+         <span>{readyTopic?({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]:draftCourses.includes(INTRODUCTORY_COACH_SESSION_ID)?({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]:({ru:'Начать сессию',en:'Start session',es:'Iniciar sesión'})[lang]} · {sessionName}</span><ChevronRight size={20} aria-hidden="true"/></button>
        {privateProfileEnabled&&<div data-coach-private-profile-entry style={{display:'grid',gap:8}}>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button>
          <button type="button" className={styles.secondary} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button>
@@ -196,6 +204,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </section>)}
      </div>
    </dialog>
+   {gate.error&&!gate.open&&<p role="alert" className={styles.error}>{gateError}</p>}
+   {gate.open&&<ReikiJoinDialog mode="coach" locale={lang} busy={gate.busy} error={gate.error?gateError:''} onGoogle={()=>void gate.signIn()} onDismiss={gate.dismiss}/>}
    <div className={styles.profileBelow}>
      {methodSelectionEnabled&&onMethodSelect&&<label data-coach-method-choice style={{display:'grid',gap:7,margin:'0 0 12px',fontSize:14}}>
        <span>{({ru:'Методика сессии (необязательно)',en:'Session method (optional)',es:'Método de sesión (opcional)'})[lang]}</span>

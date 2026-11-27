@@ -51,7 +51,7 @@ test('course entry, selector, details below rail and private Daybook handoff are
  assert.match(view,/<ClarityStartLink locale=\{lang\} coachId=\{selected\.id\}/)
  assert.ok(view.indexOf('id="course-coach-rail"')<view.indexOf('data-course-session-details'))
  assert.match(start,/stageCoachCourseChoice\(program,coachId,boot\.account\.id\)/)
- assert.match(start,/continueTo:programContinuation\(program\)/)
+ assert.match(start,/continuation:programContinuation\(program\)/)
  assert.match(dashboard,/consumeCoachCourseChoice\(program,accountId\)/)
  assert.match(dashboard,/sessionAvailable=program==='goal'/)
  assert.doesNotMatch(view,/startSession\(|live-token|paymentUrl|checkout/)
