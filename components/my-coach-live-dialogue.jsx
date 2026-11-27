@@ -567,6 +567,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,conversationLang):t.coach
+  // A restored historical utterance must never be renamed to the newly selected coach.
+  const turnCoachName=turn=>{
+    const author=turn.authorPersonaId!==undefined
+      ?(turn.authorPersonaId===turn.coachId?turn.authorPersonaId:null)
+      :(turn.coachId!==undefined?turn.coachId:(restoredDraft?null:personaId))
+    return localCoachText(getCoachPersona(author)?.name,conversationLang)||t.coach
+  }
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
   const introduction=coachSessionOpeningLine(personaId,conversationLang,greetingIdentity.name)
@@ -2605,7 +2612,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{introduction}</p></div>}
           {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
-            <strong>{turn.role==='user'?t.user:name}
+            <strong>{turn.role==='user'?t.user:turnCoachName(turn)}
               {turn.role==='assistant'&&turn.inference?.model&&
                 <span className={styles.responseSource} data-coach-answer-source={turn.inference.provider}>
                   {' · '}{turn.inference.provider==='groq'?'Groq':turn.inference.provider?.startsWith('gemini_')?'Gemini':'OpenRouter'} · {turn.inference.model}
@@ -2985,7 +2992,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <div className={styles.protocolActions}><button type="button" disabled={protocolSaving} onClick={()=>exportProtocol(false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button></div>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
-              <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
+              <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):turnCoachName(turn)}</strong>
               <p>{turn.content}</p>
               {turn.role==='user'&&turn.unanswered===true&&<small>{
                 {ru:'Реплика без ответа ИИ',en:'Submitted, no AI reply',es:'Mensaje sin respuesta de IA'}[lang]
