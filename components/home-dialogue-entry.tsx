@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays, Compass, Flame, Flower2, ClipboardList, Shield, Sprout, ChevronsRight, GraduationCap, BarChart3 } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
+import { ProfileSpaceDashboard } from "@/components/app/profile-space-dashboard";
 
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
@@ -293,6 +294,10 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <div className={styles.siteTools} data-home-site-tools><SiteNavigation locale={locale} compact /></div>
       </div>
     </header>
+
+    <section className={styles.programEntrance} data-home-program-entrance>
+      <ProfileSpaceDashboard locale={locale} root={`/${locale}/app`} homeDiscovery={true} />
+    </section>
 
     <div className={styles.hero} data-home-dialogue-hero>
       <div className={styles.scene} aria-hidden="true"/>
