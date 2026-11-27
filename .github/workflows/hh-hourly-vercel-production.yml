@@ -12,6 +12,11 @@ on:
   # Trusted default-branch release; PR source code is never checked out here.
   workflow_dispatch:
     inputs:
+      prebuilt_test:
+        description: 'Build-only pilot on protected production HEAD (no Vercel deployment)'
+        type: boolean
+        required: false
+        default: false
       emergency:
         description: 'Emergency Deploy Now (may rebuild the same SHA)'
         type: boolean
@@ -36,6 +41,7 @@ jobs:
     # Manual dry-run/apply cleanup remains separate and never starts a build.
     # Exact HEAD, last-90-minutes and UTC-hour guards apply.
     if: >-
+      github.ref == 'refs/heads/codex/bootstrap-books' && (
       (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_run' &&
@@ -45,9 +51,11 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
-       inputs.emergency == true && inputs.cleanup_mode == 'off')
+       inputs.emergency == true && inputs.cleanup_mode == 'off' && inputs.prebuilt_test != true) ||
+      (github.event_name == 'workflow_dispatch' && inputs.prebuilt_test == true &&
+       inputs.emergency != true && inputs.cleanup_mode == 'off'))
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 40
     steps:
       - name: Check prerequisites and last production SHA
         id: gate
@@ -55,6 +63,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
           EMERGENCY: ${{ inputs.emergency }}
+          PREBUILT_TEST: ${{ inputs.prebuilt_test }}
         shell: bash
         run: |
           set -euo pipefail
@@ -79,7 +88,7 @@ jobs:
           [[ "$head_sha" =~ ^[a-f0-9]{40}$ ]] || exit 1
           # Vercel v6 can expose state rather than readyState; both must dedupe.
           # Keep one bounded GET for the latest 100 production deployments.
-          if [[ "$EMERGENCY" != "true" ]]; then
+          if [[ "$EMERGENCY" != "true" && "$PREBUILT_TEST" != "true" ]]; then
             response="$(curl -fsS --retry 2 --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=100')"
             if ! printf '%s' "$response" | jq -e '.deployments | type == "array"' >/dev/null; then
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
@@ -145,8 +154,132 @@ jobs:
           fi
           echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo 'run=true' >> "$GITHUB_OUTPUT"
+      # The pilot performs no Vercel upload or artifact storage. Enable routine
+      # prebuilt only after the protected pilot succeeds and LIVE identity/status
+      # compatibility has been verified. The emergency Git-backed path stays intact.
+      - name: Checkout protected production snapshot
+        if: steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ steps.gate.outputs.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Configure Node.js matching Vercel
+        if: steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Install pinned Vercel CLI
+        if: steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        run: npm install --global vercel@66.6.0
+      - name: Pull existing production settings (no new project)
+        if: steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        env:
+          VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          VERCEL_ORG_ID: team_OSf690d0nxRHWVMXCElA8i95
+          VERCEL_PROJECT_ID: prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b
+          EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]]
+          # Verify this exact snapshot is still on the protected production branch
+          # before downloading any production credentials onto a public-repo runner.
+          gh api 'repos/andylitvinov-design/books/branches/codex%2Fpublic-book-library' --jq '.protected' | grep -Fx true
+          gh api "repos/andylitvinov-design/books/compare/$EXPECTED_SHA...codex%2Fpublic-book-library" --jq '.status' | grep -Ex 'identical|ahead'
+          vercel pull --yes --environment=production
+          jq -e --arg p "$VERCEL_PROJECT_ID" --arg o "$VERCEL_ORG_ID" '.projectId == $p and .orgId == $o' .vercel/project.json >/dev/null
+      - name: Build production locally on GitHub (no Vercel remote build)
+        if: steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ steps.gate.outputs.sha }}
+          VERCEL_GIT_COMMIT_REF: codex/public-book-library
+          VERCEL_GIT_REPO_OWNER: andylitvinov-design
+          VERCEL_GIT_REPO_SLUG: books
+          VERCEL_PROJECT_PRODUCTION_URL: holistichouse.vercel.app
+        run: |
+          set -euo pipefail
+          vercel build --prod
+          test -s .vercel/output/config.json
+          jq -e '.version == 3' .vercel/output/config.json >/dev/null
+          echo 'Production build output created locally; no artifact was uploaded.'
+      - name: Stage prebuilt production and smoke test before promotion
+        if: steps.gate.outputs.run == 'true' && vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.prebuilt_test != true && inputs.emergency != true
+        env:
+          VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No remote-build fallback, no automatic second deployment, and no
+          # upload of pulled env files. Stage the same prebuilt production output.
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 1
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 1
+          fi
+          # Recheck protected HEAD and the rolling limit after the local build, before any upload.
+          latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Protected production advanced during build; defer.'; exit 0; }
+          response="$(curl -fsS --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=100')"
+          jq -e '.deployments | type == "array" and all((.created // .createdAt) | type == "number")' <<< "$response" >/dev/null
+          cutoff_ms="$(( $(date -u +%s) * 1000 - 5400000 ))"
+          if jq -e --argjson cutoff "$cutoff_ms" '[.deployments[] | select(.target == "production" and (((.created // .createdAt) >= $cutoff) or ((.readyState // .state) == "BUILDING" or (.readyState // .state) == "QUEUED" or (.readyState // .state) == "INITIALIZING")))] | length > 0' <<< "$response" >/dev/null; then
+            echo 'Another production request occurred during local build; defer.'
+            exit 0
+          fi
+          deployment_url="$(vercel deploy --prebuilt --prod --skip-domain --yes --meta "githubCommitSha=$EXPECTED_SHA" --meta githubCommitRef=codex/public-book-library --meta githubOrg=andylitvinov-design --meta githubRepo=books)"
+          [[ "$deployment_url" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]]
+          deployment_host="${deployment_url#https://}"
+          suffix='?teamId=team_OSf690d0nxRHWVMXCElA8i95'
+          deployment="$(curl -fsS --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$deployment_host$suffix")"
+          deployment_id="$(jq -er --arg sha "$EXPECTED_SHA" 'select(.projectId == "prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b" and .target == "production" and .readyState == "READY" and .meta.githubCommitSha == $sha) | .id | select(test("^dpl_[A-Za-z0-9]+$"))' <<< "$deployment")"
+          # Protected deployment smoke: verify HTML and the application-specific
+          # release identity without publishing response bodies in public logs.
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          vercel curl / --deployment "$deployment_url" --fail --silent --show-error --max-time 30 -o "$tmp/home"
+          grep -Eiq '<html([[:space:]>])' "$tmp/home"
+          vercel curl /api/public/release-evidence --deployment "$deployment_url" --fail --silent --show-error --max-time 30 -o "$tmp/evidence"
+          jq -e --arg sha "$EXPECTED_SHA" --arg id "$deployment_id" '.available == true and .sha == $sha and .deployment_id == $id and .project_id == "prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b" and .environment == "production" and .branch == "codex/public-book-library" and .repo == "andylitvinov-design/books"' "$tmp/evidence" >/dev/null
+          # Existing independent verifier requires a real provider GitHub status.
+          # Never manufacture that status. If prebuilt is incompatible, stop before LIVE.
+          gh api "repos/andylitvinov-design/books/commits/$EXPECTED_SHA/status?per_page=100" | jq -e --arg url "https://vercel.com/super10/codex-public-book-library/${deployment_id#dpl_}" '.statuses | any((.context == "Vercel" or .context == "Vercel – codex-public-book-library") and .state == "success" and .target_url == $url)' >/dev/null
+          # Toronto local wall clock (DST-aware), checked for EVERY event and emergency.
+          local_hhmm="$(TZ=America/Toronto date +%H%M)"
+          [[ "$local_hhmm" =~ ^[0-9]{4}$ ]] || exit 1
+          if (( 10#$local_hhmm >= 100 && 10#$local_hhmm < 700 )); then
+            echo 'Toronto night publication freeze 01:00-07:00; keep queued changes for daylight.'
+            exit 1
+          fi
+          # No new builds in the preceding hour either: Vercel auto-assigns READY builds.
+          # This buffer reduces (but cannot eliminate) the risk of a build finishing after 01:00.
+          if (( 10#$local_hhmm < 100 )); then
+            echo 'Toronto pre-night safety buffer 00:00-01:00; defer new build.'
+            exit 1
+          fi
+          latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Protected production advanced; leave staged deployment unassigned.'; exit 1; }
+          vercel promote "$deployment_url" --yes
+          live="$(curl -fsS --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v4/aliases/holistichouse.vercel.app$suffix")"
+          jq -e --arg id "$deployment_id" '(.deploymentId // .deployment.id) == $id and .projectId == "prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b"' <<< "$live" >/dev/null
+          curl -fsS --max-time 20 https://holistichouse.vercel.app/api/public/release-evidence | jq -e --arg sha "$EXPECTED_SHA" --arg id "$deployment_id" '.available == true and .sha == $sha and .deployment_id == $id' >/dev/null
+          echo "Prebuilt production verified: $deployment_id $EXPECTED_SHA"
+      - name: Remove pulled production settings
+        if: always() && steps.gate.outputs.run == 'true' && (inputs.prebuilt_test == true || (vars.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs.emergency != true))
+        run: rm -rf .vercel
       - name: Deploy exact production SHA via existing Vercel Git connection
-        if: steps.gate.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true' && inputs.prebuilt_test != true && (vars.HH_VERCEL_PREBUILT_ENABLED != 'true' || inputs.emergency == true)
         env:
           VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
           EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
@@ -208,8 +341,8 @@ jobs:
     # Dedicated daily cron NEVER activates the publish job or a paid Vercel build.
     # Preserve LIVE, active aliases, six newest READY versions (LIVE + five rollbacks), and six newest deployments.
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
-      (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *')
+      github.ref == 'refs/heads/codex/bootstrap-books' && ((github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' && inputs.prebuilt_test != true && inputs.emergency != true) ||
+      (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

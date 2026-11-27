@@ -648,7 +648,7 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
     'publisher schedule predicate must match its only routine cron');
   assert.match(workflow,/cutoff_ms=.*5400000/,
     'rolling 90-minute budget cap remains enforceable for both cron chances');
- assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
    'protect latest source HEAD before Vercel release');
  assert.match(workflow,/cancel-in-progress: false/);
@@ -690,7 +690,7 @@ test('normal Vercel production batch allows at most one requested deployment per
    'capture bounded vendor error codes for diagnosis');
  assert.match(workflow,/No automatic retry/,
    'do not duplicate a possibly accepted production POST');
- assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/);
 });
 
 test('PR-target event consolidation keeps protected conflict, Ready stage, source prune and Core-only merge',()=>{

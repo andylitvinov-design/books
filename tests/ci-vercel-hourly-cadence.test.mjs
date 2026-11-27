@@ -22,7 +22,7 @@ test('routine production releases skip any build already started in rolling 90 m
 test('daytime emergency Deploy Now and guarded cleanup remain available',()=>{
   assert.match(workflow,/workflow_dispatch:/)
   assert.match(workflow,/emergency:[\s\S]*type: boolean/)
-  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/)
+  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" && "\$PREBUILT_TEST" != "true" \]\]; then/)
   assert.match(workflow,/if \[\[ "\$EMERGENCY" == "true" \]\]; then url="\$url&forceNew=1"/)
   assert.match(workflow,/github\.event_name == 'workflow_dispatch' && inputs\.cleanup_mode != 'off'/)
   assert.doesNotMatch(workflow,/push:\s*\n\s*branches:/)
@@ -66,7 +66,8 @@ test('trusted closed-PR cleanup wakes the SAME guarded publisher',()=>{
   assert.match(pub,/vars\.HH_VERCEL_HOURLY_ENABLED == 'true'/)
   assert.match(pub,/cutoff_ms=.*5400000/)
   assert.match(pub,/Already deployed or in progress:/)
-  assert.doesNotMatch(pub,/actions\/checkout|checkout.*pull_request/)
+  assert.match(pub,/ref: \$\{\{ steps\.gate\.outputs\.sha \}\}/)
+  assert.doesNotMatch(pub,/github\.event\.pull_request\.head\.sha|github\.event\.workflow_run\.head_sha/)
 })
 
 test('Toronto night freeze applies before gate and before POST, including emergency',()=>{
@@ -93,4 +94,41 @@ test('Toronto timezone window handles EST and EDT and midnight buffer',async()=>
     assert.equal(r.stdout.includes('ALLOWED'),allowed,stamp)
   }
   for(const [stamp,allowed] of [['2026-11-27 05:30:00 UTC',false],['2026-11-27 06:00:00 UTC',false],['2026-11-27 11:59:00 UTC',false],['2026-11-27 12:00:00 UTC',true],['2026-11-27 04:59:00 UTC',true],['2026-07-01 05:00:00 UTC',false],['2026-07-01 11:00:00 UTC',true]]) check(stamp,allowed)
+})
+
+test('prebuilt pilot never deploys, never uploads artifacts and is isolated from emergency',()=>{
+  const pub=workflow.slice(workflow.indexOf('  publish:'),workflow.indexOf('  cleanup:'))
+  assert.match(pub,/inputs\.prebuilt_test == true &&\s*inputs\.emergency != true/)
+  assert.match(pub,/node-version: '24'/)
+  assert.match(pub,/npm install --global vercel@66\.6\.0/)
+  assert.match(pub,/vercel pull --yes --environment=production/)
+  assert.match(pub,/vercel build --prod/)
+  assert.match(pub,/test -s \.vercel\/output\/config\.json/)
+  assert.match(pub,/vars\.HH_VERCEL_PREBUILT_ENABLED == 'true' && inputs\.prebuilt_test != true && inputs\.emergency != true/)
+  assert.match(pub,/inputs\.prebuilt_test != true && \(vars\.HH_VERCEL_PREBUILT_ENABLED != 'true' \|\| inputs\.emergency == true\)/)
+  assert.doesNotMatch(pub,/actions\/upload-artifact|actions\/cache|--token\s/)
+  assert.match(pub,/run: rm -rf \.vercel/)
+})
+
+test('prebuilt promotion is fail closed on exact deployment, smoke and provider status',()=>{
+  const stage=workflow.slice(workflow.indexOf('      - name: Stage prebuilt'),workflow.indexOf('      - name: Remove pulled'))
+  assert.match(stage,/vercel deploy --prebuilt --prod --skip-domain/)
+  assert.match(stage,/\.meta\.githubCommitSha == \$sha/)
+  assert.match(stage,/vercel curl \/ --deployment/)
+  assert.match(stage,/vercel curl \/api\/public\/release-evidence/)
+  assert.match(stage,/\.deployment_id == \$id/)
+  assert.match(stage,/\.state == "success" and \.target_url == \$url/)
+  assert.ok(stage.indexOf('vercel promote')>stage.indexOf('.state == "success"'))
+  assert.match(stage,/\/v4\/aliases\/holistichouse\.vercel\.app/)
+  assert.match(stage,/https:\/\/holistichouse\.vercel\.app\/api\/public\/release-evidence/)
+})
+
+test('prebuilt staging and promotion both recheck Toronto freeze and exact HEAD',()=>{
+  const stage=workflow.slice(workflow.indexOf('      - name: Stage prebuilt'),workflow.indexOf('      - name: Remove pulled'))
+  const upload=stage.indexOf('vercel deploy --prebuilt')
+  const promotion=stage.indexOf('vercel promote')
+  assert.ok(stage.indexOf('Toronto night publication freeze')<upload)
+  assert.ok(stage.lastIndexOf('Toronto night publication freeze')>upload && stage.lastIndexOf('Toronto night publication freeze')<promotion)
+  assert.ok(stage.indexOf('cutoff_ms=')<upload)
+  assert.ok(stage.lastIndexOf('Protected production advanced')<promotion)
 })
