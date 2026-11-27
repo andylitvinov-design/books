@@ -1240,9 +1240,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Time-only checkpoints must reach the same encrypted draft/CAS row.
   // Do not send a heartbeat each second; 30s cadence plus exact pause/exit.
   // The latest closure is used rather than stale opening/provider state.
-  checkpointNowRef.current=({freeze=false}={})=>{
+  checkpointNowRef.current=({freeze=false,closing=false}={})=>{
     if(!autoSaveRef.current||protocolSaved||resumePending)return
     if(freeze)freezeActiveClock()
+    if(closing){
+      // Actual page departure: commit received Live captions and any approved
+      // streamed sentence before requesting the last private checkpoint.
+      speechRef.current?.stop?.()
+      cancelPendingCoachTurn()
+      retainPendingClient()
+    }
     const waiting=inFlightClientRef.current
     queuePrivateDraft(waiting?[...turnsRef.current,{role:'user',content:waiting.message,...waiting.capture,unanswered:true}]:turnsRef.current)
     void autoSaveQueueRef.current?.flush()
@@ -1250,8 +1257,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     if(!autoSaveEnabled)return
     const retry=()=>{void autoSaveQueueRef.current?.flush()}
-    const leave=()=>checkpointNowRef.current?.({freeze:true})
-    const hidden=()=>{if(document.visibilityState==='hidden')leave()}
+    const leave=()=>checkpointNowRef.current?.({freeze:true,closing:true})
+    const hidden=()=>{if(document.visibilityState==='hidden')checkpointNowRef.current?.({freeze:true})}
     const heartbeat=()=>{if(document.visibilityState==='visible')checkpointNowRef.current?.()}
     window.addEventListener('online',retry);window.addEventListener('pagehide',leave)
     document.addEventListener('visibilitychange',hidden)
