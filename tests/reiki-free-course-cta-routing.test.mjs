@@ -43,9 +43,10 @@ test("main Reiki hero CTAs go to the interactive learner rather than an overview
   const entry = read("components/reiki-practitioner-entry.tsx");
   assert.match(entry, /const language = locale === "ru" \? "ru" : "en"/);
   assert.match(entry, /const destination = reikiLandingPath\(language\) \+ "\/daybook"/);
-  assert.match(entry, /await appFetch\("bootstrap\?view=portrait"\);[\s\S]*?window.location.assign\(destination\)/);
-  assert.match(entry, /status !== 401\) throw failure/);
-  assert.match(entry, /appFetch\("auth\/start",[\s\S]*?continueTo: "energywork-daybook"/);
+  assert.match(entry, /check: "bootstrap\?view=portrait"/);
+  assert.match(entry, /onAuthorized: \(\) => window.location.assign\(destination\)/);
+  assert.match(entry, /continuation: "energywork-daybook"/);
+  assert.match(read("components/use-google-page-action.js"), /failure\?\.status!==401\|\|resumed/);
   assert.match(entry, /data-reiki-start-free/);
   assert.doesNotMatch(entry, /lead-form|enquiry-form/);
 

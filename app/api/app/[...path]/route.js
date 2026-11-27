@@ -10,6 +10,7 @@ import {
   createIdentityLinkProof, verifyIdentityLinkProof,
 } from '@/lib/app/telegram-oauth.mjs'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
+import {isPageAuthContinuation,safePageAuthReturnPath,pageAuthSuccessPath} from '@/lib/app/page-auth-continuation.mjs'
 import { clarityDaybookPath, clarityOnboardingPath } from '@/lib/app/clarity-program.mjs'
 import {programFromContinuation,programDaybookPath,programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
@@ -302,7 +303,7 @@ async function handle(request, { params }) {
       const reikiFlow = body.reikiSharing === true ? randomUUID() : null
       const selectedProvider = oauthProvider(authChoice)
       if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(body.continueTo) ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','my-coach-action','clarity-daybook','goal-daybook','business-daybook'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -315,7 +316,7 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null,
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira', 'clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira','my-coach-action', 'clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) &&
         !['commander-monitor','cabinet','progress','settings','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
@@ -332,7 +333,8 @@ async function handle(request, { params }) {
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && (!safeEnquiryReturnPath(returnPath, locale) || native)) ||
-          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
+          (continueTo !== 'enquiry' && returnPath !== null && (authChoice!=='google'||!safePageAuthReturnPath(returnPath,continueTo,locale))) ||
+          (continueTo === 'my-coach-action' && returnPath === null)) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
         {
@@ -392,7 +394,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira','my-coach-action','clarity-daybook','goal-daybook','business-daybook'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -441,14 +443,16 @@ async function handle(request, { params }) {
         catch { throw new AppError('INVALID_RECIPIENT',400) }
       }
       if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
-          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (url.searchParams.getAll('returnPath').length>1 ||
+          (continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
+          (continueTo !== 'enquiry' && returnPath !== null && !safePageAuthReturnPath(returnPath,continueTo,locale)) ||
+          (continueTo === 'my-coach-action' && returnPath === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','progress','settings','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','progress','settings','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtube','practitioner-youtubeConnect','practitioner-youtubeConnectEn','energywork-daybook','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira','my-coach-action','clarity-daybook','goal-daybook','business-daybook'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -457,7 +461,7 @@ async function handle(request, { params }) {
         if (linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id','reikiJoin']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id','reikiJoin','returnPath']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -466,7 +470,9 @@ async function handle(request, { params }) {
         else handoff.searchParams.set('error','cancelled')
         return finishAuth(NextResponse.redirect(handoff.toString(),{status:303,headers:PRIVATE_HEADERS}))
       }
-      const destination = intentId
+      const pageReturn = isPageAuthContinuation(continueTo) && returnPath !== null
+        ? pageAuthSuccessPath(returnPath,continueTo,locale) : null
+      const destination = pageReturn ? origin+pageReturn : intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
@@ -546,7 +552,7 @@ async function handle(request, { params }) {
         : continueTo === 'my-coach-mira' ? `${origin}/${locale}/my-coach` : destination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(pageReturn) url.searchParams.delete('hh_resume'); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -558,7 +564,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(pageReturn) url.searchParams.delete('hh_resume'); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -605,7 +611,7 @@ async function handle(request, { params }) {
       // On first Google sign-in, the client must finish explicit account
       // consent before a private thread is created. Keep the chosen master's
       // public slug through this existing Cabinet onboarding, never in storage.
-      const verifiedDestination=linkedAccount ? (url.searchParams.get('quick')==='1' ? destination : origin+'/'+locale+'/app/settings?identity=linked') : continueTo==='direct-messages'&&account.onboardingState!=='active'
+      const verifiedDestination=linkedAccount ? (url.searchParams.get('quick')==='1' ? destination : origin+'/'+locale+'/app/settings?identity=linked') : pageReturn ? destination : continueTo==='direct-messages'&&account.onboardingState!=='active'
         ? origin+directMessengerSetupPath(locale,recipientSlug) : continueTo==='clarity-daybook'&&account.onboardingState!=='active'
         ? origin+clarityOnboardingPath(locale) : programFromContinuation(continueTo)&&account.onboardingState!=='active'
         ? origin+programOnboardingPath(locale,programFromContinuation(continueTo)) : destination

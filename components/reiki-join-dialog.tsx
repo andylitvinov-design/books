@@ -5,6 +5,12 @@ import { ArrowRight, BookOpen, Layers, LockKeyhole, Sparkles, X } from "lucide-r
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./reiki-join-dialog.module.css";
 
+const coachCopy = {
+  en: { badge: 'MY COACH', title: 'Sign in / create your account', intro: 'Continue with your chosen coach in your personal Holistic House account.', course: 'My Coach', cover: 'Your personal Daybook', lessons: 'Your coach', progress: 'Save progress', practices: 'Private sessions', google: 'Sign in with Google', action: 'and continue', wait: 'Opening Google…', note: 'A free account is created automatically if you are new. Your sessions stay private; no mailing subscription.', private: 'Secure & private', free: 'Free account', close: 'Close sign-in window' },
+  ru: { badge: 'MY COACH', title: 'Войти / создать кабинет', intro: 'Продолжите с выбранным коучем в личном кабинете Holistic House.', course: 'My Coach', cover: 'Ваш личный Daybook', lessons: 'Ваш коуч', progress: 'Ваш прогресс', practices: 'Личные сессии', google: 'Войти через Google', action: 'и продолжить', wait: 'Открываем Google…', note: 'Если вы здесь впервые, бесплатный кабинет создаётся автоматически. Сессии остаются личными; без подписки на рассылку.', private: 'Конфиденциально', free: 'Бесплатный кабинет', close: 'Закрыть окно входа' },
+  es: { badge: 'MY COACH', title: 'Accede / crea tu cuenta', intro: 'Continúa con tu coach en tu cuenta personal de Holistic House.', course: 'My Coach', cover: 'Tu Daybook personal', lessons: 'Tu coach', progress: 'Guarda tu progreso', practices: 'Sesiones privadas', google: 'Accede con Google', action: 'y continúa', wait: 'Abriendo Google…', note: 'Si eres nuevo, se crea una cuenta gratuita automáticamente. Tus sesiones son privadas; sin suscripción a correos.', private: 'Seguro y privado', free: 'Cuenta gratuita', close: 'Cerrar ventana de acceso' },
+} as const;
+
 const copy = {
   en: { badge: "JOIN THE COURSE", title: "Join the Reiki Practitioner Course", intro: "Start your free Reiki journey in your personal Daybook.", course: "Reiki Practitioner", cover: "5 weeks · 3 Reiki systems · Free", lessons: "Online lessons", progress: "Save progress", practices: "Reiki practices", google: "Sign in with Google", action: "and join the course", wait: "Opening Google…", note: "Your free account is created automatically. Name and email are saved in Academy CRM for enrollment. Your journal stays private; no mailing subscription.", private: "Secure & private", free: "Free access", close: "Close sign-in window" },
   ru: { badge: "ПРИСОЕДИНИТЬСЯ К КУРСУ", title: "Станьте практиком Рейки", intro: "Начните бесплатный курс в личном дневнике Daybook.", course: "Практик Рейки", cover: "5 недель · 3 системы · Бесплатно", lessons: "Онлайн-уроки", progress: "Ваш прогресс", practices: "Практики Рейки", google: "Войти через Google", action: "и начать курс", wait: "Открываем Google…", note: "Бесплатный кабинет создаётся автоматически. Имя и email сохраняются в CRM Академии для записи на курс. Дневник личный, без рассылок.", private: "Конфиденциально", free: "Бесплатный доступ", close: "Закрыть окно входа" },
@@ -20,8 +26,9 @@ function GoogleMark() {
   </svg>;
 }
 
-export function ReikiJoinDialog({ locale, busy, error, onGoogle, onDismiss }: { locale: PublicLocale; busy: boolean; error: string; onGoogle: () => void; onDismiss: () => void }) {
-  const t = copy[locale] || copy.en;
+export function ReikiJoinDialog({ locale, busy, error, onGoogle, onDismiss, mode = 'reiki' }: { locale: PublicLocale; busy: boolean; error: string; onGoogle: () => void; onDismiss: () => void; mode?: 'reiki' | 'coach' }) {
+  const words = mode === 'coach' ? coachCopy : copy;
+  const t = words[locale] || words.en;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -33,7 +40,7 @@ export function ReikiJoinDialog({ locale, busy, error, onGoogle, onDismiss }: { 
       if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
-  return <dialog ref={dialogRef} className={styles.dialog} data-reiki-join-dialog aria-labelledby={titleId}
+  return <dialog ref={dialogRef} className={styles.dialog} data-reiki-join-dialog={mode === 'reiki' ? true : undefined} data-hh-google-join={mode} aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); if (!busy) onDismiss(); }}
     onClick={event => { if (event.target === event.currentTarget && !busy) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onDismiss(); } }}>
     <div className={styles.inner}>
@@ -65,7 +72,7 @@ export function ReikiJoinDialog({ locale, busy, error, onGoogle, onDismiss }: { 
         <div><span><Sparkles size={21} aria-hidden="true" /></span>{t.practices}</div>
       </div>
       <p className={styles.note}>{t.note}</p>
-      <button type="button" className={styles.google} data-reiki-join-google disabled={busy} aria-busy={busy} onClick={onGoogle} autoFocus>
+      <button type="button" className={styles.google} data-reiki-join-google={mode === 'reiki' ? true : undefined} data-hh-google-join-action disabled={busy} aria-busy={busy} onClick={onGoogle} autoFocus>
         <GoogleMark /><span>{busy ? t.wait : <>{t.google}<br />{t.action}</>}</span><ArrowRight size={22} aria-hidden="true" />
       </button>
       {error && <p className={styles.error} role="alert">{error}</p>}

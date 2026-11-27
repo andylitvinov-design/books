@@ -637,12 +637,14 @@ test('Director guidance and consented references never interrupt human speech; r
 
 test('catalog session entries load a new document with the session voice policy',()=>{
  const catalog=load('components/my-coach-catalog.jsx')
- const entryTags=[...catalog.matchAll(/<(a|Link)\b[^<>]*href=\{(?:startHref|coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\))\}[^<>]*>/g)]
- assert.equal(entryTags.length,4,'hero Talk, plan, persona card and legacy Start are session links')
- for(const [tag,name] of entryTags){
-  assert.equal(name,'a','Next Link retains the catalog microphone/CSP policy')
-  assert.doesNotMatch(tag,/onClick|prefetch/)
- }
+ const entryTags=[...catalog.matchAll(/<MyCoachExpressStart\b[^<>]*href=\{(?:startHref|coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\))\}[^<>]*>/g)]
+ assert.equal(entryTags.length,5,'Mira or alternate hero Talk, plan, persona card and legacy Start use the shared auth gate')
+ for(const [tag] of entryTags)assert.doesNotMatch(tag,/prefetch/)
+ const gate=load('components/my-coach-express-start.jsx')
+ assert.match(gate,/<a \{\.\.\.buttonProps\}[^>]*href=\{target\} onClick=\{start\}/)
+ assert.match(gate,/event\.preventDefault\(\)/)
+ assert.match(gate,/onAuthorized:action=>window\.location\.assign\(action\.href\)/)
+ assert.doesNotMatch(gate,/router\.push|<Link\b/)
 })
 
 test('in-call Live context grants are checked without a second Gemini inference',async()=>{
