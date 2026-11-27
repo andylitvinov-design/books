@@ -1,6 +1,7 @@
 'use client'
 import {coachCourseProtocolRows} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {coachGroupTone} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {ClarityInnerVector} from './clarity-semantic-result'
 import {EvidenceChecks} from './my-coach-session-state-card'
 import styles from './my-coach-session-state-card.module.css'
 const copy={
@@ -19,6 +20,7 @@ export default function MyCoachCourseProgress({courseSessionId,turns,review,loca
  const groupList=groups||[{id:'course',label:t.title,children:rows,total:rows.length,recorded:rows.filter(row=>row.quote).length,confirmed,verifiedFraction:confirmed/rows.length,recordedFraction:rows.filter(row=>row.quote).length/rows.length,skippedFraction:skipped/rows.length}]
  const words=({ru:['Занесено','Проверено'],en:['Captured','Verified'],es:['Registrado','Verificado']})[lang]
  return <section data-coach-course-progress aria-label={t.title} style={{display:'grid',gap:8,margin:'10px 0'}}>
+   {courseSessionId==='clarity_day_2'&&<ClarityInnerVector rows={rows} locale={lang}/>}
    <strong>{t.title}</strong>
    <small>{t.confirmed}: {confirmed}/{rows.length} · {t.needs_confirmation}: {pending}{skipped>0?' · '+t.skipped_by_client+': '+skipped:''}</small>
    {groupList.map(group=><section key={group.id} className={styles.protocolGroup} data-coach-protocol-group={group.id}>
