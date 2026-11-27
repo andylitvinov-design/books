@@ -26,7 +26,7 @@ assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, no
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
 function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
-  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
+  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],deviceUtterances=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -59,7 +59,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
         // device-narration fallback. The latter has real start/end events.
         const recoveryCue=typeof utterance.volume==='number'
         if(recoveryCue){cues++;cueVolumes.push(utterance.volume)}
-        else deviceSpoken++
+        else {deviceSpoken++;deviceUtterances.push(utterance.text)}
         if(!recoveryCue||!stuckCue)
           queueMicrotask(()=>{utterance.onstart?.();utterance.onend?.()})
       },
@@ -125,7 +125,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     onVoiceLevel(){},onTranscript(){},onDraft(value){drafts.push(value)},
   },ref)
   return {
-    ref,voices,inputs,phases,drafts,
+    ref,voices,inputs,phases,drafts,deviceUtterances,
     hide(){fakeDocument.visibilityState='hidden';documentEvents.get('visibilitychange')?.()},
     show(){fakeDocument.visibilityState='visible';documentEvents.get('visibilitychange')?.()},
     pagehide(){windowEvents.get('pagehide')?.()},
@@ -154,7 +154,7 @@ async function nextMic(session,count){
 }
 test('one Play sustains five iOS 27 synthetic turns and recovers one failed natural voice',async()=>{
   const session=createSession({ttsFailures:[3]})
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true}),true)
   let mic=await nextMic(session,1)
   const phrases=['Я хочу обсудить тревогу','Мне важно быть услышанным',
     'У меня это связано с работой','Я часто останавливаю дыхание',
@@ -179,7 +179,7 @@ test('one Play sustains five iOS 27 synthetic turns and recovers one failed natu
 })
 test('temporary speech-network errors auto-rearm; permission denial and End stop',async()=>{
   const session=createSession()
-  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
   const mic=await nextMic(session,1)
   mic.onerror?.({error:'network'})
   assert.equal(mic.aborted,true,'old silent recognizer detached before bounded retry')
@@ -194,7 +194,7 @@ test('temporary speech-network errors auto-rearm; permission denial and End stop
 })
 test('safety reply stops the speech loop rather than prompting for another user turn',async()=>{
   const session=createSession({respond:()=>({reply:'Please seek human support.',mode:'safety'})})
-  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
   const mic=await nextMic(session,1)
   mic.hear('Мне сейчас небезопасно')
   for(let i=0;i<12;i++)await new Promise(resolve=>setImmediate(resolve))
@@ -205,7 +205,7 @@ test('safety reply stops the speech loop rather than prompting for another user 
 
 test('iOS 27 naturally ends short yes/no turns without poisoning the next mic',async()=>{
  const session=createSession()
- session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
  const noiseMic=await nextMic(session,1)
  noiseMic.onresult?.({results:[{isFinal:false,0:{transcript:'а'}}]})
  session.flushDelay(6500)
@@ -227,7 +227,7 @@ test('iOS 27 naturally ends short yes/no turns without poisoning the next mic',a
 
 test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS failures',async()=>{
   const session=createSession({ttsFailures:[2,7]})
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true}),true)
   let mic=await nextMic(session,1)
   const phrases=Array.from({length:10},(_,index)=>'Ход клиента номер '+(index+1))
   for(let i=0;i<phrases.length;i++){
@@ -248,7 +248,7 @@ test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS
 
 test('RU replies without a native RU voice stay as text, never speak with EN default',async()=>{
   const session=createSession({ttsFailures:[1],deviceVoices:[{name:'English default',lang:'en-US',localService:true}]})
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true}),true)
   let mic=await nextMic(session,1)
   mic.hear('Я хочу говорить по-русски')
   mic=await nextMic(session,2)
@@ -260,7 +260,7 @@ test('RU replies without a native RU voice stay as text, never speak with EN def
 })
 test('a deaf iOS recognizer retries a bounded number of times, then stops claiming to listen',async()=>{
   const session=createSession()
-  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
   for(let count=1;count<=4;count++){
     const mic=await nextMic(session,count)
     session.flushDelay(9000) // Safari fired onstart but no speech/results/end
@@ -274,7 +274,7 @@ test('a deaf iOS recognizer retries a bounded number of times, then stops claimi
 })
 test('iOS Safari no-onstart hang is watched before claiming the microphone works',async()=>{
   const session=createSession({skipSpeechStart:true})
-  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
   const first=await nextMic(session,1)
   session.flushDelay(14000)
   assert.equal(first.aborted,true)
@@ -284,7 +284,7 @@ test('iOS Safari no-onstart hang is watched before claiming the microphone works
 })
 test('stuck Safari recovery cue does not start a deaf recognizer or silently continue',async()=>{
   const session=createSession({stuckCue:true})
-  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
   for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))
   assert.equal(session.cues,1)
   assert.equal(session.voices[0].started,false,'a cancelled cue must not count as recovery')
@@ -451,7 +451,7 @@ test('Basic voice pause retains the mounted logical conversation and resumes wit
 
 test('explicit pause preserves editable interim words and resumes the same mounted conversation',async()=>{
   const session=createSession()
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true}),true)
   const first=await nextMic(session,1)
   first.onresult?.({results:[{isFinal:false,0:{transcript:'Мне важно сохранить эту мысль'}}]})
   assert.equal(session.ref.current.pauseSession(),true)
@@ -460,7 +460,7 @@ test('explicit pause preserves editable interim words and resumes the same mount
   assert.equal(session.inputs.length,0,'pause must not submit incomplete speech')
   assert.equal(session.drafts.at(-1),'Мне важно сохранить эту мысль')
   const starts=session.starts,intros=session.intros
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.'),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru')),true)
   const second=await nextMic(session,2)
   assert.notEqual(first,second)
   assert.equal(session.starts,starts,'resume must not restart the session')
@@ -470,7 +470,7 @@ test('explicit pause preserves editable interim words and resumes the same mount
 
 test('background and pagehide require explicit Play and do not consume another introduction or turn',async()=>{
   const session=createSession()
-  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true}),true)
   const first=await nextMic(session,1)
   const introductions=session.intros,starts=session.starts,tts=session.ttsCalls
   session.hide()
@@ -493,7 +493,7 @@ test('background and pagehide require explicit Play and do not consume another i
 test('all public coaches retain approved voice or text, never Fish/device substitution on dynamic replies',async()=>{
   for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const provider of ['fish_free','gemini_tts_free']){
     const session=createSession({personaId,cloudProvider:provider,ttsFailures:[1]})
-    assert.equal(session.ref.current.startSession('Я рядом и внимательно вас слушаю. Готовы начать?',{naturalVoice:true}),true)
+    assert.equal(session.ref.current.startSession(coachSessionOpeningLine(personaId,'ru'),{naturalVoice:true}),true)
     const mic=await nextMic(session,1)
     mic.hear('Да, я готов начать')
     await nextMic(session,2)
@@ -516,4 +516,21 @@ test('full captured utterances remain separate from the bounded model window',()
   assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory\.filter\(row=>row\.content\.length<=1200\),10\)/)
   assert.match(ui,/if\(message\.length>1200\)\{\s*retainPendingClient\(\)/)
   assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);captureBasicIntroduction\(\)\}\}/)
+})
+
+
+test('personalized greeting is local-only, never the generic public MP3 or cloud TTS',async()=>{
+ const greeting=coachSessionOpeningLine('mira','ru','Анна')
+ assert.match(greeting,/Анна/)
+ for(const deviceVoices of [[{name:'RU local',lang:'ru-RU',localService:true}],[{name:'RU remote',lang:'ru-RU',localService:false}]]){
+  const session=createSession({deviceVoices})
+  assert.equal(session.ref.current.startSession(greeting,{naturalVoice:true}),true)
+  const mic=await nextMic(session,1)
+  assert.equal(session.intros,0,'public static greeting must not replace the client name')
+  assert.equal(session.ttsCalls,0,'private greeting must not leave the device')
+  assert.deepEqual(session.deviceUtterances,deviceVoices[0].localService?[greeting]:[])
+  assert.equal(session.inputs.length,0,'a greeting is not a client turn')
+  session.ref.current.stop()
+  assert.equal(mic.aborted,true)
+ }
 })
