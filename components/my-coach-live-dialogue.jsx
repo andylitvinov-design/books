@@ -1112,7 +1112,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // text-model + WAV-TTS pipeline. Do not charge another provider.
       const message=draft.trim()
       if(!message)return null
-      if(nameCorrectionRef.current||openingProgress.pendingNameCorrection||coachExplicitNameCorrection(message)){
+      if(nameCorrectionRef.current||openingProgress.pendingNameCorrection||coachExplicitNameCorrection(message)||coachExplicitRecall(message)){
         speechRef.current?.stop?.();voicePauseRef.current=false
         setVoiceState({phase:'idle',beat:0})
         return await sendMessage(message,{forceLocal:true})
@@ -1445,7 +1445,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const pendingName=nameCorrectionRef.current||openingProgress.pendingNameCorrection
     const correctionName=coachExplicitNameCorrection(message)
     const isNameCorrection=Boolean(pendingName||(correctionName&&(openingProgress.current!=='name'||localOpeningScope.priorSession?.name)))
-    const goalEligible=!isNameCorrection&&openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
+    const goalEligible=!isNameCorrection&&!coachExplicitRecall(message)&&openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
     if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
     inFlightClientRef.current={requestId,message,capture:{locale:responseLocale,capturedAt:new Date().toISOString()}}
@@ -1859,7 +1859,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(recovered)
       setDraft(previous=>previous.trim()?previous:last.content)
     }
-    setCourseFieldReview(courseGateRef.current?.step.review||null) // preserve acknowledged thematic answers on continuation
+    setCourseFieldReview(previous=>courseGateRef.current?.step.review||previous) // preserve acknowledged thematic answers on continuation
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setPaused(false)
@@ -2142,7 +2142,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       restoredProfileProof.current=coachProfileArchiveEnvelope(p)
       const thematic=readCourseGateStep(result.draft,p)
       courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
-      setCourseFieldReview(thematic?.step.review||null);setCourseGateEnabled(result.courseGateEnabled===true)
+      setCourseFieldReview(thematic?.step.review||result.draft.draftCourseReview||null);setCourseGateEnabled(result.courseGateEnabled===true)
       const structured=readProfileV3Step(result.draft,p)
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)

@@ -95,28 +95,29 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
     },
   }[locale];
 
-  // Higher Magic is the first opt-in module detail in the My Reiki visual system.
-  // Keep the legacy module routes unchanged and reuse the full canonical curriculum.
-  if (module.slug === "higher-magic") {
+  // All six Pro module details share the existing My Reiki visual system.
+  // Keep canonical routes, curriculum, module-specific resources and navigation.
+  if (module.levelId > 1) {
+    const proNumber = String(index).padStart(2, "0");
     const t = {
-      en: { back: "Back to Pro program", kicker: "REIKI YGGDRASIL · PRO · MODULE 06", explore: "Explore the six steps", navigation: "Other modules & school resources" },
-      ru: { back: "Назад в программу Pro", kicker: "РЕЙКИ ИГГДРАСИЛЬ · PRO · МОДУЛЬ 06", explore: "Изучить шесть ступеней", navigation: "Другие модули и материалы школы" },
-      es: { back: "Volver al programa Pro", kicker: "REIKI YGGDRASIL · PRO · MÓDULO 06", explore: "Explorar las seis etapas", navigation: "Otros módulos y materiales de la escuela" },
+      en: { back: "Back to Pro program", kicker: "REIKI YGGDRASIL · PRO · MODULE " + proNumber, explore: "Explore " + level.steps.length + " steps", navigation: "Other modules & school resources" },
+      ru: { back: "Назад в программу Pro", kicker: "РЕЙКИ ИГГДРАСИЛЬ · PRO · МОДУЛЬ " + proNumber, explore: "Изучить программу", navigation: "Другие модули и материалы школы" },
+      es: { back: "Volver al programa Pro", kicker: "REIKI YGGDRASIL · PRO · MÓDULO " + proNumber, explore: "Explorar " + level.steps.length + " etapas", navigation: "Otros módulos y materiales de la escuela" },
     }[locale];
-    const backToPro = "/" + locale + "/academy/principles-of-energywork?program=pro#reiki-pro-higher-magic";
+    const backToPro = "/" + locale + "/academy/principles-of-energywork?program=pro#reiki-pro-" + module.slug;
     return (
-      <main className={proStyles.page} lang={locale} data-my-reiki-module-landing="higher-magic">
+      <main className={proStyles.page} lang={locale} data-my-reiki-module-landing={module.slug}>
         <div className={proStyles.shell}>
-          <MyReikiHeader locale={locale} program="pro" modulePath="/academy/reiki/yggdrasil/higher-magic" />
+          <MyReikiHeader locale={locale} program="pro" modulePath={`/academy/reiki/yggdrasil/${module.slug}`} />
           <ReikiProgramNavigation locale={locale} active="pro" />
         </div>
         <article className={proStyles.deck}>
           <Link className={proStyles.back} href={backToPro} prefetch={false}>← {t.back}</Link>
-          <header className={proStyles.hero} aria-labelledby="higher-magic-title">
-            <div className={proStyles.art}><Image unoptimized src={module.image} alt="" fill sizes="(max-width: 760px) 54vw, 360px" priority /></div>
+          <header className={proStyles.hero} aria-labelledby="yggdrasil-pro-module-title">
+            <div className={proStyles.art}><Image unoptimized src={module.image} alt="" fill sizes="(max-width: 760px) 94vw, 790px" priority /></div>
             <div className={proStyles.heroCopy}>
               <p className={proStyles.kicker}>{t.kicker}</p>
-              <h1 id="higher-magic-title">{module.title[locale]}</h1>
+              <h1 id="yggdrasil-pro-module-title">{module.title[locale]}</h1>
               <p className={proStyles.lead}>{module.lead[locale]}</p>
               <div className={proStyles.stats}>
                 <span><strong>{level.steps.length}</strong>{copy.steps}</span>
@@ -127,6 +128,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
             </div>
           </header>
           <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={false} visualTheme="my-reiki" />
+          {module.levelId === 2 ? <details className={proStyles.resources}><summary>{locale === "ru" ? "Видео и материалы курса инструктора" : locale === "es" ? "Vídeos y materiales de instructor" : "Instructor videos & further material"}</summary><YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /></details> : null}
           <aside className={proStyles.notice}>{copy.notice}</aside>
           <PublicConsultationCta locale={locale} />
           <details className={proStyles.resources}>
@@ -135,6 +137,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
           </details>
           <nav className={proStyles.footerNav} aria-label="Reiki Yggdrasil modules">
             {previous ? <Link href={baseUrl + "/" + previous.slug} prefetch={false}><small>{copy.previous}</small><strong>{previous.title[locale]}</strong></Link> : null}
+            {next ? <Link href={baseUrl + "/" + next.slug} prefetch={false}><small>{copy.next}</small><strong>{next.title[locale]}</strong></Link> : null}
             <Link href={baseUrl} prefetch={false}>{copy.back}<ArrowRight size={16} aria-hidden="true" /></Link>
             <Link href={backToPro} prefetch={false}>{t.back}<ArrowRight size={16} aria-hidden="true" /></Link>
           </nav>
