@@ -4,14 +4,14 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
-import {discoveryTag} from '@/lib/app/self-discovery-themes.mjs'
+import {discoveryTag,discoveryPracticeCount} from '@/lib/app/self-discovery-themes.mjs'
 import styles from './self-discovery.module.css'
 const COPY={
  en:{choose:'Choose one action',do:'Try it now or during your day. You can stop or change your choice.',save:'I tried it — save privately',saved:'Practice saved',retry:'Retry',loading:'Reading saved practices…',error:'Could not confirm private data. Retry.',history:'Previous practices',again:'Practice again',privacy:'Optional. Your own observation, not a test score.'},
  ru:{choose:'Выберите одно действие',do:'Попробуйте сделать это сейчас или в течение дня. Можно остановиться или изменить выбор.',save:'Попробовал(а) — сохранить приватно',saved:'Практика сохранена',retry:'Повторить',loading:'Загружаем сохранённые практики…',error:'Не удалось подтвердить личные данные. Повторите попытку.',history:'Предыдущие практики',again:'Повторить практику',privacy:'Добровольная практика. Личное наблюдение, а не балл теста.'},
  es:{choose:'Elige una acción',do:'Prueba ahora o durante el día. Puedes detenerte o cambiar de opción.',save:'Lo probé — guardar en privado',saved:'Práctica guardada',retry:'Reintentar',loading:'Leyendo prácticas guardadas…',error:'No se pudieron confirmar los datos privados. Reintenta.',history:'Prácticas anteriores',again:'Repetir práctica',privacy:'Opcional. Observación personal, no puntuación.'}}
 const auth=e=>e?.status===401||e?.status===403||e?.code==='ACCOUNT_CHANGED'
-export default function SelfDiscoveryPractice({accountId,locale,theme,onSessionLost}){
+export default function SelfDiscoveryPractice({accountId,locale,theme,onSessionLost,onCount}){
  const t=COPY[locale]||COPY.en
  const [phase,setPhase]=useState('loading'),[notes,setNotes]=useState([]),[choice,setChoice]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false),[saved,setSaved]=useState(false),[retry,setRetry]=useState(0)
  const saver=useRef(null),pending=useRef(null),live=useRef(false),inFlight=useRef(false)
@@ -22,10 +22,10 @@ export default function SelfDiscoveryPractice({accountId,locale,theme,onSessionL
   setPhase('loading');setNotes([])
   collectJournalExport(appFetch,accountId,()=>current).then(data=>{
    if(!current)return
-   setNotes(data.entries.filter(row=>row.tags.includes(tag)));setPhase('ready')
+   const matched=data.entries.filter(row=>row.tags.includes(tag));setNotes(matched);onCount?.(theme.id,discoveryPracticeCount(matched,theme.id));setPhase('ready')
   }).catch(e=>{if(current){if(auth(e))onSessionLost();else setPhase('error')}})
   return()=>{current=false;live.current=false;instance.discard();saver.current=null}
- },[accountId,tag,retry,onSessionLost])
+ },[accountId,tag,theme.id,retry,onSessionLost,onCount])
  async function save(){
   if(inFlight.current||!saver.current||choice===null||phase!=='ready')return
   inFlight.current=true;setBusy(true)
@@ -34,7 +34,7 @@ export default function SelfDiscoveryPractice({accountId,locale,theme,onSessionL
     pending.current={id:crypto.randomUUID(),revision:0,text:theme.title[locale]+': '+theme.choices[choice][locale],tags:[tag],kind:'note',locale,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null}}
    const result=await saver.current.save(pending.current)
    if(!live.current)return
-   pending.current=null;setNotes(old=>[result,...old.filter(row=>row.id!==result.id)]);setSaved(true);setFailed(false)
+   pending.current=null;setNotes(old=>[result,...old.filter(row=>row.id!==result.id)]);setSaved(true);setFailed(false);onCount?.(theme.id,discoveryPracticeCount([result,...notes],theme.id))
   }catch(e){if(live.current){if(auth(e))onSessionLost();else setFailed(true)}}
   finally{inFlight.current=false;if(live.current)setBusy(false)}
  }

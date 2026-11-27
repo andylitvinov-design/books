@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults,discoveryTag,discoverySourceQuery,discoveryNavigation,discoveryTheme,discoveryView} from '../lib/app/self-discovery-themes.mjs'
+import {DISCOVERY_THEMES,freeDiscoveryEntries,themeMatches,themeProgress,themeResults,discoveryTag,discoverySourceQuery,discoveryNavigation,discoveryTheme,discoveryView,discoveryPracticeCount} from '../lib/app/self-discovery-themes.mjs'
 import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
 test('canonical eligible free catalog is covered by themes in all display languages',()=>{
  for(const locale of ['en','ru','es']){
@@ -36,4 +36,11 @@ test('the fixed discovery return preserves theme, language and existing plan nav
  const forged=discoveryNavigation(new URLSearchParams('from=self-discovery&discoveryTheme=https://outside.example&discoveryLocale=ru'),'en')
  assert.equal(forged.href,'/en/app/daybook/self-discovery?theme=love&view=results')
  assert.equal(discoveryTheme(['love']), 'love');assert.equal(discoveryView('https://outside.example'),null)
+})
+
+test('practice count uses distinct persisted notes scoped to theme',()=>{
+ const saved={id:'one',revision:1,kind:'note',tags:['self-discovery:love'],text:'Action'}
+ assert.equal(discoveryPracticeCount([saved,saved,{...saved,id:'draft',revision:0},{...saved,id:'money',tags:['self-discovery:money']},{...saved,id:'empty',text:''}], 'love'),1)
+ assert.equal(discoveryPracticeCount([saved],'all'),0)
+ assert.equal(discoveryPracticeCount([], 'love'),0)
 })

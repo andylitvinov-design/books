@@ -42,7 +42,7 @@ export function CourseSpaceIntro({ locale = 'en', root = '/en/app' }) {
       <p className={styles.intro}>{t.intro}</p>
       <Link className={styles.path} href={'/'+selected+'/app/daybook/self-discovery'} prefetch={false} data-self-discovery-course>
         <span className={styles.pathIcon} aria-hidden="true"><Sparkles size={30}/></span>
-        <span className={styles.pathText}><strong>Self Discovery</strong><small>{{en:'Your tests, personal profile and measurements over time',ru:'Ваши тесты, личный профиль и история измерений',es:'Tus pruebas, perfil personal y mediciones en el tiempo'}[selected]}</small></span>
+        <span className={styles.pathText}><strong>{{en:'Self Discovery',ru:'Курс самопознания',es:'Curso de autoconocimiento'}[selected]}</strong><small>{{en:'Your tests, personal profile and measurements over time',ru:'Ваши тесты, личный профиль и история измерений',es:'Tus pruebas, perfil personal y mediciones en el tiempo'}[selected]}</small></span>
         <ArrowRight className={styles.pathArrow} size={23} aria-hidden="true"/>
       </Link>
       <a className={styles.path} href="#my-courses-content" data-course-learning-path>
