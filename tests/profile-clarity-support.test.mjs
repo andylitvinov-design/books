@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 const read = name=>readFileSync(new URL('../'+name,import.meta.url),'utf8')
 const source=read('components/app/profile-space-dashboard.jsx')
 const css=read('components/app/profile-space-dashboard.module.css')
-test('Profile has three ordered top tabs and one three-step Clarity & Support journey',()=>{
+test('Profile has three ordered top tabs and one three-step Express Support journey',()=>{
  const tabs=source.slice(source.indexOf('const tabs = ['),source.indexOf('const diagnostics = ['))
  assert.match(tabs,/id: 'clarity'[\s\S]*id: 'goals'[\s\S]*id: 'business'/)
  assert.match(source,/useState\('clarity'\)/)
@@ -27,7 +27,7 @@ test('Clarity retains existing tools and account routes without fabricating save
  assert.match(source,/reikiLandingPath\(selected\)/)
  assert.match(source,/accountId=\{accountId\}/)
  assert.doesNotMatch(source,/localStorage|sessionStorage/)
- for(const label of ['Clarity & Support','Ясность и поддержка','Claridad y apoyo'])assert.ok(source.includes(label))
+ for(const label of ['Express Support','Экспресс-поддержка','Apoyo exprés'])assert.ok(source.includes(label))
 })
 
 test('Clarity buttons outrank shared cabinet buttons and retain compact mock layout',()=>{
@@ -44,9 +44,9 @@ test('Clarity buttons outrank shared cabinet buttons and retain compact mock lay
 })
 
 test('Approved three-step landing uses one static hero action and numbered photo stages',()=>{
- assert.match(source,/3-Step Clarity Program/)
- assert.match(source,/3 шага к ясности/)
- assert.match(source,/3 pasos hacia la claridad/)
+ assert.match(source,/3-Step Express Program/)
+ assert.match(source,/Экспресс-программа: 3 шага/)
+ assert.match(source,/Programa exprés en 3 pasos/)
  assert.match(source,/Start Free Program/)
  assert.match(source,/\{index\+1\}/)
  assert.match(source,/data-stage-photo/)
@@ -84,4 +84,21 @@ test('Lower Clarity course CTA preserves Google continuation independently of co
  assert.match(source,/<ProfileProgramRequest locale=\{selected\} program="clarity"/)
  assert.match(source,/<ClarityStartLink locale=\{selected\} className=\{styles\.clarityPersonal\}>[\s\S]*?\{c\.planButton\}[\s\S]*?<\/ClarityStartLink>/)
  assert.doesNotMatch(source,/<Link href=\{personal\} className=\{styles\.clarityPersonal\}/)
+})
+
+
+test('Express landing extends the original two screens with three ordered localized session overviews',()=>{
+ const content=source.slice(source.indexOf('const EXPRESS_PARTS ='),source.indexOf('const BUSINESS ='))
+ for(const key of ['diagnostics','homeopathy','constellations'])assert.equal(content.split("key:'"+key+"'").length-1,3)
+ for(const title of ['Express Diagnostics','Homeopathy','Business Constellations','Экспресс-диагностика','Гомеопатия','Бизнес-расстановки','Evaluación exprés','Homeopatía','Constelaciones empresariales'])assert.ok(content.includes(title),title)
+ assert.match(source,/<\/ClarityStartLink>\s*<ExpressProgramOverview locale=\{selected\} copy=\{c\}\/>\s*\{!embeddedSection && <ReikiProfileCourseCard/)
+ assert.match(content,/id=\{'express-'\+part.key\}/)
+ assert.match(content,/services#service-group-/)
+ assert.ok(content.includes('no reliable evidence'))
+ assert.ok(content.includes('arranged separately'))
+ assert.match(css,/EXPRESS_SUPPORT_LANDING_20261127/)
+ assert.match(css,/min-height:min\(700px,calc\(100svh - 112px\)\)/)
+ assert.match(css,/support-first-screen-photos\.webp/)
+ assert.match(source,/id: 'clarity', title: navigation.clarity/)
+ assert.match(source,/clarity: 'Express'/)
 })

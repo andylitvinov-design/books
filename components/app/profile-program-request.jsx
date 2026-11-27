@@ -8,9 +8,9 @@ import {telegramBusinessServiceTitle,telegramServiceRequestUrl} from '@/lib/assi
 import styles from './profile-program-request.module.css'
 
 const copy = {
-  en:{details:'Request Details',book:'Request a consultation',request:'I would like details and to request a consultation.',note:'Send your message to request a consultation.',clarity:'Clarity & Support',goal:'My Goal',business:'My Business'},
-  ru:{details:'Запросить детали',book:'Запросить консультацию',request:'Хочу узнать подробности и запросить консультацию.',note:'Отправьте сообщение для запроса консультации.',clarity:'Ясность и поддержка',goal:'Моя цель',business:'Мой бизнес'},
-  es:{details:'Solicitar detalles',book:'Solicitar una consulta',request:'Quiero conocer los detalles y solicitar una consulta.',note:'Envía tu mensaje para solicitar una consulta.',clarity:'Claridad y apoyo',goal:'Mi meta',business:'Mi negocio'}
+  en:{details:'Request Details',book:'Request a consultation',request:'I would like details and to request a consultation.',note:'Send your message to request a consultation.',clarity:'Express Support',goal:'My Goal',business:'My Business'},
+  ru:{details:'Запросить детали',book:'Запросить консультацию',request:'Хочу узнать подробности и запросить консультацию.',note:'Отправьте сообщение для запроса консультации.',clarity:'Экспресс-поддержка',goal:'Моя цель',business:'Мой бизнес'},
+  es:{details:'Solicitar detalles',book:'Solicitar una consulta',request:'Quiero conocer los detalles y solicitar una consulta.',note:'Envía tu mensaje para solicitar una consulta.',clarity:'Apoyo exprés',goal:'Mi meta',business:'Mi negocio'}
 }
 
 export default function ProfileProgramRequest({locale='en',program,open,onOpenChange,request,option}) {

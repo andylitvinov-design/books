@@ -1129,3 +1129,37 @@
 .dashboard .businessScreenText{display:grid;gap:6px}
 .dashboard .businessScreenText p{margin:0;font-size:14px;line-height:1.45}
 .dashboard .businessSessionBook{display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:44px;padding:8px 10px;border:1px solid #c7ae77;border-radius:10px;background:#f5e3be;color:#075b43!important;font:700 15px/1.3 system-ui,sans-serif;text-align:left}
+
+/* EXPRESS_SUPPORT_LANDING_20261127 — three continuous photo-led mobile screens,
+   based on the existing Reiki Practitioner overview, with no extra page chrome. */
+.expressOverview{display:grid;gap:14px;min-width:0;margin-top:6px}
+.dashboard[data-profile-space-section="clarity"] .expressScreen{--express-bg:#fff4df;--express-ink:#133d2e;--express-muted:#795521;--express-border:#d8b575;isolation:isolate;display:flex;flex-direction:column;min-width:0;min-height:min(700px,calc(100svh - 112px));overflow:hidden;scroll-margin-top:18px;border:1px solid var(--express-border);border-radius:22px;background:var(--express-bg);color:var(--express-ink);box-shadow:0 5px 14px #3a260c25;box-sizing:border-box}
+.dashboard[data-profile-space-section="clarity"] .expressScreen[data-express-part="homeopathy"]{--express-bg:#fff4e2;--express-muted:#745321}
+.dashboard[data-profile-space-section="clarity"] .expressScreen[data-express-part="constellations"]{--express-bg:#073d2d;--express-ink:#fff6e2;--express-muted:#f1cf8c;--express-border:#b89960}
+.expressArtwork{position:relative;flex:none;min-width:0;aspect-ratio:16/9;max-height:min(32svh,310px);background-position:center;background-repeat:no-repeat;background-size:cover}
+.expressArtwork[data-express-art="diagnostics"]{background-image:url("/images/holistic-house/course-focus-mountain-boy.webp");background-position:center 42%}
+.expressArtwork[data-express-art="homeopathy"]{background-image:url("/images/holistic-house/support-first-screen-photos.webp");background-size:300% 200%;background-position:100% 0}
+.expressArtwork[data-express-art="constellations"]{background-image:url("/images/holistic-house/support-first-screen-photos.webp");background-size:300% 200%;background-position:50% 0}
+.expressArtwork:after{content:"";position:absolute;inset:auto 0 0;height:22%;background:linear-gradient(transparent,var(--express-bg));pointer-events:none}
+.expressBody{display:flex;flex:1;flex-direction:column;justify-content:center;align-items:stretch;gap:9px;min-width:0;padding:10px clamp(12px,4vw,28px) 17px}
+.expressEyebrow{display:flex;justify-content:center;align-items:center;gap:7px;color:var(--express-muted);font:800 11px/1.2 system-ui,sans-serif;letter-spacing:.13em}
+.expressEyebrow span{display:grid;place-items:center;background:#087252;color:#fff6df;width:27px;height:27px;border:1px solid #d7b676;border-radius:50%;font:700 17px/1 Georgia,serif;letter-spacing:0}
+.dashboard[data-profile-space-section="clarity"] .expressScreen h2{display:flex;justify-content:center;align-items:center;gap:8px;color:var(--express-ink)!important;text-align:center;font:700 clamp(26px,7vw,42px)/1.08 Georgia,serif!important;letter-spacing:-.025em;margin:0!important;overflow-wrap:anywhere;text-wrap:balance}
+.expressScreen h2 svg{flex:none;color:var(--express-muted)}
+.dashboard[data-profile-space-section="clarity"] .expressSubtitle{color:var(--express-muted)!important;font:italic 600 clamp(17px,4.8vw,23px)/1.2 Georgia,serif!important;text-align:center;margin:0!important}
+.dashboard[data-profile-space-section="clarity"] .expressIntro{color:var(--express-ink)!important;font:500 clamp(14px,3.8vw,17px)/1.42 system-ui,sans-serif!important;text-align:center;margin:0!important}
+.expressIncludes{border:1px solid var(--express-border);border-radius:15px;padding:10px 12px;background:rgba(255,255,255,.09)}
+.dashboard[data-profile-space-section="clarity"] .expressIncludes h3{color:var(--express-ink)!important;font:700 18px/1.2 Georgia,serif!important;margin:0 0 7px!important}
+.expressIncludes ul{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+.expressIncludes li{display:flex;gap:8px;align-items:flex-start;color:var(--express-ink);font:500 14px/1.35 system-ui,sans-serif}
+.expressIncludes li span{display:grid;place-items:center;flex:none;width:21px;height:21px;border-radius:50%;background:#e9ce91;color:#234334;font:700 13px/1 Georgia,serif}
+.expressResult{border-left:2px solid var(--express-border);padding:5px 9px;color:var(--express-ink)}
+.expressResult strong{display:block;color:var(--express-muted);font:700 15px/1.25 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .expressResult p{color:var(--express-ink)!important;font:500 14px/1.35 system-ui,sans-serif!important;margin:3px 0 0!important}
+.dashboard[data-profile-space-section="clarity"] .expressNotice{color:var(--express-ink)!important;font:500 12px/1.4 system-ui,sans-serif!important;margin:0!important}
+.dashboard[data-profile-space-section="clarity"] .expressLink{min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;padding:9px 12px;border:1px solid #e4bb64;border-radius:999px;text-align:center;overflow-wrap:anywhere;color:#30230f!important;background:linear-gradient(145deg,#fff0b4,#f6d178);text-decoration:none;font:700 clamp(15px,4.1vw,19px)/1.2 Georgia,serif}
+.expressLink svg{flex:none}
+.expressLink:focus-visible{outline:3px solid #a87526;outline-offset:3px}
+.dashboard[data-profile-space-section="clarity"] .expressTerms{font:500 12px/1.4 system-ui,sans-serif!important;color:#395044!important;margin:0 4px 3px!important}
+@media(max-width:374px){.expressBody{padding:9px 10px 13px;gap:8px}.expressIncludes{padding:8px}.expressScreen h2 svg{width:22px;height:22px}}
+@media(max-height:650px) and (max-width:600px){.expressArtwork{max-height:26svh}.expressBody{gap:7px}}

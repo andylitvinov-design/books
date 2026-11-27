@@ -86,26 +86,86 @@ const TEXT = {
 
 const CLARITY = {
   en: {
-    tab:'Clarity & Support', start:'START HERE', intro:'Find direction, restore your energy and create a clear next step.',
-    clarity:'Start Free Program', question:'Where would you like to begin?', program:'3-Step Clarity Program', programHint:'A practical path to understanding, support and your next goal.', planButton:'Get My Plan Now',
+    tab:'Express Support', start:'START HERE', intro:'Understand your situation, explore support and choose your next step.',
+    clarity:'Start Free Program', question:'Where would you like to begin?', program:'3-Step Express Program', programHint:'A practical path to understanding, support and your next goal.', planButton:'Get My Plan Now',
     needs:[['I don’t know my goal','Clarify wishes and direction'],['Low energy & health','Check body, stress and vitality'],['Emotional support','Anxiety, overwhelm, relationships'],['Need clarity','Understand your situation and next step']],
-    stages:[['Clarify Your Situation','Understand what’s happening now: needs, challenges and resources.'],['Support Your State & Energy','Restore balance, release tension and recharge your vitality.'],['Analyze & Choose Your Goal','Define a clear direction, set your goal and create a simple plan.']],
+    stages:[['Express Diagnostics','Understand your situation, needs and resources.'],['Homeopathy & Personal Support','Discuss wellbeing concerns and optional complementary support.'],['Business Constellations','Explore your goal, relationships and practical next steps.']],
     practices:'Free guided practices', freeReiki:'Free Reiki practices & learning', allTests:'Explore tests', goal:'Create a new goal', plan:'My coaching plan', consultation:'Explore personal support', personal:'Get Personal Guidance', personalHint:'Get personal guidance and recommendations', account:'My library & account', notice:'Self-reflection and wellbeing tools are not medical diagnosis or treatment. For health concerns, seek qualified medical care.'
   },
   ru: {
-    tab:'Ясность и поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Проясните ситуацию, восстановите силы и найдите свой следующий шаг.',
-    clarity:'Начать бесплатно', question:'С чего хотите начать?', program:'3 шага к ясности', programHint:'Путь к пониманию, поддержке и новой цели.', planButton:'Получить мой план',
+    tab:'Экспресс-поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Проясните ситуацию, найдите подходящую поддержку и определите следующий шаг.',
+    clarity:'Начать бесплатно', question:'С чего хотите начать?', program:'Экспресс-программа: 3 шага', programHint:'Путь к пониманию, поддержке и новой цели.', planButton:'Получить мой план',
     needs:[['Не знаю свою цель','Понять желания и направление'],['Энергия и здоровье','Тело, стресс и жизненные силы'],['Эмоциональная поддержка','Тревога, напряжение, отношения'],['Нужна ясность','Понять ситуацию и следующий шаг']],
-    stages:[['Прояснение ситуации','Понять происходящее: потребности, трудности и ресурсы.'],['Поддержка состояния и энергии','Снизить напряжение и восстановить внутренние ресурсы.'],['Анализ и выбор цели развития','Определить направление, сформулировать цель и план.']],
+    stages:[['Экспресс-диагностика','Понять ситуацию, потребности и ресурсы.'],['Гомеопатия и личная поддержка','Обсудить самочувствие и варианты дополнительной поддержки.'],['Бизнес-расстановки','Исследовать цель, связи и практические шаги.']],
     practices:'Бесплатные практики', freeReiki:'Бесплатное обучение и практики Рейки', allTests:'Все тесты', goal:'Создать новую цель', plan:'Мой план коучинга', consultation:'Подобрать личную поддержку', personal:'Персональная поддержка', personalHint:'Персональный анализ и рекомендации', account:'Мои материалы и аккаунт', notice:'Инструменты самопознания не заменяют медицинскую диагностику и лечение. При проблемах со здоровьем обратитесь к медицинскому специалисту.'
   },
   es: {
-    tab:'Claridad y apoyo', start:'EMPIEZA AQUÍ', intro:'Comprende tu situación, recupera energía y elige tu siguiente paso.',
-    clarity:'Empezar gratis', question:'¿Por dónde quieres empezar?', program:'3 pasos hacia la claridad', programHint:'Un camino hacia la comprensión, el apoyo y tu próxima meta.', planButton:'Obtener mi plan',
+    tab:'Apoyo exprés', start:'EMPIEZA AQUÍ', intro:'Comprende tu situación, explora opciones de apoyo y elige tu siguiente paso.',
+    clarity:'Empezar gratis', question:'¿Por dónde quieres empezar?', program:'Programa exprés en 3 pasos', programHint:'Un camino hacia la comprensión, el apoyo y tu próxima meta.', planButton:'Obtener mi plan',
     needs:[['No conozco mi meta','Aclara tus deseos y rumbo'],['Energía y salud','Cuerpo, estrés y vitalidad'],['Apoyo emocional','Ansiedad, agobio y relaciones'],['Necesito claridad','Comprende tu situación y próximo paso']],
-    stages:[['Aclara tu situación','Comprende tus necesidades, retos y recursos.'],['Apoya tu estado y energía','Recupera el equilibrio y reduce la tensión.'],['Analiza y elige tu meta','Define tu rumbo, tu meta y un plan sencillo.']],
+    stages:[['Evaluación exprés','Comprende tu situación, necesidades y recursos.'],['Homeopatía y apoyo personal','Habla de tu bienestar y de opciones complementarias.'],['Constelaciones empresariales','Explora tu meta, tus relaciones y los próximos pasos.']],
     practices:'Prácticas guiadas gratuitas', freeReiki:'Prácticas y aprendizaje Reiki gratuitos', allTests:'Explorar tests', goal:'Crear una nueva meta', plan:'Mi plan de coaching', consultation:'Explorar apoyo personal', personal:'Solicitar orientación personal', personalHint:'Orientación y recomendaciones personales', account:'Mi biblioteca y cuenta', notice:'Estas herramientas de reflexión no sustituyen el diagnóstico ni el tratamiento médico. Para problemas de salud, consulta a un profesional sanitario.'
   }
+}
+
+
+/* Express Support is the public-facing name. Keep persisted clarity IDs, routes,
+   the three-day independent workbook and all existing coaching grants unchanged. */
+const EXPRESS_PARTS = {
+  en: {
+    step:'SESSION', includes:'What we explore', result:'Your takeaway', details:'Explore this session',
+    terms:'The three-day self-guided Daybook is free. Individual consultations and complementary services are arranged separately.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Express Diagnostics',subtitle:'Understand where you are now',intro:'A focused review of your situation, priorities and the changes you would like to make.',points:['Review your current life situation and main concerns','Explore your needs, strengths and available resources','Identify a priority and a practical direction for support'],outcome:'A clear situation map and next step.',action:'Explore situation review'},
+      {key:'homeopathy',group:'homeopathy',title:'Homeopathy',subtitle:'A personal conversation about wellbeing',intro:'Discuss your individual concerns and preferences, and explore homeopathy as an optional complementary approach.',points:['Discuss physical and emotional experiences','Review what support and care you already receive','Clarify options and questions for your healthcare professional'],outcome:'An informed plan for discussing your support options.',notice:'Homeopathy has no reliable evidence of effectiveness beyond placebo and must not replace or delay medical care.',action:'Explore homeopathy'},
+      {key:'constellations',group:'business',title:'Business Constellations',subtitle:'See your goal in a wider system',intro:'Explore a work, money or business goal through a reflective systemic exercise, considering the relationships and factors around it.',points:['Identify a goal or current business challenge','Map relevant roles, relationships and resources','Choose a realistic next action to test'],outcome:'A visual understanding of the situation and a practical next step.',action:'Explore business support'}
+    ]
+  },
+  ru: {
+    step:'СЕССИЯ', includes:'Что исследуем', result:'Ваш результат', details:'Подробнее об этапе',
+    terms:'Трёхдневный дневник для самостоятельной работы бесплатный. Индивидуальные консультации и дополнительные услуги согласовываются отдельно.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Экспресс-диагностика',subtitle:'Понять, где вы сейчас',intro:'Сфокусированный анализ вашей ситуации, приоритетов и изменений, к которым вы стремитесь.',points:['Обзор жизненной ситуации и основных вопросов','Исследование потребностей, сильных сторон и доступных ресурсов','Выбор приоритета и направления поддержки'],outcome:'Понятная карта ситуации и следующий шаг.',action:'Перейти к анализу ситуации'},
+      {key:'homeopathy',group:'homeopathy',title:'Гомеопатия',subtitle:'Личный разговор о самочувствии',intro:'Обсуждение индивидуальных особенностей и предпочтений, знакомство с гомеопатией как необязательным дополнительным подходом.',points:['Обсуждение физических и эмоциональных ощущений','Обзор уже получаемой помощи и поддержки','Уточнение вариантов и вопросов для медицинского специалиста'],outcome:'Понимание вариантов поддержки и вопросов для обсуждения.',notice:'Эффективность гомеопатии сверх плацебо надёжно не доказана. Она не должна заменять или откладывать медицинскую помощь.',action:'Подробнее о гомеопатии'},
+      {key:'constellations',group:'business',title:'Бизнес-расстановки',subtitle:'Увидеть цель в системе',intro:'Исследование рабочей, финансовой или бизнес-цели с помощью системной рефлексивной практики, учитывающей связи и контекст.',points:['Выбор цели или текущей задачи бизнеса','Исследование ролей, связей и ресурсов','Выбор реалистичного действия для проверки'],outcome:'Наглядная карта ситуации и практический следующий шаг.',action:'Перейти к бизнес-поддержке'}
+    ]
+  },
+  es: {
+    step:'SESIÓN', includes:'Qué exploramos', result:'Tu resultado', details:'Explorar esta sesión',
+    terms:'El diario de tres días para el trabajo autónomo es gratuito. Las consultas individuales y los servicios complementarios se acuerdan por separado.',
+    items:[
+      {key:'diagnostics',group:'consultation',title:'Evaluación exprés',subtitle:'Comprende tu situación actual',intro:'Una revisión centrada en tu situación, tus prioridades y los cambios que deseas realizar.',points:['Revisar tu situación y tus principales inquietudes','Explorar tus necesidades, fortalezas y recursos','Elegir una prioridad y una dirección de apoyo'],outcome:'Un mapa claro de tu situación y un próximo paso.',action:'Explorar el análisis de situación'},
+      {key:'homeopathy',group:'homeopathy',title:'Homeopatía',subtitle:'Una conversación personal sobre bienestar',intro:'Habla de tus inquietudes y preferencias y conoce la homeopatía como opción complementaria no obligatoria.',points:['Hablar de experiencias físicas y emocionales','Revisar la atención y el apoyo que ya recibes','Aclarar opciones y preguntas para tu profesional sanitario'],outcome:'Una visión informada de tus opciones de apoyo.',notice:'No hay evidencia fiable de que la homeopatía sea eficaz más allá del placebo. No debe sustituir ni retrasar la atención médica.',action:'Explorar la homeopatía'},
+      {key:'constellations',group:'business',title:'Constelaciones empresariales',subtitle:'Observa tu meta dentro de un sistema',intro:'Explora una meta laboral, económica o empresarial mediante una práctica reflexiva sistémica que tiene en cuenta las relaciones y el contexto.',points:['Elegir una meta o un reto empresarial','Representar roles, relaciones y recursos','Elegir una acción realista para poner a prueba'],outcome:'Un mapa visual de la situación y un próximo paso práctico.',action:'Explorar el apoyo empresarial'}
+    ]
+  }
+}
+
+function ExpressProgramOverview({locale,copy}) {
+  const t = EXPRESS_PARTS[locale]
+  return <section className={styles.expressOverview} data-express-overview aria-label={copy.program}>
+    {t.items.map((part,index) => {
+      const Icon = [BarChart3,Leaf,BriefcaseBusiness][index]
+      return <article key={part.key} className={styles.expressScreen} data-express-part={part.key}
+        id={'express-'+part.key} aria-labelledby={'express-title-'+part.key}>
+        <div className={styles.expressArtwork} data-express-art={part.key} aria-hidden="true"/>
+        <div className={styles.expressBody}>
+          <div className={styles.expressEyebrow}><span>{index+1}</span>{t.step} {index+1} / 3</div>
+          <h2 id={'express-title-'+part.key}><Icon size={28} aria-hidden="true"/>{part.title}</h2>
+          <p className={styles.expressSubtitle}>{part.subtitle}</p>
+          <p className={styles.expressIntro}>{part.intro}</p>
+          <div className={styles.expressIncludes}>
+            <h3>{t.includes}</h3>
+            <ul>{part.points.map((point,i)=><li key={point}><span aria-hidden="true">{i+1}</span>{point}</li>)}</ul>
+          </div>
+          <div className={styles.expressResult}><strong>{t.result}</strong><p>{part.outcome}</p></div>
+          {part.notice && <p className={styles.expressNotice}>{part.notice}</p>}
+          <Link className={styles.expressLink} href={'/'+locale+'/services#service-group-'+part.group} prefetch={false}>{part.action}<ArrowRight size={18} aria-hidden="true"/></Link>
+        </div>
+      </article>
+    })}
+    <p className={styles.expressTerms}>{t.terms}</p>
+  </section>
 }
 
 const BUSINESS = {
@@ -199,9 +259,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     if (index !== null) requestAnimationFrame(() => document.getElementById('business-session-'+index)?.scrollIntoView({block:'start',behavior:'smooth'}))
   }
   const navigation = {
-    en: { label: 'My Space', clarity: 'Clarity', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
-    ru: { label: 'Моё пространство', clarity: 'Ясность', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
-    es: { label: 'Mi espacio', clarity: 'Claridad', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
+    en: { label: 'My Space', clarity: 'Express', goal: 'My Goal', business: 'My Business', businessIntro: 'Find direction and support for your business.', businessSupport: 'Business consulting & support', businessTools: 'Business insights & energy support', businessHint: 'Choose For Business on the Support page.' },
+    ru: { label: 'Моё пространство', clarity: 'Экспресс', goal: 'Моя цель', business: 'Мой бизнес', businessIntro: 'Найдите направление и поддержку для своего бизнеса.', businessSupport: 'Бизнес-консалтинг и поддержка', businessTools: 'Анализ и энергетическая поддержка бизнеса', businessHint: 'Выберите «Для бизнеса» на странице поддержки.' },
+    es: { label: 'Mi espacio', clarity: 'Exprés', goal: 'Mi meta', business: 'Mi negocio', businessIntro: 'Encuentra dirección y apoyo para tu negocio.', businessSupport: 'Consultoría y apoyo empresarial', businessTools: 'Análisis y apoyo energético empresarial', businessHint: 'Elige «Para mi negocio» en la página de apoyo.' },
   }[selected]
   const tabs = [
     { id: 'clarity', title: navigation.clarity, icon: Compass },
@@ -315,6 +375,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
             <span className={styles.clarityStagePhoto} data-stage-photo={index} aria-hidden="true"><b>{index+1}</b></span><span className={styles.clarityStageCopy}><strong><Icon size={22} aria-hidden="true"/>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
+            <a href={'#express-'+EXPRESS_PARTS[selected].items[index].key}>{EXPRESS_PARTS[selected].details}<ArrowRight size={17} aria-hidden="true"/></a>
             {stages[index].map((tool)=>tool.action ?
               <Link key={tool.title} href={root+'/daybook?start=vector'} prefetch={false}>{tool.title}<ArrowRight size={17} aria-hidden="true"/></Link> :
               <Link key={tool.title} href={tool.href} prefetch={false} data-goal-diagnostic={tool.id}>{tool.title}<ArrowRight size={17} aria-hidden="true"/></Link>)}
@@ -324,6 +385,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <ClarityStartLink locale={selected} className={styles.clarityPersonal}>
         <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
       </ClarityStartLink>
+      <ExpressProgramOverview locale={selected} copy={c}/>
       {!embeddedSection && <ReikiProfileCourseCard locale={selected} />}
       <p className={styles.clarityNotice}>{c.notice}</p>
       {!embeddedSection && <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
