@@ -57,6 +57,9 @@ export default function AliAudioCall({locale,name,image,voice,ready,busy,recorde
      {status}
     </p>
     {voice.conversing&&!voice.notice&&<p className={styles.hint}>{t.hint}</p>}
+    {voice.conversing&&voice.phoneReplyPending&&<button type="button" data-hh-ali-replay-audio onClick={voice.replayPhoneReply}
+      style={{marginTop:12,border:'1px solid currentColor',borderRadius:18,padding:'10px 18px',color:'inherit',background:'transparent'}}>
+      {locale==='ru'?'Повторить звук':locale==='es'?'Repetir audio':'Replay audio'}</button>}
    </div>
    {!voice.conversing&&!voice.paused&&<div className={styles.disclosure} data-hh-ai-voice-disclosure>
     <p>{recorded?t.recorded:t.browser}</p><p>{t.privacy}</p>
