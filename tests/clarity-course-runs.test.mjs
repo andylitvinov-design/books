@@ -225,7 +225,7 @@ test('stale connection recovery uses owner lock, database time and CAS, never a 
 })
 
 
-test('private credential reservation is account-locked, bounded and cannot expose a public mint or early release',()=>{
+test('private credential reservation is account-locked, bounded and cannot expose a public mint or release',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
  const store=read('lib/app/clarity-course-runs.js'),sql=read('docs/coaching/clarity-course-runs.proposal.sql')
  const body=store.slice(store.indexOf('export async function reserveClarityCredentialInTransaction'),store.indexOf('export async function reserveClarityRunCredential'))
@@ -292,4 +292,18 @@ test('daily quota preflight reads the shared slot before credential reservation 
  assert.ok(lock>=0&&check>lock&&check<body.indexOf('insert into '))
  assert.match(body,/new Date\(now\).toISOString\(\).slice\(0,10\)/)
  assert.doesNotMatch(body,/await claimTrustedFreeCoachingDays/)
+})
+
+
+test('credential retirement is private, exact-lease, owner-locked, and cannot leave an active run',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const store=read('lib/app/clarity-course-runs.js'),relay=read('lib/app/clarity-live-relay.js')
+ const body=store.slice(store.indexOf('export async function retireClarityCredentialInTransaction'),store.indexOf('// Bind every real clock mutation'))
+ assert.match(body,/await lockCourseOwner/)
+ assert.match(body,/row.lease_id!==leaseId/)
+ assert.match(body,/run.clock.days.some\(d=>d.status==='active'\)/)
+ assert.match(body,/where account_id=\$1 and lease_id=\$2 and provider_closed_at_ms is null/)
+ assert.match(store,/if\(!row\|\|row.provider_closed_at_ms!==null\)throw conflict\(\)/)
+ assert.match(relay,/retireLease:binding=>retireClarityCredential\(config,actor,binding\)/)
+ assert.doesNotMatch(read('app/api/app/clarity-course/runs/route.js'),/retireClarityCredential/)
 })

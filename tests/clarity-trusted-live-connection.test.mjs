@@ -8,7 +8,7 @@ class Socket extends EventEmitter{
  constructor(){super();this.readyState=1;this.messages=[];this.pings=[]}
  send(value){this.messages.push(JSON.parse(value))}
  ping(value){this.pings.push(value)}
- close(){if(this.readyState===3)return;this.readyState=3;this.emit('close')}
+ close(code=1000){if(this.readyState===3)return;this.readyState=3;this.emit('close',code)}
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
@@ -17,14 +17,15 @@ function fixture({beforePersist=async()=>{}}={}){
  let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const lease={leaseId:id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt:null,
   ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt:null})}
- let now=base,seq=20,tid=0;const timers=new Map(),events=[]
+ let now=base,seq=20,tid=0;const timers=new Map(),events=[],retirements=[]
  const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
+  retireLease:async binding=>{retirements.push({binding,status:run.clock.days[0].status,elapsed:run.clock.days[0].elapsedMs})},
   persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
  function advance(ms){now+=ms;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}}
  const ready=()=>provider.input({setupComplete:{}})
  const consent=()=>client.input({type:'hh_clarity_consent',decision:'start'})
- return {client,provider,relay,events,advance,ready,consent,base,get run(){return run}}
+ return {client,provider,relay,events,retirements,advance,ready,consent,base,get run(){return run}}
 }
 test('server provider setup and explicit client consent are both required; paired real socket pongs alone credit time',async()=>{
  const f=fixture()
@@ -97,4 +98,29 @@ test('client disconnect during first durable begin closes upstream and records p
  release();await f.relay.settled()
  assert.equal(f.events.length,2);assert.equal(f.events[0].type,'begin');assert.equal(f.events[1].type,'disconnect')
  assert.equal(f.run.clock.days[0].status,'paused');assert.equal(f.run.clock.days[0].elapsedMs,0)
+})
+
+
+test('only a normal provider close after durable pause releases the credential; abnormal close keeps expiry',async()=>{
+ const f=fixture();f.ready();f.consent();await f.relay.settled()
+ f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+ f.client.input({type:'hh_clarity_change_coach'});await f.relay.settled()
+ assert.equal(f.retirements.length,1)
+ assert.equal(f.retirements[0].status,'paused')
+ assert.equal(f.retirements[0].elapsed,5000)
+ assert.equal(f.retirements[0].binding.leaseId,id(10))
+ await f.relay.close();await f.relay.settled();assert.equal(f.retirements.length,1)
+ const g=fixture();g.ready();g.consent();await g.relay.settled()
+ g.provider.close(1006);await g.relay.settled()
+ assert.equal(g.run.clock.days[0].status,'paused');assert.equal(g.retirements.length,0)
+ const h=fixture();h.client.close();await h.relay.settled()
+ assert.equal(h.retirements.length,0,'setup never acknowledged; issuance is ambiguous')
+})
+test('failed durable pause never retires the credential',async()=>{
+ const f=fixture({beforePersist:async e=>{if(e.type==='pause')throw Error('synthetic write failure')}})
+ f.ready();f.consent();await f.relay.settled()
+ f.client.input({type:'hh_clarity_pause'});await f.relay.settled()
+ assert.equal(f.retirements.length,0)
+ assert.equal(f.provider.readyState,3)
+ assert.equal(f.run.clock.days[0].status,'active')
 })
