@@ -65,7 +65,7 @@ export default function AliAudioCall({locale,name,image,voice,ready,busy,recorde
      {voice.speaking?<Volume2 size={20} aria-hidden="true"/>:voice.recording?<Mic size={20} aria-hidden="true"/>:null}
      {status}
     </p>
-    {voice.conversing&&!voice.notice&&<p className={styles.hint}>{t.hint}</p>}
+    {voice.conversing&&!voice.notice&&<p className={styles.hint}>{voice.speaking&&voice.phoneAutoInterrupt?(locale==='ru'?'Можно перебить коуча голосом.':locale==='es'?'Puedes interrumpir hablando.':'Speak to interrupt.'):t.hint}</p>}
     {voice.conversing&&voice.phoneReplayAvailable&&!busy&&<button type="button" data-hh-ali-replay-audio onClick={voice.replayPhoneReply}
       style={{marginTop:12,border:'1px solid currentColor',borderRadius:18,padding:'10px 18px',color:'inherit',background:'transparent'}}>
       {voice.ownerAudioActive()?(locale==='ru'?'Повторить голосом устройства':locale==='es'?'Repetir con voz del dispositivo':'Replay with device voice'):(locale==='ru'?'Повторить звук':locale==='es'?'Repetir audio':'Replay audio')}</button>}
