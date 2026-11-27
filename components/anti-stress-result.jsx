@@ -10,7 +10,7 @@ function Rating({label,value,missing}){
  const known=Number.isInteger(value)&&value>=0&&value<=10
  return <div className={styles.rating}><span>{label}</span><strong>{known?value+'/10':missing}</strong>{known&&<meter min={0} max={10} value={value} aria-label={label}/>}</div>
 }
-export default function AntiStressResult({result,locale='en'}){
+export default function AntiStressResult({result,locale='en',hideMeditation=false}){
  if(!result||result.programType!=='therapy')return null
  const t=copy[locale]||copy.en
  const rows=[[t.signal,result.signalOrNeed],[t.resource,result.chosenResource],[t.observation,result.observation],[t.carryover,result.carryover],[t.status,t.states[result.practiceStatus]]]
@@ -22,7 +22,7 @@ export default function AntiStressResult({result,locale='en'}){
   <h4>{t.stress}</h4><Rating label={t.before} value={result.stress?.before} missing={t.missing}/><Rating label={t.after} value={result.stress?.after} missing={t.missing}/>
   <Rating label={t.confidence} value={result.confidence} missing={t.missing}/>
   <dl>{rows.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{typeof value==='string'&&value.trim()?value:t.missing}</dd></div>)}</dl>
-  {result.meditation?.status==='draft'&&typeof result.meditation.body==='string'&&<div><h4>{result.meditation.title}</h4>{result.meditation.body.split('\n\n').map((paragraph,index)=><p key={index}>{paragraph}</p>)}</div>}
+  {!hideMeditation&&['draft','saved'].includes(result.meditation?.status)&&typeof result.meditation.body==='string'&&<div><h4>{result.meditation.title}</h4>{result.meditation.body.split('\n\n').map((paragraph,index)=><p key={index}>{paragraph}</p>)}</div>}
   {result.partial&&<p>{t.partial}</p>}
  </section>
 }

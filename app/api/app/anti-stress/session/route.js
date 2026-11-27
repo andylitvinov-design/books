@@ -2,9 +2,9 @@ import {NextResponse} from 'next/server'
 import {getAppConfig,requestOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
-import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
+import {PRIVATE_HEADERS,safeError,readBody} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns} from '@/lib/app/anti-stress-runs'
+import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns,editOwnedAntiStressMeditation} from '@/lib/app/anti-stress-runs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -28,6 +28,25 @@ export async function GET(request){
   if(!['result','protocol','log'].includes(view))throw new AppError('ANTI_STRESS_INVALID',400)
   const session=await readAntiStressSession(config,actor,url.searchParams.get('runId'),url.searchParams.get('sessionId'),locale,view)
   return auth.apply(NextResponse.json(session,{headers:PRIVATE_HEADERS}))
+ }catch(error){
+  const safe=safeError(error),response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
+  return auth?auth.apply(response):response
+ }
+}
+
+export async function PATCH(request){
+ let auth
+ try{
+  const config=getAppConfig();requestOrigin(request,config)
+  auth=createRequestAuth(request,config)
+  const actor=await auth.verified()
+  if(request.headers.get('x-hh-account-id')!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
+  if(!antiStressStorageEnabled())throw new AppError('ANTI_STRESS_UNAVAILABLE',503)
+  await consumeRate(config,{op:'anti-stress-meditation-edit',actor:actor.id},20,3600)
+  const body=await readBody(request,65536)
+  if(!['save','decline'].includes(body.type)||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','body'].includes(k))||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<1||typeof body.runId!=='string'||typeof body.protocolId!=='string'||(body.type==='save'&&(typeof body.body!=='string'||body.body.length>12000||!body.body.trim()))||(body.type==='decline'&&body.body!==undefined))throw new AppError('ANTI_STRESS_INVALID',400)
+  const meditation=await editOwnedAntiStressMeditation(config,actor,body)
+  return auth.apply(NextResponse.json({meditation},{headers:PRIVATE_HEADERS}))
  }catch(error){
   const safe=safeError(error),response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
   return auth?auth.apply(response):response
