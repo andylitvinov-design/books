@@ -296,7 +296,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     </header>
 
     <section className={styles.programEntrance} data-home-program-entrance>
-      <ProfileSpaceDashboard locale={locale} root={`/${locale}/app`} homeDiscovery={true} />
+      <ProfileSpaceDashboard locale={locale} root={`/${locale === "es" ? "en" : locale}/app`} homeDiscovery={true} />
     </section>
 
     <div className={styles.hero} data-home-dialogue-hero>
