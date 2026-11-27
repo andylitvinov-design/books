@@ -91,7 +91,10 @@ test('native transcript review requires exact four-turn evidence; restore and ex
  assert.equal(get(turns.map((x,i)=>i===2?{...x,interrupted:true}:x)),null);
  assert.equal(get(turns.map((x,i)=>i===2?turn('assistant','different echo'):x)),null);
  assert.equal(get(turns,{afterIndex:0}),null);
- assert.equal(get([...turns,turn('assistant','goal?')]),null);
+ assert.deepEqual(get([...turns,turn('assistant','goal?')]),r);
+ const corrected=[...turns,turn('assistant','goal?'),turn('user','A revised goal'),turn('assistant','echo: A revised goal'),turn('user','yes')];
+ assert.equal(get(corrected).events.at(-1).quote,'A revised goal');
+ assert.deepEqual(get([...corrected.slice(0,-1),turn('user','no')]),r);
  assert.equal(get(turns,{normalize:()=>{throw Error('invalid')}}),null);
  const manual={version:'hh-coach-course-review-v1',courseSessionId:courseId,events:[{fieldId:'goal',status:'not_explored',turnIndex:null,quote:'',revision:1}]};
  assert.deepEqual(get(turns,{existing:manual}),manual);
