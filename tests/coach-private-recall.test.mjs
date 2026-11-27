@@ -16,3 +16,21 @@ for(const turns of [[],null,{},[null,{role:'assistant',content:'Fabricated concl
  const newer={...draft,protocol:{...draft.protocol,turns}};
  assert.deepEqual(projectPrivateCoachRecall(reviewed,newer),{kind:'draft',date:'2026-11-26',lastWords:''});
 }
+
+// Interrupted utterances are not promoted to the client's remembered words.
+assert.equal(projectPrivateCoachRecall(null,{...draft,protocol:{...draft.protocol,turns:[{role:'user',content:'My earlier complete words'},{role:'user',content:'Interrupted partial words',interrupted:true}]}}).lastWords,'My earlier complete words')
+// A private recap must remain attached to the initiating account and logical protocol.
+import {readFileSync} from 'node:fs'
+const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+const api=readFileSync(new URL('../app/api/app/my-coach/protocol/route.js',import.meta.url),'utf8')
+const storage=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+const drafts=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+assert.ok(ui.includes("if(sessionId)query.set('exclude',sessionId)"))
+assert.ok(ui.includes('protocolOwnerRef.current!==owner||protocolIdRef.current!==sessionId'))
+assert.ok(ui.includes('privateRecall.sessionId===protocolIdRef.current'))
+assert.ok(ui.includes('recallRequestRef.current?.abort();setPrivateRecall(null)'))
+assert.ok(ui.includes('||coachExplicitRecall(message)){'))
+assert.ok(ui.includes('!isNameCorrection&&!coachExplicitRecall(message)'))
+assert.ok(api.includes("if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)"))
+assert.ok(storage.includes("where account_id=$1'+(excludeId?' and protocol_id<>$2::uuid':''"))
+assert.ok(drafts.includes("where account_id=$1 and state='active'"))

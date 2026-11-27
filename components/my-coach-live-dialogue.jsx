@@ -1308,17 +1308,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     recallRequestRef.current?.abort()
     const controller=new AbortController();recallRequestRef.current=controller
     const owner=protocolOwnerRef.current
+    const sessionId=protocolIdRef.current
     setPrivateRecall(null)
     let result={kind:owner?'unavailable':'guest'}
     if(owner)try{
       const query=new URLSearchParams({view:'previous-context'})
-      if(protocolIdRef.current)query.set('exclude',protocolIdRef.current)
+      if(sessionId)query.set('exclude',sessionId)
       const response=await fetch('/api/app/my-coach/protocol?'+query,{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'X-HH-Account-ID':owner}})
       if(response.ok)result=await response.json()
     }catch{/* failure is not absence */}
-    if(controller.signal.aborted||protocolOwnerRef.current!==owner)return null
+    if(controller.signal.aborted||protocolOwnerRef.current!==owner||protocolIdRef.current!==sessionId)return null
     const reply=privateCoachRecallText(result,locale)
-    setPrivateRecall({owner,reply})
+    setPrivateRecall({owner,sessionId,reply})
     return reply
   }
   function captureBasicIntroduction(){
@@ -2133,6 +2134,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
+      recallRequestRef.current?.abort();setPrivateRecall(null)
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
       initialDraftRevision.current=result.draft.revision
       restoredOpeningScope.current=recoverPrivateOpeningScope(p)
@@ -2379,6 +2381,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               if(coachExplicitRecall(text)&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
+                setStreamingPreview('');setSpeechPreview('')
                 void loadPrivateRecall(conversationLang)
                 return true // stop Live before accepting an ungrounded reply
               }
@@ -2596,7 +2599,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
-          {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&<div className={styles.transcriptCoach} data-coach-private-recall>
+          {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&privateRecall.sessionId===protocolIdRef.current&&<div className={styles.transcriptCoach} data-coach-private-recall>
             <strong>{name} · {({ru:'Приватная память',en:'Private memory',es:'Memoria privada'})[lang]}</strong>
             <p>{privateRecall.reply}</p>
             <small>{({ru:'Показано из вашего кабинета, без передачи провайдеру. Для голосового продолжения используйте разрешение на память коуча.',en:'Read from your account without sharing with the provider. For voice continuation, use the coach memory permission.',es:'Leído desde tu cuenta sin compartir con el proveedor. Para continuar por voz, utiliza el permiso de memoria del coach.'})[lang]}</small>
