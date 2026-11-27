@@ -58,3 +58,27 @@ test('public projection suppresses opted-out counts',()=>{
  assert.match(api,/if\(!page\.share_practices\)page\.practice_count=null/)
  assert.match(api,/if\(!page\.share_videos\)page\.video_count=null/)
 })
+
+
+test('private feed can publish without a public page and returns the committed item',()=>{
+ assert.doesNotMatch(ui,/disabled=\{!page\|\|busy\|\|!entry\.trim\(\)\}/)
+ assert.match(ui,/onClick=\{\(\)=>void publishEntry\(\)\}/)
+ assert.match(ui,/result\.item\.visibility!=='private'/)
+ assert.match(ui,/setEntry\(''\);setPostNotice\(t\.posted\)/)
+ assert.match(api,/values\(\$1,\$2,\$3,false\) on conflict\(account_id\) do nothing/)
+ assert.match(api,/values\(\$1,'post',\$2,'private'\) returning id,kind,body,visibility,created_at/)
+ assert.match(api,/return \{ok:true,item,page\}/)
+})
+test('diary entries cannot be made public, including previously shared notes',()=>{
+ assert.match(api,/if\(row\.kind==='post'\)bad\('DIARY_ALWAYS_PRIVATE',403\)/)
+ assert.match(api,/visibility='public' and kind<>'post'/)
+ assert.match(ui,/item\.kind!=='post'\?<button/)
+ assert.match(ui,/posts\.map\(renderItem\)/)
+ assert.match(ui,/data-my-page-private-feed/)
+})
+
+test('auto-created diary page handle fits the existing database check',()=>{
+ const addPost=api.slice(api.indexOf("a==='addPost'"),api.indexOf("a==='editPost'"))
+ const bytes=Number(addPost.match(/'member-'\+randomBytes\((\d+)\)\.toString\('hex'\)/)?.[1])
+ assert.match('member-'+'a'.repeat(bytes*2),/^[a-z][a-z0-9-]{2,29}$/)
+})

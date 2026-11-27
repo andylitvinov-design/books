@@ -12,13 +12,13 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{}}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null}={}){
  const base=1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const lease={leaseId:id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt:null,
   ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt:null})}
  let now=base,seq=20,tid=0;const timers=new Map(),events=[],retirements=[]
- const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
+ const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async binding=>{retirements.push({binding,status:run.clock.days[0].status,elapsed:run.clock.days[0].elapsedMs})},
   persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
@@ -156,4 +156,20 @@ test('trusted course cues use durable time only, never trigger speech or interru
  await f.relay.settled()
  assert.equal(f.run.clock.days[0].status,'paused')
  assert.equal(cues().length,2)
+})
+
+
+test('hosting segment deadline pauses the same logical protocol without completing or crediting unobserved time',async()=>{
+ const f=fixture({segmentBudgetMs:270000});f.ready();f.consent();await f.relay.settled()
+ const original=f.run.protocolIds[0]
+ for(let i=0;i<53;i++){f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()}
+ assert.equal(f.run.clock.days[0].elapsedMs,265000)
+ f.advance(5000);await f.relay.settled()
+ assert.equal(f.provider.readyState,3);assert.equal(f.client.readyState,3)
+ assert.equal(f.run.protocolIds[0],original)
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,265000)
+ assert.equal(f.events.at(-1).type,'pause')
+ assert.equal(f.retirements.length,1)
+ assert.equal(f.client.messages.at(-1).status,'paused')
 })

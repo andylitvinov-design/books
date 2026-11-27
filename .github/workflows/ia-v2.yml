@@ -90,6 +90,7 @@ jobs:
       - name: Node syntax and focused IA source-contract tests
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           node --check scripts/verify-ia-v2.mjs
           node --check scripts/ia-v2-loopback-proxy.mjs
           node --check scripts/ia-public-navigation-diagnostics.mjs
@@ -127,6 +128,9 @@ jobs:
           cache: npm
       - name: Record exact tested checkout
         run: |
+          set -euo pipefail
+          # Both preflight and verify use the immutable event checkout.
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           mkdir -p /tmp/ia222-evidence
           node --input-type=module <<'JS'
           import { execFileSync } from 'node:child_process';
@@ -203,13 +207,15 @@ jobs:
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         with:
           stage: materialize
+      # Loopback and public diagnostics already ran in the mandatory preflight
+      # on the exact same event SHA; both are built-in-only source contracts.
+      # Keep all remaining security, DB, browser and application checks.
       - name: IA security, ownership and navigation contracts
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
           node --conditions=react-server --test
           tests/ia-v2.test.mjs tests/ia-preview-verifier.test.mjs tests/admin-session-lifecycle.test.mjs
-          tests/ia-v2-loopback-proxy.test.mjs
-          tests/ia-public-navigation-diagnostics.test.mjs tests/app-auth-pkce.integration.mjs
+          tests/app-auth-pkce.integration.mjs
           tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs
           tests/app-http-security.test.mjs tests/prescriptions.test.mjs
           tests/prescription-access.test.mjs tests/client-account-document-save.test.mjs

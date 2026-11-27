@@ -182,6 +182,26 @@ test('explicit continuation after private restore freezes the active clock and k
  assert.ok(gate.includes("Начать заново"))
 })
 
+
+test('chronological draft recovery preserves an early name without inventing consent or a previous topic',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'},
+  {role:'user',content:'Да, давайте начнём.'}
+ ]
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira'}))
+ assert.equal(opening.name,'Alex')
+ assert.equal(opening.checkmarks.invitation,true)
+ assert.equal(opening.completed,false)
+ const recovered=recoverPrivateOpeningScope({turns,opening,locale:'ru',personaId:'mira'})
+ assert.equal(recovered.matched,true)
+ assert.equal(recovered.allowPrior,false)
+ assert.deepEqual(coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira',...recovered})),opening)
+ const damaged=turns.map((row,index)=>index===0?{...row,interrupted:true}:row)
+ assert.equal(recoverPrivateOpeningScope({turns:damaged,opening,locale:'ru',personaId:'mira'}).matched,false)
+})
+
 test('a bound but unstarted course cannot inherit the legacy clock',()=>{
  const item={id:'draft',courseSessionId:'clarity_day_1',protocol:{id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'en',turns:[]}}
  const binding={courseRunId:'22222222-2222-4222-8222-222222222222',courseOrdinal:2,day:1,clarityTime:null}
@@ -221,4 +241,24 @@ test('unfinished thematic draft recovers verified answers without erasing them o
  assert.ok(store.includes('seal(checkpoint,context(actor,id),config)'))
  assert.ok(ui.includes('result.draft.draftCourseReview'))
  assert.ok(archive.includes('useState(item.draftCourseReview||null)'))
+})
+
+
+test('chronological draft recovery preserves an early name without inventing consent or a previous topic',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'},
+  {role:'user',content:'Да, давайте начнём.'}
+ ]
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira'}))
+ assert.equal(opening.name,'Alex')
+ assert.equal(opening.checkmarks.invitation,true)
+ assert.equal(opening.completed,false)
+ const recovered=recoverPrivateOpeningScope({turns,opening,locale:'ru',personaId:'mira'})
+ assert.equal(recovered.matched,true)
+ assert.equal(recovered.allowPrior,false)
+ assert.deepEqual(coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira',...recovered})),opening)
+ const damaged=turns.map((row,index)=>index===0?{...row,interrupted:true}:row)
+ assert.equal(recoverPrivateOpeningScope({turns:damaged,opening,locale:'ru',personaId:'mira'}).matched,false)
 })

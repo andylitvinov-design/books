@@ -229,9 +229,17 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
   const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
   assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ const identity=send.slice(send.indexOf('if(isNameCorrection&&!coachingBrainSafety'),send.indexOf('// The last opening turn'))
+ assert.match(identity,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
+ assert.match(identity,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.ok(identity.indexOf('result.saved!==true')<identity.indexOf('confirmedNameRef.current=candidate'))
+ const knownOpening=send.slice(send.indexOf('if(greetingIdentity.name&&!openingProgress.completed'),send.indexOf('// The review of an existing profile'))
+ assert.match(knownOpening,/coachOpeningTurn\(/)
+ assert.match(knownOpening,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.doesNotMatch(knownOpening,/fetch\(|appFetch\(|setTurns\(/)
   // Two extra exits are first-party name correction and confirmation. The course exit is the local verified-course opening handoff, not another
   // provider call or unguarded write. Keep the safety/boundary and commit gates.
-  const handoff=send.slice(send.indexOf('if(courseGateOpeningAfter('),send.indexOf('// The review of an existing profile'))
+  const handoff=send.slice(send.indexOf('if(courseGateOpeningAfter('),send.indexOf('if(greetingIdentity.name&&!openingProgress.completed'))
   assert.match(handoff,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
   assert.match(handoff,/courseGateHandoffText\(responseLocale\)/)
   assert.match(handoff,/!commitCompletedClientTurn\(requestId,message,\{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:'opening'\}\)\)return null/)

@@ -92,3 +92,6 @@
 .directoryVoice{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:7px 12px;color:#103d30;background:#fff4da;border:1px solid #ddc18a;border-radius:12px;font:650 13px system-ui;cursor:pointer}
 .directory :is(button,input,select):focus-visible{outline:2px solid #0a7757;outline-offset:2px}
 @media(max-width:355px){.directory{padding:12px}.directoryRow{gap:4px}.directoryDisclosure img{width:43px;height:54px}.directorySelect{max-width:91px;padding:6px;font-size:11px}.directoryDisclosure strong{font-size:15px}.directoryDisclosure small{font-size:11px}.directoryDisclosure{gap:5px}.directoryDisclosure svg{width:14px}.meetHeading .all{padding-inline:6px}.sessionRing{width:58px;height:58px;top:10px;right:10px}}
+
+.courseArt[data-course-art=anti-stress]{background-image:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.courseArt[data-course-art=goal]{background-image:url('/images/holistic-house/messenger-zen-stones.svg');background-size:cover}

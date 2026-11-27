@@ -523,8 +523,15 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(commit,/coachProtocolCanAppend\(rows,entries\)/)
  assert.match(commit,/turnsRef.current=next;setTurns\(next\);queuePrivateDraft\(next\)/)
  const send=ui.slice(ui.indexOf('async function sendMessage'),ui.indexOf('function endWithProtocol'))
- // Six original reply paths plus two deterministic identity/name paths.
  assert.equal((send.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
+ const identity=send.slice(send.indexOf('if(isNameCorrection&&!coachingBrainSafety'),send.indexOf('// The last opening turn'))
+ assert.match(identity,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)
+ assert.match(identity,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.ok(identity.indexOf('result.saved!==true')<identity.indexOf('confirmedNameRef.current=candidate'))
+ const knownOpening=send.slice(send.indexOf('if(greetingIdentity.name&&!openingProgress.completed'),send.indexOf('// The review of an existing profile'))
+ assert.match(knownOpening,/coachOpeningTurn\(/)
+ assert.match(knownOpening,/!commitCompletedClientTurn\(requestId,message,/)
+ assert.doesNotMatch(knownOpening,/fetch\(|appFetch\(|setTurns\(/)
  assert.match(send,/coachNameCorrectionQuestion\(candidate,responseLocale\)[\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
  assert.match(send,/const firstParty=coachOpeningTurn\([\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
@@ -870,6 +877,93 @@ test('cancelled streaming replies retain an approved audible prefix in the same 
  assert.match(capture,/queuePrivateDraft\(next\)/)
  assert.match(ui,/waiting\.approvedReply=\{role:'assistant',content:phrase/)
  assert.match(ui,/capturedAt:new Date\(\)\.toISOString\(\),mode:'ai',interrupted:true/)
+})
+
+
+// Owner incident 2026-11-27: neutral conversation is not a request to stop.
+import {COACH_OPENING_QUESTION_BANK,coachOpeningLiveInstruction,coachOpeningNextReply} from '../lib/coaching/coach-opening-protocol.mjs'
+import {COACH_SAFETY_RULES} from '../lib/coaching/persona-registry.mjs'
+test('ordinary opening questions never proactively offer an exit, in all persona languages',()=>{
+  const exitOffer=/(?:\b(?:pause|postpone|stop anytime|another day|come back later|leave it for)\b|пауз|отлож|остановиться|вернуться позже|\b(?:paus\w*|parar|detenerte|otro día)\b)/iu
+  for(const [persona,gates] of Object.entries(COACH_OPENING_QUESTION_BANK)){
+    for(const locale of ['en','ru','es']){
+      for(const gate of ['invitation','confirmation']){
+        for(const question of gates[gate][locale])assert.doesNotMatch(question,exitOffer,persona+'/'+locale+'/'+gate)
+        for(let attempts=0;attempts<=4;attempts++){
+          const reply=coachOpeningNextReply({personaId:persona,locale,current:gate,attempts,answers:{}})
+          assert.doesNotMatch(reply,exitOffer,persona+'/'+locale+'/'+gate+'/'+attempts)
+        }
+      }
+      const instruction=coachOpeningLiveInstruction(persona,locale)
+      assert.match(instruction,/Never introduce an unsolicited option to pause/)
+      assert.match(instruction,/Honor explicit client requests to pause, skip, end or decline immediately/)
+      assert.match(instruction,/Maybe, silence or a question is NOT yes/)
+    }
+  }
+  assert.match(COACH_SAFETY_RULES.join(' '),/Honor client-initiated pauses/)
+})
+
+
+test('an early actual name question retains the literal name without granting session consent',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'}
+ ]
+ const run=rows=>coachOpeningProgress({turns:rows,locale:'ru',personaId:'mira'})
+ assert.equal(run(turns).checkmarks.invitation,false)
+ assert.equal(run(turns).checkmarks.name,false)
+ const agreed=run([...turns,{role:'user',content:'Да, давайте начнём.'}])
+ assert.equal(agreed.checkmarks.invitation,true)
+ assert.equal(agreed.checkmarks.name,true)
+ assert.equal(agreed.answers.name.value,'Alex')
+ assert.equal(coachOpeningProtocolSnapshot(agreed).name,'Alex')
+ for(const invalid of [
+  [{...turns[0],interrupted:true},...turns.slice(1)],
+  [{...turns[0],content:'Как ваше самочувствие?'},...turns.slice(1)],
+  [turns[0],{...turns[1],unanswered:true},turns[2]]
+ ]){
+  const progress=run([...invalid,{role:'user',content:'Да, давайте начнём.'}])
+  assert.equal(progress.checkmarks.name,false)
+ }
+})
+
+
+test('capture guidance requests the exact canonical question and localized echo for a clear answer',async()=>{
+ const {checkpointConfirmation}=await import('../lib/coaching/coach-course-question-binding.mjs')
+ const opening={completed:true,answers:{focus:{kind:'goal'}}}
+ for(const locale of ['en','ru','es']){
+  const course='clarity_discover',field=coachCourseProtocolSchema(course,locale).checkpoints[0]
+  const guidance=coachCourseProtocolGuidance(course,locale)
+  assert.ok(guidance.includes(field.question));assert.match(guidance,/exact authored question as the entire question turn/)
+  const words=({en:'I want more time for my family',ru:'Мне нужно больше времени с семьёй',es:'Quiero más tiempo con mi familia'})[locale]
+  const hint=coachCourseCheckpointGuidance(course,locale,opening,{},[{role:'assistant',content:field.question}],words)
+  assert.ok(hint.includes(checkpointConfirmation(field.question,words,locale)))
+  assert.match(hint,/wait for explicit assent/)
+  assert.ok(!coachCourseCheckpointGuidance(course,locale,opening,{},[{role:'assistant',content:field.question,interrupted:true}],words).includes(checkpointConfirmation(field.question,words,locale)))
+ }
+})
+
+
+test('consented legacy draft reconstructs only exact confirmed fields after the opening',async()=>{
+ const {deriveCoachDraftReview}=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const {checkpointConfirmation}=await import('../lib/coaching/coach-course-question-binding.mjs')
+ const fixtures={en:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],ru:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],es:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí']}
+ for(const [locale,history] of Object.entries(fixtures)){
+  const course='goal_result',opening=coachOpeningProgress({turns:history,locale,personaId:'mira'})
+  assert.equal(opening.completed,true)
+  const q=coachCourseProtocolSchema(course,locale).checkpoints.find(f=>f.id==='goal').question
+  const words=({en:'I want to open a new studio',ru:'Хочу открыть новую студию',es:'Quiero abrir un estudio nuevo'})[locale]
+  const turns=[...history.map(content=>({role:'user',content})),{role:'assistant',content:q},{role:'user',content:words},{role:'assistant',content:checkpointConfirmation(q,words,locale)},{role:'user',content:history[0]}]
+  const protocol={...sample(),personaId:'mira',locale,courseSessionId:course,opening:coachOpeningProtocolSnapshot(opening),turns}
+  const review=deriveCoachDraftReview(protocol,course)
+  assert.equal(review.events.length,1);assert.equal(review.events[0].quote,words)
+  assert.deepEqual(deriveCoachDraftReview({...protocol,turns:[...turns,{role:'assistant',content:q}]},course),review)
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-1)},course),null)
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.map((t,i)=>i===turns.length-2?{...t,interrupted:true}:t)},course),null)
+  assert.equal(deriveCoachDraftReview({...protocol,opening:{...protocol.opening,name:'Different name'}},course),null)
+  assert.equal(deriveCoachDraftReview(protocol,'goal_plan'),null)
+ }
 })
 
 import {draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'

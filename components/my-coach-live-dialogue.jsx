@@ -24,7 +24,7 @@ import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coa
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
-import {coachSessionOpeningLine,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
   coachProfileReviewProtocolSnapshot} from '@/lib/coaching/coach-profile-review.mjs'
@@ -567,6 +567,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,conversationLang):t.coach
+  // A restored historical utterance must never be renamed to the newly selected coach.
+  const turnCoachName=turn=>{
+    const author=turn.authorPersonaId!==undefined
+      ?(turn.authorPersonaId===turn.coachId?turn.authorPersonaId:null)
+      :(turn.coachId!==undefined?turn.coachId:(restoredDraft?null:personaId))
+    return localCoachText(getCoachPersona(author)?.name,conversationLang)||t.coach
+  }
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
   const introduction=coachSessionOpeningLine(personaId,conversationLang,greetingIdentity.name)
@@ -698,9 +705,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   // The preferred name stays first-party; sharing past-session context remains opt-in.
-  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior||{name:greetingIdentity.name,topic:''}}
+  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior?{...openingPrior,name:greetingIdentity.name||openingPrior.name}:{name:greetingIdentity.name,topic:''}}
   const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||localNameScope):localNameScope
-  const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
+  const openingProgress=coachOpeningProgress({turns,locale:conversationLang,
     personaId,...localOpeningScope})
   const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
   const clarityOpeningReady=openingProgress.completed&&!openingProgress.declined&&Boolean(openingProgress.answers?.confirmation?.quote)
@@ -1209,9 +1216,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!autoSaveRef.current||!owner||protocolSaved||!rows.length)return
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
-    const clientRows=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32)
     const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({
-      turns:clientRows.map(row=>String(row.content||'').slice(0,160)),locale:conversationLang,
+      turns:rows,locale:conversationLang,
       personaId,...localOpeningScope,
     }))
     if(confirmedNameRef.current&&opening.checkmarks.name)opening.name=confirmedNameRef.current
@@ -1339,7 +1345,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
     const content=String(introduction||'').trim()
     if(!content)return
-    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening'}]
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',requestedSavedContext:Boolean(greetingIdentity.name)}]
+    if(!coachProtocolCanAppend([],next))return
+    turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+  }
+  function capturePrivateLiveSalutation(){
+    if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
+    const content=coachSessionNameSalutation(greetingIdentity.name,conversationLang)
+    if(!content)return
+    const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',privateGreetingPrefix:true,requestedSavedContext:true}]
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
   }
@@ -1409,8 +1423,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   pauseActionRef.current=pauseVoiceConversation
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
-    const history=rows.filter(row=>row.role==='user'&&row.unanswered!==true).slice(0,32).map(row=>String(row.content||'').slice(0,160))
-    const opening=coachOpeningProgress({turns:history,locale,personaId,...localOpeningScope})
+    const opening=coachOpeningProgress({turns:rows,locale,personaId,...localOpeningScope})
     return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
@@ -1535,7 +1548,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,deferProfileToPrivateDirector:freshPrivateProfile},personaId)
       if(firstParty){
         const answer=firstParty.message
-        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:firstParty.stage,openingProgress:firstParty.openingProgress}))return null
+        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:answer,locale:responseLocale,mode:'offline',stage:firstParty.stage,openingProgress:firstParty.openingProgress,requestedSavedContext:true}))return null
         setDraft('');setSpeechPreview('');return {reply:answer,mode:'identity',locale:responseLocale}
       }
     }
@@ -1656,7 +1669,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeClockRef.current.sample(window.performance.now())):0,
           openingHistory,
-          ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
+          // The deterministic server opening needs the same name-only context.
+          // External-provider memory sharing still requires its separate consent.
+          ...(localOpeningScope.allowPrior&&localOpeningScope.priorSession?{openingPrior:localOpeningScope.priorSession,allowOpeningPrior:true}:{}),
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
           characterSeenIds:coachCharacterObservedIds(providerHistory),
@@ -1846,7 +1861,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }finally{headerBackPendingRef.current=false}
   }
   function resumeFromProtocol(){
-    if(resumePending||protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
+    if(resumePending||protocolSaved||protocolSaveLocked||clarityTimeLimit.current)return // A saved or server-ended session cannot be restarted here.
     if(!autoSaveRef.current&&turnsRef.current.at(-1)?.unanswered===true){
       const last=turnsRef.current.at(-1)
       const recovered=turnsRef.current.slice(0,-1)
@@ -1959,6 +1974,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(protocolSaving||(protocolSaveLocked&&!protocolSaved))return
     setProtocolEditing(false)
     if(!protocolSaved){
+      if(clarityTimeLimit.current){
+        // The verified timed end cannot be reopened; leave the existing private
+        // draft intact. Cancel is never an implicit reviewed-report approval.
+        const day=clarityCourseDay(selectedCourseId)
+        window.location.assign(day&&activeCourseRunId?clarityReturnHref(lang,day,activeCourseRunId):coachCompletionDestination(lang,'daybook'))
+        return
+      }
       resumeFromProtocol()
       setPaused(true)
       return // retain separately consented draft; never finalize or publish
@@ -2146,6 +2168,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const restoredTime=result.clarityTime
       const isClarity=Boolean(clarityCourseDay(recovered.courseSessionId))
       const timeKnown=isClarity&&Number.isInteger(restoredTime?.elapsedSeconds)&&restoredTime.elapsedSeconds>=0&&restoredTime.elapsedSeconds<=CLARITY_COURSE_SECONDS&&restoredTime.remainingSeconds===CLARITY_COURSE_SECONDS-restoredTime.elapsedSeconds
+      // Only the owner-scoped, revision-bound resume response can report a
+      // completed logical clock. A local 20-minute counter is not proof.
+      const timedEnd=timeKnown&&restoredTime.status==='time_limit'&&restoredTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&restoredTime.remainingSeconds===0
       setRestoredClarityTimeKnown(timeKnown)
       speechRef.current?.stop?.();cancelPendingCoachTurn()
       if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
@@ -2160,7 +2185,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const thematic=readCourseGateStep(result.draft,p)
       courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
       setCourseFieldReview(thematic?.step.review||result.draft.draftCourseReview||null);setCourseGateEnabled(result.courseGateEnabled===true)
-      setCourseResumeRequired(Boolean(thematic?.step.crossCoach&&!thematic.step.paused))
+      setCourseResumeRequired(Boolean(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused))
       const structured=readProfileV3Step(result.draft,p)
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
@@ -2176,17 +2201,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
         setActiveSessionSeconds(activeClockRef.current.restore(timeKnown?restoredTime.elapsedSeconds:p.durationSeconds||0));setSessionClockStarted(true)
         setGreetingAccepted(true);setIntroComplete(true)
-        if(thematic?.step.crossCoach&&!thematic.step.paused){setResumePending(false);setPaused(false)}
+        if(timedEnd){
+          clarityTimeLimit.current=true
+          setResumePending(false);setPaused(true)
+          setProtocolFinishedAt(new Date().toISOString());setProtocolEditing(false);setProtocolOpen(true)
+        }else if(thematic?.step.crossCoach&&!thematic.step.paused){setResumePending(false);setPaused(false)}
         else{setResumePending(true);setPaused(true)}
         setAllowOpeningPrior(false);setStagedMemory(null);setContextTopic('');setContextPaused(true)
         setGeminiLiveConsent(false);setGeminiConsent(false);setCoachEngine('groq_stream');setDraft('')
       })
-      if(thematic?.step.crossCoach&&!thematic.step.paused)toggleComposer()
+      if(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused)toggleComposer()
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{resumeInFlight.current=false;if(draftMountedRef.current)setResumeBusy(false)}
   }
   function beginRestoredConversation(){
-    if(!resumePending||!protocolOwnerRef.current||!restoredDraft)return
+    if(!resumePending||!protocolOwnerRef.current||!restoredDraft||clarityTimeLimit.current)return
     setResumePending(false);setPaused(false);toggleComposer()
   }
   const keepCoachTab=(liveVoiceSelected||voiceState.phase!=='idle')&&sessionHasStarted&&!earlyExit&&!protocolOpen&&!ratingOpen&&!protocolSaved
@@ -2382,7 +2411,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
-            localRecoveryTurns={turns}
+            localRecoveryTurns={turns.filter(row=>!row.privateGreetingPrefix)}
+            privateGreetingText={!turns.length?coachSessionNameSalutation(greetingIdentity.name,conversationLang):''}
+            onPrivateGreeting={capturePrivateLiveSalutation}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={handleVoiceStateChange}
@@ -2405,7 +2436,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
-                const reply={role:'assistant',content:question,mode:'offline',stage:'opening',locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
+                const reply={role:'assistant',content:question,mode:'offline',stage:'opening',requestedSavedContext:true,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
                 if(coachProtocolCanAppend(turnsRef.current,[reply])){
                   nameCorrectionRef.current={name:candidate}
                   const next=[...turnsRef.current,reply];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
@@ -2607,7 +2638,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{introduction}</p></div>}
           {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
-            <strong>{turn.role==='user'?t.user:name}
+            <strong>{turn.role==='user'?t.user:turnCoachName(turn)}
               {turn.role==='assistant'&&turn.inference?.model&&
                 <span className={styles.responseSource} data-coach-answer-source={turn.inference.provider}>
                   {' · '}{turn.inference.provider==='groq'?'Groq':turn.inference.provider?.startsWith('gemini_')?'Gemini':'OpenRouter'} · {turn.inference.model}
@@ -2987,7 +3018,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <div className={styles.protocolActions}><button type="button" disabled={protocolSaving} onClick={()=>exportProtocol(false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button></div>
           <div className={styles.protocolReview} aria-label={protocolUi.turns}>
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
-              <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
+              <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):turnCoachName(turn)}</strong>
               <p>{turn.content}</p>
               {turn.role==='user'&&turn.unanswered===true&&<small>{
                 {ru:'Реплика без ответа ИИ',en:'Submitted, no AI reply',es:'Mensaje sin respuesta de IA'}[lang]
@@ -3010,7 +3041,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.protocolActions} data-coach-result-actions style={{position:'sticky',bottom:0,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6,padding:'8px 0',background:'inherit'}}>
           <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolOwnerReady||protocolSaved||protocolSaving} onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
           <button type="button" data-coach-edit-result disabled={protocolSaved||protocolSaving||protocolSaveLocked} onClick={()=>setProtocolEditing(value=>!value)}>{protocolEditing?({en:'Done',ru:'Готово',es:'Listo'})[lang]:({en:'Edit',ru:'Редактировать',es:'Editar'})[lang]}</button>
-          <button type="button" data-coach-close-protocol disabled={protocolSaving||(protocolSaveLocked&&!protocolSaved)} onClick={closeProtocolToRating}>{protocolSaved?protocolUi.close:({en:'Cancel',ru:'Отменить',es:'Cancelar'})[lang]}</button>
+          <button type="button" data-coach-close-protocol disabled={protocolSaving||(protocolSaveLocked&&!protocolSaved)} onClick={closeProtocolToRating}>{protocolSaved?protocolUi.close:clarityTimeLimit.current?({en:'Daybook',ru:'В дневник',es:'Al diario'})[lang]:({en:'Cancel',ru:'Отменить',es:'Cancelar'})[lang]}</button>
         </div>
         {protocolSaved&&clarityCourseDay(selectedCourseId)&&<Link href={clarityReturnHref(lang,clarityCourseDay(selectedCourseId),activeCourseRunId)} data-clarity-return>{({en:'Return to course day',ru:'Вернуться в день курса',es:'Volver al día del curso'})[lang]}</Link>}
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}

@@ -29,6 +29,7 @@ export default function MyCoachCourseProgress({courseSessionId,turns,review,loca
      return <div key={row.id} data-stage-id={row.id} data-stage-status={row.active?'current':row.status==='confirmed'?'done':row.status==='skipped_by_client'?'skipped':row.status==='needs_confirmation'?'needs_confirmation':'pending'} data-course-field-status={row.status} aria-current={row.active?'step':undefined} style={{display:'grid',gap:3,...(row.active?{background:'#eef8f0',borderRadius:10,padding:6}:{})}}>
       <b>{row.label}{row.active?' · '+(provisional?({ru:'Ориентир',en:'Suggested',es:'Orientativo'})[lang]:({ru:'Сейчас',en:'Current',es:'Actual'})[lang]):''}</b>
       <small>{t[row.status]}{Number.isInteger(row.turnIndex)?' · '+t.source+' '+(row.turnIndex+1):''}</small>
+      {row.status==='confirmed'&&Number.isInteger(row.current)&&row.current>=0&&row.current<=10&&<strong data-coach-axis-score>{row.current}/10{Number.isInteger(row.desired)&&row.desired>=0&&row.desired<=10?' → '+row.desired+'/10':''}</strong>}
       {row.quote&&<small data-coach-field-answer style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.quote}</small>}
       <EvidenceChecks row={row} locale={lang}/>
      </div>

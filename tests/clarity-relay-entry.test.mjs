@@ -59,7 +59,7 @@ test('upgrade preserves same-origin auth and shared provider quota; direct token
  const upgrade=read('lib/app/clarity-live-upgrade.js'),relay=read('lib/app/clarity-live-relay.js'),route=read('app/api/app/[...path]/route.js')
  assert.ok(upgrade.indexOf('requireSameOrigin(request,config)')<upgrade.indexOf('await auth.verified()'))
  assert.match(upgrade,/owner:actor\.id/)
- assert.match(upgrade,/readRun:id=>readClarityRun\(config,actor,id\)/)
+ assert.match(upgrade,/readRun:id=>readClarityRunForRelay\(config,actor,id\)/)
  assert.ok(relay.indexOf('await consumeRateBatch(config,quota.attempts)')<relay.indexOf('await issueGeminiFreeLiveToken'))
  assert.ok(relay.indexOf('await consumeRateBatch(config,quota.successful)')<relay.indexOf('const provider=createProviderSocket'))
  const section=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
@@ -77,9 +77,82 @@ test('Vercel SDK route verifies identity before upgrade and attaches synchronous
   assert.ok(lock.packages['node_modules/'+key].integrity)
  }
  assert.match(route,/export const maxDuration=300/)
+ assert.match(route,/const segmentDeadlineMs=Date\.now\(\)\+270000/)
+ assert.match(upgrade,/createProviderSocket,segmentDeadlineMs,selection/)
+ const relay=read('lib/app/clarity-live-relay.js')
+ assert.match(relay,/setup,segmentDeadlineMs,/)
+ assert.match(relay,/segmentDeadlineMs<=Date\.now\(\)\+15000/)
  assert.ok(route.indexOf('await prepareClarityLiveUpgrade(')<route.indexOf('return experimental_upgradeWebSocket('))
  assert.match(route,/experimental_upgradeWebSocket\(client=>\{[\s\S]*?prepared\.attach\(client\)/)
  assert.match(route,/perMessageDeflate:false,followRedirects:false/)
  assert.match(upgrade,/await consumeRate\(config,\{op:'clarity-live-upgrade',actor:actor\.id\},12,3600\)/)
  assert.doesNotMatch(route,/console\.|token:|access_token/)
+})
+
+test('relay restart recovers only an exact expired credential and keeps credited time',async()=>{
+ const source=readFileSync(new URL('../lib/app/clarity-course-runs.js',import.meta.url),'utf8')
+ const start=source.indexOf('export async function readClarityRunForRelay('),end=source.indexOf('export async function listClarityRuns(',start)
+ assert.ok(start>=0&&end>start)
+ const original={id:id(10),clock:{days:[{status:'active',day:1,protocolId:id(11),elapsedMs:5000,segments:[{connectionId:id(15),startedAt:1000,observedAt:6000}]}]}}
+ const row={lease_id:id(15),course_run_id:id(10),course_day:1,protocol_id:id(11),reserved_at_ms:0,possible_expires_at_ms:30000,provider_closed_at_ms:null}
+ let now=30001,credential=row,writes=0,locked=false
+ const after={...original,clock:{days:[{...original.clock.days[0],status:'paused'}]}}
+ const db={query:async(sql,params)=>{assert.equal(locked,true);assert.match(sql,/for update/);assert.deepEqual(params,[owner]);return {rows:credential?[credential]:[]}}}
+ const f=new Function('requireEnabled','transaction','lockCourseOwner','read','serverStamp','conflict','expireClarityRunObservation','writeClock',
+  source.slice(start,end).replace('export async function','async function')+'\nreturn readClarityRunForRelay')(
+  ()=>{},async(config,actor,fn)=>{assert.equal(actor.id,owner);locked=false;return fn(db)},
+  async()=>{locked=true},async(_db,actor,_config,runId,lock)=>{assert.equal(actor.id,owner);assert.equal(runId,original.id);assert.equal(lock,true);return original},
+  async()=>now,()=>Error('conflict'),(run,t)=>{assert.equal(run,original);assert.equal(t,now);return after},
+  async(_db,actor,_config,before,next)=>{assert.equal(actor.id,owner);assert.equal(before,original);assert.equal(next,after);writes++})
+ assert.equal(await f({}, {id:owner},original.id),after)
+ assert.equal(writes,1);assert.equal(after.clock.days[0].elapsedMs,5000)
+ now=29999;await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ now=30001;credential={...row,lease_id:id(99)};await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ credential=null;await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ credential={...row,provider_closed_at_ms:5000};await assert.rejects(f({}, {id:owner},original.id),/conflict/)
+ assert.equal(writes,1)
+})
+
+test('browser relay resumes the same exact protocol only after foreground Play and durable clock ACK',async()=>{
+ const {createClarityRelayClient}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const runId=id(10),protocolId=id(11)
+ const h=createClarityRelayClient({accountId:owner,runId,protocolId,day:1,body,minimumElapsedMs:5000})
+ const wire=v=>JSON.stringify(v)
+ const select={type:'hh_clarity_selection',runId,protocolId,day:1}
+ const ack=(elapsedMs,status)=>wire({type:'hh_clarity_clock',day:1,elapsedMs,status})
+ assert.equal(JSON.parse(h.entry).runId,runId)
+ assert.throws(()=>h.receive(wire({...select,protocolId:id(99)})),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.equal(h.receive(wire(select)).kind,'selection')
+ assert.equal(h.snapshot().committed,false)
+ assert.throws(()=>h.receive(wire({type:'hh_clarity_ready',decision:'start'})),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.equal(h.receive(wire({type:'hh_clarity_ready',decision:'continue'})).decision,'continue')
+ assert.throws(()=>h.consent({foreground:false,explicitPlay:true}),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.throws(()=>h.consent({foreground:true,explicitPlay:false}),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.equal(JSON.parse(h.consent({foreground:true,explicitPlay:true})).decision,'continue')
+ assert.equal(h.snapshot().canSendAudio,false)
+ assert.throws(()=>h.receive(wire({serverContent:{}})),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.throws(()=>h.receive(ack(4999,'active')),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.equal(h.receive(ack(10000,'active')).elapsedMs,10000)
+ assert.equal(h.snapshot().canSendAudio,true)
+ assert.equal(h.receive(wire({serverContent:{turnComplete:true}})).kind,'provider')
+ assert.throws(()=>h.receive(wire({sessionResumptionUpdate:{newHandle:'never'}})),/CLARITY_RELAY_CLIENT_INVALID/)
+ assert.equal(JSON.parse(h.pause()).type,'hh_clarity_pause')
+ assert.equal(h.snapshot().canSendAudio,false)
+ assert.equal(h.receive(ack(10000,'paused')).status,'paused')
+ assert.equal(h.snapshot().binding.protocolId,protocolId)
+ assert.throws(()=>h.receive(ack(15000,'active')),/CLARITY_RELAY_CLIENT_INVALID/)
+})
+test('late durable begin acknowledgement never reopens audio after pause',async()=>{
+ const {createClarityRelayClient}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const h=createClarityRelayClient({accountId:owner,day:1,body})
+ h.receive(JSON.stringify({type:'hh_clarity_selection',runId:id(10),protocolId:id(11),day:1}))
+ h.receive(JSON.stringify({type:'hh_clarity_ready',decision:'start'}))
+ h.consent({foreground:true,explicitPlay:true})
+ h.pause()
+ assert.equal(h.receive(JSON.stringify({type:'hh_clarity_clock',day:1,elapsedMs:0,status:'active'})).status,'pausing')
+ assert.equal(h.snapshot().canSendAudio,false)
+ assert.equal(h.receive(JSON.stringify({type:'hh_clarity_clock',day:1,elapsedMs:0,status:'paused'})).status,'paused')
+ assert.equal(h.snapshot().committed,true)
+ h.close()
+ assert.equal(h.snapshot().canSendAudio,false)
 })
