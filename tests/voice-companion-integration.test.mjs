@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {startAliOwnerAudio} from '../lib/voice-companion/ali-owner-audio.mjs';
+import {startAliCallBarge} from '../lib/voice-companion/ali-call-barge.mjs';
 import {createDeviceSpeech} from '../lib/assistant-avatar/device-speech.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('Web/iHelp/Client share one canonical assistant and Web Voice UI',()=>{
@@ -241,4 +242,56 @@ test('call barge ownership is restricted to consented owner PCM and records no p
  assert.match(voice,/performance\.measure\('hh-ali-text-to-'\+kind,\{start,end:window\.performance\.now\(\)\}\)/);
  assert.match(call,/voice\.speaking&&voice\.phoneAutoInterrupt/);
  assert.match(recorder,/const prefix=fastCoach\?'hh-coach':'hh-ali'/);
+});
+
+test('barge gate ducks only a candidate, then accepts exactly one human turn and no playback echo',()=>{
+ const events=[];let opts,cancelled=0,continues=0,live=true;
+ const startCapture=options=>{opts=options;return {cancel(){cancelled++},continueAfterCoach(){continues++;opts.onState('listening');return true}}};
+ const monitor=startAliCallBarge({environment:{},context:{},locale:'en',
+  spokenText:'Tell me what matters most to you about this situation today.',isCurrent:()=>live,startCapture,
+  onReady:()=>events.push('ready'),onDuck:v=>events.push(v),onRecovering:()=>events.push('recover'),
+  onInterrupt:()=>events.push('interrupt'),onListen:()=>events.push('listen'),
+  onTranscribing:()=>events.push('stt'),onResult:t=>events.push(t),onEcho:()=>events.push('echo'),
+  onFailure:(code,client)=>events.push([code,client])});
+ assert.ok(monitor);assert.equal(opts.purpose,'ali_chat');assert.equal(opts.monitorPlayback,true);
+ assert.equal(opts.textOnly,true);assert.equal(opts.fastConversation,true);
+ opts.onState('listening');opts.onCandidate();opts.onCandidateExpired();opts.onState('recovering');
+ opts.onState('listening');opts.onCandidate();opts.onSpeechDetected();opts.onSpeechDetected();
+ opts.onState('hearing');opts.onState('transcribing');opts.onResult('I want to change jobs');opts.onResult('duplicate');
+ assert.deepEqual(events,['ready',0.18,1,'recover','ready',0.18,'interrupt','listen','stt','I want to change jobs']);
+ assert.equal(monitor.continueAfterCoach(),false);assert.equal(continues,0);assert.equal(cancelled,0);
+ events.length=0;
+ startAliCallBarge({environment:{},context:{},locale:'en',spokenText:'Tell me what matters most to you about this situation today.',
+  isCurrent:()=>live,startCapture,onInterrupt:()=>events.push('interrupt'),onEcho:()=>events.push('echo'),onResult:t=>events.push(t)});
+ opts.onSpeechDetected();opts.onResult('Tell me what matters most to you about this situation today.');
+ assert.deepEqual(events,['interrupt','echo']);
+});
+test('uninterrupted playback transfers one existing capture; cancel and stale callbacks are inert',()=>{
+ const events=[];let opts,cancelled=0,continues=0,live=true;
+ const startCapture=o=>{opts=o;return {cancel(){cancelled++},continueAfterCoach(){continues++;opts.onState('listening');return true}}};
+ const make=()=>startAliCallBarge({environment:{},context:{},locale:'ru',spokenText:'Привет, что хочешь обсудить?',
+  isCurrent:()=>live,startCapture,onReady:()=>events.push('ready'),onListen:()=>events.push('listen'),
+  onResult:t=>events.push(t),onEcho:()=>events.push('echo'),onFailure:(code,client)=>events.push([code,client])});
+ const monitor=make();opts.onState('listening');assert.equal(monitor.continueAfterCoach(),true);
+ opts.onResult('работа');opts.onResult('дубликат');assert.deepEqual(events,['ready','listen','работа']);
+ assert.equal(continues,1);
+ events.length=0;const cancelledMonitor=make();cancelledMonitor.cancel();opts.onSpeechDetected();opts.onResult('late');opts.onFailure('MIC_CAPTURE');
+ assert.equal(cancelled,1);assert.deepEqual(events,[]);
+ const stale=make();live=false;opts.onState('listening');opts.onResult('stale');assert.equal(stale.continueAfterCoach(),false);
+ stale.cancel();assert.deepEqual(events,[]);assert.equal(cancelled,2);
+ live=true;make();opts.onFailure('MIC_CAPTURE');assert.deepEqual(events,[['MIC_CAPTURE',false]]);
+ events.length=0;const failure=make();failure.continueAfterCoach();opts.onFailure('STT_RATE_LIMIT');
+ assert.deepEqual(events,['listen',['STT_RATE_LIMIT',true]]);
+});
+test('owner output gain only changes this graph and is retired on cancellation',async()=>{
+ let gain,sourceNode,disconnects=0,stops=0;const events=[];
+ const env={AbortController,setTimeout:()=>1,clearTimeout(){},fetch:async()=>({ok:true,headers:{get:()=> 'audio/wav'},arrayBuffer:async()=>new ArrayBuffer(80)})};
+ const context={state:'running',destination:{},decodeAudioData:async()=>({numberOfChannels:1,duration:1,getChannelData:()=>new Float32Array([0,0.2])}),
+  createGain:()=>gain={gain:{value:0},connect(){},disconnect(){disconnects++}},
+  createBufferSource:()=>sourceNode={connect(target){assert.equal(target,gain)},disconnect(){disconnects++},start(){},stop(){stops++},onended:null}};
+ const playback=startAliOwnerAudio({environment:env,context,personaId:'max',locale:'en',text:'Hello',onStart:()=>events.push('start'),onEnd:()=>events.push('end')});
+ for(let i=0;i<12;i++)await Promise.resolve();
+ assert.equal(gain.gain.value,1);playback.setVolume(0.18);assert.equal(gain.gain.value,0.18);
+ playback.setVolume(4);assert.equal(gain.gain.value,1);playback.cancel();
+ assert.equal(sourceNode.onended,null);assert.equal(stops,1);assert.equal(disconnects,2);assert.deepEqual(events,['start']);
 });
