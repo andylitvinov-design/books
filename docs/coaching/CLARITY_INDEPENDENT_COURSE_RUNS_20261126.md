@@ -28,3 +28,6 @@ Extended the existing guarded App R1 coaching RLS integration test, without regi
 
 ## Preserve unfinished drafts on attempted final review (27 Nov)
 Bound Clarity session promotion now reads the exact persisted course/run clock in the existing archive transaction. Before its verified timed end it rejects permanent promotion with a distinct conflict code, retains the existing draft and unlocks the UI after an explicit rejection (not an uncertain timeout). After a trusted 1,200-second end, the archive receives canonical duration and a time-limit marker; separate homework acceptance is not inferred. Existing unbound archive behavior is unchanged; no flags activated. Actual provider and mobile acceptance remain outstanding.
+
+## Draft-only real database rehearsal routing (27 Nov)
+The existing Coaching CI runner now executes the disposable PostgreSQL rehearsal for a changed Clarity SQL/runtime/test diff while the PR is Draft. It uses the same synthetic loopback credentials and existing guarded runner; no new job, production access, paid resource or release-gate bypass. Ready PRs retain the full original App R1 SQL/RLS acceptance. A completed native run is still required before asserting success.
