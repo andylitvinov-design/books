@@ -265,7 +265,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         // The home now owns the compact My Space chrome. Keep all eleven
         // responsive widths, real interactions, accessibility and lower dock.
         if(surface==='home'){
-          const entry=page.locator('[data-home-dialogue-entry]')
+          const entry=page.locator('[data-home-program-page]')
           const header=entry.locator('[data-home-dialogue-header]')
           await expect(entry).toHaveCount(1)
           await expect(header).toBeVisible()
@@ -323,73 +323,9 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await tabs.nth(0).click()
           await expect(dashboard).toHaveAttribute('data-profile-space-section','clarity')
           await expect(dashboard.locator('[data-profile-my-video], [data-profile-my-page-courses-entry]')).toHaveCount(0)
-          // Existing four Ali program cards with three benefits each remain below.
-          await expect(entry).toHaveAttribute('data-home-mode','self')
-          const form=entry.locator('[data-home-intent-form]')
-          const input=form.locator('[data-home-intent-composer]')
-          const send=form.locator('[data-home-send-to-ali]')
-          const choices=entry.locator('[data-home-intent-option]')
-          const programs={
-            en:['Clarity & Stress Relief','Achieving My Goal','Business Support','Reiki Practic'],
-            ru:['Ясность и снятие стресса','Достижение моей цели','Поддержка бизнеса','Reiki Practic'],
-            es:["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"],
-          }
-          await expect(choices).toHaveCount(4)
-          const ids=['clarity','goal','business','reiki']
-          assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),ids,label+': approved program order')
-          for(const [index,intention] of ids.entries()){
-            const button=entry.locator('[data-home-intent-option="'+intention+'"]')
-            await expect(button).toHaveCount(1)
-            await expect(button).toHaveAttribute('type','button')
-            await expect(button).toHaveAttribute('aria-label',programs[locale][index])
-            await expect(button).toHaveAccessibleName(programs[locale][index])
-            await expect(button).toBeVisible()
-            await expect(button.locator('img')).toHaveCount(1)
-            await expect(button.locator('span[class*="programSteps"] > span')).toHaveCount(3)
-            const box=await button.boundingBox()
-            assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
-          }
-          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(0)
-          await expect(entry.locator('[data-home-mode-button]')).toHaveCount(0)
-          await expect(entry.locator('[data-home-methods]')).toBeVisible()
-          await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
-          const journeyLink=entry.locator('[data-home-continue-path]')
-          await expect(journeyLink).toHaveCount(1)
-          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
-          await expect(journeyLink).toBeHidden()
-          // Same-frame geometry: keep hero, composer, four programs and
-          // methods in order; cards never overlap or overflow at any viewport.
-          const homeLayout=await entry.evaluate(root=>{
-            const nodes=['[data-home-program-entrance]','[data-home-dialogue-hero]','[data-home-intent-form]',
-              '[data-home-focus-grid]','[data-home-methods]'].map(selector=>root.querySelector(selector))
-            if(nodes.some(node=>!node))return null
-            const boxes=nodes.map(node=>node.getBoundingClientRect())
-            const cards=[...root.querySelectorAll('[data-home-intent-option]')].map(node=>node.getBoundingClientRect())
-            return {
-              ordered:nodes.every((node,i)=>i===0||Boolean(
-                nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
-              noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
-              inWidth:[...boxes,...cards].every(box=>box.left>=-1&&box.right<=innerWidth+1),
-              cardsSeparate:cards.length===4&&cards.every((a,i)=>cards.slice(i+1).every(b=>
-                a.right<=b.left+1||b.right<=a.left+1||a.bottom<=b.top+1||b.bottom<=a.top+1)),
-            }
-          })
-          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth&&homeLayout.cardsSeparate,
-            label+': hero → composer → four programs → methods '+JSON.stringify(homeLayout))
-          await expect(input).toBeVisible()
-          // Approved free-chat entry opens Ali even without a prefilled wish.
-          // Users may also describe their goal first; neither action is blocked.
-          await expect(send).toBeEnabled()
-          await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
-          await expect(send).toBeVisible()
-          await expect(send).toBeEnabled()
-          await input.fill('')
-          await expect(send).toBeEnabled()
-          await expect(entry.locator('[data-home-intent-mic]')).toBeVisible()
-          const hero=entry.locator('[data-home-dialogue-hero]')
-          await hero.scrollIntoViewIfNeeded()
-          const rect=await hero.boundingBox()
-          assert.ok(rect&&rect.width>0&&rect.height>0&&rect.y<900&&rect.y+rect.height>0,label+': Ali hero remains reachable below discovery')
+          await expect(dashboard.locator('[data-profile-clarity-support]')).toBeVisible()
+          await expect(page.locator('[data-home-dialogue-entry], [data-home-dialogue-hero], [data-home-intent-form], [data-home-focus-grid], [data-home-video-below-fold]')).toHaveCount(0)
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+': discovery has no horizontal overflow')
           await page.evaluate(()=>window.scrollTo(0,0))
           await languageTrigger.click()
           await expect(language).toHaveJSProperty('open',true)
@@ -410,7 +346,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await header.screenshot({path:evidence+'/header-'+engine+'-'+locale+'-home-'+width+'.png'})
           const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
           if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
-          pass('Dialogue-first Home: '+label)
+          pass('Program-only Home: '+label)
           continue
         }
         const header = page.locator('header.house-header--services')
