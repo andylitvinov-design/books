@@ -94,3 +94,7 @@ Verified the existing linked Vercel team super10 is Pro; official Vercel functio
 
 ## Bounded setup allowance — 27 Nov
 A remaining-time-only token expires before the final active-time observation if setup/consent takes any positive time. The private reservation now permits up to 45s setup plus 20s observation allowance, with the same hard 1,200s maximum per credential, same one-use/overlap rules and provider quotas. Only paired trusted observations count; the relay closes the provider on exactly 1,200,000 ms of logical active time. Added synthetic two-segment regression with 20s setup each, same protocol and exact terminal receipt. This changes only reserved wall time, not client entitlement, tariff, daily quota or production flags; actual provider/runtime/cost acceptance remains mandatory.
+
+
+## Real socket close ordering — 27 Nov
+The durable relay no longer sends its terminal pause/time-limit receipt before the upstream close/credential-retirement attempt. It keeps the client attached during a bounded 1.5-second close-handshake wait; only a normal close plus durable stop may retire the lease. Abnormal or missing close and failed retirement preserve the original expiry. This avoids relying on work after the client socket has already closed. A local loopback `ws` regression is registered in the existing specialist suite to check actual ping/pong, PCM delivery, no resumption-handle leakage, and durable-stop → retirement → terminal receipt ordering without provider spend. This is not yet Vercel/Gemini/iPhone acceptance or a production activation.

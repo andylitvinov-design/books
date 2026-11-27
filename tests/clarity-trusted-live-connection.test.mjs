@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {EventEmitter} from 'node:events'
+import {EventEmitter,once} from 'node:events'
+import {setTimeout as delay} from 'node:timers/promises'
+import WebSocket,{WebSocketServer} from 'ws'
 import {createClarityRun,advanceClarityRun,clarityRunSummary,clarityRunCredentialWindow} from '../lib/coaching/clarity-course-runs.mjs'
 import {bindClarityTrustedLiveConnection} from '../lib/coaching/clarity-trusted-live-connection.mjs'
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
@@ -245,4 +247,66 @@ test('two host segments reach exactly 20 active minutes despite setup and consen
  assert.equal(g.provider.readyState,3);assert.equal(g.client.readyState,3)
  assert.equal(g.client.messages.at(-1).status,'time_limit')
  assert.equal(g.retirements.length,1)
+})
+
+
+test('real loopback ws: paired pongs, durable stop, upstream close and retirement precede terminal receipt', {timeout:10000},async()=>{
+ const server=new WebSocketServer({host:'127.0.0.1',port:0})
+ const sockets=[]
+ const until=async(predicate)=>{
+  const deadline=Date.now()+2500
+  while(!predicate()){
+   if(Date.now()>=deadline)throw Error('loopback relay timeout')
+   await delay(10)
+  }
+ }
+ try{
+  await once(server,'listening')
+  const endpoint='ws://127.0.0.1:'+server.address().port
+  const connect=async()=>{
+   const accepted=once(server,'connection')
+   const peer=new WebSocket(endpoint);sockets.push(peer)
+   const [side]=await accepted;sockets.push(side)
+   if(peer.readyState!==WebSocket.OPEN)await once(peer,'open')
+   return {peer,side}
+  }
+  const browser=await connect(),upstream=await connect()
+  const received=[],providerFrames=[],events=[],retired=[],order=[]
+  browser.peer.on('message',raw=>{const m=JSON.parse(raw.toString());received.push(m);if(m.status==='paused')order.push('terminal')})
+  upstream.peer.on('message',raw=>{const m=JSON.parse(raw.toString());providerFrames.push(m);if(m.setup)upstream.peer.send(JSON.stringify({setupComplete:{}}))})
+  const base=1795100000000,protocolId=id(2)
+  let now=base,seq=30,tid=0,run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
+  const timers=new Map(),lease={leaseId:id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt:null,...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt:null})}
+  const relay=bindClarityTrustedLiveConnection({client:browser.side,provider:upstream.side,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},clock:()=>now,uuid:()=>id(++seq),
+   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
+   persist:async e=>{events.push(e);run=advanceClarityRun(run,e);if(e.type==='pause')order.push('durable');return clarityRunSummary(run)},
+   retireLease:async binding=>{assert.equal(upstream.side.readyState,WebSocket.CLOSED);assert.equal(run.clock.days[0].status,'paused');retired.push(binding);order.push('retired')}})
+  const send=(peer,value)=>peer.send(JSON.stringify(value))
+  await until(()=>received.some(m=>m.type==='hh_clarity_ready'))
+  assert.equal(events.length,0)
+  send(browser.peer,{type:'hh_clarity_consent',decision:'start'})
+  await until(()=>received.some(m=>m.status==='active'&&m.elapsedMs===0))
+  await until(()=>providerFrames.some(m=>m.clientContent?.turnComplete===true))
+  assert.equal(events.length,1)
+  now+=5000;for(const [key,t] of [...timers])if(t.at<=now){timers.delete(key);t.fn()}
+  await until(()=>received.some(m=>m.status==='active'&&m.elapsedMs===5000))
+  assert.equal(run.clock.days[0].elapsedMs,5000)
+  const pcm={realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}
+  send(browser.peer,pcm)
+  await until(()=>providerFrames.some(m=>m.realtimeInput?.audio?.data==='AAAAAA=='))
+  send(upstream.peer,{serverContent:{turnComplete:true},sessionResumptionUpdate:{newHandle:'must-not-leak'}})
+  await until(()=>received.some(m=>m.serverContent?.turnComplete))
+  assert.ok(received.every(m=>!m.sessionResumptionUpdate))
+  send(browser.peer,{type:'hh_clarity_pause'})
+  await until(()=>received.some(m=>m.status==='paused'))
+  await relay.settled()
+  assert.deepEqual(order,['durable','retired','terminal'])
+  assert.equal(retired.length,1);assert.equal(retired[0].leaseId,lease.leaseId)
+  assert.equal(run.clock.days[0].elapsedMs,5000)
+  assert.equal(run.protocolIds[0],protocolId)
+  await until(()=>browser.peer.readyState===WebSocket.CLOSED)
+ }finally{
+  for(const socket of sockets)socket.terminate()
+  await new Promise(resolve=>server.close(()=>resolve()))
+ }
 })
