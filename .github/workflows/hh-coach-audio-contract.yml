@@ -4,6 +4,9 @@ on:
     branches: [feat/anti-stress-therapy-program-20261127, codex/public-book-library]
     paths:
       - 'lib/coaching/coach-audio-profiles.mjs'
+      - 'lib/coaching/coach-audio-wire.mjs'
+      - 'lib/coaching/gemini-live-transport.mjs'
+      - 'components/my-coach-gemini-live.jsx'
       - 'lib/coaching/gemini-voice-catalog.mjs'
       - 'lib/coaching/gemini-live-free.mjs'
       - 'lib/coaching/gemini-coach-tts.mjs'
@@ -27,4 +30,4 @@ jobs:
         with:
           node-version: 22
       - name: Test audio registry and server setup with synthetic payloads only
-        run: node --test tests/coach-audio-profiles.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/my-coach-gemini-approved-voices.test.mjs tests/my-coach-gemini-tiers-tts.test.mjs
+        run: node --test tests/coach-audio-profiles.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/my-coach-gemini-approved-voices.test.mjs tests/my-coach-gemini-tiers-tts.test.mjs tests/my-coach-gemini-free-live.test.mjs tests/my-coach-gemini-live-session-playback.test.mjs
