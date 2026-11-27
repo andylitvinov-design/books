@@ -7,6 +7,8 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
 import type { PublicLocale } from "@/lib/public-locales";
+import { CourseCartButton } from "./commerce/course-cart-button";
+import { courseOffer } from "@/lib/commerce/course-cart.mjs";
 import styles from "./academy-course-card-list.module.css";
 
 export type AcademyCourseItem = CatalogShowcaseItem & {
@@ -16,6 +18,7 @@ export type AcademyCourseItem = CatalogShowcaseItem & {
   detailsHint?: string;
   archiveKind?: "course" | "video";
   takeLabel?: string;
+  paidCourseSku?: string;
 };
 
 const copy = {
@@ -43,6 +46,7 @@ function AcademyCourseCard({ item, locale }: { item: AcademyCourseItem; locale: 
   const t = copy[locale];
   const [showDetails, setShowDetails] = useState(false);
   const hintId = `academy-course-hint-${item.id}`;
+  const paidOffer=!item.free&&item.paidCourseSku?courseOffer(item.paidCourseSku,locale):null;
 
   return (
     <article className={styles.card} role="listitem" data-academy-course-card={item.id}
@@ -79,10 +83,10 @@ function AcademyCourseCard({ item, locale }: { item: AcademyCourseItem; locale: 
               {showDetails ? t.hideDetails : t.details}
               <ChevronDown className={showDetails ? styles.chevronOpen : styles.chevron} size={15} aria-hidden="true" />
             </button>
-            <Link className={styles.take} href={item.courseHref ?? item.href} prefetch={false}>
+            {paidOffer?<CourseCartButton sku={paidOffer.id} locale={locale} className={styles.take}/>:<Link className={styles.take} href={item.courseHref ?? item.href} prefetch={false}>
               {item.takeLabel ?? (item.courseHref ? t.start : t.open)}
               <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+            </Link>}
           </div>
         </div>
       </div>
