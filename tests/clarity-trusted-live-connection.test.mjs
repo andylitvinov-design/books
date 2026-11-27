@@ -310,3 +310,23 @@ test('real loopback ws: paired pongs, durable stop, upstream close and retiremen
   await new Promise(resolve=>server.close(()=>resolve()))
  }
 })
+
+
+test('pause racing the last observation cannot retire twice or overwrite terminal completion',async()=>{
+ const f=fixture({segmentBudgetMs:770000});f.advance(20000);f.ready();f.consent();await f.relay.settled()
+ for(let i=0;i<149;i++){f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()}
+ f.advance(5000);await f.relay.settled()
+ let entered,release
+ const pending=new Promise(resolve=>{entered=resolve}),gate=new Promise(resolve=>{release=resolve})
+ let observations=0
+ const g=fixture({previousRun:f.run,segmentBudgetMs:770000,beforePersist:async e=>{if(e.type==='observe'&&++observations===91){entered();await gate}}})
+ g.advance(20000);g.ready();g.consent();await g.relay.settled()
+ for(let i=0;i<90;i++){g.advance(5000);g.client.pong();g.provider.pong();await g.relay.settled()}
+ g.advance(5000);g.client.pong();g.provider.pong();await pending
+ g.client.input({type:'hh_clarity_pause'});release();await g.relay.settled()
+ assert.equal(g.run.clock.days[0].status,'time_limit')
+ assert.equal(g.run.clock.days[0].elapsedMs,1200000)
+ assert.equal(g.retirements.length,1)
+ assert.equal(g.client.messages.filter(m=>m.status==='time_limit').length,1)
+ assert.equal(g.events.filter(e=>e.type==='pause').length,0)
+})
