@@ -16,6 +16,24 @@ import {
   inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
+// Bounded read-only fan-out: do not serially wait for every completed
+// workflow's jobs API. Preserve original result order and fail closed; finish
+// the current small batch before reporting its first failure, and never start
+// another batch after failure. No API write or synthetic success.
+export async function mapSpecialistEvidence(runs, inspect) {
+  const evidence = [];
+  const width = 3;
+  for (let offset = 0; offset < runs.length; offset += width) {
+    const results = await Promise.allSettled(
+      runs.slice(offset, offset + width).map(async run => inspect(run))
+    );
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+    evidence.push(...results.map(result => result.value));
+  }
+  return evidence;
+}
+
 export function worktreeSources(baseSha, cwd = process.cwd()) {
   const baseNames = execFileSync('git', ['ls-tree','-r','--name-only',baseSha,'--',WORKFLOW_PREFIX],
     {cwd, encoding:'utf8',maxBuffer:5e6}).split('\n').filter(x => /\.ya?ml$/.test(x));
@@ -32,7 +50,13 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
   // Always compare the immutable base manifest to the exact proposed checkout.
   const basePackage = execFileSync('git', ['show',baseSha + ':package.json'], {cwd,encoding:'utf8',maxBuffer:2e6});
   const currentPackage = readFileSync(join(cwd,'package.json'),'utf8');
-  return {base,current,basePackage,currentPackage};
+  // Immutable merge parent and actual proposed checkout; missing evidence remains strict.
+  let baseLock,currentLock;
+  try {
+    baseLock=execFileSync('git',['show',baseSha+':package-lock.json'],{cwd,encoding:'utf8',maxBuffer:2e6});
+    currentLock=readFileSync(join(cwd,'package-lock.json'),'utf8');
+  } catch { /* no readiness compatibility proof */ }
+  return {base,current,basePackage,currentPackage,baseLock,currentLock};
 }
 
 // Use the exact tested merge checkout, including both sides of renames, rather
@@ -611,7 +635,7 @@ export async function verify(api,ctx,files,options={}) {
       // One general loose-base rule for complete non-overlapping ordinary product changes.
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
-        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed);
+        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
@@ -622,7 +646,7 @@ export async function verify(api,ctx,files,options={}) {
           typeof api.target === 'function' && maxWait > 0 &&
           (safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed) ||
            safeDetachedCiSourceAdvance(diff, ctx.base, liveBaseSha, changed) ||
-           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files) ||
            safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, true) ||
            (changedRows.every(row => !row.previous_filename &&
              ['M','A','modified','added'].includes(row.status)) &&
@@ -650,7 +674,7 @@ export async function verify(api,ctx,files,options={}) {
       }
       if (nonOverlappingProduct) {
         approvedDisjointBases.add(liveBaseSha);
-        console.log('CI_BASE_ADVANCE_REUSED: ordinary non-overlapping protected product delta; retain exact-HEAD CI without a new build');
+        console.log('CI_BASE_ADVANCE_REUSED: verified independent protected product delta (including mixed candidates); retain exact-HEAD CI without a new build');
       }
       if (unrelatedPublicLeaves) {
         approvedDisjointBases.add(liveBaseSha);
@@ -950,8 +974,9 @@ export async function verify(api,ctx,files,options={}) {
       : finalFast ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
-  const executed=[];
-  for (const run of state.passed) {
+  const specialistWaitMs = now() - start;
+  const evidenceStart = now();
+  const executed = await mapSpecialistEvidence(state.passed, async run => {
     const requiredJobs = pinnedChangeRows ? trustedRequiredJobs(files.base.get(run.path)) : [];
     const jobDeadline = Math.min(deadline, now() + jobGrace);
     let jobs;
@@ -997,8 +1022,12 @@ export async function verify(api,ctx,files,options={}) {
       }
       optionalSkipped.push('writer-practical-focused');
     }
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)});
-  }
+    return {name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)};
+  });
+  console.log('CI_SPECIALIST_TIMING:' + JSON.stringify({
+    workflows:state.passed.length, wait_ms:specialistWaitMs,
+    job_evidence_ms:now()-evidenceStart, evidence_parallelism:3,
+  }));
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.

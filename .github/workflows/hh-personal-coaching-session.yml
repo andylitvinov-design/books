@@ -39,6 +39,10 @@ on:
       - 'components/my-coach-live-dialogue*'
       # Every dedicated My Coach endpoint has a focused private Coaching owner.
       - 'app/api/app/my-coach/**'
+      - 'app/api/app/clarity-course/route.js'
+      - 'app/api/app/clarity-course/clock/route.js'
+      - 'app/api/app/clarity-course/protocol/route.js'
+      - 'app/api/app/clarity-course/runs/route.js'
       - 'app/api/coaching/**'
       - 'lib/coaching/**'
       - 'components/my-coach-*'
