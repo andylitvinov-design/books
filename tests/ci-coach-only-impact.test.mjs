@@ -52,3 +52,37 @@ test('unguarded shared execution between coach branches always invokes real publ
       'shared non-Coach statement cannot be scoped: '+inserted);
   }
 });
+
+// The production dispatcher now has shared method-session helpers preceding
+// the stream/turn branches. Only the two explicitly guarded bodies may vary.
+const currentDispatcher = [
+  "import {myCoachGenerativeTurn} from '@/lib/app/coaching-brain'",
+  "    const coachMethodContext=()=>({config,actor})",
+  "    if (joined === 'my-coach/stream') {",
+  "      if (method !== 'POST') throw new AppError('NOT_FOUND',404)",
+  "      return json('stream-v1')",
+  "    }",
+  "    // An authenticated, one-use credential constrained to a single FREE",
+  "    if (joined === 'my-coach/live-token') { return json(token) }",
+  "    if (joined === 'my-coach/turn') {",
+  "      if (method !== 'POST') throw new AppError('NOT_FOUND',404)",
+  "      return json('turn-v1')",
+  "    }",
+  "    // A synthetic preflight proves verified ZDR free-model access before any",
+  "    if (joined === 'my-coach/probe') { return json(probe) }",
+  "    if (joined === 'services/cart') { return json(cart) }",
+].join('\n');
+test('current method-session dispatcher routes isolated existing Coach text changes',()=>{
+  const candidate=currentDispatcher.replace('stream-v1','stream-v2').replace('turn-v1','turn-v2');
+  assert.equal(verifiedCoachOnlySharedRouting([route,path('components/my-coach-live-dialogue.jsx')],currentDispatcher,candidate),true);
+  for (const tamper of [
+    candidate.replace('({config,actor})','({config,actor:null})'),
+    candidate.replace('return json(token)','return json(otherToken)'),
+    candidate.replace('return json(probe)','return json(otherProbe)'),
+    candidate.replace('return json(cart)','return json(otherCart)'),
+    candidate.replace('myCoachGenerativeTurn','otherFunction'),
+    candidate.replace("    // An authenticated, one-use credential constrained to a single FREE","    config.payment=false;\n    // An authenticated, one-use credential constrained to a single FREE"),
+    candidate.replace("    // A synthetic preflight proves verified ZDR free-model access before any","    if (joined === 'my-coach/other') { return json('extra') }\n    // A synthetic preflight proves verified ZDR free-model access before any"),
+  ]) assert.equal(verifiedCoachOnlySharedRouting([route],currentDispatcher,tamper),false);
+  assert.equal(verifiedCoachOnlySharedRouting([route,path('app/api/payments/checkout/route.js')],currentDispatcher,candidate),false);
+});

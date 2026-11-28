@@ -137,6 +137,9 @@ try {
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
   await visible(section);
+  // The native disclosure can open before React hydration and be reset when
+  // the client subtree commits. Wait for this component, not router internals.
+  await expect(section).toHaveAttribute("data-business-hydrated","true",{timeout:30000});
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
@@ -195,8 +198,7 @@ try {
   assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
     "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
-  await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  await expect(shelves.locator('[data-business-shelf="express"]')).toBeVisible();
   await shelves.locator('[data-business-shelf="express"]').click();
   await expect(shelves).toHaveAttribute("data-expanded","true");
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
