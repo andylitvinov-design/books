@@ -246,3 +246,25 @@ test('fresh reference is checked after committed consent but before audio and up
  assert.equal(g.run.clock.days[0].status,'paused')
  assert.equal(g.run.clock.days[0].elapsedMs,0)
 })
+
+test('therapy pause ACK waits for actual asynchronous provider closure and retirement',async()=>{
+ for(const code of [1000,1006]){
+  const f=fixture();f.ready();f.consent();await f.relay.settled()
+  f.advance(5000);f.client.pong();f.provider.pong();await f.relay.settled()
+  // ws.close() enters CLOSING; only the later close event proves closure.
+  f.provider.close=()=>{if(f.provider.readyState===1)f.provider.readyState=2}
+  f.client.input({type:'hh_anti_stress_pause'})
+  for(let i=0;i<10;i++)await Promise.resolve()
+  assert.equal(f.provider.readyState,2)
+  assert.equal(f.client.readyState,1)
+  assert.equal(f.retired.length,0)
+  assert.equal(f.client.messages.some(x=>x.type==='hh_anti_stress_clock'&&x.status==='paused'),false)
+  assert.equal(f.run.clock.days[0].status,'paused')
+  f.provider.readyState=3;f.provider.emit('close',code)
+  await f.relay.settled()
+  assert.equal(f.retired.length,code===1000?1:0)
+  assert.equal(f.client.messages.at(-1).status,'paused')
+  assert.equal(f.client.messages.at(-1).elapsedMs,5000)
+  assert.equal(f.client.readyState,3)
+ }
+})
