@@ -7,6 +7,8 @@ import {buildProfileAssessmentView} from '@/lib/profile/profile-assessment-view'
 import styles from './profile-personal-summary.module.css'
 import MyPageCourses from './my-page-courses'
 import {getCoachPersona,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
+import {selectLastCoachSession} from '@/lib/app/my-page-session-history.mjs'
 
 const COPY={
  ru:{about:'Обо мне',emptyBio:'Расскажите о себе в настройках своей странички.',edit:'Редактировать',privacy:'Личная страничка · ваши данные',goal:'Моя терапевтическая задача',goalEmpty:'Текст личной задачи пока не указан. Сформулировать направление работы можно в «Моём пути».',goalNote:'Самооценка выбранной цели — не диагноз и не результат теста.',goalLink:'Мой путь',goalRatings:['Ясность цели','Мотивация к цели','Уверенность в достижении цели'],tests:'Результаты моих тестов',testsEmpty:'Пока нет завершённых профессиональных тестов.',testsNote:'Это позиции в шкалах отдельных опросников, а не общий процент здоровья.',allTests:'Мои тесты',videos:'Мои видео и медитации',allVideos:'Все мои видео',videosEmpty:'Сохранённых видео пока нет.',open:'Смотреть',add:'Добавить на страничку',private:'Приватно',videoError:'Видео пока недоступно. Откройте его в библиотеке.',editIntro:'Настроить мою страничку',wait:'Загружаем личные результаты…',resultError:'Не удалось загрузить результаты. Откройте «Мои тесты».',personal:'Мои личные материалы',themes:{energy:'Энергия',relationships:'Отношения',goals:'Цели',money:'Деньги',health:'Самочувствие',life:'Жизнь'}},
@@ -29,9 +31,9 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
  const [courseSummary,setCourseSummary]=useState(null)
  const [daily,setDaily]=useState(null)
  const extras=({
- en:{focus:'My Focus',choose:'Choose a goal',last:'Last Session',noSession:'No reviewed session yet',noTasks:'No saved plan today',unavailable:'Unavailable',loading:'Loading…',done:'Courses completed',of:'of',details:'Details',profile:'My Profile',notifications:'Notifications',language:'Language',privacy:'Privacy',data:'My Data',with:'With',session:'Session',plan:'My plan',unreviewed:'Saved coaching session',unknown:'Progress unavailable'},
- ru:{focus:'Мой фокус',choose:'Выбрать цель',last:'Последняя сессия',noSession:'Пока нет проверенных сессий',noTasks:'Нет сохранённого плана на сегодня',unavailable:'Недоступно',loading:'Загрузка…',done:'Курсов завершено',of:'из',details:'Подробнее',profile:'Профиль',notifications:'Уведомления',language:'Язык',privacy:'Приватность',data:'Мои данные',with:'С коучем',session:'Сессия',plan:'Мой план',unreviewed:'Сохранённая сессия',unknown:'Прогресс недоступен'},
- es:{focus:'Mi enfoque',choose:'Elegir meta',last:'Última sesión',noSession:'Sin sesiones revisadas',noTasks:'Sin plan guardado hoy',unavailable:'No disponible',loading:'Cargando…',done:'Cursos completados',of:'de',details:'Detalles',profile:'Mi perfil',notifications:'Avisos',language:'Idioma',privacy:'Privacidad',data:'Mis datos',with:'Con',session:'Sesión',plan:'Mi plan',unreviewed:'Sesión guardada',unknown:'Progreso no disponible'}
+ en:{focus:'My Focus',choose:'Choose a goal',last:'Last Session',noSession:'No saved sessions yet',draft:'Saved · not reviewed',reviewed:'Reviewed',lastSaved:'Last saved',historyPartial:'Some sessions could not be loaded',noTasks:'No saved plan today',unavailable:'Unavailable',loading:'Loading…',done:'Courses completed',of:'of',details:'Details',profile:'My Profile',notifications:'Notifications',language:'Language',privacy:'Privacy',data:'My Data',with:'With',session:'Session',plan:'My plan',unreviewed:'Saved coaching session',unknown:'Progress unavailable'},
+ ru:{focus:'Мой фокус',choose:'Выбрать цель',last:'Последняя сессия',noSession:'Пока нет сохранённых сессий',draft:'Сохранена · не проверена',reviewed:'Проверена',lastSaved:'Сохранено',historyPartial:'Часть сессий не загрузилась',noTasks:'Нет сохранённого плана на сегодня',unavailable:'Недоступно',loading:'Загрузка…',done:'Курсов завершено',of:'из',details:'Подробнее',profile:'Профиль',notifications:'Уведомления',language:'Язык',privacy:'Приватность',data:'Мои данные',with:'С коучем',session:'Сессия',plan:'Мой план',unreviewed:'Сохранённая сессия',unknown:'Прогресс недоступен'},
+ es:{focus:'Mi enfoque',choose:'Elegir meta',last:'Última sesión',noSession:'Sin sesiones guardadas',draft:'Guardada · sin revisar',reviewed:'Revisada',lastSaved:'Último guardado',historyPartial:'No se pudieron cargar algunas sesiones',noTasks:'Sin plan guardado hoy',unavailable:'No disponible',loading:'Cargando…',done:'Cursos completados',of:'de',details:'Detalles',profile:'Mi perfil',notifications:'Avisos',language:'Idioma',privacy:'Privacidad',data:'Mis datos',with:'Con',session:'Sesión',plan:'Mi plan',unreviewed:'Sesión guardada',unknown:'Progreso no disponible'}
  })[language]
  useEffect(()=>{
   if(!accountId)return
@@ -39,11 +41,13 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
   const now=new Date(),day=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')
   Promise.allSettled([
    appFetch('daybook-daily?day='+encodeURIComponent(day),undefined,'GET',options),
-   fetch('/api/app/my-coach/protocol',{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'x-hh-account-id':accountId}}).then(r=>{if(!r.ok)throw Error('PROTOCOL_UNAVAILABLE');return r.json()})
-  ]).then(([d,p])=>{
+   fetch('/api/app/my-coach/protocol',{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'x-hh-account-id':accountId}}).then(r=>{if(!r.ok)throw Error('PROTOCOL_UNAVAILABLE');return r.json()}),
+   fetch('/api/app/my-coach/draft?view=summary',{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'x-hh-account-id':accountId}}).then(r=>{if(!r.ok)throw Error('DRAFT_UNAVAILABLE');return r.json()})
+  ]).then(([d,p,q])=>{
    if(controller.signal.aborted)return
    const reviewed=p.status==='fulfilled'&&Array.isArray(p.value?.protocols)?p.value.protocols.filter(x=>x?.provenance==='client_reviewed_dialogue'&&Number.isFinite(Date.parse(x.completedAt))).sort((a,b)=>Date.parse(b.completedAt)-Date.parse(a.completedAt)):null
-   setDaily({owner:accountId,intention:d.status==='fulfilled'&&d.value?.intention?.localDay===day?d.value.intention:null,failed:d.status==='rejected',protocol:reviewed?.[0]||null,protocolFailed:reviewed===null})
+   const drafts=q.status==='fulfilled'&&Array.isArray(q.value?.drafts)?q.value.drafts:null
+   setDaily({owner:accountId,intention:d.status==='fulfilled'&&d.value?.intention?.localDay===day?d.value.intention:null,failed:d.status==='rejected',protocol:selectLastCoachSession(reviewed,drafts),protocolFailed:reviewed===null||drafts===null})
   })
   return ()=>controller.abort()
  },[accountId,language])
@@ -54,6 +58,9 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
  const last=currentDaily?.protocol
  const coach=last?getCoachPersona(last.personaId):null
  const coachName=coach?localCoachText(coach.name,language):extras.session
+ let sessionTopic=extras.session
+ if(last?.courseSessionId){try{sessionTopic=coachCourseFocusLabel(last.courseSessionId,language)||extras.session}catch{}}
+ const sessionDuration=Number.isInteger(last?.durationSeconds)&&last.durationSeconds>=0&&last.durationSeconds<=7200?Math.floor(last.durationSeconds/60)+':'+String(last.durationSeconds%60).padStart(2,'0'):null
  const coachPhoto=({mira:'my-coach-mira-rail.webp',max:'my-coach-max-rail.webp',sofia:'my-coach-sofia-rail.webp',alex:'my-coach-alex-rail.webp'})[last?.personaId]
  const focus=summary?.focus
  const [playing,setPlaying]=useState(null)
@@ -122,9 +129,10 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
    </section>
    <section className={styles.card+' '+styles.dashboardTile} data-my-page-sessions>
     <header className={styles.heading}><MessageCircle size={20} aria-hidden="true"/><h2>{extras.last}</h2></header>
-    {last?<div className={styles.sessionBody}><span className={styles.coachPortrait} aria-hidden="true" style={coachPhoto?{backgroundImage:'url(/images/holistic-house/'+coachPhoto+')'}:undefined}>{!coachPhoto&&<UserRound size={22}/>}</span><span><strong>{extras.with} {coachName}</strong><small>{new Date(last.completedAt).toLocaleDateString(language)}</small><small>{last.courseSessionId?.startsWith('clarity_')?'Express':last.courseSessionId?.startsWith('goal_')?dashboard.goals:last.courseSessionId?.startsWith('anti_stress_')?({en:'Anti-Stress',ru:'Антистресс',es:'Antiestrés'})[language]:extras.unreviewed}</small></span></div>:<p>{!currentDaily?extras.loading:currentDaily.protocolFailed?extras.unavailable:extras.noSession}</p>}
-    <Link className={styles.tileLink} href={'/'+appLocale+'/app/my-coaching-plan?tab=reports'} prefetch={false} data-my-page-coach-protocols aria-label={dashboard.coachProtocols}>{extras.details}<ArrowRight size={16} aria-hidden="true"/></Link>
-    <Link className={styles.tileLink} href={'/'+appLocale+'/app/portrait?space=sessions'} prefetch={false}>{dashboard.sessions}<ArrowRight size={16} aria-hidden="true"/></Link>
+    {last?<div className={styles.sessionBody}><span className={styles.coachPortrait} aria-hidden="true" style={coachPhoto?{backgroundImage:'url(/images/holistic-house/'+coachPhoto+')'}:undefined}>{!coachPhoto&&<UserRound size={22}/>}</span><span><strong>{extras.with} {coachName}</strong><small>{!last.startedAt&&last.status==='draft'?extras.lastSaved+' · ':''}{new Date(last.startedAt||last.date).toLocaleString(language,{dateStyle:'medium',timeStyle:'short'})}</small><small>{sessionTopic}{sessionDuration?' · '+sessionDuration:''}</small><small>{last.status==='draft'?extras.draft:extras.reviewed}</small></span></div>:<p>{!currentDaily?extras.loading:currentDaily.protocolFailed?extras.unavailable:extras.noSession}</p>}
+    <Link className={styles.tileLink} href={'/'+appLocale+'/app/my-coaching-plan?tab=reports'} prefetch={false} data-my-page-coach-protocols aria-label={dashboard.coachProtocols}>{dashboard.coachProtocols}<ArrowRight size={16} aria-hidden="true"/></Link>
+    {last&&currentDaily.protocolFailed&&<p role="status">{extras.historyPartial}</p>}
+     <Link className={styles.tileLink} href={'/'+appLocale+'/app/portrait?space=sessions'} prefetch={false}>{dashboard.sessions}<ArrowRight size={16} aria-hidden="true"/></Link>
    </section>
    </div>
    <section className={styles.card+' '+styles.settingsCard} data-my-page-settings><header className={styles.heading}><Settings size={22} aria-hidden="true"/><h2>{dashboard.settings}</h2></header>

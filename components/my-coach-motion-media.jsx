@@ -11,7 +11,7 @@ import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coa
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
-import {qualityScreenedReactionMedia,qualityScreenedPresentation} from '@/lib/coaching/coach-reaction-quality.mjs'
+import {qualityScreenedReactionMedia,qualityScreenedPublicPresence} from '@/lib/coaching/coach-reaction-quality.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -39,11 +39,13 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const directorActive=sessionContext&&Boolean(reactionIntent)
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
-  const presentation=useMemo(()=>pinnedPresentation?qualityScreenedPresentation(pinnedPresentation,releasedReactionMedia(personaId,REACTION_V4_RELEASED,pinnedPresentation.group)):null,[pinnedPresentation,personaId])
-  // Mira's protected original is 480x672 and visibly soft on Retina.
-  // Keep its immutable asset/registry for archival and other consumers; only
-  // the public presentation begins directly with the screened same-camera HD loop.
-  const opening=presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null
+  const presentation=useMemo(()=>qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation),[pinnedPresentation,personaId])
+  // All four 480x672 originals can visibly soften on Retina and have
+  // unverified opening-to-HD pose seams. Preserve their immutable assets,
+  // but start public portraits directly in the screened HD presence.
+  // Keep approved higher-resolution Merlin/Harry performances unchanged.
+  const originalOpening=presentationActive?coachPresentationOpening(personaId):null
+  const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null
   const openingActive=Boolean(opening&&openingDone!==personaId)
   const activePresentation=openingActive?opening:presentation
   // Lock the released HD camera for the whole session. Exhaustion holds its
@@ -79,7 +81,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const src=presentationActive?(activePresentation?.src||null):reserveSrc
   const framePoster = presentationActive?null:coachVideoPosterPath(src)
   // Keep the initial poster stable beneath the two presentation layers.
-  const preferredPoster=presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
+  const preferredPoster=presentationActive?(openingActive?opening?.poster||presentation?.poster||pinnedPresentation?.poster:presentation?.poster||pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
   // Large Harry surfaces must not reveal the old tiny rail poster on error.
   const harryOriginalPoster=MEDIA_ROOT+'harry-greeting-real-v2.webp'
   const largeHarryFallback=personaId==='harry'&&(presentationActive||sessionContext)

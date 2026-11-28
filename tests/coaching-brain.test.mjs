@@ -596,3 +596,12 @@ test('My Coach local unavailable-model path uses semantic Coach Mind instead of 
  assert.match(ui,/selectedGeminiEngine\?!geminiEngineReady:readiness\.status!=='verified'/)
  assert.match(ui,/!selectedGeminiEngine&&await retryCoachModelAfterOutage\(\)/)
 })
+
+test('ordinary fatigue, overload and thanks do not solicit an exit on the shared offline path',()=>{
+ const exit=/pause|take a break|shorter conversation|end our conversation|пауз|сократить разговор|закончить разговор|pausar|acortar la conversación|terminar nuestra conversación/iu
+ for(const [locale,message] of [['en','I feel overwhelmed by everything'],['en','thanks'],['ru','Я устал и у меня нет сил'],['ru','спасибо'],['es','gracias']]){
+  const input=normalizeCoachingBrainInput(req({locale,message}))
+  const out=offlineCoachingBrainReply(input,'grow','explore')
+  assert.doesNotMatch(out.reflection+' '+out.question,exit)
+ }
+})

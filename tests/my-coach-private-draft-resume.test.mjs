@@ -62,8 +62,8 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 
 import {coachDraftListSummary,draftTranscriptPrefix,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
- const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null})
+ const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turnCount:1,durationSeconds:null})
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
@@ -106,7 +106,10 @@ test('explicit continuation after private restore freezes the active clock and k
  assert.ok(ui.includes('setResumePending(false);setPaused(false);toggleComposer()'))
  assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
  assert.ok(ui.includes('data-coach-resume-minutes'))
- assert.ok(gate.includes("Начать заново"))
+ assert.doesNotMatch(gate,/Начать заново|window\.confirm/)
+ assert.ok(gate.includes('onResumeSession(entry.item)'))
+ assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
+ assert.ok(ui.includes('onResumeSession={restorePrivateDraft}'))
 })
 
 
