@@ -1,4 +1,12 @@
 'use client'
+import {clarityDay,clarityHomeworkNotes,clarityHomeworkTags,clarityHomeworkEntryId,validClarityHomeworkAnswer} from '@/lib/coaching/clarity-course.mjs'
+import ClarityRunCatalog from './clarity-run-catalog'
+import {clarityDaybookRunSelection} from '@/lib/coaching/clarity-resume-scope.mjs'
+import {clarityRunNotes,clarityRunScopeTag} from '@/lib/coaching/clarity-course-runs.mjs'
+import {ClarityCourseResults,ClarityCourseStatus,useClarityResults} from './clarity-course-results'
+import {clarityResultProjection} from '@/lib/coaching/clarity-course-results.mjs'
+import {clarityRatingDefinition,clarityRatingAnswer} from '@/lib/coaching/clarity-session-fields.mjs'
+import ClarityCourseProtocol from './clarity-course-protocol'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
@@ -171,18 +179,29 @@ export function ClarityDetails({locale='en'}){
   <p className={css.notice}>{t.privacy}</p>
  </main>
 }
-function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
+function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost,homework,courseRunId=null}){
  const t=COPY[locale]
  const [text,setText]=useState(entry?.text||''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
+ const rating=homework&&clarityRatingDefinition(homework.row.id)
+ const previousRating=rating?clarityRatingAnswer(homework.row.id,entry?.text):null
+ // Preserve a previously saved pair on edit; do not require a new desired rating on Day 1.
+ const ratingMode=homework?.row.ratingMode
+ const needsDesired=ratingMode!=='current'&&(rating?.track==='inner'||previousRating?.desired!=null)
+ const [current,setCurrent]=useState(()=>String(previousRating?.current??''))
+ const [desired,setDesired]=useState(()=>String(previousRating?.desired??''))
+ const answer=rating?(current!==''&&(!needsDesired||desired!=='')?(needsDesired?current+'/'+desired:current):''):text.trim()
+ const valid=homework?validClarityHomeworkAnswer(homework.row.id,answer,{ratingMode}):Boolean(answer)
+ const labels=({ru:{current:'Сейчас',desired:'Желаемое',select:'Выберите 0–10',invalid:'Уточните ответ на этот вопрос.'},en:{current:'Current',desired:'Desired',select:'Choose 0–10',invalid:'Please clarify your answer to this question.'},es:{current:'Actual',desired:'Deseado',select:'Elige 0–10',invalid:'Aclara tu respuesta a esta pregunta.'}})[locale]
  const saver=useRef(null),draft=useRef(null),alive=useRef(true),inFlight=useRef(false)
  useEffect(()=>{alive.current=true;saver.current=createJournalSaver(appFetch,accountId);return()=>{alive.current=false;saver.current?.discard()}},[accountId])
  async function save(){
-  if(inFlight.current||!saver.current||!text.trim())return
+  if(inFlight.current||!saver.current||!valid)return
   inFlight.current=true;setBusy(true)
   try{
    if(!draft.current){
     const timezone=entry?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone
-    draft.current={id:entry?.id||crypto.randomUUID(),revision:entry?.revision||0,text:text.trim(),tags:entry?.tags||[clarityDayTag(day)],kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
+    draft.current={id:entry?.id||(homework?await clarityHomeworkEntryId(accountId,homework.reportId,homework.row.id):crypto.randomUUID()),revision:entry?.revision||0,text:answer,tags:entry?.tags||(homework?clarityHomeworkTags(homework.reportId,homework.row.id):[clarityDayTag(day)]),kind:'note',locale:entry?.locale||locale,timezone,localDay:entry?.localDay||localJournalDay(new Date().toISOString(),timezone),goalId:null}
+    if(courseRunId)draft.current.tags=[...draft.current.tags.filter(tag=>!tag.startsWith('cr:')),clarityRunScopeTag(courseRunId)]
    }
    const saved=await saver.current.save(draft.current)
    if(!alive.current)return
@@ -194,31 +213,57 @@ function FreeReflection({accountId,locale,day,entry,onSaved,onSessionLost}){
   }finally{inFlight.current=false;if(alive.current)setBusy(false)}
  }
  return <div className={css.reflection}>
-  <label>{t.reflection}<textarea rows={3} maxLength={20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>
-  {entry&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
+  {rating?<fieldset disabled={busy||failed} style={{border:0,padding:0,margin:0}}><legend>{homework.row.question}</legend><div style={{display:'grid',gridTemplateColumns:needsDesired?'1fr 1fr':'1fr',gap:12}}>{[[labels.current,current,setCurrent],...(needsDesired?[[labels.desired,desired,setDesired]]:[])].map(([label,value,change])=><label key={label}>{label}<select value={value} onChange={e=>change(e.target.value)} style={{width:'100%',minHeight:44}}><option value="">{labels.select}</option>{Array.from({length:11},(_,i)=><option key={i} value={i}>{i}</option>)}</select></label>)}</div></fieldset>:<label>{homework?homework.row.question:t.reflection}<textarea rows={3} maxLength={homework?1200:20000} value={text} placeholder={t.placeholder} onChange={e=>setText(e.target.value)} disabled={busy||failed}/></label>}
+  {entry&&(!homework||validClarityHomeworkAnswer(homework.row.id,entry.text,{ratingMode}))&&<p role="status" className={css.saved}><CheckCircle2 size={18}/>{t.saved}</p>}
+  {homework&&answer&&!valid&&<p role="status">{labels.invalid}</p>}
   {failed&&<p role="alert">{t.error}</p>}
-  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!text.trim()||(!failed&&entry?.text===text.trim())}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
+  <button type="button" className={css.primary} onClick={()=>void save()} disabled={busy||!valid||(!failed&&entry?.text===answer)}>{busy?t.working:failed?t.retry:entry?t.edit:t.save}<ArrowRight size={18}/></button>
  </div>
 }
-export function ClarityDaybook({locale='en',accountId,entries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children}){
+export function ClarityDaybook({locale='en',accountId,entries:allEntries,hasMore,loadingAll,onLoadAll,loadError,onSaved,onSessionLost,children,initialDay}){
+ const entries=clarityRunNotes(allEntries)
  const lang=clarityLocale(locale),t=COPY[lang],g=GOLDEN[lang],days=CLARITY_SYLLABUS[lang]
  const recorded=clarityRecordedDays(entries),legacy=clarityLegacyNotes(entries),oldPractice=Array.from({length:7},(_,i)=>clarityPracticeNotes(entries,i+1)).flat()
  const searchParams=useSearchParams()
+ const runSelection=clarityDaybookRunSelection(searchParams)
  const requestedWeek=searchParams?.getAll('week')
  const routeWeek=reportDaybookWeek('clarity',requestedWeek?.length===1?requestedWeek[0]:null)
- const [selected,setSelected]=useState(null)
+ const [selected,setSelected]=useState(()=>clarityDay(initialDay))
+ const [showLegacy,setShowLegacy]=useState(false)
+ const resultState=useClarityResults(accountId,lang,onSessionLost)
  const day=selected??(routeWeek&&routeWeek<=CLARITY_DAY_COUNT?routeWeek:null)??(Array.from({length:CLARITY_DAY_COUNT},(_,i)=>i+1).find(n=>!gameProgress(entries,n).complete)||CLARITY_DAY_COUNT)
  const root='/'+lang
  const toolPaths={vectors:root+'/development-vectors',profile:root+'/app/portrait',practice:root+'/practice',goal:root+'/app/daybook?start=vector'}
  const sheet=useRef(null)
  function chooseDay(number){setSelected(number);if(sheet.current)sheet.current.scrollTop=0}
  const counts=days.map((_,i)=>gameProgress(entries,i+1))
+ const assigned=resultState.phase==='ready'?resultState.data.results.filter(r=>r.day===day&&r.homework.length).map(report=>({...report,projection:clarityResultProjection(report,entries,{journalComplete:!hasMore})})):[]
+ const homeworkTotal=assigned.reduce((n,r)=>n+r.projection.homeworkTotal,0)
+ const homeworkDone=assigned.reduce((n,r)=>n+r.projection.homeworkDone,0)
+ if(runSelection.requested&&!showLegacy&&(runSelection.invalid||resultState.phase!=='ready'||!resultState.data.runCatalog))return <section className={css.practiceBody} data-clarity-exact-run-unavailable><p role="status">{resultState.phase==='loading'&&!runSelection.invalid?t.working:({en:'This course is unavailable. No other course was opened.',ru:'Этот курс недоступен. Другой курс не открыт.',es:'Este curso no está disponible. No se abrió otro curso.'})[lang]}</p><button type="button" onClick={resultState.reload}>{t.retry}</button><Link href={clarityDaybookPath(lang)}>{({en:'All courses',ru:'Все курсы',es:'Todos los cursos'})[lang]}</Link></section>
+ if(resultState.phase==='ready'&&(resultState.data.runCatalog?.runs?.length||runSelection.id&&resultState.data.runCatalog)&&!showLegacy)return <ClarityRunCatalog key={accountId+':'+(runSelection.id||'catalog')+':'+(runSelection.day||'all')} initialRunId={runSelection.id} initialDay={runSelection.day} initialCatalog={resultState.data.runCatalog} accountId={accountId} locale={lang} entries={allEntries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={onSaved} onSessionLost={onSessionLost} onLegacy={()=>setShowLegacy(true)} renderReflection={props=><FreeReflection {...props} accountId={accountId} locale={lang} onSaved={onSaved} onSessionLost={onSessionLost}/>}/>
  return <section data-clarity-daybook data-clarity-design="golden-one-screen-v3">
   <CoachingCourseDashboard key={accountId} accountId={accountId} locale={lang} program="clarity" title={t.title} sessions={days} selected={day} onSelect={chooseDay} practiceCounts={counts} loaded={!hasMore} 
    practiceFlow={onClose=><DaybookGames day={day} accountId={accountId} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} loadError={loadError} onLoadAll={onLoadAll} onSaved={entry=>{setSelected(day);onSaved(entry)}} onSessionLost={onSessionLost} onClose={onClose} onNextDay={()=>{chooseDay(Math.min(day+1,3));onClose()}}/>}
-   results={<DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/>}
+   results={<><ClarityCourseResults state={resultState} day={day} locale={lang} entries={entries} hasMore={hasMore} loadingAll={loadingAll} onLoadAll={onLoadAll} loadError={loadError}/><DaybookWeekReports key={accountId+':clarity'} locale={lang} accountId={accountId} program="clarity" week={day} showEmpty/></>}
+   protocol={<ClarityCourseProtocol key={day} state={resultState} day={day} locale={lang} accountId={accountId} onSessionLost={onSessionLost}/>}
+   sessionAvailable={false}
+   sessionStatus={<ClarityCourseStatus state={resultState} day={day} locale={lang}/>}
+   homeworkStatus={resultState.phase==='ready'&&!hasMore&&homeworkTotal>0?{label:homeworkDone+'/'+homeworkTotal,complete:homeworkDone===homeworkTotal}:null}
+   homework={<section data-clarity-personal-homework>
+    {resultState.phase==='loading'?<p>{t.working}</p>:resultState.phase!=='ready'?<button type="button" onClick={resultState.reload}>{t.retry}</button>:
+     hasMore?<><button type="button" onClick={onLoadAll} disabled={loadingAll}>{loadingAll?t.working:t.load}</button>{loadError&&<p role="alert">{t.loadError}</p>}</>:
+     !assigned.length?<p>{({en:'No agreed homework yet.',ru:'Пока нет согласованного домашнего задания.',es:'Todavía no hay una tarea acordada.'})[lang]}</p>:
+     assigned.map(report=><section key={report.id} data-clarity-homework-practice>
+      <p>{({en:'Personal coach',ru:'Личный коуч',es:'Coach personal'})[lang]}: {report.personaId} · {new Date(report.savedAt).toLocaleDateString(lang)}</p>
+      <p>{({en:'Your saved answers update the session result as independent reflections, not coach confirmations.',ru:'Сохранённые ответы дополняют итоги сессии как самостоятельная работа, а не как подтверждение коучем.',es:'Tus respuestas guardadas actualizan el resultado como reflexiones autónomas, no como confirmaciones del coach.'})[lang]}</p>
+      <p role="status">{report.projection.homeworkDone}/{report.projection.homeworkTotal}</p>
+      {report.projection.assigned.map(row=>{const answers=clarityHomeworkNotes(entries,report.id,row.id);const form=row.homeworkState==='conflict'?<p role="alert">{t.duplicate}</p>:<FreeReflection key={answers[0]?.id||report.id+':'+row.id} accountId={accountId} locale={lang} day={day} entry={answers[0]} homework={{reportId:report.id,row}} onSaved={onSaved} onSessionLost={onSessionLost}/>;return row.homeworkState==='done'?<details key={row.id} data-clarity-homework-done><summary>✓ {row.label}</summary>{form}</details>:<div key={row.id} data-clarity-homework-field={row.id}><strong>{row.label}</strong>{form}</div>})}
+     </section>)}
+   </section>}
    initialPanel={routeWeek===4?'resources':null}
    resources={<>
+    {resultState.phase==='ready'&&resultState.data.runCatalog?.runs?.length>0&&<button type="button" onClick={()=>setShowLegacy(false)}>{({en:'My coaching courses',ru:'Мои курсы коучинга',es:'Mis cursos de coaching'})[lang]}</button>}
     <p>{t.intro}</p><p>{t.terms}</p><p>{t.coachHint}</p><strong>{t.homework}</strong><p>{t.homeworkHint}</p>
     {oldPractice.length>0&&<details className={css.resources}><summary>{t.legacy} · 1</summary>{oldPractice.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}
     {legacy.length>0&&<details className={css.resources}><summary>{t.legacy}</summary>{legacy.map(e=><p key={e.id}>{e.text}</p>)}<Link href={root+'/app/daybook?tab=journal'}>{t.journal}</Link></details>}

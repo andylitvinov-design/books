@@ -5,28 +5,39 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 
 export async function verifyLiveAudioBrowser(browserType,browser){
-  const [transport,echo]=await Promise.all([
-    readFile(new URL('../lib/coaching/gemini-live-transport.mjs',import.meta.url),'utf8'),
-    readFile(new URL('../lib/coaching/gemini-live-echo.mjs',import.meta.url),'utf8'),
-  ])
+  const origin='http://my-coach-audio.test'
+  const modules=[
+    'gemini-live-transport.mjs',
+    'gemini-live-echo.mjs',
+    'coach-audio-wire.mjs',
+    'coach-audio-profiles.mjs',
+    'coach-personality-core.mjs',
+  ]
+  const sources=new Map(await Promise.all(modules.map(async name=>[
+    '/'+name,await readFile(new URL('../lib/coaching/'+name,import.meta.url),'utf8'),
+  ])))
+  const requests=[]
   const context=await browser.newContext()
   const page=await context.newPage()
   const pageErrors=[]
   page.on('pageerror',error=>pageErrors.push(error.message))
   try{
-    await context.route(/^https?:\/\//,route=>route.abort())
-    await page.setContent('<!doctype html><button>Run synthetic audio QA</button>')
-    await page.evaluate(async({transport,echo})=>{
+    await context.route('**/*',route=>{
+      const url=new URL(route.request().url())
+      if(url.origin===origin&&url.pathname==='/'){
+        return route.fulfill({contentType:'text/html',body:'<!doctype html><button>Run synthetic audio QA</button>'})
+      }
+      if(url.origin===origin&&sources.has(url.pathname)){
+        requests.push(url.pathname)
+        return route.fulfill({contentType:'text/javascript',body:sources.get(url.pathname)})
+      }
+      return route.abort()
+    })
+    await page.goto(origin)
+    await page.evaluate(async transportUrl=>{
       const check=(condition,code)=>{if(!condition)throw Error(code)}
       const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
-      const moduleUrl=source=>URL.createObjectURL(new Blob([source],{type:'text/javascript'}))
-      const relative="'./gemini-live-echo.mjs'"
-      check(transport.split(relative).length===2,'UNEXPECTED_TRANSPORT_IMPORT')
-      const echoUrl=moduleUrl(echo)
-      const transportUrl=moduleUrl(transport.replace(relative,JSON.stringify(echoUrl)))
-      let api
-      try{api=await import(transportUrl)}
-      finally{URL.revokeObjectURL(transportUrl);URL.revokeObjectURL(echoUrl)}
+      const api=await import(transportUrl)
       const {GeminiLiveReplyWatchdog,GeminiLivePcmPlayer,bytesToBase64,readGeminiLiveServerMessage}=api
       const button=document.querySelector('button')
       button.addEventListener('click',async()=>{
@@ -89,11 +100,12 @@ export async function verifyLiveAudioBrowser(browserType,browser){
           window.__hhCoachAudioProbe=result
         }
       },{once:true})
-    },{transport,echo})
+    },origin+'/gemini-live-transport.mjs')
     await page.getByRole('button',{name:'Run synthetic audio QA'}).click()
     await page.waitForFunction(()=>Boolean(window.__hhCoachAudioProbe),null,{timeout:20000})
     const result=await page.evaluate(()=>window.__hhCoachAudioProbe)
     assert.equal(result.ok,true,browserType.name()+': '+JSON.stringify(result))
+    assert.deepEqual([...new Set(requests)].sort(),[...sources.keys()].sort(),browserType.name()+': transport dependency graph')
     assert.deepEqual(pageErrors,[],browserType.name()+': native audio browser errors')
     console.log('COACH_NATIVE_AUDIO_BROWSER_PASS '+browserType.name()+' '+JSON.stringify(result))
     return result

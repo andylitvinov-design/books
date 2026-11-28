@@ -57,7 +57,8 @@ test('the live microphone displays interim words in transcript only',()=>{
     "recognition.onresult=event=>{",
     "recognition.interimResults=true",
     'transcriptRef.current?.(visible)',
-    'lastHeardRef.current=finished',
+    'finished=visible',
+    'lastHeardRef.current=coachSpeechLanguageMemory(lastHeardRef.current,spoken)',
     "event.error==='network'",
   ])assert.ok(loop.includes(marker),marker)
   assert.ok(ui.includes('onTranscript={setSpeechPreview}'))
@@ -133,7 +134,10 @@ test('Safari fragment watchdog and silence settle commit once automatically',()=
   assert.ok(handler.includes('iosResultTimerRef.current=setTimeout'))
   assert.ok(handler.includes('settleTimerRef.current=setTimeout'))
   assert.ok(handler.includes('recognition.onend=null'))
-  assert.ok(handler.includes('lastHeardRef.current=heard'))
+  assert.ok(!handler.includes('lastHeardRef.current='),'uncertain ASR must not change the language hint before delivery')
+  const delivery=loop.slice(loop.indexOf('async function deliver(text)'),loop.indexOf('async function speakCoachReply'))
+  assert.ok(delivery.includes('lastHeardRef.current=coachSpeechLanguageMemory(lastHeardRef.current,spoken)'))
+  assert.ok(delivery.indexOf('coachSpeechNeedsLanguageReview(spoken,languageContext)')<delivery.indexOf('lastHeardRef.current=coachSpeechLanguageMemory'))
   assert.ok(handler.includes('void deliver(appendSpokenAnswer'))
   assert.ok(!handler.includes('changePhase(\'stalled\')'))
 })
@@ -291,7 +295,8 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('coachSessionOpeningLine(personaId,conversationLang)'))
+ assert.ok(ui.includes("const privateSalutation=coachReturningSalutation(coachSessionNameSalutation(greetingIdentity.name,conversationLang),greetingIdentity.hasPreviousProtocol,conversationLang)"))
+  assert.ok(ui.includes("const introduction=[privateSalutation,coachSessionOpeningLine(personaId,conversationLang)].filter(Boolean).join(' ')"))
  assert.ok(ui.includes('coachSessionOpeningAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))

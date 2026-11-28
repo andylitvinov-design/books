@@ -10,7 +10,7 @@ export interface SimliDialoguePilotProps {
   blocked?: boolean
 }
 export interface SimliDialoguePilotHandle {
-  schedule(samples: Float32Array, start: number, context: BaseAudioContext): void
+  schedule(samples: Float32Array, start: number, context: BaseAudioContext, canSend: () => boolean): void
   clear(): void
 }
 declare const SimliDialoguePilot: ForwardRefExoticComponent<SimliDialoguePilotProps & RefAttributes<SimliDialoguePilotHandle>>
