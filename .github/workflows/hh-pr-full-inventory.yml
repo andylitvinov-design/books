@@ -60,11 +60,19 @@ jobs:
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
             let classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            // Share the protected V3 proof with the event-driven native path.
+            // The second inventory pass revalidates the exact run/attempt and
+            // current target; it does not download and classify the same CI again.
+            const {createSweepReadyReader}=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-sweep-ready-receipt.cjs");
+            const readSweepReady=createSweepReadyReader({github,owner,repo,
+              verify:baseEvidence.verifiedMergeReadyV3});
             // A different PR can merge while the inventory is being read.
             // Refresh only the protected policy checkout, never the PR HEAD.
             async function assessCurrentBase(pr,checks){
               for(let attempt=0;attempt<3;attempt++){
                 const result=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                  readReadyReceipt:unifiedRequired?target=>readSweepReady({pr,
+                    check:checks.get("hh-merge-check"),target}):undefined,
                   verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr,
                     check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
                     rows,token:process.env.HH_CORE_BASE_TOKEN})});
