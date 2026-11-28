@@ -6,7 +6,11 @@ CREATE TABLE app_private.hh_personality_proposals (
  kind text NOT NULL CHECK(kind IN ('value_conflict','fictional_event','judgment_rule','reaction_rule')),
  title text NOT NULL CHECK(length(title) BETWEEN 1 AND 160),
  candidate jsonb NOT NULL CHECK(jsonb_typeof(candidate)='object' AND length(candidate::text)<=8000
- AND jsonb_typeof(candidate->'scenario')='string' AND jsonb_typeof(candidate->'position')='string'
+ AND candidate ?& ARRAY['scenario','position','revision','fictional']
+ AND candidate - ARRAY['scenario','position','revision','fictional'] = '{}'::jsonb
+ AND length(btrim(candidate->>'scenario')) BETWEEN 1 AND 2000
+ AND length(btrim(candidate->>'position')) BETWEEN 1 AND 3000
+ AND length(btrim(candidate->>'revision')) BETWEEN 1 AND 2000 AND jsonb_typeof(candidate->'scenario')='string' AND jsonb_typeof(candidate->'position')='string'
  AND jsonb_typeof(candidate->'revision')='string' AND jsonb_typeof(candidate->'fictional')='boolean'
  AND (kind<>'fictional_event' OR candidate->'fictional'='true'::jsonb)),
  provenance text NOT NULL DEFAULT 'editorial_synthetic' CHECK(provenance='editorial_synthetic'),
