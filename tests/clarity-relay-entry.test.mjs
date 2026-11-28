@@ -466,3 +466,19 @@ test('startup watchdogs close the right phase without a fabricated enrollment or
   assert.equal(relay.sendAudio({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}),false)
  }
 })
+
+
+test('retired grant and clock stores cannot be activated by cumulative relay environment flags',async()=>{
+ const {readFileSync}=await import('node:fs')
+ const grant=readFileSync(new URL('../lib/app/clarity-course-access.js',import.meta.url),'utf8')
+ const clock=readFileSync(new URL('../lib/app/clarity-course-clock-store.js',import.meta.url),'utf8')
+ assert.match(grant,/const LEGACY_CLARITY_GRANT_ADAPTER_READY=false/)
+ assert.match(grant,/const legacyGrantEnabled=\(\)=>LEGACY_CLARITY_GRANT_ADAPTER_READY&&clarityCourseEnabled\(\)/)
+ assert.match(grant,/if\(!day\|\|!legacyGrantEnabled\(\)\)throw unavailable\(\)/)
+ assert.equal((grant.match(/if\(!legacyGrantEnabled\(\)\)throw unavailable\(\)/g)||[]).length,2)
+ assert.match(grant,/if\(!legacyGrantEnabled\(\)\)return \{enabled:false,usedDays:\[\],busyDays:\[\]\}/)
+ assert.match(clock,/const LEGACY_CLARITY_CLOCK_ADAPTER_READY=false/)
+ assert.match(clock,/clarityClockStorageEnabled=\(\)=>LEGACY_CLARITY_CLOCK_ADAPTER_READY&&process\.env\.HH_CLARITY_CUMULATIVE_CLOCK_ENABLED==='true'/)
+ assert.equal((clock.match(/if\(!clarityClockStorageEnabled\(\)\)return null/g)||[]).length,2)
+ assert.match(clock,/if\(!clarityClockStorageEnabled\(\)\)throw new AppError/)
+})
