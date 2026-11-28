@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import {chooseDictationLanguage,coachSpokenTurnLocale,coachSpeechLanguageMemory,coachSpeechNeedsLanguageReview} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import { speechResultSegments, appendSpokenAnswer, COACHING_ANSWER_LIMIT } from '../lib/personal-coaching/speech-text.js'
 import { coachingLocalVoices, chooseCoachingVoice, coachingSpeechProfile, coachingVoiceSample } from '../lib/personal-coaching/voice-quality.js'
 
@@ -163,4 +164,35 @@ test('coaching UI scripts are parseable before a production deployment', async()
     })
     assert.deepEqual(errors,[],file+' contains invalid JSX/JavaScript')
   }
+})
+
+test('one ASR token cannot switch the next Coach mic language or reply language',()=>{
+  assert.equal(chooseDictationLanguage({locale:'ru',lastTranscript:'postawszym'}),'ru-RU')
+  assert.equal(chooseDictationLanguage({locale:'ru',lastTranscript:'postawszym.'}),'ru-RU')
+  assert.equal(chooseDictationLanguage({locale:'ru',lastTranscript:'Reiki'}),'ru-RU')
+  assert.equal(chooseDictationLanguage({locale:'es',lastTranscript:'OK'}),'es-ES')
+  assert.equal(chooseDictationLanguage({locale:'ru',lastTranscript:'I want to talk'}),'en-GB')
+  assert.equal(chooseDictationLanguage({locale:'en',lastTranscript:'Я хочу поговорить'}),'ru-RU')
+  assert.equal(chooseDictationLanguage({locale:'ru',selection:'en',lastTranscript:'Я хочу поговорить'}),'en-GB')
+  assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'ru-RU',transcript:'postawszym'}),'ru')
+  assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'es-ES',transcript:'OK'}),'es')
+  assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'ru-RU',transcript:'I want to talk'}),'en')
+})
+test('rejected and weak speech never overwrite a reliable previous language hint',()=>{
+  for(const value of ['postawszym','Reiki','OK','123','Я изучаю Reiki',''])assert.equal(coachSpeechLanguageMemory('Мне нужна поддержка',value),'Мне нужна поддержка')
+  assert.equal(coachSpeechLanguageMemory('I want to talk','Я хочу поговорить'),'Я хочу поговорить')
+  assert.equal(coachSpeechLanguageMemory('I want to talk','tired'),'I want to talk')
+  assert.equal(coachSpeechNeedsLanguageReview('postawszym.',{selection:'auto',recognizedLanguage:'ru-RU'}),true)
+  assert.equal(coachSpeechNeedsLanguageReview('postawszym',{selection:'ru',recognizedLanguage:'en-GB'}),true)
+  assert.equal(coachSpeechNeedsLanguageReview('postawszym',{selection:'en',recognizedLanguage:'ru-RU'}),false)
+  assert.equal(coachSpeechNeedsLanguageReview('Reiki',{selection:'ru'}),false)
+  assert.equal(coachSpeechNeedsLanguageReview('Уставшим',{selection:'ru'}),false)
+})
+test('speech review precedes language memory and coach delivery, with no extra provider call',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const delivery=loop.slice(loop.indexOf('async function deliver(text)'),loop.indexOf('async function speakCoachReply'))
+  assert.match(delivery,/coachSpeechNeedsLanguageReview\(spoken,languageContext\)/)
+  assert.ok(delivery.indexOf('coachSpeechNeedsLanguageReview(spoken,languageContext)')<delivery.indexOf('lastHeardRef.current=coachSpeechLanguageMemory'))
+  assert.ok(delivery.indexOf('lastHeardRef.current=coachSpeechLanguageMemory')<delivery.indexOf('turnRef.current?.(text'))
+  assert.equal((loop.match(/lastHeardRef\.current=/g)||[]).length,1)
 })
