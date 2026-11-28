@@ -34,6 +34,33 @@ export async function mapSpecialistEvidence(runs, inspect) {
   return evidence;
 }
 
+
+// A policy handoff must re-evaluate the current mandatory job contract, but
+// an immutable completed GitHub run attempt does not need another jobs API
+// download. Cache only exact positive attempts, never pending/failed evidence,
+// unknown identities or a partial response missing required jobs.
+export function withCompletedSpecialistEvidence(api) {
+  const cache=new Map();
+  return {...api, completedSpecialistJobs:async(run,required=[])=>{
+    const id=run?.id,attempt=run?.run_attempt;
+    const key=Number.isSafeInteger(id)&&id>0&&Number.isSafeInteger(attempt)&&attempt>0&&
+      run.status==='completed'&&run.conclusion==='success'?id+':'+attempt:null;
+    const complete=rows=>Array.isArray(rows)&&rows.length>0&&
+      required.every(name=>rows.some(j=>j.name===name))&&
+      new Set(rows.map(j=>j.id)).size===rows.length&&
+      rows.every(j=>Number.isSafeInteger(j.id)&&j.id>0&&j.run_id===id&&j.run_attempt===attempt&&
+        j.status==='completed'&&['success','skipped'].includes(j.conclusion));
+    const saved=key&&cache.get(key);
+    if(saved&&complete(saved))return saved;
+    const rows=await api.jobs(id);
+    if(key&&complete(rows)){
+      if(cache.size>=200)cache.delete(cache.keys().next().value);
+      cache.set(key,rows);
+    }
+    return rows;
+  }};
+}
+
 export function worktreeSources(baseSha, cwd = process.cwd()) {
   const baseNames = execFileSync('git', ['ls-tree','-r','--name-only',baseSha,'--',WORKFLOW_PREFIX],
     {cwd, encoding:'utf8',maxBuffer:5e6}).split('\n').filter(x => /\.ya?ml$/.test(x));
@@ -1276,7 +1303,7 @@ export async function verify(api,ctx,files,options={}) {
   // Only the single last running Specialist can use the shorter cadence;
   // bound it to 90 seconds to conserve the shared GitHub read-only API.
   let finalWaveSince = null;
-  const priorEvidence=pinnedChangeRows ? await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) : new Map();
+  let priorEvidence=null; // Avoid old-run/log reads unless current evidence is actually missing or queued.
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
@@ -1290,8 +1317,20 @@ export async function verify(api,ctx,files,options={}) {
   for (;;) {
     if (requireCurrentBase && deferBaseUntilSpecialists && now() >= nextDriftPreview &&
         typeof api.target === 'function' && typeof api.compare === 'function') {
+      const previousPreview=previewedBase;
       previewedBase=await observeProtectedBaseDrift(api,ctx,changed,previewedBase);
       nextDriftPreview=now()+sensitiveFreshnessInterval;
+      // Optional read-only switch to a newly merged compatible validator.
+      // No old job is cancelled, and an unavailable/unapproved policy simply
+      // returns null. A real failure from the selected policy propagates.
+      if(previewedBase!==previousPreview&&previewedBase!==ctx.base&&
+         typeof options.tryProtectedPolicy==='function'&&now()<deadline){
+        const updated=await options.tryProtectedPolicy(Math.max(0,deadline-now()));
+        if(updated){
+          console.log('CI_POLICY_HANDOFF: current protected validator selected during specialist wait');
+          return updated;
+        }
+      }
     }
     if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
@@ -1356,7 +1395,10 @@ export async function verify(api,ctx,files,options={}) {
       }
       state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
     }
-    state=reusePriorSpecialistState(state,priorEvidence);
+    if(priorEvidence===null&&pinnedChangeRows&&(state.missing.length||state.queued.length)&&
+       !state.failed.length&&!state.orphanFailures.length)
+      priorEvidence=await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected);
+    state=reusePriorSpecialistState(state,priorEvidence??new Map());
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     const unexpected = [...new Set([...unregistered, ...retiredProblems])];
@@ -1463,7 +1505,8 @@ export async function verify(api,ctx,files,options={}) {
     const jobDeadline = Math.min(deadline, now() + jobGrace);
     let jobs;
     for (;;) {
-      jobs = await api.jobs(run.id);
+      jobs = typeof api.completedSpecialistJobs==='function' ?
+        await api.completedSpecialistJobs(run,requiredJobs) : await api.jobs(run.id);
       const missing = requiredJobs.filter(name => !jobs.some(job => job.name === name));
       const pending = jobs.filter(job => job.status !== 'completed');
       if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
@@ -1639,7 +1682,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
       evidenceStarted=true;
       try {
         result = await policy.verify(api, ctx, files,
-          {trustedPolicyBaseSha:target});
+          {trustedPolicyBaseSha:target,...(Number.isFinite(options.maxWaitMs)?{maxWaitMs:options.maxWaitMs}:{})});
       } catch (error) {
         if (String(error?.message || error).includes(
               'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED') &&
@@ -1736,7 +1779,7 @@ async function main() {
   const env=process.env;
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
   const ctx=validateParameters(env);
-  const api=githubReader(ctx.repo,ctx.token);
+  const api=withCompletedSpecialistEvidence(githubReader(ctx.repo,ctx.token));
   const verifiedBase = verifiedCheckoutBase(env, ctx);
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
@@ -1767,7 +1810,8 @@ async function main() {
     // waiting for old-scope specialists. Do not wait for jobs that the
     // current trusted policy has already proved non-applicable.
     result=verifiedBase ? await revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files,{optional:true}) : null;
-    if(!result) result=await verify(api,checkedCtx,files);
+    if(!result) result=await verify(api,checkedCtx,files,{tryProtectedPolicy:maxWaitMs=>
+      revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files,{optional:true,maxWaitMs})});
   } catch (error) {
     // A changed production CI *policy* cannot be ignored by the old policy.
     // Re-execute the new trusted policy against the same exact-HEAD evidence,
