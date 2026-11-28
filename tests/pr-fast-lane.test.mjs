@@ -308,6 +308,11 @@ const classifierCases = [
   ['Source Preflight contract edit', 'scripts/ci-source-preflight.mjs', null, 'edit', false, 'pull_request', false, true],
   ['ESLint repair contract edit', 'scripts/ci-deterministic-eslint-repair.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow validation test edit', 'tests/ci-workflow-globs.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI-only lib/ci/coach-only-impact.mjs edit', 'lib/ci/coach-only-impact.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI-only tests/ci-coach-only-impact.test.mjs edit', 'tests/ci-coach-only-impact.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI-only scripts/ci-site-video-scope.mjs edit', 'scripts/ci-site-video-scope.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['CI-only tests/ci-site-video-scope.test.mjs edit', 'tests/ci-site-video-scope.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['Coach CI proof plus private API stays full Core', 'lib/ci/coach-only-impact.mjs', 'app/api/app/my-coach/engines/route.js', 'mixed', false],
   ['CI YAML plus runtime code', '.github/workflows/example.yml', 'app/api/payments/route.js', 'mixed', false],
   ['CI YAML rename to runtime file', '.github/workflows/example.yml', 'components/example.tsx', 'rename', false],
   ['dependency lockfile edit', 'package-lock.json', null, 'edit', false],
@@ -1859,4 +1864,12 @@ test('Public Services reuses exact production compiler and scenario caches witho
   assert.ok(s.includes('if [[ "$EVENT_BASE_SHA" == "$tested_base" ]]; then\n            relation=identical\n          else'));
   assert.ok(s.includes('x.behind_by!==0||x.base_commit?.sha!==process.env.EVENT_BASE_SHA||x.merge_base_commit?.sha!==process.env.EVENT_BASE_SHA'));
   assert.ok(s.includes('mapfile -t tested_parents'));
+});
+
+test('Coach and Site Video CI-only classifiers keep exact policy contracts executable',()=>{
+ const core=workflow('hh-pr-core-release.yml'),video=workflow('site-video-browser.yml');
+ const scope=core.split('# CI-only allowlist is exact')[1]?.split('*) ci_only=false')[0]||'';
+ for(const name of ["lib/ci/coach-only-impact.mjs","tests/ci-coach-only-impact.test.mjs","scripts/ci-site-video-scope.mjs","tests/ci-site-video-scope.test.mjs"])assert.ok(scope.includes(name+'|\\'),name);
+ assert.match(core,/node --test[^\n]*tests\/ci-coach-only-impact\.test\.mjs/);
+ assert.match(video,/node --test tests\/ci-site-video-scope\.test\.mjs/);
 });
