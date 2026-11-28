@@ -105,3 +105,18 @@ test('registered thematic blueprints, schema and grouped UI have the same field 
   assert.ok(p.rows.every(g=>g.tone==='gray'));
  }
 });
+
+test('all eight Goal sessions have a real final evidence checkpoint without changing stored field identities',()=>{
+ for(const s of GOAL_SESSION_SCENARIOS){
+  assert.ok(s.stages.slice(1).every(stage=>stage.fields.length>0),s.id);
+  for(const locale of ['en','ru','es']){
+   const schema=coachCourseProtocolSchema(s.id,locale);
+   assert.deepEqual(s.stages.flatMap(stage=>stage.fields),schema.checkpoints.map(f=>f.id));
+   const last=s.stages.at(-1);
+   for(const field of last.fields){assert.ok(goalScenarioTimeGuidance(s.id,1080).includes(field));}
+   const rows=schema.checkpoints.map(f=>({...f,status:last.fields.includes(f.id)?'confirmed':'not_explored',quote:last.fields.includes(f.id)?'Client confirmed answer':''}));
+   const view=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(rows),{mode:'course',courseId:s.id,locale});
+   assert.equal(view.rows.at(-1).tone,'green');assert.equal(view.rows.at(-1).total,last.fields.length);
+  }
+ }
+});
