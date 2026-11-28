@@ -26,6 +26,7 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {withPublishedCoachGraph} from '@/lib/app/coach-personality-graph'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {COACH_SESSION_COOKIE,COACH_SESSION_TTL_SECONDS,sealCoachSession} from '@/lib/coaching/session-authority.mjs'
 import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest} from '@/lib/coaching/method-session-transport.mjs'
@@ -1230,6 +1231,7 @@ async function handle(request, { params }) {
         ownerTrial:practitionerEmailAllowed(actor),
       })
       await consumeRateBatch(config,liveQuota.attempts)
+      start={...start,policy:await withPublishedCoachGraph(config,actor,start.policy)}
       const directWindowNow=await reserveOrdinaryGeminiLiveWindow(config,actor)
       const grant=clarityCourseDay(start.courseSessionId)?await clarityReserve(config,actor,start.courseSessionId):null
       let token
