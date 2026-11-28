@@ -115,6 +115,30 @@ test('reviewed fields require separate prior consent and a signed stage token',(
  assert.throws(()=>normalizeGenerativeCoachInput({...base,allowOpeningPrior:false,memoryShareReviewedFields:true}),/COACHING_BRAIN_INPUT_INVALID/)
 })
 
+test('pre-greeting consent uses a separate ticket scope and cannot authorize personal context',()=>{
+  const owner={accountId:'test-owner',provider:'groq',secret:'synthetic-key',now:1000000000000,consentRevision:4}
+  const entry=issueCoachMemoryTicket({...owner,priorSessions:true,entry:true})
+  const ordinary=issueCoachMemoryTicket({...owner,priorSessions:true})
+  const verification={...owner,now:owner.now+1}
+  assert.equal(verifyCoachMemoryTicket(entry,{...verification,requireEntry:true}),true)
+  assert.equal(verifyCoachMemoryTicket(entry,{...verification,requireEntry:true,consentRevision:5}),false)
+  assert.equal(verifyCoachMemoryTicket(entry,verification),false)
+  assert.equal(verifyCoachMemoryTicket(ordinary,{...verification,requireEntry:true}),false)
+  assert.equal(verifyCoachMemoryTicket(entry,{...verification,requireEntry:true,provider:'gemini_free'}),false)
+  assert.equal(verifyCoachMemoryTicket(entry,{...verification,requireEntry:true,accountId:'other'}),false)
+})
+
+
+test('entry authorization binds the chosen context topic and exact review session',()=>{
+  const opts={accountId:'owner',provider:'groq',secret:'test-secret',entry:true,
+    priorSessions:true,consentRevision:2,topicKey:'personal_growth',contextSessionToken:'test-session'}
+  const token=issueCoachMemoryTicket(opts)
+  const request={...opts,requireEntry:true}
+  assert.equal(verifyCoachMemoryTicket(token,request),true)
+  assert.equal(verifyCoachMemoryTicket(token,{...request,topicKey:'relationships'}),false)
+  assert.equal(verifyCoachMemoryTicket(token,{...request,contextSessionToken:'different'}),false)
+})
+
 test('explicitly confirmed preferred name wins over older reviewed names, without sharing draft identity',()=>{
  const earlier={...protocol,opening:{name:'Anna'}}
  const correction={source:'confirmed_preference',preferredName:'Anya',preferenceVersion:'private-version'}

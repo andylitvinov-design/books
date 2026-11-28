@@ -27,7 +27,7 @@ assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, no
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
 function createSession({speechLocale='ru',personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
-  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],timers=new Map()
+  const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],deviceUtterances=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -60,7 +60,7 @@ function createSession({speechLocale='ru',personaId='mira',cloudProvider='gemini
         // device-narration fallback. The latter has real start/end events.
         const recoveryCue=typeof utterance.volume==='number'
         if(recoveryCue){cues++;cueVolumes.push(utterance.volume)}
-        else deviceSpoken++
+        else {deviceSpoken++;deviceUtterances.push(utterance.text)}
         if(!recoveryCue||!stuckCue)
           queueMicrotask(()=>{utterance.onstart?.();utterance.onend?.()})
       },
@@ -95,7 +95,7 @@ function createSession({speechLocale='ru',personaId='mira',cloudProvider='gemini
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
-    coachSessionOpeningAudioPath,lockedCoachSessionVoice,coachSessionOpeningLine,
+    coachSessionOpeningAudioPath,coachSessionOpeningLine,lockedCoachSessionVoice,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
       assert.equal(_path,'/api/coaching/intro/ru/'+personaId+'?v=7','only the short session opening, never the full presentation')
       intros++
@@ -127,7 +127,7 @@ function createSession({speechLocale='ru',personaId='mira',cloudProvider='gemini
     onVoiceLevel(){},onTranscript(){},onDraft(value){drafts.push(value)},
   },ref)
   return {
-    ref,voices,inputs,phases,drafts,
+    ref,voices,inputs,phases,drafts,deviceUtterances,
     hide(){fakeDocument.visibilityState='hidden';documentEvents.get('visibilitychange')?.()},
     show(){fakeDocument.visibilityState='visible';documentEvents.get('visibilitychange')?.()},
     pagehide(){windowEvents.get('pagehide')?.()},
@@ -413,8 +413,22 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(source,/sessionClockStarted&&openingProgress\.completed&&!openingProgress\.declined&&!resumePending&&document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/const voicePaused=voiceState\.phase==='paused'/)
-  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current/)
-  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined,resumePending\]\)/)
+  assert.match(source,/document\.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef\.current&&!coachProfileOpenRef\.current&&!courseClockHeld/)
+  assert.match(source,/\},\[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress\.completed,openingProgress\.declined,clarityCourseActive,clarityOpeningReady,clarityVoiceActive,courseClockHeld,resumePending,restoredDraft\]\)/)
+  assert.match(source,/!clarityCourseActive\|\|\(clarityOpeningReady&&clarityVoiceActive&&speechRef\.current\?\.isConnected\?\.\(\)===true\)/)
+  assert.match(source,/const limit=clarityCourseActive\?CLARITY_COURSE_SECONDS:7200/)
+  // The presentation clock cannot complete a logical session. The sole
+  // exception is readback of the exact owner-bound server clock on resume.
+  const resume=source.slice(source.indexOf('async function restorePrivateDraft('),source.indexOf('function beginRestoredConversation('))
+  assert.ok(resume.includes("restoredTime.status==='time_limit'&&restoredTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&restoredTime.remainingSeconds===0"))
+  assert.match(resume,/if\(timedEnd\)\{\s*clarityTimeLimit\.current=true/)
+  const relay=source.slice(source.indexOf('  function acceptClarityRelayClock('),source.indexOf('  function queuePrivateDraft('))
+  assert.match(relay,/projectClarityPanelClock\(\{previous:relayClockRef\.current,selection,owner,ack\}\)/)
+  assert.match(relay,/if\(next\.status==='time_limit'\)\{\s*clarityTimeLimit\.current=true/)
+  assert.match(source,/if\(clarityCourseActive\)\{clock\.setRunning\(window\.performance\.now\(\),false\);return\}/)
+  assert.doesNotMatch(source.replace(resume,'').replace(relay,''),/clarityTimeLimit\.current\s*=\s*true/)
+  assert.equal((resume.match(/clarityTimeLimit\.current\s*=\s*true/g)||[]).length,1)
+  assert.match(source,/sole authority for course grants, completion and homework/)
   assert.match(source,/data-coach-pause-control/)
   assert.match(source,/freezeActiveClock\(\)\s+cancelPendingCoachTurn\(\)\s+retainPendingClient\(\)/)
 })
@@ -516,14 +530,35 @@ test('full captured utterances remain separate from the bounded model window',()
   assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);captureBasicIntroduction\(\)\}\}/)
 })
 
-test('private name greeting uses a local voice without public MP3 or cloud synthesis',async()=>{
- const session=createSession()
- assert.equal(session.ref.current.startSession(coachSessionOpeningLine('mira','ru','Анна'),{naturalVoice:true}),true)
- await nextMic(session,1)
- assert.equal(session.intros,0)
- assert.equal(session.ttsCalls,0)
- assert.equal(session.deviceSpoken,1)
- session.ref.current.stop()
+
+test('personalized greeting is local-only, never the generic public MP3 or cloud TTS',async()=>{
+ const greeting=coachSessionOpeningLine('mira','ru','Анна')
+ assert.match(greeting,/Анна/)
+ for(const deviceVoices of [[{name:'RU local',lang:'ru-RU',localService:true}],[{name:'RU remote',lang:'ru-RU',localService:false}]]){
+  const session=createSession({deviceVoices})
+  assert.equal(session.ref.current.startSession(greeting,{naturalVoice:true}),true)
+  const mic=await nextMic(session,1)
+  assert.equal(session.intros,0,'public static greeting must not replace the client name')
+  assert.equal(session.ttsCalls,0,'private greeting must not leave the device')
+  assert.deepEqual(session.deviceUtterances,deviceVoices[0].localService?[greeting]:[])
+  assert.equal(session.inputs.length,0,'a greeting is not a client turn')
+  session.ref.current.stop()
+  assert.equal(mic.aborted,true)
+ }
+})
+
+
+test('manual replay reads committed opening evidence before any cloud request',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const start=ui.indexOf('function replayCoachReply(overrideText)')
+ const end=ui.indexOf("void fetch('/api/app/my-coach/voice/synthesize'",start)
+ assert.ok(start>=0&&end>start)
+ const guard=ui.slice(start,end)
+ assert.match(guard,/const replayTurn=\[\.\.\.turnsRef\.current\]\.reverse\(\)\.find/)
+ assert.match(guard,/const publicOpening=spokenText===coachSessionOpeningLine\(personaId,conversationLang\)/)
+ assert.match(guard,/replayTurn\.content===spokenText&&\(replayTurn\.stage==='opening'\|\|Boolean\(replayTurn\.openingProgress\)\)/)
+ assert.match(guard,/if\(privateOpening\)\{[\s\S]*?setPlaybackNotice\([\s\S]*?\n\s*return\n\s*\}/)
+ assert.ok(guard.indexOf('if(privateOpening)')<guard.indexOf('startDirectCoachIntroAudio(introUrl'))
 })
 
 test('uncertain Russian wrong-script ASR keeps the next microphone in RU without creating a coach turn',async()=>{

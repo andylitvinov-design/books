@@ -34,6 +34,33 @@ export async function mapSpecialistEvidence(runs, inspect) {
   return evidence;
 }
 
+
+// A policy handoff must re-evaluate the current mandatory job contract, but
+// an immutable completed GitHub run attempt does not need another jobs API
+// download. Cache only exact positive attempts, never pending/failed evidence,
+// unknown identities or a partial response missing required jobs.
+export function withCompletedSpecialistEvidence(api) {
+  const cache=new Map();
+  return {...api, completedSpecialistJobs:async(run,required=[])=>{
+    const id=run?.id,attempt=run?.run_attempt;
+    const key=Number.isSafeInteger(id)&&id>0&&Number.isSafeInteger(attempt)&&attempt>0&&
+      run.status==='completed'&&run.conclusion==='success'?id+':'+attempt:null;
+    const complete=rows=>Array.isArray(rows)&&rows.length>0&&
+      required.every(name=>rows.some(j=>j.name===name))&&
+      new Set(rows.map(j=>j.id)).size===rows.length&&
+      rows.every(j=>Number.isSafeInteger(j.id)&&j.id>0&&j.run_id===id&&j.run_attempt===attempt&&
+        j.status==='completed'&&['success','skipped'].includes(j.conclusion));
+    const saved=key&&cache.get(key);
+    if(saved&&complete(saved))return saved;
+    const rows=await api.jobs(id);
+    if(key&&complete(rows)){
+      if(cache.size>=200)cache.delete(cache.keys().next().value);
+      cache.set(key,rows);
+    }
+    return rows;
+  }};
+}
+
 export function worktreeSources(baseSha, cwd = process.cwd()) {
   const baseNames = execFileSync('git', ['ls-tree','-r','--name-only',baseSha,'--',WORKFLOW_PREFIX],
     {cwd, encoding:'utf8',maxBuffer:5e6}).split('\n').filter(x => /\.ya?ml$/.test(x));
@@ -437,7 +464,28 @@ export async function awaitPositiveMergeability(api, ctx, target, sleep = delay)
     const fresh = await api.pr(ctx.number);
     assertSame(fresh, ctx, false);
     if (await api.target() !== target) return null;
-    if (fresh.mergeable === true && fresh.base.sha === target) return fresh;
+    if (fresh.mergeable === true) {
+      if (fresh.base.sha === target) return fresh;
+      // GitHub's PR base snapshot may lag even its own freshly computed
+      // merge commit. Accept the exact two-parent merge proof, not a guess
+      // from a stale snapshot. The final gate still checks full base impact.
+      if (typeof api.commit === 'function' &&
+          /^[0-9a-f]{40}$/.test(fresh.merge_commit_sha || '')) {
+        let proof;
+        try { proof = await api.commit(fresh.merge_commit_sha); }
+        catch { /* A missing/recomputed merge commit remains unproven. */ }
+        if (proof?.sha === fresh.merge_commit_sha &&
+            Array.isArray(proof.parents) && proof.parents.length === 2 &&
+            proof.parents[0]?.sha === target &&
+            proof.parents[1]?.sha === ctx.head) {
+          // Close the race while the immutable commit was read. Do not
+          // return evidence for a target that has already moved again.
+          if (await api.target() !== target) return null;
+          console.log('CI_MERGEABILITY_SNAPSHOT_RECOVERED: verified exact GitHub merge parents');
+          return fresh;
+        }
+      }
+    }
     if (fresh.mergeable !== null && fresh.mergeable !== true) return null;
   }
   return null;
@@ -680,29 +728,34 @@ const PACKAGE_ONLY_ADVISORY_OWNERS = new Set([
   '.github/workflows/opora-module-ci.yml',
   '.github/workflows/hh-owner-telegram-video.yml',
   '.github/workflows/hh-live-audio-ci.yml',
+  '.github/workflows/holistic-house-native.yml',
 ]);
-export function independentPackageOnlyAdvisories(files,changed,expected) {
-  const result=new Set();
-  if(!Array.isArray(changed)||!Array.isArray(expected)||
+export function verifiedIsolatedServerAddition(files,changed) {
+  if(!Array.isArray(changed)||
      !changed.includes('package.json')||!changed.includes('package-lock.json')||
-     !verifiedAdditiveServerPackageEvidence(files,changed)) return result;
+     !verifiedAdditiveServerPackageEvidence(files,changed)) return false;
   try {
     const old=JSON.parse(files.baseLock).packages, next=JSON.parse(files.currentLock).packages;
     const added=new Set(Object.keys(next).filter(p=>!Object.hasOwn(old,p)).map(p=>p.slice('node_modules/'.length)));
-    if(!added.size) return result;
+    if(!added.size) return false;
     // Even an unchanged existing lock row might acquire a formerly absent
     // optional peer. Reject any prior dependency/peer edge into the additions.
     for(const [p,row] of Object.entries(old)) {
       if(!p) continue;
       if(['dependencies','optionalDependencies','peerDependencies'].some(k=>
-         Object.keys(row[k]||{}).some(name=>added.has(name)))) return result;
+         Object.keys(row[k]||{}).some(name=>added.has(name)))) return false;
     }
     for(const name of added) {
       const row=next['node_modules/'+name];
       if(!row||row.hasInstallScript||row.link||row.inBundle||row.bin||
-         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return result;
+         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return false;
     }
-  } catch { return result; }
+  } catch { return false; }
+  return true;
+}
+export function independentPackageOnlyAdvisories(files,changed,expected) {
+  const result=new Set();
+  if(!Array.isArray(expected)||!verifiedIsolatedServerAddition(files,changed))return result;
   const productPaths=changed.filter(p=>p!=='package.json'&&p!=='package-lock.json');
   // A change to global application/CI execution policy stays strict.
   if(productPaths.some(p=>/^(?:\.github\/actions\/|\.github\/workflows\/hh-pr-core-release\.|lib\/ci\/|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$|app\/(?:layout|globals)\.)/i.test(p)))return result;
@@ -716,6 +769,186 @@ export function independentPackageOnlyAdvisories(files,changed,expected) {
       if(productPaths.length&&matchesTrigger(trigger,productPaths,TARGET))continue;
       result.add(path);
     } catch { /* unknown trigger stays mandatory */ }
+  }
+  return result;
+}
+
+
+// A shared dispatcher is not a universal trigger when the only source edits
+// are confined to existing guarded My Coach branches. Compare every byte
+// outside those AST-proven branch bodies; never remove an existing import,
+// change a guard or hide shared auth/session/payment routing. A new named
+// feature import is allowed only when every reference stays in those bodies.
+// This is a routing proof, not a security review of the feature's code.
+const COACH_SHARED_DISPATCHER='app/api/app/[...path]/route.js';
+const COACH_DEDICATED_ROUTE=/^app\/api\/app\/(?:my-coach|clarity-course)(?:\/[a-z0-9-]+)*\/route\.(?:js|ts)$/i;
+const COACH_IMPORT_SOURCE=/^@\/lib\/(?:coaching\/[a-z0-9-]+\.mjs|app\/(?:clarity-course(?:-[a-z0-9-]+)?|coaching-brain)\.js)$/;
+export function verifiedCoachDispatcherIsolation(before,after,ts) {
+  if(!ts||typeof before!=='string'||typeof after!=='string'||before===after||
+     before.length>250_000||after.length>250_000||before.includes('\r')||after.includes('\r'))return false;
+  try {
+    function parse(source) {
+      const ast=ts.createSourceFile('route.js',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+      if(ast.parseDiagnostics.length)return null;
+      const bodies=[],names=new Set(),imports=[];
+      let invalid=false;
+      for(const node of ast.statements) {
+        if(ts.isImportDeclaration(node))imports.push({node,text:source.slice(node.getStart(ast),node.end)});
+      }
+      function visit(node) {
+        if(ts.isIfStatement(node)&&ts.isBinaryExpression(node.expression)) {
+          const e=node.expression;
+          if(e.operatorToken.kind===ts.SyntaxKind.EqualsEqualsEqualsToken&&
+             ts.isIdentifier(e.left)&&e.left.text==='joined'&&ts.isStringLiteral(e.right)&&
+             /^my-coach\/[a-z0-9/-]+$/.test(e.right.text)) {
+            let owner=node.parent;
+            while(owner&&!ts.isFunctionLike(owner))owner=owner.parent;
+            if(owner&&ts.isFunctionDeclaration(owner)&&owner.name?.text==='handle'&&
+               ts.isBlock(node.parent)&&ts.isBlock(node.thenStatement)&&!node.elseStatement) {
+              if(names.has(e.right.text)){invalid=true;return;}
+              names.add(e.right.text);
+              bodies.push({start:node.thenStatement.getStart(ast)+1,end:node.thenStatement.end-1});
+              return;
+            }
+          }
+        }
+        ts.forEachChild(node,visit);
+      }
+      visit(ast);
+      return invalid||!bodies.length?null:{ast,bodies,imports,names,source};
+    }
+    const a=parse(before),b=parse(after);
+    if(!a||!b||a.names.size!==b.names.size||[...a.names].some(x=>!b.names.has(x)))return false;
+    const originalImports=new Set(a.imports.map(x=>x.text)),remove=[],addedNames=new Set();
+    for(const entry of b.imports) {
+      if(originalImports.has(entry.text))continue;
+      const n=entry.node,c=n.importClause,bindings=c?.namedBindings;
+      const start=n.getStart(b.ast);
+      if(!ts.isStringLiteral(n.moduleSpecifier)||!COACH_IMPORT_SOURCE.test(n.moduleSpecifier.text)||
+         !c||c.isTypeOnly||c.name||!bindings||!ts.isNamedImports(bindings)||
+         !bindings.elements.length||n.attributes||entry.text.includes('\n')||
+         (start>0&&after[start-1]!=='\n')||after[n.end]!=='\n')return false;
+      for(const el of bindings.elements) {
+        if(el.isTypeOnly||el.propertyName||addedNames.has(el.name.text))return false;
+        addedNames.add(el.name.text);
+      }
+      remove.push({start,end:n.end+1});
+    }
+    const inRange=(pos,range)=>range.start<=pos&&pos<range.end;
+    const used=new Set();let outside=false;
+    function check(node) {
+      if(ts.isIdentifier(node)&&addedNames.has(node.text)) {
+        const pos=node.getStart(b.ast);
+        if(!remove.some(r=>inRange(pos,r))) {
+          if(!b.bodies.some(r=>inRange(pos,r)))outside=true;
+          else used.add(node.text);
+        }
+      }
+      ts.forEachChild(node,check);
+    }
+    check(b.ast);
+    if(outside||used.size!==addedNames.size)return false;
+    function project(info,extra) {
+      const spans=[...info.bodies.map(r=>({...r,value:'<MY_COACH_BODY>'})),
+        ...extra.map(r=>({...r,value:''}))].sort((x,y)=>y.start-x.start);
+      let text=info.source,last=text.length;
+      for(const range of spans) {
+        if(range.start<0||range.end>last||range.start>range.end)return null;
+        text=text.slice(0,range.start)+range.value+text.slice(range.end);
+        last=range.start;
+      }
+      return text;
+    }
+    const left=project(a,[]),right=project(b,remove);
+    return left!==null&&left===right;
+  } catch{return false;}
+}
+
+const DISPATCHER_ADVISORY_OWNERS=new Set([
+  '.github/workflows/hh-energywork-ai.yml',
+  '.github/workflows/practitioner-presentations.yml',
+  '.github/workflows/practice-visual-browser.yml',
+  '.github/workflows/practice-visual-services.yml',
+  '.github/workflows/practice-google-browser.yml',
+  '.github/workflows/hh-profile-axis-matching.yml',
+]);
+// These public browser suites overlap both the catch-all API selector and
+// (for storefront) root-lock routing. Compose both existing independent proofs
+// rather than requiring either alone to cover the entire mixed PR.
+const PUBLIC_COMPOSED_ADVISORY_OWNERS=new Map([
+  ['.github/workflows/hh-public-services-production.yml',[
+    '.github/workflows/hh-app-browser.yml','.github/workflows/hh-billing-isolated.yml']],
+  ['.github/workflows/site-video-browser.yml',[
+    '.github/workflows/hh-app-browser.yml','.github/workflows/hh-private-audio-e2e.yml']],
+]);
+const ROOT_MANIFEST=/^(?:package\.json|package-lock\.json)$/;
+const PRIVATE_COACH_GATE_OWNERS=[
+  '.github/workflows/hh-personal-coaching-session.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/ia-v2.yml',
+];
+export function independentDispatcherAdvisories(files,rows,expected,readSource,ts) {
+  const result=new Set();
+  if(!Array.isArray(rows)||!rows.length||rows.some(row=>typeof row?.filename!=='string'||row.previous_filename||
+      !['M','A','modified','added'].includes(row.status))||
+     new Set(rows.map(r=>r.filename)).size!==rows.length||!Array.isArray(expected)||
+     !PRIVATE_COACH_GATE_OWNERS.every(name=>expected.includes(name))||
+     !/^[0-9a-f]{40}$/.test(files.testedMergeSha||'')||
+     !rows.some(r=>r.filename===COACH_SHARED_DISPATCHER&&['M','modified'].includes(r.status)))return result;
+  const changed=rows.map(r=>r.filename);
+  // Shared application/auth, security, payments, native and global release
+  // controls never inherit a route-local exemption.
+  if(changed.some(p=>/^(?:\.github\/(?:actions\/|workflows\/(?!hh-personal-coaching-session\.yml$))|lib\/(?:ci\/|security\/|commerce\/|checkout\/|academy\/|practitioners\/)|lib\/app\/(?:auth|session|config|repository)(?:[./-]|$)|app\/api\/(?:auth|payments)\/|app\/(?:layout|globals)\.|components\/app\/app-workspace\.|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$)/i.test(p)))return result;
+  try{
+    if(!verifiedCoachDispatcherIsolation(readSource('base',COACH_SHARED_DISPATCHER),
+      readSource('merge',COACH_SHARED_DISPATCHER),ts))return result;
+    const sharedPaths=changed.filter(p=>p===COACH_SHARED_DISPATCHER||COACH_DEDICATED_ROUTE.test(p));
+    const remaining=changed.filter(p=>!sharedPaths.includes(p));
+    for(const name of expected) {
+      const composed=PUBLIC_COMPOSED_ADVISORY_OWNERS.get(name);
+      if((!DISPATCHER_ADVISORY_OWNERS.has(name)&&!composed)||changed.includes(name))continue;
+      let unaffected=remaining;
+      if(composed){
+        if(!composed.every(owner=>expected.includes(owner)))continue;
+        // Keep shared payment, booking, identity and media contracts mandatory.
+        // Coach-specific payment remains covered by Billing, App R1 and IA.
+        if(changed.some(p=>/^(?:lib\/(?:billing|payments|commerce|checkout)\/|app\/api\/(?:payments|public|service-enquiries)\/|app\/api\/app\/(?:services|bookings|practitioner)\/|lib\/app\/(?:booking|order|payment|billing|checkout)(?:[./-]|$))/i.test(p)))continue;
+        if(name.endsWith('/site-video-browser.yml')&&remaining.some(p=>
+          /(?:^|[\/._-])(?:photo|photos|video|videos|media|recording|recordings)(?:$|[\/._-])/i.test(p)))continue;
+        const manifestTouched=remaining.some(p=>ROOT_MANIFEST.test(p));
+        if(manifestTouched){
+          if(!verifiedIsolatedServerAddition(files,changed))continue;
+          unaffected=remaining.filter(p=>!ROOT_MANIFEST.test(p));
+        }
+      }
+      const old=files.base.get(name);
+      if(typeof old!=='string'||old!==files.current.get(name))continue;
+      const trigger=parsePrTrigger(old,name);
+      if(!trigger?.paths||!matchesTrigger(trigger,sharedPaths,TARGET)||
+         (unaffected.length&&matchesTrigger(trigger,unaffected,TARGET)))continue;
+      result.add(name);
+    }
+  }catch{return new Set();}
+  return result;
+}
+
+// An unassociated run from a known, unchanged workflow with explicit
+// non-matching path selectors cannot block an unrelated exact checkout.
+// Missing/failed expected owners, retired/unknown workflows and any change
+// to the workflow itself remain subject to the existing strict rules.
+export function provenNonApplicableWorkflows(files,changed,baselineExpected) {
+  const result=new Set();
+  if(!Array.isArray(files.changedRows)||!files.changedRows.length||
+     !Array.isArray(changed)||!changed.length||!Array.isArray(baselineExpected))return result;
+  const candidate=[...changed];
+  if(candidate.includes('package-lock.json')&&!candidate.includes('package.json'))candidate.push('package.json');
+  for(const [name,old] of files.base) {
+    if(name===WORKFLOW_PREFIX+'hh-pr-core-release.yml'||baselineExpected.includes(name)||
+       changed.includes(name)||old!==files.current.get(name))continue;
+    try{
+      const trigger=parsePrTrigger(old,name);
+      if(trigger?.paths&&!matchesTrigger(trigger,candidate,TARGET))result.add(name);
+    }catch{/* unknown trigger stays strict */}
   }
   return result;
 }
@@ -821,7 +1054,7 @@ export async function verify(api,ctx,files,options={}) {
       // The new BASE must contain CI-only policy/test changes: no workflows or
       // application source may have advanced without new proposed-merge CI.
       const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
-        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
+        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed, files);
       // Independently tested public media source advances cannot change a
       // candidate that edits ONLY detached Specialist policy code/tests. The
       // immutable PR HEAD, actual successful Core and every Specialist job
@@ -908,6 +1141,7 @@ export async function verify(api,ctx,files,options={}) {
       // One general loose-base rule for complete non-overlapping ordinary product changes.
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
+        !diff.files?.some(row=>REVALIDATABLE_CI_POLICY_FILES.includes(row?.filename)) &&
         safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
       if (!identicalOnly && !documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
@@ -1014,14 +1248,12 @@ export async function verify(api,ctx,files,options={}) {
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
   const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
   if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
-  if (risk !== 'FAST') {
-    let loaded=false, parser;
-    const loadTypescript=()=>{
-      if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
-      return parser;
-    };
-    risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
-  }
+  let loaded=false, parser;
+  const loadTypescript=()=>{
+    if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
+    return parser;
+  };
+  if (risk !== 'FAST') risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const routed=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
@@ -1052,8 +1284,17 @@ export async function verify(api,ctx,files,options={}) {
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const packageOnlyAdvisory=pinnedChangeRows ? independentPackageOnlyAdvisories(files,changed,routed.expected) : new Set();
   for(const replacement of replacements) packageOnlyAdvisory.delete(replacement);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name));
+  const dispatcherAdvisory=pinnedChangeRows && files.testedMergeSha && changed.includes(COACH_SHARED_DISPATCHER) &&
+    PRIVATE_COACH_GATE_OWNERS.every(name=>routed.expected.includes(name)) ?
+    independentDispatcherAdvisories(files,changedRows,routed.expected,(side,path)=>
+      readSource(side==='base'?ctx.base:files.testedMergeSha,path),loadTypescript()) : new Set();
+  for(const replacement of replacements) dispatcherAdvisory.delete(replacement);
+  const nonApplicable=provenNonApplicableWorkflows(files,changed,baselineExpected);
+  for(const name of routed.expected) nonApplicable.delete(name);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) &&
+    !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name) && !dispatcherAdvisory.has(name));
   if(packageOnlyAdvisory.size) console.log('CI_PACKAGE_ONLY_ADVISORY:'+JSON.stringify([...packageOnlyAdvisory].sort()));
+  if(dispatcherAdvisory.size) console.log('CI_DISPATCHER_ONLY_ADVISORY:'+JSON.stringify([...dispatcherAdvisory].sort()));
   // A moving production SHA is not itself a failing PR. Wait for required
   // exact-HEAD specialist evidence before considering any base-sync recovery.
   // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
@@ -1084,7 +1325,7 @@ export async function verify(api,ctx,files,options={}) {
   // Only the single last running Specialist can use the shorter cadence;
   // bound it to 90 seconds to conserve the shared GitHub read-only API.
   let finalWaveSince = null;
-  const priorEvidence=pinnedChangeRows ? await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) : new Map();
+  let priorEvidence=null; // Avoid old-run/log reads unless current evidence is actually missing or queued.
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
@@ -1098,8 +1339,20 @@ export async function verify(api,ctx,files,options={}) {
   for (;;) {
     if (requireCurrentBase && deferBaseUntilSpecialists && now() >= nextDriftPreview &&
         typeof api.target === 'function' && typeof api.compare === 'function') {
+      const previousPreview=previewedBase;
       previewedBase=await observeProtectedBaseDrift(api,ctx,changed,previewedBase);
       nextDriftPreview=now()+sensitiveFreshnessInterval;
+      // Optional read-only switch to a newly merged compatible validator.
+      // No old job is cancelled, and an unavailable/unapproved policy simply
+      // returns null. A real failure from the selected policy propagates.
+      if(previewedBase!==previousPreview&&previewedBase!==ctx.base&&
+         typeof options.tryProtectedPolicy==='function'&&now()<deadline){
+        const updated=await options.tryProtectedPolicy(Math.max(0,deadline-now()));
+        if(updated){
+          console.log('CI_POLICY_HANDOFF: current protected validator selected during specialist wait');
+          return updated;
+        }
+      }
     }
     if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
@@ -1121,11 +1374,12 @@ export async function verify(api,ctx,files,options={}) {
       }
     }
     const allRuns=[...indexed,...recovered.values()];
-    fastDiagnostics=allRuns.filter(run=>(advisoryPaths.has(String(run.path || '').split('@')[0]) || packageOnlyAdvisory.has(String(run.path || '').split('@')[0])) &&
+    const informational=run=>[advisoryPaths,packageOnlyAdvisory,dispatcherAdvisory,nonApplicable]
+      .some(set=>set.has(String(run.path || '').split('@')[0]));
+    fastDiagnostics=allRuns.filter(run=>informational(run)&&run.head_sha===ctx.head &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
     const eligibleRuns = rows => rows.filter(run =>
-      !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
-      !packageOnlyAdvisory.has(String(run.path || '').split('@')[0]) &&
+      !informational(run) &&
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
@@ -1163,7 +1417,10 @@ export async function verify(api,ctx,files,options={}) {
       }
       state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
     }
-    state=reusePriorSpecialistState(state,priorEvidence);
+    if(priorEvidence===null&&pinnedChangeRows&&(state.missing.length||state.queued.length)&&
+       !state.failed.length&&!state.orphanFailures.length)
+      priorEvidence=await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected);
+    state=reusePriorSpecialistState(state,priorEvidence??new Map());
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     const unexpected = [...new Set([...unregistered, ...retiredProblems])];
@@ -1270,7 +1527,8 @@ export async function verify(api,ctx,files,options={}) {
     const jobDeadline = Math.min(deadline, now() + jobGrace);
     let jobs;
     for (;;) {
-      jobs = await api.jobs(run.id);
+      jobs = typeof api.completedSpecialistJobs==='function' ?
+        await api.completedSpecialistJobs(run,requiredJobs) : await api.jobs(run.id);
       const missing = requiredJobs.filter(name => !jobs.some(job => job.name === name));
       const pending = jobs.filter(job => job.status !== 'completed');
       if (now() >= jobDeadline || (jobs.length && !missing.length && !pending.length)) break;
@@ -1323,12 +1581,13 @@ export async function verify(api,ctx,files,options={}) {
   // green gate or authorization to reuse a different source tree.
   console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
     executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  let acceptedBase=null;
   if (requireCurrentBase && typeof api.target === 'function')
-    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+    acceptedBase=await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
   else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
-    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
+    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:(await api.runs(ctx.head)).filter(run=>!nonApplicable.has(String(run.path||'').split('@')[0])&&!dispatcherAdvisory.has(String(run.path||'').split('@')[0])&&!packageOnlyAdvisory.has(String(run.path||'').split('@')[0])),pr:fresh});
     if(latest.failed.length||latest.cancelled.length||latest.interrupted.length||
        latest.notExecuted.length||latest.uncertain.length||latest.running.length||
        latest.orphanFailures.length||latest.orphanCancelled.length||latest.orphanInterrupted.length||
@@ -1344,8 +1603,9 @@ export async function verify(api,ctx,files,options={}) {
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
     packageOnly:[...packageOnlyAdvisory].sort(),
+    dispatcherOnly:[...dispatcherAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base,acceptedBase};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1384,10 +1644,12 @@ function loadProtectedValidator(liveSha) {
 
 export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
   const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  let evidenceStarted=false;
+  const decline=()=>{if(options.optional===true&&!evidenceStarted)return null;throw blocked();};
   const changed = files.changedRows?.flatMap(row => row.previous_filename
     ? [row.filename, row.previous_filename] : [row.filename]);
   if (!Array.isArray(changed) || !changed.length ||
-      changed.some(path => typeof path !== 'string')) throw blocked();
+      changed.some(path => typeof path !== 'string')) return decline();
 
   // Always execute policy code from the CURRENT protected production commit,
   // never the PR source or an untrusted checkpoint. The old immutable policy
@@ -1408,15 +1670,16 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
     } catch (error) { extracted.cleanup(); throw error; }
   });
   const policyFiles = new Set(REVALIDATABLE_CI_POLICY_FILES);
+  try {
   for (let attempt = 0; attempt < 4; attempt++) {
     const target = await api.target();
-    if (!/^[0-9a-f]{40}$/.test(target || '')) throw blocked();
+    if (!/^[0-9a-f]{40}$/.test(target || '')||target===ctx.base) return decline();
     const diff = await api.compare(ctx.base, target);
-    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed);
+    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed, files);
     const possibleNewPolicy = Array.isArray(diff?.files) && diff.files.some(row =>
       policyFiles.has(row?.filename) && !changed.includes(row.filename) &&
       ['added','modified'].includes(row.status) && !row.previous_filename);
-    if (!oldPolicyAccepts && !possibleNewPolicy) throw blocked();
+    if (!oldPolicyAccepts && !possibleNewPolicy) return decline();
 
     // Do not fetch a stale validator if another protected merge already won.
     if (await api.target() !== target) {
@@ -1429,7 +1692,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
         throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
       const currentImpact = typeof policy.safeTrustedPolicyAdvance === 'function'
         ? policy.safeTrustedPolicyAdvance : safeTrustedPolicyAdvance;
-      if (!currentImpact(diff, ctx.base, target, changed)) throw blocked();
+      if (!currentImpact(diff, ctx.base, target, changed, files)) return decline();
 
       // Target can move while the new validator reviews successful workflows.
       // Retry only this read-only policy check on a different verified SHA;
@@ -1439,9 +1702,10 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
         continue;
       }
       let result;
+      evidenceStarted=true;
       try {
         result = await policy.verify(api, ctx, files,
-          {trustedPolicyBaseSha:target});
+          {trustedPolicyBaseSha:target,...(Number.isFinite(options.maxWaitMs)?{maxWaitMs:options.maxWaitMs}:{})});
       } catch (error) {
         if (String(error?.message || error).includes(
               'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED') &&
@@ -1462,7 +1726,14 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
     }
   }
   // Never certify a perpetually moving or unproven target as green.
-  throw blocked();
+  return decline();
+  } catch(error) {
+    // The optional early probe is not a release gate. If the trusted policy
+    // cannot even be loaded/approved, run the original strict verifier.
+    // Once actual evidence evaluation starts, never hide any failure.
+    if(options.optional===true&&!evidenceStarted)return null;
+    throw error;
+  }
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.
@@ -1527,11 +1798,39 @@ export function diagnoseAggregateError(error) {
   return {category,action,symptomKeys:[...new Set(symptoms)].sort().slice(0,30)};
 }
 
+
+// This receipt is emitted ONLY by the protected verifier after every required
+// workflow and the final protected-ref proof succeeds. It is evidence, not a
+// merge permission. The native consumer must authenticate the actual successful
+// job/attempt, immutable checkout and trusted workflow before using it.
+export function mergeReadyReceipt(ctx,files,result,env) {
+  const sha=x=>typeof x==='string'&&/^[0-9a-f]{40}$/.test(x);
+  const pos=x=>Number.isSafeInteger(x)&&x>0;
+  const run=Number(env.GITHUB_RUN_ID),attempt=Number(env.GITHUB_RUN_ATTEMPT);
+  if(!pos(run)||!pos(attempt)||!pos(ctx.number)||!sha(ctx.head)||!sha(ctx.base)||
+     !sha(files.testedMergeSha)||!sha(result?.acceptedBase)||
+     result.head!==ctx.head||result.base!==ctx.base||
+     !Array.isArray(result.expected)||result.expected.length>300||
+     !Array.isArray(result.executed)||!Array.isArray(result.reused)||
+     (result.policyRevalidatedAgainst&&result.policyRevalidatedAgainst!==result.acceptedBase))return null;
+  const validPath=x=>typeof x==='string'&&/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(x);
+  const expected=new Set(result.expected);
+  const evidence=[...result.executed,...result.reused];
+  if(expected.size!==result.expected.length||[...expected].some(x=>!validPath(x))||
+     evidence.length!==expected.size||new Set(evidence.map(x=>x?.name)).size!==expected.size||
+     evidence.some(x=>!expected.has(x?.name)||!pos(x.run_id)||!pos(x.jobs)))return null;
+  return {schema:'HH_MERGE_READY_V3',repo:ctx.repo,pr:ctx.number,head:ctx.head,
+    tested_base:ctx.base,tested_merge:files.testedMergeSha,accepted_base:result.acceptedBase,
+    policy_base:result.policyRevalidatedAgainst||ctx.base,run_id:run,run_attempt:attempt,
+    required:[...expected].sort(),evidence:evidence.map(x=>({path:x.name,run_id:x.run_id,jobs:x.jobs,
+      ...(x.prior_head?{prior_head:x.prior_head}:{})})).sort((a,b)=>a.path.localeCompare(b.path))};
+}
+
 async function main() {
   const env=process.env;
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
   const ctx=validateParameters(env);
-  const api=githubReader(ctx.repo,ctx.token);
+  const api=withCompletedSpecialistEvidence(githubReader(ctx.repo,ctx.token));
   const verifiedBase = verifiedCheckoutBase(env, ctx);
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
@@ -1558,7 +1857,12 @@ async function main() {
   }
   let result;
   try {
-    result=await verify(api,checkedCtx,files);
+    // Prefer an already protected, independently compatible policy BEFORE
+    // waiting for old-scope specialists. Do not wait for jobs that the
+    // current trusted policy has already proved non-applicable.
+    result=verifiedBase ? await revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files,{optional:true}) : null;
+    if(!result) result=await verify(api,checkedCtx,files,{tryProtectedPolicy:maxWaitMs=>
+      revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files,{optional:true,maxWaitMs})});
   } catch (error) {
     // A changed production CI *policy* cannot be ignored by the old policy.
     // Re-execute the new trusted policy against the same exact-HEAD evidence,
@@ -1576,6 +1880,8 @@ async function main() {
     '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
+  const ready=verifiedBase?mergeReadyReceipt(checkedCtx,files,result,env):null;
+  if(ready) console.log('HH_MERGE_READY_V3:'+JSON.stringify(ready));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }
 

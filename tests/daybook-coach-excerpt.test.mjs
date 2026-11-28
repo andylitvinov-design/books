@@ -37,3 +37,13 @@ test('empty, over-budget, control characters and sensitive excerpts are not coac
  const source={revision:1,text:'Private diagnosis. I will walk.'}
  assert.equal(daybookCoachExcerpt(source,{revision:1,topicKey:'body_health',start:19,end:31}).text,'I will walk.')
 })
+test('material annotations bind review to the current source version while preserving the exact excerpt',()=>{
+ const version='a'.repeat(24),linked={...entry,material:{kind:'photo',id:'portrait'}}
+ const reviewed=daybookCoachExcerpt(linked,range,version)
+ assert.equal(reviewed.text,entry.text.slice(range.start,range.end))
+ assert.deepEqual(parseDaybookCoachExcerptRevision(reviewed.sourceRevision),{...range,materialVersion:version})
+ assert.notEqual(daybookCoachExcerpt(linked,range,'b'.repeat(24)).sourceRevision,reviewed.sourceRevision)
+ assert.throws(()=>daybookCoachExcerpt(linked,range,'unverified'))
+ assert.throws(()=>daybookCoachExcerpt(entry,range,version))
+ assert.equal(parseDaybookCoachExcerptRevision('journal:2:4:body_health:19:37'),null)
+})
