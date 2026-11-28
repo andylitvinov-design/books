@@ -2289,7 +2289,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
-      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(item=>item.personaId===personaId).map(item=>item.courseSessionId):[]}
+      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.map(item=>item.courseSessionId):[]}
+      savedSessions={resumeList?.owner===protocolOwnerRef.current?resumeList.items:[]}
+      resumeLookupReady={Boolean(resumeList&&resumeList.owner===protocolOwnerRef.current)} resumeBusy={resumeBusy} resumeError={resumeError}
+      resumeCursor={resumeList?.owner===protocolOwnerRef.current?resumeList.cursor:null} onResumeSession={restorePrivateDraft} onReloadSessions={()=>loadPrivateResume()}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         <button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume()}>{({ru:'Продолжить сохранённую сессию',en:'Continue a saved session',es:'Continuar una sesión guardada'})[lang]}</button>
         {resumeBusy&&<p role="status">{({ru:'Проверяем сохранённые сессии…',en:'Checking saved sessions…',es:'Buscando sesiones guardadas…'})[lang]}</p>}
