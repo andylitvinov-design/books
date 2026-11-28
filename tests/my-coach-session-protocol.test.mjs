@@ -1125,12 +1125,14 @@ test('expanded conversational review is reproducible from the exact transcript, 
   const opening=coachOpeningProgress({turns:history,locale,personaId});assert.ok(opening.completed);
   const field=coachCourseProtocolSchema(courseSessionId,locale,{scenarioVersion:courseScenarioVersion}).checkpoints.find(x=>x.id==='strategy_tradeoffs');
   const quote=({en:'We need to limit the cost of testing.',ru:'Нужно ограничить стоимость проверки.',es:'Necesitamos limitar el coste de la prueba.'})[locale];
-  const turns=[...history.map(content=>({role:'user',content})),{role:'assistant',content:field.question},{role:'user',content:quote},{role:'assistant',content:thematicTranscriptEcho(field.question,quote,locale)},{role:'user',content:({en:'yes',ru:'да',es:'sí'})[locale]}];
+  const turns=[...history.map(content=>({role:'user',content})),{role:'assistant',content:field.question},{role:'user',content:quote},{role:'assistant',content:thematicTranscriptEcho(field.question,quote,locale)},{role:'user',content:({en:'yes',ru:'да',es:'sí'})[locale]},{role:'assistant',content:({en:'Thank you.',ru:'Спасибо.',es:'Gracias.'})[locale]}];
   const protocol={...sample(),locale,personaId,courseSessionId,courseScenarioVersion,turnLayout:'chronological',opening:coachOpeningProtocolSnapshot(opening),turns};
   const review=deriveCoachDraftReview(protocol,courseSessionId);assert.equal(review.version,THEMATIC_TRANSCRIPT_REVIEW_VERSION);assert.equal(review.events.length,1);assert.equal(review.events[0].fieldId,field.id);assert.ok(coachConversationReviewMatches({...protocol,courseFieldReview:review}));
   assert.equal(coachConversationReviewMatches({...protocol,courseFieldReview:{...review,events:[]}}),false);
   assert.equal(coachConversationReviewMatches({...protocol,courseFieldReview:{...review,version:'hh-coach-thematic-review-v2'}}),false);
   assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-1)},courseSessionId)?.events.length,0);
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-2)},courseSessionId)?.events.length,0);
+  assert.equal(deriveCoachDraftReview(normalizeMyCoachProtocol({...protocol,turns:turns.slice(0,-1)}),courseSessionId)?.events.length,0);
   assert.equal(deriveCoachDraftReview({...protocol,courseScenarioVersion:undefined},courseSessionId),null);
   assert.equal(normalizeMyCoachProtocol({...protocol,courseFieldReview:review}).courseScenarioVersion,courseScenarioVersion);
   assert.throws(()=>normalizeMyCoachProtocol({...protocol,courseScenarioVersion:undefined,courseFieldReview:review}));
