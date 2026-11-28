@@ -2455,6 +2455,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading')return
     if(courseRunId&&(privateProfile||resumeBusy||resumeError||resumeList?.owner!==protocolOwnerRef.current||resumeList?.cursor||resumeList?.items.length!==0||!validBoundClarityStart(resumeList.boundStart,courseRunId,id)))return
     if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
+    // The exact next-day receipt was issued by the private server lookup.
+    if(courseRunId)protocolIdRef.current=resumeList.boundStart.protocolId
     clarityTimeLimit.current=false
     setClarityHomeworkAccepted(false)
     if(clarityCourseDay(id)){engineManuallySelectedRef.current=true;setCoachEngine('gemini_live_free')}
