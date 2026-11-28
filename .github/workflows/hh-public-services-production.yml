@@ -438,6 +438,9 @@ jobs:
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
+          # Both locale shards must pass; manual dispatch retains serial QA.
+          HH_PUBLIC_SERVICES_SHARD: all
+          HH_PUBLIC_SERVICES_PARALLEL: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -568,7 +571,7 @@ jobs:
             printf 'home-rsc-local,NOT_APPLICABLE,0\n' >> artifacts/public-services-production/timings.csv
           fi
           printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
-          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
+          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=$([[ "$HH_PUBLIC_SERVICES_PARALLEL" == 1 ]] && echo 3 || echo 2)"
           cat artifacts/public-services-production/timings.csv
                     {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"

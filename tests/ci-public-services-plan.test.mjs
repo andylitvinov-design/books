@@ -1929,3 +1929,25 @@ test('CI-only Public Services plus Home/Practice lint policy does not build the 
   }
   assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'workflow_dispatch'}).cases,'all');
 });
+
+
+test('Public Services parallel acceptance preserves both shards and manual full coverage', () => {
+  const src = readFileSync(new URL('../scripts/verify-public-services-production.mjs', import.meta.url), 'utf8');
+  const yaml = workflow('hh-public-services-production.yml');
+  assert.ok(yaml.includes('HH_PUBLIC_SERVICES_PARALLEL:'));
+  assert.ok(src.includes('["0", "1"].map'));
+  assert.ok(src.includes('results.every(Boolean)'));
+  assert.ok(src.includes('code === 0 && signal === null'));
+  assert.ok(src.includes('"/shard-" + shard'));
+  assert.equal((src.match(/for\s*\(const locale of localesFor\(/g) || []).length, 8);
+  assert.equal((src.match(/if \(includesShard\("[01]"\)\)/g) || []).length, 2);
+  const partition = (locales, offset, shard) => shard === 'all' ? locales : locales.filter((_, index) => (index + offset) % 2 === Number(shard));
+  for (const locales of [['en','ru'],['en','ru','es'],['ru','en','es']]) {
+    for (const offset of [0,1]) {
+      assert.deepEqual(partition(locales, offset, 'all'), locales);
+      const combined = [...partition(locales, offset, '0'), ...partition(locales, offset, '1')];
+      assert.equal(new Set(combined).size, locales.length);
+      assert.deepEqual(combined.sort(), [...locales].sort());
+    }
+  }
+});
