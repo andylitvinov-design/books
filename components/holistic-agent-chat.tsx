@@ -1419,7 +1419,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setContentStep(null);setContentVoice(false);setContentBrief("");
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:(journeyPath?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:messages.slice(-6)})?.reply:buildWaveEntryMenu(turnLocale).reply)||
+        {role:"assistant" as const,text:(journeyPath?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:messages.slice(-6)})?.reply:(pageHelp?pageHelpGreeting(turnLocale)+" "+buildWaveEntryMenu(turnLocale).reply:buildWaveEntryMenu(turnLocale).reply))||
           (/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
             /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello)}].slice(-30));
       return;
@@ -1958,11 +1958,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>{!optionsOnly&&<span data-hh-wave-goal-closing>{menu.closing}</span>}
     </div>;
   }
+  function pageHelpGreeting(language:string){
+    return language==="ru"?"Привет! Рад помочь.":language==="es"?"¡Hola! Estoy aquí para ayudarte.":"Hi! I'm here to help.";
+  }
   function pageHelpReplyText(text:string,index:number){
     const entry=readWaveEntryMenu(text);
     if(entry){
       const greeting=messages[index-1]?.role==="user"&&isCasualGreeting(messages[index-1].text);
-      const hello=entry.locale==="ru"?"Привет! Рад помочь.":entry.locale==="es"?"¡Hola! Estoy aquí para ayudarte.":"Hi! I'm here to help.";
+      const hello=pageHelpGreeting(entry.locale);
       return greeting?hello+" "+entry.question:entry.question;
     }
     const menu=readWaveGoalMenu(text);
@@ -2470,6 +2473,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           composerRef.current?.focus({preventScroll:true});
         }}/>
         <details className={styles.pageHelpMore}><summary>{locale==="ru"?"Помощь с этой страницей":locale==="es"?"Ayuda con esta página":"Help with this page"}</summary>
+        <p className={styles.muted}>{pageHelp.greeting}</p>
         <div className={styles.startActions} role="group" aria-label={starter.actions} data-hh-ihelp-actions>
         {pageHelp.actions.map(action=><button type="button" key={action.id}
           data-hh-ihelp-option={action.id} disabled={busy}
