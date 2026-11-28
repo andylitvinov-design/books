@@ -516,12 +516,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputInterim?.('')
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
-    const audioParts=r.speechReviewBuffer?.take()
+    // Do not associate a still-speaking or stale segment with a completed caption.
+    const audioParts=r.bargeDetector.userActive?(r.speechReviewBuffer?.invalidate(),null):r.speechReviewBuffer?.take()
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts){
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&!r.paused&&propsRef.current.speechReviewConsent===true)propsRef.current.onSpeechReviewCandidate?.(id,text)
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
         if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
@@ -1029,6 +1030,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     else if(event==='interrupt')interrupt()
     if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
       r.pendingMic.length=0
+      r.speechReviewBuffer?.invalidate()
       r.backpressureChunks=(r.backpressureChunks||0)+1
       if(r.backpressureChunks===6)notify(t.networkSlow)
       // An explicit text fallback is safer than silent lost microphone seconds.
@@ -1074,8 +1076,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         }
         pending.length=0
         if(protectedPlayback&&!confirmed)pcm.fill(0)
-        if(sendSocket(r,geminiLivePcmMessage(pcm))&&propsRef.current.speechReviewConsent===true){
-          if(!protectedPlayback||confirmed)r.speechReviewBuffer?.append(pcm,confirmed||micLevel>=speechThreshold)
+        const sent=sendSocket(r,geminiLivePcmMessage(pcm))
+        if(propsRef.current.speechReviewConsent===true){
+          if(!sent)r.speechReviewBuffer?.invalidate()
+          else if(!protectedPlayback||confirmed)r.speechReviewBuffer?.append(pcm,confirmed||micLevel>=speechThreshold)
         }
       }
     }
@@ -1158,6 +1162,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       clearTimeout(setupTimer)
       if(r.ended||r.socket!==socket)return
       r.ready=false
+      r.speechReviewBuffer?.clear();r.speechReviewQueue?.cancel();r.speechReviewQueue=null
       r.replyWatch?.clear()
       r.reconnectSoon=false
       // A complete reply already received from Gemini belongs to the current

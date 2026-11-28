@@ -15,5 +15,11 @@ test('one in-flight, cancellation suppresses results',async()=>{
  const q=createSpeechReviewQueue({request:async()=>{calls++;return 'test'},onResult:(...r)=>results.push(r)})
  assert.equal(q.offer({id:1,parts:[new Uint8Array(3200)]}),true)
  assert.equal(q.offer({id:2,parts:[new Uint8Array(3200)]}),false)
- q.cancel();await new Promise(r=>setTimeout(r,10));assert.equal(calls,0);assert.deepEqual(results,[])
+ q.cancel();await new Promise(r=>setTimeout(r,10));assert.equal(calls,0);assert.deepEqual(results,[[1,'']])
+})
+
+test('stale and discontinuous audio is never offered as a candidate',()=>{
+ const b=createSpeechReviewBuffer();b.append(new Uint8Array(6400),true,1000);assert.equal(b.take(3600),null)
+ b.append(new Uint8Array(6400),true,5000);b.append(new Uint8Array(6400),true,6700);assert.equal(b.take(6800),null)
+ b.append(new Uint8Array(6400),true,7000);b.invalidate();b.append(new Uint8Array(6400),true,7100);assert.equal(b.take(7200),null)
 })

@@ -1410,6 +1410,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const wasPaused=voicePauseRef.current
     voicePauseRef.current=next.phase==='paused'
     setVoiceState(next)
+    if(next.phase==='idle'||next.phase==='paused')setSpeechReviews(rows=>rows.map(row=>row.pending?{...row,pending:false}:row))
     if(!voicePauseRef.current||wasPaused)return
     freezeActiveClock()
     cancelPendingCoachTurn()
@@ -2406,7 +2407,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               const recallRequested=handlePrivateLiveRecall(text)
               if(details?.source==='speech'&&!recallRequested&&!candidate&&isSuspectShortRussianSpeech(text,conversationLang)&&
-                !coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
+                !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
                 const id=++speechReviewSerial.current
                 setSpeechReviews(rows=>[...rows,{id,raw:text,candidate:'',pending:details.reviewAvailable===true}])
                 setSpeechPreview('')
@@ -2719,7 +2720,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
             {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
             {row.candidate&&<p>{({ru:'Вариант Whisper',en:'Whisper candidate',es:'Opción Whisper'})[lang]}: {row.candidate}</p>}
-            <button type="button" disabled={Boolean(draft.trim())||busy} onClick={()=>{setDraft(previous=>previous.trim()?previous:(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'В поле ввода',en:'Copy to input',es:'Copiar al campo'})[lang]}</button>
+            <button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.candidate||row.raw);setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>
             <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
           </div>)}
         </section>}
