@@ -59,12 +59,15 @@ jobs:
             const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
+            const hourlyProof=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-hourly-ready-proof.cjs");
             let classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             // A different PR can merge while the inventory is being read.
             // Refresh only the protected policy checkout, never the PR HEAD.
             async function assessCurrentBase(pr,checks){
               for(let attempt=0;attempt<3;attempt++){
                 const result=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                  readReadyReceipt:target=>unifiedRequired?hourlyProof.readHourlyReadyReceipt({github,owner,repo,pr,checks,target,
+                    verify:baseEvidence.verifiedMergeReadyV3}):null,
                   verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr,
                     check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
                     rows,token:process.env.HH_CORE_BASE_TOKEN})});
@@ -131,14 +134,7 @@ jobs:
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0,apiPaused=false;
             async function latestChecks(sha){
-              const runs=(await github.rest.checks.listForRef({owner,repo,ref:sha,per_page:100})).data;
-              if(!Array.isArray(runs.check_runs)||!Number.isSafeInteger(runs.total_count)||
-                 runs.total_count>100||runs.total_count!==runs.check_runs.length)return null;
-              const names=new Map();
-              for(const check of [...runs.check_runs].sort((a,b)=>b.id-a.id)){
-                if(!names.has(check.name))names.set(check.name,check);
-              }
-              return names;
+              return hourlyProof.completeLatestChecks({github,owner,repo,sha});
             }
             // Release-ready may temporarily be optional; replace it only with proven exact-HEAD QA.
             const quality=/core-lint-types-build|actionlint-changed|unit|browser|database|guard-unit|contract|public-services|focused-verification|crm|verify/i;
