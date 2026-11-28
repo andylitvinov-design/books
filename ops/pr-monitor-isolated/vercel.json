@@ -72,6 +72,26 @@
     {
       "source": "/api/pr-merge-period",
       "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-merge-period"
+    },
+    {
+      "source": "/api/verified-pr-meta/:number",
+      "destination": "https://api.github.com/repos/andylitvinov-design/books/pulls/:number"
+    },
+    {
+      "source": "/api/agent-trace-registry",
+      "destination": "https://api.github.com/repos/andylitvinov-design/books/issues/1419/comments?per_page=100&sort=created&direction=desc"
+    },
+    {
+      "source": "/api/agent-trace-comments/:number",
+      "destination": "https://api.github.com/repos/andylitvinov-design/books/issues/:number/comments?per_page=100&sort=created&direction=desc"
+    },
+    {
+      "source": "/api/agent-trace-commits/:number",
+      "destination": "https://api.github.com/repos/andylitvinov-design/books/pulls/:number/commits?per_page=100"
+    },
+    {
+      "source": "/api/agent-trace-checks/:sha",
+      "destination": "https://api.github.com/repos/andylitvinov-design/books/commits/:sha/check-runs?per_page=100"
     }
   ]
 }

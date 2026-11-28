@@ -12,7 +12,7 @@ const FILES=Object.freeze([
  'api/ci-stage-weekly.js',
  'api/package.json',
  'api/pr-open-count.js',
- 'index.html','monitor.css','monitor.js','vercel.json'
+ 'index.html','monitor.css','monitor.js','agents-performance.js','vercel.json'
 ]);
 const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
 const fail=reason=>{throw Error('HH_DASHBOARD_BUNDLE_'+reason)};
@@ -35,12 +35,13 @@ function auditBundle(root=__dirname){
     !api.includes('extended_stages')||!api.includes('incidents:')||
     !js.includes('Array.isArray(d.extended_stages)'))
    fail('MISMATCHED_API_CLIENT');
- if(!Array.isArray(config.rewrites)||config.rewrites.length!==10||
-    config.rewrites.some(r=>typeof r.source!=='string'||
-      !/^\/api\/[a-z0-9-]+$/.test(r.source)||
-      typeof r.destination!=='string'||
-      !r.destination.startsWith('https://holistic-house-pr-monitor.vercel.app/api/')))
+ const agentRoutes=[{"source":"/api/verified-pr-meta/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number"},{"source":"/api/agent-trace-registry","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/1419/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-comments/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/:number/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-commits/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number/commits?per_page=100"},{"source":"/api/agent-trace-checks/:sha","destination":"https://api.github.com/repos/andylitvinov-design/books/commits/:sha/check-runs?per_page=100"}];
+ const legacy=config.rewrites?.filter(r=>!agentRoutes.some(a=>a.source===r.source));
+ if(!Array.isArray(config.rewrites)||config.rewrites.length!==15||legacy.length!==10||
+    legacy.some(r=>typeof r.source!=='string'||!/^\/api\/[a-z0-9-]+$/.test(r.source)||typeof r.destination!=='string'||!r.destination.startsWith('https://holistic-house-pr-monitor.vercel.app/api/'))||
+    agentRoutes.some(a=>!config.rewrites.some(r=>r.source===a.source&&r.destination===a.destination)))
    fail('UNEXPECTED_REWRITE');
+ if(!html.includes('id="agents-performance"')||!html.includes('src="/agents-performance.js"'))fail('MISSING_AGENT_UI');
  return {schema:'HH_PR_DASHBOARD_ATOMIC_RELEASE_V1',files,
   bundle_sha256:sha(JSON.stringify(files)),file_count:files.length,
   requires_complete_upload:true};
@@ -49,7 +50,7 @@ async function verifyLive({fetchImpl=global.fetch,root=__dirname,origin=ORIGIN}=
  if(origin!==ORIGIN||typeof fetchImpl!=='function')
   return {verified:false,reason:'INVALID_ORIGIN_OR_FETCHER'};
  const manifest=auditBundle(root);
- const pages=[['index.html','/'],['monitor.js','/monitor.js'],['monitor.css','/monitor.css']];
+ const pages=[['index.html','/'],['monitor.js','/monitor.js'],['monitor.css','/monitor.css'],['agents-performance.js','/agents-performance.js']];
  try{
   const response=await Promise.all(pages.map(async ([file,route])=>{
    const r=await fetchImpl(origin+route,{method:'GET',redirect:'error',

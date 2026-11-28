@@ -5,16 +5,18 @@ const root=__dirname,read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
 const sandbox={module:{exports:{}},AbortController,setTimeout,clearTimeout};new vm.Script(js).runInNewContext(sandbox);
 const {activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,SCHEMAS,URLS}=sandbox.module.exports;
-test('one static CSS + one deferred JS; all eight main sections exist',()=>{
- assert.equal((html.match(/<script /g)||[]).length,1);
+test('one static CSS + two explicit deferred JS; all main sections exist',()=>{
+ assert.equal((html.match(/<script /g)||[]).length,2);
+ assert.match(html,/<script src="\/agents-performance\.js" defer>/);
+ assert.ok(html.includes('id="agents-performance"'));
  assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);
  assert.match(html,/<script src="\/monitor\.js" defer>/);
  for(const id of ['overview','graphs','stages','ci','queue','prs','repair','issues'])assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(html,/holistic-house-agents-director\.vercel\.app/);
  assert.ok(css.length>6500);assert.match(css,/@media\(max-width:750px\)/);
 });
-test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
- assert.equal(conf.rewrites.length,10);
+test('strict public read-only origin and explicit API allowlist rewrites',()=>{
+ assert.equal(conf.rewrites.length,15);
  for(const [key,url]of Object.entries(URLS)){
   if(key==='comparison'||key==='funnel'||key==='open')continue; // Two local read-only serverless functions; no public owner API proxy.
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
@@ -433,7 +435,7 @@ test('atomic release manifest includes every serverless dependency and all match
  const release=require('./release-integrity.cjs');
  const report=release.auditBundle(root);
  assert.equal(report.schema,'HH_PR_DASHBOARD_ATOMIC_RELEASE_V1');
- assert.equal(report.file_count,9);
+ assert.equal(report.file_count,10);
  assert.match(report.bundle_sha256,/^[a-f0-9]{64}$/);
  assert.ok(report.files.some(x=>x.path==='api/ci-funnel-extensions.cjs'));
  assert.ok(report.files.every(x=>x.bytes>0));
@@ -494,4 +496,27 @@ test('live open count is independent of stale dispatcher snapshot; zero is a rea
  assert.ok(html.indexOf('id="k-ci-queued"')<html.indexOf('id="chart-flow"'));
  assert.ok(html.indexOf('id="chart-flow"')<html.indexOf('class="period-toolbar"'));
  assert.match(css,/\.metrics\.current-metrics\{grid-template-columns:repeat\(3/);
+});
+
+
+test('agent evidence is explicit opt-in and separate from confirmed commit/merge',()=>{
+ const {identity,receipts,ledger,prReport}=require('./agents-performance.js');
+ const source=read('agents-performance.js');
+ assert.doesNotMatch(source,/MutationObserver|setInterval\s*\(|api\.github\.com|raw\.githubusercontent\.com|process\.env|localStorage|\.innerHTML\s*=/);
+ const expected=[{"source":"/api/verified-pr-meta/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number"},{"source":"/api/agent-trace-registry","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/1419/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-comments/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/:number/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-commits/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number/commits?per_page=100"},{"source":"/api/agent-trace-checks/:sha","destination":"https://api.github.com/repos/andylitvinov-design/books/commits/:sha/check-runs?per_page=100"}];
+ for(const route of expected)assert.deepEqual(conf.rewrites.find(x=>x.source===route.source),route);
+ const H='a'.repeat(40),B='b'.repeat(40),M='c'.repeat(40),at='2026-11-28T13:16:17Z',now=Date.parse('2026-11-28T14:00:00Z');
+ const owner={login:'andylitvinov-design',id:274943885};
+ const marker='HH-Automation: triage-15\nHH-Run: triage-15-20261128T131617Z';
+ const p={number:5872,state:'open',user:owner,body:marker,commits:1,head:{sha:H,repo:{full_name:'andylitvinov-design/books'}},base:{sha:B,ref:'codex/public-book-library'}};
+ const e={schema:'HH_PR_TRACE_V1',automation_id:'triage-15',run_id:'triage-15-20261128T131617Z',pr:5872,stage:'CI',event:'STAGE_OBSERVED',outcome:'OBSERVED',at,head_sha:H,base_sha:B,reason_code:'CI_ACTIVE'};
+ const c=(x,id=1)=>({id,user:owner,created_at:at,body:'<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify(x)});
+ assert.equal(identity(marker).actor,'triage-15');
+ assert.equal(ledger([c(e),c(e,2)],now).totals['triage-15'].OBSERVED,1);
+ assert.equal(ledger([c(e)],now).totals['triage-15'].COMMIT_WRITTEN,undefined);
+ assert.equal(receipts([c(e)],{pr:5871,now}).length,0);
+ assert.equal(prReport(p,[{sha:H,commit:{message:marker}}],[],null,[c(e)],now).commits[0].identity.actor,'triage-15');
+ assert.equal(prReport(p,[],[],null,[c({...e,outcome:'HOLD',base_sha:M,next_action:'Check CI'})],now).blocker,null);
+ assert.equal(prReport({...p,state:'closed',merged_at:at,merge_commit_sha:M},[],[],null,[c({...e,event:'MERGED',stage:'MERGE',merge_sha:M})],now).mergeActor,'UNKNOWN');
+ assert.equal(prReport(p,[],[],{total_count:1,check_runs:[{id:1,name:'hh-merge-check',head_sha:M,status:'completed',conclusion:'success'}]},null,now).stage,'UNKNOWN');
 });
