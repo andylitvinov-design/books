@@ -1317,7 +1317,7 @@ test('same regular protected blob is not a conflicting change; unknown or differ
     await normalize({...delta,files:[{...row,filename:'lib/ci/production-base-impact.mjs'}]},[{filename:'lib/ci/production-base-impact.mjs',status:'M'}]),
   ]) assert.deepEqual(result.identical,[]);
   const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
-  const files={base:new Map(),current:new Map(),changedRows:rows};
+  const files={base:new Map(),current:new Map(),changedRows:[...rows,{filename:'app/api/app/my-coach/turn/route.js',status:'M'}]};
   const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,
     entry:async()=>entry,runs:async()=>[],jobs:async()=>[]};
   // An unchanged HEAD may keep its real specialist evidence, not fabricate new tests.
