@@ -11,7 +11,7 @@ import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coa
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
-import {qualityScreenedReactionMedia,qualityScreenedPresentation} from '@/lib/coaching/coach-reaction-quality.mjs'
+import {qualityScreenedReactionMedia,qualityScreenedPublicPresence} from '@/lib/coaching/coach-reaction-quality.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -39,7 +39,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const directorActive=sessionContext&&Boolean(reactionIntent)
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
-  const presentation=useMemo(()=>pinnedPresentation?qualityScreenedPresentation(pinnedPresentation,releasedReactionMedia(personaId,REACTION_V4_RELEASED,pinnedPresentation.group)):null,[pinnedPresentation,personaId])
+  const presentation=useMemo(()=>qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation),[pinnedPresentation,personaId])
   // All four 480x672 originals can visibly soften on Retina and have
   // unverified opening-to-HD pose seams. Preserve their immutable assets,
   // but start public portraits directly in the screened HD presence.
