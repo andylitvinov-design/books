@@ -163,3 +163,10 @@ test('restored bound evidence is not duplicated or frozen; a later explicit corr
  const next=get([...turns,t('assistant','goal?'),t('user','New goal'),t('assistant','echo: New goal'),t('user','yes')],prior)
  assert.equal(next.events.length,2);assert.equal(next.events.at(-1).quote,'New goal')
 })
+
+test('historical unversioned Clarity B/C retain real fields and distinct stage names',()=>{
+ for(const [courseId,fieldIds] of [['clarity_day_2',['changes','review_homework','inner_anchor','strengths','resources','practices']],['clarity_day_3',['changes','review_homework','dream_image','goal','why','success','next','timing']]])for(const locale of ['en','ru','es']){
+  const p=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(fieldIds.map(id=>({id,label:id,status:'not_explored'}))),{mode:'course',courseId,locale});
+  assert.equal(p.total,6);assert.deepEqual(p.rows.flatMap(g=>g.coreChildren.map(f=>f.id)),fieldIds);assert.ok(p.rows.every(g=>g.tone==='gray'));
+ }
+});

@@ -962,6 +962,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
   const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?clarityScenarioVersion(selectedCourseId):null)
   const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang,{scenarioVersion:courseScenarioVersion})
+  // A selected course stays a course even while evidence/readback is unavailable.
+  // Never replace its checklist with a persona method because rows are temporarily empty.
+  const selectedCourseProtocol=Boolean(courseSchema)&&!profileSelected
   // Do not use opening answers as core field candidates. Retain original indices.
   let openingEnd=-1,openingCount=0
   for(let i=0;i<turns.length&&openingCount<openingProgress.consumedTurns;i++){
@@ -992,12 +995,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       courseRows=courseSchema.checkpoints.map(row=>({...row,status:'not_explored',turnIndex:null,quote:''}))
     }
   }
-  const coursePosition=courseStagePosition(courseRows,{promptId:courseReviewInvalid?null:courseGate?.step.prompt?.fieldId,
+  const coursePosition=courseStagePosition(courseRows.length?courseRows:selectedCourseProtocol?courseSchema.checkpoints.map(row=>({...row,status:'not_explored',quote:'',turnIndex:null})):[],{promptId:courseReviewInvalid?null:courseGate?.step.prompt?.fieldId,
     paused:courseReviewInvalid||courseGate?.step.paused,completed:courseGate?.step.completed,
-    allowProvisional:!courseGate&&!courseGateRequired&&!courseReviewInvalid})
+    allowProvisional:openingProgress.completed&&!openingProgress.declined&&!courseGate&&!courseGateRequired&&!courseReviewInvalid})
   const savedProfile=profileV3?coachSavedProfileV3(profileV3.protocol,lang):null
   const savedProfilePosition=savedProfileStagePosition(savedProfile,profileV3?.step,lang)
-  const progressMode=openingActive?'opening':savedProfile?'profile-v3':profileActive?'profile':courseRows.length?'course':'method'
+  const progressMode=openingActive?'opening':savedProfile?'profile-v3':profileActive?'profile':selectedCourseProtocol?'course':'method'
   const coreMode=progressMode==='opening'?(profileSelected?'profile':courseSchema?'course':'method'):progressMode
   const detailPosition=coreMode==='profile-v3'?savedProfilePosition:coreMode==='profile'?profilePosition:
     coreMode==='course'?(openingActive?courseStagePosition((courseSchema?.checkpoints||[]).map(row=>({...row,status:'not_explored',quote:'',turnIndex:null})),{allowProvisional:false}):coursePosition):methodPosition
@@ -2174,7 +2177,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setProtocolSaved(true)
       setProtocolEditing(false)
       return true
-    }catch{setProtocolError(protocolCopy[lang].error);return false}
+    }catch{
+      // Before a final POST is prepared there can be no ambiguous archive commit.
+      // Release the UI so the client can edit or retry after checkpoint failure.
+      // Once prepared, retain the exact request and snapshot for an idempotent retry.
+      if(!protocolSaveRequestRef.current){
+        protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)
+      }
+      setProtocolError(protocolCopy[lang].error);return false
+    }
     finally{protocolSaveInFlightRef.current=false;setProtocolSaving(false)}
   }
 
