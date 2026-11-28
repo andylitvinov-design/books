@@ -19,25 +19,76 @@ const exportCopy={
  ru:{download:'Скачать выбранные записи',empty:'Нет выбранных записей для скачивания.',partial:'Часть выбранных записей недоступна. Не удалось подготовить файл.',not_authorized:'Для скачивания разрешите чувствительную память в настройках.'},
  es:{download:'Descargar memorias seleccionadas',empty:'No hay memorias seleccionadas para descargar.',partial:'Algunas memorias seleccionadas no están disponibles. No se pudo preparar el archivo.',not_authorized:'Permite el uso de datos sensibles en los permisos de memoria para descargar tus memorias.'},
 }
+const backfillCopy={
+ en:{start:'Import confirmed answers from past sessions',next:'Continue importing',confirm:'Add the confirmed answers from your already saved sessions to My Memory?',
+  complete:'Finished checking your saved sessions.',none:'There are no saved sessions to check.',partial:'Only part of the archive was checked.',
+  limit:'My Memory is full. Forget a selection to continue.',not_authorized:'Allow sensitive memory in Memory permissions first.',
+  stale_consent:'Memory permissions changed. Confirm a new import to continue.',added:n=>'Added on this page: '+n+'.'},
+ ru:{start:'Перенести подтверждённые ответы прошлых сессий',next:'Продолжить перенос',confirm:'Добавить подтверждённые ответы уже сохранённых сессий в Мою память?',
+  complete:'Проверка сохранённых сессий завершена.',none:'Нет сохранённых сессий для проверки.',partial:'Проверена только часть архива.',
+  limit:'Моя память заполнена. Чтобы продолжить, забудьте выбранную запись.',not_authorized:'Сначала разрешите чувствительную память в настройках.',
+  stale_consent:'Разрешения изменились. Подтвердите новый перенос.',added:n=>'Добавлено на этой странице: '+n+'.'},
+ es:{start:'Importar respuestas confirmadas de sesiones anteriores',next:'Continuar la importación',confirm:'¿Añadir a Mi memoria las respuestas confirmadas de tus sesiones ya guardadas?',
+  complete:'Terminó la revisión de las sesiones guardadas.',none:'No hay sesiones guardadas para revisar.',partial:'Solo se revisó una parte del archivo.',
+  limit:'Mi memoria está llena. Olvida una selección para continuar.',not_authorized:'Activa primero el permiso de memoria sensible.',
+  stale_consent:'Los permisos cambiaron. Confirma una nueva importación.',added:n=>'Añadidas en esta página: '+n+'.'},
+}
+const practiceCopy={
+ en:{heading:'What works for me',open:'Show practice history',empty:'No practice outcomes yet.',
+  partial:'Showing recent practice outcomes. The counts cover the sessions shown here.',
+  helpful:'Helpful',neutral:'No change',not_helpful:'Did not help',discomfort:'Discomfort',unknown:'No clear response',
+  day:n=>'Course day '+n,pair:(a,b)=>'Difficulty before '+a+'/10, after '+b+'/10',
+  caution:'You reported discomfort with this practice.'},
+ ru:{heading:'Что мне помогает',open:'Показать историю практик',empty:'Пока нет результатов практик.',
+  partial:'Показаны недавние практики. Подсчёт относится к сессиям на этой странице.',
+  helpful:'Помогло',neutral:'Без изменений',not_helpful:'Не помогло',discomfort:'Дискомфорт',unknown:'Нет ясного ответа',
+  day:n=>'День курса '+n,pair:(a,b)=>'Трудность до '+a+'/10, после '+b+'/10',
+  caution:'Вы отмечали дискомфорт при этой практике.'},
+ es:{heading:'Qué me funciona',open:'Mostrar historial de prácticas',empty:'Aún no hay resultados de prácticas.',
+  partial:'Se muestran las prácticas recientes. Los recuentos corresponden a las sesiones que aparecen aquí.',
+  helpful:'Me ayudó',neutral:'Sin cambios',not_helpful:'No me ayudó',discomfort:'Malestar',unknown:'Sin respuesta clara',
+  day:n=>'Día '+n+' del curso',pair:(a,b)=>'Dificultad antes '+a+'/10, después '+b+'/10',
+  caution:'Has indicado malestar con esta práctica.'},
+}
 const types=['resource','goal_statement','action_statement','practice_observation','state_observation','client_statement']
 export default function CoachPersonalMemoryPanel({accountId,locale='en',selectionEnabled=false}){
  const t=copy[locale]||copy.en
  const correctionText=correctionCopy[locale]||correctionCopy.en
  const exportText=exportCopy[locale]||exportCopy.en
+ const backfillText=backfillCopy[locale]||backfillCopy.en
+ const practice=practiceCopy[locale]||practiceCopy.en
  const [query,setQuery]=useState(''),[type,setType]=useState('')
  const [result,setResult]=useState(null),[selected,setSelected]=useState(null)
  const [editing,setEditing]=useState(null)
+ const [importState,setImportState]=useState(null)
+ const [practiceHistory,setPracticeHistory]=useState(null)
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState('')
  const pending=useRef(null)
+ const importKey='hh.my-memory.import.'+accountId
  useEffect(()=>()=>pending.current?.abort(),[])
+ useEffect(()=>{
+  if(!selectionEnabled||!accountId)return
+  try{
+   const cursor=window.sessionStorage.getItem(importKey)
+   if(cursor)setImportState({status:'ready',nextCursor:cursor})
+  }catch{/* Browsers may block storage. */}
+ },[accountId,importKey,selectionEnabled])
+ function updateImportState(value){
+  setImportState(value)
+  try{
+   if(value?.nextCursor)window.sessionStorage.setItem(importKey,value.nextCursor)
+   else window.sessionStorage.removeItem(importKey)
+  }catch{/* The current page can still resume from React state. */}
+ }
  async function run(fn){
   if(pending.current)return
+  setPracticeHistory(null)
   const controller=new AbortController();pending.current=controller;setBusy(true);setNotice('')
   try{await fn(controller.signal)}catch(e){
    if(!controller.signal.aborted){
     setSelected(null)
     setEditing(null)
-    if(e.code==='ACCOUNT_CHANGED'||e.code==='SIGN_IN_REQUIRED')setResult(null)
+    if(e.code==='ACCOUNT_CHANGED'||e.code==='SIGN_IN_REQUIRED'){setResult(null);updateImportState(null)}
     setNotice(t.error)
    }
   }finally{if(pending.current===controller){pending.current=null;if(!controller.signal.aborted)setBusy(false)}}
@@ -65,6 +116,12 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    if(!signal.aborted){setSelected(next);setEditing(null)}
   })
  }
+ function loadPracticeHistory(){
+  void run(async signal=>{
+   const next=await post('my-coach/memory-selection',{action:'practice-outcomes'},signal)
+   if(!signal.aborted)setPracticeHistory(next)
+  })
+ }
  function downloadSelected(){
   void run(async signal=>{
    const result=await post('my-coach/memory-selection',{action:'export'},signal)
@@ -77,6 +134,35 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    anchor.download='holistic-house-selected-memories.json'
    anchor.click()
    setTimeout(()=>URL.revokeObjectURL(url),1000)
+  })
+ }
+ async function importPage(cursor,signal){
+  let result
+  try{result=await post('my-coach/memory-selection',{action:'backfill-page',cursor},signal)}
+  catch(error){
+   if(!signal.aborted&&error.code==='MY_COACH_MEMORY_SELECTION_INVALID')updateImportState(null)
+   throw error
+  }
+  if(signal.aborted)return
+  updateImportState(result)
+  if(result.status==='not_authorized'||result.status==='stale_consent'){setSelected(null);setEditing(null)}
+  if(result.selected>0)await loadSelected(signal)
+ }
+ function importHistory(){
+  if(importState?.nextCursor){
+   void run(signal=>importPage(importState.nextCursor,signal))
+   return
+  }
+  if(!window.confirm(backfillText.confirm))return
+  void run(async signal=>{
+   const permissions=await post('my-coach/memory-selection',{action:'permissions'},signal)
+   if(signal.aborted)return
+   if(!permissions.allowed){updateImportState({status:'not_authorized'});setSelected(null);setEditing(null);return}
+   const started=await post('my-coach/memory-selection',
+    {action:'backfill-start',confirmed:true,expectedSettingsRevision:permissions.settingsRevision},signal)
+   if(signal.aborted)return
+   updateImportState(started)
+   if(started.nextCursor)await importPage(started.nextCursor,signal)
   })
  }
  function save(item){
@@ -133,6 +219,10 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    <button type="button" className={css.secondary} disabled={busy} onClick={()=>void run(signal=>loadSelected(signal))}>{t.load}</button>
    <button type="button" className={css.secondary} disabled={busy||(!query.trim()&&!type)} onClick={searchSelected}>{t.searchSaved}</button>
    <button type="button" className={css.secondary} disabled={busy} onClick={downloadSelected}>{exportText.download}</button>
+   <button type="button" className={css.secondary} disabled={busy} onClick={importHistory}>
+    {importState?.nextCursor?backfillText.next:backfillText.start}
+   </button>
+   {backfillText[importState?.status]&&<p role="status">{backfillText[importState.status]} {importState.selected>0?backfillText.added(importState.selected):''}</p>}
    {selected?.searchStatus==='no_match'&&<p>{t.none}</p>}
    {selected?.consentRequired&&<p>{t.consent} <Link href={'/'+locale+'/app/memory'} prefetch={false}>{t.settings}</Link></p>}
    {selected?.partial&&<p>{t.partial}</p>}
@@ -150,6 +240,22 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    </article>)}
    {selected?.nextCursor&&<button type="button" className={css.secondary} disabled={busy}
     onClick={()=>void run(signal=>loadSelected(signal,selected.nextCursor))}>{t.more}</button>}</>}
+  {selectionEnabled&&<section data-my-page-practice-memory>
+   <h3>{practice.heading}</h3>
+   <button type="button" className={css.secondary} disabled={busy} onClick={loadPracticeHistory}>{practice.open}</button>
+   {practiceHistory?.status==='not_authorized'&&<p>{t.consent} <Link href={'/'+locale+'/app/memory'} prefetch={false}>{t.settings}</Link></p>}
+   {practiceHistory?.status==='empty'&&<p role="status">{practice.empty}</p>}
+   {practiceHistory?.status==='partial'&&<p role="status">{practice.partial}</p>}
+   {practiceHistory?.counts&&practiceHistory.items.length>0&&<p role="status">
+    {Object.entries(practiceHistory.counts).map(([key,count])=>practice[key]+' '+count).join(' · ')}
+   </p>}
+   {practiceHistory?.items.map(item=><article className={css.entry} key={item.id}>
+    <h4>{item.title?.[locale]||practice.day(item.context.day)}</h4>
+    <p><time dateTime={item.occurredAt}>{item.occurredAt.slice(0,10)}</time> · {practice[item.clientFeedback]}</p>
+    {item.measurement&&<p>{practice.pair(item.measurement.before,item.measurement.after)}</p>}
+    {item.recall==='discomfort_reported'&&item.clientFeedback!=='discomfort'&&<p>{practice.caution}</p>}
+   </article>)}
+  </section>}
   <p role="status">{notice}</p>
  </section>
 }

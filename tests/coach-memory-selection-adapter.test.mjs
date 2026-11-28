@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import * as core from '../lib/coaching/coach-memory-selection.mjs'
+import * as practice from '../lib/coaching/coach-practice-memory.mjs'
 import {searchOwnerReviewedEvidence} from '../lib/coaching/coach-personal-memory.mjs'
 const src=readFileSync(new URL('../lib/app/my-coach-memory-selection.js',import.meta.url),'utf8')
 const body=src.replace(/^import \{[\s\S]*?\} from '[^']+'\n/gm,'')
@@ -19,6 +20,7 @@ function fixture(){
  let item={accountId:A,kind:'resource',evidenceStatus:'client_confirmed',temporalStatus:'historical',
   value:'A quiet walk helps.',sessionEndedAt:'2026-11-22T10:00:00.000Z',source}
  const settings={memory_enabled:true,sensitive_enabled:true,revision:1}
+ const practiceRows=[]
  let ref=null,archive=true,changeRevisionAtRecheck=false
  const ops=new Map(),versions=new Map(),calls=[]
  const fp=(config,accountId,x)=>digest({accountId,source:x.source,value:x.value,sessionEndedAt:x.sessionEndedAt})
@@ -28,6 +30,7 @@ function fixture(){
   let rows=[]
   if(sql.startsWith('select 1 from app.accounts'))rows=[{one:1}]
   else if(sql.startsWith('select memory_enabled'))rows=[{...settings}]
+  else if(sql.includes('from app_private.growth_sessions'))rows=practiceRows.slice(0,args[1])
   else if(sql.startsWith('select action,request_hash')){const x=ops.get(args[1]);if(x)rows=[x]}
   else if(sql.startsWith('insert into app_private.client_ai_memory_protocol_ref_ops'))ops.set(args[1],{action:args[2],request_hash:args[3],ref_id:args[4]})
   else if(sql.startsWith('with chosen as')){if(archive&&args[1].includes(P))rows=[{account_id:A,protocol_id:P,schema_version:1,protocol_ciphertext:'synthetic'}]}
@@ -37,6 +40,7 @@ function fixture(){
    const version=versions.get(ref?.revision)
    if(version&&args[1].includes(version.ref_id))rows=[version]
   }
+  else if(sql.startsWith('select field_id from'))rows=ref?.protocol_id===args[1]?[{field_id:ref.field_id}]:[]
   else if(sql.startsWith('select count(*)'))rows=[{n:ref?.status==='active'?1:0}]
   else if(sql.startsWith('insert into app_private.client_ai_memory_protocol_refs')){
    assert.equal(ref,null)
@@ -61,16 +65,39 @@ function fixture(){
  }
  const deps={randomUUID:()=>R,AppError,transaction:async(config,actor,fn)=>fn({query}),
   operationHash:digest,ownerMemoryFingerprint:fp,projectOwnerMemoryArchiveRow:()=>({supported:true,items:[item]}),
-  seal:JSON.stringify,openSealed:JSON.parse,OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,...core}
- const manage=new Function(...Object.keys(deps),body+'\nreturn {manageMyCoachMemorySelection,readOwnerCheckpointMemory}')(...Object.values(deps))
+  seal:JSON.stringify,openSealed:JSON.parse,OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,
+  lessonFor:()=>null,...practice,...core}
+ const manage=new Function(...Object.keys(deps),body+'\nreturn {manageMyCoachMemorySelection,readOwnerCheckpointMemory,writeReviewedProtocolMemory}')(...Object.values(deps))
  const run=raw=>manage.manageMyCoachMemorySelection({}, {id:A},raw)
  const recall=target=>manage.readOwnerCheckpointMemory({query},{},{id:A},target)
+ const write=revision=>manage.writeReviewedProtocolMemory({query},{},{id:A},P,revision)
  const save=(n=1)=>({action:'save',confirmed:true,operationId:op(n),expectedSettingsRevision:settings.revision,
   source,sourceFingerprint:fp({},A,item)})
- return {run,save,recall,settings,calls,reviseDuringRead:()=>{changeRevisionAtRecheck=true},change:patch=>{item={...item,...patch}},
+ return {run,save,recall,write,settings,calls,practiceRows,reviseDuringRead:()=>{changeRevisionAtRecheck=true},change:patch=>{item={...item,...patch}},
   revoke:()=>{settings.sensitive_enabled=false;settings.revision++;if(ref?.status==='active')ref={...ref,status:'blocked',source_hash:null,revision:ref.revision+1}},
   deleteSource:()=>{archive=false;ref=null}}
 }
+test('practice outcome reads use the owner settings lock and never select raw course notes',async()=>{
+ const f=fixture()
+ for(let i=0;i<=practice.PRACTICE_HISTORY_LIMIT;i++){
+  f.practiceRows.push({
+   id:'session-'+i,account_id:A,cycle_id:'cycle',day_number:1,lesson_id:'practice',content_version:'v1',
+   completed_at:'2026-11-01T10:00Z',window:'practice_v15',focus:'attention_clarity',usefulness:'useful',
+  })
+ }
+ const view=await f.run({action:'practice-outcomes'})
+ assert.equal(view.status,'partial')
+ assert.equal(view.counts.helpful,practice.PRACTICE_HISTORY_LIMIT)
+ assert.ok(view.items.every(i=>i.recall==='review_history'))
+ const read=f.calls.find(x=>x.sql.includes('from app_private.growth_sessions'))
+ assert.ok(f.calls.slice(0,f.calls.indexOf(read)).some(x=>x.sql.includes('client_ai_memory_settings')&&x.sql.includes('for update')))
+ assert.match(read.sql,/where account_id=\$1/)
+ assert.doesNotMatch(read.sql,/reflection|ciphertext|select\s+\*/)
+ f.revoke()
+ f.calls.length=0
+ assert.deepEqual(await f.run({action:'practice-outcomes'}),{status:'not_authorized',counts:null,items:[]})
+ assert.equal(f.calls.some(x=>x.sql.includes('from app_private.growth_sessions')),false)
+})
 test('server adapter saves canonical evidence once, never caller text; exact retry is idempotent',async()=>{
  const f=fixture(),request=f.save()
  const a=await f.run(request);assert.equal(a.status,'active');assert.equal(a.id,R)
@@ -212,4 +239,20 @@ test('checkpoint recall returns only current private evidence for the matching h
  assert.deepEqual(await f.recall(target),{status:'partial',item:null})
  f.revoke()
  assert.deepEqual(await f.recall(target),{status:'not_authorized',item:null})
+})
+
+test('reviewed archive writer uses current separate permission and never recreates blocked evidence',async()=>{
+ const f=fixture()
+ assert.deepEqual(await f.run({action:'permissions'}),{allowed:true,settingsRevision:1})
+ assert.deepEqual(await f.write(0),{status:'stale_consent',selected:0})
+ assert.deepEqual((await f.run({action:'list'})).items,[])
+ assert.deepEqual(await f.write(1),{status:'saved',selected:1})
+ assert.deepEqual(await f.write(1),{status:'no_change',selected:0})
+ assert.equal((await f.run({action:'list'})).items[0].value,'A quiet walk helps.')
+ f.revoke()
+ assert.deepEqual(await f.run({action:'permissions'}),{allowed:false,settingsRevision:2})
+ assert.deepEqual(await f.write(1),{status:'not_authorized',selected:0})
+ f.settings.sensitive_enabled=true;f.settings.revision++
+ assert.deepEqual(await f.write(3),{status:'no_change',selected:0})
+ assert.deepEqual((await f.run({action:'list'})).items,[])
 })

@@ -93,3 +93,14 @@ test("the latest correction has distinct provenance and cannot fall back to the 
   assert.deepEqual(view.source,item.source)
   assert.doesNotMatch(JSON.stringify(view),/quiet walk/)
 })
+
+test('history backfill has separate explicit consent and accepts only the opaque continuation',()=>{
+ const start={action:'backfill-start',confirmed:true,expectedSettingsRevision:4}
+ assert.deepEqual(normalizeMemorySelection(start),start)
+ for(const raw of [{...start,confirmed:false},{...start,expectedSettingsRevision:-1},{...start,cutoff:'2020-01-01'},
+   {action:'backfill-page',cursor:'opaque',accountId:'other'},{action:'backfill-page',cursor:''}]){
+  assert.throws(()=>normalizeMemorySelection(raw),/MY_COACH_MEMORY_SELECTION_INVALID/)
+ }
+ const page={action:'backfill-page',cursor:'opaque'}
+ assert.deepEqual(normalizeMemorySelection(page),page)
+})

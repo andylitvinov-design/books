@@ -1,3 +1,6 @@
+import './my-coach-speech-amendments.test.mjs'
+import './my-coach-speech-evidence.test.mjs'
+import './my-coach-speech-review.test.mjs'
 import './coach-private-recall.test.mjs'
 import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'
@@ -529,12 +532,17 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  const recallEnd=send.indexOf('if(isNameCorrection&&!coachingBrainSafety',recallStart)
  assert.ok(recallStart>=0&&recallEnd>recallStart)
  const recall=send.slice(recallStart,recallEnd)
- assert.match(recall,/await loadPrivateRecall\(responseLocale\)/)
- assert.match(recall,/if\(!reply\|\|turnRequestRef.current!==requestId\)\{retainPendingClient\(\);return null\}/)
+ // The archive lookup is a sideband: even pending or rejected retrieval
+ // cannot delay the neutral receipt or replace it with archived content.
+ assert.match(recall,/void loadPrivateRecall\(responseLocale\)/)
+ assert.doesNotMatch(recall,/\bawait\b|\.then\(|setBusy\(|speechRef\.current/)
+ assert.ok(recall.indexOf('void loadPrivateRecall(responseLocale)')<recall.indexOf('const acknowledgment=privateRecallReceipt(responseLocale)'))
+ assert.match(commit,/inFlightClientRef.current\?\.requestId!==requestId/)
+ assert.match(recall,/if\(!commitCompletedClientTurn\([\s\S]*?\)\)return null/)
  assert.match(recall,/const acknowledgment=privateRecallReceipt\(responseLocale\)/)
  assert.match(recall,/!commitCompletedClientTurn\(requestId,message,\{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline',stage:'memory',requestedSavedContext:true\}\)/)
  assert.doesNotMatch(recall,/content:reply\b/)
- assert.match(recall,/return \{reply,mode:'identity',locale:responseLocale\}/)
+ assert.match(recall,/return \{reply:acknowledgment,mode:'identity',locale:responseLocale\}/)
  assert.doesNotMatch(recall,/appFetch\(|fetch\(|setTurns\(/)
  assert.equal((recall.match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,1)
  assert.equal((send.slice(0,recallStart).concat(send.slice(recallEnd)).match(/commitCompletedClientTurn\(requestId,message,/g)||[]).length,8)
@@ -776,7 +784,7 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
- assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value\)/)
+ assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value,\{source:'speech',reviewAvailable:Boolean\(audioParts\)&&propsRef.current.speechReviewConsent===true\}\)/)
   assert.match(native,/if\(decision===true\)\{stop\(\);return true\}/)
  assert.equal((native.match(/if\(r.inputText&&commitInput\(r,frame.turnComplete\)\)return/g)||[]).length,3)
 })
@@ -1046,7 +1054,7 @@ test('private checkpoint recall leaves the existing checkpoint write quota avail
 test('authenticated draft continuation can render before greeting playback',()=>{
  const greeting=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
  const dialogue=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
- assert.match(greeting,/\{resumeControl&&<div className=\{styles\.resumeBelow\}>\{resumeControl\}/)
+ assert.match(greeting,/\{resumeControl&&<div ref=\{resumePanel\} className=\{styles\.resumeBelow\}>\{resumeControl\}/)
  assert.match(dialogue,/resumeControl=\{protocolOwnerReady&&/)
  assert.match(greeting,/\{greetingStarted&&\(readyTopic\?/)
 })

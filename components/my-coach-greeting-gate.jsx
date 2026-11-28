@@ -14,7 +14,7 @@ import {MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-sessio
 import {COACH_COMPARISON_IDS,getCoachProgramComparison} from '@/lib/coach-program-comparison.mjs'
 import {courseLaunchNeighbor,courseLaunchPresentation} from '@/lib/coach-course-launch.mjs'
 import {appFetch} from '@/lib/app/client-fetch'
-import {projectCourseSession} from '@/lib/coach-course-session-progress.mjs'
+import {projectCourseSession,resolveSavedCoachSession} from '@/lib/coach-course-session-progress.mjs'
 import {ClarityStartLink} from './app/clarity-program'
 import styles from './my-coach-greeting-gate.module.css'
 import {ReikiJoinDialog} from './reiki-join-dialog'
@@ -91,7 +91,7 @@ function CourseProgress({progress,lang}){
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[]}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[],savedSessions=[],resumeLookupReady=false,resumeBusy=false,resumeError=false,resumeCursor=null,onResumeSession,onReloadSessions}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
@@ -99,6 +99,11 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const course=getCoachProgramComparison(lang).programs.find(item=>item.id===program)
  const ui=screenWords[lang],presentation=courseLaunchPresentation(lang,course)
  const progress=useCourseSessionProgress(program,course.count,course.available,accountSaving)
+ const resumePanel=useRef(null)
+ const resolveEntry=id=>resolveSavedCoachSession({accountSaving,ready:resumeLookupReady,busy:resumeBusy,error:resumeError,cursor:resumeCursor,items:savedSessions,topic:id,personaId})
+ const mainEntry=resolveEntry(INTRODUCTORY_COACH_SESSION_ID)
+ const entryWords=({ru:{lookup:'Проверить историю сессий',choose:'Открыть историю сессий',saved:'Сохранено в черновике'},en:{lookup:'Check session history',choose:'Open session history',saved:'Saved in draft'},es:{lookup:'Consultar historial',choose:'Abrir historial de sesiones',saved:'Guardado en borrador'}})[lang]
+ const entryLabel=entry=>entry.kind==='resume'?ui.resume:entry.kind==='new'?ui.start:entryWords[entry.kind]
  const [expanded,setExpanded]=useState(false)
  const [dialogMode,setDialogMode]=useState('sessions')
  const [time,setTime]=useState(0),[duration,setDuration]=useState(null),[muted,setMuted]=useState(false)
@@ -208,7 +213,14 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  function chooseSession(id,options){
    if(entryPending||!greetingStarted||chosen.current||switching.current||gate.busy)return
    if(!accountSaving){topicDialog.current?.close();void gate.begin({id});return}
-   if(draftCourses.includes(id)&&!window.confirm(({ru:'Начать отдельную сессию заново? Старый черновик останется в профиле. Это не увеличивает бесплатный лимит.',en:'Start a separate new session? The old draft stays in your profile. This does not increase your free allowance.',es:'¿Empezar una sesión nueva? El borrador anterior se conserva. Esto no aumenta tu límite gratuito.'})[lang]))return
+   const entry=resolveEntry(id)
+   if(entry.kind!=='new'){
+     topicDialog.current?.close()
+     if(entry.kind==='resume'&&onResumeSession){void onResumeSession(entry.item);return}
+     if(entry.kind==='lookup'&&!resumeBusy)void onReloadSessions?.()
+     resumePanel.current?.scrollIntoView?.({block:'nearest'})
+     return
+   }
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
@@ -245,7 +257,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            {greetingStarted&&(readyTopic?<button type="button" className={styles.mainAction} disabled={gate.busy||entryPending} onClick={()=>chooseSession(readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><Play size={25} fill="currentColor" aria-hidden="true"/><span>{({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]}</span><ChevronRight size={23}/></button>:course.available&&program==='clarity'?(progress?.complete?<ClarityStartLink locale={lang} coachId={personaId} className={styles.mainAction}>
              <BookOpen size={25} aria-hidden="true"/><span className={styles.ctaCopy}><strong>{ui.done}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
            </ClarityStartLink>:<button type="button" className={styles.mainAction} data-coach-greeting-live-start disabled={gate.busy||entryPending} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}>
-             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{ui.start}</strong><CourseProgress progress={progress} lang={lang}/></span><ChevronRight size={23} aria-hidden="true"/>
+             <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{entryLabel(mainEntry)}</strong>{progress?<CourseProgress progress={progress} lang={lang}/>:mainEntry.item&&Number.isFinite(mainEntry.item.durationSeconds)?<span className={styles.ctaProgress}>{entryWords.saved}: {clockText(mainEntry.item.durationSeconds)}</span>:<CourseProgress progress={progress} lang={lang}/>}</span><ChevronRight size={23} aria-hidden="true"/>
            </button>):<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
          </div>
          <div className={styles.courseSelector} data-coach-greeting-course={program}>
@@ -273,7 +285,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
      {entryPending&&<p role="status">{({ru:'Проверяем ваш профиль…',en:'Checking your profile…',es:'Comprobando tu perfil…'})[lang]}</p>}
      <p className={styles.freeNotice}><Info size={18} aria-hidden="true"/><span>{t.free}{accountSaving?' '+({en:'Your session text is automatically saved privately in your account.',ru:'Текст сессии автоматически сохраняется в вашем личном кабинете.',es:'El texto de la sesión se guarda automáticamente en tu cuenta privada.'})[lang]:''}</span></p>
-     {resumeControl&&<div className={styles.resumeBelow}>{resumeControl}</div>}
+     {resumeControl&&<div ref={resumePanel} className={styles.resumeBelow}>{resumeControl}</div>}
    </div>
    <dialog ref={topicDialog} className={styles.topicDialog} aria-labelledby="coach-topics-title"
      data-coach-topic-dialog onClose={()=>{if(!chosen.current)topicTrigger.current?.focus()}}
@@ -287,7 +299,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      </div>
      <div className={styles.topicGroups}>
        {dialogMode==='courses'?getCoachProgramComparison(lang).programs.map(item=><button type="button" key={item.id} className={styles.topicChoice} aria-pressed={program===item.id} onClick={()=>{selectProgram(item.id);topicDialog.current?.close()}}><span>{courseLaunchPresentation(lang,item).title}</span><small>{item.available?'FREE':item.price}</small><ChevronRight size={18}/></button>):<>
-       {dialogMode==='sessions'&&<div className={styles.coursePlan}><strong>{presentation.title}</strong><ol>{course.rows.map((row,i)=><li key={i}>{row.title}</li>)}</ol></div>}
+       {dialogMode==='sessions'&&<div className={styles.coursePlan}><strong>{presentation.title}</strong><ol>{course.rows.map((row,i)=><li key={i}>{row.title}</li>)}</ol>{program==='clarity'&&savedSessions.filter(item=>item.courseSessionId===INTRODUCTORY_COACH_SESSION_ID).map(item=><p key={item.id}>{entryWords.saved}: {clockText(item.durationSeconds)} · {localCoachText(getCoachPersona(item.personaId)?.name,lang)}</p>)}</div>}
        {phase==='complete'?<>
        <button type="button" className={styles.topicChoice} data-coach-greeting-start onClick={()=>chooseSession(readyTopic||INTRODUCTORY_COACH_SESSION_ID)}><span>{readyTopic?({ru:'Продолжить выбранную сессию',en:'Continue selected session',es:'Continuar sesión elegida'})[lang]:t.start+' '+label}</span><ChevronRight size={18}/></button>
        {privateProfileEnabled&&<div data-coach-private-profile-entry><button type="button" className={styles.topicChoice} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Wheel of Life · private text',ru:'Колесо жизненного баланса · приватный текст',es:'Rueda de la vida · texto privado'})[lang]}</button><button type="button" className={styles.topicChoice} onClick={()=>chooseSession(MEANING_AXES_COACH_SESSION_ID,{privateProfile:true})}>{({en:'Meaning Axes · private text',ru:'Оси смысла · приватный текст',es:'Ejes de sentido · texto privado'})[lang]}</button></div>}
@@ -300,7 +312,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            {group.sessions.map(item=><button key={item.id} type="button" className={styles.topicChoice}
              data-coach-topic={item.id} onClick={()=>chooseSession(item.id)}>
              <span className={styles.topicNumber}>{String(item.number).padStart(2,'0')}</span>
-             <span>{coachCourseLocal(item.title,lang)}{draftCourses.includes(item.id)&&<small> · {({ru:'Начать заново',en:'Start over',es:'Empezar de nuevo'})[lang]}</small>}</span><ChevronRight size={18} aria-hidden="true"/>
+             <span>{coachCourseLocal(item.title,lang)}{draftCourses.includes(item.id)&&<small> · {({ru:'Продолжить',en:'Continue',es:'Continuar'})[lang]}</small>}</span><ChevronRight size={18} aria-hidden="true"/>
            </button>)}
          </div>
        </section>)}

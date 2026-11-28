@@ -89,6 +89,7 @@ if(!isolated){
       const source = await readFile(new URL('../supabase/migrations/20261106203000_hh_client_memory_care_journey_v1.sql',import.meta.url),'utf8')
       await db.query(source)
       await db.query(await readFile(new URL('../supabase/migrations/20261122133522_hh_my_coach_durable_protocol_archive_v1_20261122.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
       await db.query(await readFile(new URL('../supabase/migrations/20261125144854_hh_my_coach_private_protocol_drafts_20261125.sql',import.meta.url),'utf8'))
       await db.query(await readFile(new URL('../docs/coaching/PERSONAL_MEMORY_PROTOCOL_REFS_DRAFT.sql',import.meta.url),'utf8'))
       const force = await db.query(`select relname,relrowsecurity,relforcerowsecurity from pg_class
@@ -291,6 +292,120 @@ if(!isolated){
         assert.equal(denied.exportStatus,'not_authorized')
         assert.deepEqual(await recallFor(B),{status:'not_authorized',item:null})
         assert.deepEqual(denied.items,[])
+        const {saveMyCoachProtocol,deleteMyCoachProtocol}=await import('../lib/app/personal-coaching.js')
+        const memoryEnv=['HH_COACH_MEMORY_SELECTION_ENABLED','HH_CLIENT_MEMORY_ENABLED']
+        const before=memoryEnv.map(key=>process.env[key])
+        for(const key of memoryEnv)process.env[key]='true'
+        try {
+          const permissions=await manageMyCoachMemorySelection(config,actor(A),{action:'permissions'})
+          assert.equal(permissions.allowed,true)
+          const reviewed=id=>({...protocol,id,personaId:'mira',startedAt:'2026-11-22T09:00:00.000Z',
+            turnLayout:'chronological',turns:[...protocol.turns,{role:'assistant',content:'Thank you.',mode:'offline'}]})
+          const selected='81000000-0000-4000-8000-000000000021'
+          const input={consent:true,protocol:reviewed(selected),expectedMemorySettingsRevision:permissions.settingsRevision}
+          const parallel=await Promise.all([saveMyCoachProtocol(config,actor(A),input),saveMyCoachProtocol(config,actor(A),input)])
+          assert.deepEqual(parallel.map(r=>r.memorySelection.status).sort(),['already_saved','saved'])
+          assert.deepEqual(parallel.map(r=>r.memorySelection.selected).sort(),[0,1])
+          assert.deepEqual((await exportFor(A)).items.map(item=>item.value),[quote])
+          const stale='81000000-0000-4000-8000-000000000022'
+          const staleResult=await saveMyCoachProtocol(config,actor(A),{...input,protocol:reviewed(stale),
+            expectedMemorySettingsRevision:permissions.settingsRevision+1})
+          assert.deepEqual(staleResult.memorySelection,{status:'stale_consent',selected:0})
+          const plain='81000000-0000-4000-8000-000000000023'
+          const plainResult=await saveMyCoachProtocol(config,actor(A),{consent:true,protocol:reviewed(plain)})
+          assert.equal(plainResult.saved,true)
+          assert.equal(Object.hasOwn(plainResult,'memorySelection'),false)
+          const unavailable='81000000-0000-4000-8000-000000000024'
+          await db.query("alter table app_private.client_ai_memory_protocol_refs add constraint isolated_write_failure check (protocol_id<>'81000000-0000-4000-8000-000000000024')")
+          const errorResult=await saveMyCoachProtocol(config,actor(A),{...input,protocol:reviewed(unavailable)})
+          assert.deepEqual(errorResult.memorySelection,{status:'unavailable',selected:0})
+          const records=await as(A,d=>d.query('select protocol_id from app_private.my_coach_protocol_records where protocol_id=any($1::uuid[])',
+            [[selected,stale,plain,unavailable]]))
+          assert.equal(records.rowCount,4)
+          assert.deepEqual((await as(A,d=>d.query('select protocol_id from app_private.client_ai_memory_protocol_refs'))).rows,[{protocol_id:selected}])
+          assert.equal((await as(B,d=>d.query('select protocol_id from app_private.client_ai_memory_protocol_refs where protocol_id=$1',[selected]))).rowCount,0)
+          await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=false where account_id=$1',[A]))
+          await as(A,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=true where account_id=$1',[A]))
+          const otherPermissions=await manageMyCoachMemorySelection(config,actor(A),{action:'permissions'})
+          const retry=await saveMyCoachProtocol(config,actor(A),{...input,expectedMemorySettingsRevision:otherPermissions.settingsRevision})
+          assert.deepEqual(retry.memorySelection,{status:'already_saved',selected:0})
+          assert.equal((await exportFor(A)).exportStatus,'empty')
+
+          // Resume an owner-approved import over more than 100 distinct encrypted sources.
+          await db.query('alter table app_private.client_ai_memory_protocol_refs drop constraint isolated_write_failure')
+          const history=Array.from({length:111},(_,i)=>'83000000-0000-4000-8000-'+String(i+1).padStart(12,'0'))
+          const snapshots=history.map((id,i)=>seal(i===110?{...reviewed(id),courseSessionId:undefined,courseFieldReview:undefined}:reviewed(id),
+            {accountId:A,recordId:id,field:'my_coach.protocol'},config))
+          await as(A,d=>d.query(
+            'insert into app_private.my_coach_protocol_records(account_id,protocol_id,protocol_ciphertext,saved_at) '+
+            'select $1,u.id,u.cipher,$4::timestamptz from unnest($2::uuid[],$3::text[]) u(id,cipher)',
+            [A,history,snapshots,'2026-11-21T10:00:00.123456Z']))
+          const importRequest=(body,id=A)=>manageMyCoachMemorySelection(config,actor(id),body)
+          const start={action:'backfill-start',confirmed:true,expectedSettingsRevision:otherPermissions.settingsRevision}
+          assert.equal((await importRequest({...start,expectedSettingsRevision:start.expectedSettingsRevision+1})).status,'stale_consent')
+          const started=await importRequest(start)
+          assert.equal(started.status,'ready')
+          assert.equal(started.scanned,0)
+          const initialPage={action:'backfill-page',cursor:started.nextCursor}
+          await as(B,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=true where account_id=$1',[B]))
+          await assert.rejects(()=>importRequest(initialPage,B),{code:'MY_COACH_MEMORY_SELECTION_INVALID'})
+          await assert.rejects(()=>importRequest({...initialPage,cursor:'tampered'}),{code:'MY_COACH_MEMORY_SELECTION_INVALID'})
+          const first=await importRequest(initialPage)
+          assert.equal(first.status,'partial')
+          assert.ok(first.nextCursor)
+          assert.ok(first.selected>0&&first.scanned<=6)
+          const replay=await importRequest(initialPage)
+          assert.equal(replay.selected,0)
+          assert.equal(replay.scanned,first.scanned)
+          const newer='83000000-0000-4000-8000-000000000201'
+          await saveMyCoachProtocol(config,actor(A),{consent:true,protocol:reviewed(newer)})
+          await deleteMyCoachProtocol(config,actor(A),{id:history[0],confirmed:true})
+          let page=first, pages=1
+          while(page.nextCursor&&pages<24){
+            page=await importRequest({action:'backfill-page',cursor:page.nextCursor})
+            assert.ok(page.scanned<=6)
+            pages++
+          }
+          assert.ok(pages>17)
+          assert.equal(page.status,'partial') // One historical row is untyped.
+          assert.equal(page.nextCursor,null)
+          const picked=await as(A,d=>d.query('select protocol_id,status from app_private.client_ai_memory_protocol_refs where protocol_id=any($1::uuid[])',
+            [[...history,newer,selected]]))
+          assert.equal(picked.rows.filter(r=>r.status==='active').length,109)
+          assert.equal(picked.rows.find(r=>r.protocol_id===selected)?.status,'blocked')
+          assert.ok(picked.rows.every(r=>![newer,history[0],history.at(-1)].includes(r.protocol_id)))
+          const stillSaved=await as(A,d=>d.query('select protocol_ciphertext,saved_at::text from app_private.my_coach_protocol_records where protocol_id=$1',[history[1]]))
+          assert.equal(stillSaved.rows[0].protocol_ciphertext,snapshots[1])
+          assert.match(stillSaved.rows[0].saved_at,/\.123456/)
+          const extra=Array.from({length:50},(_,i)=>'85000000-0000-4000-8000-'+String(i+1).padStart(12,'0'))
+          const extraCipher=extra.map(id=>seal(reviewed(id),{accountId:A,recordId:id,field:'my_coach.protocol'},config))
+          await as(A,d=>d.query('insert into app_private.my_coach_protocol_records(account_id,protocol_id,protocol_ciphertext) '+
+            'select $1,u.id,u.cipher from unnest($2::uuid[],$3::text[]) u(id,cipher)',[A,extra,extraCipher]))
+          let limited=await importRequest(start)
+          for(let i=0;i<12&&limited.status!=='limit'&&limited.nextCursor;i++)
+            limited=await importRequest({action:'backfill-page',cursor:limited.nextCursor})
+          assert.equal(limited.status,'limit')
+          const activeCount=async()=>Number((await as(A,d=>d.query(
+            "select count(*) as n from app_private.client_ai_memory_protocol_refs where status='active'"))).rows[0].n)
+          assert.equal(await activeCount(),150)
+          const waiting={action:'backfill-page',cursor:limited.nextCursor}
+          assert.equal((await importRequest(waiting)).selected,0)
+          const oldRef=(await as(A,d=>d.query('select id,revision from app_private.client_ai_memory_protocol_refs where protocol_id=$1',[history[1]]))).rows[0]
+          await importRequest({action:'forget',id:oldRef.id,expectedRevision:oldRef.revision,confirmed:true,operationId:op(188)})
+          assert.equal((await importRequest(waiting)).selected,1)
+          assert.equal(await activeCount(),150)
+
+          const {updateClientMemoryConsent}=await import('../lib/app/client-memory-store.js')
+          const revoked=await updateClientMemoryConsent(config,actor(A),{operationId:op(190),
+            expectedRevision:start.expectedSettingsRevision,values:{sensitive_enabled:false}})
+          assert.equal((await importRequest(initialPage)).status,'not_authorized')
+          await updateClientMemoryConsent(config,actor(A),{operationId:op(191),
+            expectedRevision:revoked.settings.revision,values:{sensitive_enabled:true}})
+          assert.equal((await importRequest(initialPage)).status,'stale_consent')
+          assert.equal((await exportFor(A)).exportStatus,'empty')
+        } finally {
+          memoryEnv.forEach((key,i)=>{if(before[i]===undefined)delete process.env[key];else process.env[key]=before[i]})
+        }
       } finally { await closeDatabase() }
       await as(B,d=>d.query("delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2",[B,protocolB]))
       assert.equal((await as(B,d=>d.query("select * from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",[refB]))).rowCount,0)

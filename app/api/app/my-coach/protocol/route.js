@@ -68,8 +68,9 @@ export async function POST(request){
       if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
       result=await saveMyCoachGreetingName(config,actor,input)
     }else if(input.action==='save'){
-      if(Object.keys(input).some(key=>!['action','consent','protocol','draftRevision'].includes(key)))
+      if(Object.keys(input).some(key=>!['action','consent','protocol','draftRevision','expectedMemorySettingsRevision'].includes(key)))
         throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
+      if(Object.hasOwn(input,'expectedMemorySettingsRevision')&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
       result=await saveMyCoachProtocol(config,actor,input)
     }else if(input.action==='delete'){
       if(Object.keys(input).some(key=>!['action','id','confirmed'].includes(key)))
