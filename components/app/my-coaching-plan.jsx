@@ -7,6 +7,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
 import CoachSessionArchiveHeader from './coach-session-archive-header'
+import CoachArchiveTranscript from './coach-archive-transcript'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import CoachRatingRadar from '../coach-rating-radar'
@@ -498,11 +499,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
       <button type="button" className={styles.primaryButton} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(protocol)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
-     {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
-      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):turn.authorPersonaId||protocolCopy[lang].coach}</b>
-      <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
-      {turn.interrupted===true&&<small>{lang==='ru'?'Ответ перебит (мог быть услышан не полностью)':lang==='es'?'Respuesta interrumpida':'Reply interrupted; may not have been fully heard'}</small>}
-     </div>)}
+     <CoachArchiveTranscript protocol={protocol} locale={lang} you={({en:'You',ru:'Вы',es:'Tú'})[lang]} coach={protocolCopy[lang].coach}/>
     </details>
     <div className={styles.importPanel}>
      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>

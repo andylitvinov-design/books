@@ -155,8 +155,12 @@ test('private draft archive preserves the locked server review and per-turn auth
  assert.ok(archive.includes('lockedGate?lockedGate.review:courseFieldReview'))
  assert.ok(archive.includes('lockedGate&&opening?{opening}'))
  assert.ok(archive.includes('disabled={busy||Boolean(lockedGate)}'))
- assert.ok(archive.includes('row.authorPersonaId||t.coach'))
- assert.ok(profile.includes('turn.authorPersonaId||protocolCopy[lang].coach'))
+ const transcript=readFileSync(new URL('../components/app/coach-archive-transcript.jsx',import.meta.url),'utf8')
+ assert.ok(archive.includes('<CoachArchiveTranscript protocol={p} locale={lang} you={t.you} coach={t.coach}/>'))
+ assert.ok(profile.includes('<CoachArchiveTranscript protocol={protocol}'))
+ assert.ok(profile.includes('coach={protocolCopy[lang].coach}'))
+ assert.ok(transcript.includes("row.turn.role==='user'?you:row.turn.authorPersonaId||coach"))
+ assert.ok(transcript.includes('speechTranscriptDisplayRows(protocol)'))
 })
 
 test('time-only progress is persisted, timestamps alone are deduplicated, revisions continue',async()=>{
