@@ -81,7 +81,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const src=presentationActive?(activePresentation?.src||null):reserveSrc
   const framePoster = presentationActive?null:coachVideoPosterPath(src)
   // Keep the initial poster stable beneath the two presentation layers.
-  const preferredPoster=presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
+  const preferredPoster=presentationActive?(openingActive?opening?.poster||presentation?.poster||pinnedPresentation?.poster:presentation?.poster||pinnedPresentation?.poster||opening?.poster):sessionContext?(released?.poster||sessionPoster):framePoster
   // Large Harry surfaces must not reveal the old tiny rail poster on error.
   const harryOriginalPoster=MEDIA_ROOT+'harry-greeting-real-v2.webp'
   const largeHarryFallback=personaId==='harry'&&(presentationActive||sessionContext)
