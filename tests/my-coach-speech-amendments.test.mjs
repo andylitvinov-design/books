@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {normalizeSpeechAmendments,addSpeechAmendment,speechAmendmentsExtend,speechPersonalCorrection,speechAmendmentsByPosition} from '../lib/personal-coaching/speech-amendments.mjs'
+import {normalizeSpeechAmendments,addSpeechAmendment,speechAmendmentsExtend,speechPersonalCorrection,speechAmendmentsByPosition,speechTranscriptDisplayRows} from '../lib/personal-coaching/speech-amendments.mjs'
 import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions} from '../lib/personal-coaching/session-protocol.mjs'
 import {normalizeMyCoachDraft,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
 const id='8afbf841-49a0-46e1-b5c1-124a116efa28',other='8afbf841-49a0-46e1-b5c1-124a116efa29'
@@ -64,4 +64,19 @@ test('confirmed corrections display in chronological positions, not confirmation
  assert.match(entries[0].question,/before/)
  assert.equal(entries[1].answer,'Уставшим')
  assert.match(entries[2].answer,/after/)
+})
+
+test('saved and draft transcript projection keeps correction distinct and original turns immutable',()=>{
+ const result=speechTranscriptDisplayRows({...p,speechAmendments:[event]})
+ assert.equal(result.correctionsUnavailable,false)
+ assert.deepEqual(result.rows.map(x=>x.kind),['turn','correction','turn'])
+ assert.equal(result.rows[1].correction.text,'Уставшим')
+ assert.equal(result.rows[1].correction.raw,'postawszym')
+ assert.deepEqual(result.rows.filter(x=>x.kind==='turn').map(x=>x.turn),turns)
+ const bad=speechTranscriptDisplayRows({...p,speechAmendments:[{...event,sessionId:other}]})
+ assert.equal(bad.correctionsUnavailable,true)
+ assert.deepEqual(bad.rows.map(x=>x.turn),turns)
+ const old=speechTranscriptDisplayRows(p)
+ assert.equal(old.correctionsUnavailable,false)
+ assert.deepEqual(old.rows.map(x=>x.turn),turns)
 })

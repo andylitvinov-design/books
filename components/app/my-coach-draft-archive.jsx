@@ -6,6 +6,7 @@ import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import MyCoachCourseFieldReview from '../my-coach-course-field-review'
 import styles from './my-coaching-plan.module.css'
 import CoachSessionArchiveHeader from './coach-session-archive-header'
+import CoachArchiveTranscript from './coach-archive-transcript'
 
 const copy={
  ru:{title:'Незавершённые коуч-сессии',unreviewed:'Автосохранённый черновик · не проверенный итог',review:'Проверить и сохранить в архив',name:'Подтверждённое имя (необязательно)',goal:'Моя подтверждённая цель',summary:'Мой итог',step:'Мой следующий шаг',consent:'Я проверил(а) расшифровку и введённые сведения. Сохранить как проверенный отчёт.',discard:'Удалить черновик',ask:'Удалить незавершённый протокол без возможности восстановления?',more:'Показать более ранние черновики',error:'Не удалось синхронизировать черновики. Повторите попытку.',saved:'Проверенный протокол сохранён.',empty:'Нет незавершённых сессий',you:'Вы',coach:'Коуч'},
@@ -34,7 +35,7 @@ function DraftRow({item,t,lang,onAction,busy}){
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
    <MyCoachSavedProfileV3 protocol={p} locale={lang}/>
    <MyCoachCourseFieldReview courseSessionId={item.courseSessionId} turns={p.turns} locale={lang} value={courseFieldReview} onChange={value=>{setCourseFieldReview(value);setChecked(false)}} disabled={busy}/>
-   {p.turns.map((row,i)=><div className={styles.reportSection} key={i}><b>{row.role==='user'?t.you:t.coach}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.content}</p></div>)}
+   <CoachArchiveTranscript protocol={p} locale={lang} you={t.you} coach={t.coach}/>
    <label>{t.name}<input value={name} maxLength={60} onChange={e=>{setName(e.target.value);setChecked(false)}}/></label>
    <label>{t.goal}<textarea rows={2} value={goal} maxLength={180} onChange={e=>{setGoal(e.target.value);setChecked(false)}}/></label>
    <label>{t.summary}<textarea rows={3} value={summary} maxLength={1000} onChange={e=>{setSummary(e.target.value);setChecked(false)}}/></label>
