@@ -50,3 +50,5 @@ test('waiting audio expires during slow request and timeout reports once',async(
  assert.equal(offer(3),true);clock.advance(8000);assert.deepEqual(results,[[2,''],[1,''],[3,'']])
  complete('late');await Promise.resolve();assert.deepEqual(results,[[2,''],[1,''],[3,'']]);assert.deepEqual(calls,[1])
 })
+
+import './coach-gemini-speech-review.test.mjs'

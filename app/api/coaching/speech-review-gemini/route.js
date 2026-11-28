@@ -27,7 +27,7 @@ export async function POST(request){
   await consumeRate(config,{op:'my-coach-stt-free-user-day',userId:actor.id},120,86400)
   await consumeRate(config,{op:'my-coach-stt-free-global-minute'},12,60)
   await consumeRate(config,{op:'my-coach-stt-free-global-day'},240,86400)
-  const response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',cache:'no-store',redirect:'error',signal:AbortSignal.any([request.signal,AbortSignal.timeout(10000)]),headers:{'Content-Type':'application/json','x-goog-api-key':process.env.HH_MY_COACH_GEMINI_TRANSCRIBE_API_KEY},body:JSON.stringify(payload)})
+  const response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',cache:'no-store',redirect:'error',signal:AbortSignal.any([request.signal,AbortSignal.timeout(10000)]),headers:{'Content-Type':'application/json','Api-Revision':'2026-05-20','x-goog-api-key':process.env.HH_MY_COACH_GEMINI_TRANSCRIBE_API_KEY},body:JSON.stringify(payload)})
   if(response.status===429)throw new AppError('AUDIO_STT_RATE_LIMITED',429)
   if(!response.ok)throw new AppError('AUDIO_STT_PROVIDER_UNAVAILABLE',503)
   const text=geminiSpeechReviewText(await response.json())

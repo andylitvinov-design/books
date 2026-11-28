@@ -4,6 +4,8 @@
  * Editing, shot matching and rendering remain local on the original Studio.
  */
 import {NextResponse} from "next/server";
+import {useCoachLargeV3} from "@/lib/coaching/coach-stt-model.mjs";
+import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
 import {AppError} from "@/lib/assessments/contracts";
 import {getAppConfig,requireSameOrigin} from "@/lib/app/config";
 import {createRequestAuth} from "@/lib/app/session";
@@ -84,6 +86,16 @@ export async function POST(request){
     const multipart=new FormData();
     multipart.set("file",file,file.name.replace(/[^a-z0-9._-]/gi,"_").slice(-70));
     multipart.set("model","whisper-large-v3-turbo");
+    // The background review can switch independently of Basic's response path.
+    // The model-specific flag requires confirmed free entitlement; no retry on another model.
+    if(useCoachLargeV3({purpose,textOnly,fileName:file.name,
+      freeConfirmed:process.env.HH_MY_COACH_STT_LARGE_V3_FREE_CONFIRMED,
+      basicEnabled:process.env.HH_MY_COACH_STT_LARGE_V3_BASIC_ENABLED}))
+      multipart.set("model","whisper-large-v3");
+    // Never forward a client-provided prompt, prior dialogue or profile.
+    const glossary=coachSpeechReviewGlossary({purpose,textOnly,filename:file.name,language,
+      enabled:process.env.HH_MY_COACH_STT_GLOSSARY_ENABLED==="true"});
+    if(glossary)multipart.set("prompt",glossary);
     // Plain chat dictation needs text only; do not reject a short phrase for missing timecodes.
     multipart.set("response_format",textOnly?"json":"verbose_json");
     if(!textOnly)multipart.set("timestamp_granularities[]","segment");
