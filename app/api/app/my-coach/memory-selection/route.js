@@ -19,8 +19,8 @@ export async function POST(request){
   if(request.headers.get('x-hh-account-id')!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
   await consumeRate(config,{op:'my-coach-memory-selection',actorId:actor.id},60,3600)
   const input=await readBody(request,3072)
-  // A disabled feature cannot prevent a verified owner from forgetting a ref.
-  if(!coachMemorySelectionEnabled()&&input.action!=='forget')throw new AppError('MY_COACH_MEMORY_SELECTION_DISABLED',503)
+  // Preserve owner control of existing refs when new selections and reads are disabled.
+  if(!coachMemorySelectionEnabled()&&input.action!=='forget'&&input.action!=='correct')throw new AppError('MY_COACH_MEMORY_SELECTION_DISABLED',503)
   const result=await manageMyCoachMemorySelection(config,actor,input)
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){

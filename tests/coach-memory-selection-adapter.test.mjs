@@ -20,7 +20,7 @@ function fixture(){
   value:'A quiet walk helps.',sessionEndedAt:'2026-11-22T10:00:00.000Z',source}
  const settings={memory_enabled:true,sensitive_enabled:true,revision:1}
  let ref=null,archive=true,changeRevisionAtRecheck=false
- const ops=new Map(),calls=[]
+ const ops=new Map(),versions=new Map(),calls=[]
  const fp=(config,accountId,x)=>digest({accountId,source:x.source,value:x.value,sessionEndedAt:x.sessionEndedAt})
  const query=async(sql,args)=>{
   calls.push({sql,args})
@@ -31,6 +31,12 @@ function fixture(){
   else if(sql.startsWith('select action,request_hash')){const x=ops.get(args[1]);if(x)rows=[x]}
   else if(sql.startsWith('insert into app_private.client_ai_memory_protocol_ref_ops'))ops.set(args[1],{action:args[2],request_hash:args[3],ref_id:args[4]})
   else if(sql.startsWith('with chosen as')){if(archive&&args[1].includes(P))rows=[{account_id:A,protocol_id:P,schema_version:1,protocol_ciphertext:'synthetic'}]}
+  else if(sql.startsWith('insert into app_private.client_ai_memory_protocol_ref_versions'))
+   versions.set(args[2],{ref_id:args[1],revision:args[2],value_ciphertext:args[3],created_at:'2026-11-28T00:00:00Z'})
+  else if(sql.startsWith('select v.ref_id')){
+   const version=versions.get(ref?.revision)
+   if(version&&args[1].includes(version.ref_id))rows=[version]
+  }
   else if(sql.startsWith('select count(*)'))rows=[{n:ref?.status==='active'?1:0}]
   else if(sql.startsWith('insert into app_private.client_ai_memory_protocol_refs')){
    assert.equal(ref,null)
@@ -39,7 +45,7 @@ function fixture(){
    rows=[{...ref}]
   }else if(sql.startsWith('update app_private.client_ai_memory_protocol_refs')){
    if(ref?.id===args[1]&&ref.revision===args[2]&&ref.status==='active'){
-    ref={...ref,status:'blocked',source_hash:null,revision:ref.revision+1};rows=[{...ref}]
+    ref={...ref,revision:ref.revision+1,...(sql.includes("set status='blocked'")?{status:'blocked',source_hash:null}:{})};rows=[{...ref}]
    }
   }else if(sql.startsWith('select id,revision')){
    if(ref?.status==='active'&&args[1].includes(ref.id)){
@@ -55,7 +61,7 @@ function fixture(){
  }
  const deps={randomUUID:()=>R,AppError,transaction:async(config,actor,fn)=>fn({query}),
   operationHash:digest,ownerMemoryFingerprint:fp,projectOwnerMemoryArchiveRow:()=>({supported:true,items:[item]}),
-  OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,...core}
+  seal:JSON.stringify,openSealed:JSON.parse,OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,...core}
  const manage=new Function(...Object.keys(deps),body+'\nreturn manageMyCoachMemorySelection')(...Object.values(deps))
  const run=raw=>manage({}, {id:A},raw)
  const save=(n=1)=>({action:'save',confirmed:true,operationId:op(n),expectedSettingsRevision:settings.revision,
@@ -140,4 +146,53 @@ test("a concurrent correction discards stale evidence and marks the search parti
  const result=await f.run({action:"search",query:{ownerReview:true,query:"quiet walk"}})
  assert.equal(result.searchStatus,"partial")
  assert.deepEqual(result.items,[])
+})
+
+test('owner export returns only the selected current evidence and public provenance',async()=>{
+ const f=fixture()
+ assert.deepEqual((await f.run({action:'export'})).items,[])
+ await f.run(f.save())
+ const exported=await f.run({action:'export'})
+ assert.equal(exported.exportStatus,'ok')
+ assert.equal(exported.scope,'selected_memory')
+ assert.deepEqual(exported.items,[{
+  kind:'resource',value:'A quiet walk helps.',valueSource:'reviewed_coaching_protocol',
+  evidenceStatus:'client_confirmed',temporalStatus:'historical',
+  confirmedAt:'2026-11-27T21:00:00Z',sessionEndedAt:'2026-11-22T10:00:00.000Z',
+  source:{kind:'reviewed_coaching_protocol',courseSessionId:'clarity_support',fieldId:'resources'},
+ }])
+ await assert.rejects(()=>f.run({action:'export',accountId:B}),{status:400})
+})
+
+test('owner export distinguishes empty, denied and incomplete reads and withholds incomplete content',async()=>{
+ const f=fixture()
+ assert.equal((await f.run({action:'export'})).exportStatus,'empty')
+ await f.run(f.save())
+ f.reviseDuringRead()
+ const partial=await f.run({action:'export'})
+ assert.equal(partial.exportStatus,'partial')
+ assert.deepEqual(partial.items,[])
+ f.revoke()
+ const denied=await f.run({action:'export'})
+ assert.equal(denied.exportStatus,'not_authorized')
+ assert.deepEqual(denied.items,[])
+ const missing=fixture()
+ await missing.run(missing.save())
+ missing.change({value:'Unconfirmed source revision'})
+ const changed=await missing.run({action:'export'})
+ assert.equal(changed.exportStatus,'partial')
+ assert.deepEqual(changed.items,[])
+})
+
+test('owner export returns the latest correction without older values',async()=>{
+ const f=fixture()
+ await f.run(f.save())
+ for(const [revision,value] of ['First correction','Current correction'].entries()){
+  await f.run({action:'correct',confirmed:true,operationId:op(revision+2),id:R,expectedRevision:revision,value})
+ }
+ const exported=await f.run({action:'export'})
+ assert.equal(exported.exportStatus,'ok')
+ assert.deepEqual(exported.items.map(item=>[item.value,item.valueSource,item.confirmedAt]),
+  [['Current correction','owner_correction','2026-11-28T00:00:00Z']])
+ assert.doesNotMatch(JSON.stringify(exported),/First correction|A quiet walk|ciphertext/)
 })

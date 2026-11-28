@@ -14,10 +14,16 @@ const correctionCopy={
  ru:{edit:'Исправить',heading:'Исправление записи памяти',save:'Подтвердить исправление',cancel:'Отмена',completed:'Запись исправлена.',label:'Ваше исправление'},
  es:{edit:'Corregir',heading:'Corrige este recuerdo',save:'Confirmar corrección',cancel:'Cancelar',completed:'Recuerdo corregido.',label:'Tu corrección'},
 }
+const exportCopy={
+ en:{download:'Download selected memories',empty:'There are no selected memories to download.',partial:'Some selected memories are unavailable. The file could not be prepared.',not_authorized:'Allow sensitive memory in Memory permissions to download selected memories.'},
+ ru:{download:'Скачать выбранные записи',empty:'Нет выбранных записей для скачивания.',partial:'Часть выбранных записей недоступна. Не удалось подготовить файл.',not_authorized:'Для скачивания разрешите чувствительную память в настройках.'},
+ es:{download:'Descargar memorias seleccionadas',empty:'No hay memorias seleccionadas para descargar.',partial:'Algunas memorias seleccionadas no están disponibles. No se pudo preparar el archivo.',not_authorized:'Permite el uso de datos sensibles en los permisos de memoria para descargar tus memorias.'},
+}
 const types=['resource','goal_statement','action_statement','practice_observation','state_observation','client_statement']
 export default function CoachPersonalMemoryPanel({accountId,locale='en',selectionEnabled=false}){
  const t=copy[locale]||copy.en
  const correctionText=correctionCopy[locale]||correctionCopy.en
+ const exportText=exportCopy[locale]||exportCopy.en
  const [query,setQuery]=useState(''),[type,setType]=useState('')
  const [result,setResult]=useState(null),[selected,setSelected]=useState(null)
  const [editing,setEditing]=useState(null)
@@ -57,6 +63,20 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    const next=await post('my-coach/memory-selection',{action:'search',
     query:{ownerReview:true,query:query.trim(),...(type?{types:[type]}:{}),limit:12}},signal)
    if(!signal.aborted){setSelected(next);setEditing(null)}
+  })
+ }
+ function downloadSelected(){
+  void run(async signal=>{
+   const result=await post('my-coach/memory-selection',{action:'export'},signal)
+   if(signal.aborted)return
+   if(result.exportStatus==='not_authorized'){setSelected(null);setEditing(null)}
+   if(result.exportStatus!=='ok'){setNotice(exportText[result.exportStatus]||t.error);return}
+   const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}))
+   const anchor=document.createElement('a')
+   anchor.href=url
+   anchor.download='holistic-house-selected-memories.json'
+   anchor.click()
+   setTimeout(()=>URL.revokeObjectURL(url),1000)
   })
  }
  function save(item){
@@ -112,6 +132,7 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
   {selectionEnabled&&<><h3>{t.selected}</h3>
    <button type="button" className={css.secondary} disabled={busy} onClick={()=>void run(signal=>loadSelected(signal))}>{t.load}</button>
    <button type="button" className={css.secondary} disabled={busy||(!query.trim()&&!type)} onClick={searchSelected}>{t.searchSaved}</button>
+   <button type="button" className={css.secondary} disabled={busy} onClick={downloadSelected}>{exportText.download}</button>
    {selected?.searchStatus==='no_match'&&<p>{t.none}</p>}
    {selected?.consentRequired&&<p>{t.consent} <Link href={'/'+locale+'/app/memory'} prefetch={false}>{t.settings}</Link></p>}
    {selected?.partial&&<p>{t.partial}</p>}

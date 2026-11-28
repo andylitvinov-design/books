@@ -60,6 +60,9 @@ if(!isolated){
            recipient_practitioner_id uuid not null references app.practitioners(id),status text not null);
         create function app_private.account_active() returns boolean language sql stable security invoker as
           $$ select exists(select 1 from app.accounts where id=auth.uid() and status='active' and onboarding_state='active') $$;
+        -- The synthetic suite binds claims directly, without the app's HTTP session fixture.
+        create function app_private.session_active() returns boolean language sql stable security invoker as
+          $$ select app_private.account_active() $$;
         insert into app.accounts values
           ('${A}','active','active'),('${B}','active','active'),
           ('${M1}','active','active'),('${M2}','active','active');
@@ -174,10 +177,26 @@ if(!isolated){
       const fingerprint='a'.repeat(64)
       await as(A,d=>d.query('update app_private.client_ai_memory_settings set memory_enabled=true,sensitive_enabled=true where account_id=$1',[A]))
       await as(B,d=>d.query('insert into app_private.client_ai_memory_settings(account_id,memory_enabled,sensitive_enabled) values($1,true,true)',[B]))
-      for(const [owner,protocol] of [[A,protocolA],[B,protocolB]])await as(owner,d=>d.query(
-        'insert into app_private.my_coach_protocol_records(account_id,protocol_id,protocol_ciphertext) values($1,$2,$3)',[owner,protocol,'synthetic-ciphertext']))
+      const {seal}=await import('../lib/app/crypto.js')
+      const {ownerMemoryFingerprint,projectOwnerMemoryArchiveRow}=await import('../lib/app/my-coach-memory-source.js')
+      const {manageMyCoachMemorySelection}=await import('../lib/app/my-coach-memory-selection.js')
+      const {closeDatabase}=await import('../lib/app/database.js')
+      const config={test:true,databaseUrl:url,encryptionKey:Buffer.alloc(32,42),encryptionKeyId:'synthetic'}
+      const quote='A quiet walk before the meeting helps me.'
+      const protocol={id:protocolB,locale:'en',provenance:'client_reviewed_dialogue',
+        completedAt:'2026-11-22T10:00:00.000Z',courseSessionId:'clarity_support',
+        courseFieldReview:{version:'hh-coach-course-review-v1',courseSessionId:'clarity_support',
+          events:[{fieldId:'resources',status:'confirmed',turnIndex:0,quote,revision:1}]},
+        turns:[{role:'user',content:quote}]}
+      const cipher=seal(protocol,{accountId:B,recordId:protocolB,field:'my_coach.protocol'},config)
+      const [sourceItem]=projectOwnerMemoryArchiveRow(config,{id:B},
+        {account_id:B,protocol_id:protocolB,schema_version:1,protocol_ciphertext:cipher}).items
+      for(const [owner,protocolId,encrypted] of [[A,protocolA,'synthetic-ciphertext'],[B,protocolB,cipher]])
+        await as(owner,d=>d.query(
+          'insert into app_private.my_coach_protocol_records(account_id,protocol_id,protocol_ciphertext) values($1,$2,$3)',
+          [owner,protocolId,encrypted]))
       const insertRef=(owner,ref,protocol)=>as(owner,d=>d.query(
-        "insert into app_private.client_ai_memory_protocol_refs(account_id,id,protocol_id,field_id,field_revision,turn_index,source_hash) values($1,$2,$3,'resources',1,0,$4)",[owner,ref,protocol,fingerprint]))
+        "insert into app_private.client_ai_memory_protocol_refs(account_id,id,protocol_id,field_id,field_revision,turn_index,source_hash) values($1,$2,$3,'resources',1,0,$4)",[owner,ref,protocol,owner===B?ownerMemoryFingerprint(config,B,sourceItem):fingerprint]))
       await insertRef(A,refA,protocolA)
       await insertRef(B,refB,protocolB)
       await assert.rejects(()=>insertRef(B,'82000000-0000-4000-8000-000000000003',protocolA))
@@ -220,8 +239,27 @@ if(!isolated){
       await as(A,d=>d.query('delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2',[A,protocolA]))
       assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_refs'))).rows[0].n,0)
       assert.equal((await as(A,d=>d.query('select count(*)::int n from app_private.client_ai_memory_protocol_ref_ops'))).rows[0].n,1)
-      await addCorrection(B,refB,1)
-      assert.equal((await advanceCorrection(B,refB)).rows[0].revision,1)
+      const actor=id=>({id,claims:{sub:id}})
+      const exportFor=id=>manageMyCoachMemorySelection(config,actor(id),{action:'export'})
+      try {
+        assert.equal((await exportFor(A)).exportStatus,'empty')
+        await assert.rejects(()=>manageMyCoachMemorySelection(config,{id:B,claims:{sub:A}},{action:'export'}),
+          {code:'ACCOUNT_REQUIRED'})
+        const original=await exportFor(B)
+        assert.equal(original.exportStatus,'ok')
+        assert.deepEqual(original.items.map(item=>item.value),[quote])
+        await manageMyCoachMemorySelection(config,actor(B),{action:'correct',confirmed:true,operationId:op(101),
+          id:refB,expectedRevision:0,value:'Walking after lunch works for me.'})
+        const corrected=await exportFor(B)
+        assert.equal(corrected.exportStatus,'ok')
+        assert.deepEqual(corrected.items.map(item=>[item.value,item.valueSource]),
+          [['Walking after lunch works for me.','owner_correction']])
+        assert.doesNotMatch(JSON.stringify(corrected),/ciphertext|81000000|82000000|before the meeting/)
+        await as(B,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=false where account_id=$1',[B]))
+        const denied=await exportFor(B)
+        assert.equal(denied.exportStatus,'not_authorized')
+        assert.deepEqual(denied.items,[])
+      } finally { await closeDatabase() }
       await as(B,d=>d.query("delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2",[B,protocolB]))
       assert.equal((await as(B,d=>d.query("select * from app_private.client_ai_memory_protocol_ref_versions where ref_id=$1",[refB]))).rowCount,0)
       const pmeRls=await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid in ('app_private.client_ai_memory_protocol_refs'::regclass,'app_private.client_ai_memory_protocol_ref_ops'::regclass,'app_private.client_ai_memory_protocol_ref_versions'::regclass)")

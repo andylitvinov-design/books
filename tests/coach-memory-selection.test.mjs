@@ -52,14 +52,18 @@ test('SQL candidate uses canonical settings, account-scoped FK and irreversible 
  assert.match(sql,/status='blocked',source_hash=NULL,revision=revision\+1/)
  assert.doesNotMatch(sql,/SECURITY DEFINER|payload_ciphertext|protocol_ciphertext/)
 })
-test('server boundary stays private and forget is possible with flag off',()=>{
+test('server boundary stays private and owner corrections and forget remain available with flag off',()=>{
  const route=readFileSync(new URL('../app/api/app/my-coach/memory-selection/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-memory-selection.js',import.meta.url),'utf8')
  assert.match(route,/requireSameOrigin\(request,config\)/)
  assert.match(route,/auth\.verified\(\)/)
  assert.match(route,/x-hh-account-id/)
  assert.match(route,/PRIVATE_HEADERS/)
- assert.match(route,/input\.action!=='forget'/)
+ const gate=route.match(/if\(!coachMemorySelectionEnabled\(\)&&(.+)\)throw new AppError\('MY_COACH_MEMORY_SELECTION_DISABLED'/)?.[1]
+ assert.ok(gate)
+ const isDisabled=new Function('input','return '+gate)
+ for(const action of ['correct','forget'])assert.equal(isDisabled({action}),false)
+ for(const action of ['save','search','list','export'])assert.equal(isDisabled({action}),true)
  assert.match(store,/readSettings\(db,actor,true\)/)
  assert.match(store,/ownerMemoryFingerprint\(config,actor\.id,item\)!==input\.sourceFingerprint/)
  assert.match(store,/MY_COACH_MEMORY_BLOCKED/)
